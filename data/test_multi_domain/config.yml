@@ -1,17 +1,10 @@
 language: en
 
 pipeline:
-  - name: SpacyNLP
-  - name: SpacyTokenizer
-  - name: SpacyFeaturizer
-  - name: RegexFeaturizer
-  - name: CRFEntityExtractor
-  - name: EntitySynonymMapper
-  - name: SklearnIntentClassifier
+  - name: "KeywordIntentClassifier"
 
 policies:
   - name: MemoizationPolicy
-  - name: TEDPolicy
 
 importers:
   - name: MultiProjectImporter

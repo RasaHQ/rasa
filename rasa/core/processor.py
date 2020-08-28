@@ -224,9 +224,6 @@ class MessageProcessor:
         processing and saved at a later stage.
         """
 
-        # preprocess message if necessary
-        if self.message_preprocessor is not None:
-            message.text = self.message_preprocessor(message.text)
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.get_tracker_with_session_start(
@@ -441,18 +438,33 @@ class MessageProcessor:
     def _get_action(self, action_name) -> Optional[Action]:
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
-    async def _parse_message(self, message, tracker: DialogueStateTracker = None):
+    async def parse_message(
+        self, message: UserMessage, tracker: Optional[DialogueStateTracker] = None
+    ) -> Dict[Text, Any]:
+        """Interprete the passed message using the NLU interpreter.
+
+        Arguments:
+            message: Message to handle
+            tracker: Dialogue context of the message
+
+        Returns:
+            Parsed data extracted from the message.
+        """
+        # preprocess message if necessary
+        if self.message_preprocessor is not None:
+            text = self.message_preprocessor(message.text)
+        else:
+            text = message.text
+
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
-        if message.text.startswith(INTENT_MESSAGE_PREFIX):
+        if text.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(
-                message.text, message.message_id, tracker
+                text, message.message_id, tracker
             )
         else:
-            parse_data = await self.interpreter.parse(
-                message.text, message.message_id, tracker
-            )
+            parse_data = await self.interpreter.parse(text, message.message_id, tracker)
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
@@ -472,7 +484,7 @@ class MessageProcessor:
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = await self._parse_message(message, tracker)
+            parse_data = await self.parse_message(message, tracker)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log

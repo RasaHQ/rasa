@@ -113,3 +113,26 @@ def test_markdown_entity_regex(
 
     replaced_text = entities_parser.replace_entities(example)
     assert replaced_text == expected_text
+
+
+def test_parse_training_example():
+    message = entities_parser.parse_training_example("Hello!", intent="greet")
+    assert message.get("intent") == "greet"
+    assert message.text == "Hello!"
+
+
+def test_parse_empty_example():
+    message = entities_parser.parse_training_example("")
+    assert message.get("intent") is None
+    assert message.text == ""
+
+
+def test_parse_training_example_with_entities():
+    message = entities_parser.parse_training_example(
+        "I am from [Berlin](city).", intent="inform"
+    )
+    assert message.get("intent") == "inform"
+    assert message.text == "I am from Berlin."
+    assert message.get("entities") == [
+        {"start": 10, "end": 16, "value": "Berlin", "entity": "city"}
+    ]

@@ -161,6 +161,7 @@ def _dump_config(
                               needs to be added to the config file.
         training_type: NLU, CORE or BOTH depending on which is trained.
     """
+
     config_as_expected = _is_config_file_as_expected(
         config_file_path, missing_keys, auto_configured_keys, training_type,
     )

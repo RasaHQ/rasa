@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import patch
 
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
@@ -33,8 +34,8 @@ def test_jieba(text, expected_tokens, expected_indices):
     assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
 
-def test_jieba_load_dictionary(tmpdir_factory):
-    dictionary_path = tmpdir_factory.mktemp("jieba_custom_dictionary").strpath
+def test_jieba_load_dictionary(tmp_path: Path):
+    dictionary_path = str(tmp_path)
 
     component_config = {"dictionary_path": dictionary_path}
 

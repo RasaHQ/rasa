@@ -164,18 +164,7 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = cls.collect_templates(data.get(KEY_RESPONSES, {}))
-        if "templates" in data:
-            raise_warning(
-                "Your domain file contains the key: 'templates'. This has been "
-                "deprecated and renamed to 'responses'. The 'templates' key will "
-                "no longer work in future versions of Rasa. Please replace "
-                "'templates' with 'responses'",
-                FutureWarning,
-                docs=DOCS_URL_DOMAINS,
-            )
-            utter_templates = cls.collect_templates(data.get("templates", {}))
-
+        utter_templates = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -417,46 +406,6 @@ class Domain:
             if intent_name not in intent_properties:
                 _, properties = cls._intent_properties(intent_name, entities)
                 intent_properties.update(properties)
-
-    @staticmethod
-    def collect_templates(
-        yml_templates: Dict[Text, List[Any]]
-    ) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Go through the templates and make sure they are all in dict format."""
-        templates = {}
-        for template_key, template_variations in yml_templates.items():
-            validated_variations = []
-            if template_variations is None:
-                raise InvalidDomain(
-                    "Response '{}' does not have any defined variations.".format(
-                        template_key
-                    )
-                )
-
-            for t in template_variations:
-
-                # responses should be a dict with options
-                if isinstance(t, str):
-                    raise_warning(
-                        f"Responses should not be strings anymore. "
-                        f"Response '{template_key}' should contain "
-                        f"either a '- text: ' or a '- custom: ' "
-                        f"attribute to be a proper response.",
-                        FutureWarning,
-                        docs=DOCS_URL_DOMAINS + "#responses",
-                    )
-                    validated_variations.append({"text": t})
-                elif "text" not in t and "custom" not in t:
-                    raise InvalidDomain(
-                        f"Response '{template_key}' needs to contain either "
-                        f"'- text: ' or '- custom: ' attribute to be a proper "
-                        f"response."
-                    )
-                else:
-                    validated_variations.append(t)
-
-            templates[template_key] = validated_variations
-        return templates
 
     def __init__(
         self,
@@ -1177,9 +1126,9 @@ class Domain:
         Returns:
             `True` if it's a domain file, otherwise `False`.
         """
-        from rasa.data import YAML_FILE_EXTENSIONS
+        from rasa.data import is_likely_yaml_file
 
-        if not Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        if not is_likely_yaml_file(filename):
             return False
         try:
             content = rasa.utils.io.read_yaml_file(filename)

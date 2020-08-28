@@ -75,15 +75,18 @@ def count_temp_rasa_files(directory: Text) -> int:
 
 
 def test_train_temp_files(
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
 ):
-    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
-    output = "test_train_temp_files_models"
+    (tmp_path / "training").mkdir()
+    (tmp_path / "models").mkdir()
+
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
+    output = str(tmp_path / "models")
 
     train(
         default_domain_path,
@@ -109,36 +112,40 @@ def test_train_temp_files(
 
 
 def test_train_core_temp_files(
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_domain_path: Text,
     default_stories_file: Text,
     default_stack_config: Text,
 ):
-    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+    (tmp_path / "training").mkdir()
+    (tmp_path / "models").mkdir()
+
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
     train_core(
         default_domain_path,
         default_stack_config,
         default_stories_file,
-        output="test_train_core_temp_files_models",
+        output=str(tmp_path / "models"),
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
 
 def test_train_nlu_temp_files(
-    tmp_path: Text,
+    tmp_path: Path,
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
     default_nlu_data: Text,
 ):
-    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+    (tmp_path / "training").mkdir()
+    (tmp_path / "models").mkdir()
+
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
     train_nlu(
-        default_stack_config,
-        default_nlu_data,
-        output="test_train_nlu_temp_files_models",
+        default_stack_config, default_nlu_data, output=str(tmp_path / "models"),
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
@@ -151,12 +158,13 @@ def test_train_nlu_wrong_format_error_message(
     default_stack_config: Text,
     incorrect_nlu_data: Text,
 ):
-    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+    (tmp_path / "training").mkdir()
+    (tmp_path / "models").mkdir()
+
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
     train_nlu(
-        default_stack_config,
-        incorrect_nlu_data,
-        output="test_train_nlu_temp_files_models",
+        default_stack_config, incorrect_nlu_data, output=str(tmp_path / "models"),
     )
 
     captured = capsys.readouterr()
@@ -169,9 +177,12 @@ def test_train_nlu_no_nlu_file_error_message(
     monkeypatch: MonkeyPatch,
     default_stack_config: Text,
 ):
-    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+    (tmp_path / "training").mkdir()
+    (tmp_path / "models").mkdir()
 
-    train_nlu(default_stack_config, "", output="test_train_nlu_temp_files_models")
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
+
+    train_nlu(default_stack_config, "", output=str(tmp_path / "models"))
 
     captured = capsys.readouterr()
     assert "No NLU data given" in captured.out
