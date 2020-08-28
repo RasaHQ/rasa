@@ -31,6 +31,8 @@ async def test_simple_story(
     )
     original_md_story_steps = await original_md_reader.read_from_file(input_md_file)
 
+    assert not YAMLStoryWriter.stories_contain_loops(original_md_story_steps)
+
     original_yaml_reader = YAMLStoryReader(default_domain, None, False)
     original_yaml_story_steps = await original_yaml_reader.read_from_file(
         input_yaml_file
@@ -52,7 +54,7 @@ async def test_simple_story(
         assert len(processed_step.events) == len(original_step.events)
 
 
-async def test_forms_are_skipped_with_warning(default_domain: Domain):
+async def test_forms_are_converted(default_domain: Domain):
     original_md_reader = MarkdownStoryReader(
         default_domain, None, False, unfold_or_utterances=False,
     )
@@ -60,13 +62,14 @@ async def test_forms_are_skipped_with_warning(default_domain: Domain):
         "data/test_stories/stories_form.md"
     )
 
+    assert YAMLStoryWriter.stories_contain_loops(original_md_story_steps)
+
     writer = YAMLStoryWriter()
 
-    with pytest.warns(UserWarning) as record:
+    with pytest.warns(None) as record:
         writer.dumps(original_md_story_steps)
 
-    # We skip 5 stories with the forms and warn users
-    assert len(record) == 5
+    assert len(record) == 0
 
 
 def test_yaml_writer_dumps_user_messages():
