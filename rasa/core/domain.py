@@ -692,14 +692,12 @@ class Domain:
         if not latest_message or latest_message == UserUttered.empty():
             return state_dict
 
-        state_dict[USER] = latest_message.as_dict_core()
+        state_dict[USER] = latest_message.as_sub_state()
 
         # filter entities based on intent config
         entities = tuple(self._get_featurized_entities(latest_message))
         if entities:
             state_dict[USER][ENTITIES] = entities
-        else:
-            del state_dict[USER][ENTITIES]
 
         return state_dict
 

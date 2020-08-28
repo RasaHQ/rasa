@@ -234,8 +234,9 @@ class MarkdownStoryReader(StoryReader):
     async def _parse_message(self, message: Text, line_num: int) -> UserUttered:
 
         parse_data = await RegexInterpreter().parse(message)
+        # e2e user utterance is created in separate place, so we can set text to None
         utterance = UserUttered(
-            message, parse_data.get("intent"), parse_data.get("entities"), parse_data
+            None, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)

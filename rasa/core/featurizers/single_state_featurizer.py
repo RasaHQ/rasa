@@ -54,32 +54,6 @@ class SingleStateFeaturizer:
             )
         self.e2e_action_texts = domain.e2e_action_texts
 
-    @staticmethod
-    def _construct_message(
-        sub_state: SubState, state_type: Text
-    ) -> Tuple["Message", Text]:
-        if state_type == USER:
-            if sub_state.get(INTENT):
-                message = Message(data={INTENT: sub_state.get(INTENT)})
-                attribute = INTENT
-            else:
-                message = Message(data={TEXT: sub_state.get(TEXT)})
-                attribute = TEXT
-        elif state_type in {PREVIOUS_ACTION, ACTION}:
-            if sub_state.get(ACTION_NAME):
-                message = Message(data={ACTION_NAME: sub_state.get(ACTION_NAME)})
-                attribute = ACTION_NAME
-            else:
-                message = Message(data={ACTION_TEXT: sub_state.get(ACTION_TEXT)})
-                attribute = ACTION_TEXT
-        else:
-            raise ValueError(
-                f"Given state_type '{state_type}' is not supported. "
-                f"It must be either '{USER}' or '{PREVIOUS_ACTION}'."
-            )
-
-        return message, attribute
-
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
     ) -> Optional[Dict[Text, List["Features"]]]:
@@ -128,22 +102,29 @@ class SingleStateFeaturizer:
     ) -> Dict[Text, List["Features"]]:
 
         output = defaultdict(list)
-        message, attribute = self._construct_message(sub_state, state_type)
+        message = Message(data=sub_state)
+        # remove entities from possible attributes
+        attributes = set(
+            attribute for attribute in sub_state.keys() if attribute != ENTITIES
+        )
 
         if interpreter is not None:
             parsed_message = interpreter.synchronous_parse_message(message)
-            all_features = (
-                parsed_message.get_sparse_features(attribute)
-                + parsed_message.get_dense_features(attribute)
-                if parsed_message is not None
-                else ()
-            )
+            for attribute in attributes:
+                all_features = (
+                    parsed_message.get_sparse_features(attribute)
+                    + parsed_message.get_dense_features(attribute)
+                    if parsed_message is not None
+                    else ()
+                )
 
-            for features in all_features:
-                if features is not None:
-                    output[attribute].append(features)
+                for features in all_features:
+                    if features is not None:
+                        output[attribute].append(features)
 
-            for name_attribute in [INTENT, ACTION_NAME]:
+            # transform sequence sparse features to sentence sparse features
+            # for intent and action_name
+            for name_attribute in {INTENT, ACTION_NAME}:
                 if output.get(name_attribute):
                     sentence_features = []
                     for feature in output.get(name_attribute):
@@ -155,14 +136,19 @@ class SingleStateFeaturizer:
                                 feature.origin,
                             )
                         )
-                    output[name_attribute] += sentence_features
+                    output[name_attribute] = sentence_features
 
-        output = dict(output)
-        if not output.get(attribute) and attribute in {INTENT, ACTION_NAME}:
-            # there can only be either TEXT or INTENT
-            # or ACTION_TEXT or ACTION_NAME
-            # therefore nlu pipeline didn't create features for user or action
-            output = self._create_features(sub_state, attribute, sparse)
+        name_attribute = next(
+            (
+                attribute
+                for attribute in attributes
+                if attribute in {INTENT, ACTION_NAME}
+            ),
+            None,
+        )
+        if not output and name_attribute:
+            # nlu pipeline didn't create features for user or action
+            output = self._create_features(sub_state, name_attribute, sparse)
 
         return output
 

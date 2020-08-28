@@ -318,12 +318,19 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_dict_core(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         entities = [entity.get("entity") for entity in self.entities]
+        out = {}
+        # during training we expect either intent_name or text to be set
+        # during prediction both will be set
         if self.intent_name:
-            return {INTENT: self.intent_name, ENTITIES: entities}
-        else:
-            return {TEXT: self.text, ENTITIES: entities}
+            out[INTENT] = self.intent_name
+        if self.text:
+            out[TEXT] = self.text
+        if entities:
+            out[ENTITIES] = entities
+
+        return out
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -1074,14 +1081,14 @@ class ActionExecuted(Event):
         d.update({"name": self.action_name, "policy": policy, "confidence": confidence})
         return d
 
-    def as_dict_core(self) -> Dict[Text, Text]:
+    def as_sub_state(self) -> Dict[Text, Text]:
         if self.action_name:
             return {ACTION_NAME: self.action_name}
         else:
             return {ACTION_TEXT: self.e2e_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker.set_latest_action(self.as_dict_core())
+        tracker.set_latest_action(self.as_sub_state())
         tracker.clear_followup_action()
 
 
