@@ -8,17 +8,6 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
-    USE_TEXT_AS_LABEL,
-)
-from rasa.nlu.constants import (
-    RESPONSE_SELECTOR_PROPERTY_NAME,
-    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
-    RESPONSE_SELECTOR_DEFAULT_INTENT,
-    RESPONSE_SELECTOR_RESPONSES_KEY,
-    RESPONSE_SELECTOR_PREDICTION_KEY,
-    RESPONSE_SELECTOR_RANKING_KEY,
-    INTENT_RESPONSE_KEY,
-    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
 
@@ -64,34 +53,28 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 
     assert loaded.pipeline
     assert parsed is not None
+    assert (parsed.get("response_selector").get("all_retrieval_intents")) == [
+        "chitchat"
+    ]
     assert (
-        parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME).get(
-            RESPONSE_SELECTOR_RETRIEVAL_INTENTS
-        )
-    ) == ["chitchat"]
-    assert (
-        parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME)
-        .get(RESPONSE_SELECTOR_DEFAULT_INTENT)
-        .get(RESPONSE_SELECTOR_PREDICTION_KEY)
-        .get(INTENT_RESPONSE_KEY)
+        parsed.get("response_selector")
+        .get("default")
+        .get("response")
+        .get("intent_response_key")
     ) is not None
     assert (
-        parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME)
-        .get(RESPONSE_SELECTOR_DEFAULT_INTENT)
-        .get(RESPONSE_SELECTOR_PREDICTION_KEY)
-        .get(RESPONSE_SELECTOR_RESPONSES_KEY)
+        parsed.get("response_selector")
+        .get("default")
+        .get("response")
+        .get("response_templates")
     ) is not None
 
-    ranking = (
-        parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME)
-        .get(RESPONSE_SELECTOR_DEFAULT_INTENT)
-        .get(RESPONSE_SELECTOR_RANKING_KEY)
-    )
+    ranking = parsed.get("response_selector").get("default").get("ranking")
     assert ranking is not None
 
     for rank in ranking:
-        assert rank.get(PREDICTED_CONFIDENCE_KEY) is not None
-        assert rank.get(INTENT_RESPONSE_KEY) is not None
+        assert rank.get("confidence") is not None
+        assert rank.get("intent_response_key") is not None
 
 
 @pytest.mark.parametrize(
@@ -109,7 +92,7 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
     training_data = training_data.merge(training_data_responses)
 
     response_selector = ResponseSelector(
-        component_config={USE_TEXT_AS_LABEL: use_text_as_label}
+        component_config={"use_text_as_label": use_text_as_label}
     )
     response_selector.preprocess_train_data(training_data)
 
@@ -136,7 +119,7 @@ def test_resolve_intent_response_key_from_label(
     training_data = training_data.merge(training_data_responses)
 
     response_selector = ResponseSelector(
-        component_config={USE_TEXT_AS_LABEL: train_on_text}
+        component_config={"use_text_as_label": train_on_text}
     )
     response_selector.preprocess_train_data(training_data)
 
