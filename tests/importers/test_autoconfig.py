@@ -186,31 +186,31 @@ def test_dump_config(
     "input_file, expected_file, expected_file_windows, training_type",
     [
         (
-                "config_empty_en.yml",
-                "config_empty_en_after_dumping.yml",
-                "config_empty_en_after_dumping_windows.yml",
-                autoconfig.TrainingType.BOTH,
+            "config_empty_en.yml",
+            "config_empty_en_after_dumping.yml",
+            "config_empty_en_after_dumping_windows.yml",
+            autoconfig.TrainingType.BOTH,
         ),
         (
-                "config_empty_en.yml",
-                "config_empty_en_after_dumping_core.yml",
-                "config_empty_en_after_dumping_windows_core.yml",
-                autoconfig.TrainingType.CORE,
+            "config_empty_en.yml",
+            "config_empty_en_after_dumping_core.yml",
+            "config_empty_en_after_dumping_windows_core.yml",
+            autoconfig.TrainingType.CORE,
         ),
         (
-                "config_empty_en.yml",
-                "config_empty_en_after_dumping_nlu.yml",
-                "config_empty_en_after_dumping_windows_nlu.yml",
-                autoconfig.TrainingType.NLU,
+            "config_empty_en.yml",
+            "config_empty_en_after_dumping_nlu.yml",
+            "config_empty_en_after_dumping_windows_nlu.yml",
+            autoconfig.TrainingType.NLU,
         ),
     ],
 )
 def test_get_configuration_for_different_training_types(
-        tmp_path: Path,
-        input_file: Text,
-        expected_file: Text,
-        expected_file_windows: Text,
-        training_type: autoconfig.TrainingType,
+    tmp_path: Path,
+    input_file: Text,
+    expected_file: Text,
+    expected_file_windows: Text,
+    training_type: autoconfig.TrainingType,
 ):
     config_file = str(tmp_path / "config.yml")
     shutil.copyfile(str(CONFIG_FOLDER / input_file), config_file)
