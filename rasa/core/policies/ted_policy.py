@@ -589,6 +589,7 @@ class TED(TransformerRasaModel):
                 f"{name}_{feature_type}", self.config[DROP_RATE]
             )
 
+            # use the same configurable dense dimension for all sparse features
             self._prepare_sparse_dense_layers(
                 self.data_signature[name][feature_type],
                 f"{name}_{feature_type}",
