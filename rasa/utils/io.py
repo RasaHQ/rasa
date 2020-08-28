@@ -245,6 +245,8 @@ def convert_to_ordered_dict(obj: Any) -> Any:
         An `OrderedDict` with all nested dictionaries converted if `obj` is a
         dictionary, otherwise the object itself.
     """
+    if isinstance(obj, OrderedDict):
+        return obj
     # use recursion on lists
     if isinstance(obj, list):
         return [convert_to_ordered_dict(element) for element in obj]

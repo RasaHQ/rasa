@@ -6,7 +6,6 @@ import os
 from rasa import data
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
-from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.nlu.training_data import TrainingData
@@ -38,9 +37,8 @@ class MultiProjectImporter(TrainingDataImporter):
 
         self._init_from_dict(self.config, self._project_directory)
 
-        extra_story_files, extra_nlu_files = data.get_core_nlu_files(
-            training_data_paths
-        )
+        extra_nlu_files = data.get_data_files(training_data_paths, data.is_nlu_file)
+        extra_story_files = data.get_data_files(training_data_paths, data.is_story_file)
         self._story_paths += extra_story_files
         self._nlu_paths += extra_nlu_files
 
@@ -95,7 +93,7 @@ class MultiProjectImporter(TrainingDataImporter):
                     # Check next file
                     continue
 
-                if data.is_end_to_end_conversation_test_file(full_path):
+                if data.is_test_stories_file(full_path):
                     self._e2e_story_paths.append(full_path)
                 elif Domain.is_domain_file(full_path):
                     self._domain_paths.append(full_path)
@@ -173,7 +171,6 @@ class MultiProjectImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -183,7 +180,6 @@ class MultiProjectImporter(TrainingDataImporter):
         return await utils.story_graph_from_paths(
             story_paths,
             await self.get_domain(),
-            interpreter,
             template_variables,
             use_e2e,
             exclusion_percentage,
