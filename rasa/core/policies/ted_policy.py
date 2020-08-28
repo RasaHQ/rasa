@@ -84,6 +84,7 @@ LABEL_SUB_KEY = "ids"
 LENGTH = "length"
 POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE]
 FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
+LABEL_ACTION_KEYS = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
@@ -562,7 +563,7 @@ class TED(TransformerRasaModel):
         for name in self.label_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
 
-        for name in FEATURES_TO_ENCODE:
+        for name in FEATURES_TO_ENCODE + LABEL_ACTION_KEYS:
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
@@ -609,7 +610,7 @@ class TED(TransformerRasaModel):
             name: attribute name
         """
         feature_type = SENTENCE
-        if (
+        if name in FEATURES_TO_ENCODE and (
             name not in self.data_signature
             or feature_type not in self.data_signature[name]
         ):
@@ -688,7 +689,7 @@ class TED(TransformerRasaModel):
             mask=attribute_mask,
         )
 
-        if attribute in FEATURES_TO_ENCODE:
+        if attribute in FEATURES_TO_ENCODE + LABEL_ACTION_KEYS:
             attribute_features = self._tf_layers[f"ffnn.{attribute}_{SENTENCE}"](
                 attribute_features
             )

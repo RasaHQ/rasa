@@ -113,11 +113,9 @@ def convert_to_data_format(
         training = True
         zero_state_features = defaultdict(list)
 
-    remove_sequence_dimension = False
     # unify format of incoming features
     if isinstance(tracker_state_features[0], Dict):
         tracker_state_features = [[dicts] for dicts in tracker_state_features]
-        remove_sequence_dimension = True
 
     state_to_tracker_features = surface_attributes(tracker_state_features)
 
