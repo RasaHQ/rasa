@@ -273,9 +273,9 @@ class RedisTrackerStore(TrackerStore):
         )
         self.record_exp = record_exp
 
-        if (prefix is None) or (prefix is ""):
+        if (prefix is None) or (prefix == ""):
             self.prefix = "tracker:"
-        elif (not prefix is None) and (
+        elif (prefix is not None) and (
             (isinstance(prefix, str)) and (prefix.isalnum())
         ):
             self.prefix = prefix + ":tracker:"

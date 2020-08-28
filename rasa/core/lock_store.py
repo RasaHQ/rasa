@@ -211,7 +211,7 @@ class RedisLockStore(LockStore):
             password: The password which should be used for authentication with the
                 Redis database.
             use_ssl: `True` if SSL should be used for the connection to Redis.
-            prefix: prefix to prepend to all keys used by the lockstore. Must be 
+            prefix: prefix to prepend to all keys used by the lockstore. Must be
                 alphanumeric.
             socket_timeout: Timeout in seconds after which an exception will be raised
                 in case Redis doesn't respond within `socket_timeout` seconds.
@@ -227,9 +227,9 @@ class RedisLockStore(LockStore):
             socket_timeout=socket_timeout,
         )
 
-        if (prefix is None) or (prefix is ""):
+        if (prefix is None) or (prefix == ""):
             self.prefix = "lock:"
-        elif (not prefix is None) and (
+        elif (prefix is not None) and (
             (isinstance(prefix, str)) and (prefix.isalnum())
         ):
             self.prefix = prefix + ":lock:"
