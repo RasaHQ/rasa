@@ -17,6 +17,14 @@ class Message()
 
 Get dict representation of message as it would appear in training data
 
+#### get\_full\_intent
+
+```python
+ | get_full_intent() -> Text
+```
+
+Get intent as it appears in training data
+
 #### get\_combined\_intent\_response\_key
 
 ```python

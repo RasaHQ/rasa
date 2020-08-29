@@ -3,6 +3,7 @@ import json
 import logging
 import typing
 from typing import List, Text, Optional, Dict, Any
+import random
 
 import aiohttp
 
@@ -17,11 +18,13 @@ from rasa.core.constants import (
     RESPOND_PREFIX,
 )
 from rasa.nlu.constants import (
-    DEFAULT_OPEN_UTTERANCE_TYPE,
-    OPEN_UTTERANCE_PREDICTION_KEY,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_RESPONSES_KEY,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
     INTENT_RANKING_KEY,
     INTENT_NAME_KEY,
+    INTENT_RESPONSE_KEY,
 )
 
 from rasa.core.events import (
@@ -64,8 +67,6 @@ ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 ACTION_BACK_NAME = "action_back"
 
 RULE_SNIPPET_ACTION_NAME = "..."
-
-FULL_RETRIEVAL_INTENT = "full_retrieval_intent"
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -236,8 +237,8 @@ class ActionRetrieveResponse(Action):
 
         if self.intent_name_from_action() in response_selector_properties:
             query_key = self.intent_name_from_action()
-        elif DEFAULT_OPEN_UTTERANCE_TYPE in response_selector_properties:
-            query_key = DEFAULT_OPEN_UTTERANCE_TYPE
+        elif RESPONSE_SELECTOR_DEFAULT_INTENT in response_selector_properties:
+            query_key = RESPONSE_SELECTOR_DEFAULT_INTENT
         else:
             if not self.silent_fail:
                 logger.error(
@@ -248,10 +249,21 @@ class ActionRetrieveResponse(Action):
 
         logger.debug(f"Picking response from selector of type {query_key}")
         selected = response_selector_properties[query_key]
-        message = selected[OPEN_UTTERANCE_PREDICTION_KEY]
-        message["template_name"] = selected[FULL_RETRIEVAL_INTENT]
+        possible_messages = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
+            RESPONSE_SELECTOR_RESPONSES_KEY
+        ]
 
-        return [create_bot_utterance(message)]
+        # Pick a random message from list of candidate messages.
+        # This should ideally be done by the NLG class but that's not
+        # possible until the domain has all the response templates of the response selector.
+        picked_message_idx = random.randint(0, len(possible_messages) - 1)
+        picked_message = copy.deepcopy(possible_messages[picked_message_idx])
+
+        picked_message["template_name"] = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
+            INTENT_RESPONSE_KEY
+        ]
+
+        return [create_bot_utterance(picked_message)]
 
     def name(self) -> Text:
         return self.action_name
