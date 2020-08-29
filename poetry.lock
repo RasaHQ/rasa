@@ -2696,8 +2696,9 @@ jax = ["jax", "jaxlib"]
 [[package]]
 category = "main"
 description = "TF.Text is a TensorFlow library of text related ops, modules, and subgraphs."
+marker = "sys_platform != \"win32\""
 name = "tensorflow-text"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.3.0"
 
@@ -2855,7 +2856,7 @@ description = "Twilio API client and TwiML generator"
 name = "twilio"
 optional = false
 python-versions = "*"
-version = "6.42.0"
+version = "6.45.0"
 
 [package.dependencies]
 PyJWT = ">=1.4.2"
@@ -3065,7 +3066,6 @@ version = ">=3.7.4"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-marker = "python_version < \"3.7\" and python_version != \"3.4\" or python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
@@ -3076,16 +3076,14 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [extras]
-convert = ["tensorflow-text"]
-full = ["spacy", "tensorflow-text", "transformers", "jieba"]
+full = ["spacy", "transformers", "jieba"]
 gh-release-notes = ["github3.py"]
 jieba = ["jieba"]
 spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "ea58e7e93693e2027a6c2bd7b6f0131472a8367df4962b9ca676a5388c95350e"
-lock-version = "1.0"
+content-hash = "0aa0ed94837d69f70230aba9faf735a2f74ababdd578021ad676147666eb8da5"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -4662,7 +4660,7 @@ transformers = [
     {file = "transformers-2.11.0.tar.gz", hash = "sha256:8de20f03a94ebf16d98610a7df0acc6ba68c80bd44605cf5ad4300c642a7b57a"},
 ]
 twilio = [
-    {file = "twilio-6.42.0.tar.gz", hash = "sha256:9d423321d577cab175712e4cc3636b68534572c3ab1c6c5b191925d3abac0223"},
+    {file = "twilio-6.45.0.tar.gz", hash = "sha256:a929ee294dc41ff76a16ca93940707ace74afa72473203d40022ed3e428b0841"},
 ]
 typed-ast = [
     {file = "typed_ast-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:73d785a950fc82dd2a25897d525d003f6378d1cb23ab305578394694202a58c3"},

@@ -1,31 +1,17 @@
-import numpy as np
-import logging
 from typing import Optional, Text, Dict, Any, Union, List, Tuple
 
-from rasa.core.constants import DIALOGUE
-from rasa.nlu.constants import TEXT, NUMBER_OF_SUB_TOKENS
+import numpy as np
+
+from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
+from rasa.utils import common as common_utils
 from rasa.utils.tensorflow.constants import (
-    LABEL,
-    HIDDEN_LAYERS_SIZES,
-    NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    DENSE_DIMENSION,
     LOSS_TYPE,
     SIMILARITY_TYPE,
-    NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    REGULARIZATION_CONSTANT,
-    USE_MAX_NEG_SIM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
-    EMBEDDING_DIMENSION,
-    DROP_RATE_DIALOGUE,
-    DROP_RATE_LABEL,
-    NEGATIVE_MARGIN_SCALE,
-    DROP_RATE,
     EPOCHS,
     SOFTMAX,
     MARGIN,
@@ -33,9 +19,6 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     COSINE,
 )
-
-
-logger = logging.getLogger(__name__)
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
@@ -162,20 +145,25 @@ def load_tf_hub_model(model_url: Text) -> Any:
 
 
 def _replace_deprecated_option(
-    old_option: Text, new_option: Union[Text, List[Text]], config: Dict[Text, Any]
+    old_option: Text,
+    new_option: Union[Text, List[Text]],
+    config: Dict[Text, Any],
+    warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 ) -> Dict[Text, Any]:
     if old_option in config:
         if isinstance(new_option, str):
-            logger.warning(
+            common_utils.raise_deprecation_warning(
                 f"Option '{old_option}' got renamed to '{new_option}'. "
-                f"Please update your configuration file."
+                f"Please update your configuration file.",
+                warn_until_version=warn_until_version,
             )
             config[new_option] = config[old_option]
         else:
-            logger.warning(
+            common_utils.raise_deprecation_warning(
                 f"Option '{old_option}' got renamed to "
                 f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
-                f"Please update your configuration file."
+                f"Please update your configuration file.",
+                warn_until_version=warn_until_version,
             )
             option_dict = config.get(new_option[0], {})
             option_dict[new_option[1]] = config[old_option]
@@ -194,38 +182,6 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
 
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_pre_dial", [HIDDEN_LAYERS_SIZES, DIALOGUE], config
-    )
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_bot", [HIDDEN_LAYERS_SIZES, LABEL], config
-    )
-    config = _replace_deprecated_option("droprate", DROP_RATE, config)
-    config = _replace_deprecated_option("droprate_a", DROP_RATE_DIALOGUE, config)
-    config = _replace_deprecated_option("droprate_b", DROP_RATE_LABEL, config)
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_a", [HIDDEN_LAYERS_SIZES, TEXT], config
-    )
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_b", [HIDDEN_LAYERS_SIZES, LABEL], config
-    )
-    config = _replace_deprecated_option(
-        "num_transformer_layers", NUM_TRANSFORMER_LAYERS, config
-    )
-    config = _replace_deprecated_option("num_heads", NUM_HEADS, config)
-    config = _replace_deprecated_option("dense_dim", DENSE_DIMENSION, config)
-    config = _replace_deprecated_option("embed_dim", EMBEDDING_DIMENSION, config)
-    config = _replace_deprecated_option("num_neg", NUM_NEG, config)
-    config = _replace_deprecated_option("mu_pos", MAX_POS_SIM, config)
-    config = _replace_deprecated_option("mu_neg", MAX_NEG_SIM, config)
-    config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_NEG_SIM, config)
-    config = _replace_deprecated_option("C2", REGULARIZATION_CONSTANT, config)
-    config = _replace_deprecated_option("C_emb", NEGATIVE_MARGIN_SCALE, config)
-    config = _replace_deprecated_option(
-        "evaluate_every_num_epochs", EVAL_NUM_EPOCHS, config
-    )
-    config = _replace_deprecated_option(
-        "evaluate_on_num_examples", EVAL_NUM_EXAMPLES, config
-    )
+    # note: call _replace_deprecated_option() here when there are options to deprecate
 
     return config

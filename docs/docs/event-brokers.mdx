@@ -45,7 +45,7 @@ The example implementation we're going to show you here uses
 You can instruct Rasa to stream all events to your Pika event broker by adding an `event_broker` section to your
 `endpoints.yml`:
 
-```yml (docs/sources/data/test_endpoints/event_brokers/pika_endpoint.yml)
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/pika_endpoint.yml)
 ```
 
 Rasa will automatically start streaming events when you restart the Rasa server.
@@ -113,12 +113,12 @@ You can instruct Rasa to stream all events to your Kafka event broker by adding 
 
 Using `SASL_PLAINTEXT` protocol the endpoints file must have the following entries:
 
-```yml (docs/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
 ```
 
 If using SSL protocol, the endpoints file should look like:
 
-```yml (docs/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
+```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
 ```
 
 ### Adding a Kafka Broker in Python
@@ -228,7 +228,7 @@ To instruct Rasa to save all events to your SQL event broker, add an `event_brok
 `endpoints.yml`. For example, a valid SQLite configuration
 could look like the following:
 
-```yaml
+```yaml-rasa
 event_broker:
   type: SQL
   dialect: sqlite
@@ -237,7 +237,7 @@ event_broker:
 
 PostgreSQL databases can be used as well:
 
-```yaml
+```yaml-rasa
 event_broker:
   type: SQL
   url: 127.0.0.1

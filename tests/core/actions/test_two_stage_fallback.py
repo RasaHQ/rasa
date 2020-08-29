@@ -14,7 +14,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
     UserUttered,
-    Form,
+    ActiveLoop,
     BotUttered,
     UserUtteranceReverted,
     Event,
@@ -60,7 +60,7 @@ async def test_ask_affirmation():
     )
 
     assert len(events) == 2
-    assert events[0] == Form(ACTION_TWO_STAGE_FALLBACK_NAME)
+    assert events[0] == ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME)
     assert isinstance(events[1], BotUttered)
 
 
@@ -70,7 +70,7 @@ async def test_1st_affirmation_is_successful():
         evts=[
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
-            Form(ACTION_TWO_STAGE_FALLBACK_NAME),
+            ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
             # Action asks user to affirm
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -104,7 +104,7 @@ async def test_give_it_up_after_low_confidence_after_affirm_request():
         evts=[
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
-            Form(ACTION_TWO_STAGE_FALLBACK_NAME),
+            ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
             # Action asks user to affirm
             *_two_stage_clarification_request(),
             # User's affirms with low NLU confidence again
@@ -121,7 +121,7 @@ async def test_give_it_up_after_low_confidence_after_affirm_request():
         domain,
     )
 
-    assert events == [Form(None), UserUtteranceReverted()]
+    assert events == [ActiveLoop(None), UserUtteranceReverted()]
 
 
 async def test_ask_rephrase_after_failed_affirmation():
@@ -131,7 +131,7 @@ async def test_ask_rephrase_after_failed_affirmation():
         evts=[
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
-            Form(ACTION_TWO_STAGE_FALLBACK_NAME),
+            ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
             # Action asks user to affirm
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -144,7 +144,7 @@ async def test_ask_rephrase_after_failed_affirmation():
         f"""
         responses:
             utter_ask_rephrase:
-            - {rephrase_text}
+            - text: {rephrase_text}
         """
     )
     action = TwoStageFallbackAction()
@@ -170,7 +170,7 @@ async def test_ask_rephrasing_successful():
         evts=[
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
-            Form(ACTION_TWO_STAGE_FALLBACK_NAME),
+            ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
             # Action asks user to affirm
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -209,7 +209,7 @@ async def test_ask_affirm_after_rephrasing():
         evts=[
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
-            Form(ACTION_TWO_STAGE_FALLBACK_NAME),
+            ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
             # Action asks user to affirm
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -242,7 +242,7 @@ async def test_2nd_affirm_successful():
         evts=[
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
-            Form(ACTION_TWO_STAGE_FALLBACK_NAME),
+            ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
             # Action asks user to affirm
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -290,7 +290,7 @@ async def test_2nd_affirmation_failed(intent_which_lets_action_give_up: Text):
         evts=[
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
-            Form(ACTION_TWO_STAGE_FALLBACK_NAME),
+            ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
             # Action asks user to affirm
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -317,4 +317,4 @@ async def test_2nd_affirmation_failed(intent_which_lets_action_give_up: Text):
         domain,
     )
 
-    assert events == [Form(None), UserUtteranceReverted()]
+    assert events == [ActiveLoop(None), UserUtteranceReverted()]

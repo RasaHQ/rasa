@@ -88,14 +88,13 @@ def _auto_configure(
         )
 
     if sys.platform == "win32":
-        default_config_file = pkg_resources.resource_filename(
-            __name__, "default_config_windows.yml"
-        )
+        filename = "default_config_other_language.yml"
+    elif config.get("language") == "en":
+        filename = "default_config_en.yml"
     else:
-        default_config_file = pkg_resources.resource_filename(
-            __name__, "default_config.yml"
-        )
+        filename = "default_config_other_language.yml"
 
+    default_config_file = pkg_resources.resource_filename(__name__, filename)
     default_config = io_utils.read_config_file(default_config_file)
 
     config = copy.deepcopy(config)
@@ -127,6 +126,7 @@ def _dump_config(
         auto_configured_keys: Keys for which a commented out auto configuration section
                               needs to be added to the config file.
     """
+
     config_as_expected = _is_config_file_as_expected(
         config_file_path, missing_keys, auto_configured_keys
     )

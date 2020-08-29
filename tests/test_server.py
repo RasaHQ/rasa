@@ -1,5 +1,6 @@
 import os
 from multiprocessing.managers import DictProxy
+from pathlib import Path
 from unittest.mock import Mock, ANY
 
 import requests
@@ -160,7 +161,6 @@ def background_server(
     shared_statuses: DictProxy, tmpdir: pathlib.Path
 ) -> Generator[Process, None, None]:
     # Create a fake model archive which the mocked train function can return
-    from pathlib import Path
 
     fake_model = Path(tmpdir) / "fake_model.tar.gz"
     fake_model.touch()
@@ -197,22 +197,22 @@ def background_server(
 @pytest.fixture()
 def training_request(shared_statuses: DictProxy) -> Generator[Process, None, None]:
     def send_request() -> None:
-
-        with ExitStack() as stack:
-            formbot_data = dict(
-                domain="examples/formbot/domain.yml",
-                config="examples/formbot/config.yml",
-                stories="examples/formbot/data/stories.md",
-                nlu="examples/formbot/data/nlu.md",
-            )
-            payload = {
-                key: stack.enter_context(open(path)).read()
-                for key, path in formbot_data.items()
-            }
+        payload = ""
+        project_path = Path("examples") / "formbot"
+        for file in [
+            "domain.yml",
+            "config.yml",
+            Path("data") / "rules.yml",
+            Path("data") / "stories.yml",
+            Path("data") / "nlu.yml",
+        ]:
+            full_path = project_path / file
+            payload += full_path.read_text()
 
         response = requests.post(
             "http://localhost:5005/model/train",
-            json=payload,
+            data=payload,
+            headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
             params={"force_training": True},
         )
         shared_statuses["training_result"] = response.status_code
@@ -241,8 +241,11 @@ def test_train_status_is_not_blocked_by_training(
             return False
 
     # wait until server is up before sending train request and status test loop
-    while not is_server_ready():
+    start = time.time()
+    while not is_server_ready() and time.time() - start < 60:
         time.sleep(1)
+
+    assert is_server_ready()
 
     training_request.start()
 
@@ -258,8 +261,10 @@ def test_train_status_is_not_blocked_by_training(
     # Tell the blocking training function to stop
     shared_statuses["stop_training"] = True
 
-    while shared_statuses.get("training_result") is None:
+    start = time.time()
+    while shared_statuses.get("training_result") is None and time.time() - start < 60:
         time.sleep(1)
+    assert shared_statuses.get("training_result")
 
     # Check that the training worked correctly
     assert shared_statuses["training_result"] == 200
@@ -372,6 +377,7 @@ def test_train_stack_success(
     default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
+    tmp_path: Path,
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(open(default_domain_path))
@@ -392,8 +398,7 @@ def test_train_stack_success(
     assert response.headers["filename"] is not None
 
     # save model to temporary file
-    tempdir = tempfile.mkdtemp()
-    model_path = os.path.join(tempdir, "model.tar.gz")
+    model_path = str(tmp_path / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response.body)
 
@@ -407,6 +412,7 @@ def test_train_nlu_success(
     default_stack_config: Text,
     default_nlu_data: Text,
     default_domain_path: Text,
+    tmp_path: Path,
 ):
     domain_data = rasa_utils.io.read_yaml_file(default_domain_path)
     config_data = rasa_utils.io.read_yaml_file(default_stack_config)
@@ -428,8 +434,7 @@ def test_train_nlu_success(
     assert response.status == 200
 
     # save model to temporary file
-    tempdir = tempfile.mkdtemp()
-    model_path = os.path.join(tempdir, "model.tar.gz")
+    model_path = str(tmp_path / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response.body)
 
@@ -443,6 +448,7 @@ def test_train_core_success(
     default_stack_config: Text,
     default_stories_file: Text,
     default_domain_path: Text,
+    tmp_path: Path,
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(open(default_domain_path))
@@ -459,8 +465,7 @@ def test_train_core_success(
     assert response.status == 200
 
     # save model to temporary file
-    tempdir = tempfile.mkdtemp()
-    model_path = os.path.join(tempdir, "model.tar.gz")
+    model_path = str(tmp_path / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response.body)
 
@@ -470,7 +475,7 @@ def test_train_core_success(
 
 
 def test_train_with_retrieval_events_success(
-    rasa_app: SanicTestClient, default_stack_config: Text
+    rasa_app: SanicTestClient, default_stack_config: Text, tmp_path: Path
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(
@@ -495,13 +500,12 @@ def test_train_with_retrieval_events_success(
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
-    assert_trained_model(response.body)
+    assert_trained_model(response.body, tmp_path)
 
 
-def assert_trained_model(response_body: bytes) -> None:
+def assert_trained_model(response_body: bytes, tmp_path: Path) -> None:
     # save model to temporary file
-    tempdir = tempfile.mkdtemp()
-    model_path = os.path.join(tempdir, "model.tar.gz")
+    model_path = str(tmp_path / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response_body)
 
@@ -536,7 +540,7 @@ def test_deprecation_warnings_json_payload(payload: Dict):
         rasa.server._validate_json_training_payload(payload)
 
 
-def test_train_with_yaml(rasa_app: SanicTestClient):
+def test_train_with_yaml(rasa_app: SanicTestClient, tmp_path: Path):
     training_data = """
 stories:
 - story: My story
@@ -582,7 +586,7 @@ pipeline:
     )
 
     assert response.status == 200
-    assert_trained_model(response.body)
+    assert_trained_model(response.body, tmp_path)
 
 
 def test_train_with_invalid_yaml(rasa_app: SanicTestClient):
@@ -708,6 +712,7 @@ def test_evaluate_stories_end_to_end(
         "is_end_to_end_evaluation",
     }
     assert js["is_end_to_end_evaluation"]
+    assert js["actions"] != []
     assert set(js["actions"][0].keys()) == {
         "action",
         "predicted",
@@ -925,6 +930,29 @@ def test_pushing_event_while_executing_side_effects(rasa_server: Sanic, params: 
             assert message_received.get("text") == serialized_event.get("text")
 
 
+def test_post_conversation_id_with_slash(rasa_app: SanicTestClient):
+    conversation_id = str(uuid.uuid1())
+    id_len = len(conversation_id) // 2
+    conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
+    conversation = f"/conversations/{conversation_id}"
+
+    events = [e.as_dict() for e in test_events]
+    _, response = rasa_app.post(
+        f"{conversation}/tracker/events",
+        json=events,
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.json is not None
+    assert response.status == 200
+
+    _, tracker_response = rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    tracker = tracker_response.json
+    assert tracker is not None
+
+    # there is also an `ACTION_LISTEN` event at the start
+    assert tracker.get("events") == events
+
+
 def test_put_tracker(rasa_app: SanicTestClient):
     data = [event.as_dict() for event in test_events]
     _, response = rasa_app.put(
@@ -1004,9 +1032,7 @@ def test_get_tracker_with_jwt(rasa_secured_app: SanicTestClient):
 
 
 def test_list_routes(default_agent: Agent):
-    from rasa import server
-
-    app = server.create_app(default_agent, auth_token=None)
+    app = rasa.server.create_app(default_agent, auth_token=None)
 
     routes = utils.list_routes(app)
     assert set(routes.keys()) == {

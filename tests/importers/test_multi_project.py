@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Dict, Text
 
 import pytest
@@ -10,25 +11,25 @@ from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
 )
 from rasa.nlu.training_data.formats import RasaReader
+import rasa.utils.io
 from rasa import model
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.importers.multi_project import MultiProjectImporter
 
 
-def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
-    root = tmpdir_factory.mktemp("Parent Bot")
+def test_load_imports_from_directory_tree(tmp_path: Path):
     root_imports = {"imports": ["Project A"]}
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", root_imports)
+    utils.dump_obj_as_yaml_to_file(tmp_path / "config.yml", root_imports)
 
-    project_a_directory = root / "Project A"
+    project_a_directory = tmp_path / "Project A"
     project_a_directory.mkdir()
     project_a_imports = {"imports": ["../Project B"]}
     utils.dump_obj_as_yaml_to_file(
         project_a_directory / "config.yml", project_a_imports
     )
 
-    project_b_directory = root / "Project B"
+    project_b_directory = tmp_path / "Project B"
     project_b_directory.mkdir()
     project_b_imports = {"some other": ["../Project C"]}
     utils.dump_obj_as_yaml_to_file(
@@ -44,7 +45,7 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
     )
 
     # should not be imported
-    subdirectory_3 = root / "Project C"
+    subdirectory_3 = tmp_path / "Project C"
     subdirectory_3.mkdir()
 
     expected = [
@@ -52,48 +53,43 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
         os.path.join(str(project_b_directory)),
     ]
 
-    actual = MultiProjectImporter(str(root / "config.yml"))
+    actual = MultiProjectImporter(str(tmp_path / "config.yml"))
 
     assert actual._imports == expected
 
 
-def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
+def test_load_imports_without_imports(tmp_path: Path):
     empty_config = {}
-    root = tmpdir_factory.mktemp("Parent Bot")
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", empty_config)
+    utils.dump_obj_as_yaml_to_file(tmp_path / "config.yml", empty_config)
 
-    project_a_directory = root / "Project A"
+    project_a_directory = tmp_path / "Project A"
     project_a_directory.mkdir()
     utils.dump_obj_as_yaml_to_file(project_a_directory / "config.yml", empty_config)
 
-    project_b_directory = root / "Project B"
+    project_b_directory = tmp_path / "Project B"
     project_b_directory.mkdir()
     utils.dump_obj_as_yaml_to_file(project_b_directory / "config.yml", empty_config)
 
-    actual = MultiProjectImporter(str(root / "config.yml"))
+    actual = MultiProjectImporter(str(tmp_path / "config.yml"))
 
-    assert actual.is_imported(str(root / "Project C"))
+    assert actual.is_imported(str(tmp_path / "Project C"))
 
 
 @pytest.mark.parametrize("input_dict", [{}, {"imports": None}])
-def test_load_from_none(input_dict: Dict, tmpdir_factory: TempdirFactory):
-    root = tmpdir_factory.mktemp("Parent Bot")
-    config_path = root / "config.yml"
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", input_dict)
+def test_load_from_none(input_dict: Dict, tmp_path: Path):
+    config_path = tmp_path / "config.yml"
+    utils.dump_obj_as_yaml_to_file(tmp_path / "config.yml", input_dict)
 
     actual = MultiProjectImporter(str(config_path))
 
     assert actual._imports == list()
 
 
-def test_load_if_subproject_is_more_specific_than_parent(
-    tmpdir_factory: TempdirFactory,
-):
-    root = tmpdir_factory.mktemp("Parent Bot")
-    config_path = str(root / "config.yml")
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", {})
+def test_load_if_subproject_is_more_specific_than_parent(tmp_path: Path,):
+    config_path = str(tmp_path / "config.yml")
+    utils.dump_obj_as_yaml_to_file(tmp_path / "config.yml", {})
 
-    project_a_directory = root / "Project A"
+    project_a_directory = tmp_path / "Project A"
     project_a_directory.mkdir()
     project_a_imports = {"imports": ["Project B"]}
     utils.dump_obj_as_yaml_to_file(
@@ -108,10 +104,11 @@ def test_load_if_subproject_is_more_specific_than_parent(
 @pytest.mark.parametrize(
     "input_path", ["A/A/A/B", "A/A/A", "A/B/A/A", "A/A/A/B/C/D/E.type"]
 )
-def test_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
-    root = tmpdir_factory.mktemp("Parent Bot")
-    config_path = str(root / "config.yml")
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", {"imports": ["A/A/A", "A/B/A"]})
+def test_in_imports(input_path: Text, tmp_path: Path):
+    config_path = str(tmp_path / "config.yml")
+    utils.dump_obj_as_yaml_to_file(
+        tmp_path / "config.yml", {"imports": ["A/A/A", "A/B/A"]}
+    )
 
     importer = MultiProjectImporter(config_path, project_directory=os.getcwd())
 
@@ -119,52 +116,51 @@ def test_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
 
 
 @pytest.mark.parametrize("input_path", ["A/C", "A/A/B", "A/B"])
-def test_not_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
-    root = tmpdir_factory.mktemp("Parent Bot")
-    config_path = str(root / "config.yml")
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", {"imports": ["A/A/A", "A/B/A"]})
+def test_not_in_imports(input_path: Text, tmp_path: Path):
+    config_path = str(tmp_path / "config.yml")
+    utils.dump_obj_as_yaml_to_file(
+        tmp_path / "config.yml", {"imports": ["A/A/A", "A/B/A"]}
+    )
     importer = MultiProjectImporter(config_path, project_directory=os.getcwd())
 
     assert not importer.is_imported(input_path)
 
 
-def test_cyclic_imports(tmpdir_factory):
-    root = tmpdir_factory.mktemp("Parent Bot")
+def test_cyclic_imports(tmp_path: Path):
     project_imports = {"imports": ["Project A"]}
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", project_imports)
+    utils.dump_obj_as_yaml_to_file(tmp_path / "config.yml", project_imports)
 
-    project_a_directory = root / "Project A"
+    project_a_directory = tmp_path / "Project A"
     project_a_directory.mkdir()
     project_a_imports = {"imports": ["../Project B"]}
     utils.dump_obj_as_yaml_to_file(
         project_a_directory / "config.yml", project_a_imports
     )
 
-    project_b_directory = root / "Project B"
+    project_b_directory = tmp_path / "Project B"
     project_b_directory.mkdir()
     project_b_imports = {"imports": ["../Project A"]}
     utils.dump_obj_as_yaml_to_file(
         project_b_directory / "config.yml", project_b_imports
     )
 
-    actual = MultiProjectImporter(str(root / "config.yml"))
+    actual = MultiProjectImporter(str(tmp_path / "config.yml"))
 
     assert actual._imports == [str(project_a_directory), str(project_b_directory)]
 
 
-def test_import_outside_project_directory(tmpdir_factory):
-    root = tmpdir_factory.mktemp("Parent Bot")
+def test_import_outside_project_directory(tmp_path: Path):
     project_imports = {"imports": ["Project A"]}
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", project_imports)
+    utils.dump_obj_as_yaml_to_file(tmp_path / "config.yml", project_imports)
 
-    project_a_directory = root / "Project A"
+    project_a_directory = tmp_path / "Project A"
     project_a_directory.mkdir()
     project_a_imports = {"imports": ["../Project B"]}
     utils.dump_obj_as_yaml_to_file(
         project_a_directory / "config.yml", project_a_imports
     )
 
-    project_b_directory = root / "Project B"
+    project_b_directory = tmp_path / "Project B"
     project_b_directory.mkdir()
     project_b_imports = {"imports": ["../Project C"]}
     utils.dump_obj_as_yaml_to_file(
@@ -173,87 +169,106 @@ def test_import_outside_project_directory(tmpdir_factory):
 
     actual = MultiProjectImporter(str(project_a_directory / "config.yml"))
 
-    assert actual._imports == [str(project_b_directory), str(root / "Project C")]
+    assert actual._imports == [str(project_b_directory), str(tmp_path / "Project C")]
 
 
-def test_importing_additional_files(tmpdir_factory):
-    root = tmpdir_factory.mktemp("Parent Bot")
+def test_importing_additional_files(tmp_path: Path):
     config = {"imports": ["bots/Bot A"]}
-    config_path = str(root / "config.yml")
+    config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    additional_file = root / "directory" / "file.md"
+    additional_file = tmp_path / "directory" / "file.md"
+    additional_file.parent.mkdir()
 
     # create intermediate directories and fake files
-    additional_file.write("""## story""", ensure=True)
+    rasa.utils.io.write_text_file("""## story""", additional_file)
     selector = MultiProjectImporter(
-        config_path, training_data_paths=[str(root / "directory"), str(additional_file)]
+        config_path,
+        training_data_paths=[str(tmp_path / "directory"), str(additional_file)],
     )
 
     assert selector.is_imported(str(additional_file))
     assert str(additional_file) in selector._story_paths
 
 
-def test_not_importing_not_relevant_additional_files(tmpdir_factory):
-    root = tmpdir_factory.mktemp("Parent Bot")
+def test_not_importing_not_relevant_additional_files(tmp_path: Path):
     config = {"imports": ["bots/Bot A"]}
-    config_path = str(root / "config.yml")
+    config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    additional_file = root / "directory" / "file.yml"
+    additional_file = tmp_path / "directory" / "file.yml"
+    additional_file.parent.mkdir()
+
     selector = MultiProjectImporter(
-        config_path, training_data_paths=[str(root / "data"), str(additional_file)]
+        config_path, training_data_paths=[str(tmp_path / "data"), str(additional_file)]
     )
 
-    not_relevant_file1 = root / "data" / "another directory" / "file.yml"
-    not_relevant_file1.write({}, ensure=True)
-    not_relevant_file2 = root / "directory" / "another_file.yml"
-    not_relevant_file2.write({}, ensure=True)
+    not_relevant_file1 = tmp_path / "data" / "another directory" / "file.yml"
+    not_relevant_file1.parent.mkdir(parents=True)
+    rasa.utils.io.write_text_file("", not_relevant_file1)
+    not_relevant_file2 = tmp_path / "directory" / "another_file.yml"
+    rasa.utils.io.write_text_file("", not_relevant_file2)
 
     assert not selector.is_imported(str(not_relevant_file1))
     assert not selector.is_imported(str(not_relevant_file2))
 
 
+@pytest.mark.parametrize(
+    "test_stories_filename,test_story",
+    [
+        (
+            "test_stories.yml",
+            """
+        stories:
+        - story: story test
+          steps:
+          - user: hello
+            intent: greet
+          - action: utter_greet
+        """,
+        ),
+        (
+            "conversation_tests.md",
+            """
+        ## story test
+        * greet : "hello"
+            - utter_greet
+        """,
+        ),
+    ],
+)
 async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
-    tmpdir_factory: TempdirFactory,
+    tmp_path: Path, test_stories_filename: Text, test_story: Text
 ):
-    from rasa.core.interpreter import RegexInterpreter
     from rasa.core.training.structures import StoryGraph
     import rasa.core.training.loading as core_loading
 
-    root = tmpdir_factory.mktemp("Parent Bot")
     config = {"imports": ["bots/Bot A"]}
-    config_path = str(root / "config.yml")
+    config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    story_file = root / "bots" / "Bot A" / "data" / "stories.md"
-    story_file.write(
+    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
+    story_file.parent.mkdir(parents=True)
+    rasa.utils.io.write_text_file(
         """
         ## story
         * greet
             - utter_greet
         """,
-        ensure=True,
+        story_file,
     )
 
-    e2e_story_test_file = (
-        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "conversation_tests.md"
+    story_test_file = (
+        tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / test_stories_filename
     )
-    e2e_story_test_file.write(
-        """
-        ## story test
-        * greet : "hello"
-            - utter_greet
-        """,
-        ensure=True,
-    )
+    story_test_file.parent.mkdir(parents=True)
+    rasa.utils.io.write_text_file(test_story, story_test_file)
 
     selector = MultiProjectImporter(config_path)
 
     story_steps = await core_loading.load_data_from_resource(
-        resource=str(e2e_story_test_file),
+        resource=str(story_test_file),
         domain=Domain.empty(),
-        interpreter=RegexInterpreter(),
         template_variables=None,
         use_e2e=True,
         exclusion_percentage=None,
@@ -266,46 +281,36 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     assert expected.as_story_string() == actual.as_story_string()
 
 
-def test_not_importing_e2e_conversation_tests_in_project(
-    tmpdir_factory: TempdirFactory,
-):
-    root = tmpdir_factory.mktemp("Parent Bot")
+def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
     config = {"imports": ["bots/Bot A"]}
-    config_path = str(root / "config.yml")
+    config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    story_file = root / "bots" / "Bot A" / "data" / "stories.md"
-    story_file.write("""## story""", ensure=True)
+    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
+    story_file.parent.mkdir(parents=True)
+    rasa.utils.io.write_text_file("""## story""", story_file)
 
-    e2e_story_test_file = (
-        root / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "conversation_tests.md"
+    story_test_file = (
+        tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_stories.yml"
     )
-    e2e_story_test_file.write("""## story test""", ensure=True)
+    story_test_file.parent.mkdir(parents=True)
+    rasa.utils.io.write_text_file("""stories:""", story_test_file)
 
     selector = MultiProjectImporter(config_path)
 
     # Conversation tests should not be included in story paths
-    expected = {
-        "story_paths": [str(story_file)],
-        "e2e_story_paths": [str(e2e_story_test_file)],
-    }
-
-    actual = {
-        "story_paths": selector._story_paths,
-        "e2e_story_paths": selector._e2e_story_paths,
-    }
-
-    assert expected == actual
+    assert [str(story_file)] == selector._story_paths
+    assert [str(story_test_file)] == selector._e2e_story_paths
 
 
-def test_single_additional_file(tmpdir_factory):
-    root = tmpdir_factory.mktemp("Parent Bot")
-    config_path = str(root / "config.yml")
+def test_single_additional_file(tmp_path: Path):
+    config_path = str(tmp_path / "config.yml")
     empty_config = {}
     utils.dump_obj_as_yaml_to_file(config_path, empty_config)
 
-    additional_file = root / "directory" / "file.yml"
-    additional_file.write({}, ensure=True)
+    additional_file = tmp_path / "directory" / "file.yml"
+    additional_file.parent.mkdir()
+    rasa.utils.io.write_yaml({}, additional_file)
 
     selector = MultiProjectImporter(
         config_path, training_data_paths=str(additional_file)

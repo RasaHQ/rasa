@@ -26,6 +26,7 @@ from rasa.core.events import (
     UserUtteranceReverted,
     AgentUttered,
     SessionStarted,
+    md_format_message,
 )
 
 
@@ -300,3 +301,43 @@ def test_event_default_metadata(event_class: Type[Event]):
         assert event.as_dict()["metadata"] == {}
     else:
         assert "metadata" not in event.as_dict()
+
+
+def test_md_format_message():
+    assert (
+        md_format_message("Hello there!", intent="greet", entities=[]) == "Hello there!"
+    )
+
+
+def test_md_format_message_empty():
+    assert md_format_message("", intent=None, entities=[]) == ""
+
+
+def test_md_format_message_using_short_entity_syntax():
+    formatted = md_format_message(
+        "I am from Berlin.",
+        intent="location",
+        entities=[{"start": 10, "end": 16, "entity": "city", "value": "Berlin"}],
+    )
+    assert formatted == """I am from [Berlin](city)."""
+
+
+def test_md_format_message_using_long_entity_syntax():
+    formatted = md_format_message(
+        "I am from Berlin in Germany.",
+        intent="location",
+        entities=[
+            {"start": 10, "end": 16, "entity": "city", "value": "Berlin"},
+            {
+                "start": 20,
+                "end": 27,
+                "entity": "country",
+                "value": "Germany",
+                "role": "destination",
+            },
+        ],
+    )
+    assert (
+        formatted
+        == """I am from [Berlin](city) in [Germany]{"entity": "country", "role": "destination"}."""
+    )
