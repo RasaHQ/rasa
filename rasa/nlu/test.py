@@ -21,9 +21,10 @@ import rasa.utils.io as io_utils
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 from rasa.nlu.constants import (
-    DEFAULT_OPEN_UTTERANCE_TYPE,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
-    OPEN_UTTERANCE_PREDICTION_KEY,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    PREDICTED_CONFIDENCE_KEY,
     EXTRACTOR,
     PRETRAINED_EXTRACTORS,
     NO_ENTITY_TAG,
@@ -32,6 +33,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     RESPONSE,
     INTENT,
+    INTENT_RESPONSE_KEY,
     TEXT,
     ENTITIES,
     TOKENS_NAMES,
@@ -66,7 +68,7 @@ IntentEvaluationResult = namedtuple(
 
 ResponseSelectionEvaluationResult = namedtuple(
     "ResponseSelectionEvaluationResult",
-    "intent_target response_target response_prediction message confidence",
+    "intent_response_key_target intent_response_key_prediction message confidence",
 )
 
 EntityEvaluationResult = namedtuple(
@@ -126,10 +128,10 @@ def remove_empty_response_examples(
     for r in response_results:
         # substitute None values with empty string
         # to enable sklearn evaluation
-        if r.response_prediction is None:
-            r = r._replace(response_prediction="")
+        if r.intent_response_key_prediction is None:
+            r = r._replace(intent_response_key_prediction="")
 
-        if r.response_target != "" and r.response_target is not None:
+        if r.intent_response_key_target:
             filtered.append(r)
 
     return filtered
@@ -156,7 +158,10 @@ def drop_intents_below_freq(
     ]
 
     return TrainingData(
-        keep_examples, training_data.entity_synonyms, training_data.regex_features
+        keep_examples,
+        training_data.entity_synonyms,
+        training_data.regex_features,
+        responses=training_data.responses,
     )
 
 
@@ -236,15 +241,14 @@ def write_response_successes(
     successes = [
         {
             "text": r.message,
-            "intent_target": r.intent_target,
-            "response_target": r.response_target,
-            "response_prediction": {
-                "name": r.response_prediction,
+            "intent_response_key_target": r.intent_response_key_target,
+            "intent_response_key_prediction": {
+                "name": r.intent_response_key_prediction,
                 "confidence": r.confidence,
             },
         }
         for r in response_results
-        if r.response_prediction == r.response_target
+        if r.intent_response_key_prediction == r.intent_response_key_target
     ]
 
     if successes:
@@ -269,15 +273,14 @@ def write_response_errors(
     errors = [
         {
             "text": r.message,
-            "intent_target": r.intent_target,
-            "response_target": r.response_target,
-            "response_prediction": {
-                "name": r.response_prediction,
+            "intent_response_key_target": r.intent_response_key_target,
+            "intent_response_key_prediction": {
+                "name": r.intent_response_key_prediction,
                 "confidence": r.confidence,
             },
         }
         for r in response_results
-        if r.response_prediction != r.response_target
+        if r.intent_response_key_prediction != r.intent_response_key_target
     ]
 
     if errors:
@@ -397,24 +400,27 @@ def evaluate_response_selections(
         f"of {num_examples} examples."
     )
 
-    response_to_intent_target = {}
-    for result in response_selection_results:
-        response_to_intent_target[result.response_target] = result.intent_target
-
-    target_responses, predicted_responses = _targets_predictions_from(
-        response_selection_results, "response_target", "response_prediction"
+    (
+        target_intent_response_keys,
+        predicted_intent_response_keys,
+    ) = _targets_predictions_from(
+        response_selection_results,
+        "intent_response_key_target",
+        "intent_response_key_prediction",
     )
 
     confusion_matrix = sklearn.metrics.confusion_matrix(
-        target_responses, predicted_responses
+        target_intent_response_keys, predicted_intent_response_keys
     )
     labels = sklearn.utils.multiclass.unique_labels(
-        target_responses, predicted_responses
+        target_intent_response_keys, predicted_intent_response_keys
     )
 
     if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
-            target_responses, predicted_responses, output_dict=True
+            target_intent_response_keys,
+            predicted_intent_response_keys,
+            output_dict=True,
         )
         report = _add_confused_labels_to_report(report, confusion_matrix, labels)
 
@@ -426,7 +432,7 @@ def evaluate_response_selections(
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
-            target_responses, predicted_responses
+            target_intent_response_keys, predicted_intent_response_keys
         )
         if isinstance(report, str):
             log_evaluation_table(report, precision, f1, accuracy)
@@ -451,15 +457,10 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
-        _labels = [
-            response_to_intent_target[label]
-            if label in response_to_intent_target
-            else f"'{label[:20]}...' (response not present in test data)"
-            for label in labels
-        ]
+
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
-            classes=_labels,
+            classes=labels,
             title="Response Selection Confusion Matrix",
             output_file=confusion_matrix_filename,
         )
@@ -470,17 +471,16 @@ def evaluate_response_selections(
         plot_attribute_confidences(
             response_selection_results,
             histogram_filename,
-            "response_target",
-            "response_prediction",
+            "intent_response_key_target",
+            "intent_response_key_prediction",
             title="Response Selection Prediction Confidence Distribution",
         )
 
     predictions = [
         {
             "text": res.message,
-            "intent_target": res.intent_target,
-            "response_target": res.response_target,
-            "response_predicted": res.response_prediction,
+            "intent_response_key_target": res.intent_response_key_target,
+            "intent_response_key_prediction": res.intent_response_key_prediction,
             "confidence": res.confidence,
         }
         for res in response_selection_results
@@ -1323,23 +1323,20 @@ def get_eval_data(
             if intent_target in available_response_selector_types:
                 response_prediction_key = intent_target
             else:
-                response_prediction_key = DEFAULT_OPEN_UTTERANCE_TYPE
+                response_prediction_key = RESPONSE_SELECTOR_DEFAULT_INTENT
 
             response_prediction = selector_properties.get(
                 response_prediction_key, {}
-            ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
+            ).get(RESPONSE_SELECTOR_PREDICTION_KEY, {})
 
-            response_target = example.get(RESPONSE, "")
-
-            complete_intent = example.get_combined_intent_response_key()
+            intent_response_key_target = example.get(INTENT_RESPONSE_KEY, "")
 
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
-                    complete_intent,
-                    response_target,
-                    response_prediction.get("name"),
+                    intent_response_key_target,
+                    response_prediction.get(INTENT_RESPONSE_KEY),
                     result.get(TEXT, {}),
-                    response_prediction.get("confidence"),
+                    response_prediction.get(PREDICTED_CONFIDENCE_KEY),
                 )
             )
 
@@ -1526,9 +1523,9 @@ def generate_folds(
     skf = StratifiedKFold(n_splits=n, shuffle=True)
     x = training_data.intent_examples
 
-    # Get labels with response key appended to intent name because we want a
+    # Get labels as they appear in the training data because we want a
     # stratified split on all intents(including retrieval intents if they exist)
-    y = [example.get_combined_intent_response_key() for example in x]
+    y = [example.get_full_intent() for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
         logger.debug(f"Fold: {i_fold}")
         train = [x[i] for i in train_index]
@@ -1538,11 +1535,13 @@ def generate_folds(
                 training_examples=train,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
+                responses=training_data.responses,
             ),
             TrainingData(
                 training_examples=test,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
+                responses=training_data.responses,
             ),
         )
 
@@ -1787,7 +1786,9 @@ def compute_metrics(
     response_selection_metrics = {}
     if response_selection_results:
         response_selection_metrics = _compute_metrics(
-            response_selection_results, "response_target", "response_prediction"
+            response_selection_results,
+            "intent_response_key_target",
+            "intent_response_key_prediction",
         )
 
     return (
