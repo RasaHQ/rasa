@@ -64,6 +64,7 @@ YAML_CONTENT_TYPE = "application/x-yaml"
 
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
+EXECUTE_SIDE_EFFECTS_QUERY_KEY = "execute_side_effects"
 
 
 class ErrorResponse(Exception):
@@ -507,7 +508,8 @@ def create_app(
 
                 for event in events:
                     tracker.update(event, app.agent.domain)
-                await processor._send_bot_messages(events, tracker, output_channel)
+                if rasa.utils.endpoints.bool_arg(request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False):
+                    await processor.execute_side_effects(events, tracker, output_channel)
                 app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
