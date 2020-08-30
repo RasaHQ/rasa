@@ -4,31 +4,33 @@ sidebar_label: Handling Business Logic
 title: Handling Business Logic
 ---
 
-Conversational assistants often have user goals that involve collecting a bunch of information
-from the user before being able to do something for them. For
-example, in the banking industry you may have a user goal of transferring money, where you
-need to collect information about which account to transfer from, whom to transfer to and the
-amount to transfer. This type of behavior can and should be handled in a rule based way, as it
-is clear how this information should be collected.
-
-Here's a short adapted example from Sara, the Rasa assistant. The user wants to subscribe to the newsletter,
-and for this we need to gather one piece of information, namely the user's email. We also want the user to confirm 
-before subscribing them:
+Conversational assistants often suppor user goals that involve collecting required information
+from the user before doing something for them. For example, a restaurant search bot would need to gather a few pieces of information
+about the user's preferences to find them 
+a suitable restaurant:
 
 ```yaml
-User: I want to subscribe to the newsletter
-    Sara: Sure thing! What's your email address?
-User: user@example.com
-    Sara: Do you want me to send you the Rasa newsletter at user@example.com?
-          [yes]
-          [no]
+User: Help me find a restaurant
+    Bot: What cuisine?
+User: I'm looking for Tuscan food
+    Bot: How many people?
+User: 5
+    Bot: Do you want to sit outside?
 User: Yes
-    Sara: We sent a confirmation email to user@example.com.
+    Bot: All done!
+    Bot: I am going to run a restaurant search using the following parameters:
+          - cuisine: Tuscan 
+          - num_people: 5
+          - outdoor_seating: True
 ```
 
-This page is a guide on handling business logic. You can use the example
-configuration and training data below to build an assistant that can handle a conversation
-like the one above, or you can apply the guidelines to your own use case. 
+This type of behavior can and should be handled in a rule based way, as it
+is clear how this information should be collected.
+This page is a guide on handling business logic.
+It uses abbreviated examples from the `formbot` example bot. See the github repo for the [full source code](). 
+Adapt the example
+described in this guide to build an assistant that can handle a conversation
+like the one above, or apply the guidelines to your own use case. 
 
 ## Concepts
 
@@ -48,36 +50,52 @@ policies:
 
 #### Required Slots
 
-For the newsletter subscription example, we want to collect the user's email and confirmation.
+For the restaurant search example, we want to collect the following information
+from the user:
 
-We need to add all the slots our form is using to the domain. Slots filled by
+- cuisine
+- number of people
+- whether they want to sit outside or not
+
+
+You define a form in the domain file by specifying [slot mappings](forms.mdx#slot-mappings) for each 
+piece of required information:
+
+```rasa-yaml
+  - restaurant_form:
+      cuisine:
+        - type: from_entity
+          entity: cuisine
+      num_people:
+        - type: from_entity
+          entity: number
+      outdoor_seating:
+        - type: from_intent
+          intent: affirm
+          value: true
+        - type: from_intent
+          intent: deny
+          value: false
+```
+
+
+See the following section for an explanation of what the slot mappings mean.
+
+Since the form relies on certain slots being available,  you need to add these slots to the domain. Slots filled by
 forms are usually `unfeaturized`, since their value doesn't change
 the flow of the conversation. 
 
 ```rasa-yaml
 slots:
-  email:
+  cuisine:
     type: unfeaturized
-  confirmation:
+    auto_fill: false
+  num_people:
     type: unfeaturized
-```
-
-We define a form in our domain file with a slot and [slot mappings](forms.mdx#slot-mappings) for each piece
-of required information:
-
-```rasa-yaml
-forms:
-  subscribe_form:
-    email:
-    - type: from_entity
-      entity: email
-    confirmation:
-    - type: from_intent
-      intent: affirm
-      value: true
-    - type: from_intent
-      intent: deny
-      value: false
+    auto_fill: false
+  outdoor_seating:
+    type: unfeaturized
+    auto_fill: false
 ```
 
 #### Filling Slots
@@ -85,50 +103,51 @@ forms:
 [`Slot mappings`](forms.mdx#slot-mappings) define how a slot in a form can be filled.
 By default, a slot will be filled by an entity with the same name.
 
-The `email` slot is filled from the entity of the same name. Entities like emails 
-are best extracted using the [`DucklingEntityExtractor`](entity-extractors.mdx#ducklingentityextractor)
-in your NLU pipeline:
+The `cuisine` slot is filled from the entity of the same name.
+The `num_people` slot is filled by the `number` entity. Entities like numbers 
+are best extracted using the [`DucklingEntityExtractor`](entity-extractors.mdx#ducklingentityextractor), 
+while `cuisine` is a custom entity that will need to be extracted by the `DIETClassifier`.
+To extract these two entities, you need to add `DIETClassifier` and `DucklingEntityExtractor` 
+to your NLU pipeline in `config.yml`:
 
 ```rasa-yaml
 language: en
 pipeline:
 # other components
+- DIETClassifier
+  epochs: 100
 - DucklingEntityExtractor:
-  dimensions: ["email"]
+  dimensions: ["number"]
 ```
 
-The `confirmation` slot is 
+
+The `outdoor_seating` slot is 
 filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
-`deny`, it'll be `false`. You can
-define the bot's response for asking for confirmation with buttons, so that the user can
-click "yes" or "no" to trigger `affirm` and `deny` (see next section).
+`deny`, it'll be `false`. 
 
 
 ## Validating Slots
 
 Often, you'll want to validate the user's input before accepting it,
-for example by checking an email against a database to verify if the user is already subscribed.
+for example by checking if the given cuisine is in your assistant's database
+of available cuisines.
 See the docs on [validating form input](forms.mdx#validating-form-input) for more information
 about validation actions. 
-
 
 #### Requesting Slots
 
 To specify how the bot should ask for the required information,
 you define [`responses`](domain.mdx#responses) called `utter_ask_{slotname}` in your domain. 
-For the newsletter subscription example, the responses look like this:
+For the restaurant search example, the responses look like this:
 
 ```rasa-yaml
 responses:
-  utter_ask_email:
-  - text: Sure thing! What's your email address?
-  utter_ask_confirmation:
-  - text: Do you want me to send you the Rasa newsletter at {email}?
-    buttons:
-    - payload: /affirm
-      title: Yes
-    - payload: /deny
-      title: No
+  utter_ask_cuisine:
+    - text: "What cuisine?"
+  utter_ask_num_people:
+    - text: "How many people?"
+  utter_ask_outdoor_seating:
+    - text: "Do you want to sit outside?"
 ```
 
 #### Completing the Form
@@ -138,58 +157,37 @@ information it has collected. Depending on the use case, the assistant
 might just respond with a message, or take a more complicated action behind
 the scenes before responding to the user.
 
-For the newsletter subscription example, the email would usually be added to a database. 
-In this case, the bot will just utter a response, but the response will vary based 
-on whether the user confirms or not:
-
-
-```python
-class ActionSubscribeUser(Action):
-    def name(self):
-        return "action_subscribe_user"
-
-    def run(self, dispatcher, tracker, domain):
-        confirmation = tracker.get_slot("confirmation")
-
-        if confirmation:
-          email = tracker.get_slot("email")
-
-          # Code here for adding user's email to database
-
-          dispatcher.utter_message(
-              template="utter_subscribed"
-          )
-        else:
-          dispatcher.utter_message(
-              template="utter_cancelled"
-          )
-
-        return []
-```
-
-
+For the restaurant search example, in real life the assistant would look up
+a restaurant based on the user's preferences. 
+In this case, the bot will just utter a response with the details 
+that would be used for a search. The actions taken after the 
+form is submitted is determined by a rule for submitting the form (see the rules in the next section).
 
 ## Training Data
 
 ### Rules
 
-All the slot collection happens inside the form, and
-therefore doesn't need to be covered explicitly by a rule. 
 You need two rules for a form's happy path: 
 One to activate it, and one to submit it. 
+All the slot collection happens inside the form, and
+therefore doesn't need to be covered explicitly by a rule. 
 
 
 ```rasa-yaml
-rules:
-  - rule: activate form
+  - rule: activate restaurant form
     steps:
-      - intent: subscribe_newsletter
-      - action: subscribe_form
+      - intent: request_restaurant
+      - action: restaurant_form
+      - active_loop: restaurant_form
+
   - rule: submit form
+    condition:
+    - active_loop: restaurant_form
     steps:
-      - form: subscribe_form
-      - form: null
-      - action: action_subscribe_user
+      - action: restaurant_form
+      - active_loop: null
+      - action: utter_submit
+      - action: utter_slots_values
 ```
 
 By splitting up the activation and submission of the form, 
@@ -207,31 +205,38 @@ examples for how the user will provide the required information.
 
 You need to provide training examples for the
 intent(s) that should activate the form.
-For the newsletter subscription use case, we want the intent `subscribe_newsletter` to activate the form:
+For the restaurant search use case, we want the intent `request_restaurant` to activate the form:
 
 ```rasa-yaml
 nlu:
-- intent: subscribe_newsletter
+- intent: request_restaurant
   examples: |
-    - Subscribe me to the newsletter please
-    - I want to get news from Rasa
-    - Send me the newsletter
+    - im looking for a restaurant
+    - can i get [swedish](cuisine) food in any area
+    - a restaurant that serves [caribbean](cuisine) food
+    - id like a restaurant
+    - im looking for a restaurant that serves [mediterranean](cuisine) food
+    - can i find a restaurant that serves [chinese](cuisine)
 ```
+
+Slots filled `from_entity` can by default be filled by any user utterance, regardless of the intent, as
+long as the correct entity is extracted. That means that if the user provides the `cuisine` entity as part of
+their first message, the slot will be filled at the beginning of the form and the bot will not 
+ask them for the cuisine again. 
 
 #### Form Filling Intent(s)
 
 While the form is filling slots, it will not pay attention to which intent was predicted 
-unless:
- - a slot mapping explicitly asks for or excludes an intent or
- - an intent is involved in a different, competing rule
+unless a slot mapping explicitly requires or excludes an intent.
 
-For the newsletter subscription example, the `confirmation` slot is mapped to two intents,
-so you need to add training data for these intents if you expect users to provide
-free form input and not just use the buttons. 
+For the restaurant search example, the `outdoor_seating` slot is mapped to two intents,
+so you need to add training data for these intents. 
 
-For the `email` slot, you can add examples to a generic `inform` intent. You don't need
-to annotate any entities, since `DucklingEntityExtractor` is a rule-based extractors
-that isn't trained on your training data:
+For the `cuisine` and `number` slots, no intent is specified, so you can add examples to a generic `inform` intent. You need
+to annotate the `cuisine` entity so that `DIETClassifier` can 
+learn to extract it. You don't need to annotate the `number` entity since `DucklingEntityExtractor` is a rule-based extractors
+that isn't trained on your training data. Only a few examples are shown for each intent;
+for your bot to work well, you should add more training data than is shown here:
 
 
 ```rasa-yaml
@@ -246,19 +251,51 @@ nlu:
     - no don't
     - no
     - no I don't want that
+
 - intent: inform
   examples: |
-    - example@example.com
-    - my email is bat@man.com
-    - send it to my@email.com
+    - [afghan](cuisine) food
+    - how bout [asian oriental](cuisine)
+    - what about [indian](cuisine) food
+    - uh how about [turkish](cuisine) type of food
+    - um [english](cuisine)
+    - im looking for [tuscan](cuisine) food
+    - id like [moroccan](cuisine) food
+    - for ten people
+    - 2 people
+    - for three people
+    - just one person
+    - book for seven people
+    - 2 please
+    - nine people
 ```
 
+### Responses
+
+You should include a response for asking for each required slot and 
+for responding after the form has been submitted:
+
+```rasa-yaml
+responses:
+  utter_ask_cuisine:
+    - text: "What cuisine?"
+  utter_ask_num_people:
+    - text: "How many people?"
+  utter_ask_outdoor_seating:
+    - text: "Do you want to seat outside?"
+  utter_submit:
+    - text: "All done!"
+  utter_slots_values:
+    - text: "I am going to run a restaurant search using the following parameters:\n
+             - cuisine: {cuisine}\n
+             - num_people: {num_people}\n
+             - outdoor_seating: {outdoor_seating}
+```
 
 ## Putting it all together
 
-Forms require a few more pieces than other conversation patterns,
-but in turn they can greatly simplify the logic of collecting user 
-information. To define a minimal form like the newsletter subscription
+Forms can greatly simplify the logic of collecting user 
+information. To define a minimal form like the restaurant search
 example above, this is a summary of what you'll need to do:
 
 - [ ] Define the form with slot mappings
