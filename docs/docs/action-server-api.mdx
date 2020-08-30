@@ -1,0 +1,26 @@
+---
+id: action-server-api
+sidebar_label: Action Server API Spec
+title: Action Server API Spec
+---
+
+The [action server](action-server.mdx) must implement an endpoint with the spec below to receive HTTP `POST` requests from the Rasa Server.
+The action server can serve any other additional endpoints, but the Rasa server will only send
+requests to the one specified in 
+`endpoints.yml`.
+
+For a Rasa SDK action server running locally, the endpoint would look like this:
+
+```yaml-rasa
+action_endpoint:
+  url: "http://action-server:5055/webhook"
+```
+
+The Rasa server will send a `POST` request to this endpoint
+ and will expect a response in the format specified below.
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import Redoc from '@site/src/components/redoc';
+
+
+<Redoc specUrl={useBaseUrl("/spec/action-server.yml")} />

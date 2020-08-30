@@ -1,13 +1,10 @@
 openapi: "3.0.2"
 info:
-  title: "Rasa SDK - Action Server Endpoint"
+  title: "Action Server Endpoint"
   version: "0.0.0"
   description: >-
     API of the action server which is used by Rasa
     to execute custom actions.
-servers:
-  - url: "http://localhost:5055/webhook"
-    description: "Local development action server"
 paths:
   /:
     post:

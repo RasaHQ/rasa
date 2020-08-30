@@ -2,11 +2,44 @@
 id: action-server
 sidebar_label: Action Server
 title: Action Server
-description: Check out the API docs for open source chatbot framework Rasa's action server, which allows you to define your own custom actions.
-hide_table_of_contents: true
+description: Find out about SDKs for writing custom actions and running the action server
 ---
 
-import useBaseUrl from '@docusaurus/useBaseUrl';
-import Redoc from '@site/src/components/redoc';
+Custom actions are run by the action server. 
+When your assistant predicts a custom action, the Rasa server sends 
+a `POST` request to the action server with a json payload including
+the name of the predicted action,
+the conversation ID, the contents of the tracker and the contents of the domain.
 
-<Redoc specUrl={useBaseUrl("/spec/action-server.yml")} />
+When the action server finishes running a custom action, it returns a json payload
+of [responses](responses.mdx) and [events](events.mdx). The Rasa server then returns
+the responses to the user and adds the events
+to the conversation tracker. 
+
+See the [action server API spec](action-server-api.mdx) for details of the payload sent to the action server
+and the expected response format.
+See the [documentation for events](events.mdx) for details
+about event types that can be returned.
+
+
+## SDKs for Custom Actions
+
+### Rasa SDK (Python)
+
+The [Rasa SDK]() is a Python SDK for running custom actions. It provides
+the required endpoint and the base `Action` class, as well as methods for interacting
+with the tracker and sending messages in specific formats (e.g. images, buttons, custom payloads for 
+specific messaging channels). If you don't yet have an action server and don't need it
+to be in a language other than Python, using the Rasa SDK will be the easiest way
+to get started.
+See the [docs for the Rasa SDK]() for more details.
+
+### SDKs in Other Languages
+
+If you have legacy code or existing business logic in a language 
+other than Python, you may not want to use the Rasa SDK. In this case you can write
+your own action server in any language you want. The only requirement
+for the action server is that it provide an endpoint which accepts HTTP `POST` requests
+from the Rasa server and returns a list of [events](events.mdx). 
+See the [page on custom actions]() for details about the information that will be passed
+to the action server and what can be done with it.

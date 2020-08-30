@@ -45,6 +45,86 @@ the action server, with the following information:
 ```
 
 Your action server should respond with a list of events and responses:
+An action can run any code you want. Custom actions can turn on the lights,
+add an event to a calendar, check a user's bank balance, send the user a message,
+or anything
+else you can imagine.
+
+Custom actions are run by the [action server](action-server.mdx), which could 
+be the Rasa SDK or an SDK in any other language. 
+
+## Input to Custom Actions
+
+Regardless of which language your action 
+server is written in, 
+your custom actions will have access to the same conversation data. 
+The payload sent to your custom action server includes the 
+`domain` (your bot's domain) and the `tracker`.
+
+### Tracker
+
+The tracker lets you access the state of the conversation in your custom
+actions. You can get information about past events and the current state of the
+conversation by querying the tracker.
+
+The following are available as attributes of a `Tracker` object:
+
+* `sender_id` - The unique ID of person talking to the bot.
+
+* `slots` - The list of slots that can be filled as defined in the
+  domain.
+
+* `latest_message` - A dictionary containing the attributes of the latest
+  message: `intent`, `entities` and `text`.
+
+* `events` - A list of all previous events.
+
+* `active_form` - The name of the currently active form.
+
+* `latest_action_name` - The name of the last action the bot executed.
+
+For example, using the informaton in the tracker, you could
+
+- Get the value of a slot from the `slots` field and query a database according to it's value
+- Validate a slot value during an active [form](forms.mdx)
+
+## Output from Custom Actions
+
+The expected response from the action server is a dictionary of responses and events. 
+For example, the following response payload would result in the slot 
+`user_is_registered` being set to `False`, and the user would receive
+a message saying, "You are not yet registered on this platform". 
+
+```json
+{
+  "events": [
+    {
+      "SlotSet": 
+      {
+        "user_is_registered":false
+        }
+    }
+  ],
+  "responses": [
+    {
+      "text": "You are not yet registered on this platform",
+      "buttons": [],
+      "elements": [],
+      "custom": {},
+      "template": null,
+      "image": null,
+      "attachment": null
+    }
+  ]
+}
+```
+
+## Generating Responses from Custom Actions
+
+
+
+
+## Events
 
 ```json
 {
