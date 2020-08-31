@@ -9,7 +9,7 @@ import typing
 from functools import reduce, wraps
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Text, Union, Dict
+from typing import Any, Callable, List, Optional, Text, Union, Dict, cast
 
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 from rasa.nlu.training_data.formats import RasaYAMLReader
@@ -52,7 +52,15 @@ from sanic_jwt import Initialize, exceptions
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
+    from typing_extensions import Protocol
     from rasa.core.processor import MessageProcessor
+
+    class SanicView(Protocol):
+        def __call__(
+            self, request: Request, *args: Any, **kwargs: Any
+        ) -> response.BaseHTTPResponse:
+            ...
+
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +131,7 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
 def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
     """Wraps a request handler with token authentication."""
 
-    def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    def decorator(f: "SanicView") -> "SanicView":
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = common_utils.arguments_of(f)
 
@@ -153,7 +161,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 return False
 
         @wraps(f)
-        async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
+        async def decorated(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> response.BaseHTTPResponse:
 
             provided = request.args.get("token", None)
 
@@ -227,7 +237,7 @@ async def get_tracker(
     _validate_tracker(tracker, conversation_id)
 
     # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
-    return tracker  # pytype: disable=bad-return-type
+    return cast(DialogueStateTracker, tracker)
 
 
 def _validate_tracker(
@@ -631,7 +641,7 @@ def create_app(
         tracker = await get_tracker(app.agent.create_processor(), conversation_id)
         state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+        response_body: Dict[Text, Any] = {"tracker": state}
 
         if isinstance(output_channel, CollectingOutputChannel):
             response_body["messages"] = output_channel.messages
@@ -685,7 +695,7 @@ def create_app(
 
         state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+        response_body: Dict[Text, Any] = {"tracker": state}
 
         if isinstance(output_channel, CollectingOutputChannel):
             response_body["messages"] = output_channel.messages
@@ -869,6 +879,11 @@ def create_app(
 
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
+
+        if nlu_model is None:
+            raise ErrorResponse(
+                500, "TestingError", "Missing NLU model directory.",
+            )
 
         try:
             evaluation = run_evaluation(data_path, nlu_model, disable_plotting=True)

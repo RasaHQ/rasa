@@ -147,7 +147,7 @@ def test_core(
             "to train a NLU model first, e.g. using `rasa train`."
         )
 
-    from rasa.core.test import test
+    from rasa.core.test import test as core_test
 
     kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
 
@@ -157,11 +157,11 @@ def test_core(
 def _test_core(
     stories: Optional[Text], agent: "Agent", output_directory: Text, **kwargs: Any
 ) -> None:
-    from rasa.core.test import test
+    from rasa.core.test import test as core_test
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
-        test(stories, agent, out_directory=output_directory, **kwargs)
+        core_test(stories, agent, out_directory=output_directory, **kwargs)
     )
 
 
