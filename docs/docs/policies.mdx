@@ -5,134 +5,57 @@ title: Policies
 description: Define and train customized policy configurations to optimize your contextual assistant for longer contexts or unseen utterances which require generalization.
 ---
 
-<!-- TODO: replace with 2 files for ML policies and RulePolicy -->
-
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="policy-file"></a>
 
-## Configuring Policies
-
-The `rasa.core.policies.Policy` class decides which action to take
-at every step in the conversation.
-
-There are different policies to choose from, and you can include
-multiple policies in a single configuration.
-
-:::note
-Per default a maximum of 10 next actions can be predicted
-by the agent after every user message. To update this value
-you can set the environment variable `MAX_NUMBER_OF_PREDICTIONS`
-to the desired number of maximum predictions.
-
-:::
+Your AI assistant uses policies to decide which action to take
+at each step in a conversation.
 
 Your project's `config.yml` file takes a `policies` key
 which you can use to customize the policies your assistant uses.
-You can also leave this key out or empty. Then the
-[Suggested Config](.//model-configuration.mdx#suggested-config)
-feature will choose some default policies for you.
+There are different policies to choose from, and you can include
+multiple policies in a single configuration. Here's an example of
+what a list of policies might look like: 
 
-You can also reference custom policies in your configuration. In the example below, the
-last two lines show how to use a custom policy class and pass arguments to it.
+```yaml-rasa title="config.yml"
+language:  # your language
+pipeline: 
+  # - <pipeline components>
 
-```yaml-rasa
 policies:
-  - name: "TEDPolicy"
-    featurizer:
-    - name: MaxHistoryTrackerFeaturizer
-      max_history: 5
-      state_featurizer:
-        - name: BinarySingleStateFeaturizer
-  - name: "RulePolicy"
-  - name: "path.to.your.policy.class"
-    arg1: "..."
+  - name: MemoizationPolicy
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 100
+  - name: RulePolicy
 ```
+:::info Starting from scratch?
 
-### Max History
-
-One important hyperparameter for Rasa Core policies is the `max_history`.
-This controls how much dialogue history the model looks at to decide which
-action to take next.
-
-You can set the `max_history` by passing it to your policy's `Featurizer`
-in the policy configuration yaml file.
-
-:::note
-Only the `MaxHistoryTrackerFeaturizer` uses a max history,
-whereas the `FullDialogueTrackerFeaturizer` always looks at
-the full conversation history. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for details.
+If you don't know which policies to choose, leave out the `policies` key from your `config.yml` completely.
+If you do, the [Suggested Config](.//model-configuration.mdx#suggested-config)
+feature will provide default policies for you.
 
 :::
-
-As an example, let's say you have an `out_of_scope` intent which
-describes off-topic user messages. If your bot sees this intent multiple
-times in a row, you might want to tell the user what you can help them
-with. So your story might look like this:
-
-```yaml-rasa
-stories:
-  - story: utter help after 2 fallbacks
-    steps:
-    - intent: out_of_scope
-    - action: utter_default
-    - intent: out_of_scope
-    - action: utter_default
-    - intent: out_of_scope
-    - action: utter_help_message
-```
-
-For Rasa Core to learn this pattern, the `max_history`
-has to be at least 4.
-
-If you increase your `max_history`, your model will become bigger and
-training will take longer. If you have some information that should
-affect the dialogue very far into the future, you should store it as a
-slot. Slot information is always available for every featurizer.
-
-### Data Augmentation
-
-When you train a model, by default Rasa Core will create
-longer stories by randomly gluing together
-the ones in your stories files.
-This is because if you have stories like:
-
-```yaml-rasa
-stories: 
-  - story: thank
-    steps:
-    - intent: thankyou
-    - action: utter_youarewelcome
-  - story: say goodbye
-    steps: 
-    - intent: goodbye
-    - action: utter_goodbye
-```
-
-You actually want to teach your policy to **ignore** the dialogue history
-when it isn't relevant and just respond with the same action no matter
-what happened before.
-
-You can alter this behavior with the `--augmentation` flag.
-Which allows you to set the `augmentation_factor`.
-The `augmentation_factor` determines how many augmented stories are
-subsampled during training. The augmented stories are subsampled before training
-since their number can quickly become very large, and we want to limit it.
-The number of sampled stories is `augmentation_factor` x10.
-By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
-
-`--augmentation 0` disables all augmentation behavior.
-The memoization based policies are not affected by augmentation
-(independent of the `augmentation_factor`) and will automatically
-ignore all augmented stories.
 
 ## Action Selection
 
 At every turn, each policy defined in your configuration will
 predict a next action with a certain confidence level. For more information
-about how each policy makes its decision, read into the policy's description below.
-The bot's next action is then decided by the policy that predicts with the highest confidence.
+about how each policy makes its decision, read into the policy's description above.
+The assistant's next action is then decided by the policy that predicts with the highest confidence.
+
+:::note
+Per default a maximum of 10 next actions can be predicted
+by the assistant after each user message. To update this value
+you can set the environment variable `MAX_NUMBER_OF_PREDICTIONS`
+to the desired number of maximum predictions.
+
+:::
+
+### Policy Priority
+<!-- TODO: make sure this whole section is utd -->
 
 In the case that two policies predict with equal confidence (for example, the Memoization
-and Mapping Policies always predict with confidence of either 0 or 1), the priority of the
+and Rule Policies might both predict with confidence 1), the priority of the
 policies is considered. Rasa policies have default priorities that are set to ensure the
 expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
 
@@ -162,17 +85,10 @@ Doing so can lead to unexpected and undesired bot behavior.
 
 :::
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="embedding-policy"></a>
 
-## Embedding Policy
+## Machine Learning Policies
 
-:::caution
-`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies.mdx#ted-policy) instead of `EmbeddingPolicy`
-in your policy configuration. The functionality of the policy stayed the same.
-
-:::
-
-## TED Policy
+### TED Policy
 
 The Transformer Embedding Dialogue (TED) Policy is described in
 [our paper](https://arxiv.org/abs/1910.00486).
@@ -377,12 +293,30 @@ for details.
 
 :::
 
-## Rule Policy
+### Deprecated Policies 
 
-The `Rule Policy` is a policy that handles conversation parts that follow
-a fixed behavior. Please see [Rules](./rules.mdx) for further information.
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="embedding-policy"></a>
 
-## Memoization Policy
+#### Embedding Policy
+
+:::caution
+`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies.mdx#ted-policy) instead of `EmbeddingPolicy`
+in your policy configuration. The functionality of the policy stayed the same.
+
+:::
+
+
+
+## Rule-based Policies
+
+### Rule Policy
+
+The `RulePolicy` is a policy that handles conversation parts that follow
+a fixed behavior. It makes predictions based on any `rules` you have in your 
+training data. See the [Rules documentation](./rules.mdx) for further information
+on how to define rules.
+
+### Memoization Policy
 
 The `MemoizationPolicy` remembers the stories from your
 training data. It checks if the current conversation matches a story
@@ -404,7 +338,7 @@ policies:
 ```
 
 
-## Augmented Memoization Policy
+### Augmented Memoization Policy
 
 The `AugmentedMemoizationPolicy` remembers examples from training
 stories for up to `max_history` turns, just like the `MemoizationPolicy`.
@@ -422,9 +356,12 @@ data as well.
 
 :::
 
+
+### Deprecated Policies 
+
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="mapping-policy"></a>
 
-## Mapping Policy
+#### Mapping Policy
 
 :::caution
 The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
@@ -487,7 +424,7 @@ in your policy example these intents will not work.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="fallback-policy"></a>
 
-## Fallback Policy
+#### Fallback Policy
 
 :::caution
 The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
@@ -554,7 +491,7 @@ You can include either the `FallbackPolicy` or the
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="two-stage-fallback-policy"></a>
 
-## Two-Stage Fallback Policy
+#### Two-Stage Fallback Policy
 
 :::caution
 The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
@@ -591,8 +528,9 @@ by trying to disambiguate the user input.
     * If the user denies, the original intent is classified as the specified
       `deny_suggestion_intent_name`, and an ultimate fallback action
       is triggered (e.g. a handoff to a human).
+      
 
-### Configuration
+##### Configuration
 
 Rasa provides the default implementations of
 `action_default_ask_affirmation` and `action_default_ask_rephrase`.
@@ -633,7 +571,7 @@ You can include either the `FallbackPolicy` or the
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="form-policy"></a>
 
-## Form Policy
+#### Form Policy
 
 :::caution
 The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
@@ -647,8 +585,104 @@ handles the filling of forms. Once a `FormAction` is called, the
 `FormPolicy` will continually predict the `FormAction` until all required
 slots in the form are filled.
 
+## Custom Policies
 
-## Conversation Featurization
+You can also write custom policies and reference them in your configuration. In the example below, the
+last two lines show how to use a custom policy class and pass arguments to it.
+
+```yaml-rasa {9-10}
+policies:
+  - name: "TEDPolicy"
+    featurizer:
+    - name: MaxHistoryTrackerFeaturizer
+      max_history: 5
+      state_featurizer:
+        - name: BinarySingleStateFeaturizer
+  - name: "RulePolicy"
+  - name: "path.to.your.policy.class"
+    arg1: "..."
+```
+
+## Configuring Policies
+
+### Max History
+
+One important hyperparameter for Rasa Core policies is the `max_history`.
+This controls how much dialogue history the model looks at to decide which
+action to take next.
+
+You can set the `max_history` by passing it to your policy's `Featurizer`
+in the policy configuration yaml file.
+
+:::note
+Only the `MaxHistoryTrackerFeaturizer` uses a max history,
+whereas the `FullDialogueTrackerFeaturizer` always looks at
+the full conversation history. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for details.
+
+:::
+
+As an example, let's say you have an `out_of_scope` intent which
+describes off-topic user messages. If your bot sees this intent multiple
+times in a row, you might want to tell the user what you can help them
+with. So your story might look like this:
+
+```yaml-rasa
+stories:
+  - story: utter help after 2 fallbacks
+    steps:
+    - intent: out_of_scope
+    - action: utter_default
+    - intent: out_of_scope
+    - action: utter_default
+    - intent: out_of_scope
+    - action: utter_help_message
+```
+
+For Rasa Core to learn this pattern, the `max_history`
+has to be at least 4.
+
+If you increase your `max_history`, your model will become bigger and
+training will take longer. If you have some information that should
+affect the dialogue very far into the future, you should store it as a
+slot. Slot information is always available for every featurizer.
+
+### Data Augmentation
+
+When you train a model, by default Rasa Core will create
+longer stories by randomly gluing together
+the ones in your stories files.
+This is because if you have stories like:
+
+```yaml-rasa
+stories: 
+  - story: thank
+    steps:
+    - intent: thankyou
+    - action: utter_youarewelcome
+  - story: say goodbye
+    steps: 
+    - intent: goodbye
+    - action: utter_goodbye
+```
+
+You actually want to teach your policy to **ignore** the dialogue history
+when it isn't relevant and just respond with the same action no matter
+what happened before.
+
+You can alter this behavior with the `--augmentation` flag.
+Which allows you to set the `augmentation_factor`.
+The `augmentation_factor` determines how many augmented stories are
+subsampled during training. The augmented stories are subsampled before training
+since their number can quickly become very large, and we want to limit it.
+The number of sampled stories is `augmentation_factor` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+
+`--augmentation 0` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the `augmentation_factor`) and will automatically
+ignore all augmented stories.
+
+### Featurizers
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="featurization-conversations"></a>
 
@@ -658,7 +692,7 @@ to build up vector representations of conversations.
 Each story corresponds to a tracker which consists of the states of the
 conversation just before each action was taken.
 
-### State Featurizers
+#### State Featurizers
 
 Every event in a trackers history creates a new state (e.g. running a bot
 action, receiving a user message, setting slots). Featurizing a single state
@@ -728,14 +762,14 @@ default restart, label `2` a greeting and `3` indicates goodbye.
 
 :::
 
-### Tracker Featurizers
+#### Tracker Featurizers
 
 It's often useful to include a bit more history than just the current state
 when predicting an action. The `TrackerFeaturizer` iterates over tracker
 states and calls a `SingleStateFeaturizer` for each state. There are two
 different tracker featurizers:
 
-#### 1. Full Dialogue
+##### 1. Full Dialogue
 
 `FullDialogueTrackerFeaturizer` creates numerical representation of
 stories to feed to a recurrent neural network where the whole dialogue
@@ -747,7 +781,7 @@ Therefore, `X` is an array of shape
 The smaller dialogues are padded with `-1` for all features, indicating
 no values for a policy.
 
-#### 2. Max History
+##### 2. Max History
 
 `MaxHistoryTrackerFeaturizer` creates an array of previous tracker
 states for each bot action or utterance, with the parameter
