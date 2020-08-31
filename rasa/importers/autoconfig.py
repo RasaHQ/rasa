@@ -5,18 +5,10 @@ import sys
 from enum import Enum
 from typing import Text, Dict, Any, List, Set, Optional
 
-from rasa.cli import utils as cli_utils
-from rasa.constants import (
-    CONFIG_AUTOCONFIGURABLE_KEYS,
-    DOCS_URL_PIPELINE,
-    DOCS_URL_POLICIES,
-    CONFIG_KEYS,
-    CONFIG_KEYS_CORE,
-    CONFIG_KEYS_NLU,
-    CONFIG_AUTOCONFIGURABLE_KEYS_CORE,
-    CONFIG_AUTOCONFIGURABLE_KEYS_NLU,
-)
-from rasa.utils import io as io_utils, common as common_utils
+import rasa.constants as constants
+import rasa.utils.common as common_utils
+import rasa.cli.utils as cli_utils
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +17,13 @@ COMMENTS_FOR_KEYS = {
         f"# # No configuration for the NLU pipeline was provided. The following "
         f"default pipeline was used to train your model.\n"
         f"# # If you'd like to customize it, uncomment and adjust the pipeline.\n"
-        f"# # See {DOCS_URL_PIPELINE} for more information.\n"
+        f"# # See {constants.DOCS_URL_PIPELINE} for more information.\n"
     ),
     "policies": (
         f"# # No configuration for policies was provided. The following default "
         f"policies were used to train your model.\n"
         f"# # If you'd like to customize them, uncomment and adjust the policies.\n"
-        f"# # See {DOCS_URL_POLICIES} for more information.\n"
+        f"# # See {constants.DOCS_URL_POLICIES} for more information.\n"
     ),
 }
 
@@ -76,11 +68,11 @@ def _get_unspecified_autoconfigurable_keys(
     config: Dict[Text, Any], training_type: Optional[TrainingType] = TrainingType.BOTH
 ) -> Set[Text]:
     if training_type == TrainingType.NLU:
-        all_keys = CONFIG_AUTOCONFIGURABLE_KEYS_NLU
+        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS_NLU
     elif training_type == TrainingType.CORE:
-        all_keys = CONFIG_AUTOCONFIGURABLE_KEYS_CORE
+        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS_CORE
     else:
-        all_keys = CONFIG_AUTOCONFIGURABLE_KEYS
+        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS
 
     return {k for k in all_keys if not config.get(k)}
 
@@ -89,11 +81,11 @@ def _get_missing_config_keys(
     config: Dict[Text, Any], training_type: Optional[TrainingType] = TrainingType.BOTH
 ) -> Set[Text]:
     if training_type == TrainingType.NLU:
-        all_keys = CONFIG_KEYS_NLU
+        all_keys = constants.CONFIG_KEYS_NLU
     elif training_type == TrainingType.CORE:
-        all_keys = CONFIG_KEYS_CORE
+        all_keys = constants.CONFIG_KEYS_CORE
     else:
-        all_keys = CONFIG_KEYS
+        all_keys = constants.CONFIG_KEYS
 
     return {k for k in all_keys if k not in config.keys()}
 

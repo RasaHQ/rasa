@@ -167,7 +167,7 @@ class TrainingDataImporter:
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None
 
-        importer_config["training_type"] = training_type
+        importer_config = dict(training_type=training_type, **importer_config)
 
         constructor_arguments = common_utils.minimal_kwargs(
             importer_config, importer_class
