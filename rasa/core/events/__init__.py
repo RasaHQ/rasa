@@ -349,6 +349,8 @@ class UserUttered(Event):
             raise ValueError(f"Failed to parse bot uttered event. {e}")
 
     def as_story_string(self, e2e: bool = False) -> Text:
+        # TODO figure out how to print if TED chose to use text,
+        #  during prediction there will be always intent
         if self.intent:
             if self.entities:
                 ent_string = json.dumps(
