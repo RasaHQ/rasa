@@ -183,7 +183,6 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        # TODO sklearn policy is broken
         X, y = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
