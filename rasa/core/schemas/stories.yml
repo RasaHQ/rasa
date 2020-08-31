@@ -26,6 +26,9 @@ mapping:
                 type: "str"
                 required: True
                 allowempty: False
+              user:
+                type: "str"
+                allowempty: False
               entities:
                 type: "seq"
                 matching: "any"

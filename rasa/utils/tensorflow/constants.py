@@ -55,6 +55,8 @@ BILOU_FLAG = "BILOU_flag"
 
 RETRIEVAL_INTENT = "retrieval_intent"
 
+USE_TEXT_AS_LABEL = "use_text_as_label"
+
 SOFTMAX = "softmax"
 MARGIN = "margin"
 AUTO = "auto"

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Type
 from unittest.mock import Mock, patch
 
@@ -105,23 +106,25 @@ class PolicyTestCollection:
         policy.train(training_trackers, default_domain, RegexInterpreter())
         return policy
 
-    def test_featurizer(self, trained_policy, tmpdir):
+    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
             trained_policy.featurizer.state_featurizer, BinarySingleStateFeaturizer
         )
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        trained_policy.persist(str(tmp_path))
+        loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(
             loaded.featurizer.state_featurizer, BinarySingleStateFeaturizer
         )
 
-    async def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
+    async def test_persist_and_load(
+        self, trained_policy: Policy, default_domain: Domain, tmp_path: Path
+    ):
+        trained_policy.persist(str(tmp_path))
+        loaded = trained_policy.__class__.load(str(tmp_path))
         trackers = await train_trackers(default_domain, augmentation_factor=20)
 
         for tracker in trackers:
@@ -147,10 +150,10 @@ class PolicyTestCollection:
     @pytest.mark.filterwarnings(
         "ignore:.*without a trained model present.*:UserWarning"
     )
-    def test_persist_and_load_empty_policy(self, tmpdir):
+    def test_persist_and_load_empty_policy(self, tmp_path: Path):
         empty_policy = self.create_policy(None, None)
-        empty_policy.persist(tmpdir.strpath)
-        loaded = empty_policy.__class__.load(tmpdir.strpath)
+        empty_policy.persist(str(tmp_path))
+        loaded = empty_policy.__class__.load(str(tmp_path))
         assert loaded is not None
 
     @staticmethod
@@ -418,14 +421,14 @@ class TestTEDPolicyWithFullDialogue(TestTEDPolicy):
         p = TEDPolicy(priority=priority)
         return p
 
-    def test_featurizer(self, trained_policy, tmpdir):
+    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, FullDialogueTrackerFeaturizer)
         assert isinstance(
             trained_policy.featurizer.state_featurizer,
             LabelTokenizerSingleStateFeaturizer,
         )
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        trained_policy.persist(str(tmp_path))
+        loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, FullDialogueTrackerFeaturizer)
         assert isinstance(
             loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
@@ -440,15 +443,15 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         p = TEDPolicy(priority=priority, max_history=self.max_history)
         return p
 
-    def test_featurizer(self, trained_policy, tmpdir):
+    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
             trained_policy.featurizer.state_featurizer,
             LabelTokenizerSingleStateFeaturizer,
         )
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        trained_policy.persist(str(tmp_path))
+        loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(
@@ -495,15 +498,17 @@ class TestMemoizationPolicy(PolicyTestCollection):
         p = MemoizationPolicy(priority=priority, max_history=max_history)
         return p
 
-    def test_featurizer(self, trained_policy, tmpdir):
+    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.state_featurizer is None
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        trained_policy.persist(str(tmp_path))
+        loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.state_featurizer is None
 
-    async def test_memorise(self, trained_policy, default_domain):
+    async def test_memorise(
+        self, trained_policy: MemoizationPolicy, default_domain: Domain
+    ):
         trackers = await train_trackers(default_domain, augmentation_factor=20)
         trained_policy.train(trackers, default_domain, RegexInterpreter())
         lookup_with_augmentation = trained_policy.lookup
@@ -639,10 +644,10 @@ class TestMappingPolicy(PolicyTestCollection):
         p = MappingPolicy()
         return p
 
-    def test_featurizer(self, trained_policy, tmpdir):
+    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert trained_policy.featurizer is None
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        trained_policy.persist(str(tmp_path))
+        loaded = trained_policy.__class__.load(str(tmp_path))
         assert loaded.featurizer is None
 
     @pytest.fixture(scope="module")
@@ -720,10 +725,10 @@ class TestFallbackPolicy(PolicyTestCollection):
         p = FallbackPolicy(priority=priority)
         return p
 
-    def test_featurizer(self, trained_policy, tmpdir):
+    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert trained_policy.featurizer is None
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        trained_policy.persist(str(tmp_path))
+        loaded = trained_policy.__class__.load(str(tmp_path))
         assert loaded.featurizer is None
 
     @pytest.mark.parametrize(

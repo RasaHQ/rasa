@@ -6,6 +6,7 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
+from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
 import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
@@ -65,7 +66,14 @@ def test_validate_timestamp_options_with_invalid_timestamps():
 def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
     # write valid config to file
     endpoints_path = write_endpoint_config_to_yaml(
-        tmp_path, {"event_broker": {"type": "sql"}, "tracker_store": {"type": "sql"}}
+        tmp_path,
+        {
+            "event_broker": {
+                "type": "sql",
+                "db": str(tmp_path / "rasa.db").replace("\\", "\\\\"),
+            },
+            "tracker_store": {"type": "sql"},
+        },
     )
 
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
