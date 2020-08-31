@@ -33,10 +33,10 @@ Selectors predict a bot response from a set of candidate responses.
 
   ```json
   {
-      "response_selector": {
+    "response_selector": {
       "faq": {
         "response": {
-          "id": 1388783286124361986,
+          "id": 1388783286124362000,
           "confidence": 0.7,
           "intent_response_key": "chitchat/ask_weather",
           "response_templates": [
@@ -48,15 +48,15 @@ Selectors predict a bot response from a set of candidate responses.
               "text": "I think it's about to rain."
             }
           ]
-         },
+        },
         "ranking": [
           {
-            "id": 1388783286124361986,
+            "id": 1388783286124362000,
             "confidence": 0.7,
             "intent_response_key": "chitchat/ask_weather"
           },
           {
-            "id": 1388783286124361986,
+            "id": 1388783286124362000,
             "confidence": 0.3,
             "intent_response_key": "chitchat/ask_name"
           }
@@ -74,7 +74,6 @@ Selectors predict a bot response from a set of candidate responses.
   a set of candidate responses. The prediction of this model is used by [Retrieval Actions](../retrieval-actions).
   It embeds user inputs and response labels into the same space and follows the exact same
   neural network architecture and optimization as the [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier).
-  In its default configuration, it uses the retrieval intent with the response key(for e.g.- `faq/ask_name`) as the label for training.
 
   :::note
   If during prediction time a message contains **only** words unseen during training
@@ -137,7 +136,8 @@ Selectors predict a bot response from a set of candidate responses.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.
   Default is `None`, i.e. the model is trained for all retrieval intents.
 
-  In addition, the retrieval model can also be configured to use the text of the response messages as the training label
+  In its default configuration, the component uses the retrieval intent with the response key(e.g. `faq/ask_name`) as the label for training.
+  Alternatively, it can also be configured to use the text of the response templates as the training label
   by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response
   template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
   combined with the response key as the label.

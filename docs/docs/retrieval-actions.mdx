@@ -94,10 +94,10 @@ your responses.
 
 The retrieval model is trained separately as part of the NLU training pipeline
 to select the correct response. The default configuration uses the user message text as input and the retrieval intent combined with the
-response key suffix(for e.g. - `chitchat/ask_name`) as the correct label for that user message. However, the
-retrieval model can also be configured to use the text of the response message as the label for training the model.
-In that case, if you change the text of these responses, you have to retrain your
-retrieval model! This is a key difference to the responses defined in
+response key suffix (e.g. `chitchat/ask_name`) as the correct label for that user message. However, the
+retrieval model can also be configured to use the text of the response message as the label by setting `use_text_as_label`
+to `True` in the component's configuration. In that case, if you change the text of these responses,
+you have to retrain your retrieval model! This is a key difference to the responses defined in
 your domain file.
 
 :::note Special meaning of `/`
@@ -128,11 +128,11 @@ pipeline:
 
 ## Domain
 
-Rasa uses a naming convention to match the retrieval intent names `chitchat`
-to their corresponding retrieval action.
+Rasa uses a naming convention to match a retrieval intent name, e.g. `chitchat`,
+to its corresponding retrieval action.
 The correct action name in this case is `respond_chitchat`.
 The prefix `respond_` is mandatory to identify it as a retrieval action.
-Another example - correct action name for `faq` would be `respond_faq`
+Another example - the correct action name for `faq` would be `respond_faq`.
 To include this in your domain, add it to the list of actions:
 
 ```yaml-rasa title="domain.yml"
@@ -164,7 +164,7 @@ If your assistant includes both FAQs **and** chitchat, it is possible to
 separate these into separate retrieval actions, for example having sub-intents
 like `chitchat/ask_weather` and `faq/returns_policy`. Rasa supports adding multiple `RetrievalActions`
 like `respond_chitchat` and `respond_faq`. To train separate retrieval models for each of the retrieval intents,
-you need to include a separate `ResponseSelector` component in the config:
+you need to include a separate `ResponseSelector` component in the config for each retrieval intent:
 
 ```yaml-rasa title="config.yml" {8-12}
 language: "en"
