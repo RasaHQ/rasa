@@ -91,14 +91,6 @@ class MarkdownStoryReader(StoryReader):
                         await self._add_e2e_messages(user_messages, line_num)
                     else:
                         await self._add_user_messages(user_messages, line_num)
-                    # end-to-end BOT message
-                elif line.startswith("<B>"):
-                    event_name, parameters = self._parse_bot_message_e2e(line[3:])
-                    self._add_event(event_name, parameters)
-                # end-to-end USER message
-                elif line.startswith("<U>"):
-                    user_messages = [el.strip() for el in line[3:].split(" OR ")]
-                    await self.add_user_messages_e2e(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning(
@@ -181,13 +173,6 @@ class MarkdownStoryReader(StoryReader):
             )
             return "", {}
 
-    @staticmethod
-    def _parse_bot_message_e2e(line: Text) -> Tuple[Text, Dict[Text, Text]]:
-        from rasa.nlu.training_data.formats.markdown import MarkdownReader
-
-        action_as_message = MarkdownReader().parse_e2e_training_example(line)
-        return "", {"e2e_text": action_as_message.get(TEXT).strip()}
-
     async def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
@@ -200,18 +185,6 @@ class MarkdownStoryReader(StoryReader):
         self.current_step_builder.add_user_messages(
             parsed_messages, self.unfold_or_utterances
         )
-
-    # TODO: Hack by Genie for temporary Markdown support
-    async def add_user_messages_e2e(self, messages: List[Text], line_num: int) -> None:
-        if not self.current_step_builder:
-            raise StoryParseError(
-                f"User message '{messages}' at invalid location. "
-                f"Expected story start."
-            )
-        parsed_messages = await asyncio.gather(
-            *[self._parse_message_e2e(m, line_num) for m in messages]
-        )
-        self.current_step_builder.add_user_messages(parsed_messages)
 
     async def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
@@ -248,17 +221,6 @@ class MarkdownStoryReader(StoryReader):
                 UserWarning,
                 docs=DOCS_URL_DOMAINS,
             )
-        return utterance
-
-    # TODO: Hack by Genie for temporary Markdown support
-    async def _parse_message_e2e(self, text: Text, line_num: int) -> UserUttered:
-        from rasa.nlu.training_data.formats.markdown import MarkdownReader
-
-        message_processed = MarkdownReader().parse_training_example(text)
-
-        utterance = UserUttered(
-            message_processed.get(TEXT), None, message_processed.get("entities")
-        )
         return utterance
 
     @staticmethod
