@@ -55,7 +55,7 @@ Converts a sequence of story steps into yaml format.
 #### process\_story\_step
 
 ```python
- | process_story_step(story_step: StoryStep) -> Optional[OrderedDict]
+ | process_story_step(story_step: StoryStep) -> OrderedDict
 ```
 
 Converts a single story step into an ordered dict.
@@ -69,23 +69,23 @@ Converts a single story step into an ordered dict.
 
   Dict with a story step.
 
-#### story\_contains\_forms
+#### stories\_contain\_loops
 
 ```python
  | @staticmethod
- | story_contains_forms(story_step) -> bool
+ | stories_contain_loops(stories: List[StoryStep]) -> bool
 ```
 
-Checks if the story step contains form actions.
+Checks if the stories contain at least one active loop.
 
 **Arguments**:
 
-- `story_step` - A single story step.
+- `stories` - Stories steps.
   
 
 **Returns**:
 
-  `True` if the `story_step` contains at least one form action,
+  `True` if the `stories` contain at least one active loop.
   `False` otherwise.
 
 #### process\_user\_utterance
@@ -176,4 +176,22 @@ Converts user utterance containing the `OR` statement.
 **Returns**:
 
   Dict with converted user utterances.
+
+#### process\_active\_loop
+
+```python
+ | @staticmethod
+ | process_active_loop(event: ActiveLoop) -> OrderedDict
+```
+
+Converts ActiveLoop event into an ordered dict.
+
+**Arguments**:
+
+- `event` - ActiveLoop event.
+  
+
+**Returns**:
+
+  Converted event.
 
