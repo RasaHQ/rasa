@@ -166,7 +166,7 @@ async def test_reminder_scheduled(
     default_processor.tracker_store.save(tracker)
 
     await default_processor.handle_reminder(
-        reminder, sender_id, default_channel, default_processor.nlg
+        reminder, sender_id, default_channel,
     )
 
     # retrieve the updated tracker
@@ -197,7 +197,7 @@ async def test_reminder_aborted(
 
     default_processor.tracker_store.save(tracker)
     await default_processor.handle_reminder(
-        reminder, sender_id, default_channel, default_processor.nlg
+        reminder, sender_id, default_channel,
     )
 
     # retrieve the updated tracker
@@ -243,7 +243,7 @@ async def test_reminder_cancelled_multi_user(
     for tracker in trackers:
         default_processor.tracker_store.save(tracker)
         await default_processor._schedule_reminders(
-            tracker.events, tracker, default_channel, default_processor.nlg
+            tracker.events, tracker, default_channel,
         )
     # check that the jobs were added
     assert len((await jobs.scheduler()).get_jobs()) == 2
@@ -334,7 +334,7 @@ async def test_reminder_cancelled_by_name(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel, default_processor.nlg
+        tracker.events, tracker, default_channel,
     )
 
     # cancel the sixth reminder
@@ -350,7 +350,7 @@ async def test_reminder_cancelled_by_entities(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel, default_processor.nlg
+        tracker.events, tracker, default_channel,
     )
 
     # cancel the fourth reminder
@@ -370,7 +370,7 @@ async def test_reminder_cancelled_by_intent(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel, default_processor.nlg
+        tracker.events, tracker, default_channel,
     )
 
     # cancel the third, fifth, and sixth reminder
@@ -386,7 +386,7 @@ async def test_reminder_cancelled_all(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel, default_processor.nlg
+        tracker.events, tracker, default_channel,
     )
 
     # cancel all reminders
@@ -411,7 +411,7 @@ async def test_reminder_restart(
 
     default_processor.tracker_store.save(tracker)
     await default_processor.handle_reminder(
-        reminder, sender_id, default_channel, default_processor.nlg
+        reminder, sender_id, default_channel,
     )
 
     # retrieve the updated tracker
