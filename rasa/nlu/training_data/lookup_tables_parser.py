@@ -1,8 +1,10 @@
-from typing import Any, Text, List, Dict
+from typing import Any, Text, List, Dict, Union
 
 
 def add_item_to_lookup_tables(
-    title: Text, item: Text, existing_lookup_tables: List[Dict[Text, List[Text]]]
+    title: Text,
+    item: Text,
+    existing_lookup_tables: List[Dict[Text, Union[Text, List[Text]]]],
 ) -> None:
     """Takes a list of lookup table dictionaries.  Finds the one associated
     with the current lookup, then adds the item to the list.
@@ -17,4 +19,6 @@ def add_item_to_lookup_tables(
         existing_lookup_tables.append({"name": title, "elements": [item]})
     else:
         elements = matches[0]["elements"]
+        if not isinstance(elements, list):
+            elements = matches[0]["elements"] = [elements]
         elements.append(item)
