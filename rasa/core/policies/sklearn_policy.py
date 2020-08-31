@@ -3,7 +3,7 @@ import logging
 import os
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import scipy.sparse
 
 import numpy as np
@@ -129,9 +129,9 @@ class SklearnPolicy(Policy):
         ]
         return features
 
-    def _get_features_for_attribute(self, features: SubState, attribute: Text):
+    def _get_features_for_attribute(self, features: List[np.ndarray]):
         """
-        Given a dictionary for one attribute, turn it into a numpy array;
+        Given a list of all features for one attribute, turn it into a numpy array;
         shape_attribute = features[SENTENCE][0][0].shape[-1] (Shape of features of one attribute)
         Args:
             features: all features in the attribute stored in a np.array;
@@ -163,9 +163,10 @@ class SklearnPolicy(Policy):
             )
 
         attribute_data = {
-            attribute: self._get_features_for_attribute(X[attribute], attribute)
-            for attribute in X
+            attribute: self._get_features_for_attribute(X[attribute]) for attribute in X
         }
+        # turning it into OrderedDict so that the order of features is the same
+        attribute_data = OrderedDict(attribute_data)
         attribute_data = [features for key, features in attribute_data.items()]
         return np.concatenate(attribute_data, axis=-1)
 
