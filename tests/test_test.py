@@ -9,6 +9,7 @@ from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.utils.io
+from rasa.core.agent import Agent
 from rasa.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
@@ -201,3 +202,29 @@ def test_log_failed_stories(tmp_path: Path):
 
     assert dump.startswith("#")
     assert len(dump.split("\n")) == 1
+
+
+async def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
+    from rasa.core.test import _generate_trackers
+
+    test_file = tmp_path / "test.yml"
+    test_name = "my test story"
+    tests = f"""
+stories:
+- story: {test_name}
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+rules:
+- rule: rule which is ignored
+  steps:
+  - intent: greet
+  - action: utter_greet
+    """
+
+    test_file.write_text(tests)
+
+    test_trackers = await _generate_trackers(str(test_file), default_agent)
+    assert len(test_trackers) == 1
+    assert test_trackers[0].sender_id == test_name
