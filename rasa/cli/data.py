@@ -8,7 +8,7 @@ from typing import List
 from rasa import data
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
-from rasa.constants import DEFAULT_DATA_PATH
+from rasa.constants import DEFAULT_DATA_PATH, DOCS_URL_RULES
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 from rasa.nlu.convert import convert_training_data
@@ -287,11 +287,23 @@ def _write_nlu_yaml(
 def _write_core_yaml(
     training_data_path: Path, output_path: Path, source_path: Path
 ) -> None:
+    from rasa.core.training.story_reader.yaml_story_reader import KEY_ACTIVE_LOOP
+
     reader = MarkdownStoryReader()
     writer = YAMLStoryWriter()
 
     loop = asyncio.get_event_loop()
     steps = loop.run_until_complete(reader.read_from_file(training_data_path))
+
+    if YAMLStoryWriter.stories_contain_loops(steps):
+        print_warning(
+            f"Training data file '{source_path}' contains forms. "
+            f"Any 'form' events will be converted to '{KEY_ACTIVE_LOOP}' events. "
+            f"Please note that in order for these stories to work you still "
+            f"need the 'FormPolicy' to be active. However the 'FormPolicy' is "
+            f"deprecated, please consider switching to the new 'RulePolicy', "
+            f"for which you can find the documentation here: {DOCS_URL_RULES}."
+        )
 
     writer.dump(output_path, steps)
 
