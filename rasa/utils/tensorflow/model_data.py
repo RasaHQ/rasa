@@ -57,7 +57,8 @@ class RasaModelData:
         Initializes the RasaModelData object.
 
         Args:
-            label_key: the label_key used for balancing, etc.
+            label_key: the key of a label used for balancing, etc.
+            label_sub_key: the sub key of a label used for balancing, etc.
             data: the data holding the features
         """
 
