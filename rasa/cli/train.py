@@ -3,8 +3,12 @@ import asyncio
 import os
 from typing import List, Optional, Text, Dict
 
-import rasa.train
 import rasa.cli.arguments.train as train_arguments
+from rasa.train import (
+    train as rasa_train,
+    train_core as rasa_train_core,
+    train_nlu as rasa_train_nlu,
+)
 from rasa.cli.utils import get_validated_path, missing_config_keys, print_error
 from rasa.core.train import do_compare_training
 from rasa.constants import (
@@ -66,7 +70,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
-    return rasa.train.train(
+    return rasa_train(
         domain=domain,
         config=config,
         training_files=training_files,
@@ -101,7 +105,7 @@ def train_core(
 
         config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
 
-        return rasa.train.train_core(
+        return rasa_train_core(
             domain=args.domain,
             config=config,
             stories=story_file,
@@ -126,7 +130,7 @@ def train_nlu(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
-    return rasa.train.train_nlu(
+    return rasa_train_nlu(
         config=config,
         nlu_data=nlu_data,
         output=output,
