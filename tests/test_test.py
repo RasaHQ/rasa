@@ -215,7 +215,7 @@ stories:
   steps:
   - intent: greet
   - action: utter_greet
-  
+
 rules:
 - rule: rule which is ignored
   steps:
