@@ -334,8 +334,8 @@ class YAMLStoryReader(StoryReader):
             user_utterance = user_utterance[1:]
 
         intent = {"name": user_utterance, "confidence": 1.0}
-
-        return UserUttered(user_utterance, intent, final_entities)
+        # e2e user utterance is created in separate place, so we can set text to None
+        return UserUttered(None, intent, final_entities)
 
     @staticmethod
     def _parse_raw_entities(
