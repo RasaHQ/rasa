@@ -505,8 +505,12 @@ def create_app(
 
                 for event in events:
                     tracker.update(event, app.agent.domain)
-                if rasa.utils.endpoints.bool_arg(request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False):
-                    await processor.execute_side_effects(events, tracker, output_channel)
+                if rasa.utils.endpoints.bool_arg(
+                    request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
+                ):
+                    await processor.execute_side_effects(
+                        events, tracker, output_channel
+                    )
                 app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
