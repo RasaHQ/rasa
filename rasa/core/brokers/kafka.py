@@ -46,9 +46,30 @@ class KafkaEventBroker(EventBroker):
         return cls(broker_config.url, **broker_config.kwargs)
 
     def publish(self, event) -> None:
-        self._create_producer()
-        self._publish(event)
-        self._close()
+        if self.producer is None:
+            self._create_producer()
+            connected = self.producer.bootstrap_connected()
+            if connected:
+                logger.info(f"Connection to kafka successful")
+            else:
+                logger.info(f"Failed to connect kafka")
+                return
+        try:
+            self._publish(event)
+        except Exception as e:
+            logger.error(
+                    f"Could not publish message to kafka host '{self.host}'."
+                    f"Failed with error: {e}"
+             )
+            connected = self.producer.bootstrap_connected()
+            if not connected:
+                self._close()
+                logger.info(f"Connection to kafka lost, reconnecting...")
+                self._create_producer()
+                connected = self.producer.bootstrap_connected()
+                if connected:
+                    logger.info(f"Reconnection to kafka successful")
+                    self._publish(event)
 
     def _create_producer(self) -> None:
         import kafka
