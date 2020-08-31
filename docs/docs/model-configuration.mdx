@@ -21,6 +21,10 @@ The two other keys (`pipeline` and `policies`) can be left out or left empty. Wh
 running `rasa train`, the Suggested Config feature will select a default configuration
 for the missing key(s) which will then be used to train the model.
 
+Please note, that only the default configuration for `pipeline` will be automatically selected
+if you run `rasa train nlu`, and only the default configuration for `policies`
+will be selected if you run `rasa train core`.
+
 Example `config.yml` file:
 
 ```yaml-rasa (docs/sources/data/configs_for_docs/example_for_suggested_config.yml)
