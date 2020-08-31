@@ -70,6 +70,7 @@ class SklearnPolicy(Policy):
             label_encoder: Encoder for the labels. Must implement an
                 *inverse_transform* method.
             shuffle: Whether to shuffle training data.
+            zero_state_features: Contains default feature values for attributes
         """
 
         if featurizer:

@@ -134,11 +134,11 @@ class RulePolicy(MemoizationPolicy):
         new_states = []
         for state in reversed(states):
             if self._is_rule_snippet_state(state):
-                # remove all states before `...`
+                # remove all states before RULE_SNIPPET_ACTION_NAME
                 break
             new_states.insert(0, state)
 
-        if not new_states or new_states == [{}]:
+        if not new_states:
             return
 
         # we sort keys to make sure that the same states
@@ -167,16 +167,12 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _remove_rule_snippet_predictions(lookup: Dict[Text, Text]) -> Dict[Text, Text]:
-        keys_to_remove = set()
-        for feature_key, action in lookup.items():
-            # Delete rules if it would predict the `...` action
-            if action == RULE_SNIPPET_ACTION_NAME:
-                keys_to_remove.add(feature_key)
-
-        for feature_key in keys_to_remove:
-            del lookup[feature_key]
-
-        return lookup
+        # Delete rules if it would predict the RULE_SNIPPET_ACTION_NAME action
+        return {
+            feature_key: action
+            for feature_key, action in lookup.items()
+            if action != RULE_SNIPPET_ACTION_NAME
+        }
 
     def _create_loop_unhappy_lookup_from_states(
         self,

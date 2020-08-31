@@ -76,6 +76,8 @@ ALL_DOMAIN_KEYS = [
     KEY_E2E_ACTIONS,
 ]
 
+# State is a dictionary with origin as keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP);
+# the values are SubStates, that contain the information needed for featurization
 SubState = Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]
 State = Dict[Text, SubState]
 
@@ -719,19 +721,21 @@ class Domain:
     ) -> Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]:
         # Set all set slots with the featurization of the stored value
 
-        # proceed with values only if the user of a bot have done something at the previous step
-        # i.e., when the state is not empty.
-        if not tracker.latest_message == UserUttered.empty() and tracker.latest_action:
-            slots = {}
-            for slot_name, slot in tracker.slots.items():
-                if slot is not None and slot.as_feature():
-                    if slot.value == SHOULD_NOT_BE_SET:
-                        slots[slot_name] = SHOULD_NOT_BE_SET
-                    elif any(slot.as_feature()):
-                        # only add slot if some of the features are not zero
-                        slots[slot_name] = tuple(slot.as_feature())
-            if slots:
-                return {SLOTS: slots}
+        # proceed with values only if the user of a bot have done something
+        # at the previous step i.e., when the state is not empty.
+        if tracker.latest_message == UserUttered.empty() or not tracker.latest_action:
+            return {}
+
+        slots = {}
+        for slot_name, slot in tracker.slots.items():
+            if slot is not None and slot.as_feature():
+                if slot.value == SHOULD_NOT_BE_SET:
+                    slots[slot_name] = SHOULD_NOT_BE_SET
+                elif any(slot.as_feature()):
+                    # only add slot if some of the features are not zero
+                    slots[slot_name] = tuple(slot.as_feature())
+        if slots:
+            return {SLOTS: slots}
 
         return {}
 

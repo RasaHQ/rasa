@@ -251,9 +251,7 @@ class TEDPolicy(Policy):
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.create_encoded_all_actions(
-            domain, interpreter
-        )
+        encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
 
         attribute_data, _ = convert_to_data_format(encoded_all_labels)
 
