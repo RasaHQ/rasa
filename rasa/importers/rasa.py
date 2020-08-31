@@ -6,6 +6,7 @@ from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.training.structures import StoryGraph
 from rasa.importers import utils, autoconfig
 from rasa.importers.importer import TrainingDataImporter
+from rasa.importers.autoconfig import TrainingType
 from rasa.nlu.training_data import TrainingData
 from rasa.utils.common import raise_warning
 
@@ -20,6 +21,7 @@ class RasaFileImporter(TrainingDataImporter):
         config_file: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ):
 
         self._domain_path = domain_path
@@ -27,7 +29,7 @@ class RasaFileImporter(TrainingDataImporter):
         self._nlu_files = data.get_data_files(training_data_paths, data.is_nlu_file)
         self._story_files = data.get_data_files(training_data_paths, data.is_story_file)
 
-        self.config = autoconfig.get_configuration(config_file)
+        self.config = autoconfig.get_configuration(config_file, training_type)
 
     async def get_config(self) -> Dict:
         return self.config

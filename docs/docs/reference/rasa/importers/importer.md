@@ -76,7 +76,7 @@ Retrieves the NLU training data that should be used for training.
 
 ```python
  | @staticmethod
- | load_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+ | load_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None, training_type: Optional[TrainingType] = TrainingType.BOTH) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a configuration file.
@@ -107,7 +107,7 @@ Instance loaded from configuration file will only read NLU training data.
 
 ```python
  | @staticmethod
- | load_from_dict(config: Optional[Dict], config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
+ | load_from_dict(config: Optional[Dict], config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None, training_type: Optional[TrainingType] = TrainingType.BOTH) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a dictionary.
