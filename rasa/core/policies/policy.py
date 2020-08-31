@@ -208,8 +208,7 @@ class Policy:
 
         raise NotImplementedError("Policy must have the capacity to load itself.")
 
-    @staticmethod
-    def _default_predictions(domain: Domain) -> List[float]:
+    def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.
 
         Args:

@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
+from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
 
 import re
 from collections import defaultdict
@@ -152,8 +152,8 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _modified_states(
-        states: List[Dict[Text, float]]
-    ) -> List[Optional[Dict[Text, float]]]:
+        states: List[Dict[Text, Union[int, float]]]
+    ) -> List[Optional[Dict[Text, Union[int, float]]]]:
         """Modifies the states to create feature keys for form unhappy path conditions.
 
         Args:
@@ -165,7 +165,7 @@ class RulePolicy(MemoizationPolicy):
         """
 
         indicator = PREV_PREFIX + RULE_SNIPPET_ACTION_NAME
-        state_only_with_action = {indicator: 1}
+        state_only_with_action: Dict[Text, Union[int, float]] = {indicator: 1}
         # leave only last 2 dialogue turns to
         # - capture previous meaningful action before action_listen
         # - ignore previous intent
@@ -266,9 +266,7 @@ class RulePolicy(MemoizationPolicy):
 
         # only consider original trackers (no augmented ones)
         training_trackers = [
-            t
-            for t in training_trackers
-            if not hasattr(t, "is_augmented") or not t.is_augmented
+            t for t in training_trackers if not getattr(t, "is_augmented", False)
         ]
         # only use trackers from rule-based training data
         rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
@@ -413,6 +411,8 @@ class RulePolicy(MemoizationPolicy):
                 f"Predicted '{ACTION_LISTEN_NAME}' after form '{active_form_name}'."
             )
             return ACTION_LISTEN_NAME
+
+        return None
 
     def _find_action_from_rules(
         self, tracker: DialogueStateTracker, domain: Domain

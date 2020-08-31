@@ -275,9 +275,10 @@ def _collect_user_uttered_predictions(
     intent_gold = event.intent.get("name")
     predicted_intent = predicted.get(INTENT, {}).get("name")
 
-    user_uttered_eval_store.add_to_store(
-        intent_predictions=[predicted_intent], intent_targets=[intent_gold]
-    )
+    if intent_gold:
+        user_uttered_eval_store.add_to_store(intent_targets=[intent_gold])
+    if predicted_intent:
+        user_uttered_eval_store.add_to_store(intent_predictions=[predicted_intent])
 
     entity_gold = event.entities
     predicted_entities = predicted.get(ENTITIES)

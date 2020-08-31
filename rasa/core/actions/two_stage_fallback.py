@@ -1,6 +1,6 @@
 import copy
 import time
-from typing import List, Text, Optional
+from typing import List, Text, Optional, cast
 
 from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.actions import action
@@ -195,7 +195,7 @@ def _second_affirmation_failed(tracker: DialogueStateTracker) -> bool:
 
 
 def _message_clarification(tracker: DialogueStateTracker) -> List[Event]:
-    clarification = copy.deepcopy(tracker.latest_message)
+    clarification = copy.deepcopy(cast(Event, tracker.latest_message))
     clarification.parse_data["intent"]["confidence"] = 1.0
     clarification.timestamp = time.time()
     return [ActionExecuted(ACTION_LISTEN_NAME), clarification]
