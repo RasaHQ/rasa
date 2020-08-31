@@ -26,8 +26,6 @@ logger = logging.getLogger(__name__)
 
 class SingleStateFeaturizer:
     def __init__(self) -> None:
-
-        super().__init__()
         self._default_feature_states = {}
         self.e2e_action_texts = []
 
@@ -38,20 +36,11 @@ class SingleStateFeaturizer:
                 feature_state: idx for idx, feature_state in enumerate(feature_states)
             }
 
-        if not domain.intents == []:
-            self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
-        if not domain.action_names == []:
-            self._default_feature_states[ACTION_NAME] = convert_to_dict(
-                domain.action_names
-            )
-        if not domain.entities == []:
-            self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
-        if not domain.slot_states == []:
-            self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
-        if not domain.form_names == []:
-            self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(
-                domain.form_names
-            )
+        self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
+        self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
+        self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
+        self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
+        self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.e2e_action_texts = domain.e2e_action_texts
 
     @staticmethod
@@ -80,17 +69,17 @@ class SingleStateFeaturizer:
 
         return message, attribute
 
-    def _create_features(
-        self, sub_state: SubState, attribute: Text, sparse: bool = False
-    ) -> Optional[Dict[Text, List["Features"]]]:
+    def _state_features_for_attribute(
+        self, sub_state: SubState, attribute: Text
+    ) -> Dict[Text, int]:
         if attribute in {INTENT, ACTION_NAME}:
-            state_features = {sub_state[attribute]: 1}
+            return {sub_state[attribute]: 1}
         elif attribute == ENTITIES:
-            state_features = {entity: 1 for entity in sub_state.get(ENTITIES, [])}
+            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}
         elif attribute == ACTIVE_LOOP:
-            state_features = {sub_state["name"]: 1}
+            return {sub_state["name"]: 1}
         elif attribute == SLOTS:
-            state_features = {
+            return {
                 f"{slot_name}_{i}": value
                 for slot_name, slot_as_feature in sub_state.items()
                 for i, value in enumerate(slot_as_feature)
@@ -101,8 +90,10 @@ class SingleStateFeaturizer:
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
 
-        if attribute not in self._default_feature_states:
-            return None
+    def _create_features(
+        self, sub_state: SubState, attribute: Text, sparse: bool = False
+    ) -> Dict[Text, List["Features"]]:
+        state_features = self._state_features_for_attribute(sub_state, attribute)
 
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
         for state_feature, value in state_features.items():
@@ -132,12 +123,12 @@ class SingleStateFeaturizer:
 
         if interpreter is not None:
             parsed_message = interpreter.synchronous_parse_message(message)
-            all_features = (
-                parsed_message.get_sparse_features(attribute)
-                + parsed_message.get_dense_features(attribute)
-                if parsed_message is not None
-                else ()
-            )
+            if parsed_message is not None:
+                all_features = parsed_message.get_sparse_features(
+                    attribute
+                ) + parsed_message.get_dense_features(attribute)
+            else:
+                all_features = ()
 
             for features in all_features:
                 if features is not None:
@@ -207,7 +198,7 @@ class SingleStateFeaturizer:
 
         return self._extract_state_features(action_as_sub_state, ACTION, interpreter)
 
-    def create_encoded_all_actions(
+    def encode_all_actions(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> List[Dict[Text, List["Features"]]]:
 
@@ -233,11 +224,11 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         # ignore nlu interpreter to create binary features
         return super().encode_state(state, None)
 
-    def create_encoded_all_actions(
+    def encode_all_actions(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> List[Dict[Text, List["Features"]]]:
         # ignore nlu interpreter to create binary features
-        return super().create_encoded_all_actions(domain, None)
+        return super().encode_all_actions(domain, None)
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):

@@ -82,7 +82,7 @@ def test_binary_featurizer_creates_encoded_all_actions():
     )
     f = BinarySingleStateFeaturizer()
     f.prepare_from_domain(domain)
-    encoded_actions = f.create_encoded_all_actions(domain, None)
+    encoded_actions = f.encode_all_actions(domain, None)
     assert len(encoded_actions) == len(domain.action_names)
     assert all(
         [
