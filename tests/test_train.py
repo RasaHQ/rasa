@@ -12,6 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 import rasa.core
+import rasa.importers.autoconfig as autoconfig
 from rasa.core.interpreter import RasaNLUInterpreter
 
 from rasa.train import train_core, train_nlu, train
@@ -258,3 +259,69 @@ def test_interpreter_from_previous_model_returns_none_for_none():
     from rasa.train import _interpreter_from_previous_model
 
     assert _interpreter_from_previous_model(None) is None
+
+
+def test_train_core_autoconfig(
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+
+    # mock function that returns configuration
+    mocked_get_configuration = Mock()
+    monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
+
+    # skip actual core training
+    _train_core_with_validated_data = Mock()
+    monkeypatch.setattr(
+        sys.modules["rasa.train"],
+        "_train_core_with_validated_data",
+        asyncio.coroutine(_train_core_with_validated_data),
+    )
+
+    # do training
+    train_core(
+        default_domain_path,
+        default_stack_config,
+        default_stories_file,
+        output="test_train_core_temp_files_models",
+    )
+
+    mocked_get_configuration.assert_called_once()
+    _, args, _ = mocked_get_configuration.mock_calls[0]
+    assert args[1] == autoconfig.TrainingType.CORE
+
+
+def test_train_nlu_autoconfig(
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_stack_config: Text,
+    default_nlu_data: Text,
+):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+
+    # mock function that returns configuration
+    mocked_get_configuration = Mock()
+    monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
+
+    # skip actual NLU training
+    _train_nlu_with_validated_data = Mock()
+    monkeypatch.setattr(
+        sys.modules["rasa.train"],
+        "_train_nlu_with_validated_data",
+        asyncio.coroutine(_train_nlu_with_validated_data),
+    )
+
+    # do training
+    train_nlu(
+        default_stack_config,
+        default_nlu_data,
+        output="test_train_nlu_temp_files_models",
+    )
+
+    mocked_get_configuration.assert_called_once()
+    _, args, _ = mocked_get_configuration.mock_calls[0]
+    assert args[1] == autoconfig.TrainingType.NLU
