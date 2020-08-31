@@ -73,3 +73,27 @@ and this generator will match start and end checkpoints to
 connect complete stories. Afterwards, duplicate stories will be
 removed and the data is augmented (if augmentation is enabled).
 
+#### generate
+
+```python
+ | generate() -> List[TrackerWithCachedStates]
+```
+
+Generate trackers from stories and rules.
+
+**Returns**:
+
+  The generated trackers.
+
+#### generate\_story\_trackers
+
+```python
+ | generate_story_trackers() -> List[TrackerWithCachedStates]
+```
+
+Generate trackers from stories (exclude rule trackers).
+
+**Returns**:
+
+  The generated story trackers.
+
