@@ -84,6 +84,7 @@ LABEL_SUB_KEY = "ids"
 LENGTH = "length"
 POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE]
 FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
+LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
@@ -556,11 +557,10 @@ class TED(TransformerRasaModel):
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
+            self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
-
-        for name in FEATURES_TO_ENCODE:
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
@@ -607,9 +607,16 @@ class TED(TransformerRasaModel):
             name: attribute name
         """
         feature_type = SENTENCE
+        # create encoding layers only for the features which should be encoded;
+        if name not in FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
+            return
+        # check that there are SENTENCE features for the attribute name in data
+        if name in FEATURES_TO_ENCODE and feature_type not in self.data_signature[name]:
+            return
+        #  same for label_data
         if (
-            name not in self.data_signature
-            or feature_type not in self.data_signature[name]
+            name in LABEL_FEATURES_TO_ENCODE
+            and feature_type not in self.label_signature[name]
         ):
             return
 
@@ -686,7 +693,7 @@ class TED(TransformerRasaModel):
             mask=attribute_mask,
         )
 
-        if attribute in FEATURES_TO_ENCODE:
+        if attribute in FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
             attribute_features = self._tf_layers[f"ffnn.{attribute}_{SENTENCE}"](
                 attribute_features
             )
