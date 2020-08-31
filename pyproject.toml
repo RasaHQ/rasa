@@ -167,7 +167,7 @@ optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
 version = "~2.3"
-markers = "sys_platform!='win32'"
+markers = "sys_platform!='win32'" # TODO: remove this marker once tensorflow-text supports windows
 
 [tool.poetry.dependencies."github3.py"]
 version = "~1.3.0"
