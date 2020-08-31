@@ -236,7 +236,7 @@ async def _generate_trackers(
         augmentation_factor=0,
         tracker_limit=max_stories,
     )
-    return g.generate()
+    return g._generate_ml_trackers()
 
 
 def _clean_entity_results(
