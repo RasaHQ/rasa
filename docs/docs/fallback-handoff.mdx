@@ -153,7 +153,7 @@ rules:
   steps:
   - intent: nlu_fallback
   - action: two_stage_fallback
-  - form: two_stage_fallback
+  - active_loop: two_stage_fallback
 ```
 
 ### Handling Low Core Confidence
@@ -285,11 +285,11 @@ let's say the user asks “I want to apply for a job at Rasa”, we can then rep
 :::note
 Here's a minimal checklist of files we modified to help our assistant fail gracefully:
 
-* `data/nlu.md`:
+* `data/nlu.yml`:
 
     * Add training data for the `out_of_scope` intent & any specific out of scope intents that you want to handle seperately
 
-* `data/stories.md`:
+* `data/stories.yml`:
 
     * Add stories for any specific out of scope intents
 

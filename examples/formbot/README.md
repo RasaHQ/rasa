@@ -10,8 +10,8 @@ restaurants based on user preferences.
 This example contains some training data and the main files needed to build an
 assistant on your local machine. The `formbot` consists of the following files:
 
-- **data/nlu.md** contains training examples for the NLU model  
-- **data/stories.md** contains training stories for the Core model
+- **data/nlu.yml** contains training examples for the NLU model  
+- **data/stories.yml** contains training stories for the Core model
 - **actions.py** contains the implementation of a custom `FormAction`
 - **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant  

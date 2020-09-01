@@ -102,11 +102,11 @@ To handle FAQs defined with retrieval actions, you can add a simple story that w
 ## just sales, continue
 * contact_sales
     - sales_form
-    - form{"name": "sales_form"}
+    - active_loop{"name": "sales_form"}
 * faq
     - respond_faq
     - sales_form
-    - form{"name": null}
+    - active_loop{"name": null}
 ```
 
 This will break out of the form and deal with the users FAQ question, and then return back to the original task.
@@ -154,22 +154,22 @@ unfeaturized slots are only used for storing information. The stories for this s
 ## explain email
 * contact_sales
     - sales_form
-    - form{"name": "sales_form"}
+    - active_loop{"name": "sales_form"}
     - slot{"requested_slot": "business_email"}
 * explain
     - utter_explain_why_email
     - sales_form
-    - form{"name": null}
+    - active_loop{"name": null}
 
 ## explain budget
 * contact_sales
     - sales_form
-    - form{"name": "sales_form"}
+    - active_loop{"name": "sales_form"}
     - slot{"requested_slot": "budget"}
 * explain
     - utter_explain_why_budget
     - sales_form
-    - form{"name": null}
+    - active_loop{"name": null}
 ```
 
 We'll need to add the intent and utterances we just added to our `domain.yml` file:
@@ -220,7 +220,7 @@ Here's a minimal checklist of  of files we modified to handle unexpected user in
 
 * `actions.py`: Define `action_greet`
 
-* `data/nlu.md`: Add training data for an `explain` intent
+* `data/nlu.yml`: Add training data for an `explain` intent
 
 * `domain.yml`:
 
@@ -232,7 +232,7 @@ Here's a minimal checklist of  of files we modified to handle unexpected user in
 
     * Add responses for contextual question interruptions
 
-* `data/stories.md`:
+* `data/stories.yml`:
 
     * Remove stories using mapped intents if you have them
 

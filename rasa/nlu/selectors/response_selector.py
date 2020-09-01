@@ -1,12 +1,12 @@
+import copy
 import logging
 
 import numpy as np
 import tensorflow as tf
-from pathlib import Path
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
-import rasa.utils.io as io_utils
+from rasa.utils.common import raise_warning
 from rasa.nlu.config import InvalidConfigError
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
@@ -64,6 +64,7 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
     RETRIEVAL_INTENT,
+    USE_TEXT_AS_LABEL,
     SOFTMAX,
     AUTO,
     BALANCED,
@@ -75,10 +76,16 @@ from rasa.utils.tensorflow.constants import (
 from rasa.nlu.constants import (
     RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
-    RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
+    RESPONSE_SELECTOR_RESPONSES_KEY,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_RANKING_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    INTENT_RESPONSE_KEY,
     INTENT,
-    DEFAULT_OPEN_UTTERANCE_TYPE,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
     TEXT,
+    INTENT_NAME_KEY,
 )
 
 from rasa.utils.tensorflow.model_data import RasaModelData
@@ -204,6 +211,9 @@ class ResponseSelector(DIETClassifier):
         MASKED_LM: False,
         # Name of the intent for which this response selector is to be trained
         RETRIEVAL_INTENT: None,
+        # Boolean flag to check if actual text of the response
+        # should be used as ground truth label for training the model.
+        USE_TEXT_AS_LABEL: False,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
         TENSORBOARD_LOG_DIR: None,
@@ -222,7 +232,8 @@ class ResponseSelector(DIETClassifier):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
-        retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
+        all_retrieval_intents: Optional[List[Text]] = None,
+        responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
 
         component_config = component_config or {}
@@ -231,7 +242,12 @@ class ResponseSelector(DIETClassifier):
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[BILOU_FLAG] = None
-        self.retrieval_intent_mapping = retrieval_intent_mapping or {}
+
+        # Initialize defaults
+        self.responses = responses or {}
+        self.all_retrieval_intents = all_retrieval_intents or []
+        self.retrieval_intent = None
+        self.use_text_as_label = False
 
         super().__init__(
             component_config, index_label_id_mapping, entity_tag_specs, model
@@ -242,35 +258,27 @@ class ResponseSelector(DIETClassifier):
         return LABEL_IDS
 
     @staticmethod
-    def model_class() -> Type[RasaModel]:
-        return DIET2DIET
+    def model_class(use_text_as_label: bool) -> Type[RasaModel]:
+        if use_text_as_label:
+            return DIET2DIET
+        else:
+            return DIET2BOW
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
         self.retrieval_intent = config[RETRIEVAL_INTENT]
+        self.use_text_as_label = config[USE_TEXT_AS_LABEL]
 
     def _check_config_parameters(self) -> None:
         super()._check_config_parameters()
         self._load_selector_params(self.component_config)
 
-    @staticmethod
-    def _create_retrieval_intent_mapping(
-        training_data: TrainingData,
-    ) -> Dict[Text, Text]:
-        """Create response_key dictionary"""
-
-        retrieval_intent_mapping = {}
-        for example in training_data.intent_examples:
-            retrieval_intent_mapping[
-                example.get(RESPONSE)
-            ] = f"{example.get(INTENT)}/{example.get(RESPONSE_KEY_ATTRIBUTE)}"
-
-        return retrieval_intent_mapping
-
-    @staticmethod
     def _set_message_property(
-        message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
+        self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
     ) -> None:
         message_selector_properties = message.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
+        message_selector_properties[
+            RESPONSE_SELECTOR_RETRIEVAL_INTENTS
+        ] = self.all_retrieval_intents
         message_selector_properties[selector_key] = prediction_dict
         message.set(
             RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -296,12 +304,14 @@ class ResponseSelector(DIETClassifier):
                 "all retrieval intents."
             )
 
+        label_attribute = RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
+
         label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=RESPONSE
+            training_data, attribute=label_attribute
         )
-        self.retrieval_intent_mapping = self._create_retrieval_intent_mapping(
-            training_data
-        )
+
+        self.responses = training_data.responses
+        self.all_retrieval_intents = list(training_data.retrieval_intents)
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -310,35 +320,82 @@ class ResponseSelector(DIETClassifier):
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=RESPONSE
+            training_data, label_id_index_mapping, attribute=label_attribute
         )
 
         model_data = self._create_model_data(
             training_data.intent_examples,
             label_id_index_mapping,
-            label_attribute=RESPONSE,
+            label_attribute=label_attribute,
         )
 
         self._check_input_dimension_consistency(model_data)
 
         return model_data
 
+    def _resolve_intent_response_key(
+        self, label: Dict[Text, Optional[Text]]
+    ) -> Optional[Text]:
+        """Given a label, return the response key based on the label id.
+
+        Args:
+            label: predicted label by the selector
+
+        Returns:
+            The match for the label that was found in the known responses.
+            It is always guaranteed to have a match, otherwise that case should have been caught
+            earlier and a warning should have been raised.
+        """
+
+        for key, responses in self.responses.items():
+
+            # First check if the predicted label was the key itself
+            if hash(key) == label.get("id"):
+                return key
+
+            # Otherwise loop over the responses to check if the text has a direct match
+            for response in responses:
+                if hash(response.get(TEXT, "")) == label.get("id"):
+                    return key
+        return None
+
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Return the most likely response and its similarity to the input."""
+        """Return the most likely response, the associated intent_response_key and its similarity to the input."""
 
         out = self._predict(message)
-        label, label_ranking = self._predict_label(out)
-        retrieval_intent_name = self.retrieval_intent_mapping.get(label.get("name"))
+        top_label, label_ranking = self._predict_label(out)
 
-        for ranking in label_ranking:
-            ranking["full_retrieval_intent"] = self.retrieval_intent_mapping.get(
-                ranking.get("name")
+        # Get the exact intent_response_key and the associated
+        # response templates for the top predicted label
+        label_intent_response_key = (
+            self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
+        )
+        label_response_templates = self.responses.get(label_intent_response_key)
+
+        if not label_response_templates:
+            # response templates seem to be unavailable,
+            # likely an issue with the training data
+            # we'll use a fallback instead
+            raise_warning(
+                f"Unable to fetch response templates for {label_intent_response_key} "
+                f"This means that there is likely an issue with the training data."
+                f"Please make sure you have added response templates for this intent."
             )
+            label_response_templates = [{TEXT: label_intent_response_key}]
+
+        for label in label_ranking:
+            label[INTENT_RESPONSE_KEY] = (
+                self._resolve_intent_response_key(label) or label[INTENT_NAME_KEY]
+            )
+            # Remove the "name" key since it is either the same as
+            # "intent_response_key" or it is the response text which
+            # is not needed in the ranking.
+            label.pop(INTENT_NAME_KEY)
 
         selector_key = (
             self.retrieval_intent
             if self.retrieval_intent
-            else DEFAULT_OPEN_UTTERANCE_TYPE
+            else RESPONSE_SELECTOR_DEFAULT_INTENT
         )
 
         logger.debug(
@@ -346,9 +403,13 @@ class ResponseSelector(DIETClassifier):
         )
 
         prediction_dict = {
-            "response": label,
-            "ranking": label_ranking,
-            "full_retrieval_intent": retrieval_intent_name,
+            RESPONSE_SELECTOR_PREDICTION_KEY: {
+                "id": top_label["id"],
+                RESPONSE_SELECTOR_RESPONSES_KEY: label_response_templates,
+                PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
+                INTENT_RESPONSE_KEY: label_intent_response_key,
+            },
+            RESPONSE_SELECTOR_RANKING_KEY: label_ranking,
         }
 
         self._set_message_property(message, prediction_dict, selector_key)
@@ -363,14 +424,39 @@ class ResponseSelector(DIETClassifier):
 
         super().persist(file_name, model_dir)
 
-        model_dir = Path(model_dir)
+        return {
+            "file": file_name,
+            "responses": self.responses,
+            "all_retrieval_intents": self.all_retrieval_intents,
+        }
 
-        io_utils.json_pickle(
-            model_dir / f"{file_name}.retrieval_intent_mapping.pkl",
-            self.retrieval_intent_mapping,
+    @classmethod
+    def _load_model_class(
+        cls,
+        tf_model_file: Text,
+        model_data_example: RasaModelData,
+        label_data: RasaModelData,
+        entity_tag_specs: List[EntityTagSpec],
+        meta: Dict[Text, Any],
+    ) -> "RasaModel":
+
+        return cls.model_class(meta[USE_TEXT_AS_LABEL]).load(
+            tf_model_file,
+            model_data_example,
+            data_signature=model_data_example.get_signature(),
+            label_data=label_data,
+            entity_tag_specs=entity_tag_specs,
+            config=copy.deepcopy(meta),
         )
 
-        return {"file": file_name}
+    def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
+
+        return self.model_class(self.use_text_as_label)(
+            data_signature=model_data.get_signature(),
+            label_data=self._label_data,
+            entity_tag_specs=self._entity_tag_specs,
+            config=self.component_config,
+        )
 
     @classmethod
     def load(
@@ -386,20 +472,51 @@ class ResponseSelector(DIETClassifier):
         model = super().load(
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
-        if model == cls(component_config=meta):
-            model.retrieval_intent_mapping = {}
+        if not meta.get("file"):
             return model  # pytype: disable=bad-return-type
 
-        file_name = meta.get("file")
-        model_dir = Path(model_dir)
-
-        retrieval_intent_mapping = io_utils.json_unpickle(
-            model_dir / f"{file_name}.retrieval_intent_mapping.pkl"
-        )
-
-        model.retrieval_intent_mapping = retrieval_intent_mapping
+        model.responses = meta.get("responses", {})
+        model.all_retrieval_intents = meta.get("all_retrieval_intents", list())
 
         return model  # pytype: disable=bad-return-type
+
+
+class DIET2BOW(DIET):
+    def _create_metrics(self) -> None:
+        # self.metrics preserve order
+        # output losses first
+        self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
+        self.response_loss = tf.keras.metrics.Mean(name="r_loss")
+        # output accuracies second
+        self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
+        self.response_acc = tf.keras.metrics.Mean(name="r_acc")
+
+    def _update_metrics_to_log(self) -> None:
+        debug_log_level = logging.getLogger("rasa").level == logging.DEBUG
+
+        if self.config[MASKED_LM]:
+            self.metrics_to_log.append("m_acc")
+            if debug_log_level:
+                self.metrics_to_log.append("m_loss")
+
+        self.metrics_to_log.append("r_acc")
+        if debug_log_level:
+            self.metrics_to_log.append("r_loss")
+
+        self._log_metric_info()
+
+    def _log_metric_info(self) -> None:
+        metric_name = {"t": "total", "m": "mask", "r": "response"}
+        logger.debug("Following metrics will be logged during training: ")
+        for metric in self.metrics_to_log:
+            parts = metric.split("_")
+            name = f"{metric_name[parts[0]]} {parts[1]}"
+            logger.debug(f"  {metric} ({name})")
+
+    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
+
+        self.response_loss.update_state(loss)
+        self.response_acc.update_state(acc)
 
 
 class DIET2DIET(DIET):

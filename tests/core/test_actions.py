@@ -37,7 +37,7 @@ from rasa.core.events import (
     SlotSet,
     UserUtteranceReverted,
     BotUttered,
-    Form,
+    ActiveLoop,
     SessionStarted,
     ActionExecuted,
     Event,
@@ -45,7 +45,7 @@ from rasa.core.events import (
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.constants import USER_INTENT_SESSION_START
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker, ACTIVE_LOOP_KEY
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -167,7 +167,7 @@ async def test_remote_action_runs(
                     "message_id": None,
                     "metadata": {},
                 },
-                "active_form": {},
+                ACTIVE_LOOP_KEY: {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
@@ -221,7 +221,7 @@ async def test_remote_action_logs_events(
                     "message_id": None,
                     "metadata": {},
                 },
-                "active_form": {},
+                ACTIVE_LOOP_KEY: {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
@@ -286,7 +286,7 @@ async def test_remote_action_utterances_with_none_values(
         BotUttered(
             "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
         ),
-        Form("restaurant_form"),
+        ActiveLoop("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]
 
@@ -365,8 +365,10 @@ async def test_action_utter_retrieved_response(
         parse_data={
             "response_selector": {
                 "chitchat": {
-                    "response": {"name": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                    }
                 }
             }
         },
@@ -394,8 +396,10 @@ async def test_action_utter_default_retrieved_response(
         parse_data={
             "response_selector": {
                 "default": {
-                    "response": {"name": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                    }
                 }
             }
         },
@@ -406,6 +410,10 @@ async def test_action_utter_default_retrieved_response(
 
     assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
         "text"
+    )
+
+    assert (
+        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
     )
 
 
@@ -420,8 +428,10 @@ async def test_action_utter_retrieved_empty_response(
         parse_data={
             "response_selector": {
                 "dummy": {
-                    "response": {"name": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                    }
                 }
             }
         },

@@ -1,17 +1,14 @@
 import copy
 import logging
 import os
+import sys
+from enum import Enum
+from typing import Text, Dict, Any, List, Set, Optional
 
-from typing import Text, Dict, Any, List, Set
-
-from rasa.cli import utils as cli_utils
-from rasa.constants import (
-    CONFIG_AUTOCONFIGURABLE_KEYS,
-    DOCS_URL_PIPELINE,
-    DOCS_URL_POLICIES,
-    CONFIG_KEYS,
-)
-from rasa.utils import io as io_utils, common as common_utils
+import rasa.constants as constants
+import rasa.utils.common as common_utils
+import rasa.cli.utils as cli_utils
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -20,18 +17,26 @@ COMMENTS_FOR_KEYS = {
         f"# # No configuration for the NLU pipeline was provided. The following "
         f"default pipeline was used to train your model.\n"
         f"# # If you'd like to customize it, uncomment and adjust the pipeline.\n"
-        f"# # See {DOCS_URL_PIPELINE} for more information.\n"
+        f"# # See {constants.DOCS_URL_PIPELINE} for more information.\n"
     ),
     "policies": (
         f"# # No configuration for policies was provided. The following default "
         f"policies were used to train your model.\n"
         f"# # If you'd like to customize them, uncomment and adjust the policies.\n"
-        f"# # See {DOCS_URL_POLICIES} for more information.\n"
+        f"# # See {constants.DOCS_URL_POLICIES} for more information.\n"
     ),
 }
 
 
-def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
+class TrainingType(Enum):
+    NLU = 1
+    CORE = 2
+    BOTH = 3
+
+
+def get_configuration(
+    config_file_path: Text, training_type: Optional[TrainingType] = TrainingType.BOTH
+) -> Dict[Text, Any]:
     """Determine configuration from a configuration file.
 
     Keys that are provided and have a value in the file are kept. Keys that are not
@@ -39,6 +44,7 @@ def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
 
     Args:
         config_file_path: The path to the configuration file.
+        training_type: NLU, CORE or BOTH depending on what is trained.
     """
     if not config_file_path or not os.path.exists(config_file_path):
         logger.debug("No configuration file was provided to the TrainingDataImporter.")
@@ -46,22 +52,42 @@ def get_configuration(config_file_path: Text) -> Dict[Text, Any]:
 
     config = io_utils.read_config_file(config_file_path)
 
-    missing_keys = _get_missing_config_keys(config)
-    keys_to_configure = _get_unspecified_autoconfigurable_keys(config)
+    missing_keys = _get_missing_config_keys(config, training_type)
+    keys_to_configure = _get_unspecified_autoconfigurable_keys(config, training_type)
 
     if keys_to_configure:
         config = _auto_configure(config, keys_to_configure)
-        _dump_config(config, config_file_path, missing_keys, keys_to_configure)
+        _dump_config(
+            config, config_file_path, missing_keys, keys_to_configure, training_type
+        )
 
     return config
 
 
-def _get_unspecified_autoconfigurable_keys(config: Dict[Text, Any]) -> Set[Text]:
-    return {k for k in CONFIG_AUTOCONFIGURABLE_KEYS if not config.get(k)}
+def _get_unspecified_autoconfigurable_keys(
+    config: Dict[Text, Any], training_type: Optional[TrainingType] = TrainingType.BOTH
+) -> Set[Text]:
+    if training_type == TrainingType.NLU:
+        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS_NLU
+    elif training_type == TrainingType.CORE:
+        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS_CORE
+    else:
+        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS
+
+    return {k for k in all_keys if not config.get(k)}
 
 
-def _get_missing_config_keys(config: Dict[Text, Any]) -> Set[Text]:
-    return {k for k in CONFIG_KEYS if k not in config.keys()}
+def _get_missing_config_keys(
+    config: Dict[Text, Any], training_type: Optional[TrainingType] = TrainingType.BOTH
+) -> Set[Text]:
+    if training_type == TrainingType.NLU:
+        all_keys = constants.CONFIG_KEYS_NLU
+    elif training_type == TrainingType.CORE:
+        all_keys = constants.CONFIG_KEYS_CORE
+    else:
+        all_keys = constants.CONFIG_KEYS
+
+    return {k for k in all_keys if k not in config.keys()}
 
 
 def _auto_configure(
@@ -86,10 +112,14 @@ def _auto_configure(
             f"Values will be provided from the default configuration."
         )
 
-    default_config_file = pkg_resources.resource_filename(
-        __name__, "default_config.yml"
-    )
+    if sys.platform == "win32":
+        filename = "default_config_other_language.yml"
+    elif config.get("language") == "en":
+        filename = "default_config_en.yml"
+    else:
+        filename = "default_config_other_language.yml"
 
+    default_config_file = pkg_resources.resource_filename(__name__, filename)
     default_config = io_utils.read_config_file(default_config_file)
 
     config = copy.deepcopy(config)
@@ -104,6 +134,7 @@ def _dump_config(
     config_file_path: Text,
     missing_keys: Set[Text],
     auto_configured_keys: Set[Text],
+    training_type: Optional[TrainingType] = TrainingType.BOTH,
 ) -> None:
     """Dump the automatically configured keys into the config file.
 
@@ -120,9 +151,11 @@ def _dump_config(
         missing_keys: Keys that need to be added to the config file.
         auto_configured_keys: Keys for which a commented out auto configuration section
                               needs to be added to the config file.
+        training_type: NLU, CORE or BOTH depending on which is trained.
     """
+
     config_as_expected = _is_config_file_as_expected(
-        config_file_path, missing_keys, auto_configured_keys
+        config_file_path, missing_keys, auto_configured_keys, training_type,
     )
     if not config_as_expected:
         cli_utils.print_error(
@@ -155,7 +188,10 @@ def _dump_config(
 
 
 def _is_config_file_as_expected(
-    config_file_path: Text, missing_keys: Set[Text], auto_configured_keys: Set[Text]
+    config_file_path: Text,
+    missing_keys: Set[Text],
+    auto_configured_keys: Set[Text],
+    training_type: Optional[TrainingType] = TrainingType.BOTH,
 ) -> bool:
     try:
         content = io_utils.read_config_file(config_file_path)
@@ -164,8 +200,9 @@ def _is_config_file_as_expected(
 
     return (
         bool(content)
-        and missing_keys == _get_missing_config_keys(content)
-        and auto_configured_keys == _get_unspecified_autoconfigurable_keys(content)
+        and missing_keys == _get_missing_config_keys(content, training_type)
+        and auto_configured_keys
+        == _get_unspecified_autoconfigurable_keys(content, training_type)
     )
 
 

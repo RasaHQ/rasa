@@ -11,6 +11,8 @@ from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Text, Union, Dict
 
+from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.nlu.training_data.formats import RasaYAMLReader
 import rasa
 import rasa.core.utils
 from rasa.utils import common as common_utils
@@ -23,8 +25,8 @@ from rasa.constants import (
     DEFAULT_RESPONSE_TIMEOUT,
     DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
+    DOCS_URL_TRAINING_DATA_NLU,
 )
-from rasa.core import agent
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
@@ -338,7 +340,7 @@ async def _load_agent(
             if not lock_store:
                 lock_store = LockStore.create(endpoints.lock_store)
 
-        loaded_agent = await agent.load_agent(
+        loaded_agent = await rasa.core.agent.load_agent(
             model_path,
             model_server,
             remote_storage,
@@ -455,7 +457,7 @@ def create_app(
             }
         )
 
-    @app.get("/conversations/<conversation_id>/tracker")
+    @app.get("/conversations/<conversation_id:path>/tracker")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
@@ -478,7 +480,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    @app.post("/conversations/<conversation_id>/tracker/events")
+    @app.post("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def append_events(request: Request, conversation_id: Text):
@@ -533,7 +535,7 @@ def create_app(
 
         return events
 
-    @app.put("/conversations/<conversation_id>/tracker/events")
+    @app.put("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def replace_events(request: Request, conversation_id: Text):
@@ -562,7 +564,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    @app.get("/conversations/<conversation_id>/story")
+    @app.get("/conversations/<conversation_id:path>/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
@@ -578,7 +580,7 @@ def create_app(
                 tracker = tracker.travel_back_in_time(until_time)
 
             # dump and return tracker
-            state = tracker.export_stories(e2e=True)
+            state = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
             return response.text(state)
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -586,7 +588,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    @app.post("/conversations/<conversation_id>/execute")
+    @app.post("/conversations/<conversation_id:path>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def execute_action(request: Request, conversation_id: Text):
@@ -636,7 +638,7 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id>/trigger_intent")
+    @app.post("/conversations/<conversation_id:path>/trigger_intent")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def trigger_intent(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -690,7 +692,7 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id>/predict")
+    @app.post("/conversations/<conversation_id:path>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -707,7 +709,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-    @app.post("/conversations/<conversation_id>/messages")
+    @app.post("/conversations/<conversation_id:path>/messages")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def add_message(request: Request, conversation_id: Text):
@@ -778,11 +780,20 @@ def create_app(
                 None, functools.partial(train_model, **training_payload)
             )
 
-            filename = os.path.basename(model_path) if model_path else None
+            if model_path:
+                filename = os.path.basename(model_path)
 
-            return await response.file(
-                model_path, filename=filename, headers={"filename": filename}
-            )
+                return await response.file(
+                    model_path, filename=filename, headers={"filename": filename}
+                )
+            else:
+                raise ErrorResponse(
+                    500,
+                    "TrainingError",
+                    "Ran training, but it finished without a trained model.",
+                )
+        except ErrorResponse as e:
+            raise e
         except InvalidDomain as e:
             raise ErrorResponse(
                 400,
@@ -790,7 +801,7 @@ def create_app(
                 f"Provided domain file is invalid. Error: {e}",
             )
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TrainingError",
@@ -811,14 +822,17 @@ def create_app(
             "evaluate your model.",
         )
 
-        stories = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
+        test_data = _test_data_file_from_payload(request)
+
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(stories, app.agent, e2e=use_e2e)
+            evaluation = await test(
+                test_data, app.agent, e2e=use_e2e, disable_plotting=True
+            )
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TestingError",
@@ -835,6 +849,8 @@ def create_app(
             "evaluate your model.",
         )
 
+        test_data = _test_data_file_from_payload(request)
+
         eval_agent = app.agent
 
         model_path = request.args.get("model", None)
@@ -846,8 +862,7 @@ def create_app(
                 model_path, model_server, app.agent.remote_storage
             )
 
-        nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
-        data_path = os.path.abspath(nlu_data)
+        data_path = os.path.abspath(test_data)
 
         if not os.path.exists(eval_agent.model_directory):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
@@ -856,10 +871,10 @@ def create_app(
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
         try:
-            evaluation = run_evaluation(data_path, nlu_model)
+            evaluation = run_evaluation(data_path, nlu_model, disable_plotting=True)
             return response.json(evaluation)
         except Exception as e:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TestingError",
@@ -1058,6 +1073,15 @@ def _get_output_channel(
     )
 
 
+def _test_data_file_from_payload(request: Request) -> Text:
+    if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
+        return str(_training_payload_from_yaml(request)["training_files"])
+    else:
+        return rasa.utils.io.create_temporary_file(
+            request.body, mode="w+b", suffix=".md"
+        )
+
+
 def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool]]:
     logger.debug(
         "Extracting JSON payload with Markdown training data from request body."
@@ -1137,11 +1161,10 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
     if "force" in rjs or "save_to_default_model_directory" in rjs:
-        common_utils.raise_warning(
+        common_utils.raise_deprecation_warning(
             "Specifying 'force' and 'save_to_default_model_directory' as part of the "
             "JSON payload is deprecated. Please use the header arguments "
             "'force_training' and 'save_to_default_model_directory'.",
-            category=FutureWarning,
             docs=_docs("/api/http-api"),
         )
 
@@ -1177,14 +1200,12 @@ def _model_output_directory(save_to_default_model_directory: bool) -> Text:
 
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
-    # TODO: Use NLU schema validation once it's merged
     try:
-        rasa.utils.io.read_yaml(yaml_text)
-    except Exception:
+        RasaYAMLReader.validate(yaml_text)
+    except Exception as e:
         raise ErrorResponse(
             400,
             "BadRequest",
-            "The request body does not contain valid YAML.",
-            # TODO: Add training data docs url
-            help_url=None,
+            f"The request body does not contain valid YAML. Error: {e}",
+            help_url=DOCS_URL_TRAINING_DATA_NLU,
         )

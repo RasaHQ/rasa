@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 from unittest.mock import Mock
@@ -24,6 +26,7 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 from rasa.utils import train_utils
+from tests.conftest import DEFAULT_NLU_DATA
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
@@ -99,13 +102,13 @@ def test_check_labels_features_exist(messages, expected):
 
 
 async def _train_persist_load_with_different_settings(
-    pipeline, component_builder, tmpdir
+    pipeline, component_builder, tmp_path
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/examples/rasa/demo-rasa-multi-intent.md",
         component_builder=component_builder,
     )
@@ -149,7 +152,7 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
     )
 
 
-async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
+async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Path):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -163,7 +166,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
     with pytest.raises(Exception) as e:
         await train(
             _config,
-            path=tmpdir.strpath,
+            path=str(tmp_path),
             data=DEFAULT_DATA_PATH,
             component_builder=component_builder,
         )
@@ -207,7 +210,7 @@ def as_pipeline(*components):
         ),  # higher than default ranking_length
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            "examples/moodbot/data/nlu.md",
+            DEFAULT_NLU_DATA,
             7,
             True,
         ),  # less intents than default ranking_length
@@ -215,7 +218,7 @@ def as_pipeline(*components):
 )
 async def test_softmax_normalization(
     component_builder,
-    tmpdir,
+    tmp_path,
     classifier_params,
     data_path,
     output_length,
@@ -230,7 +233,7 @@ async def test_softmax_normalization(
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data=data_path,
         component_builder=component_builder,
     )

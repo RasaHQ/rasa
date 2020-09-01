@@ -1,0 +1,63 @@
+stories:
+- story: Happy path
+  steps:
+  - user: |
+      hi
+    intent: greet
+  - action: utter_greet
+  - user: |
+      im looking for a restaurant
+    intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+  - active_loop: null
+  - action: utter_slots_values
+  - user: |
+      thanks
+    intent: thankyou
+  - action: utter_noworries
+
+- story: Happy path with message providing requested value
+  steps:
+  - user: |
+      hi
+    intent: greet
+  - action: utter_greet
+  - user: |
+      im looking for a restaurant
+    intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+  - user: |
+      [afghan](cuisine) food
+    intent: inform
+  - action: restaurant_form
+  - active_loop: null
+  - action: utter_slots_values
+  - user: |
+      thanks
+    intent: thankyou
+  - action: utter_noworries
+
+- story: unhappy path
+  steps:
+  - user: |
+      hi
+    intent: greet
+  - action: utter_greet
+  - user: |
+      im looking for a restaurant
+    intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+  - user: |
+      can you share your boss with me?
+    intent: chitchat
+  - action: utter_chitchat
+  - action: restaurant_form
+  - active_loop: null
+  - action: utter_slots_values
+  - user: |
+      thanks
+    intent: thankyou
+  - action: utter_noworries

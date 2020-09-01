@@ -1,3 +1,4 @@
+import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
@@ -28,6 +29,7 @@ from rasa.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
+    INTENT_RESPONSE_KEY,
     NO_ENTITY_TAG,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_TYPE,
@@ -463,7 +465,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
             and not self.component_config[ENTITY_RECOGNITION]
-            and attribute != INTENT
+            and attribute not in [INTENT, INTENT_RESPONSE_KEY]
         ):
             sparse_sequence_features = None
             dense_sequence_features = None
@@ -678,14 +680,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                         self._tag_ids_for_crf(example, tag_spec)
                     )
 
-        X_sparse_sequence = np.array(X_sparse_sequence)
-        X_sparse_sentence = np.array(X_sparse_sentence)
-        X_dense_sequence = np.array(X_dense_sequence)
-        X_dense_sentence = np.array(X_dense_sentence)
-        Y_sparse_sequence = np.array(Y_sparse_sequence)
-        Y_sparse_sentence = np.array(Y_sparse_sentence)
-        Y_dense_sequence = np.array(Y_dense_sequence)
-        Y_dense_sentence = np.array(Y_dense_sentence)
+        X_sparse_sequence = np.array(X_sparse_sequence, dtype=object)
+        X_sparse_sentence = np.array(X_sparse_sentence, dtype=object)
+        X_dense_sequence = np.array(X_dense_sequence, dtype=object)
+        X_dense_sentence = np.array(X_dense_sentence, dtype=object)
+        Y_sparse_sequence = np.array(Y_sparse_sequence, dtype=object)
+        Y_sparse_sentence = np.array(Y_sparse_sentence, dtype=object)
+        Y_dense_sequence = np.array(Y_dense_sequence, dtype=object)
+        Y_dense_sentence = np.array(Y_dense_sentence, dtype=object)
         label_ids = np.array(label_ids)
         tag_name_to_tag_ids = {
             tag_name: np.array(tag_ids)
@@ -713,7 +715,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(
-                LABEL_SEQUENCE_FEATURES, self._use_default_label_features(label_ids)
+                LABEL_SENTENCE_FEATURES, self._use_default_label_features(label_ids)
             )
 
         # explicitly add last dimension to label_ids
@@ -818,12 +820,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
-        self.model = self.model_class()(
-            data_signature=model_data.get_signature(),
-            label_data=self._label_data,
-            entity_tag_specs=self._entity_tag_specs,
-            config=self.component_config,
-        )
+        self.model = self._instantiate_model_class(model_data)
 
         self.model.fit(
             model_data,
@@ -854,7 +851,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
 
-        label = {"name": None, "confidence": 0.0}
+        label = {"name": None, "id": None, "confidence": 0.0}
         label_ranking = []
 
         if predict_out is None:
@@ -880,6 +877,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
             label = {
+                "id": hash(self.index_label_id_mapping[label_ids[0]]),
                 "name": self.index_label_id_mapping[label_ids[0]],
                 "confidence": message_sim[0],
             }
@@ -895,7 +893,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ranking = list(zip(list(label_ids), message_sim))
             ranking = ranking[:output_length]
             label_ranking = [
-                {"name": self.index_label_id_mapping[label_idx], "confidence": score}
+                {
+                    "id": hash(self.index_label_id_mapping[label_idx]),
+                    "name": self.index_label_id_mapping[label_idx],
+                    "confidence": score,
+                }
                 for label_idx, score in ranking
             ]
 
@@ -935,7 +937,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             if self.component_config[BILOU_FLAG]:
                 tags = bilou_utils.ensure_consistent_bilou_tagging(tags)
-                tags = bilou_utils.remove_bilou_prefixes(tags)
 
             predicted_tags[tag_spec.tag_name] = tags
             confidence_values[tag_spec.tag_name] = confidences
@@ -981,7 +982,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.label_data.pkl", self._label_data
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.index_label_id_mapping.pkl",
+            model_dir / f"{file_name}.index_label_id_mapping.json",
             self.index_label_id_mapping,
         )
 
@@ -1045,7 +1046,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         index_label_id_mapping = io_utils.json_unpickle(
-            model_dir / f"{file_name}.index_label_id_mapping.pkl"
+            model_dir / f"{file_name}.index_label_id_mapping.json"
         )
         entity_tag_specs = io_utils.read_json_file(
             model_dir / f"{file_name}.entity_tag_specs.json"
@@ -1085,20 +1086,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta: Dict[Text, Any],
         data_example: Dict[Text, List[np.ndarray]],
         model_dir: Text,
-    ):
+    ) -> "RasaModel":
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
         label_key = LABEL_IDS if meta[INTENT_CLASSIFICATION] else None
         model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
-        model = cls.model_class().load(
-            tf_model_file,
-            model_data_example,
-            data_signature=model_data_example.get_signature(),
-            label_data=label_data,
-            entity_tag_specs=entity_tag_specs,
-            config=meta,
+        model = cls._load_model_class(
+            tf_model_file, model_data_example, label_data, entity_tag_specs, meta
         )
 
         # build the graph for prediction
@@ -1114,6 +1110,34 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model.build_for_predict(predict_data_example)
 
         return model
+
+    @classmethod
+    def _load_model_class(
+        cls,
+        tf_model_file: Text,
+        model_data_example: RasaModelData,
+        label_data: RasaModelData,
+        entity_tag_specs: List[EntityTagSpec],
+        meta: Dict[Text, Any],
+    ) -> "RasaModel":
+
+        return cls.model_class().load(
+            tf_model_file,
+            model_data_example,
+            data_signature=model_data_example.get_signature(),
+            label_data=label_data,
+            entity_tag_specs=entity_tag_specs,
+            config=copy.deepcopy(meta),
+        )
+
+    def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
+
+        return self.model_class()(
+            data_signature=model_data.get_signature(),
+            label_data=self._label_data,
+            entity_tag_specs=self._entity_tag_specs,
+            config=self.component_config,
+        )
 
 
 # accessing _tf_layers with any key results in key-error, disable it
@@ -1253,7 +1277,7 @@ class DIET(RasaModel):
         self.entity_role_loss = tf.keras.metrics.Mean(name="r_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
-        self.response_acc = tf.keras.metrics.Mean(name="i_acc")
+        self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
         self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
         self.entity_group_f1 = tf.keras.metrics.Mean(name="g_f1")
         self.entity_role_f1 = tf.keras.metrics.Mean(name="r_f1")
@@ -1851,10 +1875,14 @@ class DIET(RasaModel):
 
         loss, acc = self._calculate_label_loss(sentence_vector, label, label_ids)
 
-        self.intent_loss.update_state(loss)
-        self.response_acc.update_state(acc)
+        self._update_label_metrics(loss, acc)
 
         return loss
+
+    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
+
+        self.intent_loss.update_state(loss)
+        self.intent_acc.update_state(acc)
 
     def _batch_loss_entities(
         self,

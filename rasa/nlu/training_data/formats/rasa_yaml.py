@@ -13,7 +13,8 @@ from typing import (
     Optional,
 )
 
-from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
+from rasa import data
+from rasa.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
 import rasa.utils.io as io_utils
@@ -21,7 +22,6 @@ from rasa.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
-from rasa.data import YAML_FILE_EXTENSIONS
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 KEY_NLU = "nlu"
+KEY_RESPONSES = "responses"
 KEY_INTENT = "intent"
 KEY_INTENT_EXAMPLES = "examples"
 KEY_INTENT_TEXT = "text"
@@ -60,7 +61,18 @@ class RasaYAMLReader(TrainingDataReader):
         self.training_examples: List[Message] = []
         self.entity_synonyms: Dict[Text, Text] = {}
         self.regex_features: List[Dict[Text, Text]] = []
-        self.lookup_tables: List[Dict[Text, List[Text]]] = []
+        self.lookup_tables: List[Dict[Text, Any]] = []
+        self.responses: Dict[Text, List[Dict[Text, Any]]] = {}
+
+    @staticmethod
+    def validate(string: Text) -> None:
+        """Check if the string adheres to the NLU yaml data schema.
+
+        If the string is not in the right format, an exception will be raised."""
+        try:
+            validation.validate_yaml_schema(string, NLU_SCHEMA_FILE)
+        except validation.InvalidYamlFileError as e:
+            raise ValueError from e
 
     def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData in YAML format from a string.
@@ -75,10 +87,7 @@ class RasaYAMLReader(TrainingDataReader):
         from rasa.nlu.training_data import TrainingData
         from rasa.validator import Validator
 
-        try:
-            validate_yaml_schema(string, NLU_SCHEMA_FILE)
-        except InvalidYamlFileError as e:
-            raise ValueError from e
+        self.validate(string)
 
         yaml_content = io_utils.read_yaml(string)
 
@@ -90,12 +99,15 @@ class RasaYAMLReader(TrainingDataReader):
         for key, value in yaml_content.items():  # pytype: disable=attribute-error
             if key == KEY_NLU:
                 self._parse_nlu(value)
+            elif key == KEY_RESPONSES:
+                self.responses = value
 
         return TrainingData(
             self.training_examples,
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
+            self.responses,
         )
 
     def _parse_nlu(self, nlu_data: Optional[List[Dict[Text, Any]]]) -> None:
@@ -133,13 +145,13 @@ class RasaYAMLReader(TrainingDataReader):
                     docs=DOCS_URL_TRAINING_DATA_NLU,
                 )
 
-    def _parse_intent(self, data: Dict[Text, Any]) -> None:
+    def _parse_intent(self, intent_data: Dict[Text, Any]) -> None:
         from rasa.nlu.training_data import Message
         import rasa.nlu.training_data.entities_parser as entities_parser
         import rasa.nlu.training_data.synonyms_parser as synonyms_parser
         import rasa.nlu.constants as nlu_constants
 
-        intent = data.get(KEY_INTENT, "")
+        intent = intent_data.get(KEY_INTENT, "")
         if not intent:
             raise_warning(
                 f"Issue found while processing '{self.filename}': "
@@ -150,7 +162,7 @@ class RasaYAMLReader(TrainingDataReader):
             )
             return
 
-        examples = data.get(KEY_INTENT_EXAMPLES, "")
+        examples = intent_data.get(KEY_INTENT_EXAMPLES, "")
         for example, entities in self._parse_training_examples(examples, intent):
 
             plain_text = entities_parser.replace_entities(example)
@@ -337,12 +349,13 @@ class RasaYAMLReader(TrainingDataReader):
             `True` if the `filename` is possibly a valid YAML NLU file,
             `False` otherwise.
         """
-        if not Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        if not data.is_likely_yaml_file(filename):
             return False
+
         try:
             content = io_utils.read_yaml_file(filename)
-            if KEY_NLU in content:
-                return True
+
+            return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
         except (YAMLError, Warning) as e:
             logger.error(
                 f"Tried to check if '{filename}' is an NLU file, but failed to "
@@ -351,7 +364,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"move the file to a different location. "
                 f"Error: {e}"
             )
-        return False
+            return False
 
 
 class RasaYAMLWriter(TrainingDataWriter):
@@ -385,7 +398,12 @@ class RasaYAMLWriter(TrainingDataWriter):
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
             LATEST_TRAINING_DATA_FORMAT_VERSION
         )
-        result[KEY_NLU] = nlu_items
+
+        if nlu_items:
+            result[KEY_NLU] = nlu_items
+
+        if training_data.responses:
+            result[KEY_RESPONSES] = training_data.responses
 
         io_utils.write_yaml(result, target, True)
 

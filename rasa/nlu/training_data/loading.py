@@ -72,9 +72,6 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     else:
         training_data = data_sets[0].merge(*data_sets[1:])
 
-    if training_data.nlg_stories:
-        training_data.fill_response_phrases()
-
     return training_data
 
 
@@ -182,11 +179,3 @@ def guess_format(filename: Text) -> Text:
     logger.debug(f"Training data format of '{filename}' is '{guess}'.")
 
     return guess
-
-
-def _guess_format(filename: Text) -> Text:
-    logger.warning(
-        "Using '_guess_format()' is deprecated since Rasa 1.1.5. "
-        "Please use 'guess_format()' instead."
-    )
-    return guess_format(filename)

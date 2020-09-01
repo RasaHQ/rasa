@@ -5,14 +5,15 @@ import pytest
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.validator import Validator, KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.importers.rasa import RasaFileImporter
-from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
+from tests.conftest import DEFAULT_NLU_DATA
+from tests.core.conftest import DEFAULT_STORIES_FILE
 import rasa.utils.io as io_utils
 
 
 async def test_verify_intents_does_not_fail_on_valid_data():
     importer = RasaFileImporter(
         domain_path="examples/moodbot/domain.yml",
-        training_data_paths=["examples/moodbot/data/nlu.md"],
+        training_data_paths=[DEFAULT_NLU_DATA],
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_intents()
@@ -22,7 +23,7 @@ async def test_verify_intents_does_fail_on_invalid_data():
     # domain and nlu data are from different domain and should produce warnings
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
-        training_data_paths=["examples/moodbot/data/nlu.md"],
+        training_data_paths=[DEFAULT_NLU_DATA],
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_intents()
@@ -69,7 +70,7 @@ async def test_fail_on_invalid_utterances(tmpdir):
     invalid_domain = str(tmpdir / "invalid_domain.yml")
     io_utils.write_yaml(
         {
-            "responses": {"utter_greet": {"text": "hello"}},
+            "responses": {"utter_greet": [{"text": "hello"}]},
             "actions": [
                 "utter_greet",
                 "utter_non_existent",  # error: utter template odes not exist
@@ -87,7 +88,7 @@ async def test_verify_there_is_example_repetition_in_intents():
     # for intents greet and goodbye
     importer = RasaFileImporter(
         domain_path="examples/moodbot/domain.yml",
-        training_data_paths=["examples/moodbot/data/nlu.md"],
+        training_data_paths=[DEFAULT_NLU_DATA],
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_example_repetition_in_intents(False)
@@ -98,7 +99,7 @@ async def test_verify_logging_message_for_repetition_in_intents(caplog):
     # for intents greet and goodbye
     importer = RasaFileImporter(
         domain_path="examples/moodbot/domain.yml",
-        training_data_paths=["examples/moodbot/data/nlu.md"],
+        training_data_paths=[DEFAULT_NLU_DATA],
     )
     validator = await Validator.from_importer(importer)
     caplog.clear()  # clear caplog to avoid counting earlier debug messages
@@ -116,15 +117,15 @@ async def test_early_exit_on_invalid_domain():
         validator = await Validator.from_importer(importer)
     validator.verify_domain_validity()
 
-    # two for non-unique domains, two for missing version
-    assert len(record) == 4
+    # two for non-unique domains
+    assert len(record) == 2
     assert (
         f"Loading domain from '{domain_path}' failed. Using empty domain. "
         "Error: 'Intents are not unique! Found multiple intents with name(s) "
         "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
-        in record[1].message.args[0]
+        in record[0].message.args[0]
     )
-    assert record[1].message.args[0] == record[3].message.args[0]
+    assert record[0].message.args[0] == record[1].message.args[0]
 
 
 async def test_verify_there_is_not_example_repetition_in_intents():

@@ -46,6 +46,9 @@ mapping:
         lookup:
           type: "str"
         examples: *examples_anchor
+  responses:
+    # see rasa/utils/schemas.yml
+    include: responses
   stories:
     type: "any"
     required: False

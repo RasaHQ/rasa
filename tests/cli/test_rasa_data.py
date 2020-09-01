@@ -57,7 +57,7 @@ def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
     help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data DATA --out OUT
-                             [-l LANGUAGE] -f {json,md}"""
+                             [-l LANGUAGE] -f {json,md,yaml}"""
 
     lines = help_text.split("\n")
 
@@ -112,3 +112,54 @@ def test_validate_files_exit_early():
 
     assert pytest_e.type == SystemExit
     assert pytest_e.value.code == 1
+
+
+def test_rasa_data_convert_to_yaml(
+    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
+):
+    converted_data_folder = "converted_data"
+    os.mkdir(converted_data_folder)
+
+    simple_nlu_md = """
+    ## intent:greet
+    - hey
+    - hello
+    """
+
+    with open("data/nlu.md", "w") as f:
+        f.write(simple_nlu_md)
+
+    simple_story_md = """
+    ## happy path
+    * greet
+        - utter_greet
+        - form{"name": null}
+    """
+
+    with open("data/stories.md", "w") as f:
+        f.write(simple_story_md)
+
+    run_in_simple_project(
+        "data",
+        "convert",
+        "nlu",
+        "-f",
+        "yaml",
+        "--data",
+        "data",
+        "--out",
+        converted_data_folder,
+    )
+    run_in_simple_project(
+        "data",
+        "convert",
+        "core",
+        "-f",
+        "yaml",
+        "--data",
+        "data",
+        "--out",
+        converted_data_folder,
+    )
+
+    assert len(os.listdir(converted_data_folder)) == 2

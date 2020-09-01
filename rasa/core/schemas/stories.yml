@@ -26,6 +26,9 @@ mapping:
                 type: "str"
                 required: True
                 allowempty: False
+              user:
+                type: "str"
+                allowempty: False
               entities:
                 type: "seq"
                 matching: "any"
@@ -33,8 +36,13 @@ mapping:
                 - type: "map"
                   mapping:
                     regex;(.*):
-                      type: "str"
+                      type: "text"
                 - type: "str"
+          - type: "map"
+            mapping: &active_loop
+              active_loop:
+                type: "str"
+                allowempty: False
           - type: "map"
             mapping: &action
               action:
@@ -46,15 +54,29 @@ mapping:
                 type: "seq"
                 matching: "any"
                 sequence:
-                  - type: "map"
-                    mapping:
-                      regex;(.*):
-                        type: "str"
-                  - type: "map"
-                    mapping:
-                      regex;(.*):
-                        type: "bool"
-                  - type: "str"
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "text"
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "bool"
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "seq"
+                      matching: "any"
+                      sequence:
+                      - type: "map"
+                        mapping:
+                          regex;(.*):
+                            type: "text"
+                      - type: "map"
+                        mapping:
+                          regex;(.*):
+                            type: "bool"
+                - type: "str"
           - type: "map"
             matching-rule: 'any'
             mapping:
@@ -88,10 +110,7 @@ mapping:
           - type: "map"
             mapping: *action
           - type: "map"
-            mapping: &active_loop
-              active_loop:
-                type: "str"
-                allowempty: False
+            mapping: *active_loop
           - type: "map"
             mapping: *slot_was_set_seq
         condition:

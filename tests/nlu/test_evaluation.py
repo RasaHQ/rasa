@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from sanic.request import Request
 from typing import Text, Iterator, List, Dict, Any
 
@@ -51,12 +53,12 @@ from rasa.nlu import training_data
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
-
+from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION, RANDOM_SEED
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
+from tests.nlu.utilities import write_file_config
 
 
 @pytest.yield_fixture(scope="session")
@@ -384,7 +386,6 @@ def test_run_cv_evaluation_with_response_selector():
         "data/examples/rasa/demo-rasa-responses.md"
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
-    training_data_obj.fill_response_phrases()
 
     nlu_config = RasaNLUModelConfig(
         {
@@ -440,9 +441,10 @@ def test_response_selector_present():
     assert not is_response_selector_present(interpreter_without_response_selector)
 
 
-def test_intent_evaluation_report(tmpdir_factory):
-    path = tmpdir_factory.mktemp("evaluation").strpath
-    report_folder = os.path.join(path, "reports")
+def test_intent_evaluation_report(tmp_path: Path):
+    path = tmp_path / "evaluation"
+    path.mkdir()
+    report_folder = str(path / "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
 
     rasa.utils.io.create_directory(report_folder)
@@ -487,8 +489,9 @@ def test_intent_evaluation_report(tmpdir_factory):
     assert os.path.exists(os.path.join(report_folder, "intent_successes.json"))
 
 
-def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
-    path = tmpdir_factory.mktemp("evaluation")
+def test_intent_evaluation_report_large(tmp_path: Path):
+    path = tmp_path / "evaluation"
+    path.mkdir()
     report_folder = path / "reports"
     report_filename = report_folder / "intent_report.json"
 
@@ -510,7 +513,7 @@ def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
 
     evaluate_intents(
         intent_results,
-        report_folder,
+        str(report_folder),
         successes=False,
         errors=False,
         disable_plotting=True,
@@ -542,27 +545,23 @@ def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
     assert report["C"]["confused_with"] == c_confused_with
 
 
-def test_response_evaluation_report(tmpdir_factory):
-    path = tmpdir_factory.mktemp("evaluation").strpath
-    report_folder = os.path.join(path, "reports")
+def test_response_evaluation_report(tmp_path: Path):
+    path = tmp_path / "evaluation"
+    path.mkdir()
+    report_folder = str(path / "reports")
     report_filename = os.path.join(report_folder, "response_selection_report.json")
 
     rasa.utils.io.create_directory(report_folder)
 
     response_results = [
         ResponseSelectionEvaluationResult(
-            "chitchat",
-            "It's sunny in Berlin",
-            "It's sunny in Berlin",
+            "chitchat/ask_weather",
+            "chitchat/ask_weather",
             "What's the weather",
             0.65432,
         ),
         ResponseSelectionEvaluationResult(
-            "chitchat",
-            "My name is Mr.bot",
-            "My name is Mr.bot",
-            "What's your name?",
-            0.98765,
+            "chitchat/ask_name", "chitchat/ask_name", "What's your name?", 0.98765
         ),
     ]
 
@@ -586,14 +585,13 @@ def test_response_evaluation_report(tmpdir_factory):
 
     prediction = {
         "text": "What's your name?",
-        "intent_target": "chitchat",
-        "response_target": "My name is Mr.bot",
-        "response_predicted": "My name is Mr.bot",
+        "intent_response_key_target": "chitchat/ask_name",
+        "intent_response_key_prediction": "chitchat/ask_name",
         "confidence": 0.98765,
     }
 
     assert len(report.keys()) == 5
-    assert report["My name is Mr.bot"] == name_query_results
+    assert report["chitchat/ask_name"] == name_query_results
     assert result["predictions"][1] == prediction
 
     assert os.path.exists(
@@ -630,7 +628,7 @@ def test_get_entity_extractors(components, expected_extractors):
     assert extractors == expected_extractors
 
 
-def test_entity_evaluation_report(tmpdir_factory):
+def test_entity_evaluation_report(tmp_path):
     class EntityExtractorA(EntityExtractor):
 
         provides = ["entities"]
@@ -647,8 +645,9 @@ def test_entity_evaluation_report(tmpdir_factory):
 
             super().__init__(component_config)
 
-    path = tmpdir_factory.mktemp("evaluation").strpath
-    report_folder = os.path.join(path, "reports")
+    path = tmp_path / "evaluation"
+    path.mkdir()
+    report_folder = str(path / "reports")
 
     report_filename_a = os.path.join(report_folder, "EntityExtractorA_report.json")
     report_filename_b = os.path.join(report_folder, "EntityExtractorB_report.json")
@@ -708,23 +707,16 @@ def test_empty_intent_removal():
 
 def test_empty_response_removal():
     response_results = [
+        ResponseSelectionEvaluationResult(None, None, "What's the weather", 0.65432),
         ResponseSelectionEvaluationResult(
-            "chitchat", None, "It's sunny in Berlin", "What's the weather", 0.65432
-        ),
-        ResponseSelectionEvaluationResult(
-            "chitchat",
-            "My name is Mr.bot",
-            "My name is Mr.bot",
-            "What's your name?",
-            0.98765,
+            "chitchat/ask_name", "chitchat/ask_name", "What's your name?", 0.98765
         ),
     ]
     response_results = remove_empty_response_examples(response_results)
 
     assert len(response_results) == 1
-    assert response_results[0].intent_target == "chitchat"
-    assert response_results[0].response_target == "My name is Mr.bot"
-    assert response_results[0].response_prediction == "My name is Mr.bot"
+    assert response_results[0].intent_response_key_target == "chitchat/ask_name"
+    assert response_results[0].intent_response_key_prediction == "chitchat/ask_name"
     assert response_results[0].confidence == 0.98765
     assert response_results[0].message == "What's your name?"
 
@@ -846,12 +838,23 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-def test_nlu_comparison(tmpdir, config_path, config_path_duplicate):
+def test_nlu_comparison(tmp_path: Path):
+    config = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "KeywordIntentClassifier"},
+            {"name": "RegexEntityExtractor"},
+        ],
+    }
     # the configs need to be at a different path, otherwise the results are
     # combined on the same dictionary key and cannot be plotted properly
-    configs = [config_path, config_path_duplicate]
+    configs = [
+        write_file_config(config).name,
+        write_file_config(config).name,
+    ]
 
-    output = tmpdir.strpath
+    output = str(tmp_path)
     compare_nlu_models(
         configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
     )

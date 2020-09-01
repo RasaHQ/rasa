@@ -4,15 +4,71 @@ import shutil
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Tuple, List, Text, Set, Union, Optional, Iterable
+from typing import Callable, Tuple, List, Text, Set, Union, Optional, Iterable
 
-from rasa.constants import DEFAULT_E2E_TESTS_PATH
 from rasa.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
-MARKDOWN_FILE_EXTENSION = ".md"
-YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
-JSON_FILE_EXTENSION = ".json"
+
+MARKDOWN_FILE_EXTENSIONS = {".md"}
+
+YAML_FILE_EXTENSIONS = {".yml", ".yaml"}
+
+JSON_FILE_EXTENSIONS = {".json"}
+
+TRAINING_DATA_EXTENSIONS = JSON_FILE_EXTENSIONS.union(MARKDOWN_FILE_EXTENSIONS).union(
+    YAML_FILE_EXTENSIONS
+)
+
+
+def is_likely_yaml_file(file_path: Text) -> bool:
+    """Check if a file likely contains yaml.
+
+    Arguments:
+        file_path: path to the file
+
+    Returns:
+        `True` if the file likely contains data in yaml format, `False` otherwise.
+    """
+    return Path(file_path).suffix in YAML_FILE_EXTENSIONS
+
+
+def is_likely_json_file(file_path: Text) -> bool:
+    """Check if a file likely contains json.
+
+    Arguments:
+        file_path: path to the file
+
+    Returns:
+        `True` if the file likely contains data in json format, `False` otherwise.
+    """
+    return Path(file_path).suffix in JSON_FILE_EXTENSIONS
+
+
+def is_likely_markdown_file(file_path: Text) -> bool:
+    """Check if a file likely contains markdown.
+
+    Arguments:
+        file_path: path to the file
+
+    Returns:
+        `True` if the file likely contains data in markdown format,
+        `False` otherwise.
+    """
+    return Path(file_path).suffix in MARKDOWN_FILE_EXTENSIONS
+
+
+def get_test_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
+    """Recursively collects all Core training files from a list of paths.
+
+    Args:
+        paths: List of paths to training files or folders containing them.
+
+    Returns:
+        Path to temporary directory containing all found Core training files.
+    """
+    test_files = get_data_files(paths, is_test_stories_file)
+    return _copy_files_to_new_dir(test_files)
 
 
 def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
@@ -24,7 +80,7 @@ def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
     Returns:
         Path to temporary directory containing all found Core training files.
     """
-    core_files, _ = get_core_nlu_files(paths)
+    core_files = get_data_files(paths, is_story_file)
     return _copy_files_to_new_dir(core_files)
 
 
@@ -37,7 +93,7 @@ def get_nlu_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
     Returns:
         Path to temporary directory containing all found NLU training files.
     """
-    _, nlu_files = get_core_nlu_files(paths)
+    nlu_files = get_data_files(paths, is_nlu_file)
     return _copy_files_to_new_dir(nlu_files)
 
 
@@ -54,7 +110,8 @@ def get_core_nlu_directories(
         containing the NLU training files.
     """
 
-    story_files, nlu_data_files = get_core_nlu_files(paths)
+    story_files = get_data_files(paths, is_story_file)
+    nlu_data_files = get_data_files(paths, is_nlu_file)
 
     story_directory = _copy_files_to_new_dir(story_files)
     nlu_directory = _copy_files_to_new_dir(nlu_data_files)
@@ -62,20 +119,20 @@ def get_core_nlu_directories(
     return story_directory, nlu_directory
 
 
-def get_core_nlu_files(
-    paths: Optional[Union[Text, List[Text]]]
-) -> Tuple[List[Text], List[Text]]:
+def get_data_files(
+    paths: Optional[Union[Text, List[Text]]], filter_predicate: Callable[[Text], bool]
+) -> List[Text]:
     """Recursively collects all training files from a list of paths.
 
     Args:
         paths: List of paths to training files or folders containing them.
+        filter_predicate: property to use when filtering the paths, e.g. `is_nlu_file`.
 
     Returns:
-        Tuple of paths to story and NLU files.
+        paths of training data files.
     """
 
-    story_files = set()
-    nlu_data_files = set()
+    data_files = set()
 
     if paths is None:
         paths = []
@@ -87,24 +144,19 @@ def get_core_nlu_files(
             continue
 
         if _is_valid_filetype(path):
-            if is_nlu_file(path):
-                nlu_data_files.add(os.path.abspath(path))
-            elif is_story_file(path):
-                story_files.add(os.path.abspath(path))
+            if filter_predicate(path):
+                data_files.add(os.path.abspath(path))
         else:
-            new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
-                path
-            )
+            new_data_files = _find_data_files_in_directory(path, filter_predicate)
+            data_files.update(new_data_files)
 
-            story_files.update(new_story_files)
-            nlu_data_files.update(new_nlu_data_files)
-
-    return sorted(story_files), sorted(nlu_data_files)
+    return sorted(data_files)
 
 
-def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[Text]]:
-    story_files = set()
-    nlu_data_files = set()
+def _find_data_files_in_directory(
+    directory: Text, filter_property: Callable[[Text], bool]
+) -> Set[Text]:
+    filtered_files = set()
 
     for root, _, files in os.walk(directory, followlinks=True):
         # we sort the files here to ensure consistent order for repeatable training
@@ -115,23 +167,14 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
             if not _is_valid_filetype(full_path):
                 continue
 
-            if is_nlu_file(full_path):
-                nlu_data_files.add(full_path)
-            elif is_story_file(full_path):
-                story_files.add(full_path)
+            if filter_property(full_path):
+                filtered_files.add(full_path)
 
-    return story_files, nlu_data_files
+    return filtered_files
 
 
 def _is_valid_filetype(path: Text) -> bool:
-    is_file = os.path.isfile(path)
-    is_datafile = (
-        path.endswith(JSON_FILE_EXTENSION)
-        or path.endswith(MARKDOWN_FILE_EXTENSION)
-        or Path(path).suffix in YAML_FILE_EXTENSIONS
-    )
-
-    return is_file and is_datafile
+    return os.path.isfile(path) and Path(path).suffix in TRAINING_DATA_EXTENSIONS
 
 
 def is_nlu_file(file_path: Text) -> bool:
@@ -156,36 +199,32 @@ def is_story_file(file_path: Text) -> bool:
         `True` if it's a story file, otherwise `False`.
     """
     from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
-
-    if YAMLStoryReader.is_yaml_story_file(file_path):
-        return True
-
     from rasa.core.training.story_reader.markdown_story_reader import (
         MarkdownStoryReader,
     )
 
-    return MarkdownStoryReader.is_markdown_story_file(file_path)
+    return YAMLStoryReader.is_yaml_story_file(
+        file_path
+    ) or MarkdownStoryReader.is_markdown_story_file(file_path)
 
 
-def is_end_to_end_conversation_test_file(file_path: Text) -> bool:
-    """Checks if a file is an end-to-end conversation test file.
+def is_test_stories_file(file_path: Text) -> bool:
+    """Checks if a file is a test stories file.
 
     Args:
         file_path: Path of the file which should be checked.
 
     Returns:
-        `True` if it's a conversation test file, otherwise `False`.
+        `True` if it's a story file containing tests, otherwise `False`.
     """
-
-    if not file_path.endswith(MARKDOWN_FILE_EXTENSION):
-        return False
-
-    dirname = os.path.dirname(file_path)
-    return (
-        DEFAULT_E2E_TESTS_PATH in dirname
-        and is_story_file(file_path)
-        and not is_nlu_file(file_path)
+    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
+    from rasa.core.training.story_reader.markdown_story_reader import (
+        MarkdownStoryReader,
     )
+
+    return YAMLStoryReader.is_yaml_story_file(
+        file_path
+    ) or MarkdownStoryReader.is_markdown_test_stories_file(file_path)
 
 
 def is_config_file(file_path: Text) -> bool:

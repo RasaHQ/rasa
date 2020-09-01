@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from pathlib import Path
 
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 
@@ -16,7 +17,7 @@ from rasa.nlu.constants import (
 import rasa.utils.io as io_utils
 import typing
 from rasa.nlu import utils
-from typing import Text, Dict, Any
+from typing import Text, Dict, Any, Union
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -26,7 +27,7 @@ class TrainingDataReader:
     def __init__(self):
         self.filename: Text = ""
 
-    def read(self, filename: Text, **kwargs: Any) -> "TrainingData":
+    def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a file."""
         self.filename = filename
         return self.reads(io_utils.read_file(filename), **kwargs)
@@ -116,20 +117,20 @@ class TrainingDataWriter:
 
         if use_short_syntax:
             return f"[{entity_text}]({entity_type})"
+        else:
+            entity_dict = OrderedDict(
+                [
+                    (ENTITY_ATTRIBUTE_TYPE, entity_type),
+                    (ENTITY_ATTRIBUTE_ROLE, entity_role),
+                    (ENTITY_ATTRIBUTE_GROUP, entity_group),
+                    (ENTITY_ATTRIBUTE_VALUE, entity_value),
+                ]
+            )
+            entity_dict = OrderedDict(
+                [(k, v) for k, v in entity_dict.items() if v is not None]
+            )
 
-        entity_dict = OrderedDict(
-            [
-                (ENTITY_ATTRIBUTE_TYPE, entity_type),
-                (ENTITY_ATTRIBUTE_ROLE, entity_role),
-                (ENTITY_ATTRIBUTE_GROUP, entity_group),
-                (ENTITY_ATTRIBUTE_VALUE, entity_value),
-            ]
-        )
-        entity_dict = OrderedDict(
-            [(k, v) for k, v in entity_dict.items() if v is not None]
-        )
-
-        return f"[{entity_text}]{json.dumps(entity_dict)}"
+            return f"[{entity_text}]{json.dumps(entity_dict)}"
 
 
 class JsonTrainingDataReader(TrainingDataReader):

@@ -42,7 +42,7 @@ word vectors in your pipeline.
   The MITIE library needs a language model file, that **must** be specified in
   the configuration:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "MitieNLP"
     # language model to load
@@ -106,7 +106,7 @@ word vectors in your pipeline.
   the model name can be specified using the configuration variable `model`.
   The name will be passed to `spacy.load(name)`.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "SpacyNLP"
     # language model to load
@@ -197,7 +197,7 @@ word vectors in your pipeline.
 
   The following configuration loads the language model BERT:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
     - name: HFTransformersNLP
       # Name of the language model to use

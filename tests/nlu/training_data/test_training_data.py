@@ -4,7 +4,7 @@ import pytest
 
 import rasa.utils.io as io_utils
 from rasa.nlu import training_data
-from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
+from rasa.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -122,12 +122,12 @@ def test_demo_data(files):
     td = training_data_from_paths(files, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
     assert len(td.response_examples) == 4
     assert len(td.entity_examples) == 11
-    assert len(td.nlg_stories) == 2
+    assert len(td.responses) == 2
 
     assert td.entity_synonyms == {
         "Chines": "chinese",
@@ -159,19 +159,21 @@ def test_demo_data(files):
 def test_demo_data_filter_out_retrieval_intents(files):
     from rasa.importers.utils import training_data_from_paths
 
-    td = training_data_from_paths(files, language="en")
-    assert len(td.training_examples) == 46
+    training_data = training_data_from_paths(files, language="en")
+    assert len(training_data.training_examples) == 46
 
-    td1 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is None)
-    assert len(td1.training_examples) == 42
-
-    td2 = td.filter_training_examples(
-        lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is not None
+    training_data_filtered = training_data.filter_training_examples(
+        lambda ex: ex.get(INTENT_RESPONSE_KEY) is None
     )
-    assert len(td2.training_examples) == 4
+    assert len(training_data_filtered.training_examples) == 42
+
+    training_data_filtered_2 = training_data.filter_training_examples(
+        lambda ex: ex.get(INTENT_RESPONSE_KEY) is not None
+    )
+    assert len(training_data_filtered_2.training_examples) == 4
 
     # make sure filtering operation doesn't mutate the source training data
-    assert len(td.training_examples) == 46
+    assert len(training_data.training_examples) == 46
 
 
 @pytest.mark.parametrize(
@@ -185,7 +187,7 @@ def test_train_test_split(filepaths):
 
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
 
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
@@ -506,7 +508,7 @@ def test_training_data_conversion(
     [
         ("data/examples/luis/demo-restaurants_v5.json", JSON),
         ("data/examples", JSON),
-        ("examples/moodbot/data/nlu.md", MARKDOWN),
+        ("data/examples/rasa/demo-rasa.md", MARKDOWN),
         ("data/rasa_yaml_examples", RASA_YAML),
     ],
 )

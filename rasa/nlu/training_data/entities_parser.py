@@ -9,6 +9,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_VALUE,
 )
+from rasa.nlu.training_data.message import Message
 from rasa.utils.common import raise_warning
 
 GROUP_ENTITY_VALUE = "value"
@@ -165,3 +166,12 @@ def replace_entities(training_example: Text) -> Text:
     return re.sub(
         ENTITY_REGEX, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], training_example
     )
+
+
+def parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message":
+    """Extract entities and synonyms, and convert to plain text."""
+
+    entities = find_entities_in_training_example(example)
+    plain_text = replace_entities(example)
+
+    return Message.build(plain_text, intent, entities)

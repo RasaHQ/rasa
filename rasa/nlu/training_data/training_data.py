@@ -1,22 +1,25 @@
 import logging
 import os
+from pathlib import Path
 import random
 from collections import Counter, OrderedDict
-from copy import deepcopy
+import copy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
+from rasa import data
 import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
 from rasa.nlu.constants import (
     RESPONSE,
-    RESPONSE_KEY_ATTRIBUTE,
     NO_ENTITY_TAG,
+    INTENT_RESPONSE_KEY,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     INTENT,
     ENTITIES,
+    TEXT,
 )
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
@@ -39,34 +42,36 @@ class TrainingData:
         training_examples: Optional[List[Message]] = None,
         entity_synonyms: Optional[Dict[Text, Text]] = None,
         regex_features: Optional[List[Dict[Text, Text]]] = None,
-        lookup_tables: Optional[List[Dict[Text, Text]]] = None,
-        nlg_stories: Optional[Dict[Text, List[Text]]] = None,
+        lookup_tables: Optional[List[Dict[Text, Any]]] = None,
+        responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
 
         if training_examples:
             self.training_examples = self.sanitize_examples(training_examples)
         else:
             self.training_examples = []
-        self.entity_synonyms = entity_synonyms if entity_synonyms else {}
-        self.regex_features = regex_features if regex_features else []
+        self.entity_synonyms = entity_synonyms or {}
+        self.regex_features = regex_features or []
         self.sort_regex_features()
-        self.lookup_tables = lookup_tables if lookup_tables else []
-        self.nlg_stories = nlg_stories if nlg_stories else {}
+        self.lookup_tables = lookup_tables or []
+        self.responses = responses or {}
+
+        self._fill_response_phrases()
 
     def merge(self, *others: "TrainingData") -> "TrainingData":
         """Return merged instance of this data with other training data."""
 
-        training_examples = deepcopy(self.training_examples)
+        training_examples = copy.deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
-        regex_features = deepcopy(self.regex_features)
-        lookup_tables = deepcopy(self.lookup_tables)
-        nlg_stories = deepcopy(self.nlg_stories)
+        regex_features = copy.deepcopy(self.regex_features)
+        lookup_tables = copy.deepcopy(self.lookup_tables)
+        responses = copy.deepcopy(self.responses)
         others = [other for other in others if other]
 
         for o in others:
-            training_examples.extend(deepcopy(o.training_examples))
-            regex_features.extend(deepcopy(o.regex_features))
-            lookup_tables.extend(deepcopy(o.lookup_tables))
+            training_examples.extend(copy.deepcopy(o.training_examples))
+            regex_features.extend(copy.deepcopy(o.regex_features))
+            lookup_tables.extend(copy.deepcopy(o.lookup_tables))
 
             for text, syn in o.entity_synonyms.items():
                 check_duplicate_synonym(
@@ -74,14 +79,10 @@ class TrainingData:
                 )
 
             entity_synonyms.update(o.entity_synonyms)
-            nlg_stories.update(o.nlg_stories)
+            responses.update(o.responses)
 
         return TrainingData(
-            training_examples,
-            entity_synonyms,
-            regex_features,
-            lookup_tables,
-            nlg_stories,
+            training_examples, entity_synonyms, regex_features, lookup_tables, responses
         )
 
     def filter_training_examples(
@@ -101,6 +102,7 @@ class TrainingData:
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
+            self.responses,
         )
 
     def __hash__(self) -> int:
@@ -144,11 +146,6 @@ class TrainingData:
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
-
-    @lazy_property
-    def responses(self) -> Set[Text]:
-        """Returns the set of responses in the training data."""
-        return {ex.get(RESPONSE) for ex in self.training_examples} - {None}
 
     @lazy_property
     def retrieval_intents(self) -> Set[Text]:
@@ -232,27 +229,28 @@ class TrainingData:
             self.regex_features, key=lambda e: "{}+{}".format(e["name"], e["pattern"])
         )
 
-    def fill_response_phrases(self) -> None:
+    def _fill_response_phrases(self) -> None:
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
-            response_key = example.get(RESPONSE_KEY_ATTRIBUTE)
-            # if response_key is None, that means the corresponding intent is not a
+            # if intent_response_key is None, that means the corresponding intent is not a
             # retrieval intent and hence no response text needs to be fetched.
-            # If response_key is set, fetch the corresponding response text
-            if response_key:
-                # look for corresponding bot utterance
-                story_lookup_intent = example.get_combined_intent_response_key()
-                assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
-                if assistant_utterances:
-                    # selecting only first assistant utterance for now
-                    example.set(RESPONSE, assistant_utterances[0])
-                else:
-                    raise ValueError(
-                        "No response phrases found for {}. Check training data "
-                        "files for a possible wrong intent name in NLU/NLG file".format(
-                            story_lookup_intent
-                        )
-                    )
+            # If intent_response_key is set, fetch the corresponding response text
+            if example.get(INTENT_RESPONSE_KEY) is None:
+                continue
+
+            # look for corresponding bot utterance
+            story_lookup_intent = example.get_full_intent()
+            assistant_utterances = self.responses.get(story_lookup_intent, [])
+            if assistant_utterances:
+
+                # Use the first response text as training label if needed downstream
+                for assistant_utterance in assistant_utterances:
+                    if assistant_utterance.get(TEXT):
+                        example.set(RESPONSE, assistant_utterance[TEXT])
+
+                # If no text attribute was found use the key for training
+                if not example.get(RESPONSE):
+                    example.set(RESPONSE, story_lookup_intent)
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
@@ -263,7 +261,7 @@ class TrainingData:
         return RasaWriter().dumps(self, **kwargs)
 
     def nlg_as_markdown(self) -> Text:
-        """Generates the markdown representation of the response phrases(NLG) of
+        """Generates the markdown representation of the response phrases (NLG) of
         TrainingData."""
 
         from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
@@ -271,6 +269,21 @@ class TrainingData:
         )
 
         return NLGMarkdownWriter().dumps(self)
+
+    def nlg_as_yaml(self) -> Text:
+        """Generates yaml representation of the response phrases (NLG) of TrainingData.
+
+        Returns:
+            responses in yaml format as a string
+        """
+        from rasa.nlu.training_data.formats.rasa_yaml import (  # pytype: disable=pyi-error
+            RasaYAMLWriter,
+        )
+
+        # only dump responses. at some point it might make sense to remove the
+        # differentiation between dumping NLU and dumping responses. but we
+        # can't do that until after we remove markdown support.
+        return RasaYAMLWriter().dumps(TrainingData(responses=self.responses))
 
     def nlu_as_markdown(self) -> Text:
         """Generates the markdown representation of the NLU part of TrainingData."""
@@ -285,14 +298,22 @@ class TrainingData:
             RasaYAMLWriter,
         )
 
-        return RasaYAMLWriter().dumps(self)
+        # avoid dumping NLG data (responses). this is a workaround until we
+        # can remove the distinction between nlu & nlg when converting to a string
+        # (so until after we remove markdown support)
+        no_responses_training_data = copy.copy(self)
+        no_responses_training_data.responses = {}
 
-    def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
+        return RasaYAMLWriter().dumps(no_responses_training_data)
 
-        if filename.endswith("json"):
+    def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
+
+        if data.is_likely_json_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_json(indent=2))
-        elif filename.endswith("md"):
+        elif data.is_likely_markdown_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_markdown())
+        elif data.is_likely_yaml_file(filename):
+            rasa.nlu.utils.write_to_file(filename, self.nlu_as_yaml())
         else:
             ValueError(
                 "Unsupported file format detected. Supported file formats are 'json' "
@@ -300,22 +321,35 @@ class TrainingData:
             )
 
     def persist_nlg(self, filename: Text) -> None:
-
-        nlg_serialized_data = self.nlg_as_markdown()
-        if nlg_serialized_data == "":
-            return
-
-        rasa.nlu.utils.write_to_file(filename, self.nlg_as_markdown())
+        if data.is_likely_yaml_file(filename):
+            rasa.nlu.utils.write_to_file(filename, self.nlg_as_yaml())
+        elif data.is_likely_markdown_file(filename):
+            nlg_serialized_data = self.nlg_as_markdown()
+            if nlg_serialized_data:
+                rasa.nlu.utils.write_to_file(filename, nlg_serialized_data)
+        else:
+            ValueError(
+                "Unsupported file format detected. Supported file formats are 'md' "
+                "and 'yml'."
+            )
 
     @staticmethod
     def get_nlg_persist_filename(nlu_filename: Text) -> Text:
 
+        extension = Path(nlu_filename).suffix
+        if data.is_likely_json_file(nlu_filename):
+            # backwards compatibility: previously NLG was always dumped as md. now
+            # we are going to dump in the same format as the NLU data. unfortunately
+            # there is a special case: NLU is in json format, in this case we use
+            # md as we do not have a NLG json format
+            extension = "md"
         # Add nlg_ as prefix and change extension to .md
-        filename = os.path.join(
-            os.path.dirname(nlu_filename),
-            "nlg_" + os.path.splitext(os.path.basename(nlu_filename))[0] + ".md",
+        filename = (
+            Path(nlu_filename)
+            .with_name("nlg_" + Path(nlu_filename).name)
+            .with_suffix("." + extension)
         )
-        return filename
+        return str(filename)
 
     def persist(
         self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
@@ -384,6 +418,17 @@ class TrainingData:
                     f"this the training may fail."
                 )
 
+        # emit warnings for response intents without a response template
+        for example in self.training_examples:
+            if example.get(INTENT_RESPONSE_KEY) and not example.get(RESPONSE):
+                raise_warning(
+                    f"Your training data contains an example '{example.text[:20]}...' "
+                    f"for the {example.get_full_intent()} intent. "
+                    f"You either need to add a response phrase or correct the "
+                    f"intent for this example in your training data. "
+                    f"If you intend to use Response Selector in the pipeline, the training ."
+                )
+
     def train_test_split(
         self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:
@@ -394,44 +439,45 @@ class TrainingData:
         test, train = self.split_nlu_examples(train_frac, random_seed)
 
         # collect all nlg stories
-        test_nlg_stories, train_nlg_stories = self.split_nlg_responses(test, train)
+        test_responses = self._needed_responses_for_examples(test)
+        train_responses = self._needed_responses_for_examples(train)
 
         data_train = TrainingData(
             train,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
             lookup_tables=self.lookup_tables,
-            nlg_stories=train_nlg_stories,
+            responses=train_responses,
         )
-        data_train.fill_response_phrases()
 
         data_test = TrainingData(
             test,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
             lookup_tables=self.lookup_tables,
-            nlg_stories=test_nlg_stories,
+            responses=test_responses,
         )
-        data_test.fill_response_phrases()
 
         return data_train, data_test
 
-    def split_nlg_responses(
-        self, test, train
-    ) -> Tuple[Dict[Text, list], Dict[Text, list]]:
+    def _needed_responses_for_examples(
+        self, examples: List[Message]
+    ) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Get all responses used in any of the examples.
 
-        train_nlg_stories = self.build_nlg_stories_from_examples(train)
-        test_nlg_stories = self.build_nlg_stories_from_examples(test)
-        return test_nlg_stories, train_nlg_stories
+        Args:
+            examples: messages to select responses by.
 
-    @staticmethod
-    def build_nlg_stories_from_examples(examples) -> Dict[Text, list]:
+        Returns:
+            All responses that appear at least once in the list of examples.
+        """
 
-        nlg_stories = {}
+        responses = {}
         for ex in examples:
-            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE):
-                nlg_stories[ex.get_combined_intent_response_key()] = [ex.get(RESPONSE)]
-        return nlg_stories
+            if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
+                key = ex.get_full_intent()
+                responses[key] = self.responses[key]
+        return responses
 
     def split_nlu_examples(
         self, train_frac: float, random_seed: Optional[int] = None

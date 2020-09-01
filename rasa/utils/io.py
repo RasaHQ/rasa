@@ -26,7 +26,9 @@ if TYPE_CHECKING:
 
 DEFAULT_ENCODING = "utf-8"
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
-ESCAPE = re.compile(f'[{"".join([key for key in ESCAPE_DCT.values()])}]')
+ESCAPE = re.compile(f'[{"".join(ESCAPE_DCT.values())}]')
+UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
+UNESCAPE = re.compile(f'[{"".join(UNESCAPE_DCT.values())}]')
 GROUP_COMPLETE_MATCH = 0
 
 YAML_LINE_MAX_WIDTH = 4096
@@ -243,6 +245,8 @@ def convert_to_ordered_dict(obj: Any) -> Any:
         An `OrderedDict` with all nested dictionaries converted if `obj` is a
         dictionary, otherwise the object itself.
     """
+    if isinstance(obj, OrderedDict):
+        return obj
     # use recursion on lists
     if isinstance(obj, list):
         return [convert_to_ordered_dict(element) for element in obj]
@@ -288,6 +292,12 @@ def write_yaml(
     dumper = yaml.YAML()
     # no wrap lines
     dumper.width = YAML_LINE_MAX_WIDTH
+
+    # use `null` to represent `None`
+    dumper.representer.add_representer(
+        type(None),
+        lambda self, _: self.represent_scalar("tag:yaml.org,2002:null", "null"),
+    )
 
     if isinstance(target, StringIO):
         dumper.dump(data, target)
@@ -523,3 +533,12 @@ def encode_string(s: Text) -> Text:
         return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
 
     return ESCAPE.sub(replace, s)
+
+
+def decode_string(s: Text) -> Text:
+    """Return a decoded python string."""
+
+    def replace(match: Match) -> Text:
+        return UNESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
+
+    return UNESCAPE.sub(replace, s)

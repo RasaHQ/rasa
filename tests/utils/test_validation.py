@@ -7,6 +7,7 @@ from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
 import rasa.utils.validation as validation_utils
 import rasa.utils.io as io_utils
 import rasa.nlu.schemas.data_schema as schema
+from tests.conftest import DEFAULT_NLU_DATA
 
 
 @pytest.mark.parametrize(
@@ -27,7 +28,9 @@ def test_validate_yaml_schema(file, schema):
     "file, schema",
     [
         ("data/test_domains/invalid_format.yml", DOMAIN_SCHEMA_FILE),
-        ("examples/moodbot/data/nlu.md", DOMAIN_SCHEMA_FILE),
+        ("data/test_domains/wrong_response_format.yml", DOMAIN_SCHEMA_FILE),
+        ("data/test_domains/wrong_custom_response_format.yml", DOMAIN_SCHEMA_FILE),
+        ("data/test_domains/empty_response_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_config/example_config.yaml", CONFIG_SCHEMA_FILE),
     ],
 )

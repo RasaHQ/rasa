@@ -1,52 +1,47 @@
+from asyncio import CancelledError
 import logging
 import os
 import shutil
 import tempfile
-import uuid
-from asyncio import CancelledError
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+import uuid
 
 import aiohttp
-from sanic import Sanic
+from aiohttp import ClientError
 
 import rasa
-import rasa.utils.io
-import rasa.core.utils
-from rasa.constants import (
-    DEFAULT_DOMAIN_PATH,
-    LEGACY_DOCS_BASE_URL,
-    ENV_SANIC_BACKLOG,
-    DEFAULT_CORE_SUBDIRECTORY_NAME,
-)
-from rasa.core import constants, jobs, training
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
+from rasa.core import jobs, training
+from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.lock_store import LockStore, InMemoryLockStore
+from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
+    FailSafeTrackerStore,
     InMemoryTrackerStore,
     TrackerStore,
-    FailSafeTrackerStore,
 )
 from rasa.core.trackers import DialogueStateTracker
+import rasa.core.utils
 from rasa.exceptions import ModelNotFound
 from rasa.importers.importer import TrainingDataImporter
 from rasa.model import (
-    get_model_subdirectories,
     get_latest_model,
-    unpack_model,
     get_model,
+    get_model_subdirectories,
+    unpack_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import raise_warning, update_sanic_log_level
+from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
+import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +132,8 @@ def _load_and_set_updated_model(
         )
 
         logger.debug("Finished updating agent to new model.")
-    except Exception as e:
+    except Exception as e:  # skipcq: PYL-W0703
+        # TODO: this exception shouldn't be that broad, we need to be more specific
         logger.exception(
             f"Failed to update model. The previous model will stay loaded instead. "
             f"Error: {e}"
@@ -238,7 +234,7 @@ async def _run_model_pulling_worker(
         await _update_model_from_server(model_server, agent)
     except CancelledError:
         logger.warning("Stopping model pulling (cancelled).")
-    except Exception:
+    except ClientError:
         logger.exception(
             "An exception was raised while fetching a model. Continuing anyways..."
         )
@@ -403,9 +399,9 @@ class Agent:
         try:
             if not model_path:
                 raise ModelNotFound("No path specified.")
-            elif not os.path.exists(model_path):
+            if not os.path.exists(model_path):
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
-            elif os.path.isfile(model_path):
+            if os.path.isfile(model_path):
                 model_path = get_model(model_path)
         except ModelNotFound:
             raise ValueError(
@@ -487,7 +483,7 @@ class Agent:
 
         processor = self.create_processor()
         message = UserMessage(message_data)
-        return await processor._parse_message(message, tracker)
+        return await processor.parse_message(message, tracker)
 
     async def handle_message(
         self,
@@ -504,9 +500,8 @@ class Agent:
                 "not supported anymore. Rather use `agent.handle_text(...)`."
             )
 
-        def noop(_):
+        def noop(_: Any) -> None:
             logger.info("Ignoring message as there is no agent to handle it.")
-            return None
 
         if not self.is_ready():
             return noop(message)
@@ -618,7 +613,7 @@ class Agent:
 
         for p in self.policy_ensemble.policies:
             # explicitly ignore inheritance (e.g. augmented memoization policy)
-            if type(p) == MemoizationPolicy:
+            if type(p) is MemoizationPolicy:
                 p.toggle(activate)
 
     def _max_history(self) -> int:
@@ -706,28 +701,6 @@ class Agent:
         """
         if not self.is_core_ready():
             raise AgentNotReady("Can't train without a policy ensemble.")
-
-        # deprecation tests
-        if kwargs.get("featurizer"):
-            raise Exception(
-                "Passing `featurizer` "
-                "to `agent.train(...)` is not supported anymore. "
-                "Pass appropriate featurizer directly "
-                "to the policy configuration instead. More info "
-                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
-            )
-        if (
-            kwargs.get("epochs")
-            or kwargs.get("max_history")
-            or kwargs.get("batch_size")
-        ):
-            raise Exception(
-                "Passing policy configuration parameters "
-                "to `agent.train(...)` is not supported "
-                "anymore. Specify parameters directly in the "
-                "policy configuration instead. More info "
-                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
-            )
 
         if isinstance(training_trackers, str):
             # the user most likely passed in a file name to load training
