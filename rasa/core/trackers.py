@@ -242,7 +242,7 @@ class DialogueStateTracker:
         """
         if loop_name is not None:
             self.active_loop = {
-                NAME: loop_name,
+                LOOP_NAME: loop_name,
                 LOOP_VALIDATE: True,
                 LOOP_REJECTED: False,
                 TRIGGER_MESSAGE: self.latest_message.parse_data,
@@ -721,10 +721,10 @@ class DialogueStateTracker:
 
         Returns: `None` if no active loop or the name of the currently active loop.
         """
-        if not self.active_loop or self.active_loop.get(NAME) == SHOULD_NOT_BE_SET:
+        if not self.active_loop or self.active_loop.get(LOOP_NAME) == SHOULD_NOT_BE_SET:
             return
 
-        return self.active_loop.get(NAME)
+        return self.active_loop.get(LOOP_NAME)
 
     @property
     def latest_action_name(self) -> Optional[Text]:
@@ -736,10 +736,10 @@ class DialogueStateTracker:
 
 
 def get_active_loop_name(state: State) -> Optional[Text]:
-    if not state.get(ACTIVE_LOOP) or state[ACTIVE_LOOP].get(NAME) == SHOULD_NOT_BE_SET:
+    if not state.get(ACTIVE_LOOP) or state[ACTIVE_LOOP].get(LOOP_NAME) == SHOULD_NOT_BE_SET:
         return
 
-    return state[ACTIVE_LOOP].get(NAME)
+    return state[ACTIVE_LOOP].get(LOOP_NAME)
 
 
 def prev_action_listen_in_state(state: State) -> bool:
