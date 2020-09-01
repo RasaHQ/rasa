@@ -66,7 +66,7 @@ class SingleStateFeaturizer:
 
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
-    ) -> Dict[Text, List["Features"]]:
+    ) -> List["Features"]:
         state_features = self._state_features_for_attribute(sub_state, attribute)
 
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
@@ -82,12 +82,27 @@ class SingleStateFeaturizer:
         features = Features(
             features, FEATURE_TYPE_SENTENCE, attribute, self.__class__.__name__
         )
-        return {attribute: [features]}
+        return [features]
+
+    @staticmethod
+    def _to_sparse_sentence_features(
+        sparse_sequence_features: List["Features"], attribute: Text
+    ) -> List["Features"]:
+        sparse_sentence_features = []
+        for feature in sparse_sequence_features:
+            sparse_sentence_features.append(
+                Features(
+                    scipy.sparse.coo_matrix(feature.features.sum(0)),
+                    FEATURE_TYPE_SENTENCE,
+                    attribute,
+                    feature.origin,
+                )
+            )
+        return sparse_sentence_features
 
     def _extract_state_features(
         self,
         sub_state: SubState,
-        state_type: Text,
         interpreter: Optional[NaturalLanguageInterpreter],
         sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
@@ -115,20 +130,16 @@ class SingleStateFeaturizer:
 
             # transform sequence sparse features to sentence sparse features
             # for intent and action_name
-            for name_attribute in {INTENT, ACTION_NAME}:
-                if output.get(name_attribute):
-                    sentence_features = []
-                    for feature in output.get(name_attribute):
-                        sentence_features.append(
-                            Features(
-                                scipy.sparse.coo_matrix(feature.features.sum(0)),
-                                FEATURE_TYPE_SENTENCE,
-                                name_attribute,
-                                feature.origin,
-                            )
-                        )
-                    output[name_attribute] = sentence_features
+            if output.get(INTENT):
+                output[INTENT] = self._to_sparse_sentence_features(
+                    output[INTENT], INTENT
+                )
+            if output.get(ACTION_NAME):
+                output[ACTION_NAME] = self._to_sparse_sentence_features(
+                    output[ACTION_NAME], ACTION_NAME
+                )
 
+        # there is always either INTENT or ACTION_NAME
         name_attribute = next(
             (
                 attribute
@@ -139,7 +150,9 @@ class SingleStateFeaturizer:
         )
         if not output and name_attribute:
             # nlu pipeline didn't create features for user or action
-            output = self._create_features(sub_state, name_attribute, sparse)
+            output[name_attribute] = self._create_features(
+                sub_state, name_attribute, sparse
+            )
 
         return output
 
@@ -150,25 +163,22 @@ class SingleStateFeaturizer:
         for state_type, sub_state in state.items():
             if state_type == PREVIOUS_ACTION:
                 state_features.update(
-                    self._extract_state_features(
-                        sub_state, state_type, interpreter, sparse=True
-                    )
+                    self._extract_state_features(sub_state, interpreter, sparse=True)
                 )
             # featurize user only if it is "real" user input,
             # i.e. input from a turn after action_listen
             if state_type == USER and prev_action_listen_in_state(state):
                 state_features.update(
-                    self._extract_state_features(
-                        sub_state, state_type, interpreter, sparse=True
-                    )
+                    self._extract_state_features(sub_state, interpreter, sparse=True)
                 )
                 if sub_state.get(ENTITIES):
-                    state_features.update(
-                        self._create_features(sub_state, ENTITIES, sparse=True)
+                    state_features[ENTITIES] = self._create_features(
+                        sub_state, ENTITIES, sparse=True
                     )
+
             if state_type in {SLOTS, ACTIVE_LOOP}:
-                state_features.update(
-                    self._create_features(sub_state, state_type, sparse=True)
+                state_features[state_type] = self._create_features(
+                    sub_state, state_type, sparse=True
                 )
 
         return state_features
@@ -182,7 +192,7 @@ class SingleStateFeaturizer:
         else:
             action_as_sub_state = {ACTION_NAME: action}
 
-        return self._extract_state_features(action_as_sub_state, ACTION, interpreter)
+        return self._extract_state_features(action_as_sub_state, interpreter)
 
     def encode_all_actions(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
