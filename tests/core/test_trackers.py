@@ -11,7 +11,7 @@ import rasa.utils.io
 from rasa.core import training, restore
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.agent import Agent
-from rasa.core.constants import REQUESTED_SLOT, NAME
+from rasa.core.constants import REQUESTED_SLOT, LOOP_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
     SlotSet,
@@ -1082,15 +1082,15 @@ def test_reading_of_trackers_with_legacy_form_events():
     tracker = DialogueStateTracker.from_dict(
         "sender",
         events_as_dict=[
-            {"event": ActiveLoop.type_name, NAME: loop_name1},
-            {"event": LegacyForm.type_name, NAME: None},
-            {"event": LegacyForm.type_name, NAME: loop_name2},
+            {"event": ActiveLoop.type_name, LOOP_NAME: loop_name1},
+            {"event": LegacyForm.type_name, LOOP_NAME: None},
+            {"event": LegacyForm.type_name, LOOP_NAME: loop_name2},
         ],
     )
 
     expected_events = [ActiveLoop(loop_name1), LegacyForm(None), LegacyForm(loop_name2)]
     assert list(tracker.events) == expected_events
-    assert tracker.active_loop[NAME] == loop_name2
+    assert tracker.active_loop[LOOP_NAME] == loop_name2
 
 
 def test_writing_trackers_with_legacy_form_events():

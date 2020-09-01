@@ -26,9 +26,9 @@ from rasa.nlu.constants import (
 from rasa.core.constants import (
     SHOULD_NOT_BE_SET,
     ACTIVE_LOOP,
-    NAME,
-    VALIDATE,
-    REJECTED,
+    LOOP_NAME,
+    LOOP_VALIDATE,
+    LOOP_REJECTED,
     TRIGGER_MESSAGE,
     PREVIOUS_ACTION,
 )
@@ -237,8 +237,8 @@ class DialogueStateTracker:
         if loop_name is not None:
             self.active_loop = {
                 NAME: loop_name,
-                VALIDATE: True,
-                REJECTED: False,
+                LOOP_VALIDATE: True,
+                LOOP_REJECTED: False,
                 TRIGGER_MESSAGE: self.latest_message.parse_data,
             }
         else:
@@ -255,12 +255,12 @@ class DialogueStateTracker:
 
     def set_form_validation(self, validate: bool) -> None:
         """Toggle form validation"""
-        self.active_loop[VALIDATE] = validate
+        self.active_loop[LOOP_VALIDATE] = validate
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected"""
         if action_name == self.active_loop_name:
-            self.active_loop[REJECTED] = True
+            self.active_loop[LOOP_REJECTED] = True
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
         """Set latest action name
@@ -269,11 +269,11 @@ class DialogueStateTracker:
         self.latest_action = action
         if self.active_loop_name:
             # reset form validation if some loop is active
-            self.active_loop[VALIDATE] = True
+            self.active_loop[LOOP_VALIDATE] = True
 
         if action.get(ACTION_NAME) == self.active_loop_name:
             # reset loop rejection if it was predicted again
-            self.active_loop[REJECTED] = False
+            self.active_loop[LOOP_REJECTED] = False
 
     def current_slot_values(self) -> Dict[Text, Any]:
         """Return the currently set values of the slots"""

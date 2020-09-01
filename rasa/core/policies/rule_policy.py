@@ -22,8 +22,7 @@ from rasa.core.constants import (
     USER_INTENT_SESSION_START,
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
-    NAME,
-    REJECTED,
+    LOOP_REJECTED,
 )
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -33,7 +32,7 @@ from rasa.core.actions.action import (
     RULE_SNIPPET_ACTION_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
 )
-from rasa.nlu.constants import ACTION_NAME
+from rasa.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
@@ -347,7 +346,7 @@ class RulePolicy(MemoizationPolicy):
             return None
 
         default_action_name = DEFAULT_ACTION_MAPPINGS.get(
-            tracker.latest_message.intent.get(NAME)
+            tracker.latest_message.intent.get(INTENT_NAME_KEY)
         )
 
         if default_action_name:
@@ -361,7 +360,7 @@ class RulePolicy(MemoizationPolicy):
     ) -> Optional[Text]:
 
         active_loop_name = tracker.active_loop_name
-        active_loop_rejected = tracker.active_loop.get(REJECTED)
+        active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
         should_predict_loop = (
             active_loop_name
             and not active_loop_rejected

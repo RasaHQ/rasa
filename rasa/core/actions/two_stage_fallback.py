@@ -12,7 +12,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE, NAME
+from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE, LOOP_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
     Event,
@@ -150,7 +150,7 @@ def _last_intent_name(tracker: DialogueStateTracker) -> Optional[Text]:
     if not last_message:
         return None
 
-    return last_message.intent.get(NAME)
+    return last_message.intent.get("name")
 
 
 def _two_fallbacks_in_a_row(tracker: DialogueStateTracker) -> bool:
@@ -169,7 +169,7 @@ def _last_n_intent_names(
             UserUttered, skip=i, event_verbosity=EventVerbosity.AFTER_RESTART
         )
         if isinstance(message, UserUttered):
-            intent_names.append(message.intent.get(NAME))
+            intent_names.append(message.intent.get("name"))
 
     return intent_names
 

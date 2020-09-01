@@ -5,7 +5,7 @@ import logging
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import REQUESTED_SLOT, UTTER_PREFIX, VALIDATE
+from rasa.core.constants import REQUESTED_SLOT, UTTER_PREFIX, LOOP_VALIDATE
 from rasa.core.domain import Domain
 
 from rasa.core.actions.action import (
@@ -517,7 +517,7 @@ class FormAction(LoopAction):
         # no active_loop means that it is called during activation
         need_validation = not tracker.active_loop or (
             tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
-            and tracker.active_loop.get(VALIDATE, True)
+            and tracker.active_loop.get(LOOP_VALIDATE, True)
         )
         if need_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")
