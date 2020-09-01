@@ -21,6 +21,8 @@ class KafkaEventBroker(EventBroker):
         ssl_keyfile=None,
         ssl_check_hostname=False,
         topic="rasa_core_events",
+        client_id=None,
+        group_id=None,
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
     ) -> None:
@@ -28,6 +30,8 @@ class KafkaEventBroker(EventBroker):
         self.producer = None
         self.host = host
         self.topic = topic
+        self.client_id = client_id
+        self.group_id = group_id
         self.security_protocol = security_protocol
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
@@ -46,9 +50,30 @@ class KafkaEventBroker(EventBroker):
         return cls(broker_config.url, **broker_config.kwargs)
 
     def publish(self, event) -> None:
-        self._create_producer()
-        self._publish(event)
-        self._close()
+        if self.producer is None:
+            self._create_producer()
+            connected = self.producer.bootstrap_connected()
+            if connected:
+                logger.debug("Connection to kafka successful")
+            else:
+                logger.debug("Failed to connect kafka")
+                return
+        try:
+            self._publish(event)
+        except Exception as e:
+            logger.error(
+                f"Could not publish message to kafka host '{self.host}'."
+                f"Failed with error: {e}"
+            )
+            connected = self.producer.bootstrap_connected()
+            if not connected:
+                self._close()
+                logger.debug("Connection to kafka lost, reconnecting...")
+                self._create_producer()
+                connected = self.producer.bootstrap_connected()
+                if connected:
+                    logger.debug("Reconnection to kafka successful")
+                    self._publish(event)
 
     def _create_producer(self) -> None:
         import kafka
@@ -61,6 +86,8 @@ class KafkaEventBroker(EventBroker):
                 sasl_plain_password=self.sasl_password,
                 sasl_mechanism="PLAIN",
                 security_protocol=self.security_protocol,
+                client_id=self.client_id,
+                group_id=self.group_id,
             )
         elif self.security_protocol == "SSL":
             self.producer = kafka.KafkaProducer(
@@ -71,9 +98,12 @@ class KafkaEventBroker(EventBroker):
                 ssl_keyfile=self.ssl_keyfile,
                 ssl_check_hostname=False,
                 security_protocol=self.security_protocol,
+                client_id=self.client_id,
+                group_id=self.group_id,
             )
 
     def _publish(self, event) -> None:
+        logger.send(f"Calling kafka send({self.topic}, {event}")
         self.producer.send(self.topic, event)
 
     def _close(self) -> None:
