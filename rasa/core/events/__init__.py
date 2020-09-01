@@ -1049,10 +1049,11 @@ class ActionExecuted(Event):
         if not isinstance(other, ActionExecuted):
             return False
         else:
-            return (
-                self.action_name == other.action_name
-                and self.e2e_text == other.e2e_text
-            )
+            equal = self.action_name == other.action_name
+            if hasattr(self, "e2e_text") and hasattr(other, "e2e_text"):
+                equal = equal and self.e2e_text == other.e2e_text
+
+            return equal
 
     def as_story_string(self) -> Text:
         return self.action_name
