@@ -26,6 +26,9 @@ mapping:
                 type: "str"
                 required: True
                 allowempty: False
+              user:
+                type: "str"
+                allowempty: False
               entities:
                 type: "seq"
                 matching: "any"
@@ -43,16 +46,6 @@ mapping:
           - type: "map"
             mapping: &action
               action:
-                type: "str"
-                allowempty: False
-          - type: "map"
-            mapping:
-              user:
-                type: "str"
-                allowempty: False
-          - type: "map"
-            mapping:
-              bot:
                 type: "str"
                 allowempty: False
           - type: "map"

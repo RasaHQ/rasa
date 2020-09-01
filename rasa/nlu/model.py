@@ -22,7 +22,7 @@ from rasa.nlu.constants import (
     TEXT,
     INTENT,
     ENTITIES,
-    INTENT_CONFIDENCE_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 
 from rasa.nlu.persistor import Persistor
@@ -274,7 +274,7 @@ class Interpreter:
     def default_output_attributes() -> Dict[Text, Any]:
         return {
             TEXT: "",
-            INTENT: {INTENT_NAME_KEY: None, INTENT_CONFIDENCE_KEY: 0.0},
+            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
             ENTITIES: [],
         }
 

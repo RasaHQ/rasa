@@ -72,30 +72,29 @@ def test_validate_invalid_path():
         get_validated_path("test test test", "out", "default")
 
 
-def test_validate_valid_path():
-    tempdir = tempfile.mkdtemp()
-
-    assert get_validated_path(tempdir, "out", "default") == tempdir
+def test_validate_valid_path(tmp_path: pathlib.Path):
+    assert get_validated_path(str(tmp_path), "out", "default") == str(tmp_path)
 
 
 def test_validate_if_none_is_valid():
     assert get_validated_path(None, "out", "default", True) is None
 
 
-def test_validate_with_none_if_default_is_valid(caplog: LogCaptureFixture):
-    tempdir = tempfile.mkdtemp()
-
+def test_validate_with_none_if_default_is_valid(
+    caplog: LogCaptureFixture, tmp_path: pathlib.Path
+):
     with caplog.at_level(logging.WARNING, rasa.cli.utils.logger.name):
-        assert get_validated_path(None, "out", tempdir) == tempdir
+        assert get_validated_path(None, "out", str(tmp_path)) == str(tmp_path)
 
     assert caplog.records == []
 
 
-def test_validate_with_invalid_directory_if_default_is_valid():
-    tempdir = tempfile.mkdtemp()
+def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.Path):
     invalid_directory = "gcfhvjkb"
     with pytest.warns(UserWarning) as record:
-        assert get_validated_path(invalid_directory, "out", tempdir) == tempdir
+        assert get_validated_path(invalid_directory, "out", str(tmp_path)) == str(
+            tmp_path
+        )
     assert len(record) == 1
     assert "does not seem to exist" in record[0].message.args[0]
 

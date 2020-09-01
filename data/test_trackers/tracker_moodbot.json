@@ -5,6 +5,8 @@
       "confidence": 0.60,
       "name": "mood_great"
     },
+    "message_id": null,
+    "metadata": {},
     "text": "/mood_great",
     "intent_ranking": [
       {
@@ -46,6 +48,8 @@
           "confidence": 0.54,
           "name": "greet"
         },
+        "message_id": null,
+        "metadata": {},
         "text": "/greet",
         "intent_ranking": [
           {
@@ -89,6 +93,8 @@
           "confidence": 0.60,
           "name": "mood_great"
         },
+        "message_id": null,
+        "metadata": {},
         "text": "/mood_great",
         "intent_ranking": [
           {

@@ -96,30 +96,25 @@ def test(
     model: Text,
     stories: Text,
     nlu_data: Text,
-    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ):
     if additional_arguments is None:
         additional_arguments = {}
 
-    test_core(model, stories, endpoints, output, additional_arguments)
+    test_core(model, stories, output, additional_arguments)
     test_nlu(model, nlu_data, output, additional_arguments)
 
 
 def test_core(
     model: Optional[Text] = None,
     stories: Optional[Text] = None,
-    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
-):
-    import rasa.core.utils as core_utils
+) -> None:
     import rasa.model
     from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
     from rasa.core.agent import Agent
-
-    _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
 
     if additional_arguments is None:
         additional_arguments = {}
@@ -148,16 +143,18 @@ def test_core(
 
     _interpreter = RegexInterpreter()
     if nlu_path:
-        _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
+        _interpreter = NaturalLanguageInterpreter.create(nlu_path)
     elif use_e2e:
         cli_utils.print_warning(
             "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
-            "evaluation."
+            "evaluation. If you added actual user messages to your test stories "
+            "this will likely lead to the tests failing. In that case, you need "
+            "to train a NLU model first, e.g. using `rasa train`."
         )
 
-    _agent = Agent.load(unpacked_model, interpreter=_interpreter)
-
     from rasa.core.test import test
+
+    _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
     kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
 

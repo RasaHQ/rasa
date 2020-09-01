@@ -133,6 +133,7 @@ def test_rasa_data_convert_to_yaml(
     ## happy path
     * greet
         - utter_greet
+        - form{"name": null}
     """
 
     with open("data/stories.md", "w") as f:

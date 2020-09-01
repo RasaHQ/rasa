@@ -28,6 +28,7 @@ from rasa.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
+    INTENT_RESPONSE_KEY,
     NO_ENTITY_TAG,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_TYPE,
@@ -465,7 +466,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
             and not self.component_config[ENTITY_RECOGNITION]
-            and attribute != INTENT
+            and attribute not in [INTENT, INTENT_RESPONSE_KEY]
         ):
             sparse_sequence_features = None
             dense_sequence_features = None
@@ -753,12 +754,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
-        self.model = self.model_class()(
-            data_signature=model_data.get_signature(),
-            label_data=self._label_data,
-            entity_tag_specs=self._entity_tag_specs,
-            config=self.component_config,
-        )
+        self.model = self._instantiate_model_class(model_data)
 
         self.model.fit(
             model_data,
@@ -1025,7 +1021,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta: Dict[Text, Any],
         data_example: Dict[Text, Dict[Text, List[np.ndarray]]],
         model_dir: Text,
-    ):
+    ) -> "RasaModel":
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
@@ -1036,13 +1032,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_key=label_key, label_sub_key=label_sub_key, data=data_example
         )
 
-        model = cls.model_class().load(
-            tf_model_file,
-            model_data_example,
-            data_signature=model_data_example.get_signature(),
-            label_data=label_data,
-            entity_tag_specs=entity_tag_specs,
-            config=copy.deepcopy(meta),
+        model = cls._load_model_class(
+            tf_model_file, model_data_example, label_data, entity_tag_specs, meta
         )
 
         # build the graph for prediction
@@ -1058,6 +1049,34 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model.build_for_predict(predict_data_example)
 
         return model
+
+    @classmethod
+    def _load_model_class(
+        cls,
+        tf_model_file: Text,
+        model_data_example: RasaModelData,
+        label_data: RasaModelData,
+        entity_tag_specs: List[EntityTagSpec],
+        meta: Dict[Text, Any],
+    ) -> "RasaModel":
+
+        return cls.model_class().load(
+            tf_model_file,
+            model_data_example,
+            data_signature=model_data_example.get_signature(),
+            label_data=label_data,
+            entity_tag_specs=entity_tag_specs,
+            config=copy.deepcopy(meta),
+        )
+
+    def _instantiate_model_class(self, model_data: RasaModelData) -> "RasaModel":
+
+        return self.model_class()(
+            data_signature=model_data.get_signature(),
+            label_data=self._label_data,
+            entity_tag_specs=self._entity_tag_specs,
+            config=self.component_config,
+        )
 
 
 # accessing _tf_layers with any key results in key-error, disable it
@@ -1174,7 +1193,7 @@ class DIET(TransformerRasaModel):
         self.entity_role_loss = tf.keras.metrics.Mean(name="r_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
-        self.response_acc = tf.keras.metrics.Mean(name="i_acc")
+        self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
         self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
         self.entity_group_f1 = tf.keras.metrics.Mean(name="g_f1")
         self.entity_role_f1 = tf.keras.metrics.Mean(name="r_f1")
@@ -1641,10 +1660,14 @@ class DIET(TransformerRasaModel):
 
         loss, acc = self._calculate_label_loss(sentence_vector, label, label_ids)
 
-        self.intent_loss.update_state(loss)
-        self.response_acc.update_state(acc)
+        self._update_label_metrics(loss, acc)
 
         return loss
+
+    def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
+
+        self.intent_loss.update_state(loss)
+        self.intent_acc.update_state(acc)
 
     def _batch_loss_entities(
         self,

@@ -1,20 +1,25 @@
-import asyncio
 import json
 import logging
 import os
 import re
-from pathlib import PurePath, Path
+from pathlib import Path
 from typing import Dict, Text, List, Any, Union, Tuple
 
+import rasa.data
+from rasa.nlu.training_data import Message
 import rasa.utils.io as io_utils
-from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_STORIES
+from rasa.constants import (
+    DEFAULT_E2E_TESTS_PATH,
+    DOCS_URL_DOMAINS,
+    DOCS_URL_STORIES,
+    LEGACY_DOCS_BASE_URL,
+)
+from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import UserUttered
 from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter
-from rasa.core.training.dsl import EndToEndReader
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
-from rasa.data import MARKDOWN_FILE_EXTENSIONS
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning
 from rasa.nlu.constants import TEXT
@@ -91,14 +96,6 @@ class MarkdownStoryReader(StoryReader):
                         await self._add_e2e_messages(user_messages, line_num)
                     else:
                         await self._add_user_messages(user_messages, line_num)
-                    # end-to-end BOT message
-                elif line.startswith("<B>"):
-                    event_name, parameters = self._parse_bot_message_e2e(line[3:])
-                    self._add_event(event_name, parameters)
-                # end-to-end USER message
-                elif line.startswith("<U>"):
-                    user_messages = [el.strip() for el in line[3:].split(" OR ")]
-                    await self.add_user_messages_e2e(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning(
@@ -109,7 +106,7 @@ class MarkdownStoryReader(StoryReader):
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
-                raise ValueError(msg)
+                raise ValueError(msg) from e
         self._add_current_stories_to_result()
         return self.story_steps
 
@@ -181,37 +178,16 @@ class MarkdownStoryReader(StoryReader):
             )
             return "", {}
 
-    @staticmethod
-    def _parse_bot_message_e2e(line: Text) -> Tuple[Text, Dict[Text, Text]]:
-        from rasa.nlu.training_data.formats.markdown import MarkdownReader
-
-        action_as_message = MarkdownReader().parse_e2e_training_example(line)
-        return "", {"e2e_text": action_as_message.get(TEXT).strip()}
-
     async def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "User message '{}' at invalid location. "
                 "Expected story start.".format(messages)
             )
-        parsed_messages = await asyncio.gather(
-            *[self._parse_message(m, line_num) for m in messages]
-        )
+        parsed_messages = [self._parse_message(m, line_num) for m in messages]
         self.current_step_builder.add_user_messages(
             parsed_messages, self.unfold_or_utterances
         )
-
-    # TODO: Hack by Genie for temporary Markdown support
-    async def add_user_messages_e2e(self, messages: List[Text], line_num: int) -> None:
-        if not self.current_step_builder:
-            raise StoryParseError(
-                f"User message '{messages}' at invalid location. "
-                f"Expected story start."
-            )
-        parsed_messages = await asyncio.gather(
-            *[self._parse_message_e2e(m, line_num) for m in messages]
-        )
-        self.current_step_builder.add_user_messages(parsed_messages)
 
     async def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
@@ -220,21 +196,53 @@ class MarkdownStoryReader(StoryReader):
                 "location. Expected story start."
                 "".format(e2e_messages)
             )
-        e2e_reader = EndToEndReader()
+
         parsed_messages = []
         for m in e2e_messages:
-            message = e2e_reader._parse_item(m)
-            parsed = await self._parse_message(message.get(TEXT), line_num)
-
-            parsed.parse_data["true_intent"] = message.data["true_intent"]
-            parsed.parse_data["true_entities"] = message.data.get("entities") or []
+            message = self.parse_e2e_message(m)
+            parsed = self._parse_message(message.get(TEXT), line_num)
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    async def _parse_message(self, message: Text, line_num: int) -> UserUttered:
+    @staticmethod
+    def parse_e2e_message(line: Text) -> Message:
+        """Parses an md list item line based on the current section type.
 
-        parse_data = await RegexInterpreter().parse(message)
-        # e2e user utterance is created in separate place, so we can set text to None
+        Matches expressions of the form `<intent>:<example>`. For the
+        syntax of `<example>` see the Rasa docs on NLU training data."""
+
+        # Match three groups:
+        # 1) Potential "form" annotation
+        # 2) The correct intent
+        # 3) Optional entities
+        # 4) The message text
+        form_group = fr"({FORM_PREFIX}\s*)*"
+        item_regex = re.compile(r"\s*" + form_group + r"([^{}]+?)({.*})*:\s*(.*)")
+        match = re.match(item_regex, line)
+
+        if not match:
+            raise ValueError(
+                "Encountered invalid test story format for message "
+                "`{}`. Please visit the documentation page on "
+                "end-to-end testing at {}/user-guide/testing-your-assistant/"
+                "#end-to-end-testing/".format(line, LEGACY_DOCS_BASE_URL)
+            )
+        from rasa.nlu.training_data import entities_parser
+
+        intent = match.group(2)
+        message = match.group(4)
+        example = entities_parser.parse_training_example(message, intent)
+
+        # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
+        # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
+        if message.startswith(INTENT_MESSAGE_PREFIX):
+            parsed = RegexInterpreter().synchronous_parse(message)
+            example.data["entities"] = parsed["entities"]
+
+        return example
+
+    def _parse_message(self, message: Text, line_num: int) -> UserUttered:
+        parse_data = RegexInterpreter().synchronous_parse(message)
         utterance = UserUttered(
             None, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
@@ -251,17 +259,6 @@ class MarkdownStoryReader(StoryReader):
             )
         return utterance
 
-    # TODO: Hack by Genie for temporary Markdown support
-    async def _parse_message_e2e(self, text: Text, line_num: int) -> UserUttered:
-        from rasa.nlu.training_data.formats.markdown import MarkdownReader
-
-        message_processed = MarkdownReader().parse_training_example(text)
-
-        utterance = UserUttered(
-            message_processed.get(TEXT), None, message_processed.get("entities")
-        )
-        return utterance
-
     @staticmethod
     def is_markdown_story_file(file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in Markdown format.
@@ -273,9 +270,9 @@ class MarkdownStoryReader(StoryReader):
             `True` in case the file is a Core Markdown training data or rule data file,
             `False` otherwise.
         """
-        suffix = PurePath(file_path).suffix
-
-        if suffix not in MARKDOWN_FILE_EXTENSIONS:
+        if not rasa.data.is_likely_markdown_file(file_path) or rasa.data.is_nlu_file(
+            file_path
+        ):
             return False
 
         try:
@@ -295,6 +292,26 @@ class MarkdownStoryReader(StoryReader):
                 f"move the file to a different location. Error: {e}"
             )
             return False
+
+    @staticmethod
+    def is_markdown_test_stories_file(file_path: Union[Text, Path]) -> bool:
+        """Checks if a file contains test stories.
+
+        Args:
+            file_path: Path of the file which should be checked.
+
+        Returns:
+            `True` if it's a file containing test stories, otherwise `False`.
+        """
+        if not rasa.data.is_likely_markdown_file(file_path):
+            return False
+
+        dirname = os.path.dirname(file_path)
+        return (
+            DEFAULT_E2E_TESTS_PATH in dirname
+            and rasa.data.is_story_file(file_path)
+            and not rasa.data.is_nlu_file(file_path)
+        )
 
     @staticmethod
     def _contains_story_or_rule_pattern(text: Text) -> bool:

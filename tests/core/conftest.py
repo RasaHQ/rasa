@@ -215,7 +215,7 @@ def default_tracker(default_domain: Domain) -> DialogueStateTracker:
 
 
 @pytest.fixture
-async def form_bot_agent(trained_async, tmpdir_factory) -> Agent:
+async def form_bot_agent(trained_async) -> Agent:
     zipped_model = await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",

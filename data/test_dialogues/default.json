@@ -40,6 +40,8 @@
           "confidence": 0.0,
           "name": "greet"
         },
+        "message_id": null,
+        "metadata": {},
         "text": "Hi my name is Peter"
       },
       "text": "Hi my name is Peter",
