@@ -46,16 +46,6 @@ mapping:
                 type: "str"
                 allowempty: False
           - type: "map"
-            mapping:
-              user:
-                type: "str"
-                allowempty: False
-          - type: "map"
-            mapping:
-              bot:
-                type: "str"
-                allowempty: False
-          - type: "map"
             mapping: &slot_was_set_seq
               slot_was_set: &slot_was_set_seq_value
                 type: "seq"
