@@ -1186,7 +1186,9 @@ class DIET(RasaModel):
         self._create_metrics()
         self._update_metrics_to_log()
 
-        self.all_labels_embed = None  # needed for efficient prediction
+        self.all_labels_embed: Optional[
+            tf.Tensor
+        ] = None  # needed for efficient prediction
 
     @staticmethod
     def _ordered_tag_specs(

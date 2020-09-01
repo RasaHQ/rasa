@@ -161,8 +161,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.slot_labels = []
         self.bot_labels = []
 
-        self.bot_vocab = None
-        self.user_vocab = None
+        self.bot_vocab: Optional[Dict[Text, int]] = None
+        self.user_vocab: Optional[Dict[Text, int]] = None
 
     @staticmethod
     def _create_label_token_dict(labels, split_symbol="_") -> Dict[Text, int]:
@@ -249,6 +249,12 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows as bag of words"""
+
+        if self.bot_vocab is None:
+            raise Exception(
+                "LabelTokenizerSingleStateFeaturizer "
+                "was not prepared before encoding."
+            )
 
         encoded_all_actions = np.zeros(
             (domain.num_actions, len(self.bot_vocab)), dtype=np.int32

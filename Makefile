@@ -68,7 +68,7 @@ lint:
 	poetry run black --check rasa tests
 
 types:
-	poetry run mypy rasa
+	MYPYPATH=./stubs poetry run mypy rasa
 
 prepare-tests-files:
 	poetry install -E spacy

@@ -5,7 +5,18 @@ import logging
 import os
 import typing
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    NoReturn,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Union,
+)
 
 from ruamel.yaml import YAMLError
 
@@ -562,7 +573,7 @@ class Domain:
             self.action_for_name(name, action_endpoint) for name in self.action_names
         ]
 
-    def index_for_action(self, action_name: Text) -> Optional[int]:
+    def index_for_action(self, action_name: Text) -> Union[int, NoReturn]:
         """Look up which action index corresponds to this action name."""
 
         try:
@@ -570,7 +581,7 @@ class Domain:
         except ValueError:
             self._raise_action_not_found_exception(action_name)
 
-    def _raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
+    def _raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
             f"Cannot access action '{action_name}', "

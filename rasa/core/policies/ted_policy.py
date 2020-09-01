@@ -485,7 +485,7 @@ class TED(RasaModel):
         # optimizer
         self.optimizer = tf.keras.optimizers.Adam()
 
-        self.all_labels_embed = None
+        self.all_labels_embed: Optional[tf.Tensor] = None
 
         label_batch = label_data.prepare_batch()
         self.tf_label_data = self.batch_to_model_data_format(
