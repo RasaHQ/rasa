@@ -2,17 +2,14 @@ import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+from rasa.core.interpreter import RegexInterpreter
 from rasa.nlu.training_data import entities_parser
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 
 import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
-from rasa.constants import (
-    TEST_STORIES_FILE_PREFIX,
-    DOCS_URL_STORIES,
-    DOCS_URL_RULES,
-)
+from rasa.constants import TEST_STORIES_FILE_PREFIX, DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, LOOP_NAME
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
@@ -359,6 +356,12 @@ class YAMLStoryReader(StoryReader):
             user_message = step[KEY_USER_MESSAGE].strip()
             entities = entities_parser.find_entities_in_training_example(user_message)
             plain_text = entities_parser.replace_entities(user_message)
+            # TODO: Temporary fix. Need to talk to Sasha / Tom what's the best way to
+            # annotate entities in end-to-end tests
+            if plain_text.startswith(INTENT_MESSAGE_PREFIX):
+                entities = (
+                    RegexInterpreter().synchronous_parse(plain_text).get("entities", [])
+                )
         else:
             raw_entities = step.get(KEY_ENTITIES, [])
             entities = self._parse_raw_entities(raw_entities)
