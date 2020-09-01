@@ -304,7 +304,7 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
-    gold = event.action_name or event.e2e_text
+    gold = event.action_name or event.action_text
 
     if circuit_breaker_tripped:
         predicted = "circuit breaker tripped"

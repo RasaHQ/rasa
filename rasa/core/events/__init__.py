@@ -1027,13 +1027,13 @@ class ActionExecuted(Event):
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
-        e2e_text: Optional[Text] = None,
+        action_text: Optional[Text] = None,
     ) -> None:
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
-        self.e2e_text = e2e_text
+        self.action_text = action_text
 
         super().__init__(timestamp, metadata)
 
@@ -1050,8 +1050,8 @@ class ActionExecuted(Event):
             return False
         else:
             equal = self.action_name == other.action_name
-            if hasattr(self, "e2e_text") and hasattr(other, "e2e_text"):
-                equal = equal and self.e2e_text == other.e2e_text
+            if hasattr(self, "action_text") and hasattr(other, "action_text"):
+                equal = equal and self.action_text == other.action_text
 
             return equal
 
@@ -1068,7 +1068,7 @@ class ActionExecuted(Event):
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
-                e2e_text=parameters.get("e2e_text"),
+                action_text=parameters.get("action_text"),
             )
         ]
 
@@ -1088,7 +1088,7 @@ class ActionExecuted(Event):
         if self.action_name:
             return {ACTION_NAME: self.action_name}
         else:
-            return {ACTION_TEXT: self.e2e_text}
+            return {ACTION_TEXT: self.action_text}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.set_latest_action(self.as_sub_state())

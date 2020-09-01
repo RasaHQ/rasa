@@ -186,7 +186,7 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
             StoryStep(
                 events=[
                     UserUttered("how are you doing?"),
-                    ActionExecuted("utter_greet_from_stories", e2e_text="Hi Joey."),
+                    ActionExecuted("utter_greet_from_stories", action_text="Hi Joey."),
                 ]
             ),
         ]
@@ -215,7 +215,7 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
         Message(data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
         Message(data={TEXT: "how are you doing?", INTENT_NAME: None}),
         Message(
-            data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey.",},
+            data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey."}
         ),
     ]
 
@@ -271,13 +271,13 @@ async def test_adding_e2e_actions_to_domain(project: Text):
                 events=[
                     UserUttered("how are you doing?", {"name": "greet_from_stories"}),
                     ActionExecuted(
-                        additional_actions[0], e2e_text=additional_actions[0]
+                        additional_actions[0], action_text=additional_actions[0]
                     ),
                     ActionExecuted(
-                        additional_actions[1], e2e_text=additional_actions[1]
+                        additional_actions[1], action_text=additional_actions[1]
                     ),
                     ActionExecuted(
-                        additional_actions[1], e2e_text=additional_actions[1]
+                        additional_actions[1], action_text=additional_actions[1]
                     ),
                 ]
             ),

@@ -397,7 +397,7 @@ class YAMLStoryReader(StoryReader):
             )
             return
 
-        self._add_event("", {"e2e_text": bot_message})
+        self._add_event("", {"action_text": bot_message})
 
     def _parse_active_loop(self, active_loop_name: Optional[Text]) -> None:
         self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})
