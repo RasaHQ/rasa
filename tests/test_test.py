@@ -324,7 +324,6 @@ def test_log_failed_stories(tmp_path: Path):
     ],
 )
 def test_evaluation_store_serialise(entity_predictions, entity_targets):
-    from rasa.core.test import EvaluationStore
     from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     store = EvaluationStore(
