@@ -9,7 +9,7 @@ from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
 import rasa.utils.common as common_utils
-from constants import DOCS_URL_POLICIES
+from rasa.constants import DOCS_URL_POLICIES
 
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
@@ -17,7 +17,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
