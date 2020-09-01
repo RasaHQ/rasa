@@ -43,7 +43,7 @@ GREET_RULE = DialogueStateTracker.from_events(
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
         ActionExecuted(ACTION_LISTEN_NAME),
         # Greet is a FAQ here and gets triggered in any context
-        UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        UserUttered(intent={"name": GREET_INTENT_NAME}),
         ActionExecuted(UTTER_GREET_ACTION),
         ActionExecuted(ACTION_LISTEN_NAME),
     ],
@@ -84,7 +84,7 @@ def _form_activation_rule(
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             # The intent `other_intent` activates the form
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": activation_intent_name}),
+            UserUttered(intent={"name": activation_intent_name}),
             ActionExecuted(form_name),
             ActiveLoop(form_name),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -454,7 +454,7 @@ async def test_form_unhappy_path_from_in_form_rule():
             ActionExecuted(ACTION_LISTEN_NAME),
             # When a user says "hi", and the form is unhappy,
             # we want to run a specific action
-            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(handle_rejection_action_name),
             ActionExecuted(form_name),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -601,12 +601,12 @@ async def test_form_unhappy_path_no_validation_from_rule():
             ActionExecuted(ACTION_LISTEN_NAME),
             # When a user says "hi", and the form is unhappy,
             # we want to run a specific action
-            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(handle_rejection_action_name),
             # Next user utterance is an answer to the previous question
             # and shouldn't be validated by the form
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(form_name),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -690,12 +690,12 @@ async def test_form_unhappy_path_no_validation_from_story():
             ActiveLoop(form_name),
             # When a user says "hi", and the form is unhappy,
             # we want to run a specific action
-            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(handle_rejection_action_name),
             ActionExecuted(ACTION_LISTEN_NAME),
             # Next user utterance is an answer to the previous question
             # and shouldn't be validated by the form
-            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(form_name),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1029,7 +1029,7 @@ async def test_one_stage_fallback_rule():
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": DEFAULT_NLU_FALLBACK_INTENT_NAME}),
+            UserUttered(intent={"name": DEFAULT_NLU_FALLBACK_INTENT_NAME}),
             ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1041,7 +1041,7 @@ async def test_one_stage_fallback_rule():
         domain=domain,
         evts=[
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
