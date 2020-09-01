@@ -26,6 +26,10 @@ from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
+# temporary constants to support back compatibility
+MAX_HISTORY_NOT_SET = -1
+OLD_DEFAULT_MAX_HISTORY = 5
+
 
 class MemoizationPolicy(Policy):
     """The policy that remembers exact examples of
@@ -68,7 +72,7 @@ class MemoizationPolicy(Policy):
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = MEMOIZATION_POLICY_PRIORITY,
-        max_history: Optional[int] = -1,
+        max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
     ) -> None:
         """Initialize the policy.
@@ -81,8 +85,8 @@ class MemoizationPolicy(Policy):
                 predicted actions for them
         """
 
-        if max_history == -1:
-            max_history = 5  # old default value
+        if max_history == MAX_HISTORY_NOT_SET:
+            max_history = OLD_DEFAULT_MAX_HISTORY  # old default value
             common_utils.raise_warning(
                 f"Please configure the max history in your configuration file, "
                 f"currently 'max_history' is set to old default value of "
