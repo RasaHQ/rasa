@@ -356,7 +356,9 @@ class DynamoTrackerStore(TrackerStore):
         import boto3
 
         dynamo = boto3.resource("dynamodb", region_name=self.region)
-        if self.table_name not in self.client.list_tables()["TableNames"]:
+        try:
+            self.client.describe_table(TableName=table_name)
+        except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
                 KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"},],
