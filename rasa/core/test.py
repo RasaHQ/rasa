@@ -105,8 +105,8 @@ class EvaluationStore:
             or self.action_predictions != self.action_targets
         )
 
+    @staticmethod
     def _compare_entities(
-        self,
         entity_predictions: List[Dict[Text, Any]],
         entity_targets: List[Dict[Text, Any]],
         i_pred: int,
@@ -131,7 +131,8 @@ class EvaluationStore:
             elif target.get("start") < pred.get("start"):
                 return 1
             else:
-                # Since both have the same "start" values, check which one has the lower "end" value
+                # Since both have the same "start" values,
+                # check which one has the lower "end" value
                 if pred.get("end") < target.get("end"):
                     return -1
                 elif target.get("end") < pred.get("end"):
@@ -141,7 +142,8 @@ class EvaluationStore:
                     return 0
         return 1 if target else -1
 
-    def _generate_entity_training_data(self, entity: Dict[Text, Any]) -> Text:
+    @staticmethod
+    def _generate_entity_training_data(entity: Dict[Text, Any]) -> Text:
         return TrainingDataWriter.generate_entity(entity.get("text"), entity)
 
     def serialise(self) -> Tuple[List[Text], List[Text]]:
