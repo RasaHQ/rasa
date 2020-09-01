@@ -202,6 +202,7 @@ class DialogueStateTracker:
             "latest_input_channel": self.get_latest_input_channel(),
             ACTIVE_LOOP: self.active_loop,
             "latest_action": self.latest_action,
+            "latest_action_name": self.latest_action_name,
         }
 
     def _events_for_verbosity(
