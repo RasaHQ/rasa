@@ -105,10 +105,47 @@ class EvaluationStore:
             or self.action_predictions != self.action_targets
         )
 
+    def _compare_entities(
+        self,
+        entity_predictions: List[Dict[Text, Any]],
+        entity_targets: List[Dict[Text, Any]],
+        i_pred: int,
+        i_target: int,
+    ) -> int:
+        """
+        Compare the current predicted and target entities and decide which one
+        comes first. If the predicted entity comes first it returns -1,
+        while it returns 1 if the target entity comes first.
+        If target and predicted are aligned it returns 0
+        """
+        pred = None
+        target = None
+        if i_pred < len(entity_predictions):
+            pred = entity_predictions[i_pred]
+        if i_target < len(entity_targets):
+            target = entity_targets[i_target]
+        if target and pred:
+            # Check which entity has the lower "start" value
+            if pred.get("start") < target.get("start"):
+                return -1
+            elif target.get("start") < pred.get("start"):
+                return 1
+            else:
+                # Since both have the same "start" values, check which one has the lower "end" value
+                if pred.get("end") < target.get("end"):
+                    return -1
+                elif target.get("end") < pred.get("end"):
+                    return 1
+                else:
+                    # The entities have the same "start" and "end" values
+                    return 0
+        return 1 if target else -1
+
+    def _generate_entity_training_data(self, entity: Dict[Text, Any]) -> Text:
+        return TrainingDataWriter.generate_entity(entity.get("text"), entity)
+
     def serialise(self) -> Tuple[List[Text], List[Text]]:
         """Turn targets and predictions to lists of equal size for sklearn."""
-        # sklearn does not cope with lists of unequal size, nor None values
-
         texts = sorted(
             list(
                 set(
@@ -118,8 +155,8 @@ class EvaluationStore:
             )
         )
 
-        entity_targets_fixed = []
-        entity_predictions_fixed = []
+        aligned_entity_targets = []
+        aligned_entity_predictions = []
 
         for text in texts:
             # sort the entities of this sentence to compare them directly
@@ -132,78 +169,41 @@ class EvaluationStore:
                 key=lambda x: x.get("start"),
             )
 
-            i_pred = 0
-            i_target = 0
-
-            def compare_entities():
-                """
-                Compare the current predicted and target entities and decide which one
-                comes first. If the predicted entity comes first it returns -1,
-                while it returns 1 if the target entity comes first.
-                If target and predicted are aligned it returns 0
-                """
-                pred = None
-                target = None
-                if i_pred < len(entity_predictions):
-                    pred = entity_predictions[i_pred]
-                if i_target < len(entity_targets):
-                    target = entity_targets[i_target]
-                if target and pred:
-                    if pred.get("start") < target.get("start"):
-                        return -1
-                    elif target.get("start") < pred.get("start"):
-                        return 1
-                    else:
-                        if pred.get("end") < target.get("end"):
-                            return -1
-                        elif target.get("end") < pred.get("end"):
-                            return 1
-                        else:
-                            return 0
-                return 1 if target else -1
+            i_pred, i_target = 0, 0
 
             while i_pred < len(entity_predictions) or i_target < len(entity_targets):
-                cmp = compare_entities()
+                cmp = self._compare_entities(
+                    entity_predictions, entity_targets, i_pred, i_target
+                )
                 if cmp == -1:  # predicted comes first
-                    entity_predictions_fixed.append(
-                        TrainingDataWriter.generate_entity(
-                            entity_predictions[i_pred].get("text"),
-                            entity_predictions[i_pred],
-                        )
+                    aligned_entity_predictions.append(
+                        self._generate_entity_training_data(entity_predictions[i_pred])
                     )
-                    entity_targets_fixed.append("None")
+                    aligned_entity_targets.append("None")
                     i_pred += 1
                 elif cmp == 1:  # target entity comes first
-                    entity_targets_fixed.append(
-                        TrainingDataWriter.generate_entity(
-                            entity_targets[i_target].get("text"),
-                            entity_targets[i_target],
-                        )
+                    aligned_entity_targets.append(
+                        self._generate_entity_training_data(entity_targets[i_target])
                     )
-                    entity_predictions_fixed.append("None")
+                    aligned_entity_predictions.append("None")
                     i_target += 1
                 else:  # target and predicted entity are aligned
-                    entity_predictions_fixed.append(
-                        TrainingDataWriter.generate_entity(
-                            entity_predictions[i_pred].get("text"),
-                            entity_predictions[i_pred],
-                        )
+                    aligned_entity_predictions.append(
+                        self._generate_entity_training_data(entity_predictions[i_pred])
                     )
-                    entity_targets_fixed.append(
-                        TrainingDataWriter.generate_entity(
-                            entity_targets[i_target].get("text"),
-                            entity_targets[i_target],
-                        )
+                    aligned_entity_targets.append(
+                        self._generate_entity_training_data(entity_targets[i_target])
                     )
                     i_pred += 1
                     i_target += 1
 
-        targets = self.action_targets + self.intent_targets + entity_targets_fixed
+        targets = self.action_targets + self.intent_targets + aligned_entity_targets
 
         predictions = (
-            self.action_predictions + self.intent_predictions + entity_predictions_fixed
+            self.action_predictions
+            + self.intent_predictions
+            + aligned_entity_predictions
         )
-
         return targets, predictions
 
 
