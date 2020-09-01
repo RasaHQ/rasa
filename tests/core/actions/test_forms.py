@@ -436,7 +436,7 @@ def test_extract_requested_slot_default():
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, Domain.empty())
+    slot_values = form.extract_requested_slot(tracker, Domain.empty(), "some_slot")
     assert slot_values == {"some_slot": "some_value"}
 
 
@@ -478,7 +478,7 @@ def test_extract_requested_slot_when_mapping_applies(
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was extracted for correct intent
     assert slot_values == {"some_slot": expected_value}
 
@@ -513,7 +513,7 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was not extracted for incorrect intent
     assert slot_values == {}
 
@@ -767,7 +767,7 @@ def test_extract_requested_slot_from_entity(
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     assert slot_values == expected_slot_values
 
 
@@ -784,7 +784,7 @@ def test_invalid_slot_mapping():
     )
 
     with pytest.raises(ValueError):
-        form.extract_requested_slot(tracker, domain)
+        form.extract_requested_slot(tracker, domain, slot_name)
 
 
 @pytest.mark.parametrize(

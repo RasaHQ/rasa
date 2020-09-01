@@ -1,12 +1,13 @@
 import argparse
-import pytest
 from typing import Callable, Text
 from unittest.mock import Mock, ANY
 
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
-import rasa
+from rasa.core.train import do_interactive_learning
+from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
 from tests.conftest import DEFAULT_NLU_DATA
 
@@ -59,7 +60,7 @@ def test_pass_arguments_to_rasa_train(
 
     # Mock actual training
     mock = Mock()
-    monkeypatch.setattr(rasa, "train", mock.method)
+    monkeypatch.setattr(train, "rasa_train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
     train.train(args)
@@ -155,9 +156,6 @@ def test_no_interactive_without_core_data(
 
 
 def test_pass_conversation_id_to_interactive_learning(monkeypatch: MonkeyPatch):
-    from rasa.core.train import do_interactive_learning
-    from rasa.core.training import interactive as interactive_learning
-
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
     interactive.add_subparser(sub_parser, [])
