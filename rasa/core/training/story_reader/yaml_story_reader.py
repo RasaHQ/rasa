@@ -13,7 +13,7 @@ from rasa.constants import (
     DOCS_URL_STORIES,
     DOCS_URL_RULES,
 )
-from rasa.core.constants import INTENT_MESSAGE_PREFIX, NAME
+from rasa.core.constants import INTENT_MESSAGE_PREFIX, LOOP_NAME
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.story_reader import StoryReader
@@ -414,7 +414,7 @@ class YAMLStoryReader(StoryReader):
         self._add_event(action_name, {})
 
     def _parse_active_loop(self, active_loop_name: Optional[Text]) -> None:
-        self._add_event(ActiveLoop.type_name, {NAME: active_loop_name})
+        self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})
 
     def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
 

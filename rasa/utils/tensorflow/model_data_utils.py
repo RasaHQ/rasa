@@ -1,5 +1,5 @@
 import typing
-from typing import List, Optional, Text, Dict, Tuple, Union
+from typing import List, Optional, Text, Dict, Tuple, Union, Any
 import copy
 import numpy as np
 from collections import defaultdict, OrderedDict
@@ -136,54 +136,13 @@ def convert_to_data_format(
     empty_features = [[None] * dialogue_length]
 
     for attribute in attributes:
-        tracker_features = (
-            state_to_tracker_features[attribute]
-            if attribute in state_to_tracker_features
-            else empty_features
+        attribute_data[attribute] = _features_for_attribute(
+            attribute,
+            empty_features,
+            state_to_tracker_features,
+            training,
+            zero_state_features,
         )
-
-        # in case some features for a specific attribute and dialogue turn are
-        # missing, replace them with a feature vector of zeros
-        if training:
-            zero_state_features[attribute] = create_zero_features(tracker_features)
-
-        (attribute_masks, _dense_features, _sparse_features,) = map_tracker_features(
-            tracker_features, zero_state_features[attribute]
-        )
-
-        sparse_features = defaultdict(list)
-        dense_features = defaultdict(list)
-
-        # vstack serves as removing dimension
-        # TODO check vstack for sequence features
-        for key, values in _sparse_features.items():
-            sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
-        for key, values in _dense_features.items():
-            dense_features[key] = [np.vstack(value) for value in values]
-
-        attribute_features = {MASK: [np.array(attribute_masks)]}
-
-        feature_types = set()
-        feature_types.update(list(dense_features.keys()))
-        feature_types.update(list(sparse_features.keys()))
-
-        for feature_type in feature_types:
-            if feature_type == SEQUENCE:
-                # TODO we don't take sequence features because that makes us deal
-                #  with 4D sparse tensors
-                continue
-
-            attribute_features[feature_type] = []
-            if feature_type in sparse_features:
-                attribute_features[feature_type].append(
-                    np.array(sparse_features[feature_type])
-                )
-            if feature_type in dense_features:
-                attribute_features[feature_type].append(
-                    np.array(dense_features[feature_type])
-                )
-
-        attribute_data[attribute] = attribute_features
 
     # ensure that all attributes are in the same order
     attribute_data = OrderedDict(sorted(attribute_data.items()))
@@ -191,8 +150,77 @@ def convert_to_data_format(
     return attribute_data, zero_state_features
 
 
+def _features_for_attribute(
+    attribute: Text,
+    empty_features: List[Any],
+    state_to_tracker_features: Dict[Text, List[List[List["Features"]]]],
+    training: bool,
+    zero_state_features: Dict[Text, List["Features"]],
+) -> Dict[Text, List[np.ndarray]]:
+    """Create the features for the given attribute from the tracker features.
+
+    Args:
+        attribute: the attribute
+        empty_features: empty features
+        state_to_tracker_features: tracker features for every state
+        training: boolean indicating whether we are currently in training or not
+        zero_state_features: zero features
+
+    Returns:
+        A dictionary of feature type to actual features for the given attribute.
+    """
+    tracker_features = (
+        state_to_tracker_features[attribute]
+        if attribute in state_to_tracker_features
+        else empty_features
+    )
+
+    # in case some features for a specific attribute and dialogue turn are
+    # missing, replace them with a feature vector of zeros
+    if training:
+        zero_state_features[attribute] = create_zero_features(tracker_features)
+
+    (attribute_masks, _dense_features, _sparse_features) = map_tracker_features(
+        tracker_features, zero_state_features[attribute]
+    )
+
+    sparse_features = defaultdict(list)
+    dense_features = defaultdict(list)
+
+    # vstack serves as removing dimension
+    # TODO check vstack for sequence features
+    for key, values in _sparse_features.items():
+        sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
+    for key, values in _dense_features.items():
+        dense_features[key] = [np.vstack(value) for value in values]
+
+    attribute_features = {MASK: [np.array(attribute_masks)]}
+
+    feature_types = set()
+    feature_types.update(list(dense_features.keys()))
+    feature_types.update(list(sparse_features.keys()))
+
+    for feature_type in feature_types:
+        if feature_type == SEQUENCE:
+            # TODO we don't take sequence features because that makes us deal
+            #  with 4D sparse tensors
+            continue
+
+        attribute_features[feature_type] = []
+        if feature_type in sparse_features:
+            attribute_features[feature_type].append(
+                np.array(sparse_features[feature_type])
+            )
+        if feature_type in dense_features:
+            attribute_features[feature_type].append(
+                np.array(dense_features[feature_type])
+            )
+
+    return attribute_features
+
+
 def map_tracker_features(
-    tracker_features: List[List[List["Features"]]], zero_features: List["Features"],
+    tracker_features: List[List[List["Features"]]], zero_features: List["Features"]
 ) -> Tuple[
     List[np.ndarray],
     Dict[Text, List[List["Features"]]],

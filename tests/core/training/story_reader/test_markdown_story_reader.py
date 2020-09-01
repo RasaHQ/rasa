@@ -297,9 +297,8 @@ async def test_read_rules_without_stories(default_domain: Domain):
     assert events[1] == SlotSet("requested_slot", "some_slot")
     assert events[2] == ActionExecuted("...")
     assert events[3] == UserUttered(
-        'inform{"some_slot":"bla"}',
-        {"name": "inform", "confidence": 1.0},
-        [{"entity": "some_slot", "start": 6, "end": 25, "value": "bla"}],
+        intent={"name": "inform", "confidence": 1.0},
+        entities=[{"entity": "some_slot", "start": 6, "end": 25, "value": "bla"}],
     )
     assert events[4] == ActionExecuted("loop_q_form")
 

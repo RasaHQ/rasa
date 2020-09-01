@@ -41,7 +41,6 @@ async def test_can_read_test_story(stories_file: Text, default_domain: Domain):
     tracker = [t for t in trackers if len(t.events) == 5][0]
     assert tracker.events[0] == ActionExecuted("action_listen")
     assert tracker.events[1] == UserUttered(
-        "simple",
         intent={INTENT_NAME_KEY: "simple", "confidence": 1.0},
         parse_data={
             "text": "/simple",

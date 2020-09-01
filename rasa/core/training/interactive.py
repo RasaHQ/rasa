@@ -30,9 +30,9 @@ from rasa.core.constants import (
     DEFAULT_SERVER_PORT,
     REQUESTED_SLOT,
     UTTER_PREFIX,
-    NAME,
-    VALIDATE,
-    REJECTED,
+    LOOP_NAME,
+    LOOP_VALIDATE,
+    LOOP_REJECTED,
 )
 from rasa.nlu.constants import TEXT
 from rasa.core.domain import Domain
@@ -1008,8 +1008,8 @@ async def _correct_wrong_action(
 def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check if the form got rejected with the most recent action name."""
     return (
-        tracker.get(ACTIVE_LOOP, {}).get(NAME)
-        and action_name != tracker[ACTIVE_LOOP][NAME]
+        tracker.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+        and action_name != tracker[ACTIVE_LOOP][LOOP_NAME]
         and action_name != ACTION_LISTEN_NAME
     )
 
@@ -1017,9 +1017,9 @@ def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
 def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check whether the form is called again after it was rejected."""
     return (
-        tracker.get(ACTIVE_LOOP, {}).get(REJECTED)
+        tracker.get(ACTIVE_LOOP, {}).get(LOOP_REJECTED)
         and tracker.get("latest_action_name") == ACTION_LISTEN_NAME
-        and action_name == tracker.get(ACTIVE_LOOP, {}).get(NAME)
+        and action_name == tracker.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
     )
 
 
@@ -1043,10 +1043,12 @@ async def _confirm_form_validation(
     if not validate_input:
         # notify form action to skip validation
         await send_event(
-            endpoint, conversation_id, {"event": "form_validation", VALIDATE: False}
+            endpoint,
+            conversation_id,
+            {"event": "form_validation", LOOP_VALIDATE: False},
         )
 
-    elif not tracker.get(ACTIVE_LOOP, {}).get(VALIDATE):
+    elif not tracker.get(ACTIVE_LOOP, {}).get(LOOP_VALIDATE):
         # handle contradiction with learned behaviour
         warning_question = questionary.confirm(
             "ERROR: FormPolicy predicted no form validation "
@@ -1060,7 +1062,7 @@ async def _confirm_form_validation(
         await _ask_questions(warning_question, conversation_id, endpoint)
         # notify form action to validate an input
         await send_event(
-            endpoint, conversation_id, {"event": "form_validation", VALIDATE: True}
+            endpoint, conversation_id, {"event": "form_validation", LOOP_VALIDATE: True}
         )
 
 
@@ -1096,7 +1098,10 @@ async def _validate_action(
         await send_event(
             endpoint,
             conversation_id,
-            {"event": "action_execution_rejected", NAME: tracker[ACTIVE_LOOP][NAME],},
+            {
+                "event": "action_execution_rejected",
+                LOOP_NAME: tracker[ACTIVE_LOOP][LOOP_NAME],
+            },
         )
 
     elif _form_is_restored(action_name, tracker):
@@ -1283,7 +1288,7 @@ async def is_listening_for_message(
         if e.get("event") == UserUttered.type_name:
             return False
         elif e.get("event") == ActionExecuted.type_name:
-            return e.get(NAME) == ACTION_LISTEN_NAME
+            return e.get("name") == ACTION_LISTEN_NAME
     return False
 
 

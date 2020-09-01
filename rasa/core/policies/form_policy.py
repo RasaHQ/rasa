@@ -13,8 +13,8 @@ from rasa.core.constants import (
     FORM_POLICY_PRIORITY,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    REJECTED,
-    NAME,
+    LOOP_REJECTED,
+    LOOP_NAME,
 )
 from rasa.nlu.constants import ACTION_NAME
 
@@ -50,7 +50,7 @@ class FormPolicy(MemoizationPolicy):
 
     @staticmethod
     def _get_active_form_name(state: State) -> Optional[Text]:
-        return state.get(ACTIVE_LOOP, {}).get(NAME)
+        return state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
 
     @staticmethod
     def _prev_action_listen_in_state(state: State) -> bool:
@@ -139,7 +139,7 @@ class FormPolicy(MemoizationPolicy):
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict form action after user utterance
 
-                if tracker.active_loop.get(REJECTED):
+                if tracker.active_loop.get(LOOP_REJECTED):
                     if self.state_is_unhappy(tracker, domain):
                         tracker.update(FormValidation(False))
                         return result

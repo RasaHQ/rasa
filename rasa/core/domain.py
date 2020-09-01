@@ -39,7 +39,7 @@ from rasa.core.constants import (
     SLOTS,
     SHOULD_NOT_BE_SET,
     DEFAULT_INTENTS,
-    NAME,
+    LOOP_NAME,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
@@ -708,9 +708,9 @@ class Domain:
 
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
-        active_loop = tracker.active_loop.get(NAME)
+        active_loop = tracker.active_loop.get(LOOP_NAME)
         if active_loop is not None:
-            return {ACTIVE_LOOP: {NAME: active_loop}}
+            return {ACTIVE_LOOP: {LOOP_NAME: active_loop}}
         else:
             return {}
 
