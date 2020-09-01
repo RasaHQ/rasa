@@ -649,6 +649,8 @@ class Domain:
         entities = tuple(self._get_featurized_entities(latest_message))
         if entities:
             state_dict[USER][ENTITIES] = entities
+        elif state_dict[USER].get(ENTITIES):
+            del state_dict[USER][ENTITIES]
 
         return state_dict
 
