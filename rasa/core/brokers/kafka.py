@@ -103,7 +103,7 @@ class KafkaEventBroker(EventBroker):
             )
 
     def _publish(self, event) -> None:
-        logger.send(f"Calling kafka send({self.topic}, {event}")
+        logger.debug(f"Calling kafka send({self.topic}, {event}")
         self.producer.send(self.topic, event)
 
     def _close(self) -> None:
