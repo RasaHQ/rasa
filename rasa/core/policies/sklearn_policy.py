@@ -107,13 +107,15 @@ class SklearnPolicy(Policy):
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
 
+    @staticmethod
     def _fill_in_features_to_max_length(
-        self, features: List[np.ndarray], max_history: int
+        features: List[np.ndarray], max_history: int
     ) -> List[np.ndarray]:
         """
         Pad features with zeros to maximum length;
         Args:
-            features: list of features for each dialog; each feature has shape [dialog_history x shape_attribute]
+            features: list of features for each dialog;
+                each feature has shape [dialog_history x shape_attribute]
             max_history: maximum history of the dialogs
         Returns:
             padded features
@@ -129,16 +131,18 @@ class SklearnPolicy(Policy):
         ]
         return features
 
-    def _get_features_for_attribute(self, features: List[np.ndarray]):
+    def _get_features_for_attribute(self, attribute_data: Dict[Text, List[np.ndarray]]):
         """
         Given a list of all features for one attribute, turn it into a numpy array;
-        shape_attribute = features[SENTENCE][0][0].shape[-1] (Shape of features of one attribute)
+        shape_attribute = features[SENTENCE][0][0].shape[-1]
+            (Shape of features of one attribute)
         Args:
-            features: all features in the attribute stored in a np.array;
+            attribute_data: all features in the attribute stored in a np.array;
         Output:
-            2D np.ndarray with features for an attribute; shape: [num_dialogs x (max_history * shape_attribute)]
+            2D np.ndarray with features for an attribute with
+                shape [num_dialogs x (max_history * shape_attribute)]
         """
-        sentence_features = features[SENTENCE][0]
+        sentence_features = attribute_data[SENTENCE][0]
         if isinstance(sentence_features[0], scipy.sparse.coo_matrix):
             sentence_features = [feature.toarray() for feature in sentence_features]
         # MaxHistoryFeaturizer is always used with SkLearn policy;
@@ -147,28 +151,30 @@ class SklearnPolicy(Policy):
         features = [feature.reshape((1, -1)) for feature in features]
         return np.vstack(features)
 
-    def _preprocess_data(self, X: Data) -> np.ndarray:
+    def _preprocess_data(self, data: Data) -> np.ndarray:
         """
         Turn data into np.ndarray for sklearn training; dialogue history features
         are flattened.
         Args:
-            X: training data containing all the features
+            data: training data containing all the features
         Returns:
             Training_data: shape [num_dialogs x (max_history * all_features)];
-            all_features - sum of number of features of intent, action_name, entities, forms, slots.
+            all_features - sum of number of features of
+            intent, action_name, entities, forms, slots.
         """
-        if TEXT in X or ACTION_TEXT in X:
+        if TEXT in data or ACTION_TEXT in data:
             raise Exception(
-                f"{self.__name__} cannot be applied to text data. Try to use TEDPolicy instead. "
+                f"{self.__name__} cannot be applied to text data. "
+                f"Try to use TEDPolicy instead. "
             )
 
         attribute_data = {
-            attribute: self._get_features_for_attribute(X[attribute]) for attribute in X
+            attribute: self._get_features_for_attribute(attribute_data)
+            for attribute, attribute_data in data.items()
         }
         # turning it into OrderedDict so that the order of features is the same
         attribute_data = OrderedDict(attribute_data)
-        attribute_data = [features for key, features in attribute_data.items()]
-        return np.concatenate(attribute_data, axis=-1)
+        return np.concatenate(list(attribute_data.values()), axis=-1)
 
     def _search_and_score(self, model, X, y, param_grid) -> Tuple[Any, Any]:
         search = GridSearchCV(
@@ -185,29 +191,30 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        X, y = self.featurize_for_training(
+        tracker_state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
-        training_data, zero_state_features = convert_to_data_format(X)
+        training_data, zero_state_features = convert_to_data_format(
+            tracker_state_features
+        )
         self.zero_state_features = zero_state_features
-
-        if self.shuffle:
-            X, y = sklearn_shuffle(X, y)
 
         self._train_params.update(kwargs)
         model = self.model_architecture(**self._train_params)
         score = None
-        # Note: clone is called throughout to avoid mutating default
-        # arguments.
-        self.label_encoder = clone(self.label_encoder).fit(y)
-        Xt = self._preprocess_data(training_data)
-        yt = self.label_encoder.transform(y)
+        # Note: clone is called throughout to avoid mutating default arguments.
+        self.label_encoder = clone(self.label_encoder).fit(label_ids)
+        X = self._preprocess_data(training_data)
+        y = self.label_encoder.transform(label_ids)
+
+        if self.shuffle:
+            X, y = sklearn_shuffle(X, y)
 
         if self.cv is None:
-            model = clone(model).fit(Xt, yt)
+            model = clone(model).fit(X, y)
         else:
             param_grid = self.param_grid or {}
-            model, score = self._search_and_score(model, Xt, yt, param_grid)
+            model, score = self._search_and_score(model, X, y, param_grid)
 
         self.model = model
         logger.info("Done fitting sklearn policy model")
