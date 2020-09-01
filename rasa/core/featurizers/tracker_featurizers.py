@@ -195,7 +195,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                     if not event.unpredictable:
                         # only actions which can be
                         # predicted at a stories start
-                        actions.append(event.action_name or event.e2e_text)
+                        actions.append(event.action_name or event.action_text)
                     else:
                         # unpredictable actions can be
                         # only the first in the story
@@ -305,7 +305,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         if self.remove_duplicates:
                             hashed = self._hash_example(
                                 sliced_states,
-                                event.action_name or event.e2e_text,
+                                event.action_name or event.action_text,
                                 tracker,
                             )
 
@@ -315,12 +315,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                                 hashed_examples.add(hashed)
                                 trackers_as_states.append(sliced_states)
                                 trackers_as_actions.append(
-                                    [event.action_name or event.e2e_text]
+                                    [event.action_name or event.action_text]
                                 )
                         else:
                             trackers_as_states.append(sliced_states)
                             trackers_as_actions.append(
-                                [event.action_name or event.e2e_text]
+                                [event.action_name or event.action_text]
                             )
 
                         pbar.set_postfix(

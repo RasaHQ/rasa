@@ -401,7 +401,6 @@ def test_user_uttered_to_e2e(parse_data: Dict, expected_story_string: Text):
     assert isinstance(event, UserUttered)
     assert event.as_story_string(e2e=True) == expected_story_string
 
-
 @pytest.mark.parametrize("line", [" greet{: hi"])
 def test_invalid_end_to_end_format(line: Text):
     reader = MarkdownStoryReader()
@@ -409,3 +408,4 @@ def test_invalid_end_to_end_format(line: Text):
     with pytest.raises(ValueError):
         # noinspection PyProtectedMember
         _ = reader.parse_e2e_message(line)
+
