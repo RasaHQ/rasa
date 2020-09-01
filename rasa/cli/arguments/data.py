@@ -56,6 +56,24 @@ def set_split_arguments(parser: argparse.ArgumentParser):
     )
 
 
+def set_augmentation_arguments(parser: argparse.ArgumentParser):
+
+    add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
+
+    parser.add_argument(
+        "--augment_perc",
+        type=int,
+        default=100,
+        help="Percentage of new augmented examples",
+    )
+
+    parser.add_argument(
+        "--lang", type=str, default="en", help="Language of original training data"
+    )
+
+    parser.add_argument("--out", type=str, default=".", help="Output directory")
+
+
 def set_validator_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--fail-on-warnings",

@@ -429,6 +429,23 @@ class TrainingData:
                     f"If you intend to use Response Selector in the pipeline, the training ."
                 )
 
+    def augment_data(
+        self, augment_perc: int = 100, lang: Text = "en"
+    ) -> "TrainingData":
+
+        augmenter = Augmenter(augment_perc, lang)
+
+        new_examples = []
+        for example in self.intent_examples:
+            text = example.get(TEXT)
+            intent = example.get(INTENT)
+            augmented_texts = augmenter.generate_paraphrases(
+                text, num_examples=augment_perc / 100.0
+            )
+            for aug_text in augmented_texts:
+                new_examples.append(Message.build(aug_text, intent=intent))
+        return TrainingData(new_examples)
+
     def train_test_split(
         self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:

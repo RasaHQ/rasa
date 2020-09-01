@@ -47,6 +47,25 @@ def add_subparser(
     _add_data_validate_parsers(data_subparsers, parents)
 
 
+def _add_data_augment_parsers(
+    data_subparsers, parents: List[argparse.ArgumentParser]
+) -> None:
+
+    augmentation_parser = data_subparsers.add_parser(
+        "augment",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Creates augmentations of examples in the existing training data",
+    )
+    augmentation_parser.set_defaults(
+        func=lambda _: augmentation_parser.print_help(None)
+    )
+
+    augmentation_parser.set_defaults(func=augment_nlu_data)
+
+    arguments.set_augmentation_arguments(augmentation_parser)
+
+
 def _add_data_convert_parsers(
     data_subparsers, parents: List[argparse.ArgumentParser]
 ) -> None:
@@ -157,6 +176,22 @@ def split_nlu_data(args: argparse.Namespace) -> None:
 
     train.persist(args.out, filename=f"training_data.{fformat}")
     test.persist(args.out, filename=f"test_data.{fformat}")
+
+
+def augment_nlu_data(args: argparse.Namespace) -> None:
+
+    from rasa.nlu.training_data.loading import load_data
+    from rasa.nlu.training_data.util import get_file_format
+
+    data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    data_path = data.get_nlu_directory(data_path)
+
+    nlu_data = load_data(data_path)
+    fformat = get_file_format(data_path)
+
+    augmented_data = nlu_data.augment_data(args.augment_perc, args.lang)
+
+    augmented_data.persist(args.out, filename=f"augmented_data.{fformat}")
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
