@@ -1,14 +1,14 @@
 import logging
 import numpy as np
 import scipy.sparse
-from typing import Tuple, List, Optional, Dict, Text
+from typing import List, Optional, Dict, Text
 from collections import defaultdict
 
 from rasa.utils import common as common_utils
 from rasa.core.domain import Domain, State, SubState
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.core.constants import USER, PREVIOUS_ACTION, SLOTS, ACTION, ACTIVE_LOOP
+from rasa.core.constants import USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.constants import (
     TEXT,

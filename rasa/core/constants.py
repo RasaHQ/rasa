@@ -87,7 +87,6 @@ USER = "user"
 PREVIOUS_ACTION = "prev_action"
 ACTIVE_LOOP = "active_loop"
 SLOTS = "slots"
-ACTION = "action"
 
 LOOP_NAME = "name"
 LOOP_VALIDATE = "validate"
