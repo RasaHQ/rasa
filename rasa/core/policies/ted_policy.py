@@ -30,7 +30,6 @@ from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature, Da
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
 from rasa.utils.tensorflow.constants import (
     LABEL,
-    HIDDEN_LAYERS_SIZES,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
@@ -136,7 +135,7 @@ class TEDPolicy(Policy):
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
-        BATCH_SIZES: [8, 32],
+        BATCH_SIZES: [64, 256],
         # Strategy used whenc creating batches.
         # Can be either 'sequence' or 'balanced'.
         BATCH_STRATEGY: BALANCED,
