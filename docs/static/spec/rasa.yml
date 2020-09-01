@@ -1097,7 +1097,6 @@ components:
           description: latest action text
       description: >-
         Latest bot action.
-      required: []
 
     Event:
       type: object
