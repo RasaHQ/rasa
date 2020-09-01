@@ -22,6 +22,7 @@ from rasa.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
 )
+from rasa.core.constants import SLOTS, ACTIVE_LOOP
 import scipy.sparse
 from _pytest.monkeypatch import MonkeyPatch
 from pathlib import Path
@@ -37,27 +38,56 @@ def test_fail_to_load_non_existent_featurizer():
 
 
 def test_binary_featurizer_correctly_encodes_state():
+    """
+    Check that all the attributes are correctly featurized when they should and not featurized when shouldn't;  
+    """
     f = BinarySingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
-    f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1}
-    encoded = f.encode_state(
-        {"user": {"intent": "a"}, "prev_action": {"action_name": "d"}}, interpreter=None
-    )
-    # user input is ignored as prev action is not action_listen;
-    assert list(encoded.keys()) == [ACTION_NAME]
-    assert (
-        encoded[ACTION_NAME][0].features != scipy.sparse.coo_matrix([[0, 1]])
-    ).nnz == 0
+    f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, "action_listen": 2}
+    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
 
     encoded = f.encode_state(
-        {"user": {"intent": "a"}, "prev_action": {"action_name": "action_listen"}},
+        {
+            "user": {"intent": "a"},
+            "prev_action": {"action_name": "d"},
+            "active_loop": {"name": "i"},
+            "slots": {"g": (1.0,)},
+        },
         interpreter=None,
     )
-    assert list(encoded.keys()) == [INTENT, ACTION_NAME]
+    # user input is ignored as prev action is not action_listen;
+    assert list(encoded.keys()) == [ACTION_NAME, ACTIVE_LOOP, SLOTS]
+    assert (
+        encoded[ACTION_NAME][0].features != scipy.sparse.coo_matrix([[0, 1, 0]])
+    ).nnz == 0
+    assert (
+        encoded[ACTIVE_LOOP][0].features != scipy.sparse.coo_matrix([[0, 1, 0, 0]])
+    ).nnz == 0
+    assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[0, 0, 1]])).nnz == 0
+
+    encoded = f.encode_state(
+        {
+            "user": {"intent": "a"},
+            "prev_action": {"action_name": "action_listen"},
+            "active_loop": {"name": "k"},
+            "slots": {"e": (1.0,)},
+        },
+        interpreter=None,
+    )
+
+    assert list(encoded.keys()) == [INTENT, ACTION_NAME, ACTIVE_LOOP, SLOTS]
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[1, 0]])).nnz == 0
+    assert (
+        encoded[ACTION_NAME][0].features != scipy.sparse.coo_matrix([[0, 0, 1]])
+    ).nnz == 0
+    assert (
+        encoded[ACTIVE_LOOP][0].features != scipy.sparse.coo_matrix([[0, 0, 0, 1]])
+    ).nnz == 0
+    assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
 
 
-def test_binary_featurizer_correctly_encodes_non_existing_feature():
+def test_binary_featurizer_correctly_encodes_non_existing_value():
     f = BinarySingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1}
@@ -137,16 +167,36 @@ def test_single_state_featurizer_correctly_encodes_state(
 
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
-    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1}
     f._default_feature_states[ENTITIES] = {"c": 0}
+    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1}
+    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
     encoded = f.encode_state(
         {
             "user": {"text": "a ball", "entities": ["c"]},
             "prev_action": {"action_name": "action_listen"},
+            "active_loop": {"name": "k"},
+            "slots": {"e": (1.0,)},
         },
         interpreter=kwargs["interpreter"],
     )
-    assert all([attribute in encoded for attribute in [TEXT, ENTITIES, ACTION_NAME]])
+    assert all(
+        [
+            attribute in encoded
+            for attribute in [TEXT, ENTITIES, ACTION_NAME, SLOTS, ACTIVE_LOOP]
+        ]
+    )
     assert encoded[TEXT][0].features.shape[-1] == 300
     assert encoded[ACTION_NAME][0].features.shape[-1] == 2
     assert encoded[ENTITIES][0].features.shape[-1] == 1
+
+    encoded = f.encode_state(
+        {
+            "user": {"text": "a ball", "entities": ["c"]},
+            "prev_action": {"action_text": "throw a ball"},
+        },
+        interpreter=kwargs["interpreter"],
+    )
+
+    assert all([attribute in encoded for attribute in [ACTION_TEXT]])
+    assert encoded[ACTION_TEXT][0].features.shape[-1] == 300
