@@ -12,6 +12,8 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     INTENT,
     ACTION_NAME,
+    INTENT_RESPONSE_KEY,
+    RESPONSE_IDENTIFIER_DELIMITER,
 )
 
 logger = logging.getLogger(__name__)
@@ -97,7 +99,7 @@ class Tokenizer(Component):
                     example.get(attribute) is not None
                     and not example.get(attribute) == ""
                 ):
-                    if attribute in [INTENT, ACTION_NAME]:
+                    if attribute in [INTENT, ACTION_NAME, INTENT_RESPONSE_KEY]:
                         tokens = self._split_name(example, attribute)
                     else:
                         tokens = self.tokenize(example, attribute)
@@ -114,14 +116,29 @@ class Tokenizer(Component):
 
                 message.set(TOKENS_NAMES[attribute], tokens)
 
-    def _split_name(self, message: Message, attribute: Text) -> List[Token]:
-        text = message.get(attribute)
+    def _tokenize_on_split_symbol(self, text: Text) -> List[Text]:
 
         words = (
             text.split(self.intent_split_symbol)
             if self.intent_tokenization_flag
             else [text]
         )
+
+        return words
+
+    def _split_name(self, message: Message, attribute: Text = INTENT) -> List[Token]:
+        text = message.get(attribute)
+
+        # for INTENT_RESPONSE_KEY attribute,
+        # first split by RESPONSE_IDENTIFIER_DELIMITER
+        if attribute == INTENT_RESPONSE_KEY:
+            intent, response_key = text.split(RESPONSE_IDENTIFIER_DELIMITER)
+            words = self._tokenize_on_split_symbol(
+                intent
+            ) + self._tokenize_on_split_symbol(response_key)
+
+        else:
+            words = self._tokenize_on_split_symbol(text)
 
         return self._convert_words_to_tokens(words, text)
 

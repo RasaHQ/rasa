@@ -71,7 +71,7 @@ nlu:
 
 First, all of these examples will be combined into a single `chitchat`
 retrieval intent that NLU will predict. All retrieval intents have a suffix
-added to them which identifies a particular response text for your assistant, in the
+added to them which identifies a particular response key for your assistant, in the
 above example - `ask_name` and `ask_weather`. The suffix is separated from
 the intent name by a `/` delimiter.
 
@@ -93,10 +93,11 @@ your responses.
 :::
 
 The retrieval model is trained separately as part of the NLU training pipeline
-to select the correct response. One important thing to remember is that the
-retrieval model uses the text of the response messages to select the correct
-one. If you change the text of these responses, you have to retrain your
-retrieval model! This is a key difference to the responses defined in
+to select the correct response. The default configuration uses the user message text as input and the retrieval intent combined with the
+response key suffix (e.g. `chitchat/ask_name`) as the correct label for that user message. However, the
+retrieval model can also be configured to use the text of the response message as the label by setting `use_text_as_label`
+to `True` in the component's configuration. In that case, if you change the text of these responses,
+you have to retrain your retrieval model! This is a key difference to the responses defined in
 your domain file.
 
 :::note Special meaning of `/`
@@ -127,11 +128,11 @@ pipeline:
 
 ## Domain
 
-Rasa uses a naming convention to match the intent names like `chitchat/ask_name`
-to the retrieval action.
+Rasa uses a naming convention to match a retrieval intent name, e.g. `chitchat`,
+to its corresponding retrieval action.
 The correct action name in this case is `respond_chitchat`.
 The prefix `respond_` is mandatory to identify it as a retrieval action.
-Another example - correct action name for `faq/ask_policy` would be `respond_faq`
+Another example - the correct action name for `faq` would be `respond_faq`.
 To include this in your domain, add it to the list of actions:
 
 ```yaml-rasa title="domain.yml"
@@ -160,13 +161,27 @@ stories:
 ## Multiple Retrieval Actions
 
 If your assistant includes both FAQs **and** chitchat, it is possible to
-separate these into separate retrieval actions, for example having intents
-like `chitchat/ask_weather` and `faq/returns_policy`.
-Rasa supports adding multiple `RetrievalActions` like `respond_chitchat` and
-`respond_returns_policy`
+separate these into separate retrieval actions, for example having sub-intents
+like `chitchat/ask_weather` and `faq/returns_policy`. Rasa supports adding multiple `RetrievalActions`
+like `respond_chitchat` and `respond_faq`. To train separate retrieval models for each of the retrieval intents,
+you need to include a separate `ResponseSelector` component in the config for each retrieval intent:
 
-This works out of the box. Both actions can share the same retrieval model,
-you only need to specify a single `ResponseSelector` component in your configuration:
+```yaml-rasa title="config.yml" {8-12}
+language: "en"
+
+pipeline:
+- name: "WhitespaceTokenizer"
+  intent_split_symbol: "_"
+- name: "CountVectorsFeaturizer"
+- name: "DIETClassifier"
+- name: "ResponseSelector"
+  retrieval_intent: "faq"
+- name: "ResponseSelector"
+  retrieval_intent: "chitchat"
+```
+
+Alternatively, if you want the retrieval actions for both the intents to share a single retrieval model,
+specifying just one `ResponseSelector` component is enough.
 
 ```yaml-rasa title="config.yml" {8}
 language: "en"
@@ -179,35 +194,51 @@ pipeline:
 - name: "ResponseSelector"
 ```
 
+
 ## Under the hood: Parsing Response Selector Output
 
 The parsed output from NLU will have a property named `response_selector`
-containing the output for each response selector. Each response selector is
+containing the output for each response selector component. Each response selector is
 identified by `retrieval_intent` parameter of that response selector
 and stores two properties:
 
-* `response`: The predicted response text and the prediction confidence.
+* `response`: The predicted response key under the corresponding retrieval intent,
+prediction's confidence and the associated response templates
 
-* `ranking`: Ranking with confidences of top 10 candidate responses.
+* `ranking`: Ranking with confidences of top 10 candidate response keys.
 
 Example result:
 
 ```json
 {
-    "text": "What is the recommend python version to install?",
-    "entities": [],
-    "intent": {"confidence": 0.6485910906220309, "name": "faq"},
-    "intent_ranking": [
-        {"confidence": 0.6485910906220309, "name": "faq"},
-        {"confidence": 0.1416153159565678, "name": "greet"}
-    ],
+    "text": "How's the weather today?",
     "response_selector": {
       "faq": {
-        "response": {"text": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-        "full_retrieval_intent": "faq/supports",
+        "response": {
+          "id": 1388783286124361986,
+          "confidence": 0.7,
+          "intent_response_key": "chitchat/ask_weather",
+          "response_templates": [
+            {
+              "text": "It's sunny in Berlin today",
+              "image": "https://i.imgur.com/nGF1K8f.jpg"
+            },
+            {
+              "text": "I think it's about to rain."
+            }
+          ]
+         },
         "ranking": [
-            {"confidence": 0.7356462617, "full_retrieval_intent": "faq/supports"},
-            {"confidence": 0.2134543431, "full_retrieval_intent": "faq/languages"}
+          {
+            "id": 1388783286124361986,
+            "confidence": 0.7,
+            "intent_response_key": "chitchat/ask_weather"
+          },
+          {
+            "id": 1388783286124361986,
+            "confidence": 0.3,
+            "intent_response_key": "chitchat/ask_name"
+          }
         ]
       }
     }
@@ -216,3 +247,39 @@ Example result:
 
 If the `retrieval_intent` parameter of a particular response selector was left to its default value,
 the corresponding response selector will be identified as `default` in the returned output.
+
+```json {4}
+{
+    "text": "How's the weather today?",
+    "response_selector": {
+      "default": {
+        "response": {
+          "id": 1388783286124361986,
+          "confidence": 0.7,
+          "intent_response_key": "chitchat/ask_weather",
+          "response_templates": [
+            {
+              "text": "It's sunny in Berlin today",
+              "image": "https://i.imgur.com/nGF1K8f.jpg"
+            },
+            {
+              "text": "I think it's about to rain."
+            }
+          ]
+         },
+        "ranking": [
+          {
+            "id": 1388783286124361986,
+            "confidence": 0.7,
+            "intent_response_key": "chitchat/ask_weather"
+          },
+          {
+            "id": 1388783286124361986,
+            "confidence": 0.3,
+            "intent_response_key": "chitchat/ask_name"
+          }
+        ]
+      }
+    }
+}
+```

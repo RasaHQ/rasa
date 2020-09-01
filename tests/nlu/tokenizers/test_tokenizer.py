@@ -12,6 +12,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     ACTION_NAME,
     ACTION_TEXT,
+    INTENT_RESPONSE_KEY,
 )
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -183,6 +184,26 @@ def test_split_intent(text: Text, expected_tokens: List[Text]):
     message.set(INTENT, text)
 
     assert [t.text for t in tk._split_name(message, INTENT)] == expected_tokens
+
+
+@pytest.mark.parametrize(
+    "text, expected_tokens",
+    [
+        ("faq/ask_language", ["faq", "ask_language"]),
+        ("faq/ask+language", ["faq", "ask", "language"]),
+    ],
+)
+def test_split_intent_response_key(text, expected_tokens):
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
+
+    tk = WhitespaceTokenizer(component_config)
+
+    message = Message.build(text=text)
+    message.set(INTENT_RESPONSE_KEY, text)
+
+    assert [
+        t.text for t in tk._split_name(message, attribute=INTENT_RESPONSE_KEY)
+    ] == expected_tokens
 
 
 @pytest.mark.parametrize(

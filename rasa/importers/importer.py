@@ -9,6 +9,7 @@ from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
 from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT, TEXT
 from rasa.nlu.training_data import TrainingData, Message
+from rasa.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
 
@@ -22,13 +23,12 @@ class TrainingDataImporter:
         """Retrieves the domain of the bot.
 
         Returns:
-            Loaded ``Domain``.
+            Loaded `Domain`.
         """
         raise NotImplementedError()
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -36,15 +36,13 @@ class TrainingDataImporter:
         """Retrieves the stories that should be used for training.
 
         Args:
-            interpreter: Interpreter that should be used to parse end to
-                         end learning annotations.
             template_variables: Values of templates that should be replaced while
                                 reading the story files.
             use_e2e: Specifies whether to parse end to end learning annotations.
             exclusion_percentage: Amount of training data that should be excluded.
 
         Returns:
-            ``StoryGraph`` containing all loaded stories.
+            `StoryGraph` containing all loaded stories.
         """
 
         raise NotImplementedError()
@@ -65,7 +63,7 @@ class TrainingDataImporter:
             language: Can be used to only load training data for a certain language.
 
         Returns:
-            Loaded NLU ``TrainingData``.
+            Loaded NLU `TrainingData`.
         """
 
         raise NotImplementedError()
@@ -75,12 +73,13 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
-        """Loads a ``TrainingDataImporter`` instance from a configuration file."""
+        """Loads a `TrainingDataImporter` instance from a configuration file."""
 
         config = io_utils.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths
+            config, config_path, domain_path, training_data_paths, training_type
         )
 
     @staticmethod
@@ -89,12 +88,13 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
-        """Loads a ``TrainingDataImporter`` instance from a configuration file that
-           only reads Core training data.
+        """Loads core `TrainingDataImporter` instance.
+
+        Instance loaded from configuration file will only read Core training data.
         """
 
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths
+            config_path, domain_path, training_data_paths, TrainingType.CORE,
         )
 
         return CoreDataImporter(importer)
@@ -105,12 +105,13 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
-        """Loads a ``TrainingDataImporter`` instance from a configuration file that
-           only reads NLU training data.
+        """Loads nlu `TrainingDataImporter` instance.
+
+        Instance loaded from configuration file will only read NLU training data.
         """
 
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths
+            config_path, domain_path, training_data_paths, TrainingType.NLU
         )
 
         return NluDataImporter(importer)
@@ -121,8 +122,9 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
-        """Loads a ``TrainingDataImporter`` instance from a dictionary."""
+        """Loads a `TrainingDataImporter` instance from a dictionary."""
 
         from rasa.importers.rasa import RasaFileImporter
 
@@ -130,7 +132,7 @@ class TrainingDataImporter:
         importers = config.get("importers", [])
         importers = [
             TrainingDataImporter._importer_from_dict(
-                importer, config_path, domain_path, training_data_paths
+                importer, config_path, domain_path, training_data_paths, training_type
             )
             for importer in importers
         ]
@@ -138,7 +140,9 @@ class TrainingDataImporter:
 
         if not importers:
             importers = [
-                RasaFileImporter(config_path, domain_path, training_data_paths)
+                RasaFileImporter(
+                    config_path, domain_path, training_data_paths, training_type
+                )
             ]
 
         return CombinedDataImporter(importers)
@@ -149,6 +153,7 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> Optional["TrainingDataImporter"]:
         from rasa.importers.multi_project import MultiProjectImporter
         from rasa.importers.rasa import RasaFileImporter
@@ -165,9 +170,12 @@ class TrainingDataImporter:
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None
 
+        importer_config = dict(training_type=training_type, **importer_config)
+
         constructor_arguments = common_utils.minimal_kwargs(
             importer_config, importer_class
         )
+
         return importer_class(
             config_path, domain_path, training_data_paths, **constructor_arguments
         )
@@ -184,7 +192,6 @@ class NluDataImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -209,13 +216,12 @@ class CoreDataImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         return await self._importer.get_stories(
-            interpreter, template_variables, use_e2e, exclusion_percentage
+            template_variables, use_e2e, exclusion_percentage
         )
 
     async def get_config(self) -> Dict:
@@ -226,8 +232,10 @@ class CoreDataImporter(TrainingDataImporter):
 
 
 class CombinedDataImporter(TrainingDataImporter):
-    """A ``TrainingDataImporter`` that supports using multiple ``TrainingDataImporter``s as
-        if they were a single instance.
+    """A `TrainingDataImporter` that combines multiple importers.
+
+    Uses multiple `TrainingDataImporter` instances
+    to load the data as if they were a single instance.
     """
 
     def __init__(self, importers: List[TrainingDataImporter]):
@@ -249,15 +257,12 @@ class CombinedDataImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         stories = [
-            importer.get_stories(
-                interpreter, template_variables, use_e2e, exclusion_percentage
-            )
+            importer.get_stories(template_variables, use_e2e, exclusion_percentage)
             for importer in self._importers
         ]
         stories = await asyncio.gather(*stories)

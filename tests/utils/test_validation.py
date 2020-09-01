@@ -28,6 +28,9 @@ def test_validate_yaml_schema(file, schema):
     "file, schema",
     [
         ("data/test_domains/invalid_format.yml", DOMAIN_SCHEMA_FILE),
+        ("data/test_domains/wrong_response_format.yml", DOMAIN_SCHEMA_FILE),
+        ("data/test_domains/wrong_custom_response_format.yml", DOMAIN_SCHEMA_FILE),
+        ("data/test_domains/empty_response_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_config/example_config.yaml", CONFIG_SCHEMA_FILE),
     ],
 )

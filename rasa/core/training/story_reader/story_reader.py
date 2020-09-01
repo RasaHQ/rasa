@@ -4,7 +4,6 @@ from typing import Optional, Dict, Text, List, Any
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Event
 from rasa.core.exceptions import StoryParseError
-from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.training.story_reader.story_step_builder import StoryStepBuilder
 from rasa.core.training.structures import StoryStep
 
@@ -16,7 +15,6 @@ class StoryReader:
 
     def __init__(
         self,
-        interpreter: NaturalLanguageInterpreter,
         domain: Optional[Domain] = None,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
@@ -26,7 +24,6 @@ class StoryReader:
         """Constructor for the StoryReader.
 
         Args:
-            interpreter: Interpreter to be used to parse intents.
             domain: Domain object.
             template_vars: Template variables to be replaced.
             use_e2e: Specifies whether to use the e2e parser or not.
@@ -41,7 +38,6 @@ class StoryReader:
         self.story_steps = []
         self.current_step_builder: Optional[StoryStepBuilder] = None
         self.domain = domain
-        self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
         self.use_e2e = use_e2e
         self.source_name = source_name
