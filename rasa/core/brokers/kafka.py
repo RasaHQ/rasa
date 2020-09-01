@@ -50,9 +50,9 @@ class KafkaEventBroker(EventBroker):
             self._create_producer()
             connected = self.producer.bootstrap_connected()
             if connected:
-                logger.info(f"Connection to kafka successful")
+                logger.info("Connection to kafka successful")
             else:
-                logger.info(f"Failed to connect kafka")
+                logger.info("Failed to connect kafka")
                 return
         try:
             self._publish(event)
@@ -64,11 +64,11 @@ class KafkaEventBroker(EventBroker):
             connected = self.producer.bootstrap_connected()
             if not connected:
                 self._close()
-                logger.info(f"Connection to kafka lost, reconnecting...")
+                logger.info("Connection to kafka lost, reconnecting...")
                 self._create_producer()
                 connected = self.producer.bootstrap_connected()
                 if connected:
-                    logger.info(f"Reconnection to kafka successful")
+                    logger.info("Reconnection to kafka successful")
                     self._publish(event)
 
     def _create_producer(self) -> None:
