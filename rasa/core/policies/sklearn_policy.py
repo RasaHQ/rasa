@@ -10,7 +10,8 @@ import numpy as np
 import rasa.utils.io
 from rasa.utils.features import Features
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.core.domain import Domain, SubState
+from rasa.core.domain import Domain
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
@@ -41,10 +42,22 @@ if typing.TYPE_CHECKING:
 class SklearnPolicy(Policy):
     """Use an sklearn classifier to train a policy."""
 
+    DEFAULT_MAX_HISTORY = 5
+
+    @staticmethod
+    def _standard_featurizer(
+        max_history: int = DEFAULT_MAX_HISTORY,
+    ) -> MaxHistoryTrackerFeaturizer:
+        # Sklearn policy always uses MaxHistoryTrackerFeaturizer
+        return MaxHistoryTrackerFeaturizer(
+            state_featurizer=SingleStateFeaturizer(), max_history=5
+        )
+
     def __init__(
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
+        max_history: int = DEFAULT_MAX_HISTORY,
         model: Optional["sklearn.base.BaseEstimator"] = None,
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,
@@ -76,10 +89,21 @@ class SklearnPolicy(Policy):
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
                 raise TypeError(
-                    "Passed featurizer of type {}, should be "
-                    "MaxHistoryTrackerFeaturizer."
-                    "".format(type(featurizer).__name__)
+                    f"Passed featurizer of type '{type(featurizer).__name__}', "
+                    f"should be MaxHistoryTrackerFeaturizer."
                 )
+            if not featurizer.max_history:
+                raise ValueError(
+                    "Passed featurizer without max history, max_history should be "
+                    "set to a positive integer value."
+                )
+        else:
+            if not max_history:
+                raise ValueError(
+                    "max_history should be set to a positive integer value."
+                )
+            featurizer = self._standard_featurizer(max_history)
+
         super().__init__(featurizer, priority)
 
         self.model = model or self._default_model()
