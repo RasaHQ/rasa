@@ -280,7 +280,7 @@ class UserUttered(Event):
 
     @property
     def intent_name(self) -> Optional[Text]:
-        return self.intent.get("name")
+        return self.intent.get(INTENT_NAME_KEY)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, UserUttered):
@@ -288,11 +288,11 @@ class UserUttered(Event):
         else:
             return (
                 self.text,
-                self.intent.get(INTENT_NAME_KEY),
+                self.intent_name,
                 [jsonpickle.encode(ent) for ent in self.entities],
             ) == (
                 other.text,
-                other.intent.get(INTENT_NAME_KEY),
+                other.intent_name,
                 [jsonpickle.encode(ent) for ent in other.entities],
             )
 
