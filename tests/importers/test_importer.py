@@ -157,4 +157,3 @@ async def test_core_only(project: Text):
 
     nlu_data = await actual.get_nlu_data()
     assert nlu_data.is_empty()
-

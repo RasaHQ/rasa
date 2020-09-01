@@ -280,6 +280,7 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
 
     assert not len(record)
 
+
 async def test_active_loop_is_parsed(default_domain: Domain):
     stories = (
         f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'

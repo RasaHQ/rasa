@@ -272,7 +272,7 @@ async def test_read_stories_with_rules(default_domain: Domain):
 
 async def test_read_rules_without_stories(default_domain: Domain):
     story_steps = await loading.load_data_from_files(
-        ["data/test_stories/rules_without_stories.md"], default_domain,
+        ["data/test_stories/rules_without_stories.md"], default_domain
     )
 
     # this file contains three rules and two ML stories
@@ -307,7 +307,7 @@ async def test_read_rules_without_stories(default_domain: Domain):
     "line, expected",
     [
         (" greet: hi", {"intent": "greet", "text": "hi"}),
-        (" greet: /greet", {"intent": "greet", "text": "/greet", "entities": [],},),
+        (" greet: /greet", {"intent": "greet", "text": "/greet", "entities": []}),
         (
             'greet: /greet{"test": "test"}',
             {
@@ -401,6 +401,7 @@ def test_user_uttered_to_e2e(parse_data: Dict, expected_story_string: Text):
     assert isinstance(event, UserUttered)
     assert event.as_story_string(e2e=True) == expected_story_string
 
+
 @pytest.mark.parametrize("line", [" greet{: hi"])
 def test_invalid_end_to_end_format(line: Text):
     reader = MarkdownStoryReader()
@@ -408,4 +409,3 @@ def test_invalid_end_to_end_format(line: Text):
     with pytest.raises(ValueError):
         # noinspection PyProtectedMember
         _ = reader.parse_e2e_message(line)
-
