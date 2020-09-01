@@ -11,7 +11,6 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.constants import (
-    TEXT,
     INTENT,
     ACTION_NAME,
     ACTION_TEXT,

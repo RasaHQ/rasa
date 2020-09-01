@@ -14,7 +14,8 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
-
+from rasa.core.constants import USER
+from rasa.nlu.constants import TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -344,5 +345,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             self.slice_state_history(states, self.max_history)
             for states in trackers_as_states
         ]
+        # TODO there is no prediction support for e2e input right now, therefore
+        #  temporary remove TEXT features from USER state during prediction
+        for states in trackers_as_states:
+            for state in states:
+                if state.get(USER, {}).get(TEXT):
+                    del state[USER][TEXT]
 
         return trackers_as_states

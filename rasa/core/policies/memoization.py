@@ -189,13 +189,11 @@ class MemoizationPolicy(Policy):
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
     def _recall_states(self, states: List[State]) -> Optional[Text]:
-
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
         self, states: List[State], tracker: DialogueStateTracker, domain: Domain
     ) -> Optional[Text]:
-
         return self._recall_states(states)
 
     def _prediction_result(
