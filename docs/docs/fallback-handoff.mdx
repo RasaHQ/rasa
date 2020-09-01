@@ -231,7 +231,7 @@ starterpacks.
 You'll need to define rules for fallback and out-of-scope situations.
 You'll only need NLU training data for out-of-scope intents. 
 For human handoff, no training data is needed unless you want 
-a seperate rule for handing off to a human vs. Two-Stage-Fallback,
+a separate rule for handing off to a human vs. Two-Stage-Fallback,
 or if you want to create a `human_handoff` intent that can be predicted directly.
 
 ### NLU Training Data
@@ -278,20 +278,13 @@ rules:
 Using [Rules](./rules.mdx) or [Stories](./stories.mdx) you can implement any desired
 fallback behavior.
 
-<<<<<<< HEAD
-* `data/nlu.yml`:
-=======
 #### Rules for Two-Stage Fallback
->>>>>>> 9a6687ebb2b... Conversation patterns
 
 To use the `Two-Stage-Fallback` for messages with low NLU confidence, add the
 following [Rule](./rules.mdx) to your training data. This rule will make sure that the
 `Two-Stage-Fallback` will be activated whenever a message is received with
 low classification confidence.
 
-<<<<<<< HEAD
-* `data/stories.yml`:
-=======
 ```yaml
 rules:
 - rule: Implementation of the Two-Stage-Fallback
@@ -300,7 +293,6 @@ rules:
   - action: two_stage_fallback
   - form: two_stage_fallback
 ```
->>>>>>> 9a6687ebb2b... Conversation patterns
 
 
 #### Rules for out-of-scope requests 

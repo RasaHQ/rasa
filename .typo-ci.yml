@@ -172,5 +172,6 @@ excluded_words:
   - crfentityextractor
   - Comerica
   - entitysynonymmapper
+  - memoizationpolicy
 
 spellcheck_filenames: false
