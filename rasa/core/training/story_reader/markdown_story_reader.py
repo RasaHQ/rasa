@@ -200,7 +200,7 @@ class MarkdownStoryReader(StoryReader):
         parsed_messages = []
         for m in e2e_messages:
             message = self.parse_e2e_message(m)
-            parsed = self._parse_message(message.text, line_num)
+            parsed = self._parse_message(message.get(TEXT), line_num)
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
