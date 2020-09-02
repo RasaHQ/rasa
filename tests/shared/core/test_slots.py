@@ -1,6 +1,6 @@
 import pytest
 
-from rasa.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
+from rasa.shared.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
 from rasa.shared.core.slots import (
     Slot,
     TextSlot,
