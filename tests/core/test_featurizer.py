@@ -37,7 +37,7 @@ def test_fail_to_load_non_existent_featurizer():
     assert TrackerFeaturizer.load("non_existent_class") is None
 
 
-def test_single_state_featurizer_correctly_encodes_state():
+def test_single_state_featurizer_correctly_encodes_state_without_interpreter():
     """
     Check that all the attributes are correctly featurized when they should and not featurized when shouldn't;
     These tests are for encoding state without a trained interpreter.
