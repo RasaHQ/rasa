@@ -23,6 +23,7 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.utils.common import raise_warning
 from sanic import Sanic
+from asyncio import AbstractEventLoop
 
 logger = logging.getLogger()  # get the root logger
 
@@ -224,7 +225,7 @@ async def load_agent_on_start(
     endpoints: AvailableEndpoints,
     remote_storage: Optional[Text],
     app: Sanic,
-    loop: Text,
+    loop: AbstractEventLoop,
 ):
     """Load an agent.
 
@@ -246,16 +247,22 @@ async def load_agent_on_start(
 
     model_server = endpoints.model if endpoints and endpoints.model else None
 
-    app.agent = await agent.load_agent(
-        model_path,
-        model_server=model_server,
-        remote_storage=remote_storage,
-        interpreter=_interpreter,
-        generator=endpoints.nlg,
-        tracker_store=_tracker_store,
-        lock_store=_lock_store,
-        action_endpoint=endpoints.action,
-    )
+    try:
+        app.agent = await agent.load_agent(
+            model_path,
+            model_server=model_server,
+            remote_storage=remote_storage,
+            interpreter=_interpreter,
+            generator=endpoints.nlg,
+            tracker_store=_tracker_store,
+            lock_store=_lock_store,
+            action_endpoint=endpoints.action,
+        )
+    except Exception as e:
+        raise_warning(
+            f"The model at '{model_path}' could not be loaded. " f"Error: {e}"
+        )
+        app.agent = None
 
     if not app.agent:
         raise_warning(
