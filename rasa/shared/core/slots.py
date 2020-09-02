@@ -1,5 +1,4 @@
 import logging
-from typing import Any, Dict, List, NoReturn, Optional, Text, Type
 
 from rasa.core import utils
 from typing import Any, Dict, List, NoReturn, Optional, Text, Type
