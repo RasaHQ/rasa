@@ -478,7 +478,7 @@ class ResponseSelector(DIETClassifier):
             return model  # pytype: disable=bad-return-type
 
         model.responses = meta.get("responses", {})
-        model.all_retrieval_intents = meta.get("all_retrieval_intents", list())
+        model.all_retrieval_intents = meta.get("all_retrieval_intents", [])
 
         return model  # pytype: disable=bad-return-type
 

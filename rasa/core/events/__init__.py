@@ -87,7 +87,7 @@ def md_format_message(
     message_from_md = entities_parser.parse_training_example(text, intent)
     deserialised_entities = deserialise_entities(entities)
     return TrainingDataWriter.generate_message(
-        {"text": message_from_md.get(TEXT), "entities": deserialised_entities,}
+        {"text": message_from_md.get(TEXT), "entities": deserialised_entities}
     )
 
 
@@ -1363,7 +1363,6 @@ class SessionStarted(Event):
         logger.warning(
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
-        return None
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         # noinspection PyProtectedMember

@@ -1007,7 +1007,7 @@ class Domain:
         ) -> List[Tuple[Text, Text]]:
             """Check whether intent-action mappings use proper action names."""
 
-            incorrect = list()
+            incorrect = []
             for intent, properties in intent_properties.items():
                 if "triggers" in properties:
                     triggered_action = properties.get("triggers")

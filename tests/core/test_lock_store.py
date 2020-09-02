@@ -28,7 +28,7 @@ class FakeRedisLockStore(RedisLockStore):
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
 
-        super(RedisLockStore, self).__init__()
+        super(FakeRedisLockStore, self).__init__()
 
 
 def test_issue_ticket():
