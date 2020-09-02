@@ -293,6 +293,12 @@ def write_yaml(
     # no wrap lines
     dumper.width = YAML_LINE_MAX_WIDTH
 
+    # use `null` to represent `None`
+    dumper.representer.add_representer(
+        type(None),
+        lambda self, _: self.represent_scalar("tag:yaml.org,2002:null", "null"),
+    )
+
     if isinstance(target, StringIO):
         dumper.dump(data, target)
         return

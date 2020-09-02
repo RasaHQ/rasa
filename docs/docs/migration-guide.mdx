@@ -303,7 +303,7 @@ class RestaurantFormValidator(Action):
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.get_extracted_slots()
+        extracted_slots: Dict[Text, Any] = tracker.form_slots_to_validate()
 
         cuisine_slot_value = extracted_slots.get("cuisine")
         validated_slot_event = self.validate_cuisine(
@@ -383,12 +383,17 @@ Additionally a key `all_retrieval_intents` is added to the response selector out
 hold a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
 An example output looks like this -
 
-```json
-"response_selector": {
-    "all_retrieval_intents": ["faq"],
+```json {3-4,10,11}
+{
+  "response_selector": {
+    "all_retrieval_intents": [
+      "faq"
+    ],
     "default": {
       "response": {
-        "id": 1388783286124361986, "confidence": 1.0, "intent_response_key": "faq/is_legit",
+        "id": 1388783286124362000,
+        "confidence": 1,
+        "intent_response_key": "faq/is_legit",
         "response_templates": [
           {
             "text": "absolutely",
@@ -397,15 +402,29 @@ An example output looks like this -
           {
             "text": "I think so."
           }
-        ],
+        ]
       },
       "ranking": [
         {
-          "id": 1388783286124361986,
-          "confidence": 1.0,
+          "id": 1388783286124362000,
+          "confidence": 1,
           "intent_response_key": "faq/is_legit"
-        },
+        }
       ]
+    }
+  }
+}
+```
+As a result of this, if you were previously querying for the key `full_retrieval_intent` as:
+```python {2}
+response_selector_output.get("default")
+                        .get("full_retrieval_intent")
+```
+you should instead now do this:
+```python {2-3}
+response_selector_output.get("default")
+                        .get("response")
+                        .get("intent_response_key")
 ```
 
 ## Rasa 1.7 to Rasa 1.8
