@@ -19,7 +19,7 @@ from rasa.core.events import (
     SlotSet,
     ActiveLoop,
 )
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.structures import (
     StoryGraph,

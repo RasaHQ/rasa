@@ -36,7 +36,7 @@ from rasa.core.constants import (
     DEFAULT_INTENTS,
 )
 from rasa.core.events import SlotSet, UserUttered
-from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
+from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
 

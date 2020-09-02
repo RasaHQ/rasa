@@ -41,7 +41,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     ActionExecutionRejected,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.utils import common as common_utils
 
 
