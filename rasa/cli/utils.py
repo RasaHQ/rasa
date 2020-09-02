@@ -88,7 +88,7 @@ def cancel_cause_not_found(
         "The path '{}' does not exist. Please make sure to {}specify it"
         " with '--{}'.".format(current, default_clause, parameter)
     )
-    exit(1)
+    sys.exit(1)
 
 
 def parse_last_positional_argument_as_model_path() -> None:
@@ -174,7 +174,7 @@ def element_to_string(element: Dict[Text, Any], idx: int = 0) -> Text:
 
 def button_choices_from_message_data(
     message: Dict[Text, Any], allow_free_text_input: bool = True
-) -> "Question":
+) -> List[Text]:
     """Return list of choices to present to the user.
 
     If allow_free_text_input is True, an additional option is added

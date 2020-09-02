@@ -9,13 +9,14 @@ from rasa.nlu.constants import (
     ENTITIES,
     INTENT,
     RESPONSE,
-    RESPONSE_KEY_ATTRIBUTE,
+    INTENT_RESPONSE_KEY,
     TEXT,
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.utils import ordered
+from rasa.utils import common as common_utils
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.featurizers.featurizer import Features
@@ -65,9 +66,9 @@ class Message:
 
         d = self.as_dict()
         if d.get(INTENT, None):
-            d[INTENT] = self.get_combined_intent_response_key()
-        d.pop(RESPONSE_KEY_ATTRIBUTE, None)
+            d[INTENT] = self.get_full_intent()
         d.pop(RESPONSE, None)
+        d.pop(INTENT_RESPONSE_KEY, None)
         return d
 
     def as_dict(self, only_output_properties=False) -> dict:
@@ -109,20 +110,32 @@ class Message:
             if split_intent:
                 data[INTENT] = split_intent
             if response_key:
-                data[RESPONSE_KEY_ATTRIBUTE] = response_key
+                # intent label can be of the form - {intent}/{response_key},
+                # so store the full intent label in intent_response_key
+                data[INTENT_RESPONSE_KEY] = intent
         if entities:
             data[ENTITIES] = entities
         return cls(text, data, **kwargs)
 
+    def get_full_intent(self) -> Text:
+        """Get intent as it appears in training data"""
+
+        return (
+            self.get(INTENT_RESPONSE_KEY)
+            if self.get(INTENT_RESPONSE_KEY)
+            else self.get(INTENT)
+        )
+
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""
 
-        intent = self.get(INTENT)
-        response_key = self.get(RESPONSE_KEY_ATTRIBUTE)
-        response_key_suffix = (
-            f"{RESPONSE_IDENTIFIER_DELIMITER}{response_key}" if response_key else ""
+        common_utils.raise_warning(
+            "`get_combined_intent_response_key` is deprecated and "
+            "will be removed in future versions. "
+            "Please use `get_full_intent` instead.",
+            category=DeprecationWarning,
         )
-        return f"{intent}{response_key_suffix}"
+        return self.get_full_intent()
 
     @staticmethod
     def separate_intent_response_key(

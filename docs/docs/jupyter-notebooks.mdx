@@ -82,7 +82,8 @@ The return values are the paths to these newly created directories.
 
 ```bash
 import rasa.data as data
-stories_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
+nlu_data_directory = data.get_data_directories(training_files, data.is_nlu_file)
+stories_directory = data.get_data_directories(training_files, data.is_story_file)
 print(stories_directory, nlu_data_directory)
 ```
 To test your model, call the `test` function, passing in the path
@@ -108,5 +109,5 @@ else:
 if os.path.isdir("results"):
       print("\n")
       print("Core Errors:")
-      print(open("results/failed_stories.md").read())
+      print(open("results/failed_test_stories.yml").read())
 ```

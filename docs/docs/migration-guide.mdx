@@ -63,7 +63,7 @@ If you previously used the [Mapping Policy](./policies.mdx#mapping-policy), you
 can follow the documentation on [FAQs](./rules.mdx#faqs--mapping-intents-to-actions) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
-```yaml
+```yaml-rasa
 intents:
  - ask_is_bot:
      triggers: action_is_bot
@@ -71,7 +71,7 @@ intents:
 
 This becomes the following rule:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Rule to map `ask_is_bot` intent
   steps:
@@ -84,7 +84,7 @@ rules:
 If you previously used the [Fallback Policy](./policies.mdx#fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
-```yaml
+```yaml-rasa
 policies:
   - name: "FallbackPolicy"
     nlu_threshold: 0.4
@@ -95,7 +95,7 @@ policies:
 
 The new configuration would then look like:
 
-```yaml
+```yaml-rasa
 policies:
 # Other policies
 - name: RulePolicy
@@ -112,7 +112,7 @@ pipeline:
 In addition, you need to add a [Rule](./rules.mdx) to specify which action to run
 in case of low NLU confidence:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
   steps:
@@ -129,7 +129,7 @@ If you previously used the
 [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
-```yaml
+```yaml-rasa
 policies:
   - name: TwoStageFallbackPolicy
     nlu_threshold: 0.4
@@ -142,7 +142,7 @@ policies:
 
 The new configuration would then look like:
 
-```yaml
+```yaml-rasa
 policies:
 # Other policies
 - name: RulePolicy
@@ -159,7 +159,7 @@ pipeline:
 In addition you need to add a [Rule](./rules.mdx) to activate the Two-Stage Fallback for
 messages with low NLU confidence.
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Implementation of the TwoStageFallbackPolicy
   steps:
@@ -245,7 +245,7 @@ class RestaurantForm(FormAction):
 Start the migration by adding the [RulePolicy](./policies.mdx#rule-policy) to your
 model configuration:
 
-```yaml
+```yaml-rasa
 policies:
 # Other policies
 # ...
@@ -255,7 +255,7 @@ policies:
 Then you need to define the form and the required slots in the domain as described in
 [Forms](./forms.mdx#defining-a-form):
 
-```yaml
+```yaml-rasa
 forms:
   restaurant_form:
     cuisine:
@@ -268,7 +268,7 @@ You don't have to add a rule for activating the form as this is already covered 
 existing stories. However, you have to add a story for handle the submission of the
 form.
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Submit form
   condition:
@@ -286,7 +286,7 @@ rules:
 The last step is to implement a custom action to validate the form slots. Start by
 adding the custom action to your domain:
 
-```yaml
+```yaml-rasa
 actions:
 # Other actions
 # ...
@@ -303,7 +303,7 @@ class RestaurantFormValidator(Action):
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.get_extracted_slots()
+        extracted_slots: Dict[Text, Any] = tracker.form_slots_to_validate()
 
         cuisine_slot_value = extracted_slots.get("cuisine")
         validated_slot_event = self.validate_cuisine(
@@ -341,6 +341,92 @@ Please see [Forms](./forms.mdx) if you have further customizations in your
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-8"></a>
 
+### Response Selectors
+
+* Response Selectors are now trained on retrieval intent labels by default instead
+of the actual response text. For most models, this should improve training time
+and accuracy of the `ResponseSelector`.
+
+* If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label=true`
+ parameter to your `ResponseSelector` component.
+
+* All response selector related evaluation artifacts - `report.json, successes.json,
+errors.json, confusion_matrix.png` now use the sub-intent of the retrieval intent as
+ the target and predicted labels instead of the actual response text.
+This means that the output in these files should look like -
+
+```json title="response_selection_successes.json"
+{
+      "text": "Is this really legit?",
+      "intent_response_key_target": "faq/is_legit",
+      "intent_response_key_prediction": {
+              "name": "faq/is_legit",
+              "confidence": 0.88
+      }
+}
+```
+
+```json title="response_selection_errors.json"
+{
+      "text": "Is this really legit?",
+      "intent_response_key_target": "faq/is_legit",
+      "intent_response_key_prediction": {
+              "name": "faq/ask_cost",
+              "confidence": 0.6
+      }
+}
+```
+
+* The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name`
+have been deprecated in favour of `intent_response_key` and `response_templates` respectively.
+Additionally a key `all_retrieval_intents` is added to the response selector output which will
+hold a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
+An example output looks like this -
+
+```json {3-4,10,11}
+{
+  "response_selector": {
+    "all_retrieval_intents": [
+      "faq"
+    ],
+    "default": {
+      "response": {
+        "id": 1388783286124362000,
+        "confidence": 1,
+        "intent_response_key": "faq/is_legit",
+        "response_templates": [
+          {
+            "text": "absolutely",
+            "image": "https://i.imgur.com/nGF1K8f.jpg"
+          },
+          {
+            "text": "I think so."
+          }
+        ]
+      },
+      "ranking": [
+        {
+          "id": 1388783286124362000,
+          "confidence": 1,
+          "intent_response_key": "faq/is_legit"
+        }
+      ]
+    }
+  }
+}
+```
+As a result of this, if you were previously querying for the key `full_retrieval_intent` as:
+```python {2}
+response_selector_output.get("default")
+                        .get("full_retrieval_intent")
+```
+you should instead now do this:
+```python {2-3}
+response_selector_output.get("default")
+                        .get("response")
+                        .get("intent_response_key")
+```
+
 ## Rasa 1.7 to Rasa 1.8
 
 :::caution
@@ -358,7 +444,7 @@ model before trying to use it with this improved version.
   [TED Policy](./policies.mdx#ted-policy) add this to the `policies` section in your `config.yml`
   and remove potentially existing `KerasPolicy` entries:
 
-  ```yaml
+  ```yaml-rasa
   policies:
   # - ... other policies
   - name: TEDPolicy
@@ -412,7 +498,7 @@ model before trying to use it with this improved version.
   If you want to get the same model behavior as the current `EmbeddingIntentClassifier`, you can use
   the following configuration of `DIETClassifier`:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   # - ... other components
   - name: DIETClassifier
@@ -434,7 +520,7 @@ model before trying to use it with this improved version.
 * `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
   get the same model behavior as the current `CRFEntityExtractor`, you can use the following configuration:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   # - ... other components
   - name: LexicalSyntacticFeaturizer
@@ -473,7 +559,7 @@ model before trying to use it with this improved version.
 * If your pipeline contains `CRFEntityExtractor` and `EmbeddingIntentClassifier` you can substitute both
   components with [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier). You can use the following pipeline for that:
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   # - ... other components
   - name: LexicalSyntacticFeaturizer

@@ -17,7 +17,7 @@ from rasa.core.events import (
     Restarted,
     Event,
     SlotSet,
-    Form,
+    ActiveLoop,
 )
 from rasa.core.slots import Slot
 from rasa.core.trackers import DialogueStateTracker
@@ -222,7 +222,20 @@ class TrainingDataGenerator:
         else:
             return f"data generation round {phase}"
 
-    def _generate_ml_trackers(self) -> List[TrackerWithCachedStates]:
+    def generate(self) -> List[TrackerWithCachedStates]:
+        """Generate trackers from stories and rules.
+
+        Returns:
+            The generated trackers.
+        """
+        return self.generate_story_trackers() + self._generate_rule_trackers()
+
+    def generate_story_trackers(self) -> List[TrackerWithCachedStates]:
+        """Generate trackers from stories (exclude rule trackers).
+
+        Returns:
+            The generated story trackers.
+        """
         steps = [step for step in self.story_graph.ordered_steps() if not step.is_rule]
 
         return self._generate(steps, is_rule_data=False)
@@ -231,9 +244,6 @@ class TrainingDataGenerator:
         steps = [step for step in self.story_graph.ordered_steps() if step.is_rule]
 
         return self._generate(steps, is_rule_data=True)
-
-    def generate(self) -> List[TrackerWithCachedStates]:
-        return self._generate_ml_trackers() + self._generate_rule_trackers()
 
     def _generate(
         self, story_steps: List[StoryStep], is_rule_data: bool = False
@@ -593,7 +603,7 @@ class TrainingDataGenerator:
                 if step.is_rule:
                     # TODO: this is a hack to make a rule know
                     #  that slot or form should not be set
-                    if isinstance(event, Form) and event.name is None:
+                    if isinstance(event, ActiveLoop) and event.name is None:
                         event.name = "None"
                     if isinstance(event, SlotSet) and event.value is None:
                         event.value = "None"

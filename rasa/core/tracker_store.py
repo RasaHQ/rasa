@@ -34,7 +34,7 @@ from rasa.core.events import SessionStarted
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 import rasa.cli.utils as rasa_cli_utils
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
+from rasa.utils import common as common_utils
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
 
@@ -186,11 +186,11 @@ class TrackerStore:
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
 
-        logger.warning(
+        common_utils.raise_deprecation_warning(
             f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
-            f"trackers will be deprecated in version 2.0. Rasa will perform any "
-            f"future save operations of this tracker using json serialisation."
+            f"trackers is deprecated. Rasa will perform any "
+            f"future save operations of this tracker using json serialisation.",
         )
         return pickle.loads(serialised_tracker)
 
@@ -1086,8 +1086,8 @@ def _load_from_module_name_in_endpoint_config(
     """
 
     try:
-        tracker_store_class = class_from_module_path(store.type)
-        init_args = arguments_of(tracker_store_class.__init__)
+        tracker_store_class = common_utils.class_from_module_path(store.type)
+        init_args = common_utils.arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
             # DEPRECATION EXCEPTION - remove in 2.1
             raise Exception(
@@ -1102,7 +1102,7 @@ def _load_from_module_name_in_endpoint_config(
             domain=domain, event_broker=event_broker, **store.kwargs
         )
     except (AttributeError, ImportError):
-        raise_warning(
+        common_utils.raise_warning(
             f"Tracker store with type '{store.type}' not found. "
             f"Using `InMemoryTrackerStore` instead."
         )

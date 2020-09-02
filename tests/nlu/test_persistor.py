@@ -13,7 +13,7 @@ class Object:
 
 
 # noinspection PyPep8Naming
-async def test_list_method_method_in_AWS_persistor(component_builder, tmpdir):
+async def test_list_method_method_in_AWS_persistor(component_builder, tmp_path):
     with mock_s3():
         # artificially create a persisted model
         _config = RasaNLUModelConfig(
@@ -26,7 +26,7 @@ async def test_list_method_method_in_AWS_persistor(component_builder, tmpdir):
         (trained, _, persisted_path) = await train(
             _config,
             data="data/test/demo-rasa-small.json",
-            path=tmpdir.strpath,
+            path=str(tmp_path),
             storage="aws",
             component_builder=component_builder,
         )
@@ -163,6 +163,16 @@ def test_list_models_method_raise_exeception_in_Azure_persistor():
         result = persistor.AzurePersistor("", "", "").list_models()
 
     assert result == []
+
+
+def test_get_external_persistor():
+    p = persistor.get_persistor("rasa.nlu.persistor.Persistor")
+    assert isinstance(p, persistor.Persistor)
+
+
+def test_raise_exception_in_get_external_persistor():
+    with pytest.raises(ImportError):
+        _ = persistor.get_persistor("unknown.persistor")
 
 
 # noinspection PyPep8Naming

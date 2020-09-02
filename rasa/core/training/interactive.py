@@ -6,7 +6,6 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
 import numpy as np
@@ -23,14 +22,12 @@ import questionary
 import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa.cli import utils as cli_utils
 from rasa.core import constants, run, train, utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
     DEFAULT_SERVER_PORT,
-    DEFAULT_SERVER_URL,
     REQUESTED_SLOT,
     UTTER_PREFIX,
 )
@@ -46,7 +43,7 @@ from rasa.core.events import (
     UserUtteranceReverted,
 )
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
-from rasa.core.trackers import EventVerbosity, DialogueStateTracker
+from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP_KEY
 from rasa.core.training import visualization
 from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
@@ -73,9 +70,9 @@ logger = logging.getLogger(__name__)
 MAX_VISUAL_HISTORY = 3
 
 PATHS = {
-    "stories": "data/stories.md",
-    "nlu": "data/nlu.md",
-    "backup": "data/nlu_interactive.md",
+    "stories": "data/stories.yml",
+    "nlu": "data/nlu.yml",
+    "backup": "data/nlu_interactive.yml",
     "domain": "domain.yml",
 }
 
@@ -259,7 +256,7 @@ def format_bot_output(message: BotUttered) -> Text:
 
     if data.get("buttons"):
         output += "\nButtons:"
-        choices = cli_utils.button_choices_from_message_data(
+        choices = rasa.cli.utils.button_choices_from_message_data(
             data, allow_free_text_input=True
         )
         for choice in choices:
@@ -268,13 +265,13 @@ def format_bot_output(message: BotUttered) -> Text:
     if data.get("elements"):
         output += "\nElements:"
         for idx, element in enumerate(data.get("elements")):
-            element_str = cli_utils.element_to_string(element, idx)
+            element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
 
     if data.get("quick_replies"):
         output += "\nQuick replies:"
         for idx, element in enumerate(data.get("quick_replies")):
-            element_str = cli_utils.element_to_string(element, idx)
+            element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
 
@@ -570,7 +567,7 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strings = []
     for k, s in tracker_dump.get("slots", {}).items():
-        colored_value = cli_utils.wrap_with_color(
+        colored_value = rasa.cli.utils.wrap_with_color(
             str(s), color=rasa.cli.utils.bcolors.WARNING
         )
         slot_strings.append(f"{k}: {colored_value}")
@@ -843,20 +840,16 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
-    from rasa.data import (
-        YAML_FILE_EXTENSIONS,
-        MARKDOWN_FILE_EXTENSIONS,
-        JSON_FILE_EXTENSIONS,
-    )
+    from rasa import data
 
     guessed_format = loading.guess_format(export_path)
 
     if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
-        if Path(export_path).suffix in JSON_FILE_EXTENSIONS:
+        if data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif Path(export_path).suffix in MARKDOWN_FILE_EXTENSIONS:
+        elif data.is_likely_markdown_file(export_path):
             guessed_format = MARKDOWN
-        elif Path(export_path).suffix in YAML_FILE_EXTENSIONS:
+        elif data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
     return guessed_format
@@ -954,21 +947,20 @@ async def _predict_till_next_listen(
         if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
             "buttons", None
         ):
-            response = _get_button_choice(last_event)
-            if response != cli_utils.FREE_TEXT_INPUT_PROMPT:
-                await send_message(endpoint, conversation_id, response)
+            user_selection = _get_button_choice(last_event)
+            if user_selection != rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
+                await send_message(endpoint, conversation_id, user_selection)
 
 
 def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
     data = last_event["data"]
     message = last_event.get("text", "")
 
-    choices = cli_utils.button_choices_from_message_data(
+    choices = rasa.cli.utils.button_choices_from_message_data(
         data, allow_free_text_input=True
     )
     question = questionary.select(message, choices)
-    response = cli_utils.payload_from_button_question(question)
-    return response
+    return rasa.cli.utils.payload_from_button_question(question)
 
 
 async def _correct_wrong_nlu(
@@ -1012,8 +1004,8 @@ async def _correct_wrong_action(
 def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check if the form got rejected with the most recent action name."""
     return (
-        tracker.get("active_form", {}).get("name")
-        and action_name != tracker["active_form"]["name"]
+        tracker.get(ACTIVE_LOOP_KEY, {}).get("name")
+        and action_name != tracker[ACTIVE_LOOP_KEY]["name"]
         and action_name != ACTION_LISTEN_NAME
     )
 
@@ -1021,9 +1013,9 @@ def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
 def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check whether the form is called again after it was rejected."""
     return (
-        tracker.get("active_form", {}).get("rejected")
+        tracker.get(ACTIVE_LOOP_KEY, {}).get("rejected")
         and tracker.get("latest_action_name") == ACTION_LISTEN_NAME
-        and action_name == tracker.get("active_form", {}).get("name")
+        and action_name == tracker.get(ACTIVE_LOOP_KEY, {}).get("name")
     )
 
 
@@ -1050,7 +1042,7 @@ async def _confirm_form_validation(
             endpoint, conversation_id, {"event": "form_validation", "validate": False}
         )
 
-    elif not tracker.get("active_form", {}).get("validate"):
+    elif not tracker.get(ACTIVE_LOOP_KEY, {}).get("validate"):
         # handle contradiction with learned behaviour
         warning_question = questionary.confirm(
             "ERROR: FormPolicy predicted no form validation "
@@ -1102,7 +1094,7 @@ async def _validate_action(
             conversation_id,
             {
                 "event": "action_execution_rejected",
-                "name": tracker["active_form"]["name"],
+                "name": tracker[ACTIVE_LOOP_KEY]["name"],
             },
         )
 
@@ -1224,7 +1216,7 @@ async def _correct_entities(
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
-    from rasa.nlu.training_data.formats import MarkdownReader
+    from rasa.nlu.training_data import entities_parser
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)
@@ -1233,8 +1225,7 @@ async def _correct_entities(
     )
 
     annotation = await _ask_questions(question, conversation_id, endpoint)
-    # noinspection PyProtectedMember
-    parse_annotated = MarkdownReader().parse_training_example(annotation)
+    parse_annotated = entities_parser.parse_training_example(annotation)
 
     corrected_entities = _merge_annotated_and_original_entities(
         parse_annotated, parse_original
