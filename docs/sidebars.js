@@ -128,7 +128,6 @@ module.exports = {
             },
             'retrieval-actions',
             'forms',
-            'reminders-and-external-events',
             'default-actions',
           ],
         },

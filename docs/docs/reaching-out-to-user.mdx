@@ -10,23 +10,27 @@ or you might want to prompt the user if they haven't sent a message for a while.
 This page is a guide to enabling your assistant to reach out to the user proactively.
 
 
-## Concepts
-
-### Reaching out first
+## Reaching out first
+### Concepts
 
 To have your assistant reach out to the user at the beginning of a conversation,
 configure your [messaging or voice channel](messaging-and-voice-channels.mdx) to send a payload to the bot that 
 will trigger the appropriate response. For example, in Sara, the Rasa bot, when a 
 user opens the chat window, the chat widget sends the payload `/greet`, so that
 Sara greets the user with a welcome message. How you send the initial payload
-will depend on the channel(s) you are using. 
+will depend on the channel(s) you are using.
 
 On the bot's side,
 you might want to reuse an existing intent and response, or have a specific
 intent and response for the start of conversations. If you want a specific welcome
 message that the user won't also see by e.g. greeting the bot, you need
 to add the intent and response(s) to your domain, and add a rule
-for what the bot should do with the initial payload. For example:
+for what the bot should do with the initial payload. 
+
+### Data 
+
+Using the following example training data, your assistant
+will send the `utter_welcome` response when the `chat_opened` intent is predicted:
 
 ```rasa-yaml
 intents: 
@@ -47,14 +51,351 @@ Since there's no training data for the intent `chat_opened`, the intent can only
 be triggered explicitly by sending `/chat_opened`, which is what your channel
 should send to the bot. 
 
-## Reminders and External Events
+### Try it Out
 
-The `ReminderScheduled` event and the
-[trigger_intent endpoint](./http-api.mdx#operation/triggerConversationIntent) let your assistant remind you
-about things after a given period of time, or to respond to external events (other applications, sensors, etc.).
-[ReminderBot](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md)
-is a full example assistant that implements these features.
 
+## External Events
+
+Sometimes you want an external device to change the course of an ongoing conversation.
+For example, if you have a moisture-sensor attached to a Raspberry Pi, you could use it to notify
+you when a plant needs watering via your assistant.
+
+### Concepts
+
+#### `trigger_intent` Endpoint
+
+To have an event from some other device change the course of an ongoing conversation, you can 
+have the device post to the
+[`trigger_intent` endpoint](./http-api.mdx#operation/triggerConversationIntent) of your conversation.
+The `trigger_intent` endpoint injects a user intent (possibly with entities) into your conversation.
+For Rasa, it is as if you entered a message that got classified with that specific intent and entities.
+The assistant will then predict and execute the next action as usual.
+
+
+For example, the following post request would inject the intent `EXTERNAL_dry_plant` and the `plant` entity and value
+into the conversation with the `conversation_id` "`user123`":
+
+```shell
+curl -H "Content-Type: application/json" -X POST \
+  -d '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' \
+  "http://localhost:5005/conversations/user123/trigger_intent?output_channel=latest"
+```
+
+#### Getting the `conversation_id`
+
+To have an external device post to the `trigger_intent` endpoint, you need the conversation ID of the ongoing conversation.
+To try it out locally, you can define a custom action `action_tell_id` to tell you 
+the conversation ID, and then use it in the POST request to the `trigger_intent` endpoint:
+
+```python
+
+```
+
+In a real-life scenario, your external device would get hold of the conversation ID some other way. 
+In the dry plant example, you might have a database of plants, the users that water them, and the users' 
+conversation IDs. Your Raspberry Pi would get the conversation ID directly from the database.
+
+
+### Data
+
+#### Intents and Entities 
+
+In the dry plant example, your Raspberry Pi needs to send a message with the intent
+`EXTERNAL_dry_plant` to the `trigger_intent` endpoint. This intent will be reserved for use by the Raspberry Pi, so
+there won't be any NLU training examples for it. You'll also need to define an intent to get the `conversation_id` 
+for the POST request. You can add NLU training examples for this intent if you want, or you can just add the intent 
+and trigger it by entering `/tell_id`:
+
+```rasa-yaml
+intents:
+  - EXTERNAL_dry_plant
+  - tell_id
+```
+
+:::note
+It is recommended
+to name intents that come from other devices with the `EXTERNAL_` prefix because it makes it 
+easier to see which intents are expected to come from external devices when working with your training data. 
+:::
+
+To tell the assistant which plant needs watering, you can define an entity that you'll post along with the intent.
+To be able to use the entity value directly in a response, define a slot by the same name:
+
+```rasa-yaml
+entities:
+  - plant
+
+slots:
+  plant:
+    type: unfeaturized
+```
+
+#### Rules and Actions
+
+You'll need two rules for the dry plant example: one to get the `conversation_id` back, and one
+that tells your assistant how to respond when it receives a message from the Raspberry Pi.
+
+```rasa-yaml
+- rule: conversation id
+  steps:
+  - intent: conversation_id
+  - action: action_tell_id
+rules:
+  - rule: warn about dry plant
+    steps:
+    - intent: EXTERNAL_dry_plant
+    - action: utter_warn_dry
+```
+
+You'll need to add your custom action for telling the conversation ID to the domain too:
+
+```rasa-yaml
+actions:
+  - action_tell_id
+```
+
+#### Responses
+You'll need to define the response text for `utter_warn_dry`:
+
+```rasa-yaml
+responses:
+  utter_warn_dry: Your {plant} needs some water!
+```
+
+The response will use the value from the slot `plant` to warn about the specific plant that needs watering. 
+
+### Try it out
+
+To try out the dry plant notification example, you'll need to start both `rasa shell` 
+and the action server, since you need a custom action to tell you your `conversation_id`.
+
+Once you have retrained your model with the data above, you can try it out by 
+getting the `conversation_id` back from the assistant:
+
+```yaml
+User: /tell_id
+  Bot: Your conversation ID is user1234
+```
+
+Using the conversation ID from the bot's response, run this POST request in a separate terminal window:
+
+```shell
+curl -H "Content-Type: application/json" -X POST \
+  -d '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' \
+  "http://localhost:5005/conversations/user123/trigger_intent?output_channel=latest"
+```
+
+In your shell, you should see the bot respond to the request:
+
+```yaml
+  Bot: Your Orchid needs some water!
+```
+
+## Reminders
+
+You can have your assistant reach out to the user after a set amount of time by using **reminders**.
+
+### Concepts
+
+#### Scheduling Reminders
+
+To schedule a reminder, you need to define a custom action that returns 
+the `ReminderScheduled` event. For example, the following custom action
+schedules a reminder for five seconds from now:
+
+
+```python
+class ActionSetReminder(Action):
+    """Schedules a reminder, supplied with the last message's entities."""
+
+    def name(self) -> Text:
+        return "action_set_reminder"
+
+    async def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+
+        dispatcher.utter_message("I will remind you in 5 seconds.")
+
+        date = datetime.datetime.now() + datetime.timedelta(seconds=5)
+        entities = tracker.latest_message.get("entities")
+
+        reminder = ReminderScheduled(
+            "EXTERNAL_reminder",
+            trigger_date_time=date,
+            entities=entities,
+            name="my_reminder",
+            kill_on_user_message=False,
+        )
+
+        return [reminder]
+```
+Note that this action requires the `datetime` and `rasa_sdk.events` packages.
+
+The first argument for the `ReminderScheduled` event is the reminder's name, in this case, `EXTERNAL_reminder`. 
+The reminder name will be used later as an intent to trigger a reaction to the reminder.
+As with external events, it's recommended to name the reminder name with the 
+`EXTERNAL_` prefix to make it easier to see what's going on in your training data.
+
+You can see that the last messages' `entities` are also passed to the reminder. 
+This allows the action that reacts to the reminder to make use of the entities
+from the user's scheduling message. 
+
+For example, if you want your assistant to remind you to call a friend, you could
+send it a message like "Remind me to call Paul". If `Paul` is extracted as a `name` 
+entity, the action reacting to the reminder can use it to say "Remember to call Paul!"
+
+#### Reacting to Reminders
+
+As with external events, the bot reaches out to the user after receiving a
+POST request to the `trigger_intent` endpoint. Reminders, however, send
+the request to the right `conversation_id` automatically after a certain amount of time using 
+the name that you define in the `ReminderScheduled` event. 
+
+To define a reaction to the reminder, you only need to write a [rule](#rules) that 
+tells the bot what action to take when it receives the reminder intent. 
+
+In the call reminder example, you want to use the entities that come with the 
+reminder to be reminded to call specific people, so you need to write a custom
+action that does that:
+
+```python
+class ActionReactToReminder(Action):
+    """Reminds the user to call someone."""
+
+    def name(self) -> Text:
+        return "action_react_to_reminder"
+
+    async def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+
+        name = next(tracker.get_latest_entity_values("name"), "someone")
+        dispatcher.utter_message(f"Remember to call {name}!")
+
+        return []
+```
+
+#### Cancelling Reminders
+
+To cancel a reminder that you've already scheduled, you need a custom action 
+that returns the `ReminderCancelled()` event. 
+
+Returning `ReminderCancelled()` cancels all the reminders that are currently scheduled.
+If you only want to cancel certain reminders, you can specify some parameters by which to narrow down the scheduled reminders:
+
+* `ReminderCancelled(intent="greet")` cancels all reminders with intent `greet`
+
+* `ReminderCancelled(entities={})` cancels all reminders with the given entities
+
+* `ReminderCancelled("...")` cancels the one unique reminder with the given name “`...`” that you supplied
+  during its creation
+
+
+For the call reminder example, you can define a custom action `action_forget_reminders` that cancels
+all reminders:
+
+```python
+class ForgetReminders(Action):
+    """Cancels all reminders."""
+
+    def name(self) -> Text:
+        return "action_forget_reminders"
+
+    async def run(
+        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+
+        dispatcher.utter_message(f"Okay, I'll cancel all your reminders.")
+
+        # Cancel all reminders
+        return [ReminderCancelled()]
+```
+
+
+:::caution
+All reminders are cancelled whenever you shutdown your Rasa server.
+:::
+
+### Data
+
+#### Intents and Entities
+
+You'll need to define an intent that triggers setting the reminder and one that triggers cancelling the reminder.
+The `ReminderScheduled` event
+will automatically send the intent `EXTERNAL_reminder` to your bot after  the amount of time specified, 
+so you also need to add this intent to your intents. You don't need to add any training examples,
+since the intent is reserved for the reminder.
+
+```
+intents:
+- intent: EXTERNAL_reminder
+- intent: ask_remind_call
+- intent: ask_forget_reminders
+```
+
+You should add NLU training examples for scheduling and cancelling the reminder:
+
+```yaml-rasa
+nlu:
+- intent: ask_remind_call
+  examples: |
+    - remind me to call Albert
+    - remind me to call Susan
+    - later I have to call Daksh
+    - later I have to call Anna
+- intent: ask_forget_reminders
+  examples: |
+    - cancel all reminders
+    - cancel that please
+    - please cancel that reminder
+    - forget the reminder
+```
+
+By adding `SpacyNLP` and `SpacyEntityExtractor` to your pipeline in your config file, you won't need to annotate any of the 
+names in your training data, since Spacy has a `name` dimension:
+
+```yaml-rasa
+pipeline:
+# other components
+- SpacyNLP
+- SpacyEntityExtractor
+    dimensions: ["name"]
+```
+
+#### Rules
+
+You'll need to add three rules: One for scheduling a reminder, one for your assistant reacting to a reminder,
+and one for cancellng a reminder.
+
+```yaml-rasa
+rules:
+- rule: Schedule a reminder
+  steps:
+  - intent: ask_remind_call
+    entities:
+    - name
+  - action: action_schedule_reminder
+
+- rule: Trigger `action_react_to_reminder` for `EXTERNAL_reminder`
+  steps:
+  - intent: EXTERNAL_reminder
+  - action: action_react_to_reminder
+
+- rule: Cancel a reminder
+  steps:
+  - intent: ask_forget_reminders
+  - action: action_forget_reminders
+```
+
+
+### Try it Out
 :::caution
 Reminders don't work in request-response channels like the `rest` channel or `rasa shell`.
 Custom connectors for assistants implementing reminders or external events should be built
@@ -62,146 +403,4 @@ off of the `CallbackInput` channel instead of the `RestInput` channel.
 
 See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md)
 for instructions on how to test your reminders locally.
-
 :::
-
-
-## External Events
-
-Let's say you want to send a message from some other device to change the course of an ongoing conversation.
-For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favorite
-plant needs watering, and your assistant should then relay this message to you.
-
-To do this, your Raspberry Pi needs to send a message to the
-[trigger_intent endpoint](./http-api.mdx#operation/triggerConversationIntent) of your conversation.
-As the name says, this injects a user intent (possibly with entities) into your conversation.
-So for Rasa it is almost as if you had entered a message that got classified with this intent and these entities.
-Rasa then needs to respond to this input with an action such as `action_warn_dry`.
-The easiest and most reliable way to connect this action with the intent is to use
-[Rules](./rules.mdx).
-
-
-### Responding to External Events
-
-The first thing required to respond to an external event is the Session ID of the conversation that your
-sensor should send a notification to. For example, if everyone in your office uses this Raspberry Pi to
-keep track of their plants, the sensor needs to tell Rasa which user should be notified about a dehydrated plant.
-
-Once you have your Session ID, we need to prepare the assistant so it responds to messages from the sensor.
-To this end, we define a new intent `EXTERNAL_dry_plant` without any NLU data.
-This intent will later be triggered by the external sensor.
-Here, we start the intent name with `EXTERNAL_` to indicate that this is not something the user would say, but you can name the intent however you like.
-
-In the domain file, we now connect the intent `EXTERNAL_dry_plant` with another custom action `action_warn_dry`
-to dispatch the response to the external event to the user.
-
-Now, when you are in a conversation with id `38cc25d7e23e4dde800353751b7c2d3e`, then running
-
-```shell
-curl -H "Content-Type: application/json" -X POST \
-  -d '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' \
-  "http://localhost:5005/conversations/38cc25d7e23e4dde800353751b7c2d3e/trigger_intent?output_channel=latest"
-```
-
-in the terminal will cause your assistant to say “Your Orchid needs some water!”.
-
-
-
-## Reminders
-
-Instead of an external sensor, you might just want to be reminded about something after a certain amount of time.
-For this, Rasa provides the special event `ReminderScheduled`, and another event, `ReminderCancelled`, to unschedule a reminder.
-
-
-### Scheduling Reminders
-
-Let's say you want your assistant to remind you to call a friend in 5 seconds.
-(You probably want some longer time span, but for the sake of testing, let it be 5 seconds.)
-Thus, we define an intent `ask_remind_call` with some NLU data,
-
-```yaml-rasa
-nlu:
-- intent: ask_remind_call
-  examples: |
-    - remind me to call [Albert](name)
-    - remind me to call [Susan](name)
-    - later I have to call [Daksh](name)
-    - later I have to call [Anna](name)
-```
-
-and connect this intent with a new custom action `action_set_reminder`.
-We could make this connection by providing training stories (recommended for more complex assistants),
-or using [Rules](./rules.mdx).
-
-The custom action `action_set_reminder` should schedule a reminder that, 5 seconds later,
-triggers an intent `EXTERNAL_reminder` with all the entities that the user provided
-in his/her last message (similar to an external event):
-
-```python
-async def run(
-    self,
-    dispatcher: CollectingDispatcher,
-    tracker: Tracker,
-    domain: Dict[Text, Any],
-) -> List[Dict[Text, Any]]:
-"""Schedule a reminder, supplied with the last message's entities."""
-
-    dispatcher.utter_message("I will remind you in 5 seconds.")
-
-    date = datetime.datetime.now() + datetime.timedelta(seconds=5)
-    entities = tracker.latest_message.get("entities")
-
-    reminder = ReminderScheduled(
-        "EXTERNAL_reminder",
-        trigger_date_time=date,
-        entities=entities,
-        name="my_reminder",
-        kill_on_user_message=False,
-    )
-
-    return [reminder]
-```
-
-Note that this requires the `datetime` and `rasa_sdk.events` packages.
-
-Finally, we define another custom action `action_react_to_reminder` and link it to the `EXTERNAL_reminder` intent
-by writing a [Rule](./rules.mdx) for it:
-
-```yaml-rasa
-rules:
-- rule: Trigger `action_react_to_reminder` for `EXTERNAL_reminder`
-  steps:
-  - intent: EXTERNAL_reminder
-  - action: action_react_to_reminder
-```
-
-This tells the model which action to take when the time is up on the reminder.
-
-Instead of a custom action, we could also have used a simple response template.
-But here we want to make use of the fact that the reminder can carry entities, and we can process the entities in this custom action.
-
-:::caution
-Reminders are cancelled whenever you shutdown your Rasa server.
-
-:::
-
-
-### Cancelling Reminders
-
-Sometimes the user may want to cancel a reminder that he has scheduled earlier.
-A simple way of adding this functionality to your assistant is to create an intent `ask_forget_reminders`
-and let your assistant respond to it with a custom action that returns the `ReminderCancelled()` event.
-
-`ReminderCancelled()` simply cancels all the reminders that are currently scheduled.
-Alternatively, you may provide some parameters to narrow down the types of reminders that you want to cancel.
-
-* `ReminderCancelled(intent="greet")` cancels all reminders with intent `greet`
-
-* `ReminderCancelled(entities={...})` cancels all reminders with the given entities
-
-* `ReminderCancelled("...")` cancels the one unique reminder with the given name “`...`” that you supplied
-  during its creation
-
-
-
-## Putting it all together
