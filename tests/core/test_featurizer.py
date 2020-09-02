@@ -37,11 +37,11 @@ def test_fail_to_load_non_existent_featurizer():
     assert TrackerFeaturizer.load("non_existent_class") is None
 
 
-def test_binary_featurizer_correctly_encodes_state():
+def test_single_state_featurizer_correctly_encodes_state():
     """
     Check that all the attributes are correctly featurized when they should and not featurized when shouldn't;
     """
-    f = BinarySingleStateFeaturizer()
+    f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, "action_listen": 2}
     f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
@@ -87,8 +87,8 @@ def test_binary_featurizer_correctly_encodes_state():
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
 
 
-def test_binary_featurizer_correctly_encodes_non_existing_value():
-    f = BinarySingleStateFeaturizer()
+def test_single_state_featurizer_correctly_encodes_non_existing_value():
+    f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1}
     encoded = f.encode_state(
@@ -99,7 +99,7 @@ def test_binary_featurizer_correctly_encodes_non_existing_value():
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[0, 0]])).nnz == 0
 
 
-def test_binary_featurizer_creates_encoded_all_actions():
+def test_single_state_featurizer_creates_encoded_all_actions():
     from rasa.core.actions.action import default_action_names
 
     domain = Domain(
@@ -110,7 +110,7 @@ def test_binary_featurizer_creates_encoded_all_actions():
         forms=[],
         action_names=["a", "b", "c", "d"],
     )
-    f = BinarySingleStateFeaturizer()
+    f = SingleStateFeaturizer()
     f.prepare_from_domain(domain)
     encoded_actions = f.encode_all_actions(domain, None)
     assert len(encoded_actions) == len(domain.action_names)
@@ -122,8 +122,8 @@ def test_binary_featurizer_creates_encoded_all_actions():
     )
 
 
-def test_binary_featurizer_uses_dtype_float():
-    f = BinarySingleStateFeaturizer()
+def test_single_state_featurizer_uses_dtype_float():
+    f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1}
     f._default_feature_states[ENTITIES] = {"c": 0}
@@ -137,7 +137,7 @@ def test_binary_featurizer_uses_dtype_float():
     assert encoded[ACTION_NAME][0].features.dtype == np.float32
 
 
-def test_single_state_featurizer_correctly_encodes_state(
+def test_single_state_featurizer_correctly_encodes_state_with_interpreter(
     monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_moodbot_path: Text
 ):
     # Skip actual NLU training and return trained interpreter path from fixture
@@ -180,11 +180,8 @@ def test_single_state_featurizer_correctly_encodes_state(
         },
         interpreter=kwargs["interpreter"],
     )
-    assert all(
-        [
-            attribute in encoded
-            for attribute in [TEXT, ENTITIES, ACTION_NAME, SLOTS, ACTIVE_LOOP]
-        ]
+    assert sorted(list(encoded.keys())) == sorted(
+        [TEXT, ENTITIES, ACTION_NAME, SLOTS, ACTIVE_LOOP]
     )
     assert encoded[TEXT][0].features.shape[-1] == 300
     assert encoded[ACTION_NAME][0].features.shape[-1] == 2
@@ -198,5 +195,5 @@ def test_single_state_featurizer_correctly_encodes_state(
         interpreter=kwargs["interpreter"],
     )
 
-    assert all([attribute in encoded for attribute in [ACTION_TEXT]])
+    assert list(encoded.keys()) == [ACTION_TEXT]
     assert encoded[ACTION_TEXT][0].features.shape[-1] == 300
