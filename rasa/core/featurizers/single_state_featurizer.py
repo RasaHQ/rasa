@@ -151,7 +151,7 @@ class SingleStateFeaturizer:
             ),
             None,
         )
-        if not output and name_attribute:
+        if name_attribute and name_attribute not in output:
             # nlu pipeline didn't create features for user or action
             output[name_attribute] = self._create_features(
                 sub_state, name_attribute, sparse
