@@ -30,7 +30,7 @@ Run the API entrypoint.
 #### load\_agent\_on\_start
 
 ```python
-async load_agent_on_start(model_path: Text, endpoints: AvailableEndpoints, remote_storage: Optional[Text], app: Sanic, loop: Text)
+async load_agent_on_start(model_path: Text, endpoints: AvailableEndpoints, remote_storage: Optional[Text], app: Sanic, loop: AbstractEventLoop)
 ```
 
 Load an agent.
