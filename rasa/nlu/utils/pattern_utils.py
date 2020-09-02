@@ -45,7 +45,7 @@ def _generate_lookup_regex(lookup_table: Dict[Text, Union[Text, List[Text]]]) ->
         elements_to_regex = lookup_elements
     # otherwise it's a file path.
     else:
-        elements_to_regex = _read_lookup_table_file(lookup_elements)
+        elements_to_regex = read_lookup_table_file(lookup_elements)
 
     # sanitize the regex, escape special characters
     elements_sanitized = [re.escape(e) for e in elements_to_regex]
@@ -54,7 +54,7 @@ def _generate_lookup_regex(lookup_table: Dict[Text, Union[Text, List[Text]]]) ->
     return "(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"
 
 
-def _read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
+def read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
     """Read the lookup table file.
 
     Args:

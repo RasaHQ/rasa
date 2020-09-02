@@ -32,6 +32,7 @@ UNESCAPE = re.compile(f'[{"".join(UNESCAPE_DCT.values())}]')
 GROUP_COMPLETE_MATCH = 0
 
 YAML_LINE_MAX_WIDTH = 4096
+CONVERTED_FILE_SUFFIX = "_converted.yml"
 
 
 def configure_colored_logging(loglevel: Text) -> None:
@@ -542,3 +543,18 @@ def decode_string(s: Text) -> Text:
         return UNESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
 
     return UNESCAPE.sub(replace, s)
+
+
+def generate_path_for_converted_training_data_file(
+    source_file_path: Path, output_directory: Path
+) -> Path:
+    """Generates path for a training data file converted to YAML format.
+
+    Args:
+        source_file_path: Path to the original file.
+        output_directory: Path to the target directory.
+
+    Returns:
+        Path to the target converted training data file.
+    """
+    return output_directory / f"{source_file_path.stem}{CONVERTED_FILE_SUFFIX}"

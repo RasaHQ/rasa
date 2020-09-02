@@ -7,6 +7,7 @@ from typing import Optional, Text
 
 import rasa.utils.io as io_utils
 from rasa.nlu import utils
+from rasa.nlu.training_data.formats import NLGMarkdownReader
 from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -45,12 +46,6 @@ _json_format_heuristics = {
     DIALOGFLOW_INTENT_EXAMPLES: lambda js, fn: "_usersays_" in fn,
     DIALOGFLOW_ENTITY_ENTRIES: lambda js, fn: "_entries_" in fn,
 }
-
-# looks for pattern like:
-# ##
-# * intent/response_key
-#   - response_text
-_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*[^:]*\/.*\n\s*\t*\-.*")
 
 
 def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
@@ -139,13 +134,6 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
         return None
 
 
-def _is_nlg_story_format(content: Text) -> bool:
-
-    match = re.search(_nlg_markdown_marker_regex, content)
-    if match:
-        return True
-
-
 def guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file.
 
@@ -166,7 +154,7 @@ def guess_format(filename: Text) -> Text:
     except ValueError:
         if any(marker in content for marker in markdown.MARKDOWN_SECTION_MARKERS):
             guess = MARKDOWN
-        elif _is_nlg_story_format(content):
+        elif NLGMarkdownReader.is_markdown_nlg_file(filename):
             guess = MARKDOWN_NLG
         elif RasaYAMLReader.is_yaml_nlu_file(filename):
             guess = RASA_YAML

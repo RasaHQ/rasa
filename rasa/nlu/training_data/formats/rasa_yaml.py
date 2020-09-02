@@ -394,6 +394,9 @@ class RasaYAMLWriter(TrainingDataWriter):
         nlu_items.extend(self.process_regexes(training_data))
         nlu_items.extend(self.process_lookup_tables(training_data))
 
+        if not any([nlu_items, training_data.responses]):
+            return
+
         result = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
             LATEST_TRAINING_DATA_FORMAT_VERSION
@@ -445,6 +448,9 @@ class RasaYAMLWriter(TrainingDataWriter):
     def process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]:
         prepared_lookup_tables = OrderedDict()
         for lookup_table in training_data.lookup_tables:
+            # this is a lookup table filename
+            if isinstance(lookup_table["elements"], str):
+                continue
             prepared_lookup_tables[lookup_table["name"]] = lookup_table["elements"]
 
         return cls.process_training_examples_by_key(

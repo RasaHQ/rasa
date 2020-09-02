@@ -7,6 +7,7 @@ import rasa.utils.io as io_utils
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.domain import InvalidDomain
 from rasa.nlu.constants import INTENT
+from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader, RasaYAMLWriter
 
 MULTILINE_INTENT_EXAMPLES = f"""
@@ -347,6 +348,27 @@ def test_nlg_multimedia_load_dump_roundtrip():
     reader = RasaYAMLReader()
     result = reader.reads(responses_yml)
 
+    dumped = RasaYAMLWriter().dumps(result)
+
+    validation_reader = RasaYAMLReader()
+    dumped_result = validation_reader.reads(dumped)
+
+    assert dumped_result.responses == result.responses
+
+    # dumping again should also not change the format
+    assert dumped == RasaYAMLWriter().dumps(dumped_result)
+
+
+def test_responses_are_converted_from_markdown():
+    responses_md = textwrap.dedent(
+        """
+      ## ask name
+      * chitchat/ask_name
+        - my name is Sara, Rasa's documentation bot!
+    """
+    )
+
+    result = MarkdownReader().reads(responses_md)
     dumped = RasaYAMLWriter().dumps(result)
 
     validation_reader = RasaYAMLReader()
