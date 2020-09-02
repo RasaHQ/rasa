@@ -154,12 +154,12 @@ class TrackerFeaturizer:
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
             return jsonpickle.decode(rasa.utils.io.read_file(featurizer_file))
-        else:
-            logger.error(
-                "Couldn't load featurizer for policy. "
-                "File '{}' doesn't exist.".format(featurizer_file)
-            )
-            return None
+
+        logger.error(
+            "Couldn't load featurizer for policy. "
+            "File '{}' doesn't exist.".format(featurizer_file)
+        )
+        return None
 
 
 class FullDialogueTrackerFeaturizer(TrackerFeaturizer):

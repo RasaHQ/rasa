@@ -428,7 +428,7 @@ class Domain:
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         forms: List[Union[Text, Dict]],
-        e2e_action_texts: Optional[List[Text]] = None,
+        action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
@@ -447,7 +447,7 @@ class Domain:
 
         self.slots = slots
         self.templates = templates
-        self.e2e_action_texts = e2e_action_texts or []
+        self.action_texts = action_texts or []
         self.session_config = session_config
 
         self._custom_actions = action_names
@@ -459,7 +459,7 @@ class Domain:
         self.action_names = (
             action.combine_user_with_default_actions(self.user_actions)
             + self.form_names
-            + self.e2e_action_texts
+            + self.action_texts
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -806,7 +806,7 @@ class Domain:
             KEY_RESPONSES: self.templates,
             KEY_ACTIONS: self._custom_actions,  # class names of the actions
             KEY_FORMS: self.forms,
-            KEY_E2E_ACTIONS: self.e2e_action_texts,
+            KEY_E2E_ACTIONS: self.action_texts,
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:

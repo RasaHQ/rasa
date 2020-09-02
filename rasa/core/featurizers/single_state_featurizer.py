@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class SingleStateFeaturizer:
     def __init__(self) -> None:
         self._default_feature_states = {}
-        self.e2e_action_texts = []
+        self.action_texts = []
 
     def prepare_from_domain(self, domain: Domain) -> None:
         # store feature states for each attribute in order to create binary features
@@ -40,7 +40,7 @@ class SingleStateFeaturizer:
         self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
         self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
-        self.e2e_action_texts = domain.e2e_action_texts
+        self.action_texts = domain.action_texts
 
     # pytype: disable=bad-return-type
     def _state_features_for_attribute(
@@ -190,7 +190,7 @@ class SingleStateFeaturizer:
         self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
 
-        if action in self.e2e_action_texts:
+        if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
         else:
             action_as_sub_state = {ACTION_NAME: action}
@@ -213,7 +213,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in the future. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            category=FutureWarning,
+            category=DeprecationWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
@@ -239,6 +239,6 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in the future. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            category=FutureWarning,
+            category=DeprecationWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
