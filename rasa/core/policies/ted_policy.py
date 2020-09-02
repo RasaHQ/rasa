@@ -30,6 +30,7 @@ from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature, Da
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
 from rasa.utils.tensorflow.constants import (
     LABEL,
+    HIDDEN_LAYERS_SIZES,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
@@ -83,7 +84,7 @@ LABEL_SUB_KEY = "ids"
 LENGTH = "length"
 POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE]
 FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
-LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
+LABEL_ACTION_KEYS = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
@@ -135,7 +136,7 @@ class TEDPolicy(Policy):
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
-        BATCH_SIZES: [64, 256],
+        BATCH_SIZES: [8, 32],
         # Strategy used whenc creating batches.
         # Can be either 'sequence' or 'balanced'.
         BATCH_STRATEGY: BALANCED,
@@ -251,7 +252,9 @@ class TEDPolicy(Policy):
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
+        encoded_all_labels = state_featurizer.create_encoded_all_actions(
+            domain, interpreter
+        )
 
         attribute_data, _ = convert_to_data_format(encoded_all_labels)
 
@@ -556,10 +559,11 @@ class TED(TransformerRasaModel):
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
-            self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
+
+        for name in FEATURES_TO_ENCODE + LABEL_ACTION_KEYS:
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
@@ -606,16 +610,9 @@ class TED(TransformerRasaModel):
             name: attribute name
         """
         feature_type = SENTENCE
-        # create encoding layers only for the features which should be encoded;
-        if name not in FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
-            return
-        # check that there are SENTENCE features for the attribute name in data
-        if name in FEATURES_TO_ENCODE and feature_type not in self.data_signature[name]:
-            return
-        #  same for label_data
-        if (
-            name in LABEL_FEATURES_TO_ENCODE
-            and feature_type not in self.label_signature[name]
+        if name in FEATURES_TO_ENCODE and (
+            name not in self.data_signature
+            or feature_type not in self.data_signature[name]
         ):
             return
 
@@ -680,7 +677,14 @@ class TED(TransformerRasaModel):
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Optional[tf.Tensor]:
-
+        """
+        Encodes features for a given attribute
+        Args:
+            tf_batch_data: dictionary mapping every attribute to its features and masks
+            attribute: the attribute we will encode features for (e.g., ACTION_NAME, INTENT)
+        Returns:
+            A tensor combining  all features for `attribute`
+        """
         if not tf_batch_data[attribute]:
             return None
 
@@ -692,7 +696,7 @@ class TED(TransformerRasaModel):
             mask=attribute_mask,
         )
 
-        if attribute in FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
+        if attribute in FEATURES_TO_ENCODE + LABEL_ACTION_KEYS:
             attribute_features = self._tf_layers[f"ffnn.{attribute}_{SENTENCE}"](
                 attribute_features
             )
@@ -702,12 +706,19 @@ class TED(TransformerRasaModel):
     def _process_batch_data(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> tf.Tensor:
+        """Encodes batch data; combines intent and text and action name and action text if both are present
+        Args:
+            tf_batch_data: dictionary mapping every attribute to its features and masks
+        Returns:
+             Tensor: encoding of all features in the batch, combined;
+        """
+        # encode each attribute present in tf_batch_data
         batch_encoded = {
             key: self._encode_features_per_attribute(tf_batch_data, key)
             for key in tf_batch_data.keys()
             if LABEL_KEY not in key and DIALOGUE not in key
         }
-
+        # if both action text and action name are present, combine them; otherwise, return the one which is present
         if (
             batch_encoded.get(ACTION_TEXT) is not None
             and batch_encoded.get(ACTION_NAME) is not None
@@ -719,7 +730,7 @@ class TED(TransformerRasaModel):
             batch_action = batch_encoded.pop(ACTION_TEXT)
         else:
             batch_action = batch_encoded.pop(ACTION_NAME)
-
+        # same for user input
         if (
             batch_encoded.get(INTENT) is not None
             and batch_encoded.get(TEXT) is not None
@@ -731,7 +742,7 @@ class TED(TransformerRasaModel):
             batch_user = batch_encoded.pop(INTENT)
 
         batch_features = [batch_user, batch_action]
-
+        # once we have user input and previous action, add all other attributes (SLOTS, ACTIVE_LOOP, etc.) to batch_features;
         for key in batch_encoded.keys():
             batch_features.append(batch_encoded.get(key))
 
