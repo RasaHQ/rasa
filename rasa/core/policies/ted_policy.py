@@ -680,6 +680,14 @@ class TED(TransformerRasaModel):
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Optional[tf.Tensor]:
+        """
+        Encodes features for a given attribute
+        Args:
+            tf_batch_data: dictionary mapping every attribute to its features and masks
+            attribute: the attribute we will encode features for (e.g., ACTION_NAME, INTENT)
+        Returns:
+            A tensor combining  all features for `attribute`
+        """
 
         if not tf_batch_data[attribute]:
             return None
@@ -702,11 +710,19 @@ class TED(TransformerRasaModel):
     def _process_batch_data(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> tf.Tensor:
+        """Encodes batch data; combines intent and text and action name and action text if both are present
+        Args:
+            tf_batch_data: dictionary mapping every attribute to its features and masks
+        Returns:
+             Tensor: encoding of all features in the batch, combined;
+        """
+        # encode each attribute present in tf_batch_data
         batch_encoded = {
             key: self._encode_features_per_attribute(tf_batch_data, key)
             for key in tf_batch_data.keys()
             if LABEL_KEY not in key and DIALOGUE not in key
         }
+        # if both action text and action name are present, combine them; otherwise, return the one which is present
 
         if (
             batch_encoded.get(ACTION_TEXT) is not None
@@ -719,7 +735,7 @@ class TED(TransformerRasaModel):
             batch_action = batch_encoded.pop(ACTION_TEXT)
         else:
             batch_action = batch_encoded.pop(ACTION_NAME)
-
+        # same for user input
         if (
             batch_encoded.get(INTENT) is not None
             and batch_encoded.get(TEXT) is not None
@@ -731,7 +747,7 @@ class TED(TransformerRasaModel):
             batch_user = batch_encoded.pop(INTENT)
 
         batch_features = [batch_user, batch_action]
-
+        # once we have user input and previous action, add all other attributes (SLOTS, ACTIVE_LOOP, etc.) to batch_features;
         for key in batch_encoded.keys():
             batch_features.append(batch_encoded.get(key))
 
