@@ -78,7 +78,7 @@ ALL_DOMAIN_KEYS = [
 
 # State is a dictionary with origin as keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP);
 # the values are SubStates, that contain the information needed for featurization
-SubState = Dict[Text, Union[Text, Tuple[float], Tuple[Text]]]
+SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
 State = Dict[Text, SubState]
 
 if typing.TYPE_CHECKING:

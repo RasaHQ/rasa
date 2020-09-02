@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import scipy.sparse
-from typing import List, Optional, Dict, Text
+from typing import List, Optional, Dict, Text, Union, Tuple
 from collections import defaultdict
 
 from rasa.utils import common as common_utils
@@ -42,6 +42,7 @@ class SingleStateFeaturizer:
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.e2e_action_texts = domain.e2e_action_texts
 
+    # pytype: disable=bad-return-type
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
     ) -> Dict[Text, int]:
@@ -63,6 +64,8 @@ class SingleStateFeaturizer:
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
 
+    # pytype: enable=bad-return-type
+
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
     ) -> List["Features"]:
@@ -70,7 +73,8 @@ class SingleStateFeaturizer:
 
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
         for state_feature, value in state_features.items():
-            # check that the value is in default_feature_states to be able to assigh its value
+            # check that the value is in default_feature_states to be able to assigh
+            # its value
             if state_feature in self._default_feature_states[attribute]:
                 features[self._default_feature_states[attribute][state_feature]] = value
         features = np.expand_dims(features, 0)

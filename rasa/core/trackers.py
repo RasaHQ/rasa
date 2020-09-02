@@ -716,6 +716,7 @@ class DialogueStateTracker:
         ]
         return new_slots
 
+    # pytype: disable=bad-return-type
     @property
     def active_loop_name(self) -> Optional[Text]:
         """Get the name of the currently active loop.
@@ -723,9 +724,11 @@ class DialogueStateTracker:
         Returns: `None` if no active loop or the name of the currently active loop.
         """
         if not self.active_loop or self.active_loop.get(LOOP_NAME) == SHOULD_NOT_BE_SET:
-            return
+            return None
 
         return self.active_loop.get(LOOP_NAME)
+
+    # pytype: enable=bad-return-type
 
     @property
     def latest_action_name(self) -> Optional[Text]:

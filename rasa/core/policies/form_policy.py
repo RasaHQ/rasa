@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any
+from typing import List, Dict, Text, Optional, Any, Union, Tuple
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -49,7 +49,9 @@ class FormPolicy(MemoizationPolicy):
         )
 
     @staticmethod
-    def _get_active_form_name(state: State) -> Optional[Text]:
+    def _get_active_form_name(
+        state: State,
+    ) -> Optional[Union[Text, Tuple[Union[float, Text]]]]:
         return state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
 
     @staticmethod
@@ -75,11 +77,12 @@ class FormPolicy(MemoizationPolicy):
 
         return [action_before_listen, states[-1]]
 
+    # pytype: disable=bad-return-type
     def _create_lookup_from_states(
         self,
         trackers_as_states: List[List[State]],
         trackers_as_actions: List[List[Text]],
-    ) -> Dict[Any, Text]:
+    ) -> Dict[Text, Text]:
         """Add states to lookup dict"""
         lookup = {}
         for states in trackers_as_states:
@@ -93,6 +96,8 @@ class FormPolicy(MemoizationPolicy):
                 # because of `active_form_...` feature
                 lookup[feature_key] = active_form
         return lookup
+
+    # pytype: enable=bad-return-type
 
     def recall(
         self, states: List[State], tracker: DialogueStateTracker, domain: Domain

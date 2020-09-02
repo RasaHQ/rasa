@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Text
 
 from rasa.core.actions import Action
 from rasa.core.events import Event, ActiveLoop
@@ -11,7 +11,10 @@ if TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
 
 
-class LoopAction(Action, ABC):
+class LoopAction(Action, ABC):  # pytype: disable=base-class-error
+    def name(self) -> Text:
+        raise NotImplementedError
+
     async def run(
         self,
         output_channel: "OutputChannel",
