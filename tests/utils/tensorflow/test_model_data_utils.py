@@ -8,15 +8,13 @@ from rasa.utils.features import Features
 from rasa.nlu.constants import INTENT, ACTION_NAME
 from rasa.utils.tensorflow.constants import SENTENCE
 
-shape = (1, 100)
+shape = 100
 
 
 def test_create_zero_features():
     # DENSE FEATURES
-    dense_feature_sentence = np.zeros(shape)
-    dense_feature_sentence[0, 50] = 1
     dense_feature_sentence_features = Features(
-        features=dense_feature_sentence,
+        features=np.random.rand(shape),
         attribute=INTENT,
         feature_type=SENTENCE,
         origin=[],
@@ -30,7 +28,7 @@ def test_create_zero_features():
 
     # SPARSE FEATURES
     sparse_feature_sentence_features = Features(
-        features=scipy.sparse.coo_matrix(np.random.rand(shape[1])),
+        features=scipy.sparse.coo_matrix(np.random.rand(shape)),
         attribute=INTENT,
         feature_type=SENTENCE,
         origin=[],
@@ -39,16 +37,14 @@ def test_create_zero_features():
     zero_features = model_data_utils.create_zero_features(features)
     assert len(zero_features) == 1
     assert zero_features[0].is_sparse()
-    assert (zero_features[0].features != scipy.sparse.coo_matrix(shape)).nnz == 0
+    assert (zero_features[0].features != scipy.sparse.coo_matrix((1, shape))).nnz == 0
 
 
 def test_surface_attributes():
-    intent_features = np.zeros(shape)
-    intent_features[0, 50] = 1
     intent_features = {
         INTENT: [
             Features(
-                features=intent_features,
+                features=np.random.rand(shape),
                 attribute=INTENT,
                 feature_type=SENTENCE,
                 origin=[],
@@ -56,9 +52,7 @@ def test_surface_attributes():
         ]
     }
 
-    action_name_features = np.zeros(shape)
-    action_name_features[0, 57] = 1
-    action_name_features = scipy.sparse.coo_matrix(action_name_features)
+    action_name_features = scipy.sparse.coo_matrix(np.random.rand(shape))
     action_name_features = {
         ACTION_NAME: [
             Features(
@@ -135,7 +129,7 @@ def test_map_tracker_features():
     list_of_features = []
     for idx in random_inds:
         current_features = copy.deepcopy(zero_features_as_features)
-        current_features.features[0, idx] = 1
+        current_features.features[idx] = 1
         list_of_features.append([current_features])
 
     # organize the created features into lists ~ dialog history
