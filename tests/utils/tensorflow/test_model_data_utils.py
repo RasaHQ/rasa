@@ -8,10 +8,12 @@ from rasa.utils.features import Features
 from rasa.nlu.constants import INTENT, ACTION_NAME
 from rasa.utils.tensorflow.constants import SENTENCE
 
+shape = (1, 100)
+
 
 def test_create_zero_features():
     # DENSE FEATURES
-    dense_feature_sentence = np.zeros((1, 100))
+    dense_feature_sentence = np.zeros(shape)
     dense_feature_sentence[0, 50] = 1
     dense_feature_sentence_features = Features(
         features=dense_feature_sentence,
@@ -24,12 +26,11 @@ def test_create_zero_features():
     zero_features = model_data_utils.create_zero_features(features)
     assert len(zero_features) == 1
     assert zero_features[0].is_dense()
-    assert (zero_features[0].features == np.zeros((1, 100))).all()
+    assert (zero_features[0].features == np.zeros(shape)).all()
 
     # SPARSE FEATURES
-    sparse_feature_sentence = scipy.sparse.coo_matrix(dense_feature_sentence)
     sparse_feature_sentence_features = Features(
-        features=sparse_feature_sentence,
+        features=scipy.sparse.coo_matrix(np.random.rand(shape[1])),
         attribute=INTENT,
         feature_type=SENTENCE,
         origin=[],
@@ -38,11 +39,11 @@ def test_create_zero_features():
     zero_features = model_data_utils.create_zero_features(features)
     assert len(zero_features) == 1
     assert zero_features[0].is_sparse()
-    assert (zero_features[0].features != scipy.sparse.coo_matrix((1, 100))).nnz == 0
+    assert (zero_features[0].features != scipy.sparse.coo_matrix(shape)).nnz == 0
 
 
 def test_surface_attributes():
-    intent_features = np.zeros((1, 100))
+    intent_features = np.zeros(shape)
     intent_features[0, 50] = 1
     intent_features = {
         INTENT: [
@@ -55,7 +56,7 @@ def test_surface_attributes():
         ]
     }
 
-    action_name_features = np.zeros((1, 100))
+    action_name_features = np.zeros(shape)
     action_name_features[0, 57] = 1
     action_name_features = scipy.sparse.coo_matrix(action_name_features)
     action_name_features = {
@@ -72,8 +73,8 @@ def test_surface_attributes():
     state_features.update(copy.deepcopy(action_name_features))
     # test on 2 dialogs -- one with dialog length 3 the other one with dialog length 2
     dialogs = [
-        [state_features, copy.deepcopy(intent_features), {}],
-        [{}, copy.deepcopy(action_name_features)],
+        [state_features, intent_features, {}],
+        [{}, action_name_features],
     ]
     surfaced_features = model_data_utils.surface_attributes(dialogs)
     assert INTENT in surfaced_features and ACTION_NAME in surfaced_features
@@ -102,10 +103,27 @@ def test_surface_attributes():
         and surfaced_features.get(ACTION_NAME)[0][2] is None
         and surfaced_features.get(ACTION_NAME)[1][0] is None
     )
+    # check that all features are the same as before
+    assert all(
+        [
+            (turn[0].features == intent_features[INTENT][0].features).all()
+            for dialogue in surfaced_features.get(INTENT)
+            for turn in dialogue
+            if not turn is None
+        ]
+    )
+    assert all(
+        [
+            (turn[0].features != action_name_features[ACTION_NAME][0].features).nnz == 0
+            for dialogue in surfaced_features.get(ACTION_NAME)
+            for turn in dialogue
+            if not turn is None
+        ]
+    )
 
 
 def test_map_tracker_features():
-    zero_features = np.zeros((1, 100))
+    zero_features = np.zeros(shape)
     zero_features_as_features = Features(
         features=zero_features, attribute=INTENT, feature_type=SENTENCE, origin=[]
     )
@@ -136,3 +154,4 @@ def test_map_tracker_features():
 
     assert np.all(np.squeeze(np.array(attribute_masks), 2) == expected_mask)
     assert np.array(dense_features["sentence"]).shape[-1] == zero_features.shape[-1]
+    assert sparse_features == {}
