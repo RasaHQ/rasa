@@ -15,7 +15,7 @@ from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.nlu.constants import INTENT_NAME_KEY, ENTITIES
 import rasa.data
 
 logger = logging.getLogger(__name__)
@@ -356,11 +356,10 @@ class YAMLStoryReader(StoryReader):
             user_message = step[KEY_USER_MESSAGE].strip()
             entities = entities_parser.find_entities_in_training_example(user_message)
             plain_text = entities_parser.replace_entities(user_message)
-            # TODO: Temporary fix. Need to talk to Sasha / Tom what's the best way to
-            # annotate entities in end-to-end tests
+
             if plain_text.startswith(INTENT_MESSAGE_PREFIX):
                 entities = (
-                    RegexInterpreter().synchronous_parse(plain_text).get("entities", [])
+                    RegexInterpreter().synchronous_parse(plain_text).get(ENTITIES, [])
                 )
         else:
             raw_entities = step.get(KEY_ENTITIES, [])

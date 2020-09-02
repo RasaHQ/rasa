@@ -7,15 +7,11 @@ from typing import Text, List
 import numpy as np
 import pytest
 
-from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core import training
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, SessionStarted
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer,
-    BinarySingleStateFeaturizer,
-)
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 
 from rasa.core.interpreter import RegexInterpreter
 from rasa.nlu.constants import INTENT_NAME_KEY, INTENT, ACTION_NAME, ENTITIES

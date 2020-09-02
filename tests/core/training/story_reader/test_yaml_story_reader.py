@@ -321,3 +321,27 @@ def test_is_not_test_story_file_without_test_prefix(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.utils.io.write_yaml({"stories": []}, path)
     assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+
+
+def test_end_to_end_story_with_shortcut_intent():
+    intent = "greet"
+    plain_text = f'/{intent}{{"name": "test"}}'
+    story = f"""
+stories:
+- story: my story
+  steps:
+  - user: |
+      {plain_text}
+    intent: {intent}
+    """
+
+    story_as_yaml = rasa.utils.io.read_yaml(story)
+
+    steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
+    user_uttered = steps[0].events[0]
+
+    assert user_uttered == UserUttered(
+        plain_text,
+        intent={"name": intent},
+        entities=[{"entity": "name", "start": 6, "end": 22, "value": "test"}],
+    )
