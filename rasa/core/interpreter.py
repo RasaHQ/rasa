@@ -14,7 +14,8 @@ from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import raise_warning, class_from_module_path
+from rasa.shared.utils.io import raise_warning
+from rasa.shared.utils.common import class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -157,7 +158,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
         return self.synchronous_parse(text)
 
-    def synchronous_parse(self, text: Text,) -> Dict[Text, Any]:
+    def synchronous_parse(self, text: Text) -> Dict[Text, Any]:
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)

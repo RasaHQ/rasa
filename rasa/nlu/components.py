@@ -6,7 +6,7 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata

@@ -26,7 +26,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData, Message

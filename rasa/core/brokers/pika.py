@@ -25,7 +25,7 @@ from rasa.constants import (
     DOCS_URL_PIKA_EVENT_BROKER,
 )
 from rasa.core.brokers.broker import EventBroker
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.io import DEFAULT_ENCODING
 

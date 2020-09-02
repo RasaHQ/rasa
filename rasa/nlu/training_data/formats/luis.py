@@ -3,7 +3,7 @@ import typing
 from typing import Any, Dict, Text
 
 from rasa.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData

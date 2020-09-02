@@ -10,7 +10,8 @@ from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
-from rasa.utils.common import raise_warning, mark_as_experimental_feature
+from rasa.utils.common import mark_as_experimental_feature
+from rasa.shared.utils.io import raise_warning
 
 logger = logging.getLogger(__name__)
 

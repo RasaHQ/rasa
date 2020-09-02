@@ -20,7 +20,7 @@ from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 
 logger = logging.getLogger(__name__)
 

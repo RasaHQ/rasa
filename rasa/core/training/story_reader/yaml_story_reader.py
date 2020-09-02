@@ -2,17 +2,13 @@ import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+import rasa.shared.utils.io
 from rasa.nlu.training_data import entities_parser
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 
-import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
-from rasa.constants import (
-    TEST_STORIES_FILE_PREFIX,
-    DOCS_URL_STORIES,
-    DOCS_URL_RULES,
-)
+from rasa.constants import TEST_STORIES_FILE_PREFIX, DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
@@ -84,7 +80,7 @@ class YAMLStoryReader(StoryReader):
             validate_yaml_schema(file_content, CORE_SCHEMA_FILE)
             yaml_content = io_utils.read_yaml(file_content)
         except (ValueError, ParserError) as e:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
             return []
@@ -152,7 +148,7 @@ class YAMLStoryReader(StoryReader):
             return any(key in content for key in keys)
         except Exception as e:
             # Using broad `Exception` because yaml library is not exposing all Errors
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Tried to open '{file_path}' and load its data, but failed "
                 f"to read it. There seems to be an error with the yaml syntax: {e}"
             )
@@ -192,7 +188,7 @@ class YAMLStoryReader(StoryReader):
 
         for item in data:
             if not isinstance(item, dict):
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Unexpected block found in '{self.source_name}':\n"
                     f"{item}\nItems under the "
                     f"'{self._get_plural_item_title()}' key must be YAML "
@@ -208,7 +204,7 @@ class YAMLStoryReader(StoryReader):
         item_name = item.get(self._get_item_title(), "")
 
         if not item_name:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}': \n"
                 f"{item}\n"
                 f"The {self._get_item_title()} has an empty name. "
@@ -221,7 +217,7 @@ class YAMLStoryReader(StoryReader):
         steps: List[Union[Text, Dict[Text, Any]]] = item.get(KEY_STEPS, [])
 
         if not steps:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}': "
                 f"The {self._get_item_title()} has no steps. "
                 f"It will be skipped.",
@@ -244,7 +240,7 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_step(self, step: Union[Text, Dict[Text, Any]]) -> None:
         if isinstance(step, str):
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"Found an unexpected step in the {self._get_item_title()} "
                 f"description:\n{step}\nThe step is of type `str` "
@@ -269,7 +265,7 @@ class YAMLStoryReader(StoryReader):
         elif KEY_METADATA in step.keys():
             pass
         else:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"Found an unexpected step in the {self._get_item_title()} "
                 f"description:\n{step}\nIt will be skipped.",
@@ -301,7 +297,7 @@ class YAMLStoryReader(StoryReader):
             return
 
         if intent_name not in self.domain.intents:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}': \n"
                 f"Found intent '{intent_name}' in stories which is not part of the "
                 f"domain.",
@@ -317,7 +313,7 @@ class YAMLStoryReader(StoryReader):
                 if utterance:
                     utterances.append(utterance)
             else:
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
                     f"`OR` statement can only have '{KEY_USER_INTENT}' "
                     f"as a sub-element. This step will be skipped:\n"
@@ -332,7 +328,7 @@ class YAMLStoryReader(StoryReader):
         user_intent = step.get(KEY_USER_INTENT, "").strip()
 
         if not user_intent:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"User utterance cannot be empty. "
                 f"This {self._get_item_title()} step will be skipped:\n"
@@ -341,7 +337,7 @@ class YAMLStoryReader(StoryReader):
             )
 
         if user_intent.startswith(INTENT_MESSAGE_PREFIX):
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"User intent '{user_intent}' starts with "
                 f"'{INTENT_MESSAGE_PREFIX}'. This is not required.",
@@ -389,7 +385,7 @@ class YAMLStoryReader(StoryReader):
             elif isinstance(slot, str):
                 self._add_event(SlotSet.type_name, {slot: None})
             else:
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}':\n"
                     f"Invalid slot: \n{slot}\n"
                     f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
@@ -402,7 +398,7 @@ class YAMLStoryReader(StoryReader):
 
         action_name = step.get(KEY_ACTION, "")
         if not action_name:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}': \n"
                 f"Action name cannot be empty. "
                 f"This {self._get_item_title()} step will be skipped:\n"
@@ -425,7 +421,7 @@ class YAMLStoryReader(StoryReader):
 
         for slot in slots:
             if not isinstance(slot, dict):
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}':\n"
                     f"Checkpoint '{checkpoint_name}' has an invalid slot: "
                     f"{slots}\nItems under the '{KEY_CHECKPOINT_SLOTS}' key must be "

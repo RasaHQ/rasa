@@ -1,6 +1,7 @@
 import logging
 from typing import Text, Optional, Dict, Any, List
 
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_STORIES
 from rasa.core import utils
 from rasa.core.events import UserUttered
@@ -11,7 +12,6 @@ from rasa.core.training.structures import (
     STORY_START,
     StoryStep,
 )
-import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class StoryStepBuilder:
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"End or intermediate checkpoints "
                     f"do not support conditions! "
                     f"(checkpoint: {name})",

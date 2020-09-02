@@ -12,13 +12,8 @@ from rasa.core.domain import Domain
 from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.cli.utils import (
-    print_success,
-    print_warning,
-    print_error,
-    bcolors,
-    print_color,
-)
+from rasa.cli.utils import print_success, print_warning, print_error, print_color
+from rasa.shared.utils.io import bcolors
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,

@@ -27,7 +27,8 @@ from rasa.core.training.structures import (
     StoryStep,
     GENERATED_CHECKPOINT_PREFIX,
 )
-from rasa.utils.common import is_logging_disabled, raise_warning
+from rasa.utils.common import is_logging_disabled
+from rasa.shared.utils.io import raise_warning
 
 logger = logging.getLogger(__name__)
 

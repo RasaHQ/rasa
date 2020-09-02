@@ -9,7 +9,8 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
 from rasa import data
 import rasa.nlu.utils
-from rasa.utils.common import raise_warning, lazy_property
+from rasa.utils.common import lazy_property
+from rasa.shared.utils.io import raise_warning
 from rasa.nlu.constants import (
     RESPONSE,
     NO_ENTITY_TAG,

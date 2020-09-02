@@ -5,7 +5,7 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
@@ -31,7 +31,7 @@ class Messenger:
 
         self.on_new_message = on_new_message
         self.client = MessengerClient(page_access_token)
-        self.last_message = {}  # type: Dict[Text, Any]
+        self.last_message: Dict[Text, Any] = {}
 
     def get_user_id(self) -> Text:
         return self.last_message.get("sender", {}).get("id", "")

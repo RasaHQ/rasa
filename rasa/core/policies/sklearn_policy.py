@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import pickle
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 
@@ -14,7 +13,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV

@@ -12,7 +12,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 from rasa.utils.io import encode_string, decode_string
 
 GROUP_ENTITY_VALUE = "value"

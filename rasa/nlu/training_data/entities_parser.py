@@ -10,7 +10,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
 )
 from rasa.nlu.training_data.message import Message
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"

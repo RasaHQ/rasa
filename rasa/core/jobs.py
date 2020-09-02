@@ -3,7 +3,7 @@ import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pytz import UnknownTimeZoneError, utc
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 
 __scheduler = None
 

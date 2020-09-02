@@ -7,7 +7,7 @@ from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.constants import INTENT
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
@@ -31,7 +31,7 @@ class KeywordIntentClassifier(IntentClassifier):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         intent_keyword_map: Optional[Dict] = None,
-    ):
+    ) -> None:
 
         super(KeywordIntentClassifier, self).__init__(component_config)
 

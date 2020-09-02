@@ -8,7 +8,7 @@ import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa.nlu.training_data.util import transform_entity_synonyms
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData

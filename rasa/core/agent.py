@@ -39,7 +39,7 @@ from rasa.model import (
     unpack_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import raise_warning
+from rasa.shared.utils.io import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
 

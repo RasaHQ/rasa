@@ -11,13 +11,9 @@ from ruamel.yaml import YAMLError
 
 import rasa.core.constants
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import (
-    raise_warning,
-    lazy_property,
-    sort_list_of_dicts_by_first_key,
-)
+from rasa.utils.common import lazy_property, sort_list_of_dicts_by_first_key
+from rasa.shared.utils.io import raise_warning, bcolors, wrap_with_color
 import rasa.utils.io
-from rasa.cli.utils import bcolors, wrap_with_color
 from rasa.constants import (
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
     DOMAIN_SCHEMA_FILE,
