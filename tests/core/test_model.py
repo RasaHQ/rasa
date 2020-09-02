@@ -259,39 +259,6 @@ async def test_fingerprinting_additional_action(project: Text):
     assert old_fingerprint[FINGERPRINT_NLG_KEY] != new_fingerprint[FINGERPRINT_NLG_KEY]
 
 
-@pytest.mark.parametrize(
-    "project_files", [["invalid", "invalid", "invalid"], [None, None, None]]
-)
-async def test_create_fingerprint_from_invalid_paths(
-    project: Text, project_files: List[Optional[Text]]
-):
-    from rasa.nlu.training_data import TrainingData
-    from rasa.core.training.structures import StoryGraph
-
-    project_files = _project_files(project, *project_files)
-    domain = Domain.empty()
-    responses = domain.templates
-    domain.templates = []
-    expected = _fingerprint(
-        config="",
-        config_nlu="",
-        config_core="",
-        domain=hash(domain),
-        nlg=get_dict_hash(responses),
-        stories=hash(StoryGraph([])),
-        nlu=hash(TrainingData()),
-        rasa_version=rasa.__version__,
-    )
-
-    actual = await model_fingerprint(project_files)
-    assert actual[FINGERPRINT_TRAINED_AT_KEY] is not None
-
-    del actual[FINGERPRINT_TRAINED_AT_KEY]
-    del expected[FINGERPRINT_TRAINED_AT_KEY]
-
-    assert actual == expected
-
-
 @pytest.mark.parametrize("use_fingerprint", [True, False])
 async def test_rasa_packaging(
     trained_rasa_model: Text, project: Text, use_fingerprint: bool, tmp_path: Path
