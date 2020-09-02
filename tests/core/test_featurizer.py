@@ -39,7 +39,7 @@ def test_fail_to_load_non_existent_featurizer():
 
 def test_binary_featurizer_correctly_encodes_state():
     """
-    Check that all the attributes are correctly featurized when they should and not featurized when shouldn't;  
+    Check that all the attributes are correctly featurized when they should and not featurized when shouldn't;
     """
     f = BinarySingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}

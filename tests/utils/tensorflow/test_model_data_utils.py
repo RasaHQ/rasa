@@ -82,7 +82,7 @@ def test_surface_attributes():
         len(surfaced_features.get(INTENT)) == 2
         and len(surfaced_features.get(ACTION_NAME)) == 2
     )
-    # length of each list corresponds to length of the dialog 
+    # length of each list corresponds to length of the dialog
     assert (
         len(surfaced_features.get(INTENT)[0]) == 3
         and len(surfaced_features.get(INTENT)[1]) == 2
