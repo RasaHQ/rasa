@@ -84,7 +84,7 @@ class MockedMongoTrackerStore(MongoTrackerStore):
 
         self.db = MongoClient().rasa
         self.collection = "conversations"
-        super(MongoTrackerStore, self).__init__(_domain, None)
+        super(MockedMongoTrackerStore, self).__init__(_domain, None)
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68

@@ -323,7 +323,7 @@ async def _ask_questions(
 def _selection_choices_from_intent_prediction(
     predictions: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
-    """"Given a list of ML predictions create a UI choice list."""
+    """Given a list of ML predictions create a UI choice list."""
 
     sorted_intents = sorted(
         predictions, key=lambda k: (-k["confidence"], k[INTENT_NAME_KEY])

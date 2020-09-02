@@ -1,8 +1,7 @@
 import logging
-from typing import Any, Dict, List, NoReturn, Optional, Text, Type
+from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.core import utils
-from typing import Any, Dict, List, NoReturn, Optional, Text, Type
 from rasa.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
 from rasa.utils.common import class_from_module_path, raise_warning
 
