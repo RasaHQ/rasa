@@ -103,7 +103,7 @@ def test_surface_attributes():
             (turn[0].features == intent_features[INTENT][0].features).all()
             for dialogue in surfaced_features.get(INTENT)
             for turn in dialogue
-            if not turn is None
+            if turn is not None
         ]
     )
     assert all(
@@ -111,7 +111,7 @@ def test_surface_attributes():
             (turn[0].features != action_name_features[ACTION_NAME][0].features).nnz == 0
             for dialogue in surfaced_features.get(ACTION_NAME)
             for turn in dialogue
-            if not turn is None
+            if turn is not None
         ]
     )
 
@@ -125,7 +125,7 @@ def test_map_tracker_features():
     zero_features_list = [zero_features_as_features]
 
     # create tracker state features by setting a random index in the array to 1
-    random_inds = np.random.randint(100, size=6)
+    random_inds = np.random.randint(shape, size=6)
     list_of_features = []
     for idx in random_inds:
         current_features = copy.deepcopy(zero_features_as_features)
