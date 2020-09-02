@@ -4,14 +4,11 @@ import tempfile
 import time
 import shutil
 from pathlib import Path
-from typing import Text, Optional, Any, List
+from typing import Text, Optional, Any
 from unittest.mock import Mock
 
 import pytest
 
-import rasa
-import rasa.core
-import rasa.nlu
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.rasa import RasaFileImporter
 from rasa.constants import (
@@ -21,7 +18,6 @@ from rasa.constants import (
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
 from rasa.core.domain import Domain, KEY_RESPONSES
-from rasa.core.utils import get_dict_hash
 from rasa import model
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
@@ -51,8 +47,6 @@ from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING
 
 
 def test_get_latest_model(trained_rasa_model: str):
-    import shutil
-
     path_of_latest = os.path.join(os.path.dirname(trained_rasa_model), "latest.tar.gz")
     shutil.copy(trained_rasa_model, path_of_latest)
 
@@ -76,7 +70,7 @@ def test_get_model_context_manager(trained_rasa_model: str):
 
 
 @pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
-def test_get_model_exception(model_path):
+def test_get_model_exception(model_path: Optional[Text]):
     with pytest.raises(ModelNotFound):
         get_model(model_path)
 
