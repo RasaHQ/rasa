@@ -500,11 +500,9 @@ class Agent:
                 "not supported anymore. Rather use `agent.handle_text(...)`."
             )
 
-        def noop(_: Any) -> None:
-            logger.info("Ignoring message as there is no agent to handle it.")
-
         if not self.is_ready():
-            return noop(message)
+            logger.info("Ignoring message as there is no agent to handle it.")
+            return None
 
         processor = self.create_processor(message_preprocessor)
 
