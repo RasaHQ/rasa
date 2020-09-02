@@ -1,0 +1,1 @@
+Fix slow training of ``CRFEntityExtractor`` when using Entity Roles and Groups.
