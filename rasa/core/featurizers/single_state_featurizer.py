@@ -63,6 +63,7 @@ class SingleStateFeaturizer:
                 f"Given attribute '{attribute}' is not supported. "
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
+
     # pytype: enable=bad-return-type
 
     def _create_features(
@@ -90,17 +91,15 @@ class SingleStateFeaturizer:
     def _to_sparse_sentence_features(
         sparse_sequence_features: List["Features"], attribute: Text
     ) -> List["Features"]:
-        sparse_sentence_features = []
-        for feature in sparse_sequence_features:
-            sparse_sentence_features.append(
-                Features(
-                    scipy.sparse.coo_matrix(feature.features.sum(0)),
-                    FEATURE_TYPE_SENTENCE,
-                    attribute,
-                    feature.origin,
-                )
+        return [
+            Features(
+                scipy.sparse.coo_matrix(feature.features.sum(0)),
+                FEATURE_TYPE_SENTENCE,
+                attribute,
+                feature.origin,
             )
-        return sparse_sentence_features
+            for feature in sparse_sequence_features
+        ]
 
     def _extract_state_features(
         self,
