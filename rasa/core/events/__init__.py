@@ -335,8 +335,8 @@ class UserUttered(Event):
     def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         entities = [entity.get("entity") for entity in self.entities]
         out = {}
-        # during training we expect either intent_name or text to be set
-        # during prediction both will be set
+        # During training we expect either intent_name or text to be set.
+        # During prediction both will be set.
         if self.intent_name:
             out[INTENT] = self.intent_name
         if self.text:

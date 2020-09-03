@@ -16,7 +16,6 @@ from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
-from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)

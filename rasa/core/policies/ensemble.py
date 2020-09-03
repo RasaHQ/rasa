@@ -686,7 +686,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         )
 
         if (
-            tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
+            tracker.latest_action_name == ACTION_LISTEN_NAME
             and probabilities is not None
             and probabilities.index(max(probabilities))
             == domain.index_for_action(ACTION_LISTEN_NAME)

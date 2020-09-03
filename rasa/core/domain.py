@@ -702,7 +702,7 @@ class Domain:
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         active_loop = tracker.active_loop.get(LOOP_NAME)
-        if active_loop is not None:
+        if active_loop:
             return {LOOP_NAME: active_loop}
         else:
             return {}
