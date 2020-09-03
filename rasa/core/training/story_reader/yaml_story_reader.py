@@ -364,8 +364,8 @@ class YAMLStoryReader(StoryReader):
         else:
             raw_entities = step.get(KEY_ENTITIES, [])
             entities = self._parse_raw_entities(raw_entities)
+            # set text to `None` for e2e
             plain_text = None
-        # set text to `None` for e2e
         return UserUttered(plain_text, intent, entities)
 
     @staticmethod

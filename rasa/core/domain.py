@@ -668,7 +668,7 @@ class Domain:
     def _get_slots_sub_state(
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
-        # Set all set slots with the featurization of the stored value
+        """Set all set slots with the featurization of the stored value"""
 
         # proceed with values only if the user of a bot have done something
         # at the previous step i.e., when the state is not empty.
