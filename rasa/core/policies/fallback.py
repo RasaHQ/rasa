@@ -160,8 +160,8 @@ class FallbackPolicy(Policy):
         nlu_data = tracker.latest_message.parse_data
 
         if (
-            tracker.latest_action.get(ACTION_NAME) == self.fallback_action_name
-            and tracker.latest_action.get(ACTION_NAME) != ACTION_LISTEN_NAME
+            tracker.latest_action_name == self.fallback_action_name
+            and tracker.latest_action_name != ACTION_LISTEN_NAME
         ):
             logger.debug(
                 "Predicted 'action_listen' after fallback action '{}'".format(
