@@ -155,8 +155,8 @@ class TrackerFeaturizer:
             return jsonpickle.decode(rasa.utils.io.read_file(featurizer_file))
 
         logger.error(
-            "Couldn't load featurizer for policy. "
-            "File '{}' doesn't exist.".format(featurizer_file)
+            f"Couldn't load featurizer for policy. "
+            f"File '{featurizer_file}' doesn't exist."
         )
         return None
 
