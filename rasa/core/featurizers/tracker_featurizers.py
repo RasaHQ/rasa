@@ -2,7 +2,7 @@ import jsonpickle
 import logging
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Deque, FrozenSet
+from typing import Tuple, List, Optional, Dict, Text, Deque
 import numpy as np
 
 import rasa.utils.io
