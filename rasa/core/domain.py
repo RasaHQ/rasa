@@ -668,7 +668,12 @@ class Domain:
     def _get_slots_sub_state(
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
-        """Set all set slots with the featurization of the stored value"""
+        """Set all set slots with the featurization of the stored value
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping slot names to their featurization
+        """
 
         # proceed with values only if the user of a bot have done something
         # at the previous step i.e., when the state is not empty.
@@ -690,14 +695,24 @@ class Domain:
     def _get_prev_action_sub_state(
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Text]:
-        """Turn the previous taken action into a state name."""
+        """Turn the previous taken action into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary with the information on latest action
+        """
         return tracker.latest_action
 
     @staticmethod
     def _get_active_loop_sub_state(
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Text]:
-        """Turn tracker's active loop into a state name."""
+        """Turn tracker's active loop into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping "name" to active loop name if present
+        """
 
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
