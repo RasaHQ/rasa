@@ -54,6 +54,10 @@ rules:
 This example rule applies at the start of conversation as well as when the user decides
 to a send a message with an intent `greet` in the middle of an ongoing conversation.
 
+**Rules are not meant to hardcode a state machine.**
+Rules are restricted to have only one user turn, but there can still be multiple
+bot events, including e.g. a form being filled and its subsequent submission.
+
 ### Rules for the Conversation Start
 
 To write a rule which only applies at the beginning of a conversation, add a
