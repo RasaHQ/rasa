@@ -610,9 +610,9 @@ class Domain:
         """Returns all available slot state strings."""
 
         return [
-            f"{s.name}_{i}"
-            for s in self.slots
-            for i in range(0, s.feature_dimensionality())
+            f"{slot.name}_{feature_index}"
+            for slot in self.slots
+            for feature_index in range(0, slot.feature_dimensionality())
         ]
 
     @lazy_property

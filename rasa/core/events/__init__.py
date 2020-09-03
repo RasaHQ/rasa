@@ -29,6 +29,8 @@ from rasa.nlu.constants import (
     ACTION_TEXT,
     ENTITIES,
     INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
 )
 
 if typing.TYPE_CHECKING:
@@ -333,7 +335,7 @@ class UserUttered(Event):
         return _dict
 
     def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
-        entities = [entity.get("entity") for entity in self.entities]
+        entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
         out = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
@@ -368,7 +370,10 @@ class UserUttered(Event):
         if self.intent:
             if self.entities:
                 ent_string = json.dumps(
-                    {ent["entity"]: ent["value"] for ent in self.entities},
+                    {
+                        entity[ENTITY_ATTRIBUTE_TYPE]: entity[ENTITY_ATTRIBUTE_VALUE]
+                        for entity in self.entities
+                    },
                     ensure_ascii=False,
                 )
             else:
@@ -379,7 +384,7 @@ class UserUttered(Event):
             )
             if e2e:
                 message = md_format_message(
-                    self.text, self.intent.get("name"), self.entities
+                    self.text, self.intent.get(INTENT_NAME_KEY), self.entities
                 )
                 return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
             else:
