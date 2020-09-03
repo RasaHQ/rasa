@@ -149,7 +149,7 @@ coveralls = "^2.0.0"
 towncrier = "^19.2.0"
 toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
-pydoc-markdown = "3.3.0.post1"
+pydoc-markdown = "3.4.0"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
