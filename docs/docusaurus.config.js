@@ -1,7 +1,6 @@
 const path = require('path');
-const remarkSources = require('remark-sources');
-const remarkCollapse = require('remark-collapse');
 const { remarkProgramOutput } = require('./plugins/program_output');
+const { rehypePlugins, remarkPlugins } = require('@rasahq/docusaurus-theme-tabula');
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -28,6 +27,7 @@ const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
 module.exports = {
   title: 'Rasa Open Source Documentation',
+  // FIXME: tagline should be different from the title
   tagline: 'Rasa Open Source Documentation',
   url: SITE_URL,
   baseUrl: BASE_URL,
@@ -139,18 +139,43 @@ module.exports = {
       containerID: 'GTM-PK448GB',
     },
   },
-  themes: ['@rasahq/docusaurus-theme-tabula', path.resolve(__dirname, './themes/theme-live-codeblock')],
+  themes: [
+    '@rasahq/docusaurus-theme-tabula',
+    // path.resolve(__dirname, './themes/theme-live-codeblock')
+  ],
   plugins: [
     [
       '@docusaurus/plugin-content-docs/',
       {
         // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
         routeBasePath: '/',
-        // It is recommended to set document id as docs home page (`docs/` path).
+        // FIXME: the following option is now deprecated
         homePageId: 'index',
         sidebarPath: require.resolve('./sidebars.js'),
         editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
-        remarkPlugins: [[remarkCollapse, { test: '' }], remarkSources, remarkProgramOutput],
+        rehypePlugins: [
+          ...rehypePlugins,
+        ],
+        remarkPlugins: [
+          ...remarkPlugins,
+          remarkProgramOutput,
+        ],
+        /* TODO review all of these options ↓↓↓↓↓ */
+        // path: 'docs',
+        // routeBasePath: 'docs',
+        // homePageId: undefined,
+        // include: ['**/*.{md,mdx}'],
+        // sidebarPath: 'sidebars.json',
+        // docLayoutComponent: '@theme/DocPage',
+        // docItemComponent: '@theme/DocItem',
+        // showLastUpdateTime: false,
+        // showLastUpdateAuthor: false,
+        // admonitions: {},
+        // excludeNextVersionDocs: false,
+        // includeCurrentVersion: true,
+        // disableVersioning: false,
+        // lastVersion: undefined,
+        // versions: {},
       },
     ],
     ['@docusaurus/plugin-content-pages', {}],
@@ -161,5 +186,6 @@ module.exports = {
         priority: 0.5,
       }],
     [path.resolve(__dirname, './plugins/google-tagmanager'), {}],
-  ],
+    isDev && ['@docusaurus/plugin-debug', {}],
+  ].filter(Boolean),
 };
