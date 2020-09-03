@@ -859,6 +859,8 @@ class Domain:
             A cleaned dictionary version of the domain.
         """
         domain_data = self.as_dict()
+        # remove e2e actions from domain to be demonstrated  written to file
+        domain_data.pop(KEY_E2E_ACTIONS, None)
 
         for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):
             for name, intent in intent_info.items():
