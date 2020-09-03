@@ -205,8 +205,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                                 "actions in one story."
                                 "Check your story files."
                             )
-                        else:
-                            delete_first_state = True
+                        delete_first_state = True
 
             if delete_first_state:
                 states = states[1:]
