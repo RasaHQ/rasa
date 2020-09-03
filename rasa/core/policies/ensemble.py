@@ -5,7 +5,7 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Type
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
 
 import rasa.core
 import rasa.utils.io
@@ -36,7 +36,6 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils import common as common_utils
-from rasa.nlu.constants import ACTION_NAME, ACTION_TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,9 @@ class PolicyEnsemble:
             )
 
     @staticmethod
-    def _training_events_from_trackers(training_trackers) -> Dict[Text, Set[Event]]:
+    def _training_events_from_trackers(
+        training_trackers: List[DialogueStateTracker],
+    ) -> Dict[Text, Set[Event]]:
         events_metadata = defaultdict(set)
 
         for t in training_trackers:
@@ -79,9 +80,7 @@ class PolicyEnsemble:
             for event in t.events:
                 tracker.update(event)
                 if not isinstance(event, ActionExecuted):
-                    action_name = tracker.latest_action.get(
-                        ACTION_NAME
-                    ) or tracker.latest_action.get(ACTION_TEXT)
+                    action_name = tracker.latest_action_name
                     events_metadata[action_name].add(event)
 
         return events_metadata
@@ -686,7 +685,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         )
 
         if (
-            tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
+            tracker.latest_action_name == ACTION_LISTEN_NAME
             and probabilities is not None
             and probabilities.index(max(probabilities))
             == domain.index_for_action(ACTION_LISTEN_NAME)

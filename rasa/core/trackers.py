@@ -26,6 +26,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
     ACTION_NAME,
+    ACTION_TEXT,
 )
 from rasa.core.constants import (
     SHOULD_NOT_BE_SET,
@@ -737,11 +738,13 @@ class DialogueStateTracker:
 
     @property
     def latest_action_name(self) -> Optional[Text]:
-        """Get the name of the previously executed action if it was not e2e action.
+        """Get the name of the previously executed action or text of e2e action.
 
-        Returns: `None` if the action was e2e action.
+        Returns: name of the previously executed action or text of e2e action
         """
-        return self.latest_action.get(ACTION_NAME)
+        return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
+            ACTION_TEXT
+        )
 
 
 def get_active_loop_name(state: State) -> Optional[Text]:

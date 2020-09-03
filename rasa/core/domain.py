@@ -76,7 +76,8 @@ ALL_DOMAIN_KEYS = [
     KEY_E2E_ACTIONS,
 ]
 
-# State is a dictionary with origin as keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP);
+# State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
+# representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
 SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
 State = Dict[Text, SubState]
@@ -609,9 +610,9 @@ class Domain:
         """Returns all available slot state strings."""
 
         return [
-            f"{s.name}_{i}"
-            for s in self.slots
-            for i in range(0, s.feature_dimensionality())
+            f"{slot.name}_{feature_index}"
+            for slot in self.slots
+            for feature_index in range(0, slot.feature_dimensionality())
         ]
 
     @lazy_property
@@ -646,18 +647,27 @@ class Domain:
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, Union[Text, Tuple[Text]]]:
+        """Turn latest UserUttered event into a substate containing intent,
+        text and set entities if present
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary containing intent, text and set entities
+        """
         latest_message = tracker.latest_message
-        if not latest_message or latest_message == UserUttered.empty():
+        if not latest_message or latest_message.is_empty():
             return {}
 
         sub_state = latest_message.as_sub_state()
 
         # filter entities based on intent config
+        # sub_state will be transformed to frozenset therefore we need to
+        # convert the list to the tuple
         entities = tuple(self._get_featurized_entities(latest_message))
         if entities:
             sub_state[ENTITIES] = entities
-        elif sub_state.get(ENTITIES):
-            del sub_state[ENTITIES]
+        else:
+            sub_state.pop(ENTITIES, None)
 
         return sub_state
 
@@ -665,7 +675,12 @@ class Domain:
     def _get_slots_sub_state(
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
-        # Set all set slots with the featurization of the stored value
+        """Set all set slots with the featurization of the stored value
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping slot names to their featurization
+        """
 
         # proceed with values only if the user of a bot have done something
         # at the previous step i.e., when the state is not empty.
@@ -687,25 +702,35 @@ class Domain:
     def _get_prev_action_sub_state(
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Text]:
-        """Turn the previous taken action into a state name."""
+        """Turn the previous taken action into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary with the information on latest action
+        """
         return tracker.latest_action
 
     @staticmethod
     def _get_active_loop_sub_state(
         tracker: "DialogueStateTracker",
     ) -> Dict[Text, Text]:
-        """Turn tracker's active loop into a state name."""
+        """Turn tracker's active loop into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping "name" to active loop name if present
+        """
 
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         active_loop = tracker.active_loop.get(LOOP_NAME)
-        if active_loop is not None:
+        if active_loop:
             return {LOOP_NAME: active_loop}
         else:
             return {}
 
     @staticmethod
-    def _clean_state(state: State):
+    def _clean_state(state: State) -> State:
         return {
             state_type: sub_state
             for state_type, sub_state in state.items()
@@ -856,6 +881,8 @@ class Domain:
             A cleaned dictionary version of the domain.
         """
         domain_data = self.as_dict()
+        # remove e2e actions from domain to be demonstrated  written to file
+        domain_data.pop(KEY_E2E_ACTIONS, None)
 
         for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):
             for name, intent in intent_info.items():

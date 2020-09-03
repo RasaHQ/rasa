@@ -4,7 +4,7 @@ import copy
 import logging
 import random
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict, Tuple
+from typing import Optional, List, Text, Set, Dict, Tuple, Deque
 
 from rasa.constants import DOCS_URL_STORIES
 from rasa.core.constants import SHOULD_NOT_BE_SET
@@ -21,7 +21,7 @@ from rasa.core.events import (
     ActiveLoop,
 )
 from rasa.core.slots import Slot
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker, FrozenState
 from rasa.core.training.structures import (
     StoryGraph,
     STORY_START,
@@ -82,7 +82,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             tracker.update(e)
         return tracker
 
-    def past_states(self, domain: Domain) -> deque:
+    def past_states(self, domain: Domain) -> Deque[FrozenState]:
         """Return the states of the tracker based on the logged events."""
 
         # we need to make sure this is the same domain, otherwise things will
