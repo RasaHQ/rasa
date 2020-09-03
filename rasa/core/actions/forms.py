@@ -516,7 +516,7 @@ class FormAction(LoopAction):
         """
         # no active_loop means that it is called during activation
         need_validation = not tracker.active_loop or (
-            tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
+            tracker.latest_action_name == ACTION_LISTEN_NAME
             and tracker.active_loop.get(LOOP_VALIDATE, True)
         )
         if need_validation:

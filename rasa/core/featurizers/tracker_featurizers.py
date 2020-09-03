@@ -2,15 +2,14 @@ import jsonpickle
 import logging
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text
-from collections import deque
+from typing import Tuple, List, Optional, Dict, Text, Deque, FrozenSet
 import numpy as np
 
 import rasa.utils.io
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker, FrozenState
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -30,7 +29,7 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
 
     @staticmethod
-    def _unfreeze_states(states: deque) -> List[State]:
+    def _unfreeze_states(states: Deque[FrozenState]) -> List[State]:
         return [
             {key: dict(value) for key, value in dict(state).items()} for state in states
         ]
@@ -103,8 +102,10 @@ class TrackerFeaturizer:
         """
         if self.state_featurizer is None:
             raise ValueError(
-                "Variable 'state_featurizer' is not set. Provide "
-                "'SingleStateFeaturizer' class to featurize trackers."
+                f"Instance variable 'state_featurizer' is not set. "
+                f"During initialization set 'state_featurizer' to an instance of "
+                f"'{SingleStateFeaturizer.__class__.__name__}' class "
+                f"to get numerical features for trackers."
             )
 
         self.state_featurizer.prepare_from_domain(domain)
