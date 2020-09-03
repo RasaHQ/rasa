@@ -450,11 +450,11 @@ class Domain:
         self._check_domain_sanity()
 
     def __hash__(self) -> int:
-
         self_as_dict = self.as_dict()
         self_as_dict[KEY_INTENTS] = sort_list_of_dicts_by_first_key(
             self_as_dict[KEY_INTENTS]
         )
+        self_as_dict[KEY_ACTIONS] = self.action_names
         self_as_string = json.dumps(self_as_dict, sort_keys=True)
         text_hash = utils.get_text_hash(self_as_string)
 

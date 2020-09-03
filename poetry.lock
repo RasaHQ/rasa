@@ -248,10 +248,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = "*"
-version = "1.14.51"
+version = "1.14.54"
 
 [package.dependencies]
-botocore = ">=1.17.51,<1.18.0"
+botocore = ">=1.17.54,<1.18.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
@@ -261,7 +261,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = "*"
-version = "1.17.51"
+version = "1.17.54"
 
 [package.dependencies]
 docutils = ">=0.10,<0.16"
@@ -318,7 +318,7 @@ description = "Checks CloudFormation templates for practices and behaviour that 
 name = "cfn-lint"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.35.0"
+version = "0.35.1"
 
 [package.dependencies]
 aws-sam-translator = ">=1.25.0"
@@ -893,7 +893,7 @@ description = "Chromium HSTS Preload list as a Python package and updated daily"
 name = "hstspreload"
 optional = false
 python-versions = ">=3.6"
-version = "2020.8.25"
+version = "2020.9.2"
 
 [[package]]
 category = "main"
@@ -2174,7 +2174,7 @@ description = "Open source machine learning framework to automate text- and voic
 name = "rasa-sdk"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "2.0.0a3"
+version = "2.0.0a4"
 
 [package.dependencies]
 coloredlogs = ">=10,<15"
@@ -2664,7 +2664,7 @@ description = "TensorFlow Addons."
 name = "tensorflow-addons"
 optional = false
 python-versions = "*"
-version = "0.10.0"
+version = "0.11.2"
 
 [package.dependencies]
 typeguard = ">=2.7"
@@ -2875,7 +2875,7 @@ description = "Twilio API client and TwiML generator"
 name = "twilio"
 optional = false
 python-versions = "*"
-version = "6.45.0"
+version = "6.45.1"
 
 [package.dependencies]
 PyJWT = ">=1.4.2"
@@ -3206,12 +3206,12 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-    {file = "boto3-1.14.51-py2.py3-none-any.whl", hash = "sha256:f9dbccbcec916051c6588adbccae86547308ac4cd154f1eb7cf6422f0e391a71"},
-    {file = "boto3-1.14.51.tar.gz", hash = "sha256:a6bdb808e948bd264af135af50efb76253e85732c451fa605b7a287faf022432"},
+    {file = "boto3-1.14.54-py2.py3-none-any.whl", hash = "sha256:69ad8f2184979e223e12ee3071674fdf910983cf9f4d6f34f7ec407b089064b5"},
+    {file = "boto3-1.14.54.tar.gz", hash = "sha256:4196b418598851ffd10cf9d1606694673cbfeca4ddf8b25d4e50addbd2fc60bf"},
 ]
 botocore = [
-    {file = "botocore-1.17.51-py2.py3-none-any.whl", hash = "sha256:5f984def778b0000a12cf28ec727d64634ca46ab0dcdb5ce8b654bfb2a1fb99c"},
-    {file = "botocore-1.17.51.tar.gz", hash = "sha256:198a62d387eb64b4c1dde33a9c41e96b07884c68c1442dd7c7d38123592aae7c"},
+    {file = "botocore-1.17.54-py2.py3-none-any.whl", hash = "sha256:9e493a21e6a8d45c631eb2952ae8e1d0a31b9984546d4268ea10c0c33e2435ce"},
+    {file = "botocore-1.17.54.tar.gz", hash = "sha256:6fe05837646447d61acdaf1e3401b92cd9309f00b19c577a50d0ade7735a3403"},
 ]
 cachetools = [
     {file = "cachetools-4.1.1-py3-none-any.whl", hash = "sha256:513d4ff98dd27f85743a8dc0e92f55ddb1b49e060c2d5961512855cda2c01a98"},
@@ -3256,8 +3256,8 @@ cffi = [
     {file = "cffi-1.14.2.tar.gz", hash = "sha256:ae8f34d50af2c2154035984b8b5fc5d9ed63f32fe615646ab435b05b132ca91b"},
 ]
 cfn-lint = [
-    {file = "cfn-lint-0.35.0.tar.gz", hash = "sha256:42023d89520e3a29891ec2eb4c326eef9d1f7516fe9abee8b6c97ce064187b45"},
-    {file = "cfn_lint-0.35.0-py3-none-any.whl", hash = "sha256:8439925531fdd4c94e5b50974d067857b3af50b04b61254d3eae9b1e0ce20007"},
+    {file = "cfn-lint-0.35.1.tar.gz", hash = "sha256:98c7e2c2846df779f1a878e76f3eb7a3f40dd7b7dd316e5673c4923cf2ed121e"},
+    {file = "cfn_lint-0.35.1-py3-none-any.whl", hash = "sha256:cbf0ef2946c544db347874e36cf4c1a099c432280d62da9b9c739914668aec80"},
 ]
 chardet = [
     {file = "chardet-3.0.4-py2.py3-none-any.whl", hash = "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"},
@@ -3581,8 +3581,8 @@ hpack = [
     {file = "hpack-3.0.0.tar.gz", hash = "sha256:8eec9c1f4bfae3408a3f30500261f7e6a65912dc138526ea054f9ad98892e9d2"},
 ]
 hstspreload = [
-    {file = "hstspreload-2020.8.25-py3-none-any.whl", hash = "sha256:c96401eca4669340b423abd711d2d5d03ddf0685461f95e9cfe500d5e9acf3d2"},
-    {file = "hstspreload-2020.8.25.tar.gz", hash = "sha256:3129613419c13ea62411ec7375d79840e28004cbb6a585909ddcbeee401bea14"},
+    {file = "hstspreload-2020.9.2-py3-none-any.whl", hash = "sha256:0ecd9557e863fb2f9c7a82617a69e961bc0d287fe9c0d906f613647a8b2f9e57"},
+    {file = "hstspreload-2020.9.2.tar.gz", hash = "sha256:aa0b230cb39a2b407310a7fe18b07539bb1b9bc8aa6f042b4473d6e00f381758"},
 ]
 httplib2 = [
     {file = "httplib2-0.18.1-py3-none-any.whl", hash = "sha256:ca2914b015b6247791c4866782fa6042f495b94401a0f0bd3e1d6e0ba2236782"},
@@ -4317,8 +4317,8 @@ questionary = [
     {file = "questionary-1.5.2.tar.gz", hash = "sha256:f6e41e36b6c86fe0c3ff12a30c6c6a4e80129efba5ad0a115d71fd5df119c726"},
 ]
 rasa-sdk = [
-    {file = "rasa-sdk-2.0.0a3.tar.gz", hash = "sha256:16ed17d227bac8349634b51e91512c9c735b13c08a7b3d513feb1eeda150b478"},
-    {file = "rasa_sdk-2.0.0a3-py3-none-any.whl", hash = "sha256:3c5a5732d9fec68879f3a8965db32d7183084f625e71b965b563ecae70487e8c"},
+    {file = "rasa-sdk-2.0.0a4.tar.gz", hash = "sha256:fe5e3f1f5a19e7f7f51d0db4be1ec9556cc33bd59cc16abab8970ebed5c4f02d"},
+    {file = "rasa_sdk-2.0.0a4-py3-none-any.whl", hash = "sha256:d8e1a33a965e3b60e9362489b82655f353783f3b6e9151dc71fd1546b53ff9ea"},
 ]
 redis = [
     {file = "redis-3.5.3-py2.py3-none-any.whl", hash = "sha256:432b788c4530cfe16d8d943a09d40ca6c16149727e4afe8c2c9d5580c59d9f24"},
@@ -4602,18 +4602,18 @@ tensorflow = [
     {file = "tensorflow-2.3.0-cp38-cp38-win_amd64.whl", hash = "sha256:2d9994157d6a222d9ffd956e99af4b5e46e47338428d2d197e325362283ec835"},
 ]
 tensorflow-addons = [
-    {file = "tensorflow_addons-0.10.0-cp35-cp35m-macosx_10_13_x86_64.whl", hash = "sha256:8dae39a84dcd5eeb0889ebaed86158bd2904c7dde9d5873598712fa12993095c"},
-    {file = "tensorflow_addons-0.10.0-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:8a607414f54248d6bfbfdd2afdc8d1ac2619d5caa37013c0302775b170024524"},
-    {file = "tensorflow_addons-0.10.0-cp35-cp35m-win_amd64.whl", hash = "sha256:0353c10ab3dd332d3c4f9474b0102bc9f277fc0748d9c7a249a77dca8680b881"},
-    {file = "tensorflow_addons-0.10.0-cp36-cp36m-macosx_10_13_x86_64.whl", hash = "sha256:91a3fd625c4550e08c952ca03cc0181362a66a916f8f55631c07a10e8c1d5076"},
-    {file = "tensorflow_addons-0.10.0-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:48e58343daa94f62b31bf5f418b5f1f3f7123c7b373ddc085e1574ea1299263e"},
-    {file = "tensorflow_addons-0.10.0-cp36-cp36m-win_amd64.whl", hash = "sha256:83c452a0ab8a91695837a9380218eca7de0cda0e700ca3c48b5c39b16841f61b"},
-    {file = "tensorflow_addons-0.10.0-cp37-cp37m-macosx_10_13_x86_64.whl", hash = "sha256:c1379b7eacd2ab254b3e5c5041d6e10caa2e373b86451de800c7dab77595e8b7"},
-    {file = "tensorflow_addons-0.10.0-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:c070d28a45ca09d323f2052d83bfab97f9186b6e59191016a8dd5f2547d486a3"},
-    {file = "tensorflow_addons-0.10.0-cp37-cp37m-win_amd64.whl", hash = "sha256:16a4184f42399843ffcad23ca96b9d256a3e0a5f2d3e76c7ceecff5bad6e1c1c"},
-    {file = "tensorflow_addons-0.10.0-cp38-cp38-macosx_10_13_x86_64.whl", hash = "sha256:e185716992fe0d2af6d5826042834b85feda4e4887ad1e29fddf5c9640c38da0"},
-    {file = "tensorflow_addons-0.10.0-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:08034ad2c177038990afc6aef9e7a90546f2872f3a39c4f966d2561346a749ab"},
-    {file = "tensorflow_addons-0.10.0-cp38-cp38-win_amd64.whl", hash = "sha256:d5df84bcd4fbd7006cb2602c96b4a736a46a8667b4179e82a843a159d5802eab"},
+    {file = "tensorflow_addons-0.11.2-cp35-cp35m-macosx_10_13_x86_64.whl", hash = "sha256:c3dcf5fd56aeacf13fd41b198eb6c11567b9cf86f516673b9766a1f97061bde2"},
+    {file = "tensorflow_addons-0.11.2-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:adcfcddc62f879880f0e164344612198ea3b6de0f54978b9379cad5c350af5ff"},
+    {file = "tensorflow_addons-0.11.2-cp35-cp35m-win_amd64.whl", hash = "sha256:16b3fc4258a0251401bb0ced75742c6c02d7c5dee0531df976499da8208b5bb4"},
+    {file = "tensorflow_addons-0.11.2-cp36-cp36m-macosx_10_13_x86_64.whl", hash = "sha256:677bbe0714eb8286667d7ecf3a41e53234de72d93e67d23f63b6e55345da91b6"},
+    {file = "tensorflow_addons-0.11.2-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:cfbd34c93327de78ef0dee14956fed19bac9ef039670869000b0a4405f539c4e"},
+    {file = "tensorflow_addons-0.11.2-cp36-cp36m-win_amd64.whl", hash = "sha256:35ae042544b6f3334c2d05f111db7bc9692ac2a001078c20f4414d270c481832"},
+    {file = "tensorflow_addons-0.11.2-cp37-cp37m-macosx_10_13_x86_64.whl", hash = "sha256:22177e036e17d057afeeea0327f045d2aeb84539db31c4d81dbb5e7942692ce5"},
+    {file = "tensorflow_addons-0.11.2-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:76d7a1b99ddb69c3990581147fe751c9767f3b2555836f170c4a580525decdf9"},
+    {file = "tensorflow_addons-0.11.2-cp37-cp37m-win_amd64.whl", hash = "sha256:8663048652b8b5f7fb09c58b1c166c001fdf6e704e4a132307daef08f1b7beab"},
+    {file = "tensorflow_addons-0.11.2-cp38-cp38-macosx_10_13_x86_64.whl", hash = "sha256:e6b9acec0a8353b52854d7c7e422a1e96459c58c3307ee4c7ba7bf3afb035fb6"},
+    {file = "tensorflow_addons-0.11.2-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:e36dd53520989dbd2c6850ea92a23739bd90fb481d7076777d8d521dce47fcc8"},
+    {file = "tensorflow_addons-0.11.2-cp38-cp38-win_amd64.whl", hash = "sha256:551b0097f28075c31dfebc3d8e717bc23bd8521ba03f2d69e2141c2bd687cd29"},
 ]
 tensorflow-estimator = [
     {file = "tensorflow_estimator-2.3.0-py2.py3-none-any.whl", hash = "sha256:b75e034300ccb169403cf2695adf3368da68863aeb0c14c3760064c713d5c486"},
@@ -4705,7 +4705,7 @@ transformers = [
     {file = "transformers-2.11.0.tar.gz", hash = "sha256:8de20f03a94ebf16d98610a7df0acc6ba68c80bd44605cf5ad4300c642a7b57a"},
 ]
 twilio = [
-    {file = "twilio-6.45.0.tar.gz", hash = "sha256:a929ee294dc41ff76a16ca93940707ace74afa72473203d40022ed3e428b0841"},
+    {file = "twilio-6.45.1.tar.gz", hash = "sha256:97752ed9595dc23cd7217a812804c4a9e8c1b92e84529e82db718c921ed80edf"},
 ]
 typed-ast = [
     {file = "typed_ast-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:73d785a950fc82dd2a25897d525d003f6378d1cb23ab305578394694202a58c3"},
