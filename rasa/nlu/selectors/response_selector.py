@@ -36,7 +36,6 @@ from rasa.utils.tensorflow.constants import (
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
-    DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -156,8 +155,6 @@ class ResponseSelector(DIETClassifier):
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
-        # Default dense dimension to use if no dense features are present.
-        DENSE_DIMENSION: {TEXT: 512, LABEL: 512},
         # Default dimension to use for concatenating sequence and sentence features.
         CONCAT_DIMENSION: {TEXT: 512, LABEL: 512},
         # The number of incorrect labels. The algorithm will minimize
