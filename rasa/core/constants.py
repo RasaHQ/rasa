@@ -18,7 +18,7 @@ DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
 REQUESTED_SLOT = "requested_slot"
 # rules allow setting a value of slots or active_loops to None;
-# generator substitutes Nones with this constant to notify rule policy that
+# generator substitutes `None`s with this constant to notify rule policy that
 # a value should not be set during prediction to activate a rule
 SHOULD_NOT_BE_SET = "should_not_be_set"
 
