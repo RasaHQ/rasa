@@ -141,7 +141,7 @@ class TrackerFeaturizer:
         trackers_as_states = self.prediction_states(trackers, domain)
         return self._featurize_states(trackers_as_states, interpreter)
 
-    def persist(self, path) -> None:
+    def persist(self, path: Text) -> None:
         featurizer_file = os.path.join(path, "featurizer.json")
         rasa.utils.io.create_directory_for_file(featurizer_file)
 
@@ -149,7 +149,7 @@ class TrackerFeaturizer:
         rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
 
     @staticmethod
-    def load(path) -> Optional["TrackerFeaturizer"]:
+    def load(path: Text) -> Optional["TrackerFeaturizer"]:
         """Loads the featurizer from file."""
 
         featurizer_file = os.path.join(path, "featurizer.json")
