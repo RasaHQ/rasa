@@ -13,7 +13,7 @@ intents:
 - EXTERNAL_reminder
 - EXT_reminder
 entities:
-- name
+- PERSON
 - plant
 responses:
   utter_what_can_do:

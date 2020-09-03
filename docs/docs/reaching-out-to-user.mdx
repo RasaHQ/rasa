@@ -38,7 +38,7 @@ intents:
 
 responses:
   utter_welcome:
-  - text: Hi, I'm Sara! What can I help you with today?
+  - text: Hi there! What can I help you with today?
 
 rules:
   - rule: welcome user
@@ -53,12 +53,27 @@ should send to the bot.
 
 ### Try it Out
 
+If you don't yet have a channel set up for your assistant, you can use [rasa-webchat](https://github.com/botfront/rasa-webchat),
+a [websocket channel](./connectors/your-own-website.mdx)
+and configure the [`initPayload`](https://github.com/botfront/rasa-webchat#parameters) to send the message `/chat_opened`.
+After retraining your model, start the rasa server:
+
+```shell
+rasa run --enable-api --debug
+```
+
+In the `rasa-webchat` widget, you should now be greeted with the message, "Hi there! What can I help you with today?"
+
 
 ## External Events
 
 Sometimes you want an external device to change the course of an ongoing conversation.
 For example, if you have a moisture-sensor attached to a Raspberry Pi, you could use it to notify
 you when a plant needs watering via your assistant.
+
+The examples below are from the [reminderbot example bot](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot),
+which includes both reminders and external events.
+You can clone it and follow the instructions in `README` to try out the full version.
 
 ### Concepts
 
@@ -72,8 +87,8 @@ For Rasa, it is as if you entered a message that got classified with that specif
 The assistant will then predict and execute the next action as usual.
 
 
-For example, the following post request would inject the intent `EXTERNAL_dry_plant` and the `plant` entity and value
-into the conversation with the `conversation_id` "`user123`":
+For example, the following post request would inject the intent `EXTERNAL_dry_plant` and the `plant` entity 
+into the conversation with id `user123`:
 
 ```shell
 curl -H "Content-Type: application/json" -X POST \
@@ -81,14 +96,39 @@ curl -H "Content-Type: application/json" -X POST \
   "http://localhost:5005/conversations/user123/trigger_intent?output_channel=latest"
 ```
 
-#### Getting the `conversation_id`
+#### Getting the Conversation ID
 
 To have an external device post to the `trigger_intent` endpoint, you need the conversation ID of the ongoing conversation.
 To try it out locally, you can define a custom action `action_tell_id` to tell you 
 the conversation ID, and then use it in the POST request to the `trigger_intent` endpoint:
 
 ```python
+class ActionTellID(Action):
+    """Informs the user about the conversation ID."""
 
+    def name(self) -> Text:
+        return "action_tell_id"
+
+    async def run(
+        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+
+        conversation_id = tracker.sender_id
+
+        dispatcher.utter_message(
+            f"The ID of this conversation is: " f"{conversation_id}."
+        )
+
+        dispatcher.utter_message(
+            f"Trigger an intent with "
+            f'curl -H "Content-Type: application/json" '
+            f'-X POST -d \'{{"name": "EXTERNAL_dry_plant", '
+            f'"entities": {{"plant": "Orchid"}}}}\' '
+            f"http://localhost:5005/conversations/{conversation_id}/"
+            f"trigger_intent"
+        )
+
+        return []
 ```
 
 In a real-life scenario, your external device would get hold of the conversation ID some other way. 
@@ -102,14 +142,22 @@ conversation IDs. Your Raspberry Pi would get the conversation ID directly from 
 
 In the dry plant example, your Raspberry Pi needs to send a message with the intent
 `EXTERNAL_dry_plant` to the `trigger_intent` endpoint. This intent will be reserved for use by the Raspberry Pi, so
-there won't be any NLU training examples for it. You'll also need to define an intent to get the `conversation_id` 
+there won't be any NLU training examples for it. You'll also need to define an intent to get the conversation ID
 for the POST request. You can add NLU training examples for this intent if you want, or you can just add the intent 
-and trigger it by entering `/tell_id`:
+and trigger it by entering `/ask_id`:
 
 ```rasa-yaml
 intents:
   - EXTERNAL_dry_plant
-  - tell_id
+  - ask_id
+
+nlu:
+  - intent: ask_id
+    examples: |
+      - what's the conversation id?
+      - id
+      - What is the ID of this conversation?
+      - How do I send a POST request to this conversation?
 ```
 
 :::note
@@ -132,13 +180,13 @@ slots:
 
 #### Rules and Actions
 
-You'll need two rules for the dry plant example: one to get the `conversation_id` back, and one
+You'll need two rules for the dry plant example: one to get the conversation ID back, and one
 that tells your assistant how to respond when it receives a message from the Raspberry Pi.
 
 ```rasa-yaml
 - rule: conversation id
   steps:
-  - intent: conversation_id
+  - intent: ask_id
   - action: action_tell_id
 rules:
   - rule: warn about dry plant
@@ -166,26 +214,34 @@ The response will use the value from the slot `plant` to warn about the specific
 
 ### Try it out
 
-To try out the dry plant notification example, you'll need to start both `rasa shell` 
-and the action server, since you need a custom action to tell you your `conversation_id`.
+To try out the dry plant notification example, you'll need to start either [Rasa X](https://rasa.com/docs/rasa-x/)
+or a [`CallbackChannel`](your-own-website.mdx#callbackchannel).
+
+:::caution
+External Events and Reminders don't work in request-response channels like the `rest` channel or `rasa shell`.
+Custom connectors for assistants implementing reminders or external events should be built
+off of the [`CallbackInput` channel](your-own-website.mdx#callbackinput) instead of the `RestInput` channel.
+
+See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md)
+for instructions on how to test your reminders locally.
+:::
+
+You'll also need to start the action server, since you need a custom action to tell you your conversation ID.
 
 Once you have retrained your model with the data above, you can try it out by 
-getting the `conversation_id` back from the assistant:
+getting the conversation ID back from the assistant:
 
 ```yaml
-User: /tell_id
-  Bot: Your conversation ID is user1234
+User: /ask_id
+  Bot: The ID of this conversation is user1234. 
+      Trigger an intent with
+      curl -H "Content-Type: application/json" -X POST -d 
+      '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' 
+      "http://localhost:5005/conversations/user1234/trigger_intent?output_channel=latest"
 ```
 
-Using the conversation ID from the bot's response, run this POST request in a separate terminal window:
-
-```shell
-curl -H "Content-Type: application/json" -X POST \
-  -d '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' \
-  "http://localhost:5005/conversations/user123/trigger_intent?output_channel=latest"
-```
-
-In your shell, you should see the bot respond to the request:
+By running the returned POST request, 
+you should see the bot respond in your channel:
 
 ```yaml
   Bot: Your Orchid needs some water!
@@ -194,6 +250,9 @@ In your shell, you should see the bot respond to the request:
 ## Reminders
 
 You can have your assistant reach out to the user after a set amount of time by using **reminders**.
+The examples below are from the [reminderbot example bot](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot).
+You can clone it and follow the instructions in `README` to try out the full version.
+
 
 ### Concepts
 
@@ -245,14 +304,14 @@ This allows the action that reacts to the reminder to make use of the entities
 from the user's scheduling message. 
 
 For example, if you want your assistant to remind you to call a friend, you could
-send it a message like "Remind me to call Paul". If `Paul` is extracted as a `name` 
+send it a message like "Remind me to call Paul". If `Paul` is extracted as a `PERSON` 
 entity, the action reacting to the reminder can use it to say "Remember to call Paul!"
 
 #### Reacting to Reminders
 
 As with external events, the bot reaches out to the user after receiving a
 POST request to the `trigger_intent` endpoint. Reminders, however, send
-the request to the right `conversation_id` automatically after a certain amount of time using 
+the request to the right conversation ID automatically after a certain amount of time using 
 the name that you define in the `ReminderScheduled` event. 
 
 To define a reaction to the reminder, you only need to write a [rule](#rules) that 
@@ -276,7 +335,7 @@ class ActionReactToReminder(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        name = next(tracker.get_latest_entity_values("name"), "someone")
+        name = next(tracker.get_latest_entity_values("PERSON"), "someone")
         dispatcher.utter_message(f"Remember to call {name}!")
 
         return []
@@ -346,27 +405,28 @@ You should add NLU training examples for scheduling and cancelling the reminder:
 nlu:
 - intent: ask_remind_call
   examples: |
-    - remind me to call Albert
-    - remind me to call Susan
-    - later I have to call Daksh
-    - later I have to call Anna
+    - remind me to call John
+    - later I have to call Alan
+    - Please, remind me to call Vova
+    - please remind me to call Tanja
+    - I must not forget to call Juste
 - intent: ask_forget_reminders
   examples: |
-    - cancel all reminders
-    - cancel that please
-    - please cancel that reminder
-    - forget the reminder
+    - Forget about the reminder
+    - do not remind me
+    - cancel the reminder
+    - cancel all reminders please
 ```
 
 By adding `SpacyNLP` and `SpacyEntityExtractor` to your pipeline in your config file, you won't need to annotate any of the 
-names in your training data, since Spacy has a `name` dimension:
+names in your training data, since Spacy has a `PERSON` dimension:
 
 ```yaml-rasa
 pipeline:
 # other components
 - SpacyNLP
 - SpacyEntityExtractor
-    dimensions: ["name"]
+    dimensions: ["PERSON"]
 ```
 
 #### Rules
@@ -396,11 +456,10 @@ rules:
 
 
 ### Try it Out
-:::caution
-Reminders don't work in request-response channels like the `rest` channel or `rasa shell`.
-Custom connectors for assistants implementing reminders or external events should be built
-off of the `CallbackInput` channel instead of the `RestInput` channel.
 
-See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md)
-for instructions on how to test your reminders locally.
-:::
+As with the external events, to try out reminders you'll need to start either [Rasa X](https://rasa.com/docs/rasa-x/)
+or a [`CallbackChannel`](your-own-website.mdx#callbackchannel).
+You'll also need to start the action server to schedule, react to, and cancel your reminders.
+
+Then, if you send the bot a message like `Remind me to call Paul Pots`, you should get a reminder 
+back five seconds later that says `Remember to call Paul Pots!`.
