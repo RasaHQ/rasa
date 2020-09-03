@@ -1084,7 +1084,7 @@ class ActionExecuted(Event):
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
-                action_text=parameters.get("action_text"),
+                parameters.get("action_text"),
             )
         ]
 
