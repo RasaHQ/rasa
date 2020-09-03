@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.12] - 2020-09-03
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6549 <https://github.com/rasahq/rasa/issues/6549>`_: Fix slow training of ``CRFEntityExtractor`` when using Entity Roles and Groups.
+
+
 [1.10.11] - 2020-08-21
 ^^^^^^^^^^^^^^^^^^^^^^
 
