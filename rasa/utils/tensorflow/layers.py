@@ -9,6 +9,9 @@ from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
 
 logger = logging.getLogger(__name__)
 
+# https://github.com/tensorflow/addons#gpu-and-cpu-custom-ops-1
+tfa.options.TF_ADDONS_PY_OPS = True
+
 
 class SparseDropout(tf.keras.layers.Dropout):
     """Applies Dropout to the input.
