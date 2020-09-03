@@ -314,6 +314,11 @@ class UserUttered(Event):
     def empty() -> "UserUttered":
         return UserUttered(None)
 
+    def is_empty(self) -> bool:
+        if self.text or self.intent_name or self.entities:
+            return False
+        return True
+
     def as_dict(self) -> Dict[Text, Any]:
         _dict = super().as_dict()
         _dict.update(
