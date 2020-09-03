@@ -2,7 +2,7 @@ import jsonpickle
 import logging
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Deque, FrozenSet
+from typing import Tuple, List, Optional, Dict, Text, Deque
 import numpy as np
 
 import rasa.utils.io
@@ -114,7 +114,6 @@ class TrackerFeaturizer:
             trackers, domain
         )
 
-        # noinspection PyPep8Naming
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
 
@@ -129,7 +128,6 @@ class TrackerFeaturizer:
             "Featurizer must have the capacity to create feature vector"
         )
 
-    # noinspection PyPep8Naming
     def create_state_features(
         self,
         trackers: List[DialogueStateTracker],

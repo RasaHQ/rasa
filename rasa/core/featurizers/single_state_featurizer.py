@@ -187,7 +187,6 @@ class SingleStateFeaturizer:
     def _encode_action(
         self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
-
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
         else:
