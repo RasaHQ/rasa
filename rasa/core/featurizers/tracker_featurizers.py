@@ -102,8 +102,10 @@ class TrackerFeaturizer:
         """
         if self.state_featurizer is None:
             raise ValueError(
-                "Variable 'state_featurizer' is not set. Provide "
-                "'SingleStateFeaturizer' class to featurize trackers."
+                f"Instance variable 'state_featurizer' is not set. "
+                f"During initialization set 'state_featurizer' to an instance of "
+                f"'{SingleStateFeaturizer.__class__.__name__}' class "
+                f"to get numerical features for trackers."
             )
 
         self.state_featurizer.prepare_from_domain(domain)
