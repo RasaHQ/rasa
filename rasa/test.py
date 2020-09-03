@@ -131,20 +131,15 @@ def test_core(
         )
         return
 
-    core_path, nlu_path = rasa.model.get_model_subdirectories(unpacked_model)
+    _agent = Agent.load(unpacked_model)
 
-    if not core_path:
+    if _agent.policy_ensemble is None:
         cli_utils.print_error(
             "Unable to test: could not find a Core model. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
 
-    use_e2e = additional_arguments.get("e2e", False)
-
-    _interpreter = RegexInterpreter()
-    if nlu_path:
-        _interpreter = NaturalLanguageInterpreter.create(nlu_path)
-    elif use_e2e:
+    if isinstance(_agent.interpreter, RegexInterpreter):
         cli_utils.print_warning(
             "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
             "evaluation. If you added actual user messages to your test stories "
@@ -153,8 +148,6 @@ def test_core(
         )
 
     from rasa.core.test import test
-
-    _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
     kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
 
