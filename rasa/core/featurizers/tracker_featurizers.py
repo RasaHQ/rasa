@@ -114,7 +114,6 @@ class TrackerFeaturizer:
             trackers, domain
         )
 
-        # noinspection PyPep8Naming
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
 
