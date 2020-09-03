@@ -315,9 +315,7 @@ class UserUttered(Event):
         return UserUttered(None)
 
     def is_empty(self) -> bool:
-        if self.text or self.intent_name or self.entities:
-            return False
-        return True
+        return not self.text and not self.intent_name and not self.entities
 
     def as_dict(self) -> Dict[Text, Any]:
         _dict = super().as_dict()
