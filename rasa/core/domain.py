@@ -648,17 +648,19 @@ class Domain:
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, Union[Text, Tuple[Text]]]:
         latest_message = tracker.latest_message
-        if not latest_message or latest_message == UserUttered.empty():
+        if not latest_message or latest_message.is_empty():
             return {}
 
         sub_state = latest_message.as_sub_state()
 
         # filter entities based on intent config
+        # sub_state will be transformed to frozenset therefore we need to
+        # convert the list to the tuple
         entities = tuple(self._get_featurized_entities(latest_message))
         if entities:
             sub_state[ENTITIES] = entities
-        elif sub_state.get(ENTITIES):
-            del sub_state[ENTITIES]
+        else:
+            sub_state.pop(ENTITIES, None)
 
         return sub_state
 
