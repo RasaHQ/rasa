@@ -17,7 +17,7 @@ from rasa.core.events import UserUttered, ActionExecuted
 
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker

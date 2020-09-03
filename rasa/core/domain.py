@@ -631,29 +631,6 @@ class Domain:
             + self.form_names
         )
 
-    def _get_user_states(
-        self, tracker: "DialogueStateTracker"
-    ) -> Dict[Text, Dict[Text, Union[Text, Tuple[Text]]]]:
-        state_dict = {}
-
-        # Set all found entities with the state value 1.0, unless they should
-        # be ignored for the current intent
-        latest_message = tracker.latest_message
-
-        if not latest_message or latest_message == UserUttered.empty():
-            return state_dict
-
-        state_dict[USER] = latest_message.as_sub_state()
-
-        # filter entities based on intent config
-        entities = tuple(self._get_featurized_entities(latest_message))
-        if entities:
-            state_dict[USER][ENTITIES] = entities
-        elif state_dict[USER].get(ENTITIES):
-            del state_dict[USER][ENTITIES]
-
-        return state_dict
-
     def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
         intent_name = latest_message.intent.get(INTENT_NAME_KEY)
         intent_config = self.intent_config(intent_name)
@@ -666,10 +643,28 @@ class Domain:
 
         return entity_names.intersection(wanted_entities)
 
+    def _get_user_sub_state(
+        self, tracker: "DialogueStateTracker"
+    ) -> Dict[Text, Union[Text, Tuple[Text]]]:
+        latest_message = tracker.latest_message
+        if not latest_message or latest_message == UserUttered.empty():
+            return {}
+
+        sub_state = latest_message.as_sub_state()
+
+        # filter entities based on intent config
+        entities = tuple(self._get_featurized_entities(latest_message))
+        if entities:
+            sub_state[ENTITIES] = entities
+        elif sub_state.get(ENTITIES):
+            del sub_state[ENTITIES]
+
+        return sub_state
+
     @staticmethod
-    def _get_slots_states(
+    def _get_slots_sub_state(
         tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]:
+    ) -> Dict[Text, Union[Text, Tuple[float]]]:
         # Set all set slots with the featurization of the stored value
 
         # proceed with values only if the user of a bot have done something
@@ -685,44 +680,47 @@ class Domain:
                 elif any(slot.as_feature()):
                     # only add slot if some of the features are not zero
                     slots[slot_name] = tuple(slot.as_feature())
-        if slots:
-            return {SLOTS: slots}
 
-        return {}
+        return slots
 
     @staticmethod
-    def _get_prev_action_states(
+    def _get_prev_action_sub_state(
         tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Dict[Text, Text]]:
+    ) -> Dict[Text, Text]:
         """Turn the previous taken action into a state name."""
-        latest_action = tracker.latest_action
-
-        if latest_action:
-            return {PREVIOUS_ACTION: latest_action}
-        else:
-            return {}
+        return tracker.latest_action
 
     @staticmethod
-    def _get_active_loop_states(
+    def _get_active_loop_sub_state(
         tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Dict[Text, Text]]:
+    ) -> Dict[Text, Text]:
         """Turn tracker's active loop into a state name."""
 
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         active_loop = tracker.active_loop.get(LOOP_NAME)
         if active_loop is not None:
-            return {ACTIVE_LOOP: {LOOP_NAME: active_loop}}
+            return {LOOP_NAME: active_loop}
         else:
             return {}
 
+    @staticmethod
+    def _clean_state(state: State):
+        return {
+            state_type: sub_state
+            for state_type, sub_state in state.items()
+            if sub_state
+        }
+
     def get_active_states(self, tracker: "DialogueStateTracker") -> State:
         """Return a bag of active states from the tracker state."""
-        state_dict = self._get_user_states(tracker)
-        state_dict.update(self._get_slots_states(tracker))
-        state_dict.update(self._get_prev_action_states(tracker))
-        state_dict.update(self._get_active_loop_states(tracker))
-        return state_dict
+        state = {
+            USER: self._get_user_sub_state(tracker),
+            SLOTS: self._get_slots_sub_state(tracker),
+            PREVIOUS_ACTION: self._get_prev_action_sub_state(tracker),
+            ACTIVE_LOOP: self._get_active_loop_sub_state(tracker),
+        }
+        return self._clean_state(state)
 
     def states_for_tracker_history(
         self, tracker: "DialogueStateTracker"
