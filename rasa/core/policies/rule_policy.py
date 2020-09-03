@@ -194,31 +194,33 @@ class RulePolicy(MemoizationPolicy):
             active_loop = get_active_loop_name(states[-1])
             # even if there are two identical feature keys
             # their loop will be the same
-            if active_loop:
-                states = self._states_for_unhappy_loop_predictions(states)
-                feature_key = self._create_feature_key(states)
-                if not feature_key:
-                    continue
+            if not active_loop:
+                continue
 
-                # Since rule snippets and stories inside the loop contain
-                # only unhappy paths, notify the loop that
-                # it was predicted after an answer to a different question and
-                # therefore it should not validate user input
-                if (
-                    # loop is predicted after action_listen in unhappy path,
-                    # therefore no validation is needed
-                    prev_action_listen_in_state(states[-1])
-                    and action == active_loop
-                ):
-                    lookup[feature_key] = DO_NOT_VALIDATE_LOOP
-                elif (
-                    # some action other than action_listen and active_loop
-                    # is predicted in unhappy path,
-                    # therefore active_loop shouldn't be predicted by the rule
-                    not prev_action_listen_in_state(states[-1])
-                    and action not in {ACTION_LISTEN_NAME, active_loop}
-                ):
-                    lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
+            states = self._states_for_unhappy_loop_predictions(states)
+            feature_key = self._create_feature_key(states)
+            if not feature_key:
+                continue
+
+            # Since rule snippets and stories inside the loop contain
+            # only unhappy paths, notify the loop that
+            # it was predicted after an answer to a different question and
+            # therefore it should not validate user input
+            if (
+                # loop is predicted after action_listen in unhappy path,
+                # therefore no validation is needed
+                prev_action_listen_in_state(states[-1])
+                and action == active_loop
+            ):
+                lookup[feature_key] = DO_NOT_VALIDATE_LOOP
+            elif (
+                # some action other than action_listen and active_loop
+                # is predicted in unhappy path,
+                # therefore active_loop shouldn't be predicted by the rule
+                not prev_action_listen_in_state(states[-1])
+                and action not in {ACTION_LISTEN_NAME, active_loop}
+            ):
+                lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
         return lookup
 
     def train(
