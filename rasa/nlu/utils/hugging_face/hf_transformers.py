@@ -22,6 +22,15 @@ from rasa.nlu.constants import (
     NUMBER_OF_SUB_TOKENS,
 )
 
+MAX_SEQUENCE_LENGTHS = {
+    "bert": 512,
+    "gpt": 512,
+    "gpt2": 512,
+    "xlnet": -1,
+    "distilbert": 512,
+    "roberta": 512,
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,19 +53,22 @@ class HFTransformersNLP(Component):
         "cache_dir": None,
     }
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        skip_model_load: bool = False,
+    ) -> None:
         super(HFTransformersNLP, self).__init__(component_config)
 
-        self._load_model()
+        self._load_model_metadata()
+        self._load_model_instance(skip_model_load)
         self.whitespace_tokenizer = WhitespaceTokenizer()
 
-    def _load_model(self) -> None:
-        """Try loading the model"""
+    def _load_model_metadata(self) -> None:
 
         from rasa.nlu.utils.hugging_face.registry import (
             model_class_dict,
             model_weights_defaults,
-            model_tokenizer_dict,
         )
 
         self.model_name = self.component_config["model_name"]
@@ -64,7 +76,7 @@ class HFTransformersNLP(Component):
         if self.model_name not in model_class_dict:
             raise KeyError(
                 f"'{self.model_name}' not a valid model name. Choose from "
-                f"{str(list(model_class_dict.keys()))}or create"
+                f"{str(list(model_class_dict.keys()))} or create"
                 f"a new class inheriting from this class to support your model."
             )
 
@@ -78,22 +90,39 @@ class HFTransformersNLP(Component):
             )
             self.model_weights = model_weights_defaults[self.model_name]
 
+        self.max_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
+
+    def _load_model_instance(self, skip_model_load: bool) -> None:
+        """Try loading the model instance
+
+        Args:
+            skip_model_load: Skip loading the model instances to save time. This should be True only for pytests
+        """
+
+        from rasa.nlu.utils.hugging_face.registry import (
+            model_class_dict,
+            model_tokenizer_dict,
+        )
+
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
 
-        self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
-            self.model_weights, cache_dir=self.cache_dir
-        )
-        self.model = model_class_dict[self.model_name].from_pretrained(
-            self.model_weights, cache_dir=self.cache_dir
-        )
+        if not skip_model_load:
+            # This should be skipped only during pytests,
 
-        # Use a universal pad token since all transformer architectures do not have a
-        # consistent token. Instead of pad_token_id we use unk_token_id because
-        # pad_token_id is not set for all architectures. We can't add a new token as
-        # well since vocabulary resizing is not yet supported for TF classes.
-        # Also, this does not hurt the model predictions since we use an attention mask
-        # while feeding input.
-        self.pad_token_id = self.tokenizer.unk_token_id
+            self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
+                self.model_weights, cache_dir=self.cache_dir
+            )
+            self.model = model_class_dict[self.model_name].from_pretrained(
+                self.model_weights, cache_dir=self.cache_dir
+            )
+
+            # Use a universal pad token since all transformer architectures do not have a
+            # consistent token. Instead of pad_token_id we use unk_token_id because
+            # pad_token_id is not set for all architectures. We can't add a new token as
+            # well since vocabulary resizing is not yet supported for TF classes.
+            # Also, this does not hurt the model predictions since we use an attention mask
+            # while feeding input.
+            self.pad_token_id = self.tokenizer.unk_token_id
 
     @classmethod
     def cache_key(
@@ -275,8 +304,7 @@ class HFTransformersNLP(Component):
 
         return batch_tokens, batch_token_ids
 
-    @staticmethod
-    def _compute_attention_mask(actual_sequence_lengths: List[int]) -> np.ndarray:
+    def _compute_attention_mask(self, actual_sequence_lengths: List[int]) -> np.ndarray:
         """Compute a mask for padding tokens.
 
         This mask will be used by the language model so that it does not attend to
@@ -294,8 +322,10 @@ class HFTransformersNLP(Component):
         for actual_sequence_length in actual_sequence_lengths:
             # add 1s for present tokens, fill up the remaining space up to max
             # sequence length with 0s (non-existing tokens)
-            padded_sequence = [1] * actual_sequence_length + [0] * (
-                max_seq_length - actual_sequence_length
+            padded_sequence = [1] * min(
+                actual_sequence_length, self.max_sequence_length
+            ) + [0] * (
+                max_seq_length - min(actual_sequence_length, self.max_sequence_length)
             )
             attention_mask.append(padded_sequence)
 
@@ -303,9 +333,27 @@ class HFTransformersNLP(Component):
 
         return attention_mask
 
-    def _add_padding_to_batch(
+    def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
-    ) -> Tuple[List[int], List[List[int]]]:
+    ) -> Tuple[List[int], int]:
+
+        # Compute max length across examples
+        max_sequence_length = 0
+        actual_sequence_lengths = []
+
+        for example_token_ids in batch_token_ids:
+            sequence_length = len(example_token_ids)
+            actual_sequence_lengths.append(sequence_length)
+            max_sequence_length = max(
+                max_sequence_length,
+                min(self.max_sequence_length, len(example_token_ids)),
+            )
+
+        return actual_sequence_lengths, max_sequence_length
+
+    def _add_padding_to_batch(
+        self, batch_token_ids: List[List[int]], max_sequence_length_model: int
+    ) -> List[List[int]]:
         """Add padding so that all examples in the batch are of the same length.
 
         Args:
@@ -316,28 +364,26 @@ class HFTransformersNLP(Component):
             Padded batch with all examples of the same length.
         """
         padded_token_ids = []
-        # Compute max length across examples
-        max_seq_len = 0
-        actual_sequence_lengths = []
 
-        for example_token_ids in batch_token_ids:
-            actual_sequence_lengths.append(len(example_token_ids))
-            max_seq_len = max(max_seq_len, len(example_token_ids))
-
-        # Add padding according to max_seq_len
+        # Add padding according to max_sequence_length
         # Some models don't contain pad token, we use unknown token as padding token.
         # This doesn't affect the computation since we compute an attention mask
         # anyways.
         for example_token_ids in batch_token_ids:
+
+            # Truncate any longer sequences so that they can be fed to the model
+            if len(example_token_ids) > max_sequence_length_model:
+                example_token_ids = example_token_ids[:max_sequence_length_model]
+
             padded_token_ids.append(
                 example_token_ids
-                + [self.pad_token_id] * (max_seq_len - len(example_token_ids))
+                + [self.pad_token_id]
+                * (max_sequence_length_model - len(example_token_ids))
             )
-        return actual_sequence_lengths, padded_token_ids
+        return padded_token_ids
 
-    @staticmethod
     def _extract_nonpadded_embeddings(
-        embeddings: np.ndarray, actual_sequence_lengths: List[int]
+        self, embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
         """Use pre-computed non-padded lengths of each example to extract embeddings
         for non-padding tokens.
@@ -380,8 +426,97 @@ class HFTransformersNLP(Component):
         sequence_hidden_states = sequence_hidden_states.numpy()
         return sequence_hidden_states
 
+    def _validate_sequence_lengths(
+        self,
+        actual_sequence_lengths: List[int],
+        batch_examples: List[Message],
+        attribute: Text,
+        inference_mode: bool = False,
+    ) -> None:
+        """
+        Validate if sequence lengths of all inputs are less the max sequence length the model can handle
+
+        This method should throw an error during training, whereas log a debug message during inference if
+        any of the input examples have a length greater than maximum sequence length allowed.
+
+        Args:
+            actual_sequence_lengths: original sequence length of all inputs
+            batch_examples: all message instances in the batch
+            attribute: attribute of message object to be processed
+            inference_mode: Whether this is during training or during inferencing
+
+        """
+        if self.max_sequence_length < 0:
+            # There is no restriction on sequence length from the model
+            return
+
+        for sequence_length, example in zip(actual_sequence_lengths, batch_examples):
+            if sequence_length > self.max_sequence_length:
+                if not inference_mode:
+                    raise RuntimeError(
+                        f"The sequence length of '{example.get(attribute)[:20]}...' "
+                        f"is too long({sequence_length} tokens) for the "
+                        f"model chosen {self.model_name} which has a maximum "
+                        f"sequence length of {self.max_sequence_length} tokens. Either "
+                        f"shorten the message or use a model which has no "
+                        f"restriction on input sequence length like XLNet"
+                    )
+                else:
+                    logger.debug(
+                        f"The sequence length of '{example.get(attribute)[:20]}...' "
+                        f"is too long({sequence_length} tokens) for the "
+                        f"model chosen {self.model_name} which has a maximum "
+                        f"sequence length of {self.max_sequence_length} tokens. "
+                        f"Downstream model predictions may be affected because of this"
+                    )
+
+    def _add_extra_padding(
+        self, sequence_embeddings: np.ndarray, actual_sequence_lengths: List[int]
+    ) -> np.ndarray:
+        """
+        Add extra zero padding to match the original sequence length.
+
+        This is only done if the input was truncated during the batch preparation of input for the model.
+        Args:
+            sequence_embeddings: Embeddings returned from the model
+            actual_sequence_lengths: original sequence length of all inputs
+
+        Returns: Modified sequence embeddings with padding if necessary
+
+        """
+
+        if self.max_sequence_length < 1:
+            # No extra padding needed because there wouldn't have been any truncation in the first place
+            return sequence_embeddings
+
+        reshaped_sequence_embeddings = []
+        for index, embedding in enumerate(sequence_embeddings):
+            embedding_size = embedding.shape[-1]
+            if actual_sequence_lengths[index] > self.max_sequence_length:
+                embedding = np.concatenate(
+                    [
+                        embedding,
+                        np.zeros(
+                            (
+                                actual_sequence_lengths[index]
+                                - self.max_sequence_length,
+                                embedding_size,
+                            ),
+                            dtype=np.float32,
+                        ),
+                    ]
+                )
+            reshaped_sequence_embeddings.append(embedding)
+
+        return np.array(reshaped_sequence_embeddings)
+
     def _get_model_features_for_batch(
-        self, batch_token_ids: List[List[int]], batch_tokens: List[List[Token]]
+        self,
+        batch_token_ids: List[List[int]],
+        batch_tokens: List[List[Token]],
+        batch_examples: List[Message],
+        attribute: Text,
+        inference_mode: bool = False,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Compute dense features of each example in the batch.
 
@@ -403,9 +538,21 @@ class HFTransformersNLP(Component):
             batch_token_ids
         )
 
-        # Let's first add padding so that whole batch can be fed to the model
-        actual_sequence_lengths, padded_token_ids = self._add_padding_to_batch(
-            batch_token_ids_augmented
+        # Compute sequence lengths for all examples
+        (
+            actual_sequence_lengths,
+            max_sequence_length_model,
+        ) = self._extract_sequence_lengths(batch_token_ids_augmented)
+
+        # Validate that all sequences can be processed based on their sequence lengths and
+        # the maximum sequence length the model can handle
+        self._validate_sequence_lengths(
+            actual_sequence_lengths, batch_examples, attribute, inference_mode
+        )
+
+        # Add padding so that whole batch can be fed to the model
+        padded_token_ids = self._add_padding_to_batch(
+            batch_token_ids_augmented, max_sequence_length_model
         )
 
         # Compute attention mask based on actual_sequence_length
@@ -426,6 +573,12 @@ class HFTransformersNLP(Component):
             sentence_embeddings,
             sequence_embeddings,
         ) = self._post_process_sequence_embeddings(sequence_nonpadded_embeddings)
+
+        # Pad zeros for examples which were truncated in inference mode.
+        # This is intentionally done after sentence embeddings have been extracted so that they are not affected
+        sequence_embeddings = self._add_extra_padding(
+            sequence_embeddings, actual_sequence_lengths
+        )
 
         # shape of matrix for all sequence embeddings
         batch_dim = len(sequence_embeddings)
@@ -449,7 +602,10 @@ class HFTransformersNLP(Component):
         return sentence_embeddings, sequence_final_embeddings
 
     def _get_docs_for_batch(
-        self, batch_examples: List[Message], attribute: Text
+        self,
+        batch_examples: List[Message],
+        attribute: Text,
+        inference_mode: bool = False,
     ) -> List[Dict[Text, Any]]:
         """Compute language model docs for all examples in the batch.
 
@@ -458,6 +614,7 @@ class HFTransformersNLP(Component):
             need to be computed.
             attribute: Property of message to be processed, one of ``TEXT`` or
             ``RESPONSE``.
+
 
         Returns:
             List of language model docs for each message in batch.
@@ -470,7 +627,9 @@ class HFTransformersNLP(Component):
         (
             batch_sentence_features,
             batch_sequence_features,
-        ) = self._get_model_features_for_batch(batch_token_ids, batch_tokens)
+        ) = self._get_model_features_for_batch(
+            batch_token_ids, batch_tokens, batch_examples, attribute, inference_mode
+        )
 
         # A doc consists of
         # {'token_ids': ..., 'tokens': ..., 'sequence_features': ...,
