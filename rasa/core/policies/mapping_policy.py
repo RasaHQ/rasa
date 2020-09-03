@@ -6,7 +6,7 @@ from typing import Any, List, Text, Optional
 
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
-from rasa.nlu.constants import INTENT_NAME_KEY, ACTION_NAME
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
 
 from rasa.core.actions.action import (
@@ -22,7 +22,7 @@ from rasa.core.constants import (
 )
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
