@@ -29,6 +29,8 @@ from rasa.nlu.constants import (
     ACTION_TEXT,
     ENTITIES,
     INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
 )
 
 if typing.TYPE_CHECKING:
@@ -331,7 +333,12 @@ class UserUttered(Event):
         return _dict
 
     def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
-        entities = [entity.get("entity") for entity in self.entities]
+        """Turns a UserUttered event into a substate containing information about entities,
+        intent and text of the UserUttered
+        Returns:
+            a dictionary with intent name, text and entities
+        """
+        entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
         out = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
@@ -366,7 +373,10 @@ class UserUttered(Event):
         if self.intent:
             if self.entities:
                 ent_string = json.dumps(
-                    {ent["entity"]: ent["value"] for ent in self.entities},
+                    {
+                        entity[ENTITY_ATTRIBUTE_TYPE]: entity[ENTITY_ATTRIBUTE_VALUE]
+                        for entity in self.entities
+                    },
                     ensure_ascii=False,
                 )
             else:
@@ -377,7 +387,7 @@ class UserUttered(Event):
             )
             if e2e:
                 message = md_format_message(
-                    self.text, self.intent.get("name"), self.entities
+                    self.text, self.intent.get(INTENT_NAME_KEY), self.entities
                 )
                 return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
             else:
@@ -1082,7 +1092,7 @@ class ActionExecuted(Event):
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
-                action_text=parameters.get("action_text"),
+                parameters.get("action_text"),
             )
         ]
 
@@ -1099,6 +1109,11 @@ class ActionExecuted(Event):
         return d
 
     def as_sub_state(self) -> Dict[Text, Text]:
+        """Turns ActionExecuted into a dictionary containing action name or action text.
+        One action cannot have both set at the same time
+        Returns:
+            a dictionary containing action name or action text with the corresponding key
+        """
         if self.action_name:
             return {ACTION_NAME: self.action_name}
         else:

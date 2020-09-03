@@ -12,9 +12,6 @@ if TYPE_CHECKING:
 
 
 class LoopAction(Action, ABC):  # pytype: disable=base-class-error
-    def name(self) -> Text:
-        raise NotImplementedError
-
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -46,11 +43,13 @@ class LoopAction(Action, ABC):  # pytype: disable=base-class-error
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> bool:
+        # pytype: disable=attribute-error
         return tracker.active_loop_name == self.name()
+        # pytype: enable=attribute-error
 
     # default implementation checks if form active
     def _default_activation_events(self) -> List[Event]:
-        return [ActiveLoop(self.name())]
+        return [ActiveLoop(self.name())]  # pytype: disable=attribute-error
 
     async def activate(
         self,
