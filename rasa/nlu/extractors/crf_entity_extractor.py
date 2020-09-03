@@ -406,14 +406,18 @@ class CRFEntityExtractor(EntityExtractor):
                 # get the features to extract for the token we are currently looking at
                 current_feature_idx = pointer_position + half_window_size
                 features = configured_features[current_feature_idx]
-                # we add the 'entity' feature to include the entity type as features
-                # for the role and group CRFs
-                if include_tag_features:
-                    features.append("entity")
 
                 prefix = prefixes[current_feature_idx]
 
-                for feature in features:
+                # we add the 'entity' feature to include the entity type as features
+                # for the role and group CRFs
+                # (do not modify features, otherwise we will end up adding 'entity'
+                # over and over again, making training very slow)
+                additional_features = []
+                if include_tag_features:
+                    additional_features.append("entity")
+
+                for feature in features + additional_features:
                     if feature == "pattern":
                         # add all regexes extracted from the 'RegexFeaturizer' as a
                         # feature: 'pattern_name' is the name of the pattern the user
