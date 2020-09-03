@@ -2,15 +2,14 @@ import jsonpickle
 import logging
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text
-from collections import deque
+from typing import Tuple, List, Optional, Dict, Text, Deque, FrozenSet
 import numpy as np
 
 import rasa.utils.io
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker, FrozenState
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -30,7 +29,7 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
 
     @staticmethod
-    def _unfreeze_states(states: deque) -> List[State]:
+    def _unfreeze_states(states: Deque[FrozenState]) -> List[State]:
         return [
             {key: dict(value) for key, value in dict(state).items()} for state in states
         ]

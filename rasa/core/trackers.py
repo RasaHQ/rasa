@@ -14,6 +14,8 @@ from typing import (
     Deque,
     Iterable,
     Union,
+    FrozenSet,
+    Tuple,
 )
 
 import typing
@@ -59,6 +61,9 @@ if typing.TYPE_CHECKING:
     from rasa.core.training.structures import Story
 
 logger = logging.getLogger(__name__)
+
+# same as State but with Dict[...] substituted with FrozenSet[Tuple[...]]
+FrozenState = FrozenSet[Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text]]]]]]
 
 
 class EventVerbosity(Enum):
@@ -218,7 +223,7 @@ class DialogueStateTracker:
         return None
 
     @staticmethod
-    def freeze_current_state(state) -> frozenset:
+    def freeze_current_state(state) -> FrozenState:
         frozen_state = frozenset(
             {
                 key: frozenset(values.items())
@@ -229,7 +234,7 @@ class DialogueStateTracker:
         )
         return frozen_state
 
-    def past_states(self, domain) -> deque:
+    def past_states(self, domain) -> Deque[FrozenState]:
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)
