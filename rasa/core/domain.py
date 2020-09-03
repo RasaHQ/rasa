@@ -76,7 +76,8 @@ ALL_DOMAIN_KEYS = [
     KEY_E2E_ACTIONS,
 ]
 
-# State is a dictionary with origin as keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP);
+# State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
+# representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
 SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
 State = Dict[Text, SubState]
