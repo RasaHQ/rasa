@@ -708,7 +708,7 @@ class Domain:
             return {}
 
     @staticmethod
-    def _clean_state(state: State):
+    def _clean_state(state: State) -> State:
         return {
             state_type: sub_state
             for state_type, sub_state in state.items()
