@@ -128,7 +128,6 @@ class TrackerFeaturizer:
             "Featurizer must have the capacity to create feature vector"
         )
 
-    # noinspection PyPep8Naming
     def create_state_features(
         self,
         trackers: List[DialogueStateTracker],
