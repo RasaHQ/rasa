@@ -113,7 +113,7 @@ def test_core(
     additional_arguments: Optional[Dict] = None,
 ) -> None:
     import rasa.model
-    from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+    from rasa.core.interpreter import RegexInterpreter
     from rasa.core.agent import Agent
 
     if additional_arguments is None:
