@@ -63,8 +63,8 @@ class SingleStateFeaturizer:
                 f"Given attribute '{attribute}' is not supported. "
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
-
     # pytype: enable=bad-return-type
+
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
     ) -> List["Features"]:
