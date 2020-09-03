@@ -18,7 +18,7 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.training_data.message import Message
-from rasa.core.trackers import prev_action_listen_in_state
+from rasa.core.trackers import is_prev_action_listen_in_state
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ class SingleStateFeaturizer:
                 )
             # featurize user only if it is "real" user input,
             # i.e. input from a turn after action_listen
-            if state_type == USER and prev_action_listen_in_state(state):
+            if state_type == USER and is_prev_action_listen_in_state(state):
                 state_features.update(
                     self._extract_state_features(sub_state, interpreter, sparse=True)
                 )

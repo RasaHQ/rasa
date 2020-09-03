@@ -757,6 +757,6 @@ def get_active_loop_name(state: State) -> Optional[Text]:
     return state[ACTIVE_LOOP].get(LOOP_NAME)
 
 
-def prev_action_listen_in_state(state: State) -> bool:
+def is_prev_action_listen_in_state(state: State) -> bool:
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME
