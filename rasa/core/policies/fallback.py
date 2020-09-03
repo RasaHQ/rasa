@@ -172,7 +172,7 @@ class FallbackPolicy(Policy):
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
 
-        elif self.should_nlu_fallback(nlu_data, tracker.latest_action.get(ACTION_NAME)):
+        elif self.should_nlu_fallback(nlu_data, tracker.latest_action_name):
             result = self.fallback_scores(domain)
 
         else:
