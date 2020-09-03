@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import scipy.sparse
-from typing import List, Optional, Dict, Text, Union, Tuple
+from typing import List, Optional, Dict, Text
 from collections import defaultdict
 
 from rasa.utils import common as common_utils
