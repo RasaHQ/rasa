@@ -119,7 +119,7 @@ class MappingPolicy(Policy):
         else:
             action = domain.intent_properties.get(intent, {}).get("triggers")
 
-        if tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME:
+        if tracker.latest_action_name == ACTION_LISTEN_NAME:
             # predict mapped action
             if action:
                 idx = domain.index_for_action(action)
