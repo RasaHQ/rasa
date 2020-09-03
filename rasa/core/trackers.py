@@ -224,7 +224,7 @@ class DialogueStateTracker:
         return None
 
     @staticmethod
-    def freeze_current_state(state) -> FrozenState:
+    def freeze_current_state(state: State) -> FrozenState:
         frozen_state = frozenset(
             {
                 key: frozenset(values.items())
