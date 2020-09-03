@@ -647,6 +647,13 @@ class Domain:
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, Union[Text, Tuple[Text]]]:
+        """Turn latest UserUttered event into a substate containing intent, 
+        text and set entities if present
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary containing intent, text and set entities 
+        """
         latest_message = tracker.latest_message
         if not latest_message or latest_message.is_empty():
             return {}
