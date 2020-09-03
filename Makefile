@@ -70,6 +70,9 @@ lint:
 types:
 	poetry run mypy rasa
 
+types-old:
+	poetry run pytype --keep-going rasa -j 16
+
 prepare-tests-files:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md

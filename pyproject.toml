@@ -150,6 +150,7 @@ toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
 pydoc-markdown = "3.3.0.post1"
 mypy = "^0.782"
+pytype = "^2020.6.1"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]

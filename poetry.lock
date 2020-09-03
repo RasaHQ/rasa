@@ -981,6 +981,18 @@ python-versions = ">=3.5"
 version = "0.14"
 
 [[package]]
+category = "dev"
+description = "A library to calculate python dependency graphs."
+name = "importlab"
+optional = false
+python-versions = ">=2.7.0"
+version = "0.5.1"
+
+[package.dependencies]
+networkx = "*"
+six = "*"
+
+[[package]]
 category = "main"
 description = "Read metadata from Python packages"
 name = "importlib-metadata"
@@ -1411,6 +1423,14 @@ pygraphviz = ["pygraphviz"]
 pytest = ["pytest"]
 pyyaml = ["pyyaml"]
 scipy = ["scipy"]
+
+[[package]]
+category = "dev"
+description = "Ninja is a small build system with a focus on speed"
+name = "ninja"
+optional = false
+python-versions = "*"
+version = "1.10.0.post1"
 
 [[package]]
 category = "dev"
@@ -2092,6 +2112,22 @@ tornado = ">=5.1"
 [package.extras]
 json = ["ujson"]
 socks = ["pysocks"]
+
+[[package]]
+category = "dev"
+description = "Python type inferencer"
+name = "pytype"
+optional = false
+python-versions = "<3.9,>=3.5"
+version = "2020.8.28"
+
+[package.dependencies]
+attrs = "*"
+importlab = ">=0.5.1"
+ninja = "*"
+pyyaml = ">=3.11"
+six = "*"
+typed_ast = "*"
 
 [[package]]
 category = "main"
@@ -3065,7 +3101,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "01760c0b388a7deeceb6127efa0dc9f8c3a495e7046e2776e3073d1919e66867"
+content-hash = "2f5e105f60e23daca1e2e46a20473302358895fa15656a5b773d63f74369e22a"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -3599,6 +3635,9 @@ immutables = [
     {file = "immutables-0.14-cp38-cp38-win_amd64.whl", hash = "sha256:ef9da20ec0f1c5853b5c8f8e3d9e1e15b8d98c259de4b7515d789a606af8745e"},
     {file = "immutables-0.14.tar.gz", hash = "sha256:a0a1cc238b678455145bae291d8426f732f5255537ed6a5b7645949704c70a78"},
 ]
+importlab = [
+    {file = "importlab-0.5.1.tar.gz", hash = "sha256:d855350d19dc10a17aabd2fe6f4b428ff1a936071f692fbf686a73694d26a51c"},
+]
 importlib-metadata = [
     {file = "importlib_metadata-1.7.0-py2.py3-none-any.whl", hash = "sha256:dc15b2969b4ce36305c51eebe62d418ac7791e9a157911d58bfb1f9ccd8e2070"},
     {file = "importlib_metadata-1.7.0.tar.gz", hash = "sha256:90bb658cdbbf6d1735b6341ce708fc7024a3e14e99ffdc5783edea9f9b077f83"},
@@ -3833,6 +3872,19 @@ mypy-extensions = [
 networkx = [
     {file = "networkx-2.4-py3-none-any.whl", hash = "sha256:cdfbf698749a5014bf2ed9db4a07a5295df1d3a53bf80bf3cbd61edf9df05fa1"},
     {file = "networkx-2.4.tar.gz", hash = "sha256:f8f4ff0b6f96e4f9b16af6b84622597b5334bf9cae8cf9b2e42e7985d5c95c64"},
+]
+ninja = [
+    {file = "ninja-1.10.0.post1-py2-none-macosx_10_6_x86_64.whl", hash = "sha256:5ae857e0283acbf4b3645756d9e8217fddbe1f41dfe33e2c40dc79cb69706a8c"},
+    {file = "ninja-1.10.0.post1-py2-none-manylinux1_i686.whl", hash = "sha256:760de263a261919fc97cf1fd30d2dd8902dd89d5165d6cbf80ce3d66a39fff11"},
+    {file = "ninja-1.10.0.post1-py2-none-manylinux1_x86_64.whl", hash = "sha256:3c206a4b8b896f396aeabfc0dbd99d84bc01306a3e07568d28d5536c24cbeaa3"},
+    {file = "ninja-1.10.0.post1-py2-none-win32.whl", hash = "sha256:18bd4ebc6cef30981e966609362090a0d99aeca29a63ca83a3688305f1c35222"},
+    {file = "ninja-1.10.0.post1-py2-none-win_amd64.whl", hash = "sha256:6ba8b42193600bfbde76dc32d7f6fd5675e253a9e5d7caad4a2735a84a72d491"},
+    {file = "ninja-1.10.0.post1-py3-none-macosx_10_6_x86_64.whl", hash = "sha256:607211b652a32006cda8a72a1496c348ddadcbe30986ff264e7354972fa3194e"},
+    {file = "ninja-1.10.0.post1-py3-none-manylinux1_i686.whl", hash = "sha256:3d4b1a3fa4d68c9dc74f50875c9bfe4eaaf495b5205d12526aea95043488c8b6"},
+    {file = "ninja-1.10.0.post1-py3-none-manylinux1_x86_64.whl", hash = "sha256:fa6d68b4f65aca57594d3cccfcf8fa7c8a311e93c55eed8043cabc439617d7b7"},
+    {file = "ninja-1.10.0.post1-py3-none-win32.whl", hash = "sha256:9897b92c626caabe51fce04a9be851f635ed828a55c558a9cf1a75571b4c4fce"},
+    {file = "ninja-1.10.0.post1-py3-none-win_amd64.whl", hash = "sha256:39f9ab35f52b540777b77cc889ffed37182c7d55bec00f658f6f74bd5b1a4377"},
+    {file = "ninja-1.10.0.post1.tar.gz", hash = "sha256:ddfac074ae408e42c617cd44f90a95bf6db94f0c846c95ef2a3a9a03438027a1"},
 ]
 "nr.collections" = [
     {file = "nr.collections-0.0.1.tar.gz", hash = "sha256:ddf38cd6379cac546ce7abdadf024fc01cca75540e11b1d5f1aa701a33817f1c"},
@@ -4219,6 +4271,15 @@ python-socketio = [
 python-telegram-bot = [
     {file = "python-telegram-bot-12.8.tar.gz", hash = "sha256:327186c56469216207dcdf8706892e58e0a62e51ef46f5143268e387bbb4edc3"},
     {file = "python_telegram_bot-12.8-py2.py3-none-any.whl", hash = "sha256:7eebed539ccacf77896cff9e41d1f68746b8ff3ca4da1e2e59285e9c749cb050"},
+]
+pytype = [
+    {file = "pytype-2020.8.28-cp35-cp35m-macosx_10_14_x86_64.whl", hash = "sha256:0c12e077ad4c4a3970bf83f61bf2cb6033fc91e16fef6385ae4799dfaf4d537c"},
+    {file = "pytype-2020.8.28-cp35-cp35m-manylinux2014_x86_64.whl", hash = "sha256:3184ffbd3196b7cd60c89866dc497ff888f546e523df50f06f8257e528580ee0"},
+    {file = "pytype-2020.8.28-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:dda3c464a31530f3b485433fe55ec43fb36ef8e0a6920174d8c7a5f286f036d6"},
+    {file = "pytype-2020.8.28-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:885f0639dcebe37d7edd60a7e520fcdd14d20320586a8151120ad0c97a5fbf4a"},
+    {file = "pytype-2020.8.28-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:aec0bc7a25297c15d2ecb3d2ee095130eba38ea108949b28a0490a91b6f34486"},
+    {file = "pytype-2020.8.28-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:894a2367eedcbbd1cb9cc875279ba3325c8c28bc0c8f00edc02378fa7b86318b"},
+    {file = "pytype-2020.8.28.tar.gz", hash = "sha256:8ac53aef4453631dfb81980a7b7313d2835f602953f4a92aec1f97b5be6b7e10"},
 ]
 pytz = [
     {file = "pytz-2020.1-py2.py3-none-any.whl", hash = "sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed"},
