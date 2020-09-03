@@ -26,8 +26,8 @@ PERCENTAGE_KEY = "__percentage__"
 PACKAGE_NAME = "rasa"
 
 CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
-DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
-SCHEMA_UTILS_FILE = "utils/schemas.yml"
+DOMAIN_SCHEMA_FILE = "utils/schemas/domain.yml"
+SCHEMA_UTILS_FILE = "utils/schemas/responses.yml"
 SCHEMA_EXTENSIONS_FILE = "utils/pykwalify_extensions.py"
 YAML_VERSION = (1, 2)
 
