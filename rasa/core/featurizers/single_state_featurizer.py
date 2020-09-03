@@ -65,7 +65,6 @@ class SingleStateFeaturizer:
             )
 
     # pytype: enable=bad-return-type
-
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
     ) -> List["Features"]:
