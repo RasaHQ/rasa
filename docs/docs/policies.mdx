@@ -293,29 +293,6 @@ for details.
 
 :::
 
-### Deprecated Policies 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="embedding-policy"></a>
-
-#### Embedding Policy
-
-:::caution
-`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies.mdx#ted-policy) instead of `EmbeddingPolicy`
-in your policy configuration. The functionality of the policy stayed the same.
-
-:::
-
-
-
-## Rule-based Policies
-
-### Rule Policy
-
-The `RulePolicy` is a policy that handles conversation parts that follow
-a fixed behavior. It makes predictions based on any `rules` you have in your 
-training data. See the [Rules documentation](./rules.mdx) for further information
-on how to define rules.
-
 ### Memoization Policy
 
 The `MemoizationPolicy` remembers the stories from your
@@ -355,6 +332,30 @@ make sure to add the relevant stories without slots to your training
 data as well.
 
 :::
+
+
+### Deprecated Policies 
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="embedding-policy"></a>
+
+#### Embedding Policy
+
+:::caution
+`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies.mdx#ted-policy) instead of `EmbeddingPolicy`
+in your policy configuration. The functionality of the policy stayed the same.
+
+:::
+
+
+
+## Rule-based Policies
+
+### Rule Policy
+
+The `RulePolicy` is a policy that handles conversation parts that follow
+a fixed behavior. It makes predictions based on any `rules` you have in your 
+training data. See the [Rules documentation](./rules.mdx) for further information
+on how to define rules.
 
 
 ### Deprecated Policies 
