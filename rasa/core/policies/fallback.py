@@ -10,12 +10,11 @@ import rasa.utils.io
 from rasa.utils import common as common_utils
 
 from rasa.core.domain import Domain
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
-from rasa.nlu.constants import ACTION_NAME
 
 logger = logging.getLogger(__name__)
 
