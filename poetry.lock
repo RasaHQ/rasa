@@ -1790,6 +1790,7 @@ watchdog = ">=0.10.2,<1.0.0"
 
 [package.source]
 reference = "rasa-pypi"
+type = "legacy"
 url = "https://pypi.rasa.com/simple"
 
 [[package]]
@@ -3078,7 +3079,8 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "302b048aed148786471c33c464c25b2c8330b1523c1f4e93a5c937baa2b18d7e"
+content-hash = "0aa0ed94837d69f70230aba9faf735a2f74ababdd578021ad676147666eb8da5"
+lock-version = "1.0"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
