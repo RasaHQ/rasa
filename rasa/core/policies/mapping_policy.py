@@ -139,7 +139,7 @@ class MappingPolicy(Policy):
                     " action '{}' in the domain."
                     "".format(intent, action)
                 )
-        elif tracker.latest_action.get(ACTION_NAME) == action and action is not None:
+        elif tracker.latest_action_name == action and action is not None:
             # predict next action_listen after mapped action
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.action_name == action
