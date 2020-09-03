@@ -335,6 +335,11 @@ class UserUttered(Event):
         return _dict
 
     def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+        """Turns a UserUttered event into a substate containing information about entities, 
+        intent and text of the UserUttered
+        Returns:
+            a dictionary with intent name, text and entities
+        """
         entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
         out = {}
         # During training we expect either intent_name or text to be set.
@@ -1106,6 +1111,11 @@ class ActionExecuted(Event):
         return d
 
     def as_sub_state(self) -> Dict[Text, Text]:
+        """Turns ActionExecuted into a dictionary containing action name or action text;
+        One action cannot have both set at the same time
+        Returns:
+            a dictionary containing action name or action text with the corresponding key 
+        """
         if self.action_name:
             return {ACTION_NAME: self.action_name}
         else:
