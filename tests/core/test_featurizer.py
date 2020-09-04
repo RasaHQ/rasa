@@ -39,9 +39,8 @@ def test_fail_to_load_non_existent_featurizer():
 
 
 def test_single_state_featurizer_without_interpreter_state_not_with_action_listen():
-    """
-    This test are for encoding state without a trained interpreter.
-    action_name is not action_listen, so, INTENT, TEXT and ENTITIES should not be featurized.  
+    """This test are for encoding state without a trained interpreter. 
+    action_name is not action_listen, so, INTENT, TEXT and ENTITIES should not be featurized
     """
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
@@ -73,7 +72,7 @@ def test_single_state_featurizer_without_interpreter_state_with_action_listen():
     """
     This test are for encoding state without a trained interpreter.
     action_name is action_listen, so, INTENT and ENTITIES should be featurized
-    while text shouldn't because we don't have an interpreter.   
+    while text shouldn't because we don't have an interpreter.  
     """
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
