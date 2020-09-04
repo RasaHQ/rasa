@@ -12,7 +12,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from rasa.utils.io import encode_string, decode_string
 
 GROUP_ENTITY_VALUE = "value"
@@ -21,7 +21,7 @@ GROUP_ENTITY_DICT = "entity_dict"
 GROUP_ENTITY_TEXT = "entity_text"
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import Message, TrainingData
+    from rasa.nlu.training_data import TrainingData
 
 INTENT = "intent"
 SYNONYM = "synonym"
@@ -153,7 +153,7 @@ class MarkdownReader(TrainingDataReader):
         try:
             data = json.loads(f"{{{json_str}}}")
         except JSONDecodeError as e:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Incorrect training data format ('{{{json_str}}}'), make sure your "
                 f"data is valid. For more information about the format visit "
                 f"{DOCS_URL_TRAINING_DATA_NLU}."

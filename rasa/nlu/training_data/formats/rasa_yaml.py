@@ -26,7 +26,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData, Message
@@ -117,7 +117,7 @@ class RasaYAMLReader(TrainingDataReader):
 
         for nlu_item in nlu_data:
             if not isinstance(nlu_item, dict):
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Unexpected block found in '{self.filename}':\n"
                     f"{nlu_item}\n"
                     f"Items under the '{KEY_NLU}' key must be YAML dictionaries. "
@@ -135,7 +135,7 @@ class RasaYAMLReader(TrainingDataReader):
             elif KEY_LOOKUP in nlu_item.keys():
                 self._parse_lookup(nlu_item)
             else:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Issue found while processing '{self.filename}': "
                     f"Could not find supported key in the section:\n"
                     f"{nlu_item}\n"
@@ -153,7 +153,7 @@ class RasaYAMLReader(TrainingDataReader):
 
         intent = intent_data.get(KEY_INTENT, "")
         if not intent:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"The intent has an empty name. "
                 f"Intents should have a name defined under the {KEY_INTENT} key. "
@@ -192,7 +192,7 @@ class RasaYAMLReader(TrainingDataReader):
         elif isinstance(examples, str):
             example_strings = self._parse_multiline_example(intent, examples)
         else:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Unexpected block found in '{self.filename}' "
                 f"while processing intent '{intent}':\n"
                 f"{examples}\n"
@@ -202,7 +202,7 @@ class RasaYAMLReader(TrainingDataReader):
             return []
 
         if not example_strings:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"Intent '{intent}' has no examples.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
@@ -220,7 +220,7 @@ class RasaYAMLReader(TrainingDataReader):
 
         synonym_name = nlu_item[KEY_SYNONYM]
         if not synonym_name:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"The synonym has an empty name. "
                 f"Synonyms should have a name defined under the {KEY_SYNONYM} key. "
@@ -232,7 +232,7 @@ class RasaYAMLReader(TrainingDataReader):
         examples = nlu_item.get(KEY_SYNONYM_EXAMPLES, "")
 
         if not examples:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"{KEY_SYNONYM}: {synonym_name} doesn't have any examples. "
                 f"It will be skipped.",
@@ -241,7 +241,7 @@ class RasaYAMLReader(TrainingDataReader):
             return
 
         if not isinstance(examples, str):
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Unexpected block found in '{self.filename}':\n"
                 f"{examples}\n"
                 f"It will be skipped.",
@@ -255,7 +255,7 @@ class RasaYAMLReader(TrainingDataReader):
     def _parse_regex(self, nlu_item: Dict[Text, Any]) -> None:
         regex_name = nlu_item[KEY_REGEX]
         if not regex_name:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"The regex has an empty name."
                 f"Regex should have a name defined under the '{KEY_REGEX}' key. "
@@ -266,7 +266,7 @@ class RasaYAMLReader(TrainingDataReader):
 
         examples = nlu_item.get(KEY_REGEX_EXAMPLES, "")
         if not examples:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"'{KEY_REGEX}: {regex_name}' doesn't have any examples. "
                 f"It will be skipped.",
@@ -275,7 +275,7 @@ class RasaYAMLReader(TrainingDataReader):
             return
 
         if not isinstance(examples, str):
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Unexpected block found in '{self.filename}':\n"
                 f"{examples}\n"
                 f"This block will be skipped.",
@@ -291,7 +291,7 @@ class RasaYAMLReader(TrainingDataReader):
 
         lookup_item_name = nlu_item[KEY_LOOKUP]
         if not lookup_item_name:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"The lookup item has an empty name. "
                 f"Lookup items should have a name defined under the '{KEY_LOOKUP}' "
@@ -302,7 +302,7 @@ class RasaYAMLReader(TrainingDataReader):
 
         examples = nlu_item.get(KEY_LOOKUP_EXAMPLES, "")
         if not examples:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"'{KEY_LOOKUP}: {lookup_item_name}' doesn't have any examples. "
                 f"It will be skipped.",
@@ -311,7 +311,7 @@ class RasaYAMLReader(TrainingDataReader):
             return
 
         if not isinstance(examples, str):
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Unexpected block found in '{self.filename}':\n"
                 f"{examples}\n"
                 f"This block will be skipped.",
@@ -327,7 +327,7 @@ class RasaYAMLReader(TrainingDataReader):
     def _parse_multiline_example(self, item: Text, examples: Text) -> Iterator[Text]:
         for example in examples.splitlines():
             if not example.startswith(MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL):
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Issue found while processing '{self.filename}': "
                     f"The item '{item}' contains an example that doesn't start with a "
                     f"'{MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL}' symbol: "

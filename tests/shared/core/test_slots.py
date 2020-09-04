@@ -1,7 +1,7 @@
 import pytest
 
-from rasa.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
-from rasa.core.slots import (
+import rasa.shared.core.constants
+from rasa.shared.core.slots import (
     Slot,
     TextSlot,
     BooleanSlot,
@@ -171,7 +171,10 @@ class TestCategoricalSlot(SlotTestCollection):
             ("two", [0, 1, 0, 0, 0]),
             ("小于", [0, 0, 1, 0, 0]),
             ({"three": 3}, [0, 0, 0, 1, 0]),
-            (DEFAULT_CATEGORICAL_SLOT_VALUE, [0, 0, 0, 0, 0]),
+            (
+                rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
+                [0, 0, 0, 0, 0],
+            ),
         ]
     )
     def value_feature_pair(self, request):
@@ -195,7 +198,10 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
             ("two", [0, 1, 0, 0, 0, 0]),
             ("小于", [0, 0, 1, 0, 0, 0]),
             ({"three": 3}, [0, 0, 0, 1, 0, 0]),
-            (DEFAULT_CATEGORICAL_SLOT_VALUE, [0, 0, 0, 0, 0, 1]),
+            (
+                rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
+                [0, 0, 0, 0, 0, 1],
+            ),
             ("unseen value", [0, 0, 0, 0, 0, 1]),
         ]
     )
