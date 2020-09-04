@@ -85,6 +85,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
+    DENSE_DIMENSION,
 )
 
 
@@ -101,7 +102,6 @@ TEXT_SEQUENCE_LENGTH = f"{TEXT}_{SEQUENCE}_lengths"
 LABEL_SEQUENCE_LENGTH = f"{LABEL}_{SEQUENCE}_lengths"
 LABEL_IDS = f"{LABEL}_ids"
 TAG_IDS = "tag_ids"
-DEFAULT_DENSE_DIMENSION = 100
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
@@ -172,8 +172,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
+        # Default dense dimension to use if no dense features are present.
+        DENSE_DIMENSION: {TEXT: 128, LABEL: 20},
         # Default dimension to use for concatenating sequence and sentence features.
-        CONCAT_DIMENSION: {TEXT: 512, LABEL: 20},
+        CONCAT_DIMENSION: {TEXT: 128, LABEL: 20},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
@@ -1329,15 +1331,18 @@ class DIET(RasaModel):
             self._prepare_entity_recognition_layers()
 
     def _prepare_sparse_dense_layers(
-        self, feature_signatures: List[FeatureSignature], name: Text, reg_lambda: float
+        self,
+        feature_signatures: List[FeatureSignature],
+        name: Text,
+        reg_lambda: float,
+        dense_dim: int,
     ) -> None:
         sparse = False
         dense = False
-        dense_dim = DEFAULT_DENSE_DIMENSION
+
         for is_sparse, feature_dimension in feature_signatures:
             if is_sparse:
                 sparse = True
-                dense_dim = min(dense_dim, feature_dimension)
             else:
                 dense = True
 
@@ -1373,6 +1378,7 @@ class DIET(RasaModel):
                 self.data_signature[f"{name}_{feature_type}_features"],
                 f"{name}_{feature_type}",
                 self.config[REGULARIZATION_CONSTANT],
+                self.config[DENSE_DIMENSION][name],
             )
             self._tf_layers[f"concat_layer.{name}_{feature_type}"] = layers.Ffnn(
                 [self.config[CONCAT_DIMENSION][name]],

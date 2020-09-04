@@ -71,6 +71,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
+    DENSE_DIMENSION,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -155,6 +156,8 @@ class ResponseSelector(DIETClassifier):
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
+        # Default dense dimension to use if no dense features are present.
+        DENSE_DIMENSION: {TEXT: 128, LABEL: 128},
         # Default dimension to use for concatenating sequence and sentence features.
         CONCAT_DIMENSION: {TEXT: 512, LABEL: 512},
         # The number of incorrect labels. The algorithm will minimize
