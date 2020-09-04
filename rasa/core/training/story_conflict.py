@@ -273,7 +273,6 @@ def _sliced_states_iterator(
     """
     for tracker in trackers:
         states = tracker.past_states(domain)
-        states = [dict(state) for state in states]
 
         idx = 0
         for event in tracker.events:

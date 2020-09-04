@@ -12,7 +12,7 @@ from rasa.core.policies.policy import SupportedData
 from rasa.core.trackers import (
     DialogueStateTracker,
     get_active_loop_name,
-    prev_action_listen_in_state,
+    is_prev_action_listen_in_state,
 )
 from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import (
@@ -209,7 +209,7 @@ class RulePolicy(MemoizationPolicy):
             if (
                 # loop is predicted after action_listen in unhappy path,
                 # therefore no validation is needed
-                prev_action_listen_in_state(states[-1])
+                is_prev_action_listen_in_state(states[-1])
                 and action == active_loop
             ):
                 lookup[feature_key] = DO_NOT_VALIDATE_LOOP
@@ -217,7 +217,7 @@ class RulePolicy(MemoizationPolicy):
                 # some action other than action_listen and active_loop
                 # is predicted in unhappy path,
                 # therefore active_loop shouldn't be predicted by the rule
-                not prev_action_listen_in_state(states[-1])
+                not is_prev_action_listen_in_state(states[-1])
                 and action not in {ACTION_LISTEN_NAME, active_loop}
             ):
                 lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION

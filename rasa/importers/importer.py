@@ -3,6 +3,7 @@ from functools import reduce
 from typing import Text, Optional, List, Dict
 import logging
 
+import rasa.shared.utils.common
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
@@ -170,7 +171,9 @@ class TrainingDataImporter:
             importer_class = MultiProjectImporter
         else:
             try:
-                importer_class = common_utils.class_from_module_path(module_path)
+                importer_class = rasa.shared.utils.common.class_from_module_path(
+                    module_path
+                )
             except (AttributeError, ImportError):
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None

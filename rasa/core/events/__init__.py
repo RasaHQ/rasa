@@ -10,6 +10,7 @@ from dateutil import parser
 from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
 
+import rasa.shared.utils.common
 from rasa.core import utils
 from typing import Union
 
@@ -208,7 +209,7 @@ class Event:
         """Returns a slots class by its type name."""
         from rasa.core import utils
 
-        for cls in utils.all_subclasses(Event):
+        for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
         if type_name == "topic":
@@ -317,9 +318,7 @@ class UserUttered(Event):
         return UserUttered(None)
 
     def is_empty(self) -> bool:
-        if self.text or self.intent_name or self.entities:
-            return False
-        return True
+        return not self.text and not self.intent_name and not self.entities
 
     def as_dict(self) -> Dict[Text, Any]:
         _dict = super().as_dict()
@@ -335,7 +334,7 @@ class UserUttered(Event):
         return _dict
 
     def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
-        """Turns a UserUttered event into a substate containing information about entities, 
+        """Turns a UserUttered event into a substate containing information about entities,
         intent and text of the UserUttered
         Returns:
             a dictionary with intent name, text and entities
@@ -1111,10 +1110,10 @@ class ActionExecuted(Event):
         return d
 
     def as_sub_state(self) -> Dict[Text, Text]:
-        """Turns ActionExecuted into a dictionary containing action name or action text;
+        """Turns ActionExecuted into a dictionary containing action name or action text.
         One action cannot have both set at the same time
         Returns:
-            a dictionary containing action name or action text with the corresponding key 
+            a dictionary containing action name or action text with the corresponding key
         """
         if self.action_name:
             return {ACTION_NAME: self.action_name}

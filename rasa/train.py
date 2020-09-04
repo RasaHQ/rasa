@@ -12,13 +12,8 @@ from rasa.core.domain import Domain
 from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.cli.utils import (
-    print_success,
-    print_warning,
-    print_error,
-    bcolors,
-    print_color,
-)
+from rasa.cli.utils import print_success, print_warning, print_error, print_color
+import rasa.shared.utils.io
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
@@ -249,7 +244,7 @@ async def _do_training(
     else:
         print_color(
             "NLU data/configuration did not change. No need to retrain NLU model.",
-            color=bcolors.OKBLUE,
+            color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
 
     if fingerprint_comparison_result.should_retrain_core():
@@ -267,13 +262,13 @@ async def _do_training(
             "Core stories/configuration did not change. "
             "Only the templates section has been changed. A new model with "
             "the updated templates will be created.",
-            color=bcolors.OKBLUE,
+            color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
         await model.update_model_with_new_domain(file_importer, train_path)
     else:
         print_color(
             "Core stories/configuration did not change. No need to retrain Core model.",
-            color=bcolors.OKBLUE,
+            color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
 
 
@@ -396,7 +391,7 @@ async def _train_core_with_validated_data(
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
         # normal (not compare) training
-        print_color("Training Core model...", color=bcolors.OKBLUE)
+        print_color("Training Core model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
         domain, config = await asyncio.gather(
             file_importer.get_domain(), file_importer.get_config()
         )
@@ -408,7 +403,9 @@ async def _train_core_with_validated_data(
             additional_arguments=additional_arguments,
             interpreter=interpreter,
         )
-        print_color("Core model training completed.", color=bcolors.OKBLUE)
+        print_color(
+            "Core model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
+        )
 
         if train_path is None:
             # Only Core was trained.
@@ -531,7 +528,7 @@ async def _train_nlu_with_validated_data(
             # Otherwise, create a temp train path and clean it up on exit.
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
         config = await file_importer.get_config()
-        print_color("Training NLU model...", color=bcolors.OKBLUE)
+        print_color("Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
         _, nlu_model, _ = await rasa.nlu.train(
             config,
             file_importer,
@@ -540,7 +537,9 @@ async def _train_nlu_with_validated_data(
             persist_nlu_training_data=persist_nlu_training_data,
             **additional_arguments,
         )
-        print_color("NLU model training completed.", color=bcolors.OKBLUE)
+        print_color(
+            "NLU model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
+        )
 
         if train_path is None:
             # Only NLU was trained

@@ -996,9 +996,10 @@ async def test_ask_for_slot(
     slot_name = "sun"
 
     action_from_name = Mock(return_value=action.ActionListen())
+    endpoint_config = Mock()
     monkeypatch.setattr(action, action.action_from_name.__name__, action_from_name)
 
-    form = FormAction("my_form", None)
+    form = FormAction("my_form", endpoint_config)
     await form._ask_for_slot(
         Domain.from_dict(domain),
         None,
@@ -1007,4 +1008,4 @@ async def test_ask_for_slot(
         DialogueStateTracker.from_events("dasd", []),
     )
 
-    action_from_name.assert_called_once_with(expected_action, None, ANY)
+    action_from_name.assert_called_once_with(expected_action, endpoint_config, ANY)

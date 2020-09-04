@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
+import rasa.shared.utils.io
+import rasa.nlu.utils.bilou_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -22,8 +24,6 @@ from rasa.nlu.constants import (
     INTENT,
 )
 from rasa.nlu.training_data import Message
-import rasa.utils.common as common_utils
-from rasa.nlu.utils import bilou_utils
 
 
 class EntityExtractor(Component):
@@ -153,22 +153,30 @@ class EntityExtractor(Component):
                 last_group_tag != current_group_tag or last_role_tag != current_role_tag
             )
 
-            if bilou_utils.bilou_prefix_from_tag(current_entity_tag):
+            if rasa.nlu.utils.bilou_utilsbilou_utils.bilou_prefix_from_tag(
+                current_entity_tag
+            ):
                 # checks for new bilou tag
                 # new bilou tag begins are not with I- , L- tags
                 new_bilou_tag_starts = last_entity_tag != current_entity_tag and (
-                    bilou_utils.LAST
-                    != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
-                    and bilou_utils.INSIDE
-                    != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                    rasa.nlu.utils.bilou_utilsbilou_utils.LAST
+                    != rasa.nlu.utils.bilou_utilsbilou_utils.bilou_prefix_from_tag(
+                        current_entity_tag
+                    )
+                    and rasa.nlu.utils.bilou_utilsbilou_utils.INSIDE
+                    != rasa.nlu.utils.bilou_utilsbilou_utils.bilou_prefix_from_tag(
+                        current_entity_tag
+                    )
                 )
 
                 # to handle bilou tags such as only I-, L- tags without B-tag
                 # and handle multiple U-tags consecutively
                 new_unigram_bilou_tag_starts = (
                     last_entity_tag == NO_ENTITY_TAG
-                    or bilou_utils.UNIT
-                    == bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                    or rasa.nlu.utils.bilou_utilsbilou_utils.UNIT
+                    == rasa.nlu.utils.bilou_utilsbilou_utils.bilou_prefix_from_tag(
+                        current_entity_tag
+                    )
                 )
 
                 new_tag_found = (
@@ -177,7 +185,9 @@ class EntityExtractor(Component):
                     or group_or_role_changed
                 )
                 last_entity_tag = current_entity_tag
-                current_entity_tag = bilou_utils.tag_without_prefix(current_entity_tag)
+                current_entity_tag = rasa.nlu.utils.bilou_utilsbilou_utils.tag_without_prefix(
+                    current_entity_tag
+                )
             else:
                 new_tag_found = (
                     last_entity_tag != current_entity_tag or group_or_role_changed
@@ -337,7 +347,7 @@ class EntityExtractor(Component):
                     entity_start not in token_start_positions
                     or entity_end not in token_end_positions
                 ):
-                    common_utils.raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
                         f"end values of entities in the training data match the token "

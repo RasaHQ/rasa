@@ -18,7 +18,7 @@ DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
 REQUESTED_SLOT = "requested_slot"
 # rules allow setting a value of slots or active_loops to None;
-# generator substitutes Nones with this constant to notify rule policy that
+# generator substitutes `None`s with this constant to notify rule policy that
 # a value should not be set during prediction to activate a rule
 SHOULD_NOT_BE_SET = "should_not_be_set"
 
@@ -73,7 +73,6 @@ UTTER_PREFIX = "utter_"
 RESPOND_PREFIX = "respond_"
 
 DIALOGUE = "dialogue"
-DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
 # RabbitMQ message property header added to events published using `rasa export`
 RASA_EXPORT_PROCESS_ID_HEADER_NAME = "rasa-export-process-id"

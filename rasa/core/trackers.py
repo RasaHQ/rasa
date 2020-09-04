@@ -20,6 +20,7 @@ from typing import (
 
 import typing
 
+import rasa.shared.utils.io
 from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -54,9 +55,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     ActionExecutionRejected,
 )
 from rasa.core.domain import Domain, State  # pytype: disable=pyi-error
-from rasa.core.slots import Slot
-from rasa.utils import common as common_utils
-
+from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
     from rasa.core.training.structures import Story
@@ -224,7 +223,7 @@ class DialogueStateTracker:
         return None
 
     @staticmethod
-    def freeze_current_state(state) -> FrozenState:
+    def freeze_current_state(state: State) -> FrozenState:
         frozen_state = frozenset(
             {
                 key: frozenset(values.items())
@@ -235,11 +234,16 @@ class DialogueStateTracker:
         )
         return frozen_state
 
-    def past_states(self, domain) -> Deque[FrozenState]:
-        """Generate the past states of this tracker based on the history."""
+    def past_states(self, domain: Domain) -> List[State]:
+        """Generate the past states of this tracker based on the history.
 
-        generated_states = domain.states_for_tracker_history(self)
-        return deque(self.freeze_current_state(s) for s in generated_states)
+        Args:
+            domain: a :class:`rasa.core.domain.Domain`
+
+        Returns:
+            a list of states
+        """
+        return domain.states_for_tracker_history(self)
 
     def change_loop_to(self, loop_name: Text) -> None:
         """Set the currently active loop.
@@ -258,7 +262,7 @@ class DialogueStateTracker:
             self.active_loop = {}
 
     def change_form_to(self, form_name: Text) -> None:
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "`change_form_to` is deprecated and will be removed "
             "in future versions. Please use `change_loop_to` "
             "instead.",
@@ -757,6 +761,6 @@ def get_active_loop_name(state: State) -> Optional[Text]:
     return state[ACTIVE_LOOP].get(LOOP_NAME)
 
 
-def prev_action_listen_in_state(state: State) -> bool:
+def is_prev_action_listen_in_state(state: State) -> bool:
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME
