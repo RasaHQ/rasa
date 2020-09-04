@@ -102,7 +102,6 @@ def test_log_longer_sequence(
     caplog.set_level(logging.DEBUG)
     transformers_nlp.process(message)
     if should_overflow:
-        print(caplog.text)
         assert "hi hi hi" in caplog.text
     assert message.get("text_language_model_doc") is not None
 
