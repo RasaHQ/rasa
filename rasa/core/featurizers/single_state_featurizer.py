@@ -24,6 +24,15 @@ logger = logging.getLogger(__name__)
 
 
 class SingleStateFeaturizer:
+    """Base class to transform the dialogue state into an ML format.
+
+    Subclasses of SingleStateFeaturizer will decide how a bot will
+    transform the dialogue state into a dictionary mapping an attribute
+    to its features. Possible attributes are: INTENT, TEXT, ACTION_NAME,
+    ACTION_TEXT, ENTITIES, SLOTS and ACTIVE_LOOP. Each attribute will be
+    featurized into a list of `rasa.utils.features.Features`.
+    """
+
     def __init__(self) -> None:
         self._default_feature_states = {}
         self.action_texts = []
