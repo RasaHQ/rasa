@@ -376,10 +376,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
                 states_length_for_action += 1
 
+                # use only actions which can be predicted at a stories start
                 if event.unpredictable:
                     continue
 
-                # use only actions which can be predicted at a stories start
                 sliced_states = self.slice_state_history(
                     states[:states_length_for_action], self.max_history
                 )
