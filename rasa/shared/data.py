@@ -230,7 +230,7 @@ def is_test_stories_file(file_path: Text) -> bool:
 
     return YAMLStoryReader.is_yaml_story_file(
         file_path
-    ) or MarkdownStoryReader.is_markdown_test_stories_file(file_path)
+    ) or MarkdownStoryReader.is_markdown_story_file(file_path)
 
 
 def is_config_file(file_path: Text) -> bool:
