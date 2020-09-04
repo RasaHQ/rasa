@@ -8,9 +8,8 @@ from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
-import rasa.utils.common as common_utils
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES
-
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
@@ -87,7 +86,7 @@ class MemoizationPolicy(Policy):
 
         if max_history == MAX_HISTORY_NOT_SET:
             max_history = OLD_DEFAULT_MAX_HISTORY  # old default value
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Please configure the max history in your configuration file, "
                 f"currently 'max_history' is set to old default value of "
                 f"'{max_history}'. If you want to have infinite max history "

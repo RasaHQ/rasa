@@ -8,7 +8,6 @@ import scipy.sparse
 
 import numpy as np
 import rasa.utils.io as io_utils
-import rasa.utils.common as common_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.utils.features import Features
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
@@ -22,6 +21,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
+import rasa.shared.utils.io
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
@@ -288,7 +288,7 @@ class SklearnPolicy(Policy):
             zero_features_filename = os.path.join(path, "zero_state_features.pkl")
             io_utils.pickle_dump(zero_features_filename, self.zero_state_features)
         else:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Persist called without a trained model present. "
                 "Nothing to persist then!"
             )

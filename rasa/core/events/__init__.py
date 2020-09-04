@@ -10,6 +10,7 @@ from dateutil import parser
 from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
 
+import rasa.shared.utils.common
 from rasa.core import utils
 from typing import Union
 
@@ -208,7 +209,7 @@ class Event:
         """Returns a slots class by its type name."""
         from rasa.core import utils
 
-        for cls in utils.all_subclasses(Event):
+        for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
         if type_name == "topic":

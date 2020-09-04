@@ -20,6 +20,7 @@ from typing import (
 
 import typing
 
+import rasa.shared.utils.io
 from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -54,9 +55,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     ActionExecutionRejected,
 )
 from rasa.core.domain import Domain, State  # pytype: disable=pyi-error
-from rasa.core.slots import Slot
-from rasa.utils import common as common_utils
-
+from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
     from rasa.core.training.structures import Story
@@ -263,7 +262,7 @@ class DialogueStateTracker:
             self.active_loop = {}
 
     def change_form_to(self, form_name: Text) -> None:
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "`change_form_to` is deprecated and will be removed "
             "in future versions. Please use `change_loop_to` "
             "instead.",

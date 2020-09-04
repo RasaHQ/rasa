@@ -31,7 +31,7 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpr
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.nlu.constants import INTENT_NAME_KEY

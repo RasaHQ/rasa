@@ -12,7 +12,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +185,7 @@ class DucklingHTTPExtractor(EntityExtractor):
             )
         else:
             extracted = []
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Duckling HTTP component in pipeline, but no "
                 "`url` configuration in the config "
                 "file nor is `RASA_DUCKLING_HTTP_URL` "

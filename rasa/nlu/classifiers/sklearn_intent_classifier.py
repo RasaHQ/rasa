@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -16,7 +17,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ class SklearnIntentClassifier(IntentClassifier):
         labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Can not train an intent classifier as there are not "
                 "enough intents. Need at least 2 different intents. "
                 "Skipping training of intent classifier.",
