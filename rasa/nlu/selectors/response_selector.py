@@ -372,7 +372,7 @@ class ResponseSelector(DIETClassifier):
         )
         label_response_templates = self.responses.get(label_intent_response_key)
 
-        if not label_response_templates:
+        if label_intent_response_key and not label_response_templates:
             # response templates seem to be unavailable,
             # likely an issue with the training data
             # we'll use a fallback instead
