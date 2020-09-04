@@ -80,18 +80,6 @@ def md_format_message(
     )
 
 
-def first_key(d: Dict[Text, Any], default_key: Any) -> Any:
-    if len(d) > 1:
-        for k, v in d.items():
-            if k != default_key:
-                # we return the first key that is not the default key
-                return k
-    elif len(d) == 1:
-        return list(d.keys())[0]
-    else:
-        return None
-
-
 # noinspection PyProtectedMember
 class Event:
     """Events describe everything that occurs in
