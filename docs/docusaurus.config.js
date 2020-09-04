@@ -4,6 +4,13 @@ const { rehypePlugins, remarkPlugins } = require('@rasahq/docusaurus-theme-tabul
 
 const isDev = process.env.NODE_ENV === 'development';
 
+// FIXME: when deploying this for real, change to '/docs/rasa/'
+const BASE_URL = '/docs/rasa/next/';
+const SITE_URL = 'https://rasa.com';
+
+// this allows switching doc sites in development
+const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
+
 let versions = [];
 try {
   versions = require('./versions.json');
@@ -18,17 +25,46 @@ const legacyVersion = {
   target: '_self',
 };
 
-// FIXME: when deploying this for real, change to '/docs/rasa/'
-const BASE_URL = '/docs/rasa/next/';
-const SITE_URL = 'https://rasa.com';
-
-// this allows switching doc sites in development
-const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
+const allVersions = {
+  label: 'Versions',
+  to: '/', // "fake" link
+  position: 'left',
+  items:
+    versions.length > 0
+      ? [
+          {
+            label: versions[0],
+            to: '/',
+            activeBaseRegex: versions[0],
+          },
+          ...versions.slice(1).map((version) => ({
+            label: version,
+            to: `${version}/`,
+            activeBaseRegex: version,
+          })),
+          {
+            label: 'Master/Unreleased',
+            to: 'next/',
+            activeBaseRegex: `next`,
+          },
+          legacyVersion,
+        ]
+      : [
+          {
+            label: 'Master/Unreleased',
+            to: '/',
+            activeBaseRegex: `/`,
+          },
+          legacyVersion,
+        ],
+}
 
 module.exports = {
+  customFields: {
+    // NOTE: all non-standard options should go in this object
+  },
   title: 'Rasa Open Source Documentation',
-  // FIXME: tagline should be different from the title
-  tagline: 'Rasa Open Source Documentation',
+  tagline: 'Cras justo odio, dapibus ac facilisis in, egestas eget quam.',
   url: SITE_URL,
   baseUrl: BASE_URL,
   favicon: '/img/favicon.ico',
@@ -97,42 +133,9 @@ module.exports = {
           label: 'Community',
           position: 'right',
         },
-        {
-          label: 'Versions',
-          to: '/', // "fake" link
-          position: 'left',
-          items:
-            versions.length > 0
-              ? [
-                  {
-                    label: versions[0],
-                    to: '/',
-                    activeBaseRegex: versions[0],
-                  },
-                  ...versions.slice(1).map((version) => ({
-                    label: version,
-                    to: `${version}/`,
-                    activeBaseRegex: version,
-                  })),
-                  {
-                    label: 'Master/Unreleased',
-                    to: 'next/',
-                    activeBaseRegex: `next`,
-                  },
-                  legacyVersion,
-                ]
-              : [
-                  {
-                    label: 'Master/Unreleased',
-                    to: '/',
-                    activeBaseRegex: `/`,
-                  },
-                  legacyVersion,
-                ],
-        }      ],
+      ],
     },
     footer: {
-      style: 'dark',
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
     gtm: {
@@ -141,43 +144,33 @@ module.exports = {
   },
   themes: [
     '@rasahq/docusaurus-theme-tabula',
-    // path.resolve(__dirname, './themes/theme-live-codeblock')
+    path.resolve(__dirname, './themes/theme-live-codeblock')
   ],
   plugins: [
-    [
-      '@docusaurus/plugin-content-docs/',
-      {
-        // https://v2.docusaurus.io/docs/next/docs-introduction/#docs-only-mode
-        routeBasePath: '/',
-        // FIXME: the following option is now deprecated
-        homePageId: 'index',
-        sidebarPath: require.resolve('./sidebars.js'),
-        editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
-        rehypePlugins: [
-          ...rehypePlugins,
-        ],
-        remarkPlugins: [
-          ...remarkPlugins,
-          remarkProgramOutput,
-        ],
-        /* TODO review all of these options ↓↓↓↓↓ */
-        // path: 'docs',
-        // routeBasePath: 'docs',
-        // homePageId: undefined,
-        // include: ['**/*.{md,mdx}'],
-        // sidebarPath: 'sidebars.json',
-        // docLayoutComponent: '@theme/DocPage',
-        // docItemComponent: '@theme/DocItem',
-        // showLastUpdateTime: false,
-        // showLastUpdateAuthor: false,
-        // admonitions: {},
-        // excludeNextVersionDocs: false,
-        // includeCurrentVersion: true,
-        // disableVersioning: false,
-        // lastVersion: undefined,
-        // versions: {},
-      },
-    ],
+    ['@docusaurus/plugin-content-docs/', {
+      routeBasePath: '/',
+      sidebarPath: require.resolve('./sidebars.js'),
+      editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
+      showLastUpdateTime: true,
+      showLastUpdateAuthor: true,
+      rehypePlugins: [
+        ...rehypePlugins,
+      ],
+      remarkPlugins: [
+        ...remarkPlugins,
+        remarkProgramOutput,
+      ],
+      /*
+        VERSIONING
+        TODO: figure out these options (new since alpha 62)
+      */
+      // excludeNextVersionDocs: false,
+      // includeCurrentVersion: true,
+      // disableVersioning: false,
+      // lastVersion: undefined,
+      // onlyIncludeVersions: undefined,
+      versions: {},
+    }],
     ['@docusaurus/plugin-content-pages', {}],
     ['@docusaurus/plugin-sitemap',
       {
@@ -185,7 +178,19 @@ module.exports = {
         changefreq: 'weekly',
         priority: 0.5,
       }],
-    [path.resolve(__dirname, './plugins/google-tagmanager'), {}],
+    /*
+    TODO: configure this plugin:
+    https://v2.docusaurus.io/docs/using-plugins#docusaurusplugin-ideal-image
+     */
+    ['@docusaurus/plugin-ideal-image', {}],
+    /*
+    TODO: configure this plugin:
+    https://v2.docusaurus.io/docs/using-plugins#docusaurusplugin-client-redirects
+     */
+    // ['@docusaurus/plugin-client-redirects', {
+    //   fromExtensions: ['html', 'htm']
+    // }],
     isDev && ['@docusaurus/plugin-debug', {}],
+    [path.resolve(__dirname, './plugins/google-tagmanager'), {}],
   ].filter(Boolean),
 };
