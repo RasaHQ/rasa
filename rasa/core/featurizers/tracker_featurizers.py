@@ -280,6 +280,12 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_states = [
             self._create_states(tracker, domain) for tracker in trackers
         ]
+        # TODO there is no prediction support for e2e input right now, therefore
+        #  temporary remove TEXT features from USER state during prediction
+        for states in trackers_as_states:
+            for state in states:
+                if state.get(USER, {}).get(TEXT):
+                    del state[USER][TEXT]
 
         return trackers_as_states
 
