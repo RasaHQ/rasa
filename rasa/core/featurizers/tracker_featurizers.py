@@ -369,40 +369,38 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         for tracker in pbar:
             states = self._create_states(tracker, domain)
 
-            idx = 0
+            states_length_for_action = 0
             for event in tracker.applied_events():
-                if isinstance(event, ActionExecuted):
-                    if not event.unpredictable:
-                        # only actions which can be
-                        # predicted at a stories start
-                        sliced_states = self.slice_state_history(
-                            states[: idx + 1], self.max_history
-                        )
-                        if self.remove_duplicates:
-                            hashed = self._hash_example(
-                                sliced_states,
-                                event.action_name or event.action_text,
-                                tracker,
-                            )
+                if not isinstance(event, ActionExecuted):
+                    continue
 
-                            # only continue with tracker_states that created a
-                            # hashed_featurization we haven't observed
-                            if hashed not in hashed_examples:
-                                hashed_examples.add(hashed)
-                                trackers_as_states.append(sliced_states)
-                                trackers_as_actions.append(
-                                    [event.action_name or event.action_text]
-                                )
-                        else:
-                            trackers_as_states.append(sliced_states)
-                            trackers_as_actions.append(
-                                [event.action_name or event.action_text]
-                            )
+                states_length_for_action += 1
 
-                        pbar.set_postfix(
-                            {"# actions": "{:d}".format(len(trackers_as_actions))}
+                # use only actions which can be predicted at a stories start
+                if event.unpredictable:
+                    continue
+
+                sliced_states = self.slice_state_history(
+                    states[:states_length_for_action], self.max_history
+                )
+                if self.remove_duplicates:
+                    hashed = self._hash_example(
+                        sliced_states, event.action_name or event.action_text, tracker,
+                    )
+
+                    # only continue with tracker_states that created a
+                    # hashed_featurization we haven't observed
+                    if hashed not in hashed_examples:
+                        hashed_examples.add(hashed)
+                        trackers_as_states.append(sliced_states)
+                        trackers_as_actions.append(
+                            [event.action_name or event.action_text]
                         )
-                    idx += 1
+                else:
+                    trackers_as_states.append(sliced_states)
+                    trackers_as_actions.append([event.action_name or event.action_text])
+
+                pbar.set_postfix({"# actions": "{:d}".format(len(trackers_as_actions))})
 
         logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 
