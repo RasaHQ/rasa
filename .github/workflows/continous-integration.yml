@@ -18,7 +18,7 @@ on:
 #                       repo on hub.docker.com. used to pull and upload containers
 
 env:
-  # needed to fix issues with boto during testing:
+  # needed to fix issues with boto during testing:x
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
 
@@ -110,7 +110,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [windows-latest]
         python-version: [3.6, 3.7, 3.8]
 
     steps:
