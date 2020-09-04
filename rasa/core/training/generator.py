@@ -183,7 +183,7 @@ class TrainingDataGenerator:
         domain: Domain,
         remove_duplicates: bool = True,
         unique_last_num_states: Optional[int] = None,
-        augmentation_factor: int = 50,
+        augmentation_factor: int = 0,
         tracker_limit: Optional[int] = None,
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
