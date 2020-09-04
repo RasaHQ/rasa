@@ -5,9 +5,11 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Type
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
 
 import rasa.core
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
@@ -17,7 +19,6 @@ from rasa.constants import (
     DOCS_URL_RULES,
 )
 
-from rasa.core import utils
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -111,7 +112,7 @@ class PolicyEnsemble:
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Found policies {v} with same priority {k} "
                     f"in PolicyEnsemble. When personalizing "
                     f"priorities, be sure to give all policies "
@@ -163,7 +164,7 @@ class PolicyEnsemble:
             is_rules_consuming_policy_available
             and not training_trackers_contain_rule_trackers
         ):
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Found a rule-based policy in your pipeline but "
                 f"no rule-based training data. Please add rule-based "
                 f"stories to your training data or "
@@ -175,7 +176,7 @@ class PolicyEnsemble:
             not is_rules_consuming_policy_available
             and training_trackers_contain_rule_trackers
         ):
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Found rule-based training data but no policy supporting rule-based "
                 f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
                 f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
@@ -262,7 +263,9 @@ class PolicyEnsemble:
         domain_spec_path = os.path.join(path, "metadata.json")
         rasa.utils.io.create_directory_for_file(domain_spec_path)
 
-        policy_names = [utils.module_path_from_instance(p) for p in self.policies]
+        policy_names = [
+            rasa.shared.utils.common.module_path_from_instance(p) for p in self.policies
+        ]
 
         metadata = {
             "action_fingerprints": self.action_fingerprints,
@@ -338,7 +341,9 @@ class PolicyEnsemble:
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
-        ensemble_cls = common_utils.class_from_module_path(metadata["ensemble_name"])
+        ensemble_cls = rasa.shared.utils.common.class_from_module_path(
+            metadata["ensemble_name"]
+        )
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
@@ -603,7 +608,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 tracker, domain, interpreter
             )
         else:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "The function `predict_action_probabilities` of "
                 "the `Policy` interface was changed to support "
                 "additional parameters. Please make sure to "

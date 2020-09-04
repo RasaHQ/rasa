@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
 
 from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core.constants import (
@@ -18,7 +17,7 @@ from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIE
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.slots import TextSlot, UnfeaturizedSlot
+from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,

@@ -3,8 +3,8 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-import rasa.utils.common as common_utils
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
@@ -59,7 +59,7 @@ class RegexEntityExtractor(EntityExtractor):
         )
 
         if not self.patterns:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "No lookup tables or regexes defined in the training data that have "
                 "a name equal to any entity in the training data. In order for this "
                 "component to work you need to define valid lookup tables or regexes "

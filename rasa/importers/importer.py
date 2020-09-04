@@ -3,6 +3,7 @@ from functools import reduce
 from typing import Text, Optional, List, Dict
 import logging
 
+import rasa.shared.utils.common
 from rasa.core.domain import Domain
 from rasa.core.training.structures import StoryGraph
 from rasa.nlu.training_data import TrainingData
@@ -91,7 +92,7 @@ class TrainingDataImporter:
         """
 
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths, TrainingType.CORE,
+            config_path, domain_path, training_data_paths, TrainingType.CORE
         )
 
         return CoreDataImporter(importer)
@@ -162,7 +163,9 @@ class TrainingDataImporter:
             importer_class = MultiProjectImporter
         else:
             try:
-                importer_class = common_utils.class_from_module_path(module_path)
+                importer_class = rasa.shared.utils.common.class_from_module_path(
+                    module_path
+                )
             except (AttributeError, ImportError):
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None

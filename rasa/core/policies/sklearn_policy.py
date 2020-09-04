@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import pickle
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 
@@ -14,7 +13,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
@@ -184,7 +183,7 @@ class SklearnPolicy(Policy):
             filename = os.path.join(path, "sklearn_model.pkl")
             rasa.utils.io.pickle_dump(filename, self._state)
         else:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Persist called without a trained model present. "
                 "Nothing to persist then!"
             )

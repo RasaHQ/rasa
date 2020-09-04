@@ -11,6 +11,7 @@ from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Text, Union, Dict
 
+import rasa.shared.utils.io
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 from rasa.nlu.training_data.formats import RasaYAMLReader
 import rasa
@@ -523,7 +524,7 @@ def create_app(
         events = [event for event in events if event]
 
         if not events:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Append event called, but could not extract a valid event. "
                 f"Request JSON: {request.json}"
             )

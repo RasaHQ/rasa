@@ -7,7 +7,7 @@ from datetime import datetime
 from dateutil import parser
 from typing import Type
 
-from rasa.core import utils
+import rasa.shared.utils.common
 from rasa.core.events import (
     Event,
     UserUttered,
@@ -265,7 +265,7 @@ def test_correct_timestamp_setting(event_class):
     assert event.timestamp < event2.timestamp
 
 
-@pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
+@pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_event_metadata_dict(event_class: Type[Event]):
     metadata = {"foo": "bar", "quux": 42}
 
@@ -283,7 +283,7 @@ def test_event_metadata_dict(event_class: Type[Event]):
     assert event.as_dict()["metadata"] == metadata
 
 
-@pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
+@pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_event_default_metadata(event_class: Type[Event]):
     # Create an event without metadata. When converting the `Event` to a
     # `dict`, it should not include a `metadata` property - unless it's a
