@@ -12,6 +12,7 @@ import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
 
+import rasa.shared.utils.io
 from rasa.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
 from rasa.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
@@ -567,8 +568,8 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strings = []
     for k, s in tracker_dump.get("slots", {}).items():
-        colored_value = rasa.cli.utils.wrap_with_color(
-            str(s), color=rasa.cli.utils.bcolors.WARNING
+        colored_value = rasa.shared.utils.io.wrap_with_color(
+            str(s), color=rasa.shared.utils.io.bcolors.WARNING
         )
         slot_strings.append(f"{k}: {colored_value}")
     return slot_strings

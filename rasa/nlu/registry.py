@@ -6,7 +6,7 @@ import this in module scope."""
 
 import logging
 import typing
-from typing import Any, Dict, List, Optional, Text, Type
+from typing import Any, Dict, Optional, Text, Type
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
@@ -41,7 +41,7 @@ from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.utils.common import class_from_module_path, raise_warning
+import rasa.shared.utils.common
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -98,7 +98,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
 
     if component_name not in registered_components:
         try:
-            return class_from_module_path(component_name)
+            return rasa.shared.utils.common.class_from_module_path(component_name)
 
         except AttributeError:
             # when component_name is a path to a class but the path does not contain
