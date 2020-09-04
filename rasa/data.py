@@ -173,7 +173,7 @@ def _find_data_files_in_directory(
     return filtered_files
 
 
-def is_valid_filetype(path: Text) -> bool:
+def is_valid_filetype(path: Union[Text, Path]) -> bool:
     return os.path.isfile(path) and Path(path).suffix in TRAINING_DATA_EXTENSIONS
 
 

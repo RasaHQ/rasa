@@ -143,25 +143,23 @@ def guess_format(filename: Text) -> Text:
     Returns:
         Guessed file format.
     """
-    from rasa.nlu.training_data.formats import RasaYAMLReader, markdown
+    from rasa.nlu.training_data.formats import RasaYAMLReader, MarkdownReader
 
     guess = UNK
 
-    content = ""
     try:
-        content = io_utils.read_file(filename)
-        js = json.loads(content)
+        js = json.loads(io_utils.read_file(filename))
     except ValueError:
-        if any(marker in content for marker in markdown.MARKDOWN_SECTION_MARKERS):
+        if MarkdownReader.is_markdown_nlu_file(filename):
             guess = MARKDOWN
         elif NLGMarkdownReader.is_markdown_nlg_file(filename):
             guess = MARKDOWN_NLG
         elif RasaYAMLReader.is_yaml_nlu_file(filename):
             guess = RASA_YAML
     else:
-        for fformat, format_heuristic in _json_format_heuristics.items():
+        for file_format, format_heuristic in _json_format_heuristics.items():
             if format_heuristic(js, filename):
-                guess = fformat
+                guess = file_format
                 break
 
     logger.debug(f"Training data format of '{filename}' is '{guess}'.")
