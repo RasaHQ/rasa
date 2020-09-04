@@ -25,7 +25,7 @@ from rasa.constants import (
     DOCS_URL_PIKA_EVENT_BROKER,
 )
 from rasa.core.brokers.broker import EventBroker
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.io import DEFAULT_ENCODING
 
@@ -344,7 +344,7 @@ class PikaEventBroker(EventBroker):
             )
             return [queues_arg]
 
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"No `queues` argument provided. It is suggested to "
             f"explicitly specify a queue as described in "
             f"{DOCS_URL_PIKA_EVENT_BROKER}. "

@@ -20,7 +20,7 @@ from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class Validator:
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"There is a message in the training data labeled with intent "
                     f"'{intent}'. This intent is not listed in your domain. You "
                     f"should need to add that intent to your domain file!",
@@ -93,7 +93,7 @@ class Validator:
             if len(duplication_hash[text]) > 1:
                 everything_is_alright = ignore_warnings and everything_is_alright
                 intents_string = ", ".join(sorted(intents))
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"The example '{text}' was found labeled with multiple "
                     f"different intents in the training data. Each annotated message "
                     f"should only appear with one intent. You should fix that "
@@ -118,7 +118,7 @@ class Validator:
 
         for story_intent in stories_intents:
             if story_intent not in self.domain.intents:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"The intent '{story_intent}' is used in your stories, but it "
                     f"is not listed in the domain file. You should add it to your "
                     f"domain file!",
@@ -159,7 +159,7 @@ class Validator:
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"There is no template for the utterance action '{action}'. "
                         f"The action is listed in your domains action list, but "
                         f"there is no template defined with this name. You should "
@@ -194,7 +194,7 @@ class Validator:
                     continue
 
                 if event.action_name not in utterance_actions:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"The action '{event.action_name}' is used in the stories, "
                         f"but is not a valid utterance action. Please make sure "
                         f"the action is listed in your domain and there is a "
@@ -310,7 +310,7 @@ class Validator:
                 return True
 
         except TypeError:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Training data file {filename} must specify "
                 f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"
                 f"{KEY_TRAINING_DATA_FORMAT_VERSION}: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
@@ -320,7 +320,7 @@ class Validator:
             )
             return True
 
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"Training data file {filename} has a greater format version than "
             f"your Rasa Open Source installation: "
             f"{version_value} > {LATEST_TRAINING_DATA_FORMAT_VERSION}. "

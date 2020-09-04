@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from rasa.nlu.config import InvalidConfigError
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
@@ -376,7 +376,7 @@ class ResponseSelector(DIETClassifier):
             # response templates seem to be unavailable,
             # likely an issue with the training data
             # we'll use a fallback instead
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Unable to fetch response templates for {label_intent_response_key} "
                 f"This means that there is likely an issue with the training data."
                 f"Please make sure you have added response templates for this intent."
