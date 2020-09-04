@@ -67,11 +67,6 @@ def configure_file_logging(
     logger_obj.addHandler(file_handler)
 
 
-def module_path_from_instance(inst: Any) -> Text:
-    """Return the module path of an instance's class."""
-    return inst.__module__ + "." + inst.__class__.__name__
-
-
 def subsample_array(
     arr: List[Any],
     max_values: int,
@@ -293,14 +288,6 @@ def extract_args(
             remaining[k] = v
 
     return extracted, remaining
-
-
-def all_subclasses(cls: Any) -> List[Any]:
-    """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [
-        g for s in cls.__subclasses__() for g in all_subclasses(s)
-    ]
 
 
 def is_limit_reached(num_messages: int, limit: int) -> bool:

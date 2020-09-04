@@ -4,6 +4,7 @@ import shutil
 import tarfile
 from typing import List, Optional, Text, Tuple
 
+import rasa.shared.utils.common
 import rasa.utils.common
 
 
@@ -30,7 +31,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
         )
     if name:
         try:
-            persistor = rasa.utils.common.class_from_module_path(name)
+            persistor = rasa.shared.utils.common.class_from_module_path(name)
             return persistor()
         except ImportError:
             raise ImportError(

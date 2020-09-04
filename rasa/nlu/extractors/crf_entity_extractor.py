@@ -6,7 +6,7 @@ import numpy as np
 from typing import Any, Dict, List, Optional, Text, Tuple, Type, Callable
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
-import rasa.utils.common as common_utils
+import rasa.shared.utils.io
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.config import RasaNLUModelConfig
@@ -473,7 +473,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         tokens = message.get(TOKENS_NAMES[TEXT])
         if len(tokens) != len(features):
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Number of dense features ({len(features)}) for attribute "
                 f"'TEXT' does not match number of tokens ({len(tokens)}).",
                 docs=DOCS_URL_COMPONENTS + "#crfentityextractor",

@@ -4,6 +4,7 @@ import numpy as np
 import scipy.sparse
 import typing
 
+import rasa.shared.utils.io
 from rasa.exceptions import RasaException
 from rasa.nlu.constants import (
     ENTITIES,
@@ -18,7 +19,6 @@ from rasa.nlu.constants import (
     ACTION_NAME,
 )
 from rasa.nlu.utils import ordered
-from rasa.utils import common as common_utils
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.featurizers.featurizer import Features
@@ -150,7 +150,7 @@ class Message:
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""
 
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "`get_combined_intent_response_key` is deprecated and "
             "will be removed in future versions. "
             "Please use `get_full_intent` instead.",

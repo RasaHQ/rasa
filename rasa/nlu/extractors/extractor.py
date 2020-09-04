@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -22,8 +23,7 @@ from rasa.nlu.constants import (
     INTENT,
 )
 from rasa.nlu.training_data import Message
-import rasa.utils.common as common_utils
-from rasa.nlu.utils import bilou_utils
+import rasa.nlu.utils.bilou_utils as bilou_utils
 
 
 class EntityExtractor(Component):
@@ -337,7 +337,7 @@ class EntityExtractor(Component):
                     entity_start not in token_start_positions
                     or entity_end not in token_end_positions
                 ):
-                    common_utils.raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
                         f"end values of entities in the training data match the token "

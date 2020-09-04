@@ -10,7 +10,7 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 
 class EntitySynonymMapper(EntityExtractor):
@@ -81,7 +81,7 @@ class EntitySynonymMapper(EntityExtractor):
             synonyms = rasa.utils.io.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Failed to load synonyms file from '{entity_synonyms_file}'.",
                 docs=DOCS_URL_TRAINING_DATA_NLU + "#entity-synonyms",
             )
@@ -103,7 +103,7 @@ class EntitySynonymMapper(EntityExtractor):
             if original != replacement:
                 original = original.lower()
                 if original in self.synonyms and self.synonyms[original] != replacement:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"Found conflicting synonym definitions "
                         f"for {repr(original)}. Overwriting target "
                         f"{repr(self.synonyms[original])} with "
