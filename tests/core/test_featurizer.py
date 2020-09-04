@@ -23,6 +23,7 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
 )
 from rasa.core.constants import SLOTS, ACTIVE_LOOP
+from rasa.core.interpreter import RegexInterpreter
 import scipy.sparse
 from _pytest.monkeypatch import MonkeyPatch
 from pathlib import Path
@@ -55,7 +56,7 @@ def test_single_state_featurizer_without_interpreter_state_not_with_action_liste
             "active_loop": {"name": "i"},
             "slots": {"g": (1.0,)},
         },
-        interpreter=None,
+        interpreter=RegexInterpreter(),
     )
     # user input is ignored as prev action is not action_listen
     assert list(encoded.keys()) == [ACTION_NAME, ACTIVE_LOOP, SLOTS]
@@ -87,7 +88,7 @@ def test_single_state_featurizer_without_interpreter_state_with_action_listen():
             "active_loop": {"name": "k"},
             "slots": {"e": (1.0,)},
         },
-        interpreter=None,
+        interpreter=RegexInterpreter(),
     )
     # we featurize all the features except for *_text ones because NLU wasn't trained
     assert list(encoded.keys()) == [INTENT, ACTION_NAME, ACTIVE_LOOP, SLOTS]
@@ -116,7 +117,7 @@ def test_single_state_featurizer_without_interpreter_state_no_intent_no_action_n
             "active_loop": {"name": "k"},
             "slots": {"e": (1.0,)},
         },
-        interpreter=None,
+        interpreter=RegexInterpreter(),
     )
     assert list(encoded.keys()) == [ACTIVE_LOOP, SLOTS]
     assert (
@@ -131,7 +132,7 @@ def test_single_state_featurizer_correctly_encodes_non_existing_value():
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1}
     encoded = f.encode_state(
         {"user": {"intent": "e"}, "prev_action": {"action_name": "action_listen"}},
-        interpreter=None,
+        interpreter=RegexInterpreter(),
     )
     assert list(encoded.keys()) == [INTENT, ACTION_NAME]
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[0, 0]])).nnz == 0
@@ -150,7 +151,7 @@ def test_single_state_featurizer_creates_encoded_all_actions():
     )
     f = SingleStateFeaturizer()
     f.prepare_from_domain(domain)
-    encoded_actions = f.encode_all_actions(domain, None)
+    encoded_actions = f.encode_all_actions(domain, RegexInterpreter())
     assert len(encoded_actions) == len(domain.action_names)
     assert all(
         [
@@ -170,7 +171,7 @@ def test_single_state_featurizer_uses_dtype_float():
             "user": {"intent": "a", "entities": ["c"]},
             "prev_action": {"action_name": "d"},
         },
-        interpreter=None,
+        interpreter=RegexInterpreter(),
     )
     assert encoded[ACTION_NAME][0].features.dtype == np.float32
 
