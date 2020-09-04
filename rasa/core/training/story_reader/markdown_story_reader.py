@@ -21,7 +21,7 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ class MarkdownStoryReader(StoryReader):
             )
             return event_name, parameters
         else:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Failed to parse action line '{line}'. Ignoring this line.",
                 docs=DOCS_URL_STORIES,
             )
@@ -248,7 +248,7 @@ class MarkdownStoryReader(StoryReader):
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
         if self.domain and intent_name not in self.domain.intents:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "
                 "Please, make sure that all intents are "
                 "listed in your domain yaml.",

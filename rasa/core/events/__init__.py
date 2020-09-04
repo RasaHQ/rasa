@@ -10,6 +10,7 @@ from dateutil import parser
 from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
 
+import rasa.shared.utils.common
 from rasa.core import utils
 from typing import Union
 
@@ -76,7 +77,7 @@ def md_format_message(
     message_from_md = entities_parser.parse_training_example(text, intent)
     deserialised_entities = deserialise_entities(entities)
     return TrainingDataWriter.generate_message(
-        {"text": message_from_md.text, "entities": deserialised_entities,}
+        {"text": message_from_md.text, "entities": deserialised_entities}
     )
 
 
@@ -195,7 +196,7 @@ class Event:
         """Returns a slots class by its type name."""
         from rasa.core import utils
 
-        for cls in utils.all_subclasses(Event):
+        for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
         if type_name == "topic":
