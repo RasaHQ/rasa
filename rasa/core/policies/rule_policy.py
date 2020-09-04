@@ -4,7 +4,7 @@ from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 import re
 from collections import defaultdict
 
-from rasa.core.events import FormValidation
+from rasa.shared.core.events import FormValidation
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter

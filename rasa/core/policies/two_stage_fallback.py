@@ -13,7 +13,7 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
 )
 
-from rasa.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.events import UserUttered, ActionExecuted
 
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.core.domain import Domain, InvalidDomain

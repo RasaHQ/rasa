@@ -10,7 +10,7 @@ from typing import Optional, Any, Dict, List, Text
 import rasa.utils.io
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy

@@ -18,7 +18,7 @@ from rasa.core.actions.action import (
 from rasa.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, ConversationPaused
+from rasa.shared.core.events import ActionExecuted, ConversationPaused
 from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
     LabelTokenizerSingleStateFeaturizer,

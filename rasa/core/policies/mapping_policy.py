@@ -21,7 +21,7 @@ from rasa.core.constants import (
     USER_INTENT_SESSION_START,
 )
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker

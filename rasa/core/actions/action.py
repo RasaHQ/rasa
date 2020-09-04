@@ -9,7 +9,7 @@ import aiohttp
 
 import rasa.core
 from rasa.constants import DOCS_BASE_URL, DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.core import events
+from rasa.shared.core import events
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
     REQUESTED_SLOT,
@@ -27,7 +27,7 @@ from rasa.nlu.constants import (
     INTENT_RESPONSE_KEY,
 )
 
-from rasa.core.events import (
+from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
     ActionExecuted,

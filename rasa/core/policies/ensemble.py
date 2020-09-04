@@ -26,7 +26,12 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
 )
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
+from rasa.shared.core.events import (
+    SlotSet,
+    ActionExecuted,
+    ActionExecutionRejected,
+    Event,
+)
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter

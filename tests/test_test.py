@@ -10,7 +10,7 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.utils.io
 from rasa.core.agent import Agent
-from rasa.core.events import UserUttered
+from rasa.shared.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
     WronglyClassifiedUserUtterance,
@@ -229,7 +229,7 @@ def test_log_failed_stories(tmp_path: Path):
                 {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
                 {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
             ],
-            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},],
+            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"}],
         ),
         (
             [
@@ -258,7 +258,7 @@ def test_log_failed_stories(tmp_path: Path):
                     "start": 22,
                     "end": 28,
                     "entity": "city",
-                },
+                }
             ],
         ),
         (

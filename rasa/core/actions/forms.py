@@ -13,7 +13,7 @@ from rasa.core.actions.action import (
     RemoteAction,
     ACTION_LISTEN_NAME,
 )
-from rasa.core.events import Event, SlotSet, ActionExecuted
+from rasa.shared.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig

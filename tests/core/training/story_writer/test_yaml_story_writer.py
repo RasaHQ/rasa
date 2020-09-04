@@ -5,7 +5,7 @@ from typing import Text
 import pytest
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
@@ -27,7 +27,7 @@ async def test_simple_story(
 ):
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_yaml_file, unfold_or_utterances=False,
+        default_domain, None, False, input_yaml_file, unfold_or_utterances=False
     )
     original_md_story_steps = await original_md_reader.read_from_file(input_md_file)
 
@@ -56,7 +56,7 @@ async def test_simple_story(
 
 async def test_forms_are_converted(default_domain: Domain):
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, unfold_or_utterances=False,
+        default_domain, None, False, unfold_or_utterances=False
     )
     original_md_story_steps = await original_md_reader.read_from_file(
         "data/test_stories/stories_form.md"
@@ -73,10 +73,7 @@ async def test_forms_are_converted(default_domain: Domain):
 
 
 def test_yaml_writer_dumps_user_messages():
-    events = [
-        UserUttered("Hello", {"name": "greet"}),
-        ActionExecuted("utter_greet"),
-    ]
+    events = [UserUttered("Hello", {"name": "greet"}), ActionExecuted("utter_greet")]
     tracker = DialogueStateTracker.from_events("default", events)
     dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
 
@@ -99,10 +96,7 @@ def test_yaml_writer_dumps_user_messages():
 
 
 def test_yaml_writer_avoids_dumping_not_existing_user_messages():
-    events = [
-        UserUttered("greet", {"name": "greet"}),
-        ActionExecuted("utter_greet"),
-    ]
+    events = [UserUttered("greet", {"name": "greet"}), ActionExecuted("utter_greet")]
     tracker = DialogueStateTracker.from_events("default", events)
     dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
 

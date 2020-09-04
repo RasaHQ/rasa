@@ -16,7 +16,7 @@ from rasa.core.policies.ensemble import (
 from rasa.core.domain import Domain
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.events import UserUttered, ActiveLoop, Event
+from rasa.shared.core.events import UserUttered, ActiveLoop, Event
 
 from tests.core import utilities
 from rasa.core.actions.action import (
@@ -25,7 +25,7 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
 )
 from rasa.core.constants import USER_INTENT_RESTART, FORM_POLICY_PRIORITY
-from rasa.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 

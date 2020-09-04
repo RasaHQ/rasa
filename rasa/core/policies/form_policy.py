@@ -4,7 +4,7 @@ from typing import List, Dict, Text, Optional, Any
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
-from rasa.core.events import FormValidation
+from rasa.shared.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy

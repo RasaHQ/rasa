@@ -14,7 +14,7 @@ from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.events import (
     Event,
     UserUtteranceReverted,
     ActionExecuted,

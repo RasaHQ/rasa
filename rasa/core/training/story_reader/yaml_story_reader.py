@@ -11,7 +11,7 @@ import rasa.utils.io as io_utils
 from rasa.constants import TEST_STORIES_FILE_PREFIX, DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
-from rasa.core.events import UserUttered, SlotSet, ActiveLoop
+from rasa.shared.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.nlu.constants import INTENT_NAME_KEY

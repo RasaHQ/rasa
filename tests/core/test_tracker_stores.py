@@ -22,7 +22,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NA
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.events import (
     SlotSet,
     ActionExecuted,
     Restarted,

@@ -4,7 +4,7 @@ from typing import Text
 import pytest
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, SlotSet, UserUttered
+from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.core.training import visualization
 import rasa.utils.io
 

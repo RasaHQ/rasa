@@ -25,10 +25,10 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-from rasa.core import events  # pytype: disable=pyi-error
+from rasa.shared.core import events
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
-from rasa.core.events import (  # pytype: disable=pyi-error
+from rasa.shared.core.events import (  # pytype: disable=pyi-error
     UserUttered,
     ActionExecuted,
     Event,

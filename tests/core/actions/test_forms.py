@@ -1,4 +1,3 @@
-import asyncio
 from typing import Dict, Text, List, Optional, Any
 from unittest.mock import Mock, ANY
 
@@ -11,7 +10,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejectio
 from rasa.core.actions.forms import FormAction, REQUESTED_SLOT
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,
     UserUttered,

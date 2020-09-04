@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Dict, Text, List, Any
 
 from rasa.core.domain import Domain
-from rasa.core.events import SlotSet, ActionExecuted, Event
+from rasa.shared.core.events import SlotSet, ActionExecuted, Event
 from rasa.core.exceptions import StoryParseError
 from rasa.core.training.story_reader.story_step_builder import StoryStepBuilder
 from rasa.core.training.structures import StoryStep

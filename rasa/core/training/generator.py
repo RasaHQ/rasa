@@ -9,7 +9,7 @@ from typing import Optional, List, Text, Set, Dict, Tuple
 from rasa.constants import DOCS_URL_STORIES
 from rasa.core import utils
 from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
     ActionReverted,

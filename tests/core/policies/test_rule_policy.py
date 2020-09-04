@@ -21,7 +21,7 @@ from rasa.core.constants import (
     USER_INTENT_SESSION_START,
 )
 from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
     ActiveLoop,

@@ -22,7 +22,7 @@ from rasa.core.channels.channel import (
 )
 from rasa.core.constants import USER_INTENT_RESTART, UTTER_PREFIX, REQUESTED_SLOT
 from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
     BotUttered,
