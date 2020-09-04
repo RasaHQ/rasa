@@ -107,16 +107,6 @@ transform_collection_to_sentence(collection: Collection[Text]) -> Text
 
 Transforms e.g. a list like [&#x27;A&#x27;, &#x27;B&#x27;, &#x27;C&#x27;] into a sentence &#x27;A, B and C&#x27;.
 
-#### class\_from\_module\_path
-
-```python
-class_from_module_path(module_path: Text, lookup_path: Optional[Text] = None) -> Any
-```
-
-Given the module name and path of a class, tries to retrieve the class.
-
-The loaded class can be used to instantiate new objects.
-
 #### minimal\_kwargs
 
 ```python
@@ -183,14 +173,6 @@ Allows to avoid recomputing a property over and over.
 The result gets stored in a local var. Computation of the property
 will happen once, on the first call of the property. All
 succeeding calls will use the value stored in the private property.
-
-#### raise\_warning
-
-```python
-raise_warning(message: Text, category: Optional[Type[Warning]] = None, docs: Optional[Text] = None, **kwargs: Any, ,) -> None
-```
-
-Emit a `warnings.warn` with sensible defaults and a colored warning msg.
 
 #### raise\_deprecation\_warning
 

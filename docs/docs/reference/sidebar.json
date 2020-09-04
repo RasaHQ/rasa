@@ -38,6 +38,27 @@
         },
         {
           "items": [
+            {
+              "items": [
+                "reference/rasa/shared/utils/io",
+                "reference/rasa/shared/utils/common"
+              ],
+              "label": "rasa.shared.utils",
+              "type": "category"
+            },
+            {
+              "items": [
+                "reference/rasa/shared/core/slots"
+              ],
+              "label": "rasa.shared.core",
+              "type": "category"
+            }
+          ],
+          "label": "rasa.shared",
+          "type": "category"
+        },
+        {
+          "items": [
             "reference/rasa/utils/train_utils",
             "reference/rasa/utils/pykwalify_extensions",
             "reference/rasa/utils/io",
@@ -63,7 +84,6 @@
         },
         {
           "items": [
-            "reference/rasa/core/slots",
             "reference/rasa/core/run",
             "reference/rasa/core/train",
             "reference/rasa/core/jobs",

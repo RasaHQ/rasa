@@ -16,14 +16,6 @@ Configure logging to a file.
 - `logger_obj` - Logger object to configure.
 - `log_file` - Path of log file to write to.
 
-#### module\_path\_from\_instance
-
-```python
-module_path_from_instance(inst: Any) -> Text
-```
-
-Return the module path of an instance&#x27;s class.
-
 #### subsample\_array
 
 ```python
@@ -175,14 +167,6 @@ extract_args(kwargs: Dict[Text, Any], keys_to_extract: Set[Text]) -> Tuple[Dict[
 Go through the kwargs and filter out the specified keys.
 
 Return both, the filtered kwargs as well as the remaining kwargs.
-
-#### all\_subclasses
-
-```python
-all_subclasses(cls: Any) -> List[Any]
-```
-
-Returns all known (imported) subclasses of a class.
 
 #### is\_limit\_reached
 

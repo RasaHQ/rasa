@@ -8,7 +8,7 @@ from rasa.importers import utils, autoconfig
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.autoconfig import TrainingType
 from rasa.nlu.training_data import TrainingData
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class RasaFileImporter(TrainingDataImporter):
             domain = Domain.load(self._domain_path)
             domain.check_missing_templates()
         except InvalidDomain as e:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Loading domain from '{self._domain_path}' failed. Using "
                 f"empty domain. Error: '{e.message}'"
             )

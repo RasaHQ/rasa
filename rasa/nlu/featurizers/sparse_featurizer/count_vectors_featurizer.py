@@ -4,8 +4,8 @@ import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
 
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_COMPONENTS
-import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -292,7 +292,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             training_data_type = "NLU" if attribute == TEXT else "ResponseSelector"
 
             # if there is some text in tokens, warn if there is no oov token
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the {training_data_type} "
                 f"training examples. All unseen words will be ignored during prediction.",
