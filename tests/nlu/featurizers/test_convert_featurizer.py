@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import TEXT, TOKENS_NAMES, RESPONSE, INTENT
 from rasa.nlu.training_data import Message
@@ -28,10 +27,9 @@ def test_convert_featurizer_process(component_builder):
     )
 
     seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
-    if seq_vecs:
-        seq_vecs = seq_vecs.features
-    if sent_vecs:
-        sent_vecs = sent_vecs.features
+
+    seq_vecs = seq_vecs.features
+    sent_vecs = sent_vecs.features
 
     assert len(tokens) == len(seq_vecs)
     assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
@@ -62,30 +60,24 @@ def test_convert_featurizer_train(component_builder):
     )
 
     seq_vecs, sent_vecs = message.get_dense_features(TEXT, [])
-    if seq_vecs:
-        seq_vecs = seq_vecs.features
-    if sent_vecs:
-        sent_vecs = sent_vecs.features
+
+    seq_vecs = seq_vecs.features
+    sent_vecs = sent_vecs.features
 
     assert len(tokens) == len(seq_vecs)
     assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sent_vecs = message.get_dense_features(RESPONSE, [])
-    if seq_vecs:
-        seq_vecs = seq_vecs.features
-    if sent_vecs:
-        sent_vecs = sent_vecs.features
+
+    seq_vecs = seq_vecs.features
+    sent_vecs = sent_vecs.features
 
     assert len(tokens) == len(seq_vecs)
     assert np.allclose(seq_vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sent_vecs = message.get_dense_features(INTENT, [])
-    if seq_vecs:
-        seq_vecs = seq_vecs.features
-    if sent_vecs:
-        sent_vecs = sent_vecs.features
 
     assert seq_vecs is None
     assert sent_vecs is None
