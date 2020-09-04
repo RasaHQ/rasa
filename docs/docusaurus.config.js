@@ -135,9 +135,9 @@ module.exports = {
         },
       ],
     },
-    prism: {
-      theme: require('prism-react-renderer/themes/oceanicNext')
-    },
+    // prism: {
+    //   theme: require('prism-react-renderer/themes/oceanicNext')
+    // },
     footer: {
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },

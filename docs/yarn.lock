@@ -2225,10 +2225,10 @@
     os-homedir "^1.0.1"
     regexpu-core "^4.5.4"
 
-"@rasahq/docusaurus-theme-tabula@^0.6.0":
-  version "0.6.0"
-  resolved "https://npm.pkg.github.com/download/@rasahq/docusaurus-theme-tabula/0.6.0/4f8f91bac49f84711c32f5f96d895b73f0cce3fa1d69718b78505b5b9d404ffe#ffca71f1c81b1abe276cc19c17480303bfd6d839"
-  integrity sha512-En36lVxhYHi1jMxwwTPrxeI261ruT7mUtzVJSYkNhyNprtKv3SIk1CVfpDc5G8ML/TgOHCQURr7moDaLePHdrg==
+"@rasahq/docusaurus-theme-tabula@^0.6.1":
+  version "0.6.1"
+  resolved "https://npm.pkg.github.com/download/@rasahq/docusaurus-theme-tabula/0.6.1/16bf9abaafadacd9818344c9f322e4bf2f48235722857ccf72ed791ab69b9411#24b6aacb94674c122dd5070076dc11b9ac3b5116"
+  integrity sha512-2C4mcqmclyKiAEBqndveisOZFUiMmwaihFqV00XYMDlvCHcVpBft09zetLMcTQhP5cQoMsjMUXmhhhiNbu2/+A==
   dependencies:
     clsx "^1.1.1"
     copy-text-to-clipboard "^2.2.0"
