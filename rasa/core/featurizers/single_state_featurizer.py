@@ -163,6 +163,15 @@ class SingleStateFeaturizer:
     def encode_state(
         self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
+        """Encode the given state with the help of the given interpreter.
+
+        Args:
+            state: The state to encode
+            interpreter: The interpreter used to encode the state
+
+        Returns:
+            A dictionary of state_type to list of features.
+        """
         state_features = {}
         for state_type, sub_state in state.items():
             if state_type == PREVIOUS_ACTION:
@@ -200,6 +209,15 @@ class SingleStateFeaturizer:
     def encode_all_actions(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> List[Dict[Text, List["Features"]]]:
+        """Encode all action from the domain using the given interpreter.
+
+        Args:
+            domain: The domain that contains the actions.
+            interpreter: The interpreter used to encode the actions.
+
+        Returns:
+            A list of encoded actions.
+        """
 
         return [
             self._encode_action(action, interpreter) for action in domain.action_names
