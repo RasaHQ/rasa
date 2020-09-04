@@ -151,6 +151,9 @@ class SingleStateFeaturizer:
         )
         if name_attribute and name_attribute not in output:
             # nlu pipeline didn't create features for user or action
+            # this might happen, for example, when we have action_name in the state
+            # but it did not get featurized because only character level
+            # CountVectorsFeaturizer was included in the config.
             output[name_attribute] = self._create_features(
                 sub_state, name_attribute, sparse
             )

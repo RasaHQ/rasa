@@ -5,12 +5,12 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Deque
 import numpy as np
 
-import rasa.utils.io
+import rasa.utils.io as io_utils
+import rasa.utils.common as common_utils
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker, FrozenState
-from rasa.utils.common import is_logging_disabled
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER
@@ -85,8 +85,7 @@ class TrackerFeaturizer:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
-        """
-        Featurize the training trackers.
+        """Featurize the training trackers.
 
         Args:
             trackers: list of training trackers
@@ -141,10 +140,10 @@ class TrackerFeaturizer:
 
     def persist(self, path: Text) -> None:
         featurizer_file = os.path.join(path, "featurizer.json")
-        rasa.utils.io.create_directory_for_file(featurizer_file)
+        io_utils.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker
-        rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
+        io_utils.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
 
     @staticmethod
     def load(path: Text) -> Optional["TrackerFeaturizer"]:
@@ -152,7 +151,7 @@ class TrackerFeaturizer:
 
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
-            return jsonpickle.decode(rasa.utils.io.read_file(featurizer_file))
+            return jsonpickle.decode(io_utils.read_file(featurizer_file))
 
         logger.error(
             f"Couldn't load featurizer for policy. "
@@ -184,7 +183,11 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
-        pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
+        pbar = tqdm(
+            trackers,
+            desc="Processed trackers",
+            disable=common_utils.is_logging_disabled(),
+        )
         for tracker in pbar:
             states = self._create_states(tracker, domain)
 
@@ -288,7 +291,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
-        pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
+        pbar = tqdm(
+            trackers,
+            desc="Processed trackers",
+            disable=common_utils.is_logging_disabled(),
+        )
         for tracker in pbar:
             states = self._create_states(tracker, domain)
 

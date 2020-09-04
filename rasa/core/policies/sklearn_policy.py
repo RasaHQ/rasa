@@ -7,7 +7,9 @@ from collections import defaultdict, OrderedDict
 import scipy.sparse
 
 import numpy as np
-import rasa.utils.io
+import rasa.utils.io as io_utils
+import rasa.utils.common as common_utils
+import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.utils.features import Features
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.domain import Domain
@@ -20,14 +22,12 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
-from rasa.utils.common import raise_warning
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
 from rasa.nlu.constants import TEXT, ACTION_TEXT
 from rasa.utils.tensorflow.constants import SENTENCE
-from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
 from rasa.utils.tensorflow.model_data import Data
 
 # noinspection PyProtectedMember
@@ -94,7 +94,7 @@ class SklearnPolicy(Policy):
                 )
             if not featurizer.max_history:
                 raise ValueError(
-                    "Passed featurizer without max history, max_history should be "
+                    "Passed featurizer without `max_history`, `max_history` should be "
                     "set to a positive integer value."
                 )
         else:
@@ -218,7 +218,7 @@ class SklearnPolicy(Policy):
         tracker_state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
-        training_data, zero_state_features = convert_to_data_format(
+        training_data, zero_state_features = model_data_utils.convert_to_data_format(
             tracker_state_features
         )
         self.zero_state_features = zero_state_features
@@ -266,7 +266,9 @@ class SklearnPolicy(Policy):
         **kwargs: Any,
     ) -> List[float]:
         X = self.featurizer.create_state_features([tracker], domain, interpreter)
-        training_data, _ = convert_to_data_format(X, self.zero_state_features)
+        training_data, _ = model_data_utils.convert_to_data_format(
+            X, self.zero_state_features
+        )
         Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)
@@ -279,16 +281,14 @@ class SklearnPolicy(Policy):
             meta = {"priority": self.priority}
 
             meta_file = os.path.join(path, "sklearn_policy.json")
-            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
+            io_utils.dump_obj_as_json_to_file(meta_file, meta)
 
             filename = os.path.join(path, "sklearn_model.pkl")
-            rasa.utils.io.pickle_dump(filename, self._state)
+            io_utils.pickle_dump(filename, self._state)
             zero_features_filename = os.path.join(path, "zero_state_features.pkl")
-            rasa.utils.io.pickle_dump(
-                zero_features_filename, self.zero_state_features,
-            )
+            io_utils.pickle_dump(zero_features_filename, self.zero_state_features)
         else:
-            raise_warning(
+            common_utils.raise_warning(
                 "Persist called without a trained model present. "
                 "Nothing to persist then!"
             )
@@ -310,8 +310,8 @@ class SklearnPolicy(Policy):
         )
 
         meta_file = os.path.join(path, "sklearn_policy.json")
-        meta = json.loads(rasa.utils.io.read_file(meta_file))
-        zero_state_features = rasa.utils.io.pickle_load(zero_features_filename)
+        meta = json.loads(io_utils.read_file(meta_file))
+        zero_state_features = io_utils.pickle_load(zero_features_filename)
 
         policy = cls(
             featurizer=featurizer,
@@ -319,7 +319,7 @@ class SklearnPolicy(Policy):
             zero_state_features=zero_state_features,
         )
 
-        state = rasa.utils.io.pickle_load(filename)
+        state = io_utils.pickle_load(filename)
 
         vars(policy).update(state)
 
