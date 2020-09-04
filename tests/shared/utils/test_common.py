@@ -1,5 +1,3 @@
-import random
-
 import rasa.shared.utils.common
 
 
@@ -7,6 +5,11 @@ def test_all_subclasses():
     class TestClass:
         pass
 
-    classes = [type(f"TestClass{i}", (TestClass,), {}) for i in range(10)]
+    subclasses = [type(f"Subclass{i}", (TestClass,), {}) for i in range(10)]
+    sub_subclasses = [
+        type(f"Sub-subclass_{subclass.__name__}", (subclass,), {})
+        for subclass in subclasses
+    ]
 
-    assert rasa.shared.utils.common.all_subclasses(TestClass) == classes
+    expected = subclasses + sub_subclasses
+    assert rasa.shared.utils.common.all_subclasses(TestClass) == expected
