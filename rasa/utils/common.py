@@ -15,7 +15,7 @@ from rasa.constants import (
     GLOBAL_USER_CONFIG_PATH,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
-from rasa.shared.utils.io import raise_warning
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -326,7 +326,7 @@ def raise_deprecation_warning(
     # we're raising a `FutureWarning` instead of a `DeprecationWarning` because
     # we want these warnings to be visible in the terminal of our users
     # https://docs.python.org/3/library/warnings.html#warning-categories
-    raise_warning(message, FutureWarning, docs, **kwargs)
+    rasa.shared.utils.io.raise_warning(message, FutureWarning, docs, **kwargs)
 
 
 class RepeatedLogFilter(logging.Filter):

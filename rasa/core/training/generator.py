@@ -28,7 +28,7 @@ from rasa.core.training.structures import (
     GENERATED_CHECKPOINT_PREFIX,
 )
 from rasa.utils.common import is_logging_disabled
-from rasa.shared.utils.io import raise_warning
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -727,7 +727,7 @@ class TrainingDataGenerator:
         that no one provided."""
 
         if STORY_START in unused_checkpoints:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "There is no starting story block "
                 "in the training data. "
                 "All your story blocks start with some checkpoint. "
@@ -755,7 +755,7 @@ class TrainingDataGenerator:
 
         for cp, block_name in collected_start:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Unsatisfied start checkpoint '{cp}' "
                     f"in block '{block_name}'. "
                     f"Remove this checkpoint or add "
@@ -766,7 +766,7 @@ class TrainingDataGenerator:
 
         for cp, block_name in collected_end:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Unsatisfied end checkpoint '{cp}' "
                     f"in block '{block_name}'. "
                     f"Remove this checkpoint or add "

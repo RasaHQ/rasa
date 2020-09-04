@@ -14,8 +14,8 @@ from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.utils.io import raise_warning
-from rasa.shared.utils.common import class_from_module_path
+import rasa.shared.utils.io
+import rasa.shared.utils.common
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                     f"(instead parser found '{type(parsed_entities)}')"
                 )
         except (JSONDecodeError, ValueError) as e:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Failed to parse arguments in line "
                 f"'{user_input}'. Failed to decode parameters "
                 f"as a json object. Make sure the intent "
@@ -112,7 +112,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         try:
             return float(confidence_str.strip()[1:])
         except ValueError as e:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Invalid to parse confidence value in line "
                 f"'{confidence_str}'. Make sure the intent confidence is an "
                 f"@ followed by a decimal number. "
@@ -303,7 +303,9 @@ def _load_from_module_name_in_endpoint_config(
     """Instantiate an event channel based on its class name."""
 
     try:
-        nlu_interpreter_class = class_from_module_path(endpoint_config.type)
+        nlu_interpreter_class = rasa.shared.utils.common.class_from_module_path(
+            endpoint_config.type
+        )
         return nlu_interpreter_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
         raise Exception(

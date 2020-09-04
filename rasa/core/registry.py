@@ -4,7 +4,7 @@ should import this in module scope."""
 import logging
 from typing import Text, Type, TYPE_CHECKING
 
-from rasa.shared.utils import common as common_utils
+import rasa.shared.utils.common
 
 if TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def policy_from_module_path(module_path: Text) -> Type["Policy"]:
     """Given the name of a policy module tries to retrieve the policy."""
     try:
-        return common_utils.class_from_module_path(
+        return rasa.shared.utils.common.class_from_module_path(
             module_path, lookup_path="rasa.core.policies.registry"
         )
     except ImportError:
@@ -26,7 +26,7 @@ def policy_from_module_path(module_path: Text) -> Type["Policy"]:
 def featurizer_from_module_path(module_path: Text) -> Type["TrackerFeaturizer"]:
     """Given the name of a featurizer module tries to retrieve it."""
     try:
-        return common_utils.class_from_module_path(
+        return rasa.shared.utils.common.class_from_module_path(
             module_path, lookup_path="rasa.core.featurizers"
         )
     except ImportError:

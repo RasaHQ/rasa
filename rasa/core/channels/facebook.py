@@ -5,7 +5,7 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
-from rasa.shared.utils.io import raise_warning
+import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
@@ -205,7 +205,7 @@ class MessengerBot(OutputChannel):
 
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Facebook API currently allows only up to 3 buttons. "
                 "If you add more, all will be ignored."
             )

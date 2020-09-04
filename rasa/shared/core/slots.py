@@ -2,9 +2,9 @@ import logging
 
 from typing import Any, Dict, List, NoReturn, Optional, Text, Type
 
+import rasa.shared.core.constants
 import rasa.shared.utils.common
-from rasa.shared.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
-from rasa.shared.utils import io as io_utils, common as common_utils
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class Slot:
             if cls.type_name == type_name:
                 return cls
         try:
-            return common_utils.class_from_module_path(type_name)
+            return rasa.shared.utils.common.class_from_module_path(type_name)
         except (ImportError, AttributeError):
             raise ValueError(
                 "Failed to find slot type, '{}' is neither a known type nor "
@@ -119,7 +119,7 @@ class FloatSlot(Slot):
             )
 
         if initial_value is not None and not (min_value <= initial_value <= max_value):
-            io_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Float slot ('{self.name}') created with an initial value "
                 f"{self.value}. This value is outside of the configured min "
                 f"({self.min_value}) and max ({self.max_value}) values."
@@ -207,8 +207,10 @@ class CategoricalSlot(Slot):
 
     def add_default_value(self) -> None:
         values = set(self.values)
-        if DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
-            self.values.append(DEFAULT_CATEGORICAL_SLOT_VALUE)
+        if rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
+            self.values.append(
+                rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+            )
 
     def persistence_info(self) -> Dict[Text, Any]:
         d = super().persistence_info()
@@ -225,11 +227,16 @@ class CategoricalSlot(Slot):
                     break
             else:
                 if self.value is not None:
-                    if DEFAULT_CATEGORICAL_SLOT_VALUE in self.values:
-                        i = self.values.index(DEFAULT_CATEGORICAL_SLOT_VALUE)
+                    if (
+                        rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+                        in self.values
+                    ):
+                        i = self.values.index(
+                            rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+                        )
                         r[i] = 1.0
                     else:
-                        io_utils.raise_warning(
+                        rasa.shared.utils.io.raise_warning(
                             f"Categorical slot '{self.name}' is set to a value "
                             f"('{self.value}') "
                             "that is not specified in the domain. "
