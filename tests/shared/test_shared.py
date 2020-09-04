@@ -20,7 +20,7 @@ def test_shared_package_is_independent():
             ]
             rasa_imports = [line for line in imports if "rasa" in line]
 
-            shared_imports = ["import rasa.shared", "from rasa import shared"]
+            shared_imports = ["rasa.shared", "from rasa import shared"]
             outside_rasa_imports = [
                 import_line
                 for import_line in rasa_imports
