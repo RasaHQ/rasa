@@ -85,8 +85,8 @@ from rasa.nlu.constants import (
     INTENT,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     TEXT,
-    INTENT_NAME_KEY,
 )
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel

@@ -6,12 +6,8 @@ from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import (
-    INTENT_RANKING_KEY,
-    INTENT,
-    PREDICTED_CONFIDENCE_KEY,
-    INTENT_NAME_KEY,
-)
+from rasa.nlu.constants import INTENT_RANKING_KEY, INTENT, PREDICTED_CONFIDENCE_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"

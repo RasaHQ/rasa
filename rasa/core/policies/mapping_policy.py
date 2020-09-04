@@ -6,7 +6,7 @@ from typing import Any, List, Text, Optional
 
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
 
 from rasa.core.actions.action import (

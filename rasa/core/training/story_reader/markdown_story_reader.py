@@ -20,7 +20,7 @@ from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)

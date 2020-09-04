@@ -14,7 +14,7 @@ from colorclass import Color
 
 import rasa.shared.utils.io
 from rasa.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable

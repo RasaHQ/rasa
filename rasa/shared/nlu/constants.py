@@ -1,0 +1,1 @@
+INTENT_NAME_KEY = "name"

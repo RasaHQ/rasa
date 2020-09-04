@@ -10,7 +10,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Unio
 from ruamel.yaml import YAMLError
 
 import rasa.core.constants
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import lazy_property, sort_list_of_dicts_by_first_key
 import rasa.shared.utils.io
 import rasa.utils.io

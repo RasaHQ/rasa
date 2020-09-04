@@ -8,18 +8,17 @@ import typing
 import uuid
 from dateutil import parser
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional
+from typing import List, Dict, Text, Any, Type, Optional, Union
 
 import rasa.shared.utils.common
 from rasa.core import utils
-from typing import Union
 
-from rasa.core.constants import (
-    IS_EXTERNAL,
+from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    IS_EXTERNAL,
 )
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker

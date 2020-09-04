@@ -34,11 +34,12 @@ from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
 
-from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL, DEFAULT_INTENTS
+from rasa.core.constants import DEFAULT_INTENTS
+from rasa.shared.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
 
 import logging
 
