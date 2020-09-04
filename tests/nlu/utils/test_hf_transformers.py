@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from typing import List, Text
+import logging
 
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.training_data import Message
@@ -81,3 +82,45 @@ def test_input_padding(
     if padding_added:
         original_length = len(token_ids[0])
         assert np.all(np.array(padded_input[0][original_length:]) == 0)
+
+
+@pytest.mark.parametrize(
+    "sequence_length, model_name, should_overflow",
+    [(1000, "bert", True), (256, "bert", False)],
+)
+@pytest.mark.skip_on_windows
+def test_log_longer_sequence(
+    sequence_length: int, model_name: Text, should_overflow: bool, caplog
+):
+    transformers_config = {"model_name": model_name}
+
+    transformers_nlp = HFTransformersNLP(transformers_config)
+
+    text = " ".join(["hi"] * sequence_length)
+    message = Message(text)
+
+    caplog.set_level(logging.DEBUG)
+    transformers_nlp.process(message)
+    if should_overflow:
+        print(caplog.text)
+        assert "hi hi hi" in caplog.text
+    assert message.get("text_language_model_doc") is not None
+
+
+@pytest.mark.parametrize(
+    "actual_sequence_length, max_input_sequence_length, zero_start_index",
+    [(256, 512, 256), (700, 700, 700), (700, 512, 512)],
+)
+def test_attention_mask(
+    actual_sequence_length: int, max_input_sequence_length: int, zero_start_index: int
+):
+    component = HFTransformersNLP({"model_name": "bert"}, skip_model_load=True)
+
+    attention_mask = component._compute_attention_mask(
+        [actual_sequence_length], max_input_sequence_length
+    )
+    mask_ones = attention_mask[0][:zero_start_index]
+    mask_zeros = attention_mask[0][zero_start_index:]
+
+    assert np.all(mask_ones == 1)
+    assert np.all(mask_zeros == 0)

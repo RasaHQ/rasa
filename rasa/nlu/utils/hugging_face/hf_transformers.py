@@ -91,7 +91,7 @@ class HFTransformersNLP(Component):
             )
             self.model_weights = model_weights_defaults[self.model_name]
 
-        self.max_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
+        self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
 
     def _load_model_instance(self, skip_model_load: bool) -> None:
         """Try loading the model instance
@@ -304,33 +304,39 @@ class HFTransformersNLP(Component):
 
         return batch_tokens, batch_token_ids
 
-    def _compute_attention_mask(self, actual_sequence_lengths: List[int]) -> np.ndarray:
+    @staticmethod
+    def _compute_attention_mask(
+        actual_sequence_lengths: List[int], max_input_sequence_length: int
+    ) -> np.ndarray:
         """Compute a mask for padding tokens.
 
         This mask will be used by the language model so that it does not attend to
         padding tokens.
 
         Args:
-            actual_sequence_lengths: List of length of each example without any padding
+            actual_sequence_lengths: List of length of each example without any padding.
+            max_input_sequence_length: Maximum length of a sequence that will be present in the input batch. This is
+            after taking into consideration the maximum input sequence the model can handle. Hence it can never be
+            greater than self.max_model_sequence_length in case the model applies length restriction.
 
         Returns:
             Computed attention mask, 0 for padding and 1 for non-padding tokens.
         """
 
         attention_mask = []
-        max_seq_length = max(actual_sequence_lengths)
+
         for actual_sequence_length in actual_sequence_lengths:
             # add 1s for present tokens, fill up the remaining space up to max
             # sequence length with 0s (non-existing tokens)
             padded_sequence = [1] * min(
-                actual_sequence_length, self.max_sequence_length
+                actual_sequence_length, max_input_sequence_length
             ) + [0] * (
-                max_seq_length - min(actual_sequence_length, self.max_sequence_length)
+                max_input_sequence_length
+                - min(actual_sequence_length, max_input_sequence_length)
             )
             attention_mask.append(padded_sequence)
 
         attention_mask = np.array(attention_mask).astype(np.float32)
-
         return attention_mask
 
     def _extract_sequence_lengths(
@@ -338,18 +344,24 @@ class HFTransformersNLP(Component):
     ) -> Tuple[List[int], int]:
 
         # Compute max length across examples
-        max_sequence_length = 0
+        max_input_sequence_length = 0
         actual_sequence_lengths = []
 
         for example_token_ids in batch_token_ids:
             sequence_length = len(example_token_ids)
             actual_sequence_lengths.append(sequence_length)
-            max_sequence_length = max(
-                max_sequence_length,
-                min(self.max_sequence_length, len(example_token_ids)),
+            max_input_sequence_length = max(
+                max_input_sequence_length, len(example_token_ids)
             )
 
-        return actual_sequence_lengths, max_sequence_length
+        # Take into account the maximum sequence length the model can handle
+        max_input_sequence_length = (
+            max_input_sequence_length
+            if self.max_model_sequence_length == NO_LENGTH_RESTRICTION
+            else min(max_input_sequence_length, self.max_model_sequence_length)
+        )
+
+        return actual_sequence_lengths, max_input_sequence_length
 
     def _add_padding_to_batch(
         self, batch_token_ids: List[List[int]], max_sequence_length_model: int
@@ -384,8 +396,9 @@ class HFTransformersNLP(Component):
             )
         return padded_token_ids
 
+    @staticmethod
     def _extract_nonpadded_embeddings(
-        self, embeddings: np.ndarray, actual_sequence_lengths: List[int]
+        embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
         """Use pre-computed non-padded lengths of each example to extract embeddings
         for non-padding tokens.
@@ -446,18 +459,18 @@ class HFTransformersNLP(Component):
             attribute: attribute of message object to be processed
             inference_mode: Whether this is during training or during inferencing
         """
-        if self.max_sequence_length == NO_LENGTH_RESTRICTION:
+        if self.max_model_sequence_length == NO_LENGTH_RESTRICTION:
             # There is no restriction on sequence length from the model
             return
 
         for sequence_length, example in zip(actual_sequence_lengths, batch_examples):
-            if sequence_length > self.max_sequence_length:
+            if sequence_length > self.max_model_sequence_length:
                 if not inference_mode:
                     raise RuntimeError(
                         f"The sequence length of '{example.get(attribute)[:20]}...' "
                         f"is too long({sequence_length} tokens) for the "
                         f"model chosen {self.model_name} which has a maximum "
-                        f"sequence length of {self.max_sequence_length} tokens. Either "
+                        f"sequence length of {self.max_model_sequence_length} tokens. Either "
                         f"shorten the message or use a model which has no "
                         f"restriction on input sequence length like XLNet."
                     )
@@ -466,7 +479,7 @@ class HFTransformersNLP(Component):
                         f"The sequence length of '{example.get(attribute)[:20]}...' "
                         f"is too long({sequence_length} tokens) for the "
                         f"model chosen {self.model_name} which has a maximum "
-                        f"sequence length of {self.max_sequence_length} tokens. "
+                        f"sequence length of {self.max_model_sequence_length} tokens. "
                         f"Downstream model predictions may be affected because of this."
                     )
 
@@ -485,21 +498,21 @@ class HFTransformersNLP(Component):
             Modified sequence embeddings with padding if necessary
         """
 
-        if self.max_sequence_length == NO_LENGTH_RESTRICTION:
+        if self.max_model_sequence_length == NO_LENGTH_RESTRICTION:
             # No extra padding needed because there wouldn't have been any truncation in the first place
             return sequence_embeddings
 
         reshaped_sequence_embeddings = []
         for index, embedding in enumerate(sequence_embeddings):
             embedding_size = embedding.shape[-1]
-            if actual_sequence_lengths[index] > self.max_sequence_length:
+            if actual_sequence_lengths[index] > self.max_model_sequence_length:
                 embedding = np.concatenate(
                     [
                         embedding,
                         np.zeros(
                             (
                                 actual_sequence_lengths[index]
-                                - self.max_sequence_length,
+                                - self.max_model_sequence_length,
                                 embedding_size,
                             ),
                             dtype=np.float32,
@@ -545,7 +558,7 @@ class HFTransformersNLP(Component):
         # Compute sequence lengths for all examples
         (
             actual_sequence_lengths,
-            max_sequence_length_model,
+            max_input_sequence_length,
         ) = self._extract_sequence_lengths(batch_token_ids_augmented)
 
         # Validate that all sequences can be processed based on their sequence lengths and
@@ -556,11 +569,13 @@ class HFTransformersNLP(Component):
 
         # Add padding so that whole batch can be fed to the model
         padded_token_ids = self._add_padding_to_batch(
-            batch_token_ids_augmented, max_sequence_length_model
+            batch_token_ids_augmented, max_input_sequence_length
         )
 
         # Compute attention mask based on actual_sequence_length
-        batch_attention_mask = self._compute_attention_mask(actual_sequence_lengths)
+        batch_attention_mask = self._compute_attention_mask(
+            actual_sequence_lengths, max_input_sequence_length
+        )
 
         # Get token level features from the model
         sequence_hidden_states = self._compute_batch_sequence_features(
