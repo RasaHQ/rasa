@@ -238,21 +238,23 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             delete_first_state = False
             actions = []
             for event in tracker.applied_events():
-                if isinstance(event, ActionExecuted):
-                    if not event.unpredictable:
-                        # only actions which can be
-                        # predicted at a stories start
-                        actions.append(event.action_name or event.action_text)
-                    else:
-                        # unpredictable actions can be
-                        # only the first in the story
-                        if delete_first_state:
-                            raise Exception(
-                                "Found two unpredictable "
-                                "actions in one story."
-                                "Check your story files."
-                            )
-                        delete_first_state = True
+                if not isinstance(event, ActionExecuted):
+                    continue
+
+                if not event.unpredictable:
+                    # only actions which can be
+                    # predicted at a stories start
+                    actions.append(event.action_name or event.action_text)
+                else:
+                    # unpredictable actions can be
+                    # only the first in the story
+                    if delete_first_state:
+                        raise Exception(
+                            "Found two unpredictable "
+                            "actions in one story."
+                            "Check your story files."
+                        )
+                    delete_first_state = True
 
             if delete_first_state:
                 states = states[1:]
