@@ -106,7 +106,7 @@ def add_augmentation_param(
     parser.add_argument(
         "--augmentation",
         type=int,
-        default=50,
+        default=0,
         help="How much data augmentation to use during training.",
     )
 
