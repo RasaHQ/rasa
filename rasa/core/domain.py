@@ -663,6 +663,8 @@ class Domain:
         # filter entities based on intent config
         # sub_state will be transformed to frozenset therefore we need to
         # convert the list to the tuple
+        # sub_state is transformed to frozenset because we will later hash it
+        # for deduplication
         entities = tuple(self._get_featurized_entities(latest_message))
         if entities:
             sub_state[ENTITIES] = entities
@@ -881,7 +883,7 @@ class Domain:
             A cleaned dictionary version of the domain.
         """
         domain_data = self.as_dict()
-        # remove e2e actions from domain to be demonstrated  written to file
+        # remove e2e actions from domain before we display it
         domain_data.pop(KEY_E2E_ACTIONS, None)
 
         for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):

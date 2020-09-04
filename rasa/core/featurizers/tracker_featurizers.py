@@ -60,7 +60,7 @@ class TrackerFeaturizer:
     def _convert_labels_to_ids(
         trackers_as_actions: List[List[Text]], domain: Domain
     ) -> np.ndarray:
-        # use numpy arrays since in `Features` there are array
+        # store labels in numpy arrays so that it corresponds to np arrays of input features
         return np.array(
             [
                 np.array(
