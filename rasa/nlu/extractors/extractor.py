@@ -153,18 +153,16 @@ class EntityExtractor(Component):
                 last_group_tag != current_group_tag or last_role_tag != current_role_tag
             )
 
-            if rasa.nlu.utils.bilou_utilsbilou_utils.bilou_prefix_from_tag(
-                current_entity_tag
-            ):
+            if rasa.nlu.utils.bilou_utils.bilou_prefix_from_tag(current_entity_tag):
                 # checks for new bilou tag
                 # new bilou tag begins are not with I- , L- tags
                 new_bilou_tag_starts = last_entity_tag != current_entity_tag and (
-                    rasa.nlu.utils.bilou_utilsbilou_utils.LAST
-                    != rasa.nlu.utils.bilou_utilsbilou_utils.bilou_prefix_from_tag(
+                    rasa.nlu.utils.bilou_utils.LAST
+                    != rasa.nlu.utils.bilou_utils.bilou_prefix_from_tag(
                         current_entity_tag
                     )
-                    and rasa.nlu.utils.bilou_utilsbilou_utils.INSIDE
-                    != rasa.nlu.utils.bilou_utilsbilou_utils.bilou_prefix_from_tag(
+                    and rasa.nlu.utils.bilou_utils.INSIDE
+                    != rasa.nlu.utils.bilou_utils.bilou_prefix_from_tag(
                         current_entity_tag
                     )
                 )
@@ -173,8 +171,8 @@ class EntityExtractor(Component):
                 # and handle multiple U-tags consecutively
                 new_unigram_bilou_tag_starts = (
                     last_entity_tag == NO_ENTITY_TAG
-                    or rasa.nlu.utils.bilou_utilsbilou_utils.UNIT
-                    == rasa.nlu.utils.bilou_utilsbilou_utils.bilou_prefix_from_tag(
+                    or rasa.nlu.utils.bilou_utils.UNIT
+                    == rasa.nlu.utils.bilou_utils.bilou_prefix_from_tag(
                         current_entity_tag
                     )
                 )
@@ -185,7 +183,7 @@ class EntityExtractor(Component):
                     or group_or_role_changed
                 )
                 last_entity_tag = current_entity_tag
-                current_entity_tag = rasa.nlu.utils.bilou_utilsbilou_utils.tag_without_prefix(
+                current_entity_tag = rasa.nlu.utils.bilou_utils.tag_without_prefix(
                     current_entity_tag
                 )
             else:
