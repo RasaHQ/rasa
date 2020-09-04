@@ -20,14 +20,17 @@ def test_shared_package_is_independent():
             ]
             rasa_imports = [line for line in imports if "rasa" in line]
 
+            shared_imports = ["import rasa.shared", "from rasa import shared"]
             outside_rasa_imports = [
                 import_line
                 for import_line in rasa_imports
-                if "rasa.shared" not in import_line
+                if not any(
+                    shared_import in import_line for shared_import in shared_imports
+                )
             ]
 
             # The shared package is required to be independent of the rest of Rasa
             assert not outside_rasa_imports, (
-                f"File {file} imports code from outside "
+                f"File `{file}` imports code from outside "
                 f"of `rasa.shared`: {','.join(outside_rasa_imports)}"
             )
