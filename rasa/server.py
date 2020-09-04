@@ -3,7 +3,6 @@ import functools
 import logging
 import multiprocessing
 import os
-from pathlib import Path
 import tempfile
 import traceback
 import typing
@@ -12,8 +11,7 @@ from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Text, Union, Dict
 
-from sanic.exceptions import InvalidUsage
-
+from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 from rasa.nlu.training_data.formats import RasaYAMLReader
 import rasa
 import rasa.core.utils
@@ -29,7 +27,6 @@ from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DOCS_URL_TRAINING_DATA_NLU,
 )
-from rasa.core import agent
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
@@ -85,6 +82,7 @@ class ErrorResponse(Exception):
             "code": status,
         }
         self.status = status
+        logger.error(message)
 
 
 def _docs(sub_url: Text) -> Text:
@@ -343,7 +341,7 @@ async def _load_agent(
             if not lock_store:
                 lock_store = LockStore.create(endpoints.lock_store)
 
-        loaded_agent = await agent.load_agent(
+        loaded_agent = await rasa.core.agent.load_agent(
             model_path,
             model_server,
             remote_storage,
@@ -583,7 +581,7 @@ def create_app(
                 tracker = tracker.travel_back_in_time(until_time)
 
             # dump and return tracker
-            state = tracker.export_stories(e2e=True)
+            state = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
             return response.text(state)
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -830,7 +828,9 @@ def create_app(
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(test_data, app.agent, e2e=use_e2e)
+            evaluation = await test(
+                test_data, app.agent, e2e=use_e2e, disable_plotting=True
+            )
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -872,7 +872,7 @@ def create_app(
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
         try:
-            evaluation = run_evaluation(data_path, nlu_model)
+            evaluation = run_evaluation(data_path, nlu_model, disable_plotting=True)
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -1162,11 +1162,10 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
     if "force" in rjs or "save_to_default_model_directory" in rjs:
-        common_utils.raise_warning(
+        common_utils.raise_deprecation_warning(
             "Specifying 'force' and 'save_to_default_model_directory' as part of the "
             "JSON payload is deprecated. Please use the header arguments "
             "'force_training' and 'save_to_default_model_directory'.",
-            category=FutureWarning,
             docs=_docs("/api/http-api"),
         )
 

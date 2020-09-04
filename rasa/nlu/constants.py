@@ -2,7 +2,7 @@ TEXT = "text"
 INTENT = "intent"
 RESPONSE = "response"
 
-RESPONSE_KEY_ATTRIBUTE = "response_key"
+INTENT_RESPONSE_KEY = "intent_response_key"
 
 ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
@@ -35,7 +35,7 @@ TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClass
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
-MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE]
+MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE, INTENT_RESPONSE_KEY]
 DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE]
 
 LANGUAGE_MODEL_DOCS = {
@@ -48,6 +48,7 @@ TOKENS_NAMES = {
     TEXT: "text_tokens",
     INTENT: "intent_tokens",
     RESPONSE: "response_tokens",
+    INTENT_RESPONSE_KEY: "intent_response_key_tokens",
 }
 
 TOKENS = "tokens"
@@ -57,13 +58,15 @@ SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"
 
 RESPONSE_SELECTOR_PROPERTY_NAME = "response_selector"
-DEFAULT_OPEN_UTTERANCE_TYPE = "default"
-OPEN_UTTERANCE_PREDICTION_KEY = "response"
-OPEN_UTTERANCE_RANKING_KEY = "ranking"
+RESPONSE_SELECTOR_RETRIEVAL_INTENTS = "all_retrieval_intents"
+RESPONSE_SELECTOR_DEFAULT_INTENT = "default"
+RESPONSE_SELECTOR_PREDICTION_KEY = "response"
+RESPONSE_SELECTOR_RANKING_KEY = "ranking"
+RESPONSE_SELECTOR_RESPONSES_KEY = "response_templates"
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 INTENT_RANKING_KEY = "intent_ranking"
-INTENT_CONFIDENCE_KEY = "confidence"
+PREDICTED_CONFIDENCE_KEY = "confidence"
 INTENT_NAME_KEY = "name"
 
 FEATURE_TYPE_SENTENCE = "sentence"

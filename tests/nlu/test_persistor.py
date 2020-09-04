@@ -13,7 +13,7 @@ class Object:
 
 
 # noinspection PyPep8Naming
-async def test_list_method_method_in_AWS_persistor(component_builder, tmpdir):
+async def test_list_method_method_in_AWS_persistor(component_builder, tmp_path):
     with mock_s3():
         # artificially create a persisted model
         _config = RasaNLUModelConfig(
@@ -26,7 +26,7 @@ async def test_list_method_method_in_AWS_persistor(component_builder, tmpdir):
         (trained, _, persisted_path) = await train(
             _config,
             data="data/test/demo-rasa-small.json",
-            path=tmpdir.strpath,
+            path=str(tmp_path),
             storage="aws",
             component_builder=component_builder,
         )

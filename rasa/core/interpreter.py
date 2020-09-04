@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+
 import aiohttp
 
 import json
@@ -23,7 +25,7 @@ class NaturalLanguageInterpreter:
         self,
         text: Text,
         message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
+        tracker: Optional[DialogueStateTracker] = None,
     ) -> Dict[Text, Any]:
         raise NotImplementedError(
             "Interpreter needs to be able to parse messages into structured output."
@@ -86,11 +88,11 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             if isinstance(parsed_entities, dict):
                 return RegexInterpreter._create_entities(parsed_entities, sidx, eidx)
             else:
-                raise Exception(
+                raise ValueError(
                     f"Parsed value isn't a json object "
                     f"(instead parser found '{type(parsed_entities)}')"
                 )
-        except Exception as e:
+        except (JSONDecodeError, ValueError) as e:
             raise_warning(
                 f"Failed to parse arguments in line "
                 f"'{user_input}'. Failed to decode parameters "
@@ -108,7 +110,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
         try:
             return float(confidence_str.strip()[1:])
-        except Exception as e:
+        except ValueError as e:
             raise_warning(
                 f"Invalid to parse confidence value in line "
                 f"'{confidence_str}'. Make sure the intent confidence is an "
@@ -149,18 +151,13 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         self,
         text: Text,
         message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
+        tracker: Optional[DialogueStateTracker] = None,
     ) -> Dict[Text, Any]:
         """Parse a text message."""
 
-        return self.synchronous_parse(text, message_id, tracker)
+        return self.synchronous_parse(text)
 
-    def synchronous_parse(
-        self,
-        text: Text,
-        message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
-    ) -> Dict[Text, Any]:
+    def synchronous_parse(self, text: Text,) -> Dict[Text, Any]:
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)
@@ -189,7 +186,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         self,
         text: Text,
         message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
+        tracker: Optional[DialogueStateTracker] = None,
     ) -> Dict[Text, Any]:
         """Parse a text message.
 
@@ -241,7 +238,9 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                             f"http. Error: {response_text}"
                         )
                         return None
-        except Exception:
+        except Exception:  # skipcq: PYL-W0703
+            # need to catch all possible exceptions when doing http requests
+            # (timeouts, value errors, parser errors, ...)
             logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")
             return None
 
@@ -266,7 +265,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         self,
         text: Text,
         message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
+        tracker: Optional[DialogueStateTracker] = None,
     ) -> Dict[Text, Any]:
         """Parse a text message.
 

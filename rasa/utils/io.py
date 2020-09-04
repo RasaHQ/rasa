@@ -245,6 +245,8 @@ def convert_to_ordered_dict(obj: Any) -> Any:
         An `OrderedDict` with all nested dictionaries converted if `obj` is a
         dictionary, otherwise the object itself.
     """
+    if isinstance(obj, OrderedDict):
+        return obj
     # use recursion on lists
     if isinstance(obj, list):
         return [convert_to_ordered_dict(element) for element in obj]
@@ -290,6 +292,12 @@ def write_yaml(
     dumper = yaml.YAML()
     # no wrap lines
     dumper.width = YAML_LINE_MAX_WIDTH
+
+    # use `null` to represent `None`
+    dumper.representer.add_representer(
+        type(None),
+        lambda self, _: self.represent_scalar("tag:yaml.org,2002:null", "null"),
+    )
 
     if isinstance(target, StringIO):
         dumper.dump(data, target)

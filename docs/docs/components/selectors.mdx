@@ -18,7 +18,8 @@ Selectors predict a bot response from a set of candidate responses.
 
 * **Outputs**
 
-  A dictionary with key as `direct_response_intent` and value containing `response` and `ranking`
+  A dictionary with the key as the retrieval intent of the response selector
+   and value containing predicted response templates, confidence and the response key under the retrieval intent
 
 
 
@@ -32,15 +33,36 @@ Selectors predict a bot response from a set of candidate responses.
 
   ```json
   {
-      "response_selector": {
-        "faq": {
-          "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-          "ranking": [
-              {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-              {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
+    "response_selector": {
+      "faq": {
+        "response": {
+          "id": 1388783286124362000,
+          "confidence": 0.7,
+          "intent_response_key": "chitchat/ask_weather",
+          "response_templates": [
+            {
+              "text": "It's sunny in Berlin today",
+              "image": "https://i.imgur.com/nGF1K8f.jpg"
+            },
+            {
+              "text": "I think it's about to rain."
+            }
           ]
-        }
+        },
+        "ranking": [
+          {
+            "id": 1388783286124362000,
+            "confidence": 0.7,
+            "intent_response_key": "chitchat/ask_weather"
+          },
+          {
+            "id": 1388783286124362000,
+            "confidence": 0.3,
+            "intent_response_key": "chitchat/ask_name"
+          }
+        ]
       }
+    }
   }
   ```
 
@@ -110,9 +132,15 @@ Selectors predict a bot response from a set of candidate responses.
     set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
-  In addition, the component can also be configured to train a response selector for a particular retrieval intent.
-  The parameter `retrieval_intent` sets the name of the intent for which this response selector model is trained.
+  The component can also be configured to train a response selector for a particular retrieval intent.
+  The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.
   Default is `None`, i.e. the model is trained for all retrieval intents.
+
+  In its default configuration, the component uses the retrieval intent with the response key(e.g. `faq/ask_name`) as the label for training.
+  Alternatively, it can also be configured to use the text of the response templates as the training label
+  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response
+  template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
+  combined with the response key as the label.
 
   <details>
     <summary>
@@ -219,6 +247,10 @@ Selectors predict a bot response from a set of candidate responses.
     +---------------------------------+-------------------+--------------------------------------------------------------+
     | retrieval_intent                | None              | Name of the intent for which this response selector model is |
     |                                 |                   | trained.                                                     |
+    +---------------------------------+-------------------+--------------------------------------------------------------+
+    | use_text_as_label               | False             | Whether to use the actual text of the response as the label  |
+    |                                 |                   | for training the response selector. Otherwise, it uses the   |
+    |                                 |                   | response key as the label.                                   |
     +---------------------------------+-------------------+--------------------------------------------------------------+
     | tensorboard_log_directory       | None              | If you want to use tensorboard to visualize training         |
     |                                 |                   | metrics, set this option to a valid output directory. You    |
