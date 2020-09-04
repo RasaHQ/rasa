@@ -402,12 +402,11 @@ class Interpreter:
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
 
-    def parse_message(self, message: Message) -> Message:
+    def featurize_message(self, message: Message) -> Message:
         """
-        Tokenizer and featurize the input message by the provided attribute;
+        Tokenize and featurize the input message
         Args:
             message: message storing text to process;
-            attribute: message attribute
         Returns:
             message: it contains the tokens and features which are the output of the NLU pipeline;
         """

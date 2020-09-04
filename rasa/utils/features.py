@@ -89,7 +89,7 @@ class Features:
         self.features = hstack([self.features, additional_features.features])
 
     def __key__(
-        self
+        self,
     ) -> Tuple[
         Text, Text, Union[np.ndarray, scipy.sparse.spmatrix], Union[Text, List[Text]]
     ]:

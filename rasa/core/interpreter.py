@@ -51,7 +51,7 @@ class NaturalLanguageInterpreter:
         else:
             return _create_from_endpoint_config(obj)
 
-    def synchronous_parse_message(self, message: Message) -> Optional[Message]:
+    def featurize_message(self, message: Message) -> Optional[Message]:
         pass
 
 
@@ -282,10 +282,16 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         return result
 
-    def synchronous_parse_message(self, message: Message) -> Optional[Message]:
+    def featurize_message(self, message: Message) -> Optional[Message]:
+        """Featurize message using a trained NLU pipeline
+        Args:
+            message storing text to process
+        Returns:
+            message containing tokens and features which are the output of the NLU pipeline
+        """
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
-        result = self.interpreter.parse_message(message)
+        result = self.interpreter.featurize_message(message)
         return result
 
     def _load_interpreter(self) -> None:

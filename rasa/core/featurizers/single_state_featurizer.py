@@ -116,7 +116,7 @@ class SingleStateFeaturizer:
         )
 
         if interpreter is not None:
-            parsed_message = interpreter.synchronous_parse_message(message)
+            parsed_message = interpreter.featurize_message(message)
             for attribute in attributes:
                 if parsed_message is not None:
                     all_features = parsed_message.get_sparse_features(
