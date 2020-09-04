@@ -11,7 +11,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class MitieEntityExtractor(EntityExtractor):
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Failed to use example '{text}' to train MITIE "
                     f"entity extractor. Example will be skipped."
                     f"Error: {e}"
@@ -116,7 +116,7 @@ class MitieEntityExtractor(EntityExtractor):
                 # input - e.g. on overlapping entities
                 sample.add_entity(list(range(start, end)), ent["entity"])
             except Exception as e:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Failed to add entity example "
                     f"'{str(e)}' of sentence '{str(text)}'. "
                     f"Example will be ignored. Reason: "

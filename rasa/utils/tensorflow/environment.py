@@ -2,7 +2,8 @@ import logging
 import os
 from typing import Text, Dict
 import typing
-import rasa.utils.common as rasa_utils
+
+import rasa.shared.utils.io
 from rasa.constants import (
     ENV_GPU_CONFIG,
     ENV_CPU_INTER_OP_CONFIG,
@@ -35,7 +36,7 @@ def _setup_gpu_environment() -> None:
             _allocate_gpu_memory(physical_gpus[gpu_id], gpu_id_memory)
 
     else:
-        rasa_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"You have an environment variable '{ENV_GPU_CONFIG}' set but no GPUs were detected to configure."
         )
 
