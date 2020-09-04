@@ -11,13 +11,9 @@ from ruamel.yaml import YAMLError
 
 import rasa.core.constants
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import (
-    raise_warning,
-    lazy_property,
-    sort_list_of_dicts_by_first_key,
-)
+from rasa.utils.common import lazy_property, sort_list_of_dicts_by_first_key
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.cli.utils import bcolors, wrap_with_color
 from rasa.constants import (
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
     DOMAIN_SCHEMA_FILE,
@@ -36,7 +32,7 @@ from rasa.core.constants import (
     DEFAULT_INTENTS,
 )
 from rasa.core.events import SlotSet, UserUttered
-from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
+from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
 
@@ -79,9 +75,11 @@ class InvalidDomain(Exception):
     def __init__(self, message) -> None:
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> Text:
         # return message in error colours
-        return wrap_with_color(self.message, color=bcolors.FAIL)
+        return rasa.shared.utils.io.wrap_with_color(
+            self.message, color=rasa.shared.utils.io.bcolors.FAIL
+        )
 
 
 class SessionConfig(NamedTuple):
@@ -331,7 +329,7 @@ class Domain:
         explicitly_included = isinstance(properties[USE_ENTITIES_KEY], list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Entities: '{ambiguous_entities}' are explicitly included and"
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
@@ -1103,7 +1101,7 @@ class Domain:
 
         if missing_templates:
             for template in missing_templates:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Action '{template}' is listed as a "
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "

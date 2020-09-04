@@ -10,7 +10,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
 )
 from rasa.nlu.training_data.message import Message
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -141,7 +141,7 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
     try:
         data = json.loads(f"{{{json_str}}}")
     except JSONDecodeError as e:
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"Incorrect training data format ('{{{json_str}}}'). Make sure your "
             f"data is valid.",
             docs=DOCS_URL_TRAINING_DATA_NLU,

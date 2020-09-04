@@ -9,7 +9,8 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
 from rasa import data
 import rasa.nlu.utils
-from rasa.utils.common import raise_warning, lazy_property
+from rasa.utils.common import lazy_property
+import rasa.shared.utils.io
 from rasa.nlu.constants import (
     RESPONSE,
     NO_ENTITY_TAG,
@@ -388,14 +389,14 @@ class TrainingData:
 
         logger.debug("Validating training data...")
         if "" in self.intents:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Found empty intent, please check your "
                 "training data. This may result in wrong "
                 "intent predictions."
             )
 
         if "" in self.responses:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Found empty response, please check your "
                 "training data. This may result in wrong "
                 "response predictions."
@@ -404,7 +405,7 @@ class TrainingData:
         # emit warnings for intents with only a few training samples
         for intent, count in self.number_of_examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Intent '{intent}' has only {count} training examples! "
                     f"Minimum is {self.MIN_EXAMPLES_PER_INTENT}, training may fail."
                 )
@@ -412,7 +413,7 @@ class TrainingData:
         # emit warnings for entities with only a few training samples
         for entity, count in self.number_of_examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Entity {entity} has only {count} training examples! "
                     f"The minimum is {self.MIN_EXAMPLES_PER_ENTITY}, because of "
                     f"this the training may fail."
@@ -421,7 +422,7 @@ class TrainingData:
         # emit warnings for response intents without a response template
         for example in self.training_examples:
             if example.get(INTENT_RESPONSE_KEY) and not example.get(RESPONSE):
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Your training data contains an example '{example.text[:20]}...' "
                     f"for the {example.get_full_intent()} intent. "
                     f"You either need to add a response phrase or correct the "
