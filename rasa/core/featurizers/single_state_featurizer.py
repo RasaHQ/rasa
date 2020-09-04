@@ -4,7 +4,7 @@ import scipy.sparse
 from typing import List, Optional, Dict, Text, Set
 from collections import defaultdict
 
-from rasa.utils import common as common_utils
+import rasa.shared.utils.io
 from rasa.core.domain import Domain, State, SubState
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -244,7 +244,7 @@ class SingleStateFeaturizer:
 class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
         super().__init__()
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in the future. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
@@ -273,7 +273,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         super().__init__()
         # it is hard to fully mimic old behavior, but SingleStateFeaturizer
         # does the same thing if nlu pipeline is configured correctly
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in the future. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
