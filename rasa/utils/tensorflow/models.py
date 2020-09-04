@@ -408,9 +408,9 @@ class RasaModel(tf.keras.models.Model):
         """Convert input batch tensors into batch data format.
 
         Batch contains any number of batch data. The order is equal to the
-        key-value pairs in session data. As sparse data were converted into indices,
-        data, shape before, this methods converts them into sparse tensors. Dense data
-        is kept.
+        key-value pairs in session data. As sparse data were converted into (indices,
+        data, shape before), this method converts them into sparse tensors. Dense 
+        data is kept.
         """
 
         batch_data = defaultdict(list)

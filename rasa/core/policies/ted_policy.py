@@ -553,7 +553,6 @@ class TED(RasaModel):
             use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
             max_relative_position=self.config[MAX_RELATIVE_POSITION],
             name=DIALOGUE + "_encoder",
-            summary_writer=self.test_summary_writer,
         )
         self._tf_layers[f"embed.{DIALOGUE}"] = layers.Embed(
             self.config[EMBEDDING_DIMENSION],
@@ -574,7 +573,7 @@ class TED(RasaModel):
 
         return all_labels, all_labels_embed
 
-    def _emebed_dialogue(self, dialogue_in: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
+    def _emebed_dialogue(self, dialogue_in: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]:
         """Create dialogue level embedding and mask."""
 
         # mask different length sequences
@@ -582,7 +581,7 @@ class TED(RasaModel):
         mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
-        dialogue_transformed = self._tf_layers["transformer"](
+        dialogue_transformed, attention_weights = self._tf_layers["transformer"](
             dialogue, 1 - tf.expand_dims(mask, axis=-1), self._training
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
@@ -594,7 +593,7 @@ class TED(RasaModel):
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
-        return dialogue_embed, mask
+        return dialogue_embed, mask, attention_weights  # ToDo: ?, ?, (num_layers, batch_size, num_heads, length, length)
 
     def _embed_label(self, label_in: Union[tf.Tensor, np.ndarray]) -> tf.Tensor:
         label = self._tf_layers[f"ffnn.{LABEL}"](label_in, self._training)
@@ -614,7 +613,7 @@ class TED(RasaModel):
 
         all_labels, all_labels_embed = self._create_all_labels_embed()
 
-        dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
+        dialogue_embed, mask, _ = self._emebed_dialogue(dialogue_in)
         label_embed = self._embed_label(label_in)
 
         loss, acc = self._tf_layers[f"loss.{LABEL}"](
@@ -636,7 +635,7 @@ class TED(RasaModel):
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
-        dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
+        dialogue_embed, mask, attention_weights = self._emebed_dialogue(dialogue_in)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             dialogue_embed[:, :, tf.newaxis, :],
@@ -648,7 +647,42 @@ class TED(RasaModel):
             sim_all, self.config[SIMILARITY_TYPE]
         )
 
+        if self.tensorboard_log_dir and len(batch_in) == 1:
+            # Log attention weights if we make a single prediction
+            print("xxxxxxxxxxxxxxxxxxxxxxxx")
+            if not self.test_summary_writer:
+                self._set_up_tensorboard_writer()
+            if self.test_summary_writer:
+                with self.test_summary_writer.as_default():
+                    tf.summary.image(
+                        "TED_attention_weights",
+                        image_from_attention_weights(attention_weights),
+                        step=0,
+                        max_outputs=9
+                    )
+
         return {"action_scores": scores}
+
+
+def image_from_attention_weights(attention_weights: tf.Tensor) -> tf.Tensor:
+    num_layers = tf.shape(attention_weights)[0]
+    batch_size = tf.shape(attention_weights)[1]
+    num_heads = tf.shape(attention_weights)[2]
+    length = tf.shape(attention_weights)[3]
+
+    img = attention_weights
+    img = tf.transpose(img, perm=[1, 0, 2, 3, 4])
+    img = tf.reshape(img, (batch_size * num_layers, length, num_heads * length, 1))
+    # img = tf.transpose(img, perm=[0, 2, 1, 3])
+    # rescale values to range from 0.0 to 1.0
+    img = normalize_image(img)
+    return img
+
+
+def normalize_image(image: tf.Tensor) -> tf.Tensor:
+    return (image - tf.reduce_min(image)) / (
+        tf.reduce_max(image) - tf.reduce_min(image)
+    )
 
 
 # pytype: enable=key-error

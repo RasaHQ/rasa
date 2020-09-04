@@ -4,7 +4,6 @@ import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 import numpy as np
-from tensorflow_core.python.ops.summary_ops_v2 import ResourceSummaryWriter
 
 from rasa.utils.tensorflow.layers import DenseWithSparseWeights
 
@@ -421,11 +420,8 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         use_value_relative_position: bool = False,
         max_relative_position: Optional[int] = None,
         heads_share_relative_embedding: bool = False,
-        summary_writer: Optional[ResourceSummaryWriter] = None,
     ) -> None:
         super().__init__()
-
-        self._summary_writer = summary_writer
 
         self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self._mha = MultiHeadAttention(
@@ -458,7 +454,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         x: tf.Tensor,
         pad_mask: Optional[tf.Tensor] = None,
         training: Optional[Union[tf.Tensor, bool]] = None,
-    ) -> tf.Tensor:
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Apply transformer encoder layer.
 
         Arguments:
@@ -485,39 +481,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             ffn_out = layer(ffn_out, training=training)
         x += ffn_out
 
-        if self._summary_writer:
-            # attention_weights.shape == (batch_size, num_heads, length, length)
-
-            # for i_head in range(self._mha.num_heads):
-            #     # select attention weights of one head and reshape for image output
-            #     img = attn_weights[:, i_head, :, :]
-            #     img = tf.expand_dims(img, axis=-1)
-            #     # rescale values to range from 0.0 to 1.0
-            #     img = (img - tf.reduce_min(img)) / (
-            #         tf.reduce_max(img) - tf.reduce_min(img)
-            #     )
-            #     # write image to tensorboard
-            #     with self._summary_writer.as_default():
-            #         tf.summary.image(
-            #             f"attn_weights_h{i_head}", img, step=0, max_outputs=20
-            #         )
-
-            # reshape so we get all attention heads in one image
-            num_heads = self._mha.num_heads
-            length = tf.shape(x)[1]
-            img = tf.reshape(attn_weights, (-1, num_heads * length, length, 1))
-            img = tf.transpose(img, perm=[0, 2, 1, 3])
-            # rescale values to range from 0.0 to 1.0
-            img = (img - tf.reduce_min(img)) / (
-                tf.reduce_max(img) - tf.reduce_min(img)
-            )
-            # write image to tensorboard
-            with self._summary_writer.as_default():
-                tf.summary.image(
-                    f"attn_weights", img, step=0, max_outputs=20
-                )
-
-        return x  # (batch_size, length, units)
+        return x, attn_weights  # (batch_size, length, units), (batch_size, num_heads, length, length)
 
 
 class TransformerEncoder(tf.keras.layers.Layer):
@@ -563,7 +527,6 @@ class TransformerEncoder(tf.keras.layers.Layer):
         max_relative_position: Optional[int] = None,
         heads_share_relative_embedding: bool = False,
         name: Optional[Text] = None,
-        summary_writer: Optional[ResourceSummaryWriter] = None,
     ) -> None:
         super().__init__(name=name)
 
@@ -594,7 +557,6 @@ class TransformerEncoder(tf.keras.layers.Layer):
                 use_value_relative_position,
                 max_relative_position,
                 heads_share_relative_embedding,
-                summary_writer,
             )
             for _ in range(num_layers)
         ]
@@ -632,7 +594,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         x: tf.Tensor,
         pad_mask: Optional[tf.Tensor] = None,
         training: Optional[Union[tf.Tensor, bool]] = None,
-    ) -> tf.Tensor:
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Apply transformer encoder.
 
         Arguments:
@@ -661,10 +623,15 @@ class TransformerEncoder(tf.keras.layers.Layer):
                     1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
                 )  # (batch_size, 1, length, length)
 
+        layer_attention_weights = []
+
         for layer in self._enc_layers:
-            x = layer(x, pad_mask=pad_mask, training=training)
+            x, attn_weights = layer(x, pad_mask=pad_mask, training=training)
+            layer_attention_weights.append(attn_weights)
 
         # if normalization is done in encoding layers, then it should also be done
         # on the output, since the output can grow very large, being the sum of
         # a whole stack of unnormalized layer outputs.
-        return self._layer_norm(x)  # (batch_size, length, units)
+        x = self._layer_norm(x)  # (batch_size, length, units)
+
+        return x, tf.stack(layer_attention_weights)  # (batch_size, length, units), (num_layers, batch_size, num_heads, length, length)

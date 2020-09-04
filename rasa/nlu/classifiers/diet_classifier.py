@@ -1432,7 +1432,7 @@ class DIET(RasaModel):
             )
         else:
             # create lambda so that it can be used later without the check
-            self._tf_layers[f"{name}_transformer"] = lambda x, mask, training: x
+            self._tf_layers[f"{name}_transformer"] = lambda x, mask, training: x, None  # ToDo: is it ok to return None for attention_weights as second argument?
 
     def _prepare_mask_lm_layers(self, name: Text) -> None:
         self._tf_layers[f"{name}_input_mask"] = layers.InputMask()
@@ -1658,7 +1658,7 @@ class DIET(RasaModel):
             transformer_inputs = inputs
             lm_mask_bool = None
 
-        outputs = self._tf_layers[f"{name}_transformer"](
+        outputs, attention_weights = self._tf_layers[f"{name}_transformer"](
             transformer_inputs, 1 - mask, self._training
         )
 
