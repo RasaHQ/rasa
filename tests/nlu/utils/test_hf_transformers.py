@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from typing import List, Text
 
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.training_data import Message
@@ -10,7 +11,7 @@ from rasa.nlu.training_data import Message
     [(20, "bert", False), (1000, "bert", True), (1000, "xlnet", False)],
 )
 def test_sequence_length_overflow_train(
-    input_sequence_length, model_name, should_overflow
+    input_sequence_length: int, model_name: Text, should_overflow: bool
 ):
 
     component = HFTransformersNLP({"model_name": model_name}, skip_model_load=True)
@@ -35,7 +36,10 @@ def test_sequence_length_overflow_train(
     ],
 )
 def test_long_sequences_extra_padding(
-    sequence_embeddings, actual_sequence_lengths, model_name, padding_needed
+    sequence_embeddings: np.ndarray,
+    actual_sequence_lengths: List[int],
+    model_name: Text,
+    padding_needed: bool,
 ):
 
     component = HFTransformersNLP({"model_name": model_name}, skip_model_load=True)
@@ -65,7 +69,10 @@ def test_long_sequences_extra_padding(
     ],
 )
 def test_input_padding(
-    token_ids, max_sequence_length_model, resulting_length, padding_added
+    token_ids: List[List[int]],
+    max_sequence_length_model: int,
+    resulting_length: int,
+    padding_added: bool,
 ):
     component = HFTransformersNLP({"model_name": "bert"}, skip_model_load=True)
     component.pad_token_id = 0

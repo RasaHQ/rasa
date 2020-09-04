@@ -20,13 +20,14 @@ from rasa.nlu.constants import (
     SENTENCE_FEATURES,
     SEQUENCE_FEATURES,
     NUMBER_OF_SUB_TOKENS,
+    NO_LENGTH_RESTRICTION,
 )
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
     "gpt": 512,
     "gpt2": 512,
-    "xlnet": -1,
+    "xlnet": NO_LENGTH_RESTRICTION,
     "distilbert": 512,
     "roberta": 512,
 }
@@ -99,6 +100,10 @@ class HFTransformersNLP(Component):
             skip_model_load: Skip loading the model instances to save time. This should be True only for pytests
         """
 
+        if skip_model_load:
+            # This should be True only during pytests
+            return
+
         from rasa.nlu.utils.hugging_face.registry import (
             model_class_dict,
             model_tokenizer_dict,
@@ -106,23 +111,20 @@ class HFTransformersNLP(Component):
 
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
 
-        if not skip_model_load:
-            # This should be skipped only during pytests,
+        self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
+            self.model_weights, cache_dir=self.cache_dir
+        )
+        self.model = model_class_dict[self.model_name].from_pretrained(
+            self.model_weights, cache_dir=self.cache_dir
+        )
 
-            self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
-                self.model_weights, cache_dir=self.cache_dir
-            )
-            self.model = model_class_dict[self.model_name].from_pretrained(
-                self.model_weights, cache_dir=self.cache_dir
-            )
-
-            # Use a universal pad token since all transformer architectures do not have a
-            # consistent token. Instead of pad_token_id we use unk_token_id because
-            # pad_token_id is not set for all architectures. We can't add a new token as
-            # well since vocabulary resizing is not yet supported for TF classes.
-            # Also, this does not hurt the model predictions since we use an attention mask
-            # while feeding input.
-            self.pad_token_id = self.tokenizer.unk_token_id
+        # Use a universal pad token since all transformer architectures do not have a
+        # consistent token. Instead of pad_token_id we use unk_token_id because
+        # pad_token_id is not set for all architectures. We can't add a new token as
+        # well since vocabulary resizing is not yet supported for TF classes.
+        # Also, this does not hurt the model predictions since we use an attention mask
+        # while feeding input.
+        self.pad_token_id = self.tokenizer.unk_token_id
 
     @classmethod
     def cache_key(
@@ -138,8 +140,7 @@ class HFTransformersNLP(Component):
         return ["transformers"]
 
     def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
-        """
-        Pass the text through the tokenizer of the language model.
+        """Pass the text through the tokenizer of the language model.
 
         Args:
             text: Text to be tokenized.
@@ -157,8 +158,7 @@ class HFTransformersNLP(Component):
     def _add_lm_specific_special_tokens(
         self, token_ids: List[List[int]]
     ) -> List[List[int]]:
-        """Add language model specific special tokens which were used during their
-        training.
+        """Add language model specific special tokens which were used during their training.
 
         Args:
             token_ids: List of token ids for each example in the batch.
@@ -359,6 +359,8 @@ class HFTransformersNLP(Component):
         Args:
             batch_token_ids: Batch of examples where each example is a non-padded list
             of token ids.
+            max_sequence_length_model: Maximum length of any input sequence in the batch
+            to be fed to the model.
 
         Returns:
             Padded batch with all examples of the same length.
@@ -433,8 +435,7 @@ class HFTransformersNLP(Component):
         attribute: Text,
         inference_mode: bool = False,
     ) -> None:
-        """
-        Validate if sequence lengths of all inputs are less the max sequence length the model can handle
+        """Validate if sequence lengths of all inputs are less the max sequence length the model can handle
 
         This method should throw an error during training, whereas log a debug message during inference if
         any of the input examples have a length greater than maximum sequence length allowed.
@@ -444,9 +445,8 @@ class HFTransformersNLP(Component):
             batch_examples: all message instances in the batch
             attribute: attribute of message object to be processed
             inference_mode: Whether this is during training or during inferencing
-
         """
-        if self.max_sequence_length < 0:
+        if self.max_sequence_length == NO_LENGTH_RESTRICTION:
             # There is no restriction on sequence length from the model
             return
 
@@ -459,7 +459,7 @@ class HFTransformersNLP(Component):
                         f"model chosen {self.model_name} which has a maximum "
                         f"sequence length of {self.max_sequence_length} tokens. Either "
                         f"shorten the message or use a model which has no "
-                        f"restriction on input sequence length like XLNet"
+                        f"restriction on input sequence length like XLNet."
                     )
                 else:
                     logger.debug(
@@ -467,7 +467,7 @@ class HFTransformersNLP(Component):
                         f"is too long({sequence_length} tokens) for the "
                         f"model chosen {self.model_name} which has a maximum "
                         f"sequence length of {self.max_sequence_length} tokens. "
-                        f"Downstream model predictions may be affected because of this"
+                        f"Downstream model predictions may be affected because of this."
                     )
 
     def _add_extra_padding(
@@ -481,11 +481,11 @@ class HFTransformersNLP(Component):
             sequence_embeddings: Embeddings returned from the model
             actual_sequence_lengths: original sequence length of all inputs
 
-        Returns: Modified sequence embeddings with padding if necessary
-
+        Returns:
+            Modified sequence embeddings with padding if necessary
         """
 
-        if self.max_sequence_length < 1:
+        if self.max_sequence_length == NO_LENGTH_RESTRICTION:
             # No extra padding needed because there wouldn't have been any truncation in the first place
             return sequence_embeddings
 
@@ -529,6 +529,10 @@ class HFTransformersNLP(Component):
 
         Args:
             batch_token_ids: List of token ids of each example in the batch.
+            batch_tokens: List of token objects for each example in the batch.
+            batch_examples: List of examples in the batch.
+            attribute: attribute of the Message object to be processed.
+            inference_mode: Whether the call is during training or during inference.
 
         Returns:
             Sentence and token level dense representations.
@@ -614,6 +618,7 @@ class HFTransformersNLP(Component):
             need to be computed.
             attribute: Property of message to be processed, one of ``TEXT`` or
             ``RESPONSE``.
+            inference_mode: Whether the call is during inference or during training.
 
 
         Returns:
@@ -697,5 +702,5 @@ class HFTransformersNLP(Component):
 
         message.set(
             LANGUAGE_MODEL_DOCS[TEXT],
-            self._get_docs_for_batch([message], attribute=TEXT)[0],
+            self._get_docs_for_batch([message], attribute=TEXT, inference_mode=True)[0],
         )
