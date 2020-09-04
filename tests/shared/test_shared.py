@@ -27,4 +27,7 @@ def test_shared_package_is_independent():
             ]
 
             # The shared package is required to be independent of the rest of Rasa
-            assert not outside_rasa_imports
+            assert not outside_rasa_imports, (
+                f"File {file} imports code from outside "
+                f"of `rasa.shared`: {','.join(outside_rasa_imports)}"
+            )
