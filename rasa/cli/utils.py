@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
+import rasa.shared.utils.io
 from typing import NoReturn
 
 logger = logging.getLogger(__name__)
@@ -41,9 +42,7 @@ def get_validated_path(
             if current is None:
                 reason_str = f"Parameter '{parameter}' not set."
             else:
-                from rasa.utils.common import raise_warning  # avoid import cycle
-
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"The path '{current}' does not seem to exist. Using the "
                     f"default value '{default}' instead."
                 )
@@ -199,39 +198,24 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-class bcolors:
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
-
-
-def wrap_with_color(*args: Any, color: Text):
-    return color + " ".join(str(s) for s in args) + bcolors.ENDC
-
-
 def print_color(*args: Any, color: Text):
-    print(wrap_with_color(*args, color=color))
+    print(rasa.shared.utils.io.wrap_with_color(*args, color=color))
 
 
 def print_success(*args: Any):
-    print_color(*args, color=bcolors.OKGREEN)
+    print_color(*args, color=rasa.shared.utils.io.bcolors.OKGREEN)
 
 
 def print_info(*args: Any):
-    print_color(*args, color=bcolors.OKBLUE)
+    print_color(*args, color=rasa.shared.utils.io.bcolors.OKBLUE)
 
 
 def print_warning(*args: Any):
-    print_color(*args, color=bcolors.WARNING)
+    print_color(*args, color=rasa.shared.utils.io.bcolors.WARNING)
 
 
 def print_error(*args: Any):
-    print_color(*args, color=bcolors.FAIL)
+    print_color(*args, color=rasa.shared.utils.io.bcolors.FAIL)
 
 
 def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:

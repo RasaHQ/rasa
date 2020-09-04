@@ -21,6 +21,8 @@ from typing import (
 
 from boto3.dynamodb.conditions import Key
 import rasa.core.utils as core_utils
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
@@ -190,7 +192,7 @@ class TrackerStore:
             f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
             f"trackers is deprecated. Rasa will perform any "
-            f"future save operations of this tracker using json serialisation.",
+            f"future save operations of this tracker using json serialisation."
         )
         return pickle.loads(serialised_tracker)
 
@@ -1086,7 +1088,9 @@ def _load_from_module_name_in_endpoint_config(
     """
 
     try:
-        tracker_store_class = common_utils.class_from_module_path(store.type)
+        tracker_store_class = rasa.shared.utils.common.class_from_module_path(
+            store.type
+        )
         init_args = common_utils.arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
             # DEPRECATION EXCEPTION - remove in 2.1
@@ -1102,7 +1106,7 @@ def _load_from_module_name_in_endpoint_config(
             domain=domain, event_broker=event_broker, **store.kwargs
         )
     except (AttributeError, ImportError):
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"Tracker store with type '{store.type}' not found. "
             f"Using `InMemoryTrackerStore` instead."
         )

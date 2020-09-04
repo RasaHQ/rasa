@@ -7,8 +7,6 @@ from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
 
 import rasa.core.utils
 import rasa.utils.io
-from rasa.cli import utils
-from rasa.cli.utils import bcolors
 from rasa.constants import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_LOG_LEVEL_LIBRARIES,
@@ -17,6 +15,7 @@ from rasa.constants import (
     GLOBAL_USER_CONFIG_PATH,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -204,34 +203,6 @@ def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
     return "".join(collection)
 
 
-# noinspection PyUnresolvedReferences
-def class_from_module_path(
-    module_path: Text, lookup_path: Optional[Text] = None
-) -> Any:
-    """Given the module name and path of a class, tries to retrieve the class.
-
-    The loaded class can be used to instantiate new objects. """
-    import importlib
-
-    # load the module, will raise ImportError if module cannot be loaded
-    if "." in module_path:
-        module_name, _, class_name = module_path.rpartition(".")
-        m = importlib.import_module(module_name)
-        # get the class, will raise AttributeError if class cannot be found
-        return getattr(m, class_name)
-    else:
-        module = globals().get(module_path, locals().get(module_path))
-        if module is not None:
-            return module
-
-        if lookup_path:
-            # last resort: try to import the class from the lookup path
-            m = importlib.import_module(lookup_path)
-            return getattr(m, module_path)
-        else:
-            raise ImportError(f"Cannot retrieve class from path {module_path}.")
-
-
 def minimal_kwargs(
     kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
 ) -> Dict[Text, Any]:
@@ -336,56 +307,6 @@ def lazy_property(function: Callable) -> Any:
     return _lazyprop
 
 
-def raise_warning(
-    message: Text,
-    category: Optional[Type[Warning]] = None,
-    docs: Optional[Text] = None,
-    **kwargs: Any,
-) -> None:
-    """Emit a `warnings.warn` with sensible defaults and a colored warning msg."""
-
-    original_formatter = warnings.formatwarning
-
-    def should_show_source_line() -> bool:
-        if "stacklevel" not in kwargs:
-            if category == UserWarning or category is None:
-                return False
-            if category == FutureWarning:
-                return False
-        return True
-
-    def formatwarning(
-        message: Text,
-        category: Optional[Type[Warning]],
-        filename: Text,
-        lineno: Optional[int],
-        line: Optional[Text] = None,
-    ):
-        """Function to format a warning the standard way."""
-
-        if not should_show_source_line():
-            if docs:
-                line = f"More info at {docs}"
-            else:
-                line = ""
-
-        formatted_message = original_formatter(
-            message, category, filename, lineno, line
-        )
-        return utils.wrap_with_color(formatted_message, color=bcolors.WARNING)
-
-    if "stacklevel" not in kwargs:
-        # try to set useful defaults for the most common warning categories
-        if category == DeprecationWarning:
-            kwargs["stacklevel"] = 3
-        elif category in (UserWarning, FutureWarning):
-            kwargs["stacklevel"] = 2
-
-    warnings.formatwarning = formatwarning
-    warnings.warn(message, category=category, **kwargs)
-    warnings.formatwarning = original_formatter
-
-
 def raise_deprecation_warning(
     message: Text,
     warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
@@ -405,7 +326,7 @@ def raise_deprecation_warning(
     # we're raising a `FutureWarning` instead of a `DeprecationWarning` because
     # we want these warnings to be visible in the terminal of our users
     # https://docs.python.org/3/library/warnings.html#warning-categories
-    raise_warning(message, FutureWarning, docs, **kwargs)
+    rasa.shared.utils.io.raise_warning(message, FutureWarning, docs, **kwargs)
 
 
 class RepeatedLogFilter(logging.Filter):
