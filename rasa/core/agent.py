@@ -39,7 +39,7 @@ from rasa.model import (
     unpack_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
 
@@ -301,7 +301,9 @@ async def load_agent(
             )
 
         else:
-            raise_warning("No valid configuration given to load agent.")
+            rasa.shared.utils.io.raise_warning(
+                "No valid configuration given to load agent."
+            )
             return None
 
     except Exception as e:
@@ -666,7 +668,7 @@ class Agent:
                 unique_last_num_states = max_history
         elif unique_last_num_states < max_history:
             # possibility of data loss
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"unique_last_num_states={unique_last_num_states} but "
                 f"maximum max_history={max_history}. "
                 f"Possibility of data loss. "
@@ -892,7 +894,9 @@ class Agent:
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            raise_warning(f"Could not load local model in '{model_path}'.")
+            rasa.shared.utils.io.raise_warning(
+                f"Could not load local model in '{model_path}'."
+            )
             return Agent()
 
         working_directory = tempfile.mkdtemp()

@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
+import rasa.shared.utils.io
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -22,7 +23,6 @@ import numpy as np
 import tensorflow as tf
 
 import rasa.utils.train_utils as train_utils
-import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         **kwargs: Any,
     ) -> None:
         if config is not None and config.language != "en":
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Since ``ConveRT`` model is trained only on an english "
                 f"corpus of conversations, this featurizer should only be "
                 f"used if your training data is in english language. "
