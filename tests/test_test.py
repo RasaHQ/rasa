@@ -147,7 +147,6 @@ def test_get_label_set(targets, exclude_label, expected):
 async def test_interpreter_passed_to_agent(
     monkeypatch: MonkeyPatch, trained_rasa_model: Text
 ):
-    from rasa.test import test_core
     from rasa.core.interpreter import RasaNLUInterpreter
 
     agent = Agent.load(trained_rasa_model)

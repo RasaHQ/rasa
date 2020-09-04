@@ -37,10 +37,10 @@ def test_fail_to_load_non_existent_featurizer():
     assert TrackerFeaturizer.load("non_existent_class") is None
 
 
-def test_single_state_featurizer_correctly_encodes_state_without_interpreter():
+def test_single_state_featurizer_without_interpreter_state_not_with_action_listen():
     """
-    Check that all the attributes are correctly featurized when they should and not featurized when shouldn't;
-    These tests are for encoding state without a trained interpreter.
+    This test are for encoding state without a trained interpreter.
+    action_name is not action_listen, so, INTENT, TEXT and ENTITIES should not be featurized.  
     """
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
@@ -67,6 +67,19 @@ def test_single_state_featurizer_correctly_encodes_state_without_interpreter():
     ).nnz == 0
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[0, 0, 1]])).nnz == 0
 
+
+def test_single_state_featurizer_without_interpreter_state_with_action_listen():
+    """
+    This test are for encoding state without a trained interpreter.
+    action_name is action_listen, so, INTENT and ENTITIES should be featurized
+    while text shouldn't because we don't have an interpreter.   
+    """
+    f = SingleStateFeaturizer()
+    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
+    f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, "action_listen": 2}
+    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
+
     encoded = f.encode_state(
         {
             "user": {"intent": "a", "text": "blah blah blah"},
@@ -87,6 +100,13 @@ def test_single_state_featurizer_correctly_encodes_state_without_interpreter():
     ).nnz == 0
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
 
+
+def test_single_state_featurizer_without_interpreter_state_no_intent_no_action_name():
+    f = SingleStateFeaturizer()
+    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
+    f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, "action_listen": 2}
+    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
     # check that no intent / action_name features are added when the interpreter isn't there and
     # intent / action_name not in input
     encoded = f.encode_state(
@@ -155,33 +175,12 @@ def test_single_state_featurizer_uses_dtype_float():
     assert encoded[ACTION_NAME][0].features.dtype == np.float32
 
 
-def test_single_state_featurizer_correctly_encodes_state_with_interpreter(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_moodbot_path: Text
+def test_single_state_featurizer_with_interpreter_state_with_action_listen(
+    unpacked_trained_moodbot_path: Text,
 ):
-    # Skip actual NLU training and return trained interpreter path from fixture
-    _train_nlu_with_validated_data = Mock(return_value=unpacked_trained_moodbot_path)
+    from rasa.core.agent import Agent
 
-    # Patching is bit more complicated as we have a module `train` and function
-    # with the same name 😬
-    monkeypatch.setattr(
-        sys.modules["rasa.train"],
-        "_train_nlu_with_validated_data",
-        asyncio.coroutine(_train_nlu_with_validated_data),
-    )
-
-    # Mock the actual Core training
-    _train_core = Mock()
-    monkeypatch.setattr(rasa.core, "train", asyncio.coroutine(_train_core))
-
-    train(
-        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-        DEFAULT_CONFIG_PATH,
-        [DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA],
-        str(tmp_path),
-    )
-
-    _train_core.assert_called_once()
-    _, _, kwargs = _train_core.mock_calls[0]
+    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
 
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
@@ -199,7 +198,7 @@ def test_single_state_featurizer_correctly_encodes_state_with_interpreter(
             "active_loop": {"name": "k"},
             "slots": {"e": (1.0,)},
         },
-        interpreter=kwargs["interpreter"],
+        interpreter=interpreter,
     )
     # check all the features are encoded and *_text features are encoded by a densefeaturizer
     assert sorted(list(encoded.keys())) == sorted(
@@ -217,6 +216,20 @@ def test_single_state_featurizer_correctly_encodes_state_with_interpreter(
         encoded[ACTIVE_LOOP][0].features != scipy.sparse.coo_matrix([[0, 0, 0, 1]])
     ).nnz == 0
 
+
+def test_single_state_featurizer_with_interpreter_state_not_with_action_listen(
+    unpacked_trained_moodbot_path: Text,
+):
+    # check that user features are ignored when action_name is not action_listen
+    from rasa.core.agent import Agent
+
+    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    f = SingleStateFeaturizer()
+    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
+    f._default_feature_states[ENTITIES] = {"c": 0}
+    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
+    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
     encoded = f.encode_state(
         {
             "user": {"text": "a ball", "intent": "b", "entities": ["c"]},
@@ -224,7 +237,7 @@ def test_single_state_featurizer_correctly_encodes_state_with_interpreter(
             "active_loop": {"name": "k"},
             "slots": {"e": (1.0,)},
         },
-        interpreter=kwargs["interpreter"],
+        interpreter=interpreter,
     )
     # check user input is ignored when action is not action_listen
     assert list(encoded.keys()) == [ACTION_TEXT, ACTION_NAME, ACTIVE_LOOP, SLOTS]
@@ -237,34 +250,23 @@ def test_single_state_featurizer_correctly_encodes_state_with_interpreter(
         encoded[ACTIVE_LOOP][0].features != scipy.sparse.coo_matrix([[0, 0, 0, 1]])
     ).nnz == 0
 
-    encoded = f.encode_state(
-        {
-            "user": {"text": "a ball", "entities": ["c"]},
-            "prev_action": {
-                "action_name": "action_listen",
-                "action_text": "throw a ball",
-            },
-            "active_loop": {"name": "k"},
-            "slots": {"e": (1.0,)},
-        },
-        interpreter=kwargs["interpreter"],
-    )
-    # check all the features are encoded and *_text features are encoded by a densefeaturizer
-    # and intent features are not added
-    assert sorted(list(encoded.keys())) == sorted(
-        [TEXT, ENTITIES, ACTION_NAME, SLOTS, ACTIVE_LOOP, ACTION_TEXT]
-    )
-    assert encoded[TEXT][0].features.shape[-1] == 300
-    assert encoded[ACTION_TEXT][0].features.shape[-1] == 300
-    assert (
-        encoded[ACTION_NAME][0].features != scipy.sparse.coo_matrix([[0, 0, 1]])
-    ).nnz == 0
-    assert encoded[ENTITIES][0].features.shape[-1] == 1
-    assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
-    assert (
-        encoded[ACTIVE_LOOP][0].features != scipy.sparse.coo_matrix([[0, 0, 0, 1]])
-    ).nnz == 0
 
+def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
+    unpacked_trained_moodbot_path: Text,
+):
+    # check that action name features are not added by the featurizer when not
+    # present in the state and
+    # check user input is ignored when action is not action_listen
+    # and action_name is features are not added
+    from rasa.core.agent import Agent
+
+    interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+    f = SingleStateFeaturizer()
+    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
+    f._default_feature_states[ENTITIES] = {"c": 0}
+    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
+    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
     encoded = f.encode_state(
         {
             "user": {"text": "a ball", "intent": "b", "entities": ["c"]},
@@ -272,10 +274,8 @@ def test_single_state_featurizer_correctly_encodes_state_with_interpreter(
             "active_loop": {"name": "k"},
             "slots": {"e": (1.0,)},
         },
-        interpreter=kwargs["interpreter"],
+        interpreter=interpreter,
     )
-    # check user input is ignored when action is not action_listen
-    # and action_name is features are not added
     assert list(encoded.keys()) == [ACTION_TEXT, ACTIVE_LOOP, SLOTS]
     assert encoded[ACTION_TEXT][0].features.shape[-1] == 300
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0

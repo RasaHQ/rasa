@@ -15,7 +15,7 @@ from rasa.core.constants import (
 )
 from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
-from rasa.core.domain import Domain, InvalidDomain, SessionConfig
+from rasa.core.domain import Domain, InvalidDomain, SessionConfig, State
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core.conftest import (
@@ -89,7 +89,22 @@ async def test_create_train_data_with_history(default_domain):
     ]
 
 
+def check_for_too_many_entities_and_remove_them(state: State) -> State:
+    # we ignore entities where there are > 1 of them:
+    # entities come from dictionary keys; as a result, they are stored
+    # in different order in the tuple which makes the test unstable
+    if (
+        state.get("user")
+        and state.get("user", {}).get("entities")
+        and len(state.get("user").get("entities")) > 1
+    ):
+        state.get("user")["entities"] = ()
+    return state
+
+
 async def test_create_train_data_unfeaturized_entities():
+    import copy
+
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"
     domain = Domain.load(domain_file)
@@ -104,22 +119,9 @@ async def test_create_train_data_unfeaturized_entities():
     # decoded needs to be sorted
     hashed = []
     for states in decoded:
-        # we ignore entities where there are > 1 of them:
-        # entities come from dictionary keys; as a result, they are stored
-        # in different order in the tuple which makes the test unstable
-        new_states = []
-        for state in states:
-            if state.get("user"):
-                if state.get("user").get("entities"):
-                    if len(state.get("user")["entities"]) > 1:
-                        state.get("user")["entities"] = ()
-                        new_states.append(state)
-                    else:
-                        new_states.append(state)
-                else:
-                    new_states.append(state)
-            else:
-                new_states.append(state)
+        new_states = [
+            check_for_too_many_entities_and_remove_them(state) for state in states
+        ]
 
         hashed.append(json.dumps(new_states, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
