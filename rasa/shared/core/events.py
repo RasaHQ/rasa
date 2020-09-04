@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional, Union
 
 import rasa.shared.utils.common
-from rasa.core import utils
 
 from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
@@ -193,8 +192,6 @@ class Event:
         type_name: Text, default: Optional[Type["Event"]] = None
     ) -> Optional[Type["Event"]]:
         """Returns a slots class by its type name."""
-        from rasa.core import utils
-
         for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
@@ -383,8 +380,8 @@ class BotUttered(Event):
         super().__init__(timestamp, metadata)
 
     def __members(self):
-        data_no_nones = utils.remove_none_values(self.data)
-        meta_no_nones = utils.remove_none_values(self.metadata)
+        data_no_nones = {k: v for k, v in self.data.items() if v is not None}
+        meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
         return (
             self.text,
             jsonpickle.encode(data_no_nones),
