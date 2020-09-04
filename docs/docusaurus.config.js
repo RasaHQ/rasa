@@ -135,6 +135,9 @@ module.exports = {
         },
       ],
     },
+    prism: {
+      theme: require('prism-react-renderer/themes/oceanicNext')
+    },
     footer: {
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
@@ -144,7 +147,7 @@ module.exports = {
   },
   themes: [
     '@rasahq/docusaurus-theme-tabula',
-    path.resolve(__dirname, './themes/theme-live-codeblock')
+    path.resolve(__dirname, './themes/theme-custom')
   ],
   plugins: [
     ['@docusaurus/plugin-content-docs/', {
