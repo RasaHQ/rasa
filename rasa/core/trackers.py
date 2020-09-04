@@ -235,11 +235,16 @@ class DialogueStateTracker:
         )
         return frozen_state
 
-    def past_states(self, domain) -> Deque[FrozenState]:
-        """Generate the past states of this tracker based on the history."""
+    def past_states(self, domain: Domain) -> List[State]:
+        """Generate the past states of this tracker based on the history.
 
-        generated_states = domain.states_for_tracker_history(self)
-        return deque(self.freeze_current_state(s) for s in generated_states)
+        Args:
+            domain: a :class:`rasa.core.domain.Domain`
+
+        Returns:
+            a list of states
+        """
+        return domain.states_for_tracker_history(self)
 
     def change_loop_to(self, loop_name: Text) -> None:
         """Set the currently active loop.

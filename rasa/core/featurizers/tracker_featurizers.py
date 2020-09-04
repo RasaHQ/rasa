@@ -2,7 +2,7 @@ import jsonpickle
 import logging
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Deque
+from typing import Tuple, List, Optional, Dict, Text
 import numpy as np
 
 import rasa.utils.io as io_utils
@@ -10,7 +10,7 @@ import rasa.utils.common as common_utils
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
-from rasa.core.trackers import DialogueStateTracker, FrozenState
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER
@@ -30,31 +30,20 @@ class TrackerFeaturizer:
         Args:
             state_featurizer: The state featurizer used to encode the states.
         """
-
         self.state_featurizer = state_featurizer
 
     @staticmethod
-    def _unfreeze_states(states: Deque[FrozenState]) -> List[State]:
-        return [
-            {key: dict(value) for key, value in dict(state).items()} for state in states
-        ]
-
-    def _create_states(
-        self, tracker: DialogueStateTracker, domain: Domain
-    ) -> List[State]:
+    def _create_states(tracker: DialogueStateTracker, domain: Domain) -> List[State]:
         """Create states for the given tracker.
 
         Args:
-            tracker: The tracker
-            domain: The domain
+            tracker: a :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: a :class:`rasa.core.domain.Domain`
 
         Returns:
-            The state: a list of dictionaries.
+            a list of states
         """
-
-        states = tracker.past_states(domain)
-
-        return self._unfreeze_states(states)
+        return tracker.past_states(domain)
 
     def _featurize_states(
         self,
