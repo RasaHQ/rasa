@@ -7,7 +7,8 @@ import typing
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Union
 
 from rasa.core import utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.core.actions.action import ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event, SessionStarted

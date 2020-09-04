@@ -11,7 +11,7 @@ from typing import Optional, Text, List, Callable
 from unittest.mock import patch, Mock
 
 from rasa.core import jobs
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.core.actions.action import ACTION_SESSION_START_NAME
 
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
@@ -39,7 +39,11 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
 
 from rasa.core.constants import DEFAULT_INTENTS
-from rasa.shared.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
+from rasa.shared.core.constants import (
+    EXTERNAL_MESSAGE_PREFIX,
+    IS_EXTERNAL,
+    ACTION_LISTEN_NAME,
+)
 
 import logging
 

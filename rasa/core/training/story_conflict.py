@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from typing import List, Optional, Dict, Text, Tuple, Generator, NamedTuple
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer

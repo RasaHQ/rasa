@@ -11,7 +11,6 @@ from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_SESSION_START_NAME,
@@ -28,6 +27,7 @@ from rasa.core.actions.action import (
     RemoteAction,
     ActionSessionStart,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.actions.forms import FormAction
 from rasa.core.actions.two_stage_fallback import ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.channels import CollectingOutputChannel

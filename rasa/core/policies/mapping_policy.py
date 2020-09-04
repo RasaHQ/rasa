@@ -11,10 +11,10 @@ from rasa.utils import common as common_utils
 
 from rasa.core.actions.action import (
     ACTION_BACK_NAME,
-    ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,

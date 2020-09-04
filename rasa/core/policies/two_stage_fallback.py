@@ -10,8 +10,8 @@ from rasa.core.actions.action import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_LISTEN_NAME,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
 from rasa.shared.core.events import UserUttered, ActionExecuted
 

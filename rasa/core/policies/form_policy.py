@@ -2,7 +2,7 @@ import logging
 from typing import List, Dict, Text, Optional, Any
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
 from rasa.shared.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer

@@ -8,7 +8,7 @@ import rasa.cli.utils
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.cli import utils as cli_utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import console
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.domain import Domain

@@ -13,7 +13,7 @@ from mock import Mock
 
 import rasa.utils.io
 from rasa.core.actions import action
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import UserMessage
 from rasa.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted

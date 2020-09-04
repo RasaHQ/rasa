@@ -7,7 +7,7 @@ from typing import Tuple, List, Optional, Dict, Text, Any
 
 import rasa.utils.io
 from rasa.core import utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker

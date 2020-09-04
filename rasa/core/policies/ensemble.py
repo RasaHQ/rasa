@@ -20,11 +20,8 @@ from rasa.constants import (
 )
 
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_BACK_NAME,
-    ACTION_RESTART_NAME,
-)
+from rasa.core.actions.action import ACTION_BACK_NAME, ACTION_RESTART_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import (
     SlotSet,

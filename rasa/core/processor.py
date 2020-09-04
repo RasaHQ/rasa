@@ -10,11 +10,11 @@ import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
 from rasa.core import jobs
 from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     Action,
     ActionExecutionRejection,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,

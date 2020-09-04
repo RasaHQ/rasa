@@ -10,11 +10,11 @@ from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_LISTEN_NAME,
     ActionRevertFallbackEvents,
     ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain

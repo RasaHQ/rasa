@@ -5,7 +5,6 @@ from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 
 from rasa.core import training
 from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ActionDefaultFallback,
     ACTION_RESTART_NAME,
@@ -13,6 +12,7 @@ from rasa.core.actions.action import (
     ACTION_SESSION_START_NAME,
     RULE_SNIPPET_ACTION_NAME,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.constants import (
     REQUESTED_SLOT,

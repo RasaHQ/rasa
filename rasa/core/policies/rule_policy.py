@@ -18,13 +18,13 @@ from rasa.core.constants import (
     USER_INTENT_SESSION_START,
 )
 from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
     ACTION_SESSION_START_NAME,
     RULE_SNIPPET_ACTION_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error

@@ -24,7 +24,8 @@ import rasa.cli.utils
 from questionary import Choice, Form, Question
 
 from rasa.core import constants, run, train, utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
+from rasa.core.actions.action import default_action_names
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,

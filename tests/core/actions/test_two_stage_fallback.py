@@ -3,7 +3,7 @@ from typing import List, Text
 import pytest
 
 from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.actions.two_stage_fallback import (
     TwoStageFallbackAction,
     ACTION_TWO_STAGE_FALLBACK_NAME,

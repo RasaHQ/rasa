@@ -3,7 +3,7 @@ from collections import defaultdict, deque
 import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter

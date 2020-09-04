@@ -25,6 +25,7 @@ from rasa.nlu.constants import (
     INTENT_RANKING_KEY,
     INTENT_RESPONSE_KEY,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 from rasa.shared.core.events import (
@@ -47,8 +48,6 @@ if typing.TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
 
 logger = logging.getLogger(__name__)
-
-ACTION_LISTEN_NAME = "action_listen"
 
 ACTION_RESTART_NAME = "action_restart"
 

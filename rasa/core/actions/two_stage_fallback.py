@@ -6,10 +6,10 @@ from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.actions import action
 from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_LISTEN_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
