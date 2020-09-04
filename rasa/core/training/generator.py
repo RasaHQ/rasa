@@ -97,9 +97,10 @@ class TrackerWithCachedStates(DialogueStateTracker):
         return self._frozen_states
 
     @staticmethod
-    def _unfreeze_states(states: Deque[FrozenState]) -> List[State]:
+    def _unfreeze_states(frozen_states: Deque[FrozenState]) -> List[State]:
         return [
-            {key: dict(value) for key, value in dict(state).items()} for state in states
+            {key: dict(value) for key, value in dict(frozen_state).items()}
+            for frozen_state in frozen_states
         ]
 
     def past_states(self, domain: Domain) -> List[State]:
