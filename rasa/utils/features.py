@@ -1,4 +1,4 @@
-from typing import Union, Text, Optional, List, Any
+from typing import Union, Text, Optional, List, Any, Tuple
 
 import numpy as np
 import scipy.sparse
@@ -88,10 +88,14 @@ class Features:
 
         self.features = hstack([self.features, additional_features.features])
 
-    def __key__(self):
+    def __key__(
+        self
+    ) -> Tuple[
+        Text, Text, Union[np.ndarray, scipy.sparse.spmatrix], Union[Text, List[Text]]
+    ]:
         return (self.type, self.attribute, self.features, self.origin)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.__key__())
 
     def __eq__(self, other: Any) -> bool:

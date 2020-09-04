@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import scipy.sparse
-from typing import List, Optional, Dict, Text, Union, Tuple
+from typing import List, Optional, Dict, Text
 from collections import defaultdict
 
 from rasa.utils import common as common_utils
@@ -18,7 +18,7 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.training_data.message import Message
-from rasa.core.trackers import prev_action_listen_in_state
+from rasa.core.trackers import is_prev_action_listen_in_state
 
 logger = logging.getLogger(__name__)
 
@@ -91,17 +91,15 @@ class SingleStateFeaturizer:
     def _to_sparse_sentence_features(
         sparse_sequence_features: List["Features"], attribute: Text
     ) -> List["Features"]:
-        sparse_sentence_features = []
-        for feature in sparse_sequence_features:
-            sparse_sentence_features.append(
-                Features(
-                    scipy.sparse.coo_matrix(feature.features.sum(0)),
-                    FEATURE_TYPE_SENTENCE,
-                    attribute,
-                    feature.origin,
-                )
+        return [
+            Features(
+                scipy.sparse.coo_matrix(feature.features.sum(0)),
+                FEATURE_TYPE_SENTENCE,
+                attribute,
+                feature.origin,
             )
-        return sparse_sentence_features
+            for feature in sparse_sequence_features
+        ]
 
     def _extract_state_features(
         self,
@@ -153,6 +151,9 @@ class SingleStateFeaturizer:
         )
         if name_attribute and name_attribute not in output:
             # nlu pipeline didn't create features for user or action
+            # this might happen, for example, when we have action_name in the state
+            # but it did not get featurized because only character level
+            # CountVectorsFeaturizer was included in the config.
             output[name_attribute] = self._create_features(
                 sub_state, name_attribute, sparse
             )
@@ -162,6 +163,15 @@ class SingleStateFeaturizer:
     def encode_state(
         self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
+        """Encode the given state with the help of the given interpreter.
+
+        Args:
+            state: The state to encode
+            interpreter: The interpreter used to encode the state
+
+        Returns:
+            A dictionary of state_type to list of features.
+        """
         state_features = {}
         for state_type, sub_state in state.items():
             if state_type == PREVIOUS_ACTION:
@@ -170,7 +180,7 @@ class SingleStateFeaturizer:
                 )
             # featurize user only if it is "real" user input,
             # i.e. input from a turn after action_listen
-            if state_type == USER and prev_action_listen_in_state(state):
+            if state_type == USER and is_prev_action_listen_in_state(state):
                 state_features.update(
                     self._extract_state_features(sub_state, interpreter, sparse=True)
                 )
@@ -189,7 +199,6 @@ class SingleStateFeaturizer:
     def _encode_action(
         self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> Dict[Text, List["Features"]]:
-
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
         else:
@@ -200,6 +209,15 @@ class SingleStateFeaturizer:
     def encode_all_actions(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> List[Dict[Text, List["Features"]]]:
+        """Encode all action from the domain using the given interpreter.
+
+        Args:
+            domain: The domain that contains the actions.
+            interpreter: The interpreter used to encode the actions.
+
+        Returns:
+            A list of encoded actions.
+        """
 
         return [
             self._encode_action(action, interpreter) for action in domain.action_names

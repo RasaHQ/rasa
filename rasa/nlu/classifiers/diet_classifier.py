@@ -575,9 +575,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data.add_features(LABEL, SEQUENCE, sequence_features)
         label_data.add_features(LABEL, SENTENCE, sentence_features)
 
-        if label_data.feature_not_exist(
+        if label_data.does_feature_not_exist(
             LABEL, SENTENCE
-        ) and label_data.feature_not_exist(LABEL, SEQUENCE):
+        ) and label_data.does_feature_not_exist(LABEL, SEQUENCE):
             raise ValueError(
                 "No label features are present. Please check your configuration file."
             )
@@ -645,8 +645,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         if (
             label_attribute
-            and model_data.feature_not_exist(LABEL, SENTENCE)
-            and model_data.feature_not_exist(LABEL, SEQUENCE)
+            and model_data.does_feature_not_exist(LABEL, SENTENCE)
+            and model_data.does_feature_not_exist(LABEL, SEQUENCE)
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(

@@ -2,15 +2,15 @@ import jsonpickle
 import logging
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Deque, FrozenSet
+from typing import Tuple, List, Optional, Dict, Text, Deque
 import numpy as np
 
-import rasa.utils.io
+import rasa.utils.io as io_utils
+import rasa.utils.common as common_utils
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker, FrozenState
-from rasa.utils.common import is_logging_disabled
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER
@@ -25,6 +25,11 @@ class TrackerFeaturizer:
     def __init__(
         self, state_featurizer: Optional[SingleStateFeaturizer] = None
     ) -> None:
+        """Initialize the tracker featurizer.
+
+        Args:
+            state_featurizer: The state featurizer used to encode the states.
+        """
 
         self.state_featurizer = state_featurizer
 
@@ -37,7 +42,15 @@ class TrackerFeaturizer:
     def _create_states(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[State]:
-        """Create states: a list of dictionaries."""
+        """Create states for the given tracker.
+
+        Args:
+            tracker: The tracker
+            domain: The domain
+
+        Returns:
+            The state: a list of dictionaries.
+        """
 
         states = tracker.past_states(domain)
 
@@ -73,8 +86,15 @@ class TrackerFeaturizer:
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]]]:
-        """Transforms list of trackers to lists of states and actions."""
+        """Transforms list of trackers to lists of states and actions.
 
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+
+        Returns:
+            A tuple of list of states and list of actions.
+        """
         raise NotImplementedError(
             "Featurizer must have the capacity to encode trackers to feature vectors"
         )
@@ -85,8 +105,7 @@ class TrackerFeaturizer:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
-        """
-        Featurize the training trackers.
+        """Featurize the training trackers.
 
         Args:
             trackers: list of training trackers
@@ -94,7 +113,7 @@ class TrackerFeaturizer:
             interpreter: the interpreter
 
         Returns:
-            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+            - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
               ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
               turns in all training trackers
             - the label ids (e.g. action ids) for every dialuge turn in all training
@@ -114,7 +133,6 @@ class TrackerFeaturizer:
             trackers, domain
         )
 
-        # noinspection PyPep8Naming
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
 
@@ -123,42 +141,69 @@ class TrackerFeaturizer:
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> List[List[State]]:
-        """Transforms list of trackers to lists of states for prediction."""
+        """Transforms list of trackers to lists of states for prediction.
 
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+
+        Returns:
+            A list of states.
+        """
         raise NotImplementedError(
             "Featurizer must have the capacity to create feature vector"
         )
 
-    # noinspection PyPep8Naming
     def create_state_features(
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-        """Create X for prediction."""
+        """Create state features for prediction.
 
+        Args:
+            trackers: A list of state trackers
+            domain: The domain
+            interpreter: The interpreter
+
+        Returns:
+            A dictionary of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+            ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
+            turns in all trackers.
+        """
         trackers_as_states = self.prediction_states(trackers, domain)
         return self._featurize_states(trackers_as_states, interpreter)
 
-    def persist(self, path) -> None:
+    def persist(self, path: Text) -> None:
+        """Persist the tracker featurizer to the given path.
+
+        Args:
+            path: The path to persist the tracker featurizer to.
+        """
         featurizer_file = os.path.join(path, "featurizer.json")
-        rasa.utils.io.create_directory_for_file(featurizer_file)
+        io_utils.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker
-        rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
+        io_utils.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
 
     @staticmethod
-    def load(path) -> Optional["TrackerFeaturizer"]:
-        """Loads the featurizer from file."""
+    def load(path: Text) -> Optional["TrackerFeaturizer"]:
+        """Load the featurizer from file.
 
+        Args:
+            path: The path to load the tracker featurizer from.
+
+        Returns:
+            The loaded tracker featurizer.
+        """
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
-            return jsonpickle.decode(rasa.utils.io.read_file(featurizer_file))
+            return jsonpickle.decode(io_utils.read_file(featurizer_file))
 
         logger.error(
-            "Couldn't load featurizer for policy. "
-            "File '{}' doesn't exist.".format(featurizer_file)
+            f"Couldn't load featurizer for policy. "
+            f"File '{featurizer_file}' doesn't exist."
         )
         return None
 
@@ -176,6 +221,13 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         """Transforms list of trackers to lists of states and actions.
 
         Training data is padded up to the length of the longest dialogue with -1.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+
+        Returns:
+            A tuple of list of states and list of actions.
         """
 
         trackers_as_states = []
@@ -186,7 +238,11 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
-        pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
+        pbar = tqdm(
+            trackers,
+            desc="Processed trackers",
+            disable=common_utils.is_logging_disabled(),
+        )
         for tracker in pbar:
             states = self._create_states(tracker, domain)
 
@@ -207,8 +263,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                                 "actions in one story."
                                 "Check your story files."
                             )
-                        else:
-                            delete_first_state = True
+                        delete_first_state = True
 
             if delete_first_state:
                 states = states[1:]
@@ -221,7 +276,15 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> List[List[State]]:
-        """Transforms list of trackers to lists of states for prediction."""
+        """Transforms list of trackers to lists of states for prediction.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+
+        Returns:
+            A list of states.
+        """
 
         trackers_as_states = [
             self._create_states(tracker, domain) for tracker in trackers
@@ -252,9 +315,17 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     def slice_state_history(
         states: List[State], slice_length: Optional[int]
     ) -> List[State]:
-        """Slices states from the trackers history.
+        """Slice states from the trackers history.
+
         If the slice is at the array borders, padding will be added to ensure
         the slice length.
+
+        Args:
+            states: The states
+            slice_length: The slice length
+
+        Returns:
+            The sliced states.
         """
         if not slice_length:
             return states
@@ -276,7 +347,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions.
-        Training data is padded up to the max_history with -1.
+
+        Training data is padded up to the length of the longest dialogue with -1.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+
+        Returns:
+            A tuple of list of states and list of actions.
         """
 
         trackers_as_states = []
@@ -291,7 +370,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
-        pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
+        pbar = tqdm(
+            trackers,
+            desc="Processed trackers",
+            disable=common_utils.is_logging_disabled(),
+        )
         for tracker in pbar:
             states = self._create_states(tracker, domain)
 
@@ -337,7 +420,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> List[List[State]]:
-        """Transforms list of trackers to lists of states for prediction."""
+        """Transforms list of trackers to lists of states for prediction.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+
+        Returns:
+            A list of states.
+        """
 
         trackers_as_states = [
             self._create_states(tracker, domain) for tracker in trackers

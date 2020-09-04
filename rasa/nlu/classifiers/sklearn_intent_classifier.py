@@ -129,7 +129,7 @@ class SklearnIntentClassifier(IntentClassifier):
             return sentence_features.features[0]
 
         raise ValueError(
-            "No sentence features present. Not able to train sklearn " "policy."
+            "No sentence features present. Not able to train sklearn policy."
         )
 
     def _num_cv_splits(self, y: np.ndarray) -> int:

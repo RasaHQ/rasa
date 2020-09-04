@@ -3,7 +3,6 @@ from typing import Text, List, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from rasa.core.domain import Domain
     from rasa.core.trackers import DialogueStateTracker
-    from rasa.core.training.generator import TrackerWithCachedStates
     from rasa.core.training.structures import StoryGraph
     from rasa.importers.importer import TrainingDataImporter
 
