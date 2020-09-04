@@ -38,7 +38,7 @@ https://github.com/slackapi/python-slackclient
   Slack app and get your Bot User OAuth Access Token
   `here &lt;https://api.slack.com/slack-apps&gt;`_.
 - `slack_channel` - the string identifier for a channel to which
-  the bot posts, or channel name (e.g. &#x27;`bot`-test&#x27;)
+  the bot posts, or channel name (e.g. &#x27;#bot-test&#x27;)
   If not set, messages will be sent back
   to the &quot;App&quot; DM channel of your bot&#x27;s name.
 - `proxy` - A Proxy Server to route your traffic through

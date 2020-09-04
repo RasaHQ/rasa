@@ -20,11 +20,6 @@
             "reference/rasa/cli/export",
             "reference/rasa/cli/data",
             {
-              "items": [],
-              "label": "rasa.cli.initial_project",
-              "type": "category"
-            },
-            {
               "items": [
                 "reference/rasa/cli/arguments/run",
                 "reference/rasa/cli/arguments/default_arguments"
