@@ -5,7 +5,6 @@ import pytest
 
 import rasa.utils.io as io_utils
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.core.domain import InvalidDomain
 from rasa.nlu.constants import INTENT
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader, RasaYAMLWriter

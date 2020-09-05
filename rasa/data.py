@@ -174,6 +174,14 @@ def _find_data_files_in_directory(
 
 
 def is_valid_filetype(path: Union[Text, Path]) -> bool:
+    """Checks if given file has a supported extension.
+
+    Args:
+        path: Path to the source file.
+
+    Returns:
+        `True` is given file has supported extension, `False` otherwise.
+    """
     return os.path.isfile(path) and Path(path).suffix in TRAINING_DATA_EXTENSIONS
 
 

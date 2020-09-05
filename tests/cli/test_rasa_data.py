@@ -145,17 +145,6 @@ def test_rasa_data_convert_nlu_to_yaml(
 
     assert len(os.listdir(converted_data_folder)) == 1
 
-    with open(f"{converted_data_folder}/nlu_converted.yml", "r") as f:
-        content = f.read()
-        assert content == (
-            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
-            "nlu:\n"
-            "- intent: greet\n"
-            "  examples: |\n"
-            "    - hey\n"
-            "    - hello\n"
-        )
-
 
 def test_rasa_data_convert_stories_to_yaml(
     run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
@@ -187,20 +176,6 @@ def test_rasa_data_convert_stories_to_yaml(
 
     assert len(os.listdir(converted_data_folder)) == 1
 
-    with open(f"{converted_data_folder}/stories_converted.yml", "r") as f:
-        content = f.read()
-        assert content == (
-            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
-            "stories:\n"
-            "- story: happy path\n"
-            "  steps:\n"
-            "  - or:\n"
-            "    - intent: greet\n"
-            "    - intent: goodbye\n"
-            "  - action: utter_greet\n"
-            "  - active_loop: null\n"
-        )
-
 
 def test_rasa_data_convert_nlg_to_yaml(
     run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
@@ -230,15 +205,6 @@ def test_rasa_data_convert_nlg_to_yaml(
     )
 
     assert len(os.listdir(converted_data_folder)) == 1
-
-    with open(f"{converted_data_folder}/responses_converted.yml", "r") as f:
-        content = f.read()
-        assert content == (
-            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
-            "responses:\n"
-            "  chitchat/ask_name:\n"
-            "  - text: my name is Sara, Rasa's documentation bot!\n"
-        )
 
 
 def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
@@ -274,15 +240,3 @@ def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
     )
 
     assert len(os.listdir(converted_data_folder)) == 1
-
-    with open(f"{converted_data_folder}/products_converted.yml", "r") as f:
-        content = f.read()
-        assert content == (
-            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
-            "nlu:\n"
-            "- lookup: products\n"
-            "  examples: |\n"
-            "    - core\n"
-            "    - nlu\n"
-            "    - x\n"
-        )

@@ -93,6 +93,14 @@ class NLGMarkdownReader(TrainingDataReader):
 
     @staticmethod
     def is_markdown_nlg_file(filename: Union[Text, Path]) -> bool:
+        """Checks if given file contains NLG training data.
+
+        Args:
+            filename: Path to the training data file.
+
+        Returns:
+            `True` if file contains NLG training data, `False` otherwise.
+        """
         content = io_utils.read_file(filename)
         return re.search(NLG_MARKDOWN_MARKER_REGEX, content) is not None
 

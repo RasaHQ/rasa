@@ -147,6 +147,9 @@ def guess_format(filename: Text) -> Text:
 
     guess = UNK
 
+    if not os.path.isfile(filename):
+        return guess
+
     try:
         js = json.loads(io_utils.read_file(filename))
     except ValueError:

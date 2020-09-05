@@ -14,12 +14,19 @@ from rasa.cli.utils import (
     print_warning,
 )
 from rasa.constants import DEFAULT_DATA_PATH
-from rasa.core.convert import write_core_yaml
-from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
+from rasa.core.training.converters.story_markdown_to_yaml_converter import (
+    StoryMarkdownToYamlConverter,
+)
 from rasa.data import is_valid_filetype
 from rasa.importers.rasa import RasaFileImporter
-from rasa.nlu.convert import convert_training_data, write_nlu_yaml, write_nlg_yaml
-from rasa.nlu.training_data.formats import MarkdownReader, NLGMarkdownReader
+from rasa.nlu.convert import convert_training_data
+from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
+    NLGMarkdownToYamlConverter,
+)
+from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
+    NLUMarkdownToYamlConverter,
+)
+from rasa.utils.tensorflow.converter import TrainingDataConverter
 from rasa.validator import Validator
 
 logger = logging.getLogger(__name__)
@@ -73,7 +80,7 @@ def _add_data_convert_parsers(
         parents=parents,
         help="Converts NLG data between formats.",
     )
-    convert_nlg_parser.set_defaults(func=_convert_core_data)
+    convert_nlg_parser.set_defaults(func=_convert_nlg_data)
 
     arguments.set_convert_arguments(convert_nlg_parser, data_type="Rasa NLG")
 
@@ -227,7 +234,7 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
     if args.format in ["json", "md"]:
         convert_training_data(args.data, args.out, args.format, args.language)
     elif args.format == "yaml":
-        _convert_to_yaml(args, True)
+        _convert_to_yaml(args, NLUMarkdownToYamlConverter())
     else:
         print_error_and_exit(
             "Could not recognize output format. Supported output formats: 'json', "
@@ -237,7 +244,7 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
 
 def _convert_core_data(args: argparse.Namespace) -> None:
     if args.format == "yaml":
-        _convert_to_yaml(args, False)
+        _convert_to_yaml(args, StoryMarkdownToYamlConverter())
     else:
         print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
@@ -245,7 +252,19 @@ def _convert_core_data(args: argparse.Namespace) -> None:
         )
 
 
-def _convert_to_yaml(args: argparse.Namespace, is_nlu: bool) -> None:
+def _convert_nlg_data(args: argparse.Namespace) -> None:
+    if args.format == "yaml":
+        _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+    else:
+        print_error_and_exit(
+            "Could not recognize output format. Supported output formats: "
+            "'yaml'. Specify the desired output format with '--format'."
+        )
+
+
+def _convert_to_yaml(
+    args: argparse.Namespace, converter: TrainingDataConverter
+) -> None:
 
     output = Path(args.out)
     if not os.path.exists(output):
@@ -269,19 +288,16 @@ def _convert_to_yaml(args: argparse.Namespace, is_nlu: bool) -> None:
             if not is_valid_filetype(source_path):
                 continue
 
-            if MarkdownReader.is_markdown_nlu_file(source_path):
-                if not is_nlu:
-                    continue
-                write_nlu_yaml(source_path, output)
+            if converter.filter(source_path):
+                converter.convert_and_write(source_path, output)
                 num_of_files_converted += 1
-            elif not is_nlu and NLGMarkdownReader.is_markdown_nlg_file(source_path):
-                write_nlg_yaml(source_path, output)
-                num_of_files_converted += 1
-            elif not is_nlu and MarkdownStoryReader.is_markdown_story_file(source_path):
-                write_core_yaml(source_path, output)
-                num_of_files_converted += 1
-
             else:
                 print_warning(f"Skipped file: '{source_path}'.")
 
-    print_info(f"Converted {num_of_files_converted} file(s), saved in '{output}'.")
+    if num_of_files_converted:
+        print_info(f"Converted {num_of_files_converted} file(s), saved in '{output}'.")
+    else:
+        print_warning(
+            f"Didn't convert any file in '{training_data}' folder. "
+            "Did you specify the correct folder?"
+        )
