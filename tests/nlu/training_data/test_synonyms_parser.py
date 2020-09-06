@@ -1,4 +1,4 @@
-import rasa.nlu.training_data.synonyms_parser as synonyms_parser
+import rasa.shared.nlu.training_data.synonyms_parser as synonyms_parser
 
 
 def test_add_synonym():

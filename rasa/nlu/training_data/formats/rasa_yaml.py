@@ -149,7 +149,7 @@ class RasaYAMLReader(TrainingDataReader):
     def _parse_intent(self, intent_data: Dict[Text, Any]) -> None:
         from rasa.nlu.training_data import Message
         import rasa.nlu.training_data.entities_parser as entities_parser
-        import rasa.nlu.training_data.synonyms_parser as synonyms_parser
+        import rasa.shared.nlu.training_data.synonyms_parser as synonyms_parser
 
         intent = intent_data.get(KEY_INTENT, "")
         if not intent:
@@ -216,7 +216,7 @@ class RasaYAMLReader(TrainingDataReader):
         return results
 
     def _parse_synonym(self, nlu_item: Dict[Text, Any]) -> None:
-        import rasa.nlu.training_data.synonyms_parser as synonyms_parser
+        import rasa.shared.nlu.training_data.synonyms_parser as synonyms_parser
 
         synonym_name = nlu_item[KEY_SYNONYM]
         if not synonym_name:
