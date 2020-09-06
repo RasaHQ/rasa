@@ -14,7 +14,7 @@ from typing import (
 )
 
 import rasa.shared.nlu.constants
-from rasa import data
+from rasa.shared import data
 from rasa.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 

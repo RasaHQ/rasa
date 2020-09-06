@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Dict, Text, List, Any, Union
 
-import rasa.data
+import rasa.shared.data
 from rasa.nlu.training_data import Message
 import rasa.utils.io as io_utils
 from rasa.constants import (
@@ -268,9 +268,9 @@ class MarkdownStoryReader(StoryReader):
             `True` in case the file is a Core Markdown training data or rule data file,
             `False` otherwise.
         """
-        if not rasa.data.is_likely_markdown_file(file_path) or rasa.data.is_nlu_file(
+        if not rasa.shared.data.is_likely_markdown_file(
             file_path
-        ):
+        ) or rasa.shared.data.is_nlu_file(file_path):
             return False
 
         try:
@@ -301,14 +301,14 @@ class MarkdownStoryReader(StoryReader):
         Returns:
             `True` if it's a file containing test stories, otherwise `False`.
         """
-        if not rasa.data.is_likely_markdown_file(file_path):
+        if not rasa.shared.data.is_likely_markdown_file(file_path):
             return False
 
         dirname = os.path.dirname(file_path)
         return (
             DEFAULT_E2E_TESTS_PATH in dirname
-            and rasa.data.is_story_file(file_path)
-            and not rasa.data.is_nlu_file(file_path)
+            and rasa.shared.data.is_story_file(file_path)
+            and not rasa.shared.data.is_nlu_file(file_path)
         )
 
     @staticmethod

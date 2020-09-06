@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Optional, Text, Union
 
-from rasa import data
+from rasa.shared import data
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.training.structures import StoryGraph
 from rasa.importers import utils, autoconfig

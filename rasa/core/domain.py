@@ -1124,7 +1124,7 @@ class Domain:
         Returns:
             `True` if it's a domain file, otherwise `False`.
         """
-        from rasa.data import is_likely_yaml_file
+        from rasa.shared.data import is_likely_yaml_file
 
         if not is_likely_yaml_file(filename):
             return False

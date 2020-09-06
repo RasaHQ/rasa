@@ -15,7 +15,7 @@ from rasa.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.nlu.constants import INTENT_NAME_KEY
-import rasa.data
+import rasa.shared.data
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ class YAMLStoryReader(StoryReader):
             `True` in case the file is a Core YAML training data or rule data file,
             `False` otherwise.
         """
-        return rasa.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
+        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
             file_path, KEY_STORIES, KEY_RULES
         )
 

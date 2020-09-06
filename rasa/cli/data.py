@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from rasa import data
+from rasa.shared import data
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 from rasa.constants import DEFAULT_DATA_PATH, DOCS_URL_RULES

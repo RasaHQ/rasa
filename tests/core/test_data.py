@@ -5,7 +5,7 @@ import tempfile
 import pytest
 from pathlib import Path
 
-import rasa.data as data
+import rasa.shared.data as data
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_STORIES_FILE
 from rasa.nlu.training_data import load_data
