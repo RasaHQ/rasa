@@ -12,14 +12,18 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
 )
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.nlu.training_data import Message
 import rasa.nlu.utils.bilou_utils as bilou_utils
 

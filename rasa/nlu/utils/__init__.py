@@ -10,12 +10,14 @@ import rasa.utils.io as io_utils
 # noinspection PyUnresolvedReferences
 from rasa.utils.io import read_json_file
 from rasa.nlu.constants import (
-    ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_START,
+)
+from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
 )
 
 

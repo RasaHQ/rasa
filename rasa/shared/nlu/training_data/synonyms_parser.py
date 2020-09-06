@@ -1,9 +1,9 @@
 from typing import Any, Text, List, Dict
 
-from rasa.nlu.constants import (
+from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
 )
 
 

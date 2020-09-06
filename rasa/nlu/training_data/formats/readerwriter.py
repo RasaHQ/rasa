@@ -5,14 +5,16 @@ from pathlib import Path
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 
 from rasa.nlu.constants import (
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-from rasa.shared.nlu.constants import INTENT
+from rasa.shared.nlu.constants import (
+    INTENT,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+)
 
 import rasa.utils.io as io_utils
 import typing

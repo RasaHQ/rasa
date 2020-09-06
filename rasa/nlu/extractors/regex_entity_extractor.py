@@ -9,13 +9,13 @@ import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import (
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_START,
+from rasa.nlu.constants import ENTITY_ATTRIBUTE_TYPE
+from rasa.shared.nlu.constants import (
+    ENTITIES,
     ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
 )
-from rasa.shared.nlu.constants import ENTITIES
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 

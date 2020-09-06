@@ -7,8 +7,8 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
 )
+from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_VALUE
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 
