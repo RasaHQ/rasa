@@ -7,7 +7,6 @@ from typing import Optional, Text
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-from rasa.nlu import utils
 from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -16,7 +15,6 @@ from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_INTENT_EXAMPLES,
     DIALOGFLOW_PACKAGE,
 )
-from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -74,25 +72,6 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
         training_data = data_sets[0].merge(*data_sets[1:])
 
     return training_data
-
-
-async def load_data_from_endpoint(
-    data_endpoint: EndpointConfig, language: Optional[Text] = "en"
-) -> "TrainingData":
-    """Load training data from a URL."""
-    import requests
-
-    if not utils.is_url(data_endpoint.url):
-        raise requests.exceptions.InvalidURL(data_endpoint.url)
-    try:
-        response = await data_endpoint.request("get")
-        response.raise_for_status()
-        temp_data_file = io_utils.create_temporary_file(response.content, mode="w+b")
-        training_data = _load(temp_data_file, language)
-
-        return training_data
-    except Exception as e:
-        logger.warning(f"Could not retrieve training data from URL:\n{e}")
 
 
 def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:

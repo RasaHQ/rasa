@@ -3,12 +3,13 @@ import typing
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
 import rasa.utils.common as common_utils
-from rasa.nlu import config
+from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.training_data import load_data
-from rasa.nlu.training_data.loading import load_data_from_endpoint
+from rasa.nlu.training_data.loading import _load, logger
+from rasa.utils import io as io_utils
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -105,3 +106,22 @@ if __name__ == "__main__":
         "`rasa train` to train a combined Core and NLU model or `rasa train nlu` "
         "to train an NLU model."
     )
+
+
+async def load_data_from_endpoint(
+    data_endpoint: EndpointConfig, language: Optional[Text] = "en"
+) -> "TrainingData":
+    """Load training data from a URL."""
+    import requests
+
+    if not utils.is_url(data_endpoint.url):
+        raise requests.exceptions.InvalidURL(data_endpoint.url)
+    try:
+        response = await data_endpoint.request("get")
+        response.raise_for_status()
+        temp_data_file = io_utils.create_temporary_file(response.content, mode="w+b")
+        training_data = _load(temp_data_file, language)
+
+        return training_data
+    except Exception as e:
+        logger.warning(f"Could not retrieve training data from URL:\n{e}")
