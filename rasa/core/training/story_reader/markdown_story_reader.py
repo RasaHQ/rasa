@@ -14,7 +14,7 @@ from rasa.constants import (
     DOCS_URL_STORIES,
     LEGACY_DOCS_BASE_URL,
 )
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import UserUttered
 from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter

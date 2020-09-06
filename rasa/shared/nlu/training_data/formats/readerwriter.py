@@ -2,7 +2,7 @@ import json
 from collections import OrderedDict
 from pathlib import Path
 
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 from rasa.shared.nlu.constants import (
     INTENT,

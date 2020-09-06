@@ -43,7 +43,8 @@ from rasa.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP_KEY
 from rasa.core.training import visualization
 from rasa.core.training.visualization import (
