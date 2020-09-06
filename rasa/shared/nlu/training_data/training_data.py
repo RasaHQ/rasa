@@ -24,7 +24,6 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.util import check_duplicate_synonym
-from rasa.nlu.utils import list_to_str
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -574,3 +573,7 @@ class TrainingData:
             self.lookup_tables,
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
+
+
+def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    return delim.join([quote + e + quote for e in lst])

@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, Optional, Text
 from pathlib import Path
 
 import rasa.utils.io as io_utils
@@ -24,10 +24,6 @@ def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
     if f is not None:
         return Path(os.path.relpath(f, path))
     return None
-
-
-def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
-    return delim.join([quote + e + quote for e in lst])
 
 
 def module_path_from_object(o: Any) -> Text:
