@@ -5,7 +5,7 @@ import scipy.sparse
 import typing
 
 import rasa.shared.utils.io
-from rasa.exceptions import RasaException
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
