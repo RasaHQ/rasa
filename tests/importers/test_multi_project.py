@@ -11,7 +11,7 @@ from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_E2E_TESTS_PATH,
 )
-from rasa.nlu.training_data.formats import RasaReader
+from rasa.shared.nlu.training_data.formats import RasaReader
 import rasa.utils.io
 from rasa import model
 from rasa.core import utils

@@ -8,7 +8,7 @@ from typing import Optional, Text
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.nlu import utils
-from rasa.nlu.training_data.formats.dialogflow import (
+from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
     DIALOGFLOW_ENTITY_ENTRIES,
@@ -97,7 +97,7 @@ async def load_data_from_endpoint(
 
 def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     """Generates the appropriate reader class based on the file format."""
-    from rasa.nlu.training_data.formats import (
+    from rasa.shared.nlu.training_data.formats import (
         RasaYAMLReader,
         MarkdownReader,
         WitReader,
@@ -156,7 +156,7 @@ def guess_format(filename: Text) -> Text:
     Returns:
         Guessed file format.
     """
-    from rasa.nlu.training_data.formats import RasaYAMLReader, markdown
+    from rasa.shared.nlu.training_data.formats import RasaYAMLReader, markdown
 
     guess = UNK
 

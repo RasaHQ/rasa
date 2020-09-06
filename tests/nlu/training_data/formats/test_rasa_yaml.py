@@ -5,9 +5,11 @@ import pytest
 
 import rasa.utils.io as io_utils
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.core.domain import InvalidDomain
 from rasa.shared.nlu.constants import INTENT
-from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader, RasaYAMLWriter
+from rasa.shared.nlu.training_data.formats.rasa_yaml import (
+    RasaYAMLReader,
+    RasaYAMLWriter,
+)
 
 MULTILINE_INTENT_EXAMPLES = f"""
 version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"

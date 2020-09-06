@@ -12,8 +12,8 @@ from rasa.constants import DEFAULT_DATA_PATH, DOCS_URL_RULES
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 from rasa.nlu.convert import convert_training_data
-from rasa.nlu.training_data.formats import MarkdownReader
-from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
+from rasa.shared.nlu.training_data.formats.markdown import MarkdownReader
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
 from rasa.cli.utils import (

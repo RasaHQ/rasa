@@ -6,7 +6,7 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data.formats import MarkdownReader
+from rasa.shared.nlu.training_data.formats import MarkdownReader
 
 
 @pytest.mark.parametrize(

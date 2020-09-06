@@ -13,7 +13,7 @@ from typing import Any, Callable, List, Optional, Text, Union, Dict
 
 import rasa.shared.utils.io
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
-from rasa.nlu.training_data.formats import RasaYAMLReader
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 import rasa
 import rasa.core.utils
 from rasa.utils import common as common_utils

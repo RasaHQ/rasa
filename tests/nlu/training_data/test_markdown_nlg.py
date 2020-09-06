@@ -1,7 +1,7 @@
-from rasa.nlu.training_data.formats import NLGMarkdownReader
+from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 
 
-def test_markdownnlg_read_newlines():
+def test_markdow_nlg_read_newlines():
     md = """
 ## Ask something
 * faq/ask_something
