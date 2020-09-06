@@ -8,7 +8,7 @@ from _pytest.pytester import RunResult
 
 from rasa import model
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import training_data
+from rasa.shared.nlu.training_data import training_data
 
 # noinspection PyProtectedMember
 from rasa.cli.train import _get_valid_config
