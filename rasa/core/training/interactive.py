@@ -57,7 +57,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 # noinspection PyProtectedMember
 from rasa.nlu.training_data import loading
-from rasa.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test

@@ -9,7 +9,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_VALUE,
 )
-from rasa.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 
 GROUP_ENTITY_VALUE = "value"

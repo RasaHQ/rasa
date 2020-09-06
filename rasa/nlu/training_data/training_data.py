@@ -22,7 +22,7 @@ from rasa.nlu.constants import (
     ENTITIES,
     TEXT,
 )
-from rasa.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
 

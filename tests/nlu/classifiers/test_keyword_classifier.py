@@ -7,7 +7,7 @@ from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifi
 # from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.training_data.formats.rasa import RasaReader
 from rasa.nlu.training_data import load_data
-from rasa.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.message import Message
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
