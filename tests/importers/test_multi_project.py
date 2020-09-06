@@ -5,6 +5,7 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 import os
 
+import rasa.shared.utils.io
 from rasa.constants import (
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DEFAULT_DOMAIN_PATH,
@@ -181,7 +182,7 @@ def test_importing_additional_files(tmp_path: Path):
     additional_file.parent.mkdir()
 
     # create intermediate directories and fake files
-    rasa.utils.io.write_text_file("""## story""", additional_file)
+    rasa.shared.utils.io.write_text_file("""## story""", additional_file)
     selector = MultiProjectImporter(
         config_path,
         training_data_paths=[str(tmp_path / "directory"), str(additional_file)],
@@ -205,9 +206,9 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
 
     not_relevant_file1 = tmp_path / "data" / "another directory" / "file.yml"
     not_relevant_file1.parent.mkdir(parents=True)
-    rasa.utils.io.write_text_file("", not_relevant_file1)
+    rasa.shared.utils.io.write_text_file("", not_relevant_file1)
     not_relevant_file2 = tmp_path / "directory" / "another_file.yml"
-    rasa.utils.io.write_text_file("", not_relevant_file2)
+    rasa.shared.utils.io.write_text_file("", not_relevant_file2)
 
     assert not selector.is_imported(str(not_relevant_file1))
     assert not selector.is_imported(str(not_relevant_file2))
@@ -249,7 +250,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
 
     story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
     story_file.parent.mkdir(parents=True)
-    rasa.utils.io.write_text_file(
+    rasa.shared.utils.io.write_text_file(
         """
         ## story
         * greet
@@ -262,7 +263,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
         tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / test_stories_filename
     )
     story_test_file.parent.mkdir(parents=True)
-    rasa.utils.io.write_text_file(test_story, story_test_file)
+    rasa.shared.utils.io.write_text_file(test_story, story_test_file)
 
     selector = MultiProjectImporter(config_path)
 
@@ -288,13 +289,13 @@ def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
 
     story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
     story_file.parent.mkdir(parents=True)
-    rasa.utils.io.write_text_file("""## story""", story_file)
+    rasa.shared.utils.io.write_text_file("""## story""", story_file)
 
     story_test_file = (
         tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_stories.yml"
     )
     story_test_file.parent.mkdir(parents=True)
-    rasa.utils.io.write_text_file("""stories:""", story_test_file)
+    rasa.shared.utils.io.write_text_file("""stories:""", story_test_file)
 
     selector = MultiProjectImporter(config_path)
 

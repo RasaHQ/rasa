@@ -2,6 +2,7 @@ from typing import Text
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.nlu import training_data
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
@@ -287,7 +288,7 @@ def test_repeated_entities(tmp_path):
   }
 }"""
     f = tmp_path / "tmp_training_data.json"
-    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
     td = training_data.load_data(str(f))
     assert len(td.entity_examples) == 1
     example = td.entity_examples[0]
@@ -320,7 +321,7 @@ def test_multiword_entities(tmp_path):
   }
 }"""
     f = tmp_path / "tmp_training_data.json"
-    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
     td = training_data.load_data(str(f))
     assert len(td.entity_examples) == 1
     example = td.entity_examples[0]
@@ -351,7 +352,7 @@ def test_nonascii_entities(tmp_path):
   ]
 }"""
     f = tmp_path / "tmp_training_data.json"
-    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
     td = training_data.load_data(str(f))
     assert len(td.entity_examples) == 1
     example = td.entity_examples[0]
@@ -403,7 +404,7 @@ def test_entities_synonyms(tmp_path):
   }
 }"""
     f = tmp_path / "tmp_training_data.json"
-    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
     td = training_data.load_data(str(f))
     assert td.entity_synonyms["New York City"] == "nyc"
 
@@ -545,7 +546,7 @@ def test_custom_attributes(tmp_path):
   }
 }"""
     f = tmp_path / "tmp_training_data.json"
-    f.write_text(data, io_utils.DEFAULT_ENCODING)
+    f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
     td = training_data.load_data(str(f))
     assert len(td.training_examples) == 1
     example = td.training_examples[0]

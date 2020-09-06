@@ -6,6 +6,7 @@ import uuid
 import typing
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Union
 
+import rasa.shared.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.conversation import Dialogue
@@ -274,7 +275,9 @@ class Story:
     ) -> None:
         from rasa.utils import io
 
-        io.write_text_file(self.as_story_string(flat, e2e), filename, append=True)
+        rasa.shared.utils.io.write_text_file(
+            self.as_story_string(flat, e2e), filename, append=True
+        )
 
 
 class StoryGraph:

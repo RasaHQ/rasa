@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, Optional, Text
 from pathlib import Path
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 
 # backwards compatibility 1.0.x
@@ -46,7 +47,7 @@ def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
 def write_to_file(filename: Text, text: Any) -> None:
     """Write a text to a file."""
 
-    io_utils.write_text_file(str(text), filename)
+    rasa.shared.utils.io.write_text_file(str(text), filename)
 
 
 def build_entity(

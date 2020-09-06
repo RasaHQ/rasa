@@ -3,6 +3,7 @@ from collections import defaultdict, deque
 import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
+import rasa.shared.utils.io
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, Event
@@ -300,7 +301,7 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     graph_as_text = graph_as_text.replace("\\", "\\\\")
     template = template.replace("// { graph-content }", f"graph = `{graph_as_text}`", 1)
 
-    io_utils.write_text_file(template, output_file)
+    rasa.shared.utils.io.write_text_file(template, output_file)
 
 
 def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> int:

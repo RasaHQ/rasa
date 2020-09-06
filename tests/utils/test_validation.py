@@ -2,6 +2,7 @@ import pytest
 
 from jsonschema import ValidationError
 
+import rasa.shared.utils.io
 from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
 
 import rasa.utils.validation as validation_utils
@@ -101,7 +102,7 @@ def test_url_data_format():
       }
     }"""
     fname = io_utils.create_temporary_file(
-        data.encode(io_utils.DEFAULT_ENCODING),
+        data.encode(rasa.shared.utils.io.DEFAULT_ENCODING),
         suffix="_tmp_training_data.json",
         mode="w+b",
     )

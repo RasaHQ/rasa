@@ -23,7 +23,7 @@ from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent

@@ -6,6 +6,7 @@ import pytest
 from pathlib import Path
 
 import rasa.shared.data as data
+import rasa.shared.utils.io
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_STORIES_FILE
 from rasa.nlu.training_data import load_data
@@ -178,7 +179,7 @@ def test_is_nlu_file_with_json():
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
 
-    io.write_text_file(json_to_string(test), file)
+    rasa.shared.utils.io.write_text_file(json_to_string(test), file)
 
     assert data.is_nlu_file(file)
 
@@ -186,7 +187,7 @@ def test_is_nlu_file_with_json():
 def test_is_not_nlu_file_with_json():
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
-    io.write_text_file('{"test": "a"}', file)
+    rasa.shared.utils.io.write_text_file('{"test": "a"}', file)
 
     assert not data.is_nlu_file(file)
 

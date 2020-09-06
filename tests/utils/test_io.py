@@ -3,12 +3,13 @@ import string
 import uuid
 from collections import OrderedDict
 from pathlib import Path
-from typing import Callable, Text, List, Set, Dict, Any
+from typing import Callable, Text, List, Set, Any
 
 import pytest
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 
 os.environ["USER_NAME"] = "user"
@@ -280,7 +281,7 @@ def test_list_directory(
     sub_sub_directory.mkdir()
 
     sub_sub_file = sub_sub_directory / "sub_file.txt"
-    sub_sub_file.write_text("", encoding=io_utils.DEFAULT_ENCODING)
+    sub_sub_file.write_text("", encoding=rasa.shared.utils.io.DEFAULT_ENCODING)
 
     file1 = subdirectory / "file.txt"
     file1.write_text("", encoding="utf-8")
@@ -338,7 +339,7 @@ def test_create_directory_for_file(tmp_path: Path):
 
 @pytest.mark.parametrize(
     "should_preserve_key_order, expected_keys",
-    [(True, list(reversed(string.ascii_lowercase))),],
+    [(True, list(reversed(string.ascii_lowercase)))],
 )
 def test_dump_yaml_key_order(
     tmp_path: Path, should_preserve_key_order: bool, expected_keys: List[Text]

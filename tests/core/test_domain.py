@@ -5,6 +5,7 @@ from typing import Dict
 
 import pytest
 
+import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core.constants import (
     DEFAULT_KNOWLEDGE_BASE_ACTION,
@@ -192,7 +193,7 @@ def test_utter_templates():
 
 def test_custom_slot_type(tmpdir: Path):
     domain_path = str(tmpdir / "domain.yml")
-    io_utils.write_text_file(
+    rasa.shared.utils.io.write_text_file(
         """
        slots:
          custom:
@@ -229,7 +230,7 @@ def test_custom_slot_type(tmpdir: Path):
 )
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
     domain_path = str(tmpdir / "domain.yml")
-    io_utils.write_text_file(domain_unkown_slot_type, domain_path)
+    rasa.shared.utils.io.write_text_file(domain_unkown_slot_type, domain_path)
     with pytest.raises(ValueError):
         Domain.load(domain_path)
 

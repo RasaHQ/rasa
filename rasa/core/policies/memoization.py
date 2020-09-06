@@ -7,6 +7,7 @@ import os
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
+import rasa.shared.utils.io
 import rasa.utils.io
 
 from rasa.core.domain import Domain
@@ -146,8 +147,12 @@ class MemoizationPolicy(Policy):
 
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
-            compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
-            return base64.b64encode(compressed).decode(io.DEFAULT_ENCODING)
+            compressed = zlib.compress(
+                bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
+            )
+            return base64.b64encode(compressed).decode(
+                rasa.shared.utils.io.DEFAULT_ENCODING
+            )
         else:
             return feature_str
 

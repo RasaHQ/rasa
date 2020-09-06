@@ -783,7 +783,9 @@ def _write_stories_to_file(
     else:
         append_write = "w"  # make a new file if not
 
-    with open(export_story_path, append_write, encoding=io_utils.DEFAULT_ENCODING) as f:
+    with open(
+        export_story_path, append_write, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+    ) as f:
         i = 1
         for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
@@ -837,7 +839,7 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     else:
         stringified_training_data = nlu_data.nlu_as_json()
 
-    io_utils.write_text_file(stringified_training_data, export_nlu_path)
+    rasa.shared.utils.io.write_text_file(stringified_training_data, export_nlu_path)
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:

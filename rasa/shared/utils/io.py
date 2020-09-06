@@ -1,5 +1,8 @@
 import warnings
-from typing import Any, Text, Optional, Type
+from pathlib import Path
+from typing import Any, Text, Optional, Type, Union
+
+DEFAULT_ENCODING = "utf-8"
 
 
 class bcolors:
@@ -65,3 +68,23 @@ def raise_warning(
     warnings.formatwarning = formatwarning
     warnings.warn(message, category=category, **kwargs)
     warnings.formatwarning = original_formatter
+
+
+def write_text_file(
+    content: Text,
+    file_path: Union[Text, Path],
+    encoding: Text = DEFAULT_ENCODING,
+    append: bool = False,
+) -> None:
+    """Writes text to a file.
+
+    Args:
+        content: The content to write.
+        file_path: The path to which the content should be written.
+        encoding: The encoding which should be used.
+        append: Whether to append to the file or to truncate the file.
+
+    """
+    mode = "a" if append else "w"
+    with open(file_path, mode, encoding=encoding) as file:
+        file.write(content)

@@ -20,11 +20,11 @@ import ruamel.yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
+from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING
 
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
 
-DEFAULT_ENCODING = "utf-8"
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 ESCAPE = re.compile(f'[{"".join(ESCAPE_DCT.values())}]')
 UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
@@ -305,26 +305,6 @@ def write_yaml(
 
     with Path(target).open("w", encoding=DEFAULT_ENCODING) as outfile:
         dumper.dump(data, outfile)
-
-
-def write_text_file(
-    content: Text,
-    file_path: Union[Text, Path],
-    encoding: Text = DEFAULT_ENCODING,
-    append: bool = False,
-) -> None:
-    """Writes text to a file.
-
-    Args:
-        content: The content to write.
-        file_path: The path to which the content should be written.
-        encoding: The encoding which should be used.
-        append: Whether to append to the file or to truncate the file.
-
-    """
-    mode = "a" if append else "w"
-    with open(file_path, mode, encoding=encoding) as file:
-        file.write(content)
 
 
 def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:

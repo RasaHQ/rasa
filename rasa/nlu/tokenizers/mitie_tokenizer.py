@@ -3,7 +3,7 @@ from typing import List, Text
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
 
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 
 class MitieTokenizer(Tokenizer):

@@ -6,6 +6,7 @@ import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -432,7 +433,9 @@ class TrackerFeaturizer:
         rasa.utils.io.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker
-        rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
+        rasa.shared.utils.io.write_text_file(
+            str(jsonpickle.encode(self)), featurizer_file
+        )
 
     @staticmethod
     def load(path) -> Optional["TrackerFeaturizer"]:

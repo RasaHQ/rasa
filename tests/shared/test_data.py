@@ -7,7 +7,7 @@ import pytest
 
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
 from rasa.shared import data
-from rasa.utils.io import write_text_file
+from rasa.shared.utils.io import write_text_file
 
 
 def test_story_file_can_not_be_yml(tmpdir: Path):

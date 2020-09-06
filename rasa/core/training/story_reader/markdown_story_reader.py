@@ -35,7 +35,9 @@ class MarkdownStoryReader(StoryReader):
         """Given a md file reads the contained stories."""
 
         try:
-            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
+            with open(
+                filename, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+            ) as f:
                 lines = f.readlines()
 
             return await self._process_lines(lines)
@@ -275,7 +277,9 @@ class MarkdownStoryReader(StoryReader):
 
         try:
             with open(
-                file_path, encoding=io_utils.DEFAULT_ENCODING, errors="surrogateescape"
+                file_path,
+                encoding=rasa.shared.utils.io.DEFAULT_ENCODING,
+                errors="surrogateescape",
             ) as lines:
                 return any(
                     MarkdownStoryReader._contains_story_or_rule_pattern(line)

@@ -3,6 +3,7 @@ from typing import Dict, Text
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
 from rasa.core.domain import Domain
@@ -28,7 +29,7 @@ async def test_persist_and_read_test_story_graph(
         "data/test_stories/stories.md", default_domain
     )
     out_path = tmp_path / "persisted_story.md"
-    rasa.utils.io.write_text_file(graph.as_story_string(), str(out_path))
+    rasa.shared.utils.io.write_text_file(graph.as_story_string(), str(out_path))
 
     recovered_trackers = await training.load_data(
         str(out_path),
@@ -269,7 +270,7 @@ async def test_read_stories_with_rules(default_domain: Domain):
 
 async def test_read_rules_without_stories(default_domain: Domain):
     story_steps = await loading.load_data_from_files(
-        ["data/test_stories/rules_without_stories.md"], default_domain,
+        ["data/test_stories/rules_without_stories.md"], default_domain
     )
 
     # this file contains three rules and two ML stories
@@ -305,7 +306,7 @@ async def test_read_rules_without_stories(default_domain: Domain):
     "line, expected",
     [
         (" greet: hi", {"intent": "greet", "text": "hi"}),
-        (" greet: /greet", {"intent": "greet", "text": "/greet", "entities": [],},),
+        (" greet: /greet", {"intent": "greet", "text": "/greet", "entities": []}),
         (
             'greet: /greet{"test": "test"}',
             {

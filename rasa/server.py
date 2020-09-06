@@ -1097,24 +1097,26 @@ def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool
 
     config_path = os.path.join(temp_dir, "config.yml")
 
-    rasa.utils.io.write_text_file(request_payload["config"], config_path)
+    rasa.shared.utils.io.write_text_file(request_payload["config"], config_path)
 
     if "nlu" in request_payload:
         nlu_path = os.path.join(temp_dir, "nlu.md")
-        rasa.utils.io.write_text_file(request_payload["nlu"], nlu_path)
+        rasa.shared.utils.io.write_text_file(request_payload["nlu"], nlu_path)
 
     if "stories" in request_payload:
         stories_path = os.path.join(temp_dir, "stories.md")
-        rasa.utils.io.write_text_file(request_payload["stories"], stories_path)
+        rasa.shared.utils.io.write_text_file(request_payload["stories"], stories_path)
 
     if "responses" in request_payload:
         responses_path = os.path.join(temp_dir, "responses.md")
-        rasa.utils.io.write_text_file(request_payload["responses"], responses_path)
+        rasa.shared.utils.io.write_text_file(
+            request_payload["responses"], responses_path
+        )
 
     domain_path = DEFAULT_DOMAIN_PATH
     if "domain" in request_payload:
         domain_path = os.path.join(temp_dir, "domain.yml")
-        rasa.utils.io.write_text_file(request_payload["domain"], domain_path)
+        rasa.shared.utils.io.write_text_file(request_payload["domain"], domain_path)
 
     model_output_directory = _model_output_directory(
         request_payload.get(
@@ -1173,12 +1175,12 @@ def _validate_json_training_payload(rjs: Dict):
 def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
-    decoded = request.body.decode(rasa.utils.io.DEFAULT_ENCODING)
+    decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
     _validate_yaml_training_payload(decoded)
 
     temp_dir = tempfile.mkdtemp()
     training_data = Path(temp_dir) / "data.yml"
-    rasa.utils.io.write_text_file(decoded, training_data)
+    rasa.shared.utils.io.write_text_file(decoded, training_data)
 
     model_output_directory = _model_output_directory(
         request.args.get("save_to_default_model_directory", True)
