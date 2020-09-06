@@ -4,7 +4,8 @@ import scipy.sparse
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT, RESPONSE
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData

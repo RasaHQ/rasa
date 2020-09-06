@@ -4,7 +4,7 @@ import pytest
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.training_data import Message
 
 

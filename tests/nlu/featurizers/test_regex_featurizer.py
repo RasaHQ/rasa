@@ -7,7 +7,8 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.constants import TEXT, RESPONSE, SPACY_DOCS, TOKENS_NAMES, INTENT
+from rasa.nlu.constants import SPACY_DOCS, TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
 

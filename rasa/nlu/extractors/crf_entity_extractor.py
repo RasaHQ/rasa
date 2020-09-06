@@ -18,13 +18,12 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TOKENS_NAMES,
-    TEXT,
-    ENTITIES,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
 )
+from rasa.shared.nlu.constants import TEXT, ENTITIES
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
 

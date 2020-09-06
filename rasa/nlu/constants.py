@@ -1,10 +1,12 @@
-TEXT = "text"
-INTENT = "intent"
-RESPONSE = "response"
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    RESPONSE,
+    INTENT_RESPONSE_KEY,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
 
-INTENT_RESPONSE_KEY = "intent_response_key"
-
-ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
 BILOU_ENTITIES_ROLE = "bilou_entities_role"
 BILOU_ENTITIES_GROUP = "bilou_entities_group"
@@ -63,14 +65,11 @@ RESPONSE_SELECTOR_DEFAULT_INTENT = "default"
 RESPONSE_SELECTOR_PREDICTION_KEY = "response"
 RESPONSE_SELECTOR_RANKING_KEY = "ranking"
 RESPONSE_SELECTOR_RESPONSES_KEY = "response_templates"
-RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 INTENT_RANKING_KEY = "intent_ranking"
 PREDICTED_CONFIDENCE_KEY = "confidence"
 INTENT_NAME_KEY = "name"
 
-FEATURE_TYPE_SENTENCE = "sentence"
-FEATURE_TYPE_SEQUENCE = "sequence"
 VALID_FEATURE_TYPES = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
 
 FEATURIZER_CLASS_ALIAS = "alias"

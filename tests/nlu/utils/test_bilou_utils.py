@@ -4,7 +4,8 @@ from _pytest.logging import LogCaptureFixture
 import pytest
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.nlu.constants import BILOU_ENTITIES, ENTITIES
+from rasa.nlu.constants import BILOU_ENTITIES
+from rasa.shared.nlu.constants import ENTITIES
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData, Message
 

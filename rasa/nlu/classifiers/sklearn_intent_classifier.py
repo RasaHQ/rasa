@@ -14,7 +14,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 

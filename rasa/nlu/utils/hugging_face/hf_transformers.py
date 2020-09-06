@@ -12,7 +12,6 @@ import rasa.utils.train_utils as train_utils
 import numpy as np
 
 from rasa.nlu.constants import (
-    TEXT,
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKEN_IDS,
@@ -22,6 +21,7 @@ from rasa.nlu.constants import (
     NUMBER_OF_SUB_TOKENS,
     NO_LENGTH_RESTRICTION,
 )
+from rasa.shared.nlu.constants import TEXT
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,

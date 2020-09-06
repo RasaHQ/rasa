@@ -7,9 +7,7 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
     EXTRACTOR,
-    ENTITIES,
     TOKENS_NAMES,
-    TEXT,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
@@ -20,8 +18,8 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    INTENT,
 )
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.nlu.training_data import Message
 import rasa.nlu.utils.bilou_utils as bilou_utils
 

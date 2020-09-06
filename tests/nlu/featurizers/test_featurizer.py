@@ -18,12 +18,8 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
-from rasa.nlu.constants import (
-    TEXT,
-    FEATURIZER_CLASS_ALIAS,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
-)
+from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import FEATURIZERS
 
 

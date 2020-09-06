@@ -9,7 +9,8 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import TEXT, SPACY_DOCS
+from rasa.nlu.constants import SPACY_DOCS
+from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.training_data import Message
 
 

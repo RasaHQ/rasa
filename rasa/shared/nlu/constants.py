@@ -1,0 +1,8 @@
+TEXT = "text"
+INTENT = "intent"
+RESPONSE = "response"
+INTENT_RESPONSE_KEY = "intent_response_key"
+ENTITIES = "entities"
+RESPONSE_IDENTIFIER_DELIMITER = "/"
+FEATURE_TYPE_SENTENCE = "sentence"
+FEATURE_TYPE_SEQUENCE = "sequence"

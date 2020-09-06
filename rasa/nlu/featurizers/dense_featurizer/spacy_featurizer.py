@@ -10,13 +10,11 @@ from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT,
     SPACY_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
 )
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
 if typing.TYPE_CHECKING:

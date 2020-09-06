@@ -6,7 +6,8 @@ from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.constants import SPACY_DOCS, TEXT, RESPONSE, INTENT
+from rasa.nlu.constants import SPACY_DOCS
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 
 
 def test_spacy_featurizer_cls_vector(spacy_nlp):

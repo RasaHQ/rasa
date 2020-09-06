@@ -5,9 +5,7 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import (
-    ENTITIES,
     TOKENS_NAMES,
-    TEXT,
     BILOU_ENTITIES,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
@@ -18,6 +16,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
+from rasa.shared.nlu.constants import TEXT, ENTITIES
 
 logger = logging.getLogger(__name__)
 

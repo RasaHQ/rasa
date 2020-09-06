@@ -7,15 +7,13 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT,
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
 )
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 
 
 class LanguageModelFeaturizer(DenseFeaturizer):

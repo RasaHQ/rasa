@@ -3,7 +3,8 @@ from typing import List, Text
 import pytest
 
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.constants import TEXT, INTENT, RESPONSE, TOKENS_NAMES, INTENT_RESPONSE_KEY
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, INTENT_RESPONSE_KEY
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 

@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Text
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.constants import INTENT
+from rasa.shared.nlu.constants import INTENT
 import rasa.shared.utils.io
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData

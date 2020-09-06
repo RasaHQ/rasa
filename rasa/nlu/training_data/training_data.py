@@ -12,15 +12,17 @@ import rasa.nlu.utils
 from rasa.utils.common import lazy_property
 import rasa.shared.utils.io
 from rasa.nlu.constants import (
-    RESPONSE,
     NO_ENTITY_TAG,
-    INTENT_RESPONSE_KEY,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    INTENT,
-    ENTITIES,
+)
+from rasa.shared.nlu.constants import (
     TEXT,
+    INTENT,
+    RESPONSE,
+    INTENT_RESPONSE_KEY,
+    ENTITIES,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym

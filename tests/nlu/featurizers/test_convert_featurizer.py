@@ -4,7 +4,8 @@ import pytest
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import TEXT, TOKENS_NAMES, RESPONSE, INTENT
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.nlu.training_data import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer

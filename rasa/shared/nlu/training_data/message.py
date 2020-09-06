@@ -6,15 +6,15 @@ import typing
 
 import rasa.shared.utils.io
 from rasa.exceptions import RasaException
-from rasa.nlu.constants import (
-    ENTITIES,
+from rasa.shared.nlu.constants import (
+    TEXT,
     INTENT,
     RESPONSE,
     INTENT_RESPONSE_KEY,
-    TEXT,
+    ENTITIES,
     RESPONSE_IDENTIFIER_DELIMITER,
-    FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
 )
 from rasa.nlu.utils import ordered
 

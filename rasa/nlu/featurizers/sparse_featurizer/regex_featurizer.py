@@ -11,13 +11,12 @@ import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import (
-    RESPONSE,
+from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
+from rasa.shared.nlu.constants import (
     TEXT,
-    TOKENS_NAMES,
+    RESPONSE,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
-    FEATURIZER_CLASS_ALIAS,
 )
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.model import Metadata

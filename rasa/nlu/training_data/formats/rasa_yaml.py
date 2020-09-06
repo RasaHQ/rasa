@@ -13,6 +13,7 @@ from typing import (
     Optional,
 )
 
+import rasa.shared.nlu.constants
 from rasa import data
 from rasa.utils import validation
 from ruamel.yaml import YAMLError, StringIO
@@ -173,7 +174,7 @@ class RasaYAMLReader(TrainingDataReader):
 
             message = Message.build(plain_text, intent)
             if entities:
-                message.set(nlu_constants.ENTITIES, entities)
+                message.set(rasa.shared.nlu.constants.ENTITIES, entities)
             self.training_examples.append(message)
 
     def _parse_training_examples(

@@ -12,13 +12,11 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
     TOKENS_NAMES,
 )
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 import numpy as np
 import tensorflow as tf
 

@@ -74,19 +74,16 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
 )
 from rasa.nlu.constants import (
-    RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
-    INTENT_RESPONSE_KEY,
-    INTENT,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
-    TEXT,
     INTENT_NAME_KEY,
 )
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, INTENT_RESPONSE_KEY
 
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel

@@ -9,13 +9,11 @@ from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
 )
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 
 if typing.TYPE_CHECKING:

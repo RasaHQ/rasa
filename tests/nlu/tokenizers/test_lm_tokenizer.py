@@ -2,13 +2,12 @@ import pytest
 
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT,
-    INTENT,
     TOKENS_NAMES,
     LANGUAGE_MODEL_DOCS,
     TOKEN_IDS,
     NUMBER_OF_SUB_TOKENS,
 )
+from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 

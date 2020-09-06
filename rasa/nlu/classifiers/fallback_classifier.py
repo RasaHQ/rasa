@@ -8,10 +8,10 @@ from rasa.nlu.components import Component
 from rasa.nlu.training_data import Message
 from rasa.nlu.constants import (
     INTENT_RANKING_KEY,
-    INTENT,
     PREDICTED_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
 )
+from rasa.shared.nlu.constants import INTENT
 
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"

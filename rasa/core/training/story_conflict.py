@@ -6,7 +6,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted, Event
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.nlu.constants import INTENT
+from rasa.shared.nlu.constants import INTENT
 from rasa.core.training.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)

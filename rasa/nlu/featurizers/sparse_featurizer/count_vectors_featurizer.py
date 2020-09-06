@@ -15,16 +15,18 @@ from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT,
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    INTENT,
-    INTENT_RESPONSE_KEY,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    RESPONSE,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
     FEATURIZER_CLASS_ALIAS,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    RESPONSE,
+    INTENT_RESPONSE_KEY,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
 )
 
 logger = logging.getLogger(__name__)

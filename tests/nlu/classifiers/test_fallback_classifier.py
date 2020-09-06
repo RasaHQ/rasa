@@ -13,10 +13,10 @@ from rasa.nlu.classifiers.fallback_classifier import (
 from rasa.nlu.training_data import Message
 from rasa.nlu.constants import (
     INTENT_RANKING_KEY,
-    INTENT,
     PREDICTED_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
 )
+from rasa.shared.nlu.constants import INTENT
 
 
 @pytest.mark.parametrize(

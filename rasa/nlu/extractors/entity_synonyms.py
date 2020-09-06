@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.components import Component
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu.constants import ENTITIES
+from rasa.shared.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
