@@ -10,6 +10,7 @@ from dateutil import parser
 from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
 
+import rasa.shared.utils.common
 from rasa.core import utils
 from typing import Union
 
@@ -56,18 +57,27 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
     return [e for e in entities if isinstance(e, dict)]
 
 
-def md_format_message(text, intent, entities) -> Text:
-    from rasa.nlu.training_data.formats import MarkdownReader
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+def md_format_message(
+    text: Text, intent: Optional[Text], entities: Union[Text, List[Any]]
+) -> Text:
+    """Uses NLU parser information to generate a message with inline entity annotations.
 
-    message_from_md = MarkdownReader().parse_training_example(text)
+    Arguments:
+        text: text of the message
+        intent: intent of the message
+        entities: entities of the message
+
+    Return:
+        Message with entities annotated inline, e.g.
+        `I am from [Berlin]{"entity": "city"}`.
+    """
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.nlu.training_data import entities_parser
+
+    message_from_md = entities_parser.parse_training_example(text, intent)
     deserialised_entities = deserialise_entities(entities)
     return TrainingDataWriter.generate_message(
-        {
-            "text": message_from_md.text,
-            "intent": intent,
-            "entities": deserialised_entities,
-        }
+        {"text": message_from_md.text, "entities": deserialised_entities}
     )
 
 
@@ -186,7 +196,7 @@ class Event:
         """Returns a slots class by its type name."""
         from rasa.core import utils
 
-        for cls in utils.all_subclasses(Event):
+        for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
         if type_name == "topic":
@@ -227,16 +237,16 @@ class UserUttered(Event):
 
         super().__init__(timestamp, metadata)
 
+        self.parse_data = {
+            "intent": self.intent,
+            "entities": self.entities,
+            "text": text,
+            "message_id": self.message_id,
+            "metadata": self.metadata,
+        }
+
         if parse_data:
-            self.parse_data = parse_data
-        else:
-            self.parse_data = {
-                "intent": self.intent,
-                "entities": self.entities,
-                "text": text,
-                "message_id": self.message_id,
-                "metadata": self.metadata,
-            }
+            self.parse_data.update(**parse_data)
 
     @staticmethod
     def _from_parse_data(
@@ -333,7 +343,9 @@ class UserUttered(Event):
                 intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
             )
             if e2e:
-                message = md_format_message(self.text, self.intent, self.entities)
+                message = md_format_message(
+                    self.text, self.intent.get("name"), self.entities
+                )
                 return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
             else:
                 return parse_string

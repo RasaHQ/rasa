@@ -31,7 +31,7 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpr
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.nlu.constants import INTENT_NAME_KEY
@@ -69,14 +69,14 @@ async def test_message_id_logging(default_processor: MessageProcessor):
 
 async def test_parsing(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "boy"}')
-    parsed = await default_processor._parse_message(message)
+    parsed = await default_processor.parse_message(message)
     assert parsed["intent"][INTENT_NAME_KEY] == "greet"
     assert parsed["entities"][0]["entity"] == "name"
 
 
 async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/dislike{"test_entity": "RASA"}')
-    parsed = await default_processor._parse_message(message)
+    parsed = await default_processor.parse_message(message)
     with pytest.warns(UserWarning) as record:
         default_processor._check_for_unseen_features(parsed)
     assert len(record) == 2
@@ -96,7 +96,7 @@ async def test_default_intent_recognized(
     default_processor: MessageProcessor, default_intent: Text
 ):
     message = UserMessage(default_intent)
-    parsed = await default_processor._parse_message(message)
+    parsed = await default_processor.parse_message(message)
     with pytest.warns(None) as record:
         default_processor._check_for_unseen_features(parsed)
     assert len(record) == 0
@@ -111,9 +111,7 @@ async def test_http_parsing():
 
         inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         try:
-            await MessageProcessor(inter, None, None, None, None)._parse_message(
-                message
-            )
+            await MessageProcessor(inter, None, None, None, None).parse_message(message)
         except KeyError:
             pass  # logger looks for intent and entities, so we except
 

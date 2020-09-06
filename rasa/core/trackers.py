@@ -16,6 +16,9 @@ from typing import (
     Union,
 )
 
+import typing
+
+import rasa.shared.utils.io
 from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -39,8 +42,11 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     ActionExecutionRejected,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
-from rasa.core.slots import Slot
-from rasa.utils import common as common_utils
+from rasa.shared.core.slots import Slot
+
+
+if typing.TYPE_CHECKING:
+    from rasa.core.training.structures import Story
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +232,7 @@ class DialogueStateTracker:
             self.active_loop = {}
 
     def change_form_to(self, form_name: Text) -> None:
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "`change_form_to` is deprecated and will be removed "
             "in future versions. Please use `change_loop_to` "
             "instead.",
@@ -528,7 +534,7 @@ class DialogueStateTracker:
             for e in domain.slots_for_entities(event.parse_data["entities"]):
                 self.update(e)
 
-    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
+    def as_story(self, include_source: bool = False) -> "Story":
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
@@ -539,7 +545,18 @@ class DialogueStateTracker:
             if include_source
             else self.sender_id
         )
-        story = Story.from_events(self.applied_events(), story_name)
+        return Story.from_events(self.applied_events(), story_name)
+
+    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
+        """Dump the tracker as a story in the Rasa Core story format.
+
+        Returns:
+            The dumped tracker as a string.
+        """
+        # TODO: we need to revisit all usages of this, the caller needs to specify
+        #       the format. this likely points to areas where we are not properly
+        #       handling markdown vs yaml
+        story = self.as_story(include_source)
         return story.as_story_string(flat=True, e2e=e2e)
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:

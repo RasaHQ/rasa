@@ -19,7 +19,7 @@ from rasa.core.events import (
     SlotSet,
     ActiveLoop,
 )
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.structures import (
     StoryGraph,
@@ -27,7 +27,8 @@ from rasa.core.training.structures import (
     StoryStep,
     GENERATED_CHECKPOINT_PREFIX,
 )
-from rasa.utils.common import is_logging_disabled, raise_warning
+from rasa.utils.common import is_logging_disabled
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +223,20 @@ class TrainingDataGenerator:
         else:
             return f"data generation round {phase}"
 
-    def _generate_ml_trackers(self) -> List[TrackerWithCachedStates]:
+    def generate(self) -> List[TrackerWithCachedStates]:
+        """Generate trackers from stories and rules.
+
+        Returns:
+            The generated trackers.
+        """
+        return self.generate_story_trackers() + self._generate_rule_trackers()
+
+    def generate_story_trackers(self) -> List[TrackerWithCachedStates]:
+        """Generate trackers from stories (exclude rule trackers).
+
+        Returns:
+            The generated story trackers.
+        """
         steps = [step for step in self.story_graph.ordered_steps() if not step.is_rule]
 
         return self._generate(steps, is_rule_data=False)
@@ -231,9 +245,6 @@ class TrainingDataGenerator:
         steps = [step for step in self.story_graph.ordered_steps() if step.is_rule]
 
         return self._generate(steps, is_rule_data=True)
-
-    def generate(self) -> List[TrackerWithCachedStates]:
-        return self._generate_ml_trackers() + self._generate_rule_trackers()
 
     def _generate(
         self, story_steps: List[StoryStep], is_rule_data: bool = False
@@ -716,7 +727,7 @@ class TrainingDataGenerator:
         that no one provided."""
 
         if STORY_START in unused_checkpoints:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "There is no starting story block "
                 "in the training data. "
                 "All your story blocks start with some checkpoint. "
@@ -744,7 +755,7 @@ class TrainingDataGenerator:
 
         for cp, block_name in collected_start:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Unsatisfied start checkpoint '{cp}' "
                     f"in block '{block_name}'. "
                     f"Remove this checkpoint or add "
@@ -755,7 +766,7 @@ class TrainingDataGenerator:
 
         for cp, block_name in collected_end:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Unsatisfied end checkpoint '{cp}' "
                     f"in block '{block_name}'. "
                     f"Remove this checkpoint or add "

@@ -25,7 +25,7 @@ The command line interface (CLI) gives you easy-to-remember commands for common 
 |`rasa x`                |Launch Rasa X locally.                                                                                                                    |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
 
-## Create a new project
+## rasa init
 
 A single command sets up a complete project for you with some example training data.
 
@@ -42,14 +42,14 @@ This creates the following files:
 ├── config.yml
 ├── credentials.yml
 ├── data
-│   ├── nlu.md
-│   └── stories.md
+│   ├── nlu.yml
+│   └── stories.yml
 ├── domain.yml
 ├── endpoints.yml
 ├── models
 │   └── <timestamp>.tar.gz
 └── tests
-   └── conversation_tests.md
+   └── test_stories.yml
 ```
 
 The `rasa init` command will ask you if you want to train an initial model using this data.
@@ -59,7 +59,7 @@ With this project setup, common commands are very easy to remember.
 To train a model, type `rasa train`, to talk to your model on the command line, `rasa shell`,
 to test your model type `rasa test`.
 
-## Train a Model
+## rasa train
 
 The main command is:
 
@@ -87,7 +87,7 @@ If training data for only one model type is present, the command automatically f
 
 :::
 
-## Interactive Learning
+## rasa interactive
 
 To start an interactive learning session with your assistant, run
 
@@ -114,9 +114,10 @@ The full list of arguments that can be set for `rasa interactive` is:
 ```text [rasa interactive --help]
 ```
 
-## Talk to your Assistant
+## rasa shell
 
-To start a chat session with your assistant on the command line, run:
+This command allows you to talk to your assistant. To start a chat session
+with your assistant on the command line, run:
 
 ```bash
 rasa shell
@@ -149,7 +150,7 @@ The full list of options for `rasa shell` is:
 ```text [rasa shell --help]
 ```
 
-## Start a Server
+## rasa run
 
 To start a server running your Rasa model, run:
 
@@ -175,7 +176,7 @@ The following arguments can be used to configure your Rasa server:
 For more information on the additional parameters, see [Model Storage](./model-storage.mdx).
 See the Rasa [HTTP API](./http-api.mdx) docs for detailed documentation of all the endpoints.
 
-## Start an Action Server
+## rasa run actions
 
 To run your action server run
 
@@ -188,7 +189,7 @@ The following arguments can be used to adapt the server settings:
 ```text [rasa run actions --help]
 ```
 
-## Visualize your Stories
+## rasa visualize
 
 To open a browser tab with a graph showing your stories:
 
@@ -204,7 +205,7 @@ Additional arguments are:
 ```text [rasa visualize --help]
 ```
 
-## Evaluating a Model on Test Data
+## rasa test
 
 To evaluate your model on test data, run:
 
@@ -212,23 +213,38 @@ To evaluate your model on test data, run:
 rasa test
 ```
 
-Specify the model to test using `--model`.
-Check out more details in [Evaluating an NLU Model](./testing-your-assistant.mdx#evaluating-an-nlu-model) and [Evaluating a Core Model](./testing-your-assistant.mdx#evaluating-a-core-model).
+Specify the model to test using `--model`. The above command will test your model
+end-to-end using test stories. You can evaluate the dialogue and nlu
+model separately using
+```bash
+rasa test core
+```
+and
+
+```bash
+rasa test nlu
+```
+
+Check out more details in
+[Evaluating an NLU Model](./testing-your-assistant.mdx#evaluating-an-nlu-model) and
+[Evaluating a Core Model](./testing-your-assistant.mdx#evaluating-a-core-model).
 
 The following arguments are available for `rasa test`:
 
 ```text [rasa test --help]
 ```
 
-## Create a Train-Test Split
+## rasa data split
 
-To create a split of your NLU data, run:
+This commands allows you to create a train-test split of your training data. To
+create a split of your NLU data, run:
 
 ```bash
 rasa data split nlu
 ```
 
-You can specify the training data, the fraction, and the output directory using the following arguments:
+You can specify the training data, the fraction, and the output directory using
+the following arguments:
 
 ```text [rasa data split nlu --help]
 ```
@@ -239,14 +255,25 @@ If you have NLG data for retrieval actions, this will be saved to seperate files
 ```bash
 ls train_test_split
 
-      nlg_test_data.md     test_data.json
-      nlg_training_data.md training_data.json
+      nlg_test_data.yml     test_data.json
+      nlg_training_data.yml training_data.json
 ```
 
-## Convert Data Between Markdown and JSON
+## rasa data convert
 
-To convert NLU data from LUIS data format, WIT data format, Dialogflow data format, JSON, or Markdown
-to JSON or Markdown, run:
+You cam convert NLU data from
+- LUIS data format,
+- WIT data format,
+- Dialogflow data format,
+- JSON, or
+- Markdown
+
+to
+- YAML or
+- JSON or
+- Markdown.
+
+You can start the converter by running:
 
 ```bash
 rasa data convert nlu
@@ -257,7 +284,7 @@ You can specify the input file, output file, and the output format with the foll
 ```text [rasa data convert nlu --help]
 ```
 
-## Export Conversations to an Event Broker
+## rasa export
 
 To export events from a tracker store using an event broker, run:
 
@@ -272,7 +299,7 @@ should be published.
 ```text [rasa export --help]
 ```
 
-## Start Rasa X
+## rasa x
 
 Rasa X is a toolset that helps you leverage conversations to improve your assistant.
 You can find more information about it <a className="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.You can start Rasa X locally by executing
@@ -282,7 +309,9 @@ rasa x
 ```
 
 To be able to start Rasa X you need to have Rasa X local mode installed
-and you need to be in a Rasa project.:::note
+and you need to be in a Rasa project.
+
+:::note
 By default Rasa X runs on the port 5002. Using the argument `--rasa-x-port` allows you to change it to
 any other port.
 

@@ -370,6 +370,7 @@ def test_train_stack_success(
     default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
+    tmp_path: Path,
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(open(default_domain_path))
@@ -390,8 +391,7 @@ def test_train_stack_success(
     assert response.headers["filename"] is not None
 
     # save model to temporary file
-    tempdir = tempfile.mkdtemp()
-    model_path = os.path.join(tempdir, "model.tar.gz")
+    model_path = str(tmp_path / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response.body)
 
@@ -405,6 +405,7 @@ def test_train_nlu_success(
     default_stack_config: Text,
     default_nlu_data: Text,
     default_domain_path: Text,
+    tmp_path: Path,
 ):
     domain_data = rasa_utils.io.read_yaml_file(default_domain_path)
     config_data = rasa_utils.io.read_yaml_file(default_stack_config)
@@ -426,8 +427,7 @@ def test_train_nlu_success(
     assert response.status == 200
 
     # save model to temporary file
-    tempdir = tempfile.mkdtemp()
-    model_path = os.path.join(tempdir, "model.tar.gz")
+    model_path = str(tmp_path / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response.body)
 
@@ -441,6 +441,7 @@ def test_train_core_success(
     default_stack_config: Text,
     default_stories_file: Text,
     default_domain_path: Text,
+    tmp_path: Path,
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(open(default_domain_path))
@@ -457,8 +458,7 @@ def test_train_core_success(
     assert response.status == 200
 
     # save model to temporary file
-    tempdir = tempfile.mkdtemp()
-    model_path = os.path.join(tempdir, "model.tar.gz")
+    model_path = str(tmp_path / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response.body)
 
@@ -468,7 +468,7 @@ def test_train_core_success(
 
 
 def test_train_with_retrieval_events_success(
-    rasa_app: SanicTestClient, default_stack_config: Text
+    rasa_app: SanicTestClient, default_stack_config: Text, tmp_path: Path
 ):
     with ExitStack() as stack:
         domain_file = stack.enter_context(
@@ -493,13 +493,12 @@ def test_train_with_retrieval_events_success(
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
-    assert_trained_model(response.body)
+    assert_trained_model(response.body, tmp_path)
 
 
-def assert_trained_model(response_body: bytes) -> None:
+def assert_trained_model(response_body: bytes, tmp_path: Path) -> None:
     # save model to temporary file
-    tempdir = tempfile.mkdtemp()
-    model_path = os.path.join(tempdir, "model.tar.gz")
+    model_path = str(tmp_path / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response_body)
 
@@ -534,7 +533,7 @@ def test_deprecation_warnings_json_payload(payload: Dict):
         rasa.server._validate_json_training_payload(payload)
 
 
-def test_train_with_yaml(rasa_app: SanicTestClient):
+def test_train_with_yaml(rasa_app: SanicTestClient, tmp_path: Path):
     training_data = """
 stories:
 - story: My story
@@ -580,7 +579,7 @@ pipeline:
     )
 
     assert response.status == 200
-    assert_trained_model(response.body)
+    assert_trained_model(response.body, tmp_path)
 
 
 def test_train_with_invalid_yaml(rasa_app: SanicTestClient):
@@ -706,6 +705,7 @@ def test_evaluate_stories_end_to_end(
         "is_end_to_end_evaluation",
     }
     assert js["is_end_to_end_evaluation"]
+    assert js["actions"] != []
     assert set(js["actions"][0].keys()) == {
         "action",
         "predicted",
@@ -877,6 +877,29 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
         f"{conversation}/tracker/events",
         json=events,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    assert response.json is not None
+    assert response.status == 200
+
+    _, tracker_response = rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    tracker = tracker_response.json
+    assert tracker is not None
+
+    # there is also an `ACTION_LISTEN` event at the start
+    assert tracker.get("events") == events
+
+
+def test_post_conversation_id_with_slash(rasa_app: SanicTestClient):
+    conversation_id = str(uuid.uuid1())
+    id_len = len(conversation_id) // 2
+    conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
+    conversation = f"/conversations/{conversation_id}"
+
+    events = [e.as_dict() for e in test_events]
+    _, response = rasa_app.post(
+        f"{conversation}/tracker/events",
+        json=events,
+        headers={"Content-Type": "application/json"},
     )
     assert response.json is not None
     assert response.status == 200

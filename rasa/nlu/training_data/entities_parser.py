@@ -9,7 +9,8 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_VALUE,
 )
-from rasa.utils.common import raise_warning
+from rasa.nlu.training_data.message import Message
+import rasa.shared.utils.io
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -140,7 +141,7 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
     try:
         data = json.loads(f"{{{json_str}}}")
     except JSONDecodeError as e:
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"Incorrect training data format ('{{{json_str}}}'). Make sure your "
             f"data is valid.",
             docs=DOCS_URL_TRAINING_DATA_NLU,
@@ -165,3 +166,12 @@ def replace_entities(training_example: Text) -> Text:
     return re.sub(
         ENTITY_REGEX, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], training_example
     )
+
+
+def parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message":
+    """Extract entities and synonyms, and convert to plain text."""
+
+    entities = find_entities_in_training_example(example)
+    plain_text = replace_entities(example)
+
+    return Message.build(plain_text, intent, entities)

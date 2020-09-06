@@ -7,6 +7,7 @@ from functools import partial
 from typing import Any, List, Optional, Text, Union
 
 import rasa.core.utils
+import rasa.shared.utils.common
 import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
@@ -21,8 +22,9 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from sanic import Sanic
+from asyncio import AbstractEventLoop
 
 logger = logging.getLogger()  # get the root logger
 
@@ -58,7 +60,9 @@ def _create_single_channel(channel, credentials) -> Any:
     else:
         # try to load channel based on class name
         try:
-            input_channel_class = rasa.utils.common.class_from_module_path(channel)
+            input_channel_class = rasa.shared.utils.common.class_from_module_path(
+                channel
+            )
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
             raise Exception(
@@ -224,7 +228,7 @@ async def load_agent_on_start(
     endpoints: AvailableEndpoints,
     remote_storage: Optional[Text],
     app: Sanic,
-    loop: Text,
+    loop: AbstractEventLoop,
 ):
     """Load an agent.
 
@@ -246,19 +250,25 @@ async def load_agent_on_start(
 
     model_server = endpoints.model if endpoints and endpoints.model else None
 
-    app.agent = await agent.load_agent(
-        model_path,
-        model_server=model_server,
-        remote_storage=remote_storage,
-        interpreter=_interpreter,
-        generator=endpoints.nlg,
-        tracker_store=_tracker_store,
-        lock_store=_lock_store,
-        action_endpoint=endpoints.action,
-    )
+    try:
+        app.agent = await agent.load_agent(
+            model_path,
+            model_server=model_server,
+            remote_storage=remote_storage,
+            interpreter=_interpreter,
+            generator=endpoints.nlg,
+            tracker_store=_tracker_store,
+            lock_store=_lock_store,
+            action_endpoint=endpoints.action,
+        )
+    except Exception as e:
+        rasa.shared.utils.io.raise_warning(
+            f"The model at '{model_path}' could not be loaded. " f"Error: {e}"
+        )
+        app.agent = None
 
     if not app.agent:
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "Agent could not be loaded with the provided configuration. "
             "Load default agent without any model."
         )

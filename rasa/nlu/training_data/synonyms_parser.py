@@ -1,4 +1,4 @@
-from typing import Text, List, Dict
+from typing import Any, Text, List, Dict
 
 from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
@@ -8,7 +8,7 @@ from rasa.nlu.constants import (
 
 
 def add_synonyms_from_entities(
-    plain_text: Text, entities: List[Dict], existing_synonyms: Dict
+    plain_text: Text, entities: List[Dict], existing_synonyms: Dict[Text, Any]
 ) -> None:
     """Adds synonyms found in intent examples.
 
@@ -25,7 +25,7 @@ def add_synonyms_from_entities(
 
 
 def add_synonym(
-    synonym_value: Text, synonym_name: Text, existing_synonyms: Dict
+    synonym_value: Text, synonym_name: Text, existing_synonyms: Dict[Text, Any]
 ) -> None:
     """Adds a new synonym mapping to the provided list of synonyms.
 

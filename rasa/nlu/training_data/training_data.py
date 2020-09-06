@@ -7,17 +7,14 @@ import copy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
-from rasa.data import (
-    JSON_FILE_EXTENSIONS,
-    MARKDOWN_FILE_EXTENSIONS,
-    YAML_FILE_EXTENSIONS,
-)
+from rasa import data
 import rasa.nlu.utils
-from rasa.utils.common import raise_warning, lazy_property
+from rasa.utils.common import lazy_property
+import rasa.shared.utils.io
 from rasa.nlu.constants import (
     RESPONSE,
-    RESPONSE_KEY_ATTRIBUTE,
     NO_ENTITY_TAG,
+    INTENT_RESPONSE_KEY,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
@@ -86,11 +83,7 @@ class TrainingData:
             responses.update(o.responses)
 
         return TrainingData(
-            training_examples,
-            entity_synonyms,
-            regex_features,
-            lookup_tables,
-            responses,
+            training_examples, entity_synonyms, regex_features, lookup_tables, responses
         )
 
     def filter_training_examples(
@@ -240,18 +233,25 @@ class TrainingData:
     def _fill_response_phrases(self) -> None:
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
-            # if response_key is None, that means the corresponding intent is not a
+            # if intent_response_key is None, that means the corresponding intent is not a
             # retrieval intent and hence no response text needs to be fetched.
-            # If response_key is set, fetch the corresponding response text
-            if example.get(RESPONSE_KEY_ATTRIBUTE) is None:
+            # If intent_response_key is set, fetch the corresponding response text
+            if example.get(INTENT_RESPONSE_KEY) is None:
                 continue
 
             # look for corresponding bot utterance
-            story_lookup_intent = example.get_combined_intent_response_key()
+            story_lookup_intent = example.get_full_intent()
             assistant_utterances = self.responses.get(story_lookup_intent, [])
             if assistant_utterances:
-                # selecting only first assistant utterance for now
-                example.set(RESPONSE, assistant_utterances[0].get(TEXT))
+
+                # Use the first response text as training label if needed downstream
+                for assistant_utterance in assistant_utterances:
+                    if assistant_utterance.get(TEXT):
+                        example.set(RESPONSE, assistant_utterance[TEXT])
+
+                # If no text attribute was found use the key for training
+                if not example.get(RESPONSE):
+                    example.set(RESPONSE, story_lookup_intent)
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
@@ -309,11 +309,11 @@ class TrainingData:
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
 
-        if Path(filename).suffix in JSON_FILE_EXTENSIONS:
+        if data.is_likely_json_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_json(indent=2))
-        elif Path(filename).suffix in MARKDOWN_FILE_EXTENSIONS:
+        elif data.is_likely_markdown_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_markdown())
-        elif Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        elif data.is_likely_yaml_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_yaml())
         else:
             ValueError(
@@ -322,9 +322,9 @@ class TrainingData:
             )
 
     def persist_nlg(self, filename: Text) -> None:
-        if Path(filename).suffix in YAML_FILE_EXTENSIONS:
+        if data.is_likely_yaml_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlg_as_yaml())
-        elif Path(filename).suffix in MARKDOWN_FILE_EXTENSIONS:
+        elif data.is_likely_markdown_file(filename):
             nlg_serialized_data = self.nlg_as_markdown()
             if nlg_serialized_data:
                 rasa.nlu.utils.write_to_file(filename, nlg_serialized_data)
@@ -338,7 +338,7 @@ class TrainingData:
     def get_nlg_persist_filename(nlu_filename: Text) -> Text:
 
         extension = Path(nlu_filename).suffix
-        if extension in JSON_FILE_EXTENSIONS:
+        if data.is_likely_json_file(nlu_filename):
             # backwards compatibility: previously NLG was always dumped as md. now
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use
@@ -389,14 +389,14 @@ class TrainingData:
 
         logger.debug("Validating training data...")
         if "" in self.intents:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Found empty intent, please check your "
                 "training data. This may result in wrong "
                 "intent predictions."
             )
 
         if "" in self.responses:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Found empty response, please check your "
                 "training data. This may result in wrong "
                 "response predictions."
@@ -405,7 +405,7 @@ class TrainingData:
         # emit warnings for intents with only a few training samples
         for intent, count in self.number_of_examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Intent '{intent}' has only {count} training examples! "
                     f"Minimum is {self.MIN_EXAMPLES_PER_INTENT}, training may fail."
                 )
@@ -413,7 +413,7 @@ class TrainingData:
         # emit warnings for entities with only a few training samples
         for entity, count in self.number_of_examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Entity {entity} has only {count} training examples! "
                     f"The minimum is {self.MIN_EXAMPLES_PER_ENTITY}, because of "
                     f"this the training may fail."
@@ -421,12 +421,13 @@ class TrainingData:
 
         # emit warnings for response intents without a response template
         for example in self.training_examples:
-            if example.get(RESPONSE_KEY_ATTRIBUTE):
-                raise_warning(
+            if example.get(INTENT_RESPONSE_KEY) and not example.get(RESPONSE):
+                rasa.shared.utils.io.raise_warning(
                     f"Your training data contains an example '{example.text[:20]}...' "
-                    f"for the {example.get_combined_intent_response_key()} intent. "
+                    f"for the {example.get_full_intent()} intent. "
                     f"You either need to add a response phrase or correct the "
-                    f"intent for this example in your training data."
+                    f"intent for this example in your training data. "
+                    f"If you intend to use Response Selector in the pipeline, the training ."
                 )
 
     def train_test_split(
@@ -474,8 +475,8 @@ class TrainingData:
 
         responses = {}
         for ex in examples:
-            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE):
-                key = ex.get_combined_intent_response_key()
+            if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
+                key = ex.get_full_intent()
                 responses[key] = self.responses[key]
         return responses
 

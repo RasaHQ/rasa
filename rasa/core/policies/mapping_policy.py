@@ -26,7 +26,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -52,10 +52,9 @@ class MappingPolicy(Policy):
 
         super().__init__(priority=priority)
 
-        common_utils.raise_warning(
+        common_utils.raise_deprecation_warning(
             f"'{MappingPolicy.__name__}' is deprecated and will be removed in "
             "the future. It is recommended to use the 'RulePolicy' instead.",
-            category=FutureWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
@@ -124,7 +123,7 @@ class MappingPolicy(Policy):
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"MappingPolicy tried to predict unknown "
                         f"action '{action}'. Make sure all mapped actions are "
                         f"listed in the domain.",

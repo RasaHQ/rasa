@@ -18,7 +18,7 @@ from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 
@@ -226,7 +226,7 @@ def project() -> Text:
 
 
 @pytest.fixture
-async def form_bot_agent(trained_async, tmpdir_factory) -> Agent:
+async def form_bot_agent(trained_async) -> Agent:
     zipped_model = await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",

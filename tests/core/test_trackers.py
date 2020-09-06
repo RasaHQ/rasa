@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type
 
@@ -27,7 +28,14 @@ from rasa.core.events import (
     BotUttered,
     LegacyForm,
 )
-from rasa.core.slots import FloatSlot, BooleanSlot, ListSlot, TextSlot, DataSlot, Slot
+from rasa.shared.core.slots import (
+    FloatSlot,
+    BooleanSlot,
+    ListSlot,
+    TextSlot,
+    DataSlot,
+    Slot,
+)
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,
@@ -129,14 +137,14 @@ def test_tracker_store(store, pair):
     assert restored == tracker
 
 
-async def test_tracker_write_to_story(tmpdir, moodbot_domain: Domain):
+async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain
     )
-    p = tmpdir.join("export.md")
-    tracker.export_stories_to_file(p.strpath)
+    p = tmp_path / "export.md"
+    tracker.export_stories_to_file(str(p))
     trackers = await training.load_data(
-        p.strpath,
+        str(p),
         moodbot_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
@@ -465,17 +473,17 @@ def test_traveling_back_in_time(default_domain: Domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
-async def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
+async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
     trackers = await default_agent.load_data(DEFAULT_STORIES_FILE)
 
     for tracker in trackers:
-        out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
+        out_path = tmp_path / "dumped_tracker.json"
 
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
-        rasa.utils.io.dump_obj_as_json_to_file(out_path.strpath, dumped)
+        rasa.utils.io.dump_obj_as_json_to_file(str(out_path), dumped)
 
         restored_tracker = restore.load_tracker_from_json(
-            out_path.strpath, default_agent.domain
+            str(out_path), default_agent.domain
         )
 
         assert restored_tracker == tracker

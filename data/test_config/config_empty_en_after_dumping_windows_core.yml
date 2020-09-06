@@ -1,0 +1,11 @@
+language: en
+pipeline:
+policies:
+# # No configuration for policies was provided. The following default policies were used to train your model.
+# # If you'd like to customize them, uncomment and adjust the policies.
+# # See https://rasa.com/docs/rasa/core/policies/ for more information.
+#   - name: MemoizationPolicy
+#   - name: TEDPolicy
+#     max_history: 5
+#     epochs: 100
+#   - name: RulePolicy

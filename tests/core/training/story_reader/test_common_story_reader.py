@@ -173,13 +173,13 @@ async def test_generate_training_data_original_and_augmented_trackers(
     ],
 )
 async def test_visualize_training_data_graph(
-    stories_file: Text, tmpdir, default_domain: Domain
+    stories_file: Text, tmp_path: Path, default_domain: Domain
 ):
     graph = await training.extract_story_graph(stories_file, default_domain)
 
     graph = graph.with_cycles_removed()
 
-    out_path = tmpdir.join("graph.html").strpath
+    out_path = str(tmp_path / "graph.html")
 
     # this will be the plotted networkx graph
     G = graph.visualize(out_path)
