@@ -1,11 +1,4 @@
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
-    RESPONSE,
-    INTENT_RESPONSE_KEY,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
-)
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, INTENT_RESPONSE_KEY
 
 BILOU_ENTITIES = "bilou_entities"
 BILOU_ENTITIES_ROLE = "bilou_entities_role"
@@ -69,8 +62,6 @@ RESPONSE_SELECTOR_RESPONSES_KEY = "response_templates"
 INTENT_RANKING_KEY = "intent_ranking"
 PREDICTED_CONFIDENCE_KEY = "confidence"
 INTENT_NAME_KEY = "name"
-
-VALID_FEATURE_TYPES = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
 
 FEATURIZER_CLASS_ALIAS = "alias"
 

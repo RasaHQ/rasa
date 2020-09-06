@@ -18,7 +18,8 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
 )
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.training_data import Message, TrainingData

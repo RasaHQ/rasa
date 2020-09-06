@@ -19,7 +19,7 @@ from rasa.shared.nlu.constants import (
 from rasa.nlu.utils import ordered
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.featurizers.featurizer import Features
+    from rasa.shared.nlu.training_data.features import Features
 
 
 class Message:
