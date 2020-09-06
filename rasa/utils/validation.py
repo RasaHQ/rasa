@@ -2,12 +2,8 @@ from typing import Text, Dict, Any
 
 from ruamel.yaml.constructor import DuplicateKeyError
 
-from rasa.constants import (
-    PACKAGE_NAME,
-    DOCS_URL_TRAINING_DATA_NLU,
-    SCHEMA_EXTENSIONS_FILE,
-    SCHEMA_UTILS_FILE,
-)
+from rasa.constants import PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE, SCHEMA_UTILS_FILE
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 
 
 class InvalidYamlFileError(ValueError):

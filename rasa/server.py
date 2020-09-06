@@ -24,10 +24,9 @@ from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESPONSE_TIMEOUT,
-    DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
-    DOCS_URL_TRAINING_DATA_NLU,
 )
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_BASE_URL
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (

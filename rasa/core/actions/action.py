@@ -8,7 +8,8 @@ import random
 import aiohttp
 
 import rasa.core
-from rasa.constants import DOCS_BASE_URL, DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.core import events
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,

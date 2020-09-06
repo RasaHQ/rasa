@@ -8,7 +8,7 @@ import numpy as np
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.components import Component

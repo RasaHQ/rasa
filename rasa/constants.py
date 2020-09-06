@@ -1,5 +1,7 @@
 import os
 
+from rasa.shared.constants import DOCS_BASE_URL
+
 DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
 DEFAULT_CREDENTIALS_PATH = "credentials.yml"
 DEFAULT_CONFIG_PATH = "config.yml"
@@ -34,7 +36,6 @@ YAML_VERSION = (1, 2)
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 
-DOCS_BASE_URL = "https://rasa.com/docs/rasa"
 DOCS_URL_POLICIES = DOCS_BASE_URL + "/core/policies/"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
 DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
@@ -47,7 +48,6 @@ DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
 DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/api/tracker-stores/"
 DOCS_URL_PIPELINE = DOCS_BASE_URL + "/nlu/choosing-a-pipeline/"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/nlu/components/"
-DOCS_URL_TRAINING_DATA_NLU = DOCS_BASE_URL + "/nlu/training-data-format/"
 DOCS_URL_MIGRATE_GOOGLE = DOCS_BASE_URL + "/migrate-from/google-dialogflow-to-rasa/"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide/"
 

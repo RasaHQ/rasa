@@ -8,17 +8,17 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     BILOU_ENTITIES,
     NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
     BILOU_ENTITIES_GROUP,
     BILOU_ENTITIES_ROLE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
     ENTITIES,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 
 logger = logging.getLogger(__name__)

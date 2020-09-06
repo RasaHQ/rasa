@@ -2,13 +2,13 @@ import re
 from json import JSONDecodeError
 from typing import Text, List, Dict, Match, Optional, NamedTuple, Any
 
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu.constants import (
-    ENTITY_ATTRIBUTE_GROUP,
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
 )
-from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_VALUE
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 

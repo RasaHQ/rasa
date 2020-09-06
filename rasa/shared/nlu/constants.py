@@ -13,3 +13,6 @@ ENTITY_ATTRIBUTE_END = "end"
 EXTRACTOR = "extractor"
 PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
+ENTITY_ATTRIBUTE_TYPE = "entity"
+ENTITY_ATTRIBUTE_GROUP = "group"
+ENTITY_ATTRIBUTE_ROLE = "role"

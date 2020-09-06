@@ -1,16 +1,13 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
@@ -23,6 +20,9 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
     EXTRACTOR,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.nlu.training_data import Message
 import rasa.nlu.utils.bilou_utils as bilou_utils

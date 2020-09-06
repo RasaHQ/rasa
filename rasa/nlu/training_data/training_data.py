@@ -11,18 +11,16 @@ from rasa import data
 import rasa.nlu.utils
 from rasa.utils.common import lazy_property
 import rasa.shared.utils.io
-from rasa.nlu.constants import (
-    NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
-)
+from rasa.nlu.constants import NO_ENTITY_TAG
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
     RESPONSE,
     INTENT_RESPONSE_KEY,
     ENTITIES,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.util import check_duplicate_synonym

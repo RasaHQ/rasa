@@ -10,8 +10,8 @@ from rasa.constants import (
     DOCS_URL_DOMAINS,
     DOCS_URL_ACTIONS,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    DOCS_BASE_URL,
 )
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.core.constants import UTTER_PREFIX
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted

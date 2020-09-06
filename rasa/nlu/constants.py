@@ -1,13 +1,18 @@
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, INTENT_RESPONSE_KEY
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    RESPONSE,
+    INTENT_RESPONSE_KEY,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+)
 
 BILOU_ENTITIES = "bilou_entities"
 BILOU_ENTITIES_ROLE = "bilou_entities_role"
 BILOU_ENTITIES_GROUP = "bilou_entities_group"
 NO_ENTITY_TAG = "O"
 
-ENTITY_ATTRIBUTE_TYPE = "entity"
-ENTITY_ATTRIBUTE_GROUP = "group"
-ENTITY_ATTRIBUTE_ROLE = "role"
 ENTITY_ATTRIBUTE_TEXT = "text"
 ENTITY_ATTRIBUTE_CONFIDENCE = "confidence"
 ENTITY_ATTRIBUTE_CONFIDENCE_TYPE = (

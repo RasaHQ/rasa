@@ -19,12 +19,12 @@ from typing import (
 import typing
 
 import rasa.shared.utils.io
-from rasa.nlu.constants import (
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
-from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_VALUE
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error

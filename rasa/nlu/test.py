@@ -26,9 +26,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     PREDICTED_CONFIDENCE_KEY,
     NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
@@ -43,6 +40,9 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     EXTRACTOR,
     PRETRAINED_EXTRACTORS,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
