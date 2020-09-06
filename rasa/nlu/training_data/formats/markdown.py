@@ -178,7 +178,7 @@ class MarkdownReader(TrainingDataReader):
 
     @staticmethod
     def is_markdown_nlu_file(filename: Union[Text, Path]) -> bool:
-        content = io_utils.read_file(filename)
+        content = rasa.shared.utils.io.read_file(filename)
         return any(marker in content for marker in MARKDOWN_SECTION_MARKERS)
 
 

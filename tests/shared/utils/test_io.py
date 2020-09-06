@@ -1,5 +1,6 @@
 import pytest
 
+import rasa.shared
 from rasa.shared.utils import io as io_utils
 
 
@@ -26,3 +27,8 @@ def test_raise_deprecation():
     assert len(record) == 1
     assert record[0].message.args[0] == "My warning."
     assert isinstance(record[0].message, DeprecationWarning)
+
+
+def test_read_file_with_not_existing_path():
+    with pytest.raises(ValueError):
+        rasa.shared.utils.io.read_file("some path")

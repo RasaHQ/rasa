@@ -76,7 +76,7 @@ class YAMLStoryReader(StoryReader):
         self.source_name = filename
 
         try:
-            file_content = io_utils.read_file(
+            file_content = rasa.shared.utils.io.read_file(
                 filename, rasa.shared.utils.io.DEFAULT_ENCODING
             )
             validate_yaml_schema(file_content, CORE_SCHEMA_FILE)

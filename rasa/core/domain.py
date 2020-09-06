@@ -144,7 +144,7 @@ class Domain:
 
     @classmethod
     def from_file(cls, path: Text) -> "Domain":
-        return cls.from_yaml(rasa.utils.io.read_file(path), path)
+        return cls.from_yaml(rasa.shared.utils.io.read_file(path), path)
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
@@ -771,7 +771,7 @@ class Domain:
         """Load a domains specification from a dumped model directory."""
 
         metadata_path = os.path.join(path, "domain.json")
-        specification = json.loads(rasa.utils.io.read_file(metadata_path))
+        specification = json.loads(rasa.shared.utils.io.read_file(metadata_path))
         return specification
 
     def compare_with_specification(self, path: Text) -> bool:

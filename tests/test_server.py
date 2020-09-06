@@ -21,6 +21,7 @@ from multiprocessing import Process, Manager
 
 import rasa
 import rasa.constants
+import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.server
 from rasa.core import events, utils
@@ -651,7 +652,7 @@ def test_train_internal_error(rasa_app: SanicTestClient):
 
 
 def test_evaluate_stories(rasa_app: SanicTestClient, default_stories_file: Text):
-    stories = rasa.utils.io.read_file(default_stories_file)
+    stories = rasa.shared.utils.io.read_file(default_stories_file)
 
     _, response = rasa_app.post("/model/test/stories", data=stories)
 
@@ -679,7 +680,7 @@ def test_evaluate_stories(rasa_app: SanicTestClient, default_stories_file: Text)
 def test_evaluate_stories_not_ready_agent(
     rasa_app_nlu: SanicTestClient, default_stories_file: Text
 ):
-    stories = rasa.utils.io.read_file(default_stories_file)
+    stories = rasa.shared.utils.io.read_file(default_stories_file)
 
     _, response = rasa_app_nlu.post("/model/test/stories", data=stories)
 
@@ -689,7 +690,7 @@ def test_evaluate_stories_not_ready_agent(
 def test_evaluate_stories_end_to_end(
     rasa_app: SanicTestClient, end_to_end_story_file: Text
 ):
-    stories = rasa.utils.io.read_file(end_to_end_story_file)
+    stories = rasa.shared.utils.io.read_file(end_to_end_story_file)
 
     _, response = rasa_app.post("/model/test/stories?e2e=true", data=stories)
 
@@ -715,7 +716,7 @@ def test_evaluate_stories_end_to_end(
 
 
 def test_evaluate_intent(rasa_app: SanicTestClient, default_nlu_data: Text):
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app.post(
         "/model/test/intents",
@@ -734,7 +735,7 @@ def test_evaluate_intent(rasa_app: SanicTestClient, default_nlu_data: Text):
 def test_evaluate_intent_on_just_nlu_model(
     rasa_app_nlu: SanicTestClient, default_nlu_data: Text
 ):
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app_nlu.post(
         "/model/test/intents",
@@ -756,7 +757,7 @@ def test_evaluate_intent_with_query_param(
     _, response = rasa_app.get("/status")
     previous_model_file = response.json["model_file"]
 
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app.post(
         f"/model/test/intents?model={trained_nlu_model}",

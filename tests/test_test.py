@@ -8,6 +8,7 @@ import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.events import UserUttered
@@ -198,7 +199,7 @@ def test_log_failed_stories(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.core.test._log_stories([], path)
 
-    dump = rasa.utils.io.read_file(path)
+    dump = rasa.shared.utils.io.read_file(path)
 
     assert dump.startswith("#")
     assert len(dump.split("\n")) == 1

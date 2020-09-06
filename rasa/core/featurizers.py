@@ -443,7 +443,7 @@ class TrackerFeaturizer:
 
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
-            return jsonpickle.decode(rasa.utils.io.read_file(featurizer_file))
+            return jsonpickle.decode(rasa.shared.utils.io.read_file(featurizer_file))
         else:
             logger.error(
                 "Couldn't load featurizer for policy. "

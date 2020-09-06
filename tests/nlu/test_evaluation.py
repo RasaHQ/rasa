@@ -8,6 +8,7 @@ import asyncio
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.nlu.constants import NO_ENTITY_TAG
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -462,7 +463,7 @@ def test_intent_evaluation_report(tmp_path: Path):
         disable_plotting=False,
     )
 
-    report = json.loads(rasa.utils.io.read_file(report_filename))
+    report = json.loads(rasa.shared.utils.io.read_file(report_filename))
 
     greet_results = {
         "precision": 1.0,
@@ -519,7 +520,7 @@ def test_intent_evaluation_report_large(tmp_path: Path):
         disable_plotting=True,
     )
 
-    report = json.loads(rasa.utils.io.read_file(str(report_filename)))
+    report = json.loads(rasa.shared.utils.io.read_file(str(report_filename)))
 
     a_results = {
         "precision": 1.0,
@@ -573,7 +574,7 @@ def test_response_evaluation_report(tmp_path: Path):
         disable_plotting=False,
     )
 
-    report = json.loads(rasa.utils.io.read_file(report_filename))
+    report = json.loads(rasa.shared.utils.io.read_file(report_filename))
 
     name_query_results = {
         "precision": 1.0,
@@ -670,8 +671,8 @@ def test_entity_evaluation_report(tmp_path):
         disable_plotting=False,
     )
 
-    report_a = json.loads(rasa.utils.io.read_file(report_filename_a))
-    report_b = json.loads(rasa.utils.io.read_file(report_filename_b))
+    report_a = json.loads(rasa.shared.utils.io.read_file(report_filename_a))
+    report_b = json.loads(rasa.shared.utils.io.read_file(report_filename_b))
 
     assert len(report_a) == 6
     assert report_a["datetime"]["support"] == 1.0

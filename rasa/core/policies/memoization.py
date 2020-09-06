@@ -247,7 +247,7 @@ class MemoizationPolicy(Policy):
         featurizer = TrackerFeaturizer.load(path)
         memorized_file = os.path.join(path, "memorized_turns.json")
         if os.path.isfile(memorized_file):
-            data = json.loads(rasa.utils.io.read_file(memorized_file))
+            data = json.loads(rasa.shared.utils.io.read_file(memorized_file))
             return cls(
                 featurizer=featurizer, priority=data["priority"], lookup=data["lookup"]
             )

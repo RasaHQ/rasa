@@ -20,7 +20,7 @@ import ruamel.yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
-from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING
+from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file
 
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
@@ -136,16 +136,6 @@ def read_yaml(content: Text) -> Any:
 
 def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
-
-
-def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) -> Any:
-    """Read text from a file."""
-
-    try:
-        with open(filename, encoding=encoding) as f:
-            return f.read()
-    except FileNotFoundError:
-        raise ValueError(f"File '{filename}' does not exist.")
 
 
 def read_json_file(filename: Union[Text, Path]) -> Any:

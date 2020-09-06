@@ -88,3 +88,13 @@ def write_text_file(
     mode = "a" if append else "w"
     with open(file_path, mode, encoding=encoding) as file:
         file.write(content)
+
+
+def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) -> Any:
+    """Read text from a file."""
+
+    try:
+        with open(filename, encoding=encoding) as f:
+            return f.read()
+    except FileNotFoundError:
+        raise ValueError(f"File '{filename}' does not exist.")

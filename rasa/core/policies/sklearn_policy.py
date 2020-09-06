@@ -204,7 +204,7 @@ class SklearnPolicy(Policy):
         )
 
         meta_file = os.path.join(path, "sklearn_policy.json")
-        meta = json.loads(rasa.utils.io.read_file(meta_file))
+        meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
 
         policy = cls(featurizer=featurizer, priority=meta["priority"])
 

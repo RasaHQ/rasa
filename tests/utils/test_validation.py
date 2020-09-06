@@ -22,7 +22,7 @@ from tests.conftest import DEFAULT_NLU_DATA
 )
 def test_validate_yaml_schema(file, schema):
     # should raise no exception
-    validation_utils.validate_yaml_schema(io_utils.read_file(file), schema)
+    validation_utils.validate_yaml_schema(rasa.shared.utils.io.read_file(file), schema)
 
 
 @pytest.mark.parametrize(
@@ -37,7 +37,9 @@ def test_validate_yaml_schema(file, schema):
 )
 def test_validate_yaml_schema_raise_exception(file, schema):
     with pytest.raises(validation_utils.InvalidYamlFileError):
-        validation_utils.validate_yaml_schema(io_utils.read_file(file), schema)
+        validation_utils.validate_yaml_schema(
+            rasa.shared.utils.io.read_file(file), schema
+        )
 
 
 def test_example_training_data_is_valid():

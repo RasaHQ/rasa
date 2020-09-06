@@ -181,11 +181,6 @@ def test_bool_str():
     assert content["three"] == "True"
 
 
-def test_read_file_with_not_existing_path():
-    with pytest.raises(ValueError):
-        io_utils.read_file("some path")
-
-
 @pytest.mark.parametrize("file, parents", [("A/test.md", "A"), ("A", "A")])
 def test_file_in_path(file, parents):
     assert io_utils.is_subdirectory(file, parents)
@@ -313,7 +308,7 @@ def test_write_utf_8_yaml_file(tmp_path: Path):
     data = {"data": "amazing 🌈"}
 
     io_utils.write_yaml(data, file_path)
-    assert io_utils.read_file(file_path) == "data: amazing 🌈\n"
+    assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
 
 
 def test_create_directory_if_new(tmp_path: Path):

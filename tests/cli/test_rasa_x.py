@@ -7,6 +7,7 @@ from _pytest.pytester import RunResult
 
 from aioresponses import aioresponses
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
@@ -149,5 +150,5 @@ async def test_pull_runtime_config_from_server():
             config_url, 1, 0
         )
 
-        assert io_utils.read_file(endpoints_path) == endpoint_config
-        assert io_utils.read_file(credentials_path) == credentials
+        assert rasa.shared.utils.io.read_file(endpoints_path) == endpoint_config
+        assert rasa.shared.utils.io.read_file(credentials_path) == credentials

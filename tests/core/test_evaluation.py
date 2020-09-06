@@ -4,6 +4,7 @@ from typing import Any, Text, Dict
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.test import (
     _generate_trackers,
@@ -126,7 +127,7 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
         e2e=False,
     )
 
-    failed_stories = rasa.utils.io.read_file(stories_path)
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
     assert (
         f"story: simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"

@@ -30,7 +30,7 @@ class TrainingDataReader:
     def read(self, filename: Union[Text, Path], **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a file."""
         self.filename = filename
-        return self.reads(io_utils.read_file(filename), **kwargs)
+        return self.reads(rasa.shared.utils.io.read_file(filename), **kwargs)
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a string."""

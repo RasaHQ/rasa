@@ -292,7 +292,7 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    template = io_utils.read_file(visualization_html_path())
+    template = rasa.shared.utils.io.read_file(visualization_html_path())
 
     # Insert graph into template
     template = template.replace("// { is-client }", "isClient = true", 1)

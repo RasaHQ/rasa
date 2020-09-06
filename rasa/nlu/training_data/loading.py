@@ -5,6 +5,7 @@ import re
 import typing
 from typing import Optional, Text
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats.dialogflow import (
@@ -161,7 +162,7 @@ def guess_format(filename: Text) -> Text:
 
     content = ""
     try:
-        content = io_utils.read_file(filename)
+        content = rasa.shared.utils.io.read_file(filename)
         js = json.loads(content)
     except ValueError:
         if any(marker in content for marker in markdown.MARKDOWN_SECTION_MARKERS):

@@ -3,6 +3,7 @@ import logging
 import os
 from typing import List
 
+import rasa.shared.utils.io
 from rasa.cli.arguments import test as arguments
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
@@ -117,7 +118,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
         for file in args.config:
             try:
                 validation_utils.validate_yaml_schema(
-                    io_utils.read_file(file),
+                    rasa.shared.utils.io.read_file(file),
                     CONFIG_SCHEMA_FILE,
                     show_validation_errors=False,
                 )
