@@ -1,4 +1,4 @@
-import rasa.nlu.training_data.lookup_tables_parser as lookup_tables_parser
+import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser
 
 
 def test_add_item_to_lookup_tables():

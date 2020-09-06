@@ -150,7 +150,6 @@ class RasaYAMLReader(TrainingDataReader):
         from rasa.nlu.training_data import Message
         import rasa.nlu.training_data.entities_parser as entities_parser
         import rasa.nlu.training_data.synonyms_parser as synonyms_parser
-        import rasa.nlu.constants as nlu_constants
 
         intent = intent_data.get(KEY_INTENT, "")
         if not intent:
@@ -288,7 +287,7 @@ class RasaYAMLReader(TrainingDataReader):
             self.regex_features.append({"name": regex_name, "pattern": example})
 
     def _parse_lookup(self, nlu_item: Dict[Text, Any]):
-        import rasa.nlu.training_data.lookup_tables_parser as lookup_tables_parser
+        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser
 
         lookup_item_name = nlu_item[KEY_LOOKUP]
         if not lookup_item_name:
