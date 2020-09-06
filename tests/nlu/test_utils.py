@@ -4,6 +4,8 @@ import pickle
 import pytest
 import tempfile
 import shutil
+
+import rasa.shared.nlu.training_data.message
 import rasa.utils.io as io_utils
 from rasa.nlu import utils
 from pathlib import Path
@@ -61,11 +63,6 @@ def test_list_files_ignores_hidden_files(tmpdir):
 def test_creation_of_existing_dir(tmpdir):
     # makes sure there is no exception
     assert io_utils.create_directory(tmpdir.strpath) is None
-
-
-def test_ordered():
-    target = {"a": [1, 3, 2], "c": "a", "b": 1}
-    assert utils.ordered(target) == [("a", [1, 2, 3]), ("b", 1), ("c", "a")]
 
 
 def test_empty_is_model_dir(empty_model_dir):

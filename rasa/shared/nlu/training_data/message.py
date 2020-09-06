@@ -16,7 +16,6 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
 )
-from rasa.nlu.utils import ordered
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -293,3 +292,12 @@ class Message:
             combined_features = f.combine_with_features(combined_features)
 
         return combined_features
+
+
+def ordered(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return sorted((k, ordered(v)) for k, v in obj.items())
+    if isinstance(obj, list):
+        return sorted(ordered(x) for x in obj)
+    else:
+        return obj

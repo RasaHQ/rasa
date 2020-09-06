@@ -30,15 +30,6 @@ def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
     return delim.join([quote + e + quote for e in lst])
 
 
-def ordered(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return sorted((k, ordered(v)) for k, v in obj.items())
-    if isinstance(obj, list):
-        return sorted(ordered(x) for x in obj)
-    else:
-        return obj
-
-
 def module_path_from_object(o: Any) -> Text:
     """Returns the fully qualified class path of the instantiated object."""
     return o.__class__.__module__ + "." + o.__class__.__name__

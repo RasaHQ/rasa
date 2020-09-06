@@ -232,3 +232,12 @@ def test_features_present(
     actual = message.features_present(attribute, featurizers)
 
     assert actual == expected
+
+
+def test_ordered():
+    target = {"a": [1, 3, 2], "c": "a", "b": 1}
+    assert rasa.shared.nlu.training_data.message.ordered(target) == [
+        ("a", [1, 2, 3]),
+        ("b", 1),
+        ("c", "a"),
+    ]
