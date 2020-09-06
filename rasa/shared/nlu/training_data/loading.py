@@ -15,9 +15,9 @@ from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_INTENT_EXAMPLES,
     DIALOGFLOW_PACKAGE,
 )
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData
     from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReader
 
 logger = logging.getLogger(__name__)
@@ -56,8 +56,6 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
-    from rasa.nlu.training_data import TrainingData
-
     if not os.path.exists(resource_name):
         raise ValueError(f"File '{resource_name}' does not exist.")
 
