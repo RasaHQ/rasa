@@ -28,7 +28,8 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData, Message
+    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 

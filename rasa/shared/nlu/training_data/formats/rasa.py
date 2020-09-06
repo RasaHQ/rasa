@@ -11,7 +11,8 @@ from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import Message, TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 

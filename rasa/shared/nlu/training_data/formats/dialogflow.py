@@ -11,7 +11,7 @@ from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

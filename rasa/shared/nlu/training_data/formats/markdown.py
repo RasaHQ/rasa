@@ -20,7 +20,7 @@ GROUP_ENTITY_DICT = "entity_dict"
 GROUP_ENTITY_TEXT = "entity_text"
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
 INTENT = "intent"
 SYNONYM = "synonym"
