@@ -4,8 +4,7 @@ import os
 from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
-from rasa.nlu.constants import EXTRACTOR, PRETRAINED_EXTRACTORS
-from rasa.shared.nlu.constants import ENTITIES
+from rasa.shared.nlu.constants import ENTITIES, EXTRACTOR, PRETRAINED_EXTRACTORS
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)

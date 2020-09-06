@@ -6,7 +6,6 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
-    EXTRACTOR,
     TOKENS_NAMES,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
@@ -23,6 +22,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    EXTRACTOR,
 )
 from rasa.nlu.training_data import Message
 import rasa.nlu.utils.bilou_utils as bilou_utils

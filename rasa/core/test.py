@@ -9,13 +9,14 @@ from rasa.core.channels import UserMessage
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
-from rasa.nlu.constants import EXTRACTOR, ENTITY_ATTRIBUTE_TEXT, ENTITY_ATTRIBUTE_TYPE
+from rasa.nlu.constants import ENTITY_ATTRIBUTE_TEXT, ENTITY_ATTRIBUTE_TYPE
 from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    EXTRACTOR,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.events import ActionExecuted, UserUttered
