@@ -3,7 +3,7 @@ import typing
 from collections import defaultdict
 from typing import Any, Dict, Text
 
-from rasa.nlu.training_data.formats.readerwriter import (
+from rasa.shared.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
 )

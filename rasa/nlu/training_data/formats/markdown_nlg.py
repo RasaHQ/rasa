@@ -3,7 +3,7 @@ import typing
 from typing import Any, Dict, List, Text
 
 from rasa.shared.nlu.constants import TEXT
-from rasa.nlu.training_data.formats.readerwriter import (
+from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )

@@ -71,7 +71,7 @@ def md_format_message(
         Message with entities annotated inline, e.g.
         `I am from [Berlin]{"entity": "city"}`.
     """
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
     from rasa.shared.nlu.training_data import entities_parser
 
     message_from_md = entities_parser.parse_training_example(text, intent)

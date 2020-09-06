@@ -19,7 +19,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReader
 
 logger = logging.getLogger(__name__)
 

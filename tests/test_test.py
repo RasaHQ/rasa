@@ -229,7 +229,7 @@ def test_log_failed_stories(tmp_path: Path):
                 {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
                 {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
             ],
-            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},],
+            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"}],
         ),
         (
             [
@@ -258,7 +258,7 @@ def test_log_failed_stories(tmp_path: Path):
                     "start": 22,
                     "end": 28,
                     "entity": "city",
-                },
+                }
             ],
         ),
         (
@@ -324,7 +324,7 @@ def test_log_failed_stories(tmp_path: Path):
     ],
 )
 def test_evaluation_store_serialise(entity_predictions, entity_targets):
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     store = EvaluationStore(
         entity_predictions=entity_predictions, entity_targets=entity_targets

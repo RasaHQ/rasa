@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Text, List, Tuple
 from rasa.constants import DOCS_URL_MIGRATE_GOOGLE
 import rasa.utils.io
 from rasa.nlu import utils
-from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
+from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 import rasa.shared.utils.io
 

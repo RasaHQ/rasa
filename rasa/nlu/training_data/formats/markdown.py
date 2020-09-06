@@ -8,7 +8,7 @@ from typing import Any, Text, Optional, Tuple, Dict, Union
 
 import rasa.utils.io as io_utils
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu.training_data.formats.readerwriter import (
+from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
