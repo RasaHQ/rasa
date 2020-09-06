@@ -26,7 +26,7 @@ from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
-from rasa.nlu.constants import NO_ENTITY_TAG, TOKENS_NAMES
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
@@ -35,6 +35,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.nlu.training_data import TrainingData

@@ -7,7 +7,6 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     BILOU_ENTITIES,
-    NO_ENTITY_TAG,
     BILOU_ENTITIES_GROUP,
     BILOU_ENTITIES_ROLE,
 )
@@ -19,6 +18,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
 
 logger = logging.getLogger(__name__)

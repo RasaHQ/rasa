@@ -16,3 +16,4 @@ TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClass
 ENTITY_ATTRIBUTE_TYPE = "entity"
 ENTITY_ATTRIBUTE_GROUP = "group"
 ENTITY_ATTRIBUTE_ROLE = "role"
+NO_ENTITY_TAG = "O"

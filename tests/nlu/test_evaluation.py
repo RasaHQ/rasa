@@ -9,7 +9,7 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
-from rasa.nlu.constants import NO_ENTITY_TAG
+from rasa.shared.nlu.constants import NO_ENTITY_TAG
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.test import compare_nlu_models
@@ -849,10 +849,7 @@ def test_nlu_comparison(tmp_path: Path):
     }
     # the configs need to be at a different path, otherwise the results are
     # combined on the same dictionary key and cannot be plotted properly
-    configs = [
-        write_file_config(config).name,
-        write_file_config(config).name,
-    ]
+    configs = [write_file_config(config).name, write_file_config(config).name]
 
     output = str(tmp_path)
     compare_nlu_models(
