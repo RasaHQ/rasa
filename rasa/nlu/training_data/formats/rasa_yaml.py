@@ -148,7 +148,7 @@ class RasaYAMLReader(TrainingDataReader):
 
     def _parse_intent(self, intent_data: Dict[Text, Any]) -> None:
         from rasa.nlu.training_data import Message
-        import rasa.nlu.training_data.entities_parser as entities_parser
+        import rasa.shared.nlu.training_data.entities_parser as entities_parser
         import rasa.shared.nlu.training_data.synonyms_parser as synonyms_parser
 
         intent = intent_data.get(KEY_INTENT, "")
@@ -179,7 +179,7 @@ class RasaYAMLReader(TrainingDataReader):
     def _parse_training_examples(
         self, examples: Union[Text, List[Dict[Text, Any]]], intent: Text
     ) -> List[Tuple[Text, List[Dict[Text, Any]]]]:
-        import rasa.nlu.training_data.entities_parser as entities_parser
+        import rasa.shared.nlu.training_data.entities_parser as entities_parser
 
         if isinstance(examples, list):
             example_strings = [

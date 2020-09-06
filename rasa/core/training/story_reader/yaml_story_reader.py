@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
 import rasa.shared.utils.io
-from rasa.nlu.training_data import entities_parser
+from rasa.shared.nlu.training_data import entities_parser
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 

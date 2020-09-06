@@ -2,7 +2,7 @@ from typing import Text, List, Dict, Any
 
 import pytest
 
-import rasa.nlu.training_data.entities_parser as entities_parser
+import rasa.shared.nlu.training_data.entities_parser as entities_parser
 
 
 @pytest.mark.parametrize(

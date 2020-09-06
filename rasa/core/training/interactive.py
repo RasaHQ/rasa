@@ -1217,7 +1217,7 @@ async def _correct_entities(
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
-    from rasa.nlu.training_data import entities_parser
+    from rasa.shared.nlu.training_data import entities_parser
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)

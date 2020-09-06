@@ -226,7 +226,7 @@ class MarkdownStoryReader(StoryReader):
                 "end-to-end testing at {}/user-guide/testing-your-assistant/"
                 "#end-to-end-testing/".format(line, LEGACY_DOCS_BASE_URL)
             )
-        from rasa.nlu.training_data import entities_parser
+        from rasa.shared.nlu.training_data import entities_parser
 
         intent = match.group(2)
         message = match.group(4)

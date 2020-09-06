@@ -72,7 +72,7 @@ def md_format_message(
         `I am from [Berlin]{"entity": "city"}`.
     """
     from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
-    from rasa.nlu.training_data import entities_parser
+    from rasa.shared.nlu.training_data import entities_parser
 
     message_from_md = entities_parser.parse_training_example(text, intent)
     deserialised_entities = deserialise_entities(entities)
@@ -194,7 +194,6 @@ class Event:
         type_name: Text, default: Optional[Type["Event"]] = None
     ) -> Optional[Type["Event"]]:
         """Returns a slots class by its type name."""
-        from rasa.core import utils
 
         for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
