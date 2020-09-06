@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
 from rasa.shared import data
 import rasa.nlu.utils
-from rasa.utils.common import lazy_property
+from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
     TEXT,
