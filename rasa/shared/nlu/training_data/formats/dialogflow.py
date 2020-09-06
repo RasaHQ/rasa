@@ -3,9 +3,9 @@ import os
 import typing
 from typing import Any, Dict, Optional, Text, List, Tuple
 
-from rasa.constants import DOCS_URL_MIGRATE_GOOGLE
 import rasa.utils.io
 from rasa.nlu import utils
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 import rasa.shared.utils.io
@@ -14,6 +14,8 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
+
+DOCS_URL_MIGRATE_GOOGLE = DOCS_BASE_URL + "/migrate-from/google-dialogflow-to-rasa/"
 
 DIALOGFLOW_PACKAGE = "dialogflow_package"
 DIALOGFLOW_AGENT = "dialogflow_agent"

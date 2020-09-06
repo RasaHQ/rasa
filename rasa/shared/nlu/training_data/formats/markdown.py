@@ -6,7 +6,6 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Text, Optional, Tuple, Dict, Union
 
-import rasa.utils.io as io_utils
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
