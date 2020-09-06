@@ -2,6 +2,7 @@ import json
 from collections import OrderedDict
 from pathlib import Path
 
+import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 from rasa.shared.nlu.constants import (
@@ -15,7 +16,6 @@ from rasa.shared.nlu.constants import (
 )
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 import typing
 from typing import Text, Dict, Any, Union
 
@@ -68,7 +68,7 @@ class TrainingDataWriter:
     def generate_list_item(text: Text) -> Text:
         """Generates text for a list item."""
 
-        return f"- {io_utils.encode_string(text)}\n"
+        return f"- {rasa.shared.nlu.training_data.util.encode_string(text)}\n"
 
     @staticmethod
     def generate_message(message: Dict[Text, Any]) -> Text:

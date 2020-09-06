@@ -14,7 +14,7 @@ from asyncio import AbstractEventLoop
 from collections import OrderedDict
 from io import BytesIO as IOReader, StringIO
 from pathlib import Path
-from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING, Match
+from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
 
 import ruamel.yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
@@ -494,21 +494,3 @@ def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
     jsonpickle_numpy.register_handlers()
 
     write_text_file(jsonpickle.dumps(obj), file_name)
-
-
-def encode_string(s: Text) -> Text:
-    """Return an encoded python string."""
-
-    def replace(match: Match) -> Text:
-        return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
-
-    return ESCAPE.sub(replace, s)
-
-
-def decode_string(s: Text) -> Text:
-    """Return a decoded python string."""
-
-    def replace(match: Match) -> Text:
-        return UNESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
-
-    return UNESCAPE.sub(replace, s)

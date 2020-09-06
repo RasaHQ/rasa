@@ -1,11 +1,18 @@
 import json
 import logging
 import os
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, Match
 
 import rasa.utils.io as io_utils
 from rasa.shared.nlu.constants import ENTITIES, EXTRACTOR, PRETRAINED_EXTRACTORS
 import rasa.shared.utils.io
+from rasa.utils.io import (
+    ESCAPE_DCT,
+    GROUP_COMPLETE_MATCH,
+    ESCAPE,
+    UNESCAPE_DCT,
+    UNESCAPE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,3 +92,21 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
             trainable_entities.append(entity)
 
     example[ENTITIES] = trainable_entities
+
+
+def encode_string(s: Text) -> Text:
+    """Return an encoded python string."""
+
+    def replace(match: Match) -> Text:
+        return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
+
+    return ESCAPE.sub(replace, s)
+
+
+def decode_string(s: Text) -> Text:
+    """Return a decoded python string."""
+
+    def replace(match: Match) -> Text:
+        return UNESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
+
+    return UNESCAPE.sub(replace, s)
