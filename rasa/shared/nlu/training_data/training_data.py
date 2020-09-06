@@ -8,7 +8,6 @@ from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
 from rasa.shared import data
-import rasa.nlu.utils
 from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
@@ -309,11 +308,11 @@ class TrainingData:
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
 
         if data.is_likely_json_file(filename):
-            rasa.nlu.utils.write_to_file(filename, self.nlu_as_json(indent=2))
+            rasa.shared.utils.io.write_text_file(self.nlu_as_json(indent=2), filename)
         elif data.is_likely_markdown_file(filename):
-            rasa.nlu.utils.write_to_file(filename, self.nlu_as_markdown())
+            rasa.shared.utils.io.write_text_file(self.nlu_as_markdown(), filename)
         elif data.is_likely_yaml_file(filename):
-            rasa.nlu.utils.write_to_file(filename, self.nlu_as_yaml())
+            rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
         else:
             ValueError(
                 "Unsupported file format detected. Supported file formats are 'json' "
@@ -322,11 +321,11 @@ class TrainingData:
 
     def persist_nlg(self, filename: Text) -> None:
         if data.is_likely_yaml_file(filename):
-            rasa.nlu.utils.write_to_file(filename, self.nlg_as_yaml())
+            rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
         elif data.is_likely_markdown_file(filename):
             nlg_serialized_data = self.nlg_as_markdown()
             if nlg_serialized_data:
-                rasa.nlu.utils.write_to_file(filename, nlg_serialized_data)
+                rasa.shared.utils.io.write_text_file(nlg_serialized_data, filename)
         else:
             ValueError(
                 "Unsupported file format detected. Supported file formats are 'md' "
