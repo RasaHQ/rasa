@@ -20,7 +20,7 @@ import typing
 from typing import Text, Dict, Any, Union
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 class TrainingDataReader:
