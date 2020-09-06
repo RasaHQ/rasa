@@ -147,7 +147,7 @@ class KeywordIntentClassifier(IntentClassifier):
             file_name = meta.get("file")
             keyword_file = os.path.join(model_dir, file_name)
             if os.path.exists(keyword_file):
-                intent_keyword_map = utils.read_json_file(keyword_file)
+                intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Failed to load key word file for `IntentKeywordClassifier`, "

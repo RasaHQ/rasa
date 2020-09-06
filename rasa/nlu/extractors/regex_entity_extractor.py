@@ -117,7 +117,7 @@ class RegexEntityExtractor(EntityExtractor):
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
-            patterns = io_utils.read_json_file(regex_file)
+            patterns = rasa.shared.utils.io.read_json_file(regex_file)
             return RegexEntityExtractor(meta, patterns=patterns)
 
         return RegexEntityExtractor(meta)

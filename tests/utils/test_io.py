@@ -297,7 +297,7 @@ def test_write_json_file(tmp_path: Path):
     file_path = str(tmp_path / "abc.txt")
 
     io_utils.dump_obj_as_json_to_file(file_path, expected)
-    assert io_utils.read_json_file(file_path) == expected
+    assert rasa.shared.utils.io.read_json_file(file_path) == expected
 
 
 def test_write_utf_8_yaml_file(tmp_path: Path):

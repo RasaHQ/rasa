@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Union, Type, Tuple
 import numpy as np
 import scipy.sparse
 
+import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu import utils
@@ -161,7 +162,7 @@ class RegexFeaturizer(SparseFeaturizer):
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
-            known_patterns = rasa.utils.io.read_json_file(regex_file)
+            known_patterns = rasa.shared.utils.io.read_json_file(regex_file)
             return RegexFeaturizer(meta, known_patterns=known_patterns)
         else:
             return RegexFeaturizer(meta)

@@ -44,7 +44,7 @@ def test_validate_yaml_schema_raise_exception(file, schema):
 
 def test_example_training_data_is_valid():
     demo_json = "data/examples/rasa/demo-rasa.json"
-    data = io_utils.read_json_file(demo_json)
+    data = rasa.shared.utils.io.read_json_file(demo_json)
     validation_utils.validate_training_data(data, schema.rasa_nlu_data_schema())
 
 
@@ -108,7 +108,7 @@ def test_url_data_format():
         suffix="_tmp_training_data.json",
         mode="w+b",
     )
-    data = io_utils.read_json_file(fname)
+    data = rasa.shared.utils.io.read_json_file(fname)
     assert data is not None
     validation_utils.validate_training_data(data, schema.rasa_nlu_data_schema())
 

@@ -1,3 +1,5 @@
+import json
+import os
 import warnings
 from pathlib import Path
 from typing import Any, Text, Optional, Type, Union
@@ -98,3 +100,15 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
             return f.read()
     except FileNotFoundError:
         raise ValueError(f"File '{filename}' does not exist.")
+
+
+def read_json_file(filename: Union[Text, Path]) -> Any:
+    """Read json from a file."""
+    content = read_file(filename)
+    try:
+        return json.loads(content)
+    except ValueError as e:
+        raise ValueError(
+            "Failed to read json from '{}'. Error: "
+            "{}".format(os.path.abspath(filename), e)
+        )

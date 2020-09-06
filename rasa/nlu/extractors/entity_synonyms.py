@@ -78,7 +78,7 @@ class EntitySynonymMapper(EntityExtractor):
 
         entity_synonyms_file = os.path.join(model_dir, file_name)
         if os.path.isfile(entity_synonyms_file):
-            synonyms = rasa.utils.io.read_json_file(entity_synonyms_file)
+            synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
             rasa.shared.utils.io.raise_warning(

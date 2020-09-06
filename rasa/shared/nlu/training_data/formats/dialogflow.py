@@ -3,7 +3,6 @@ import os
 import typing
 from typing import Any, Dict, Optional, Text, List, Tuple
 
-import rasa.utils.io
 from rasa.nlu import utils
 from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReader
@@ -39,7 +38,7 @@ class DialogflowReader(TrainingDataReader):
                 "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
             )
 
-        root_js = rasa.utils.io.read_json_file(fn)
+        root_js = rasa.shared.utils.io.read_json_file(fn)
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
@@ -139,7 +138,7 @@ class DialogflowReader(TrainingDataReader):
         examples_fn_ending = f"_{examples_type}_{language}.json"
         examples_fn = fn.replace(".json", examples_fn_ending)
         if os.path.isfile(examples_fn):
-            return rasa.utils.io.read_json_file(examples_fn)
+            return rasa.shared.utils.io.read_json_file(examples_fn)
         else:
             return None
 

@@ -487,7 +487,7 @@ async def test_interactive_domain_persistence(
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = rasa.utils.io.read_json_file(tracker_dump)
+    tracker_json = rasa.shared.utils.io.read_json_file(tracker_dump)
 
     events = tracker_json.get("events", [])
 

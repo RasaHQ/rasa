@@ -138,18 +138,6 @@ def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
 
 
-def read_json_file(filename: Union[Text, Path]) -> Any:
-    """Read json from a file."""
-    content = read_file(filename)
-    try:
-        return json.loads(content)
-    except ValueError as e:
-        raise ValueError(
-            "Failed to read json from '{}'. Error: "
-            "{}".format(os.path.abspath(filename), e)
-        )
-
-
 def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     """Dump an object as a json string to a file."""
 

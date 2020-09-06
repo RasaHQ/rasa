@@ -1049,7 +1049,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         index_label_id_mapping = io_utils.json_unpickle(
             model_dir / f"{file_name}.index_label_id_mapping.json"
         )
-        entity_tag_specs = io_utils.read_json_file(
+        entity_tag_specs = rasa.shared.utils.io.read_json_file(
             model_dir / f"{file_name}.entity_tag_specs.json"
         )
         entity_tag_specs = [

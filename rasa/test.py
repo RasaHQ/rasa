@@ -5,6 +5,7 @@ import typing
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.constants import (
     DEFAULT_RESULTS_PATH,
@@ -32,7 +33,7 @@ def test_core_models_in_directory(
     loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
-    number_of_stories = io_utils.read_json_file(story_n_path)
+    number_of_stories = rasa.shared.utils.io.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
 
 

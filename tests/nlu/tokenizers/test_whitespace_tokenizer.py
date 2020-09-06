@@ -1,5 +1,6 @@
 import pytest
 
+import rasa.shared.utils.io
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import TOKENS_NAMES
@@ -141,7 +142,9 @@ def test_whitespace_training(supervised_embeddings_config):
 def test_whitespace_does_not_throw_error():
     import rasa.utils.io as io_utils
 
-    texts = io_utils.read_json_file("data/test_tokenizers/naughty_strings.json")
+    texts = rasa.shared.utils.io.read_json_file(
+        "data/test_tokenizers/naughty_strings.json"
+    )
 
     tk = WhitespaceTokenizer()
 
