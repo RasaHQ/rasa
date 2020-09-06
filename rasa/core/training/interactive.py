@@ -745,7 +745,7 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
 
-    import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
+    import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
     messages = []
 

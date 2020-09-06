@@ -7,7 +7,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
 )
-from rasa.nlu.training_data.util import transform_entity_synonyms
+from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
 
 if typing.TYPE_CHECKING:

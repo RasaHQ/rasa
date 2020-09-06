@@ -34,7 +34,7 @@ def add_synonym(
         synonym_name: Name of the synonym.
         existing_synonyms: Dictionary will synonym mappings that will be extended.
     """
-    import rasa.nlu.training_data.util as training_data_util
+    import rasa.shared.nlu.training_data.util as training_data_util
 
     training_data_util.check_duplicate_synonym(
         existing_synonyms, synonym_value, synonym_name, "reading markdown"

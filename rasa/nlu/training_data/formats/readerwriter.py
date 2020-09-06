@@ -53,7 +53,7 @@ class TrainingDataWriter:
     def prepare_training_examples(training_data: "TrainingData") -> OrderedDict:
         """Pre-processes training data examples by removing not trainable entities."""
 
-        import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
+        import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
         training_examples = OrderedDict()
 

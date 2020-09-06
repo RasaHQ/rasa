@@ -197,7 +197,7 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown training examples."""
 
-        import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
+        import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
         training_examples = OrderedDict()
 

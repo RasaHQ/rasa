@@ -10,7 +10,7 @@ from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data.loading import guess_format, UNK, RASA_YAML, JSON, MARKDOWN
-from rasa.nlu.training_data.util import get_file_format
+from rasa.shared.nlu.training_data.util import get_file_format
 
 
 def test_luis_data():

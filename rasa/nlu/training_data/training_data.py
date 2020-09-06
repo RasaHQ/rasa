@@ -25,7 +25,7 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.training_data.util import check_duplicate_synonym
+from rasa.shared.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
