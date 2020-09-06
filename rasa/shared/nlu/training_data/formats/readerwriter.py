@@ -14,9 +14,9 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
 )
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import typing
-from rasa.nlu import utils
 from typing import Text, Dict, Any, Union
 
 if typing.TYPE_CHECKING:
@@ -41,7 +41,7 @@ class TrainingDataWriter:
     def dump(self, filename: Text, training_data) -> None:
         """Writes a TrainingData object in markdown format to a file."""
         s = self.dumps(training_data)
-        utils.write_to_file(filename, s)
+        rasa.shared.utils.io.write_text_file(s, filename)
 
     def dumps(self, training_data: "TrainingData") -> Text:
         """Turns TrainingData into a string."""
