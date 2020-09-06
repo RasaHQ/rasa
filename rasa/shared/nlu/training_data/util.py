@@ -41,7 +41,7 @@ def check_duplicate_synonym(
 
 
 def get_file_format(resource_name: Text) -> Text:
-    from rasa.nlu.training_data import loading
+    from rasa.shared.nlu.training_data import loading
 
     if resource_name is None or not os.path.exists(resource_name):
         raise AttributeError(f"Resource '{resource_name}' does not exist.")

@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Callable, Tuple, List, Text, Set, Union, Optional, Iterable
 
-from rasa.nlu.training_data import loading as nlu_loading
+from rasa.shared.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
 

@@ -13,7 +13,7 @@ from aiohttp import ClientError
 from colorclass import Color
 
 import rasa.shared.utils.io
-from rasa.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
 from rasa.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
@@ -57,7 +57,7 @@ from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 # noinspection PyProtectedMember
-from rasa.nlu.training_data import loading
+from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library

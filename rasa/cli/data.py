@@ -144,7 +144,7 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments
     """
-    from rasa.nlu.training_data.loading import load_data
+    from rasa.shared.nlu.training_data.loading import load_data
     from rasa.shared.nlu.training_data.util import get_file_format
 
     data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
