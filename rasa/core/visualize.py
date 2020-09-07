@@ -44,13 +44,15 @@ async def visualize(
     if nlu_data_path is not None:
         import rasa.shared.nlu.training_data.loading
 
-        nlu_data_path = rasa.shared.nlu.training_data.loading.load_data(nlu_data_path)
+        nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
+            nlu_data_path
+        )
     else:
-        nlu_data_path = None
+        nlu_training_data = None
 
     logger.info("Starting to visualize stories...")
     await agent.visualize(
-        stories_path, output_path, max_history, nlu_training_data=nlu_data_path
+        stories_path, output_path, max_history, nlu_training_data=nlu_training_data
     )
 
     full_output_path = "file://{}".format(os.path.abspath(output_path))
