@@ -92,7 +92,7 @@ module.exports = {
           type: 'category',
           label: 'Actions',
           items: [
-            // 'actions',
+            'actions',
             'responses',
             {
               type: 'category',
