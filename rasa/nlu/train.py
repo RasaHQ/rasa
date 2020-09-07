@@ -7,7 +7,7 @@ from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
-from rasa.shared.nlu.training_data.loading import _load, logger, load_data
+from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils import io as io_utils
 from rasa.utils.endpoints import EndpointConfig
 
@@ -40,6 +40,25 @@ class TrainingException(Exception):
 
     def __str__(self) -> Text:
         return self.message
+
+
+async def load_data_from_endpoint(
+    data_endpoint: EndpointConfig, language: Optional[Text] = "en"
+) -> "TrainingData":
+    """Load training data from a URL."""
+    import requests
+
+    if not utils.is_url(data_endpoint.url):
+        raise requests.exceptions.InvalidURL(data_endpoint.url)
+    try:
+        response = await data_endpoint.request("get")
+        response.raise_for_status()
+        temp_data_file = io_utils.create_temporary_file(response.content, mode="w+b")
+        training_data = load_data(temp_data_file, language)
+
+        return training_data
+    except Exception as e:
+        logger.warning(f"Could not retrieve training data from URL:\n{e}")
 
 
 def create_persistor(persistor: Optional[Text]):
@@ -106,22 +125,3 @@ if __name__ == "__main__":
         "`rasa train` to train a combined Core and NLU model or `rasa train nlu` "
         "to train an NLU model."
     )
-
-
-async def load_data_from_endpoint(
-    data_endpoint: EndpointConfig, language: Optional[Text] = "en"
-) -> "TrainingData":
-    """Load training data from a URL."""
-    import requests
-
-    if not utils.is_url(data_endpoint.url):
-        raise requests.exceptions.InvalidURL(data_endpoint.url)
-    try:
-        response = await data_endpoint.request("get")
-        response.raise_for_status()
-        temp_data_file = io_utils.create_temporary_file(response.content, mode="w+b")
-        training_data = _load(temp_data_file, language)
-
-        return training_data
-    except Exception as e:
-        logger.warning(f"Could not retrieve training data from URL:\n{e}")

@@ -58,7 +58,11 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     if not os.path.exists(resource_name):
         raise ValueError(f"File '{resource_name}' does not exist.")
 
-    files = rasa.shared.utils.io.list_files(resource_name)
+    if os.path.isfile(resource_name):
+        files = [resource_name]
+    else:
+        files = rasa.shared.utils.io.list_files(resource_name)
+
     data_sets = [_load(f, language) for f in files]
     data_sets = [ds for ds in data_sets if ds]
     if len(data_sets) == 0:
