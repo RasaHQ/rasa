@@ -7,7 +7,7 @@ from typing import Dict, Text, List, Any, Union
 
 import rasa.data
 import rasa.shared.data
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
     DOCS_URL_DOMAINS,

@@ -5,7 +5,7 @@ from rasa.shared.nlu.constants import ENTITIES
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error

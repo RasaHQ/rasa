@@ -2,7 +2,8 @@ from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
@@ -24,7 +25,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
 )
-from rasa.nlu.training_data import Message
 import rasa.nlu.utils.bilou_utils as bilou_utils
 
 

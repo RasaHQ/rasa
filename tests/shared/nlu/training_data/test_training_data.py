@@ -3,24 +3,24 @@ from typing import Text
 import pytest
 
 import rasa.shared.utils.io
-from rasa.nlu import training_data
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import (
     guess_format,
     UNK,
     RASA_YAML,
     JSON,
     MARKDOWN,
+    load_data,
 )
 from rasa.shared.nlu.training_data.util import get_file_format
 
 
 def test_luis_data():
-    td = training_data.load_data("data/examples/luis/demo-restaurants_v5.json")
+    td = load_data("data/examples/luis/demo-restaurants_v5.json")
 
     assert not td.is_empty()
     assert len(td.entity_examples) == 8
@@ -32,7 +32,7 @@ def test_luis_data():
 
 
 def test_wit_data():
-    td = training_data.load_data("data/examples/wit/demo-flights.json")
+    td = load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 4
     assert len(td.intent_examples) == 1
@@ -43,7 +43,7 @@ def test_wit_data():
 
 
 def test_dialogflow_data():
-    td = training_data.load_data("data/examples/dialogflow/")
+    td = load_data("data/examples/dialogflow/")
     assert not td.is_empty()
     assert len(td.entity_examples) == 5
     assert len(td.intent_examples) == 24
@@ -70,7 +70,7 @@ def test_dialogflow_data():
 
 def test_lookup_table_json():
     lookup_fname = "data/test/lookup_tables/plates.txt"
-    td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.json")
+    td_lookup = load_data("data/test/lookup_tables/lookup_table.json")
     assert not td_lookup.is_empty()
     assert len(td_lookup.lookup_tables) == 1
     assert td_lookup.lookup_tables[0]["name"] == "plates"
@@ -79,7 +79,7 @@ def test_lookup_table_json():
 
 def test_lookup_table_md():
     lookup_fname = "data/test/lookup_tables/plates.txt"
-    td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.md")
+    td_lookup = load_data("data/test/lookup_tables/lookup_table.md")
     assert not td_lookup.is_empty()
     assert len(td_lookup.lookup_tables) == 1
     assert td_lookup.lookup_tables[0]["name"] == "plates"
@@ -87,7 +87,7 @@ def test_lookup_table_md():
 
 
 def test_composite_entities_data():
-    td = training_data.load_data("data/test/demo-rasa-composite-entities.md")
+    td = load_data("data/test/demo-rasa-composite-entities.md")
     assert not td.is_empty()
     assert len(td.entity_examples) == 11
     assert len(td.intent_examples) == 45
@@ -249,8 +249,8 @@ def test_train_test_split_with_random_seed(filepaths):
     ],
 )
 def test_data_merging(files):
-    td_reference = training_data.load_data(files[0])
-    td = training_data.load_data(files[1])
+    td_reference = load_data(files[0])
+    td = load_data(files[1])
     assert len(td.entity_examples) == len(td_reference.entity_examples)
     assert len(td.intent_examples) == len(td_reference.intent_examples)
     assert len(td.training_examples) == len(td_reference.training_examples)
@@ -261,14 +261,10 @@ def test_data_merging(files):
 
 
 def test_markdown_single_sections():
-    td_regex_only = training_data.load_data(
-        "data/test/markdown_single_sections/regex_only.md"
-    )
+    td_regex_only = load_data("data/test/markdown_single_sections/regex_only.md")
     assert td_regex_only.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
 
-    td_syn_only = training_data.load_data(
-        "data/test/markdown_single_sections/synonyms_only.md"
-    )
+    td_syn_only = load_data("data/test/markdown_single_sections/synonyms_only.md")
     assert td_syn_only.entity_synonyms == {"Chines": "chinese", "Chinese": "chinese"}
 
 
@@ -294,7 +290,7 @@ def test_repeated_entities(tmp_path):
 }"""
     f = tmp_path / "tmp_training_data.json"
     f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
-    td = training_data.load_data(str(f))
+    td = load_data(str(f))
     assert len(td.entity_examples) == 1
     example = td.entity_examples[0]
     entities = example.get("entities")
@@ -327,7 +323,7 @@ def test_multiword_entities(tmp_path):
 }"""
     f = tmp_path / "tmp_training_data.json"
     f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
-    td = training_data.load_data(str(f))
+    td = load_data(str(f))
     assert len(td.entity_examples) == 1
     example = td.entity_examples[0]
     entities = example.get("entities")
@@ -358,7 +354,7 @@ def test_nonascii_entities(tmp_path):
 }"""
     f = tmp_path / "tmp_training_data.json"
     f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
-    td = training_data.load_data(str(f))
+    td = load_data(str(f))
     assert len(td.entity_examples) == 1
     example = td.entity_examples[0]
     entities = example.get("entities")
@@ -410,7 +406,7 @@ def test_entities_synonyms(tmp_path):
 }"""
     f = tmp_path / "tmp_training_data.json"
     f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
-    td = training_data.load_data(str(f))
+    td = load_data(str(f))
     assert td.entity_synonyms["New York City"] == "nyc"
 
 
@@ -485,11 +481,11 @@ def test_training_data_conversion(
 ):
     out_path = tmpdir.join("rasa_nlu_data.json")
     convert_training_data(data_file, out_path.strpath, output_format, language)
-    td = training_data.load_data(out_path.strpath, language)
+    td = load_data(out_path.strpath, language)
     assert td.entity_examples != []
     assert td.intent_examples != []
 
-    gold_standard = training_data.load_data(gold_standard_file, language)
+    gold_standard = load_data(gold_standard_file, language)
     cmp_message_list(td.entity_examples, gold_standard.entity_examples)
     cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
@@ -498,7 +494,7 @@ def test_training_data_conversion(
     # file format and performing the same tests
     rto_path = tmpdir.join("data_in_original_format.txt")
     convert_training_data(out_path.strpath, rto_path.strpath, "json", language)
-    rto = training_data.load_data(rto_path.strpath, language)
+    rto = load_data(rto_path.strpath, language)
     cmp_message_list(gold_standard.entity_examples, rto.entity_examples)
     cmp_message_list(gold_standard.intent_examples, rto.intent_examples)
     assert gold_standard.entity_synonyms == rto.entity_synonyms
@@ -552,7 +548,7 @@ def test_custom_attributes(tmp_path):
 }"""
     f = tmp_path / "tmp_training_data.json"
     f.write_text(data, rasa.shared.utils.io.DEFAULT_ENCODING)
-    td = training_data.load_data(str(f))
+    td = load_data(str(f))
     assert len(td.training_examples) == 1
     example = td.training_examples[0]
     assert example.get("sentiment") == 0.8

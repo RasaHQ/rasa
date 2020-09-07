@@ -7,9 +7,9 @@ from pathlib import Path
 
 import rasa.data as data
 import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.loading import load_data
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_STORIES_FILE
-from rasa.nlu.training_data import load_data
 from rasa.shared.utils.io import json_to_string
 
 

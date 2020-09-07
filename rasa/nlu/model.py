@@ -13,7 +13,8 @@ from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=p
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.nlu.persistor import Persistor
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 
 MODEL_NAME_PREFIX = "nlu_"

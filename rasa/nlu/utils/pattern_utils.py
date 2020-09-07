@@ -2,8 +2,7 @@ import re
 from typing import Dict, List, Text, Union
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def _convert_lookup_tables_to_regex(

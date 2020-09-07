@@ -11,7 +11,7 @@ from rasa.shared.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)

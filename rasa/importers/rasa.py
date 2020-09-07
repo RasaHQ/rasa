@@ -7,7 +7,7 @@ from rasa.core.training.structures import StoryGraph
 from rasa.importers import utils, autoconfig
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.autoconfig import TrainingType
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)

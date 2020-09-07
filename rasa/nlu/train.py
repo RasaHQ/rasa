@@ -7,14 +7,14 @@ from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
-from rasa.nlu.training_data import load_data
-from rasa.shared.nlu.training_data.loading import _load, logger
+from rasa.shared.nlu.training_data.loading import _load, logger, load_data
 from rasa.utils import io as io_utils
 from rasa.utils.endpoints import EndpointConfig
 
 
 if typing.TYPE_CHECKING:
     from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from typing import List, Text
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 from rasa.shared.utils.io import DEFAULT_ENCODING
 

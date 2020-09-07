@@ -8,10 +8,10 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
 )
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT
-from rasa.nlu.training_data import Message
 
 
 @pytest.mark.parametrize(

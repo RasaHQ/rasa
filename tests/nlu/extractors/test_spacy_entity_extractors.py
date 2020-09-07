@@ -1,5 +1,5 @@
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 
 def test_spacy_ner_extractor(component_builder, spacy_nlp):

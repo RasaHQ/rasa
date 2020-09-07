@@ -8,7 +8,8 @@ import rasa.utils.io as io_utils
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_VALUE,
@@ -16,7 +17,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_TYPE,
 )
-from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 
 logger = logging.getLogger(__name__)

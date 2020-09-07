@@ -1463,13 +1463,13 @@ def run_evaluation(
 
     Returns: dictionary containing evaluation results
     """
-    import rasa.nlu.training_data
+    import rasa.shared.nlu.training_data.loading
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = rasa.nlu.training_data.load_data(
+    test_data = rasa.shared.nlu.training_data.loading.load_data(
         data_path, interpreter.model_metadata.language
     )
 

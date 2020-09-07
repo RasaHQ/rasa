@@ -2,9 +2,9 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import ENTITIES
-from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 
 

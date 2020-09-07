@@ -814,7 +814,7 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
 
 def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> None:
     """Write the nlu data of the conversation_id to the file paths."""
-    from rasa.nlu.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
     msgs = _collect_messages(events)
     msgs = _filter_messages(msgs)

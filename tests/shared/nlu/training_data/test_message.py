@@ -6,7 +6,8 @@ import scipy.sparse
 
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
-from rasa.nlu.training_data import Message
+import rasa.shared.nlu.training_data.message
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(

@@ -6,7 +6,7 @@ import logging
 import rasa.shared.utils.common
 from rasa.core.domain import Domain
 from rasa.core.training.structures import StoryGraph
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils

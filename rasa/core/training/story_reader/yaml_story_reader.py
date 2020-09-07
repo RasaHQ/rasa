@@ -5,7 +5,7 @@ from typing import Dict, Text, List, Any, Optional, Union
 import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data import entities_parser
-from rasa.shared.utils.validation import validate_yaml_schema, InvalidYamlFileError
+import rasa.shared.utils.validation
 from ruamel.yaml.parser import ParserError
 
 from rasa.constants import TEST_STORIES_FILE_PREFIX, DOCS_URL_STORIES, DOCS_URL_RULES
@@ -79,14 +79,16 @@ class YAMLStoryReader(StoryReader):
             file_content = rasa.shared.utils.io.read_file(
                 filename, rasa.shared.utils.io.DEFAULT_ENCODING
             )
-            validate_yaml_schema(file_content, CORE_SCHEMA_FILE)
+            rasa.shared.utils.validation.validate_yaml_schema(
+                file_content, CORE_SCHEMA_FILE
+            )
             yaml_content = rasa.shared.utils.io.read_yaml(file_content)
         except (ValueError, ParserError) as e:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
             return []
-        except InvalidYamlFileError as e:
+        except rasa.shared.utils.validation.InvalidYamlFileError as e:
             raise ValueError from e
 
         return self.read_from_parsed_yaml(yaml_content)
@@ -103,7 +105,9 @@ class YAMLStoryReader(StoryReader):
             The parsed stories or rules.
         """
 
-        if not validate_training_data_format_version(parsed_content, self.source_name):
+        if not rasa.shared.utils.validation.validate_training_data_format_version(
+            parsed_content, self.source_name
+        ):
             return []
 
         for key, parser_class in {

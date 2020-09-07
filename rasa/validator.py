@@ -12,7 +12,7 @@ from rasa.core.events import UserUttered
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph
 from rasa.importers.importer import TrainingDataImporter
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)

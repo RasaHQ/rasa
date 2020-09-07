@@ -38,9 +38,9 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,

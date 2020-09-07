@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from rasa.nlu import training_data
-from rasa.nlu.training_data import Message
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data import loading
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.constants import SPACY_DOCS
@@ -70,7 +70,7 @@ def test_spacy_training_sample_alignment(spacy_nlp_component):
 def test_spacy_intent_featurizer(spacy_nlp_component):
     from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
-    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    td = loading.load_data("data/examples/rasa/demo-rasa.json")
     spacy_nlp_component.train(td, config=None)
     spacy_featurizer = SpacyFeaturizer()
     spacy_featurizer.train(td, config=None)
@@ -123,7 +123,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
 
     ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
-    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    td = loading.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:
         doc = spacy_nlp(e.text)
         doc_capitalized = spacy_nlp(e.text.capitalize())

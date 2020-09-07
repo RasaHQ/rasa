@@ -10,7 +10,7 @@ from rasa.nlu.classifiers.fallback_classifier import (
     THRESHOLD_KEY,
     AMBIGUITY_THRESHOLD_KEY,
 )
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,

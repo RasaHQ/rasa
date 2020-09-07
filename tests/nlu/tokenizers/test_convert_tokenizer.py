@@ -1,6 +1,7 @@
 import pytest
 
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer

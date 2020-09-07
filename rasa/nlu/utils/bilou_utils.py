@@ -2,8 +2,8 @@ import logging
 from typing import List, Tuple, Text, Optional, Dict, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.training_data import Message
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     BILOU_ENTITIES,

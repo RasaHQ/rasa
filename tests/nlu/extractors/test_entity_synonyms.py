@@ -1,5 +1,6 @@
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 
 def test_entity_synonyms():
