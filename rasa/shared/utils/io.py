@@ -2,8 +2,11 @@ import glob
 import json
 import os
 import warnings
+from hashlib import md5
 from pathlib import Path
 from typing import Any, Text, Optional, Type, Union, List
+
+import rasa.shared
 
 DEFAULT_ENCODING = "utf-8"
 
@@ -166,3 +169,8 @@ def list_subdirectories(path: Text) -> List[Text]:
     If the path points to a file, returns an empty list."""
 
     return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
+
+
+def get_text_hash(text: Text, encoding: Text = DEFAULT_ENCODING) -> Text:
+    """Calculate the md5 hash for a text."""
+    return md5(text.encode(encoding)).hexdigest()

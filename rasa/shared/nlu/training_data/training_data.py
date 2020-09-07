@@ -105,10 +105,8 @@ class TrainingData:
         )
 
     def __hash__(self) -> int:
-        from rasa.core import utils as core_utils
-
         stringified = self.nlu_as_json() + self.nlg_as_markdown()
-        text_hash = core_utils.get_text_hash(stringified)
+        text_hash = rasa.shared.utils.io.get_text_hash(stringified)
 
         return int(text_hash, 16)
 

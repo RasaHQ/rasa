@@ -346,13 +346,6 @@ def get_file_hash(path: Text) -> Text:
     return md5(file_as_bytes(path)).hexdigest()
 
 
-def get_text_hash(
-    text: Text, encoding: Text = rasa.shared.utils.io.DEFAULT_ENCODING
-) -> Text:
-    """Calculate the md5 hash for a text."""
-    return md5(text.encode(encoding)).hexdigest()
-
-
 def get_dict_hash(
     data: Dict, encoding: Text = rasa.shared.utils.io.DEFAULT_ENCODING
 ) -> Text:

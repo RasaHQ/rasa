@@ -3,7 +3,6 @@ import logging
 import os
 from typing import Any, Dict, Optional, Text, Match
 
-import rasa.utils.io as io_utils
 from rasa.shared.nlu.constants import ENTITIES, EXTRACTOR, PRETRAINED_EXTRACTORS
 import rasa.shared.utils.io
 from rasa.utils.io import (

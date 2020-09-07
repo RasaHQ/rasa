@@ -455,7 +455,7 @@ class Domain:
         )
         self_as_dict[KEY_ACTIONS] = self.action_names
         self_as_string = json.dumps(self_as_dict, sort_keys=True)
-        text_hash = utils.get_text_hash(self_as_string)
+        text_hash = rasa.shared.utils.io.get_text_hash(self_as_string)
 
         return int(text_hash, 16)
 

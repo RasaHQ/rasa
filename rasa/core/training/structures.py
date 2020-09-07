@@ -300,7 +300,7 @@ class StoryGraph:
 
     def __hash__(self) -> int:
         self_as_string = self.as_story_string()
-        text_hash = utils.get_text_hash(self_as_string)
+        text_hash = rasa.shared.utils.io.get_text_hash(self_as_string)
 
         return int(text_hash, 16)
 
