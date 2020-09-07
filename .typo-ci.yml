@@ -172,5 +172,7 @@ excluded_words:
   - crfentityextractor
   - Comerica
   - entitysynonymmapper
+  - NLG
+  - nlg
 
 spellcheck_filenames: false
