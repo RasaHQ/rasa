@@ -1,6 +1,5 @@
 import logging
 import os
-import typing
 from typing import Any, Dict, Optional, Text, List, Tuple
 
 from rasa.nlu import utils
@@ -9,8 +8,8 @@ from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReade
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 import rasa.shared.utils.io
 
-if typing.TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +26,6 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 class DialogflowReader(TrainingDataReader):
     def read(self, fn: Text, **kwargs: Any) -> "TrainingData":
         """Loads training data stored in the Dialogflow data format."""
-        from rasa.nlu.training_data import TrainingData
-
         language = kwargs["language"]
         fformat = kwargs["fformat"]
 
@@ -56,8 +53,6 @@ class DialogflowReader(TrainingDataReader):
         self, intent_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
     ) -> "TrainingData":
         """Reads the intent and examples from respective jsons."""
-        from rasa.nlu.training_data import Message, TrainingData
-
         intent = intent_js.get("name")
 
         training_examples = []
@@ -118,8 +113,6 @@ class DialogflowReader(TrainingDataReader):
 
     @staticmethod
     def _read_entities(entity_js, examples_js) -> "TrainingData":
-        from rasa.nlu.training_data import TrainingData
-
         entity_synonyms = transform_entity_synonyms(examples_js)
 
         name = entity_js.get("name")

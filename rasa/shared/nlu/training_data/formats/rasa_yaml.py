@@ -1,17 +1,7 @@
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import (
-    Text,
-    Any,
-    List,
-    Dict,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-    Iterator,
-    Optional,
-)
+from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
 
 import rasa.shared.nlu.constants
 from rasa.shared import data
@@ -27,9 +17,8 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
 )
 import rasa.shared.utils.io
 
-if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.training_data import TrainingData
-    from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +73,6 @@ class RasaYAMLReader(TrainingDataReader):
         Returns:
             New `TrainingData` object with parsed training data.
         """
-        from rasa.nlu.training_data import TrainingData
         from rasa.validator import Validator
 
         self.validate(string)
@@ -146,7 +134,6 @@ class RasaYAMLReader(TrainingDataReader):
                 )
 
     def _parse_intent(self, intent_data: Dict[Text, Any]) -> None:
-        from rasa.nlu.training_data import Message
         import rasa.shared.nlu.training_data.entities_parser as entities_parser
         import rasa.shared.nlu.training_data.synonyms_parser as synonyms_parser
 

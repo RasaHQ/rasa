@@ -13,14 +13,13 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
 )
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.util import encode_string, decode_string
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
 GROUP_ENTITY_DICT = "entity_dict"
 GROUP_ENTITY_TEXT = "entity_text"
 
-if typing.TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.training_data import TrainingData
 
 INTENT = "intent"
 SYNONYM = "synonym"
@@ -50,8 +49,6 @@ class MarkdownReader(TrainingDataReader):
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
-        from rasa.nlu.training_data import TrainingData
-
         s = self._strip_comments(s)
         for line in s.splitlines():
             line = decode_string(line.strip())

@@ -1,5 +1,4 @@
 import logging
-import typing
 from typing import Any, Dict, List, Text
 
 from rasa.shared.nlu.constants import TEXT
@@ -7,9 +6,7 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-
-if typing.TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +19,6 @@ class NLGMarkdownReader(TrainingDataReader):
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
-        from rasa.nlu.training_data import TrainingData
-
         self.__init__()
         lines = s.splitlines()
         self.responses = self.process_lines(lines)
