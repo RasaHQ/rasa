@@ -286,7 +286,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
     def featurize_message(self, message: Message) -> Optional[Message]:
         """Featurize message using a trained NLU pipeline
         Args:
-            message storing text to process
+            message: storing text to process
         Returns:
             message containing tokens and features which are the output of the NLU pipeline
         """
