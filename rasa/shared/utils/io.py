@@ -9,8 +9,6 @@ from typing import Any, Text, Optional, Type, Union, List
 
 from ruamel import yaml as yaml
 
-from rasa.constants import YAML_VERSION
-
 DEFAULT_ENCODING = "utf-8"
 
 
@@ -250,3 +248,6 @@ def read_yaml(content: Text) -> Any:
 
 def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
+
+
+YAML_VERSION = (1, 2)

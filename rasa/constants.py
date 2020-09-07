@@ -31,7 +31,6 @@ CONFIG_SCHEMA_FILE = "shared/nlu/training_data/schemas/config.yml"
 DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
 SCHEMA_UTILS_FILE = "utils/schemas.yml"
 SCHEMA_EXTENSIONS_FILE = "utils/pykwalify_extensions.py"
-YAML_VERSION = (1, 2)
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005

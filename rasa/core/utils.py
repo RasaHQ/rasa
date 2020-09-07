@@ -33,8 +33,8 @@ from rasa.constants import (
     DEFAULT_SANIC_WORKERS,
     ENV_SANIC_WORKERS,
     DEFAULT_ENDPOINTS_PATH,
-    YAML_VERSION,
 )
+from rasa.shared.utils.io import YAML_VERSION
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
