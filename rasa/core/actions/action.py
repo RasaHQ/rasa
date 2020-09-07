@@ -15,7 +15,6 @@ from rasa.core.constants import (
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
     UTTER_PREFIX,
-    RESPOND_PREFIX,
 )
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -92,6 +91,11 @@ def default_action_names() -> List[Text]:
     return [a.name() for a in default_actions()] + [RULE_SNIPPET_ACTION_NAME]
 
 
+def construct_retrieval_action_names(retrieval_intents) -> List[Text]:
+
+    return [f"{UTTER_PREFIX}{intent}" for intent in retrieval_intents]
+
+
 def combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
     # remove all user actions that overwrite default actions
     # this logic is a bit reversed, you'd think that we should remove
@@ -115,11 +119,21 @@ def combine_with_templates(
     return actions + unique_template_names
 
 
+def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
+
+    return (
+        True
+        if retrieval_intents and action_name.split(UTTER_PREFIX)[1] in retrieval_intents
+        else False
+    )
+
+
 def action_from_name(
     name: Text,
     action_endpoint: Optional[EndpointConfig],
     user_actions: List[Text],
     should_use_form_action: bool = False,
+    retrieval_intents: List[Text] = [],
 ) -> "Action":
     """Return an action instance for the name."""
 
@@ -128,9 +142,10 @@ def action_from_name(
     if name in defaults and name not in user_actions:
         return defaults[name]
     elif name.startswith(UTTER_PREFIX):
-        return ActionUtterTemplate(name)
-    elif name.startswith(RESPOND_PREFIX):
-        return ActionRetrieveResponse(name)
+        if is_retrieval_action(name, retrieval_intents):
+            return ActionRetrieveResponse(name)
+        else:
+            return ActionUtterTemplate(name)
     elif should_use_form_action:
         from rasa.core.actions.forms import FormAction
 
@@ -220,7 +235,7 @@ class ActionRetrieveResponse(Action):
         self.silent_fail = silent_fail
 
     def intent_name_from_action(self) -> Text:
-        return self.action_name.split(RESPOND_PREFIX)[1]
+        return self.action_name.split(UTTER_PREFIX)[1]
 
     async def run(
         self,

@@ -10,6 +10,7 @@ from rasa.nlu.training_data import TrainingData
 from rasa.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
+from rasa.core.actions import action
 
 logger = logging.getLogger(__name__)
 
@@ -251,8 +252,33 @@ class CombinedDataImporter(TrainingDataImporter):
         domains = [importer.get_domain() for importer in self._importers]
         domains = await asyncio.gather(*domains)
 
-        return reduce(
+        # Check if NLU data has any retrieval intents,
+        # if yes add corresponding retrieval actions with `utter_` prefix automatically to an empty domain.
+        nlu_data = await self.get_nlu_data()
+        if nlu_data.retrieval_intents:
+            domains.append(
+                self._get_domain_with_retrieval_actions(nlu_data.retrieval_intents)
+            )
+
+        combined_domain = reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
+        )
+
+        # Make the domain known which intents are retrieval intents
+        combined_domain._update_retrieval_intent_properties(nlu_data.retrieval_intents)
+
+        return combined_domain
+
+    @staticmethod
+    def _get_domain_with_retrieval_actions(retrieval_intents):
+
+        return Domain(
+            [],
+            [],
+            [],
+            {},
+            action.construct_retrieval_action_names(retrieval_intents),
+            [],
         )
 
     async def get_stories(

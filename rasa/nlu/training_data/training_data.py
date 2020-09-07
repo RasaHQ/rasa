@@ -22,6 +22,7 @@ from rasa.nlu.constants import (
     ENTITIES,
     TEXT,
 )
+from rasa.core.constants import UTTER_PREFIX
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
@@ -240,8 +241,8 @@ class TrainingData:
                 continue
 
             # look for corresponding bot utterance
-            story_lookup_intent = example.get_full_intent()
-            assistant_utterances = self.responses.get(story_lookup_intent, [])
+            story_lookup_key = f"{UTTER_PREFIX}{example.get_full_intent()}"
+            assistant_utterances = self.responses.get(story_lookup_key, [])
             if assistant_utterances:
 
                 # Use the first response text as training label if needed downstream
@@ -251,7 +252,7 @@ class TrainingData:
 
                 # If no text attribute was found use the key for training
                 if not example.get(RESPONSE):
-                    example.set(RESPONSE, story_lookup_intent)
+                    example.set(RESPONSE, story_lookup_key)
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""

@@ -30,11 +30,13 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT_TYPE,
     SLOT_LISTED_ITEMS,
     DEFAULT_INTENTS,
+    UTTER_PREFIX,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
+from rasa.nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -311,6 +313,7 @@ class Domain:
 
         properties.setdefault(USE_ENTITIES_KEY, True)
         properties.setdefault(IGNORE_ENTITIES_KEY, [])
+        properties.setdefault("is_retrieval_intent", False)
         if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
             properties[USE_ENTITIES_KEY] = []
 
@@ -342,6 +345,18 @@ class Domain:
         del properties[IGNORE_ENTITIES_KEY]
 
         return intent
+
+    def _update_retrieval_intent_properties(self, retrieval_intents: List[Text]):
+        for retrieval_intent in retrieval_intents:
+            self.intent_properties[retrieval_intent]["is_retrieval_intent"] = True
+
+    @lazy_property
+    def retrieval_intents(self) -> List[Text]:
+        return [
+            intent
+            for intent in self.intent_properties
+            if self.intent_properties[intent]["is_retrieval_intent"]
+        ]
 
     @classmethod
     def collect_intent_properties(
@@ -385,7 +400,13 @@ class Domain:
     ) -> Tuple[Text, Dict[Text, Any]]:
         if not isinstance(intent, dict):
             intent_name = intent
-            intent = {intent_name: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
+            intent = {
+                intent_name: {
+                    USE_ENTITIES_KEY: True,
+                    IGNORE_ENTITIES_KEY: [],
+                    "is_retrieval_intent": False,
+                }
+            }
         else:
             intent_name = list(intent.keys())[0]
 
@@ -537,6 +558,7 @@ class Domain:
             action_endpoint,
             self.user_actions_and_forms,
             should_use_form_action,
+            self.retrieval_intents,
         )
 
     def action_for_index(
@@ -635,7 +657,6 @@ class Domain:
     @lazy_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
-
         return (
             self.intent_states
             + self.entity_states
