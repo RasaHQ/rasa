@@ -1,5 +1,6 @@
 import pytest
 
+
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
@@ -216,6 +217,7 @@ def test_whitespace_processing_with_attribute(
         },
     )
     expected_action_tokens_text = ["Where", "are", "you", "going"]
+
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
     tk.process(message)

@@ -19,7 +19,7 @@ from rasa.nlu.constants import (
 logger = logging.getLogger(__name__)
 
 
-class Token(object):
+class Token:
     def __init__(
         self,
         text: Text,

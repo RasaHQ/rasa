@@ -2,7 +2,6 @@ from typing import Any, Optional, Tuple, Text, Dict, Set, List, Union
 
 import pytest
 
-
 from rasa.nlu.tokenizers.tokenizer import Token
 
 from rasa.nlu.constants import (
@@ -14,6 +13,7 @@ from rasa.nlu.constants import (
     ACTION_TEXT,
     INTENT_RESPONSE_KEY,
 )
+
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 

@@ -272,7 +272,7 @@ async def test_read_stories_with_rules(default_domain: Domain):
 
 async def test_read_rules_without_stories(default_domain: Domain):
     story_steps = await loading.load_data_from_files(
-        ["data/test_stories/rules_without_stories.md"], default_domain,
+        ["data/test_stories/rules_without_stories.md"], default_domain
     )
 
     # this file contains three rules and two ML stories
@@ -297,9 +297,8 @@ async def test_read_rules_without_stories(default_domain: Domain):
     assert events[1] == SlotSet("requested_slot", "some_slot")
     assert events[2] == ActionExecuted("...")
     assert events[3] == UserUttered(
-        'inform{"some_slot":"bla"}',
-        {"name": "inform", "confidence": 1.0},
-        [{"entity": "some_slot", "start": 6, "end": 25, "value": "bla"}],
+        intent={"name": "inform", "confidence": 1.0},
+        entities=[{"entity": "some_slot", "start": 6, "end": 25, "value": "bla"}],
     )
     assert events[4] == ActionExecuted("loop_q_form")
 
@@ -308,7 +307,7 @@ async def test_read_rules_without_stories(default_domain: Domain):
     "line, expected",
     [
         (" greet: hi", {"intent": "greet", "text": "hi"}),
-        (" greet: /greet", {"intent": "greet", "text": "/greet", "entities": [],},),
+        (" greet: /greet", {"intent": "greet", "text": "/greet", "entities": []}),
         (
             'greet: /greet{"test": "test"}',
             {

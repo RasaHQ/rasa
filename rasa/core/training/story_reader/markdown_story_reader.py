@@ -242,8 +242,13 @@ class MarkdownStoryReader(StoryReader):
 
     def _parse_message(self, message: Text, line_num: int) -> UserUttered:
         parse_data = RegexInterpreter().synchronous_parse(message)
+
+        text = None
+        if self.use_e2e:
+            text = parse_data.get("text")
+
         utterance = UserUttered(
-            message, parse_data.get("intent"), parse_data.get("entities"), parse_data
+            text, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)

@@ -4,11 +4,12 @@ import copy
 import logging
 import random
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict, Tuple
+from typing import Optional, List, Text, Set, Dict, Tuple, Deque
 
 from rasa.constants import DOCS_URL_STORIES
+from rasa.core.constants import SHOULD_NOT_BE_SET
 from rasa.core import utils
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, State
 from rasa.core.events import (
     ActionExecuted,
     UserUttered,
@@ -19,8 +20,8 @@ from rasa.core.events import (
     SlotSet,
     ActiveLoop,
 )
+from rasa.core.trackers import DialogueStateTracker, FrozenState
 from rasa.shared.core.slots import Slot
-from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.structures import (
     StoryGraph,
     STORY_START,
@@ -59,7 +60,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
-        self._states = None
+        self._frozen_states = None
         self.domain = domain
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
@@ -82,9 +83,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             tracker.update(e)
         return tracker
 
-    def past_states(self, domain: Domain) -> deque:
-        """Return the states of the tracker based on the logged events."""
-
+    def past_frozen_states(self, domain: Domain) -> Deque[FrozenState]:
         # we need to make sure this is the same domain, otherwise things will
         # go south. but really, the same tracker shouldn't be used across
         # domains
@@ -92,14 +91,26 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         # if don't have it cached, we use the domain to calculate the states
         # from the events
-        if self._states is None:
-            self._states = super().past_states(domain)
+        if self._frozen_states is None:
+            states = super().past_states(domain)
+            self._frozen_states = deque(self.freeze_current_state(s) for s in states)
 
-        return self._states
+        return self._frozen_states
+
+    @staticmethod
+    def _unfreeze_states(frozen_states: Deque[FrozenState]) -> List[State]:
+        return [
+            {key: dict(value) for key, value in dict(frozen_state).items()}
+            for frozen_state in frozen_states
+        ]
+
+    def past_states(self, domain: Domain) -> List[State]:
+        frozen_states = self.past_frozen_states(domain)
+        return self._unfreeze_states(frozen_states)
 
     def clear_states(self) -> None:
         """Reset the states."""
-        self._states = None
+        self._frozen_states = None
 
     def init_copy(self) -> "TrackerWithCachedStates":
         """Create a new state tracker with the same initial values."""
@@ -130,16 +141,17 @@ class TrackerWithCachedStates(DialogueStateTracker):
         for event in self.events:
             tracker.update(event, skip_states=True)
 
-        tracker._states = copy.copy(self._states)
+        tracker._frozen_states = copy.copy(self._frozen_states)
 
-        return tracker  # yields the final state
+        return tracker
 
     def _append_current_state(self) -> None:
-        if self._states is None:
-            self._states = self.past_states(self.domain)
+        if self._frozen_states is None:
+            self._frozen_states = self.past_frozen_states(self.domain)
         else:
             state = self.domain.get_active_states(self)
-            self._states.append(frozenset(state.items()))
+            frozen_state = self.freeze_current_state(state)
+            self._frozen_states.append(frozen_state)
 
     def update(self, event: Event, skip_states: bool = False) -> None:
         """Modify the state of the tracker according to an ``Event``. """
@@ -147,10 +159,10 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
 
-        if self._states is None and not skip_states:
+        if self._frozen_states is None and not skip_states:
             # rest of this function assumes we have the previous state
             # cached. let's make sure it is there.
-            self._states = self.past_states(self.domain)
+            self._frozen_states = self.past_frozen_states(self.domain)
 
         super().update(event)
 
@@ -158,14 +170,14 @@ class TrackerWithCachedStates(DialogueStateTracker):
             if isinstance(event, ActionExecuted):
                 pass
             elif isinstance(event, ActionReverted):
-                self._states.pop()  # removes the state after the action
-                self._states.pop()  # removes the state used for the action
+                self._frozen_states.pop()  # removes the state after the action
+                self._frozen_states.pop()  # removes the state used for the action
             elif isinstance(event, UserUtteranceReverted):
                 self.clear_states()
             elif isinstance(event, Restarted):
                 self.clear_states()
             else:
-                self._states.pop()
+                self._frozen_states.pop()
 
             self._append_current_state()
 
@@ -602,12 +614,14 @@ class TrainingDataGenerator:
                 ):
                     end_trackers.append(tracker.copy(tracker.sender_id))
                 if step.is_rule:
-                    # TODO: this is a hack to make a rule know
-                    #  that slot or form should not be set
+                    # The rules can specify that a form or a slot shouldn't be set,
+                    # therefore we need to distinguish between not set
+                    # and explicitly set to None
                     if isinstance(event, ActiveLoop) and event.name is None:
-                        event.name = "None"
+                        event.name = SHOULD_NOT_BE_SET
+
                     if isinstance(event, SlotSet) and event.value is None:
-                        event.value = "None"
+                        event.value = SHOULD_NOT_BE_SET
 
                 tracker.update(event)
 
@@ -634,21 +648,21 @@ class TrainingDataGenerator:
         end_trackers = []  # for all steps
 
         for tracker in trackers:
-            states = tuple(tracker.past_states(self.domain))
-            hashed = hash(states)
+            frozen_states = tuple(tracker.past_frozen_states(self.domain))
+            hashed = hash(frozen_states)
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
             if hashed not in step_hashed_featurizations:
                 if self.config.unique_last_num_states:
-                    last_states = states[-self.config.unique_last_num_states :]
+                    last_states = frozen_states[-self.config.unique_last_num_states :]
                     last_hashed = hash(last_states)
 
                     if last_hashed not in step_hashed_featurizations:
                         step_hashed_featurizations.add(last_hashed)
                         unique_trackers.append(tracker)
                     elif (
-                        len(states) > len(last_states)
+                        len(frozen_states) > len(last_states)
                         and hashed not in self.hashed_featurizations
                     ):
                         self.hashed_featurizations.add(hashed)
@@ -673,8 +687,8 @@ class TrainingDataGenerator:
         # otherwise featurization does a lot of unnecessary work
 
         for tracker in trackers:
-            states = tuple(tracker.past_states(self.domain))
-            hashed = hash(states + (tracker.is_rule_tracker,))
+            frozen_states = tuple(tracker.past_frozen_states(self.domain))
+            hashed = hash(frozen_states + (tracker.is_rule_tracker,))
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed

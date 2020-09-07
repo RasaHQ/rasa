@@ -12,8 +12,6 @@ from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
     IntentClassifier,
 )
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
-from rasa.nlu.featurizers.featurizer import Featurizer  # pytype: disable=pyi-error
-from rasa.nlu.tokenizers import tokenizer  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
@@ -28,7 +26,6 @@ from rasa.nlu.constants import (
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
-from rasa.nlu.constants import TEXT
 
 MODEL_NAME_PREFIX = "nlu_"
 
@@ -202,7 +199,7 @@ class Trainer:
         working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            if isinstance(component, (EntityExtractor, IntentClassifier),):
+            if isinstance(component, (EntityExtractor, IntentClassifier)):
                 working_data = working_data.without_empty_e2e_examples()
 
             logger.info(f"Starting to train component {component.name}")
@@ -405,17 +402,16 @@ class Interpreter:
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
 
-    def parse_message(self, message: Message, attribute: Text = TEXT) -> Message:
+    def featurize_message(self, message: Message) -> Message:
         """
-        Tokenizer and featurize the input message by the provided attribute;
+        Tokenize and featurize the input message
         Args:
             message: message storing text to process;
-            attribute: message attribute
         Returns:
             message: it contains the tokens and features which are the output of the NLU pipeline;
         """
 
         for component in self.pipeline:
-            if not isinstance(component, (EntityExtractor, IntentClassifier),):
-                component.process(message, attribute, **self.context)
+            if not isinstance(component, (EntityExtractor, IntentClassifier)):
+                component.process(message, **self.context)
         return message
