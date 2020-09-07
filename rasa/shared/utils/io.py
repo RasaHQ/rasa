@@ -3,11 +3,14 @@ import json
 import os
 import re
 import warnings
+from collections import OrderedDict
 from hashlib import md5
+from io import StringIO
 from pathlib import Path
 from typing import Any, Text, Optional, Type, Union, List, Dict
 
 from ruamel import yaml as yaml
+from ruamel.yaml import RoundTripRepresenter
 
 DEFAULT_ENCODING = "utf-8"
 
@@ -260,3 +263,78 @@ def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, A
         filename: The path to the file which should be read.
     """
     return read_yaml(read_file(filename, DEFAULT_ENCODING))
+
+
+def write_yaml(
+    data: Any,
+    target: Union[Text, Path, StringIO],
+    should_preserve_key_order: bool = False,
+) -> None:
+    """Writes a yaml to the file or to the stream
+
+    Args:
+        data: The data to write.
+        target: The path to the file which should be written or a stream object
+        should_preserve_key_order: Whether to force preserve key order in `data`.
+    """
+    _enable_ordered_dict_yaml_dumping()
+
+    if should_preserve_key_order:
+        data = convert_to_ordered_dict(data)
+
+    dumper = yaml.YAML()
+    # no wrap lines
+    dumper.width = YAML_LINE_MAX_WIDTH
+
+    # use `null` to represent `None`
+    dumper.representer.add_representer(
+        type(None),
+        lambda self, _: self.represent_scalar("tag:yaml.org,2002:null", "null"),
+    )
+
+    if isinstance(target, StringIO):
+        dumper.dump(data, target)
+        return
+
+    with Path(target).open("w", encoding=DEFAULT_ENCODING) as outfile:
+        dumper.dump(data, outfile)
+
+
+YAML_LINE_MAX_WIDTH = 4096
+
+
+def convert_to_ordered_dict(obj: Any) -> Any:
+    """Convert object to an `OrderedDict`.
+
+    Args:
+        obj: Object to convert.
+
+    Returns:
+        An `OrderedDict` with all nested dictionaries converted if `obj` is a
+        dictionary, otherwise the object itself.
+    """
+    if isinstance(obj, OrderedDict):
+        return obj
+    # use recursion on lists
+    if isinstance(obj, list):
+        return [convert_to_ordered_dict(element) for element in obj]
+
+    if isinstance(obj, dict):
+        out = OrderedDict()
+        # use recursion on dictionaries
+        for k, v in obj.items():
+            out[k] = convert_to_ordered_dict(v)
+
+        return out
+
+    # return all other objects
+    return obj
+
+
+def _enable_ordered_dict_yaml_dumping() -> None:
+    """Ensure that `OrderedDict`s are dumped so that the order of keys is respected."""
+    yaml.add_representer(
+        OrderedDict,
+        RoundTripRepresenter.represent_dict,
+        representer=RoundTripRepresenter,
+    )

@@ -2,6 +2,7 @@ from pep440_version_utils import Version
 
 import pytest
 
+import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.validator import Validator, KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.importers.rasa import RasaFileImporter
@@ -68,7 +69,7 @@ async def test_verify_bad_story_structure_ignore_warnings():
 async def test_fail_on_invalid_utterances(tmpdir):
     # domain and stories are from different domain and should produce warnings
     invalid_domain = str(tmpdir / "invalid_domain.yml")
-    io_utils.write_yaml(
+    rasa.shared.utils.io.write_yaml(
         {
             "responses": {"utter_greet": [{"text": "hello"}]},
             "actions": [

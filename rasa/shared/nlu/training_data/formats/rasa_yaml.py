@@ -8,7 +8,6 @@ from rasa.shared import data
 from rasa.shared.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
-import rasa.utils.io as io_utils
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -393,7 +392,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         if training_data.responses:
             result[KEY_RESPONSES] = training_data.responses
 
-        io_utils.write_yaml(result, target, True)
+        rasa.shared.utils.io.write_yaml(result, target, True)
 
     @classmethod
     def process_intents(cls, training_data: "TrainingData") -> List[OrderedDict]:

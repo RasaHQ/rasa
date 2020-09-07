@@ -6,6 +6,7 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.events import UserUttered, ActionExecuted, SlotSet, ActiveLoop
@@ -52,7 +53,7 @@ class YAMLStoryWriter:
         """
         result = self.stories_to_yaml(story_steps)
 
-        io_utils.write_yaml(result, target, True)
+        rasa.shared.utils.io.write_yaml(result, target, True)
 
     def stories_to_yaml(self, story_steps: List[StoryStep]) -> Dict[Text, Any]:
         """Converts a sequence of story steps into yaml format.

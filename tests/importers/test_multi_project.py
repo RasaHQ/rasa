@@ -311,7 +311,7 @@ def test_single_additional_file(tmp_path: Path):
 
     additional_file = tmp_path / "directory" / "file.yml"
     additional_file.parent.mkdir()
-    rasa.utils.io.write_yaml({}, additional_file)
+    rasa.shared.utils.io.write_yaml({}, additional_file)
 
     selector = MultiProjectImporter(
         config_path, training_data_paths=str(additional_file)

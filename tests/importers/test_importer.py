@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Text, Dict, Type, List
 
 import pytest
+
+import rasa.shared.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
 from rasa.importers.importer import (
     CombinedDataImporter,
@@ -104,7 +106,9 @@ def test_load_from_config(tmpdir: Path):
 
     config_path = str(tmpdir / "config.yml")
 
-    io_utils.write_yaml({"importers": [{"name": "MultiProjectImporter"}]}, config_path)
+    rasa.shared.utils.io.write_yaml(
+        {"importers": [{"name": "MultiProjectImporter"}]}, config_path
+    )
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, CombinedDataImporter)

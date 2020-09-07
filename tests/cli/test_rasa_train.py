@@ -85,7 +85,7 @@ def test_train_persist_nlu_data(run_in_simple_project: Callable[..., RunResult])
 def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    io_utils.write_yaml(
+    rasa.shared.utils.io.write_yaml(
         {
             "language": "en",
             "pipeline": "supervised_embeddings",
@@ -94,7 +94,7 @@ def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
         "config_1.yml",
     )
 
-    io_utils.write_yaml(
+    rasa.shared.utils.io.write_yaml(
         {
             "language": "en",
             "pipeline": "supervised_embeddings",
@@ -452,12 +452,14 @@ def test_get_valid_config(parameters):
     config_path = None
     if parameters["config_data"] is not None:
         config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
-        io_utils.write_yaml(parameters["config_data"], config_path)
+        rasa.shared.utils.io.write_yaml(parameters["config_data"], config_path)
 
     default_config_path = None
     if parameters["default_config"] is not None:
         default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-        io_utils.write_yaml(parameters["default_config"], default_config_path)
+        rasa.shared.utils.io.write_yaml(
+            parameters["default_config"], default_config_path
+        )
 
     if parameters["error"]:
         with pytest.raises(SystemExit):

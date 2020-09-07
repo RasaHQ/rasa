@@ -1,6 +1,9 @@
 import os
+import string
+import uuid
+from collections import OrderedDict
 from pathlib import Path
-from typing import Callable, Text, List, Set
+from typing import Callable, Text, List, Set, Any
 
 import pytest
 
@@ -240,3 +243,67 @@ def test_bool_str():
     assert content["one"] == "yes"
     assert content["two"] == "true"
     assert content["three"] == "True"
+
+
+@pytest.mark.parametrize(
+    "should_preserve_key_order, expected_keys",
+    [(True, list(reversed(string.ascii_lowercase)))],
+)
+def test_dump_yaml_key_order(
+    tmp_path: Path, should_preserve_key_order: bool, expected_keys: List[Text]
+):
+    file = tmp_path / "test.yml"
+
+    # create YAML file with keys in reverse-alphabetical order
+    content = ""
+    for i in reversed(string.ascii_lowercase):
+        content += f"{i}: {uuid.uuid4().hex}\n"
+
+    file.write_text(content)
+
+    # load this file and ensure keys are in correct reverse-alphabetical order
+    data = rasa.shared.utils.io.read_yaml_file(file)
+    assert list(data.keys()) == list(reversed(string.ascii_lowercase))
+
+    # dumping `data` will result in alphabetical or reverse-alphabetical list of keys,
+    # depending on the value of `should_preserve_key_order`
+    rasa.shared.utils.io.write_yaml(
+        data, file, should_preserve_key_order=should_preserve_key_order
+    )
+    with file.open() as f:
+        keys = [line.split(":")[0] for line in f.readlines()]
+
+    assert keys == expected_keys
+
+
+@pytest.mark.parametrize(
+    "source, target",
+    [
+        # ordinary dictionary
+        ({"b": "b", "a": "a"}, OrderedDict({"b": "b", "a": "a"})),
+        # dict with list
+        ({"b": [1, 2, 3]}, OrderedDict({"b": [1, 2, 3]})),
+        # nested dict
+        ({"b": {"c": "d"}}, OrderedDict({"b": OrderedDict({"c": "d"})})),
+        # doubly-nested dict
+        (
+            {"b": {"c": {"d": "e"}}},
+            OrderedDict({"b": OrderedDict({"c": OrderedDict({"d": "e"})})}),
+        ),
+        # a list is not affected
+        ([1, 2, 3], [1, 2, 3]),
+        # a string also isn't
+        ("hello", "hello"),
+    ],
+)
+def test_convert_to_ordered_dict(source: Any, target: Any):
+    assert rasa.shared.utils.io.convert_to_ordered_dict(source) == target
+
+    def _recursively_check_dict_is_ordered_dict(d):
+        if isinstance(d, dict):
+            assert isinstance(d, OrderedDict)
+            for value in d.values():
+                _recursively_check_dict_is_ordered_dict(value)
+
+    # ensure nested dicts are converted correctly
+    _recursively_check_dict_is_ordered_dict(target)

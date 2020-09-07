@@ -15,6 +15,7 @@ from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
+import rasa.shared.utils.io
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
@@ -264,7 +265,7 @@ def write_endpoint_config_to_yaml(
     endpoints_path = path / endpoints_filename
 
     # write endpoints config to file
-    io_utils.write_yaml(data, endpoints_path)
+    rasa.shared.utils.io.write_yaml(data, endpoints_path)
     return endpoints_path
 
 

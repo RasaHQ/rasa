@@ -418,7 +418,7 @@ def test_train_nlu_success(
     }
 
     data = StringIO()
-    rasa_utils.io.write_yaml(payload, data)
+    rasa.shared.utils.io.write_yaml(payload, data)
 
     _, response = rasa_app.post(
         "/model/train",

@@ -306,13 +306,13 @@ async def test_active_loop_is_parsed(default_domain: Domain):
 
 def test_is_test_story_file(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    rasa.utils.io.write_yaml({"stories": []}, path)
+    rasa.shared.utils.io.write_yaml({"stories": []}, path)
     assert YAMLStoryReader.is_yaml_test_stories_file(path)
 
 
 def test_is_not_test_story_file_if_it_doesnt_contain_stories(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    rasa.utils.io.write_yaml({"nlu": []}, path)
+    rasa.shared.utils.io.write_yaml({"nlu": []}, path)
     assert not YAMLStoryReader.is_yaml_test_stories_file(path)
 
 
@@ -323,5 +323,5 @@ def test_is_not_test_story_file_if_empty(tmp_path: Path):
 
 def test_is_not_test_story_file_without_test_prefix(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
-    rasa.utils.io.write_yaml({"stories": []}, path)
+    rasa.shared.utils.io.write_yaml({"stories": []}, path)
     assert not YAMLStoryReader.is_yaml_test_stories_file(path)

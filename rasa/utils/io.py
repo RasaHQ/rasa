@@ -9,21 +9,15 @@ import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from collections import OrderedDict
-from io import BytesIO as IOReader, StringIO
+from io import BytesIO as IOReader
 from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
-
-import ruamel.yaml as yaml
-from ruamel.yaml import RoundTripRepresenter
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file, read_yaml
 
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
-
-YAML_LINE_MAX_WIDTH = 4096
 
 
 def configure_colored_logging(loglevel: Text) -> None:
@@ -127,78 +121,6 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
         zip_ref.extractall(directory)
         zip_ref.close()
         return directory
-
-
-def convert_to_ordered_dict(obj: Any) -> Any:
-    """Convert object to an `OrderedDict`.
-
-    Args:
-        obj: Object to convert.
-
-    Returns:
-        An `OrderedDict` with all nested dictionaries converted if `obj` is a
-        dictionary, otherwise the object itself.
-    """
-    if isinstance(obj, OrderedDict):
-        return obj
-    # use recursion on lists
-    if isinstance(obj, list):
-        return [convert_to_ordered_dict(element) for element in obj]
-
-    if isinstance(obj, dict):
-        out = OrderedDict()
-        # use recursion on dictionaries
-        for k, v in obj.items():
-            out[k] = convert_to_ordered_dict(v)
-
-        return out
-
-    # return all other objects
-    return obj
-
-
-def _enable_ordered_dict_yaml_dumping() -> None:
-    """Ensure that `OrderedDict`s are dumped so that the order of keys is respected."""
-    yaml.add_representer(
-        OrderedDict,
-        RoundTripRepresenter.represent_dict,
-        representer=RoundTripRepresenter,
-    )
-
-
-def write_yaml(
-    data: Any,
-    target: Union[Text, Path, StringIO],
-    should_preserve_key_order: bool = False,
-) -> None:
-    """Writes a yaml to the file or to the stream
-
-    Args:
-        data: The data to write.
-        target: The path to the file which should be written or a stream object
-        should_preserve_key_order: Whether to force preserve key order in `data`.
-    """
-    _enable_ordered_dict_yaml_dumping()
-
-    if should_preserve_key_order:
-        data = convert_to_ordered_dict(data)
-
-    dumper = yaml.YAML()
-    # no wrap lines
-    dumper.width = YAML_LINE_MAX_WIDTH
-
-    # use `null` to represent `None`
-    dumper.representer.add_representer(
-        type(None),
-        lambda self, _: self.represent_scalar("tag:yaml.org,2002:null", "null"),
-    )
-
-    if isinstance(target, StringIO):
-        dumper.dump(data, target)
-        return
-
-    with Path(target).open("w", encoding=DEFAULT_ENCODING) as outfile:
-        dumper.dump(data, outfile)
 
 
 def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:

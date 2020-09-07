@@ -3,6 +3,7 @@ from typing import Text
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import INTENT
@@ -262,7 +263,7 @@ def test_minimal_valid_example():
 
 def test_minimal_yaml_nlu_file(tmp_path):
     target_file = tmp_path / "test_nlu_file.yaml"
-    io_utils.write_yaml(MINIMAL_VALID_EXAMPLE, target_file, True)
+    rasa.shared.utils.io.write_yaml(MINIMAL_VALID_EXAMPLE, target_file, True)
     assert RasaYAMLReader.is_yaml_nlu_file(target_file)
 
 
