@@ -752,6 +752,14 @@ class DialogueStateTracker:
 
 
 def get_active_loop_name(state: State) -> Optional[Text]:
+    """Get the name of current active loop.
+
+    Args:
+        state: The state from which the name of active loop should be extracted
+
+    Return:
+        the name of active loop or None
+    """
     if (
         not state.get(ACTIVE_LOOP)
         or state[ACTIVE_LOOP].get(LOOP_NAME) == SHOULD_NOT_BE_SET
@@ -762,5 +770,13 @@ def get_active_loop_name(state: State) -> Optional[Text]:
 
 
 def is_prev_action_listen_in_state(state: State) -> bool:
+    """Check if action_listen is the previous executed action.
+
+    Args:
+        state: The state for which the check should be performed
+
+    Return:
+        boolean value indicating whether action_listen is previous action
+    """
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME
