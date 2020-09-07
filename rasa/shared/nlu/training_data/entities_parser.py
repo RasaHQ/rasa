@@ -135,7 +135,7 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
     """
     import json
     import rasa.shared.utils.validation as validation_utils
-    import rasa.nlu.schemas.data_schema as schema
+    import rasa.shared.nlu.training_data.schemas.data_schema as schema
 
     # add {} as they are not part of the regex
     try:

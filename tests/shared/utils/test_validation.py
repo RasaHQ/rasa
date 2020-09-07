@@ -7,7 +7,7 @@ from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
 
 import rasa.shared.utils.validation as validation_utils
 import rasa.utils.io as io_utils
-import rasa.nlu.schemas.data_schema as schema
+import rasa.shared.nlu.training_data.schemas.data_schema as schema
 
 
 @pytest.mark.parametrize(
