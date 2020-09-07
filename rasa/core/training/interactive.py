@@ -844,7 +844,7 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
-    from rasa.shared import data
+    from rasa import data
 
     guessed_format = loading.guess_format(export_path)
 

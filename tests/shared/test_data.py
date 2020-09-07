@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
-from rasa.shared import data
+from rasa import data
 from rasa.shared.utils.io import write_text_file
 
 

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
 
 import rasa.shared.nlu.constants
-from rasa.shared import data
+from rasa import data
 from rasa.shared.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 

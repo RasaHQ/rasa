@@ -60,7 +60,7 @@ def add_subparser(
 
 def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
-    from rasa.shared import data
+    from rasa import data
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
     stories = cli_utils.get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
@@ -94,7 +94,7 @@ def run_core_test(args: argparse.Namespace) -> None:
 
 def run_nlu_test(args: argparse.Namespace) -> None:
     """Run NLU tests."""
-    from rasa.shared import data
+    from rasa import data
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
     nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)

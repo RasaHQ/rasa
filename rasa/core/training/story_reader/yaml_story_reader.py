@@ -7,7 +7,6 @@ from rasa.shared.nlu.training_data import entities_parser
 from rasa.shared.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 
-import rasa.utils.io as io_utils
 from rasa.constants import TEST_STORIES_FILE_PREFIX, DOCS_URL_STORIES, DOCS_URL_RULES
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
@@ -15,7 +14,7 @@ from rasa.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.nlu.constants import INTENT_NAME_KEY
-import rasa.shared.data
+import rasa.data
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +101,6 @@ class YAMLStoryReader(StoryReader):
         Returns:
             The parsed stories or rules.
         """
-        from rasa.validator import Validator
 
         if not validate_training_data_format_version(parsed_content, self.source_name):
             return []
@@ -129,7 +127,7 @@ class YAMLStoryReader(StoryReader):
             `True` in case the file is a Core YAML training data or rule data file,
             `False` otherwise.
         """
-        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
+        return rasa.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
             file_path, KEY_STORIES, KEY_RULES
         )
 

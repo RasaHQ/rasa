@@ -152,7 +152,6 @@ class Domain:
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
-        from rasa.validator import Validator
 
         try:
             validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
@@ -1129,7 +1128,7 @@ class Domain:
         Returns:
             `True` if it's a domain file, otherwise `False`.
         """
-        from rasa.shared.data import is_likely_yaml_file
+        from rasa.data import is_likely_yaml_file
 
         if not is_likely_yaml_file(filename):
             return False

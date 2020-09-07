@@ -3,7 +3,7 @@ from functools import reduce
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
-from rasa.shared import data
+from rasa import data
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter

@@ -7,7 +7,7 @@ import copy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
-from rasa.shared import data
+from rasa import data
 from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
