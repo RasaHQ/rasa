@@ -38,6 +38,11 @@ class SingleStateFeaturizer:
         self.action_texts = []
 
     def prepare_from_domain(self, domain: Domain) -> None:
+        """Gets necessary information for featurization from domain.
+
+        Args:
+            domain: a :class:`rasa.core.domain.Domain`
+        """
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:
             return {
