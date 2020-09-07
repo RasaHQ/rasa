@@ -3,8 +3,12 @@ from typing import Text, Dict, Any
 from ruamel.yaml.constructor import DuplicateKeyError
 
 import rasa.shared.utils.io
-from rasa.constants import PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE, SCHEMA_UTILS_FILE
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.constants import (
+    DOCS_URL_TRAINING_DATA_NLU,
+    PACKAGE_NAME,
+    SCHEMA_UTILS_FILE,
+    SCHEMA_EXTENSIONS_FILE,
+)
 
 
 class InvalidYamlFileError(ValueError):
@@ -29,7 +33,6 @@ def validate_yaml_schema(
     from pykwalify.errors import SchemaError
     from ruamel.yaml import YAMLError
     import pkg_resources
-    import rasa.utils.io
     import logging
 
     log = logging.getLogger("pykwalify")

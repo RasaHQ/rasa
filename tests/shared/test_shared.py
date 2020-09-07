@@ -29,13 +29,7 @@ def test_shared_package_is_independent():
                 )
             ]
 
-            excluded = [
-                "data.py",
-                "entities_parser.py",
-                # "rasa.py",
-                "markdown.py",
-                "rasa_yaml.py",
-            ]
+            excluded = ["data.py", "rasa_yaml.py"]
             if file in excluded:
                 continue
             # The shared package is required to be independent of the rest of Rasa
