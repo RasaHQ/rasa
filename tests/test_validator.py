@@ -2,7 +2,7 @@ from pep440_version_utils import Version
 
 import pytest
 
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.validator import Validator, KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.importers.rasa import RasaFileImporter
 from tests.conftest import DEFAULT_NLU_DATA

@@ -9,8 +9,10 @@ from rasa.shared.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
 import rasa.utils.io as io_utils
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.constants import (
+    DOCS_URL_TRAINING_DATA_NLU,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,

@@ -4,13 +4,10 @@ from typing import Any, Dict, List, Text, Union, Optional
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
-from ruamel.yaml.scalarstring import (
-    DoubleQuotedScalarString,
-    LiteralScalarString,
-)
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
 
 import rasa.utils.io as io_utils
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.events import UserUttered, ActionExecuted, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.yaml_story_reader import (
     KEY_STORIES,
@@ -45,7 +42,7 @@ class YAMLStoryWriter:
         return stream.getvalue()
 
     def dump(
-        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep],
+        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep]
     ) -> None:
         """Writes Story steps into a target file/stream.
 

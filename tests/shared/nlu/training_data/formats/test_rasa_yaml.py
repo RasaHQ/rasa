@@ -4,7 +4,7 @@ from typing import Text
 import pytest
 
 import rasa.utils.io as io_utils
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import INTENT
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
