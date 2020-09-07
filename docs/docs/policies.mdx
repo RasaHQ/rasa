@@ -2,14 +2,8 @@
 id: policies
 sidebar_label: Policies
 title: Policies
-description: Define and train customized policy configurations to optimize your contextual assistant for longer contexts or unseen utterances which require generalization.
+abstract: Your AI assistant uses policies to decide which action to take at each step in a conversation. There are machine-learning and rule-based policies that your assistant can use in tandem.
 ---
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="policy-file"></a>
-
-Your AI assistant uses policies to decide which action to take
-at each step in a conversation.
-
 Your project's `config.yml` file takes a `policies` key
 which you can use to customize the policies your assistant uses.
 There are different policies to choose from, and you can include
@@ -40,45 +34,40 @@ feature will provide default policies for you.
 
 At every turn, each policy defined in your configuration will
 predict a next action with a certain confidence level. For more information
-about how each policy makes its decision, read into the policy's description above.
+about how each policy makes its decision, read into the policy's description below.
 The assistant's next action is then decided by the policy that predicts with the highest confidence.
 
 :::note
-Per default a maximum of 10 next actions can be predicted
-by the assistant after each user message. To update this value
+By default, your assistant can predict a maximum of 10 next actions 
+after each user message. To update this value,
 you can set the environment variable `MAX_NUMBER_OF_PREDICTIONS`
 to the desired number of maximum predictions.
 
 :::
 
 ### Policy Priority
-<!-- TODO: make sure this whole section is utd -->
 
 In the case that two policies predict with equal confidence (for example, the Memoization
 and Rule Policies might both predict with confidence 1), the priority of the
 policies is considered. Rasa policies have default priorities that are set to ensure the
 expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
 
-1. `TEDPolicy` and `SklearnPolicy`
-
-2. `MappingPolicy`
+5. `RulePolicy`
 
 3. `MemoizationPolicy` and `AugmentedMemoizationPolicy`
 
-4. `FallbackPolicy` and `TwoStageFallbackPolicy`
+1. `TEDPolicy` and `SklearnPolicy`
 
-5. `RulePolicy` and `FormPolicy`
 
-This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
-above the `nlu_threshold`, the bot will still fall back. In general, it is not recommended to have more
-than one policy per priority level, and some policies on the same priority level, such as the two
-fallback policies, strictly cannot be used in tandem.
+In general, it is not recommended to have more
+than one policy per priority level. If you have 2 policies with the same priority and they predict
+with the same confidence, the resulting action will be chosen randomly.
 
 If you create your own policy, use these priorities as a guide for figuring out the priority of your policy.
 If your policy is a machine learning policy, it should most likely have priority 1, the same as the Rasa machine
 learning policies.
 
-:::caution
+:::warning overriding policy priorities
 All policy priorities are configurable via the `priority:` parameter in the configuration,
 but we **do not recommend** changing them outside of specific cases such as custom policies.
 Doing so can lead to unexpected and undesired bot behavior.
@@ -321,18 +310,9 @@ data as well.
 :::
 
 
-### Deprecated Policies 
+### Sklearn Policy
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="embedding-policy"></a>
-
-#### Embedding Policy
-
-:::caution
-`EmbeddingPolicy` was renamed to `TEDPolicy`. Please use [TED Policy](./policies.mdx#ted-policy) instead of `EmbeddingPolicy`
-in your policy configuration. The functionality of the policy stayed the same.
-
-:::
-
+TODO: Document this policy
 
 
 ## Rule-based Policies
@@ -344,252 +324,6 @@ a fixed behavior. It makes predictions based on any `rules` you have in your
 training data. See the [Rules documentation](./rules.mdx) for further information
 on how to define rules.
 
-
-### Deprecated Policies 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="mapping-policy"></a>
-
-#### Mapping Policy
-
-:::caution
-The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
-its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
-the `MappingPolicy`, see the
-[migration guide](./migration-guide.mdx#migrating-from-the-mapping-policy).
-:::
-
-The `MappingPolicy` can be used to directly map intents to actions. The
-mappings are assigned by giving an intent the property `triggers`, e.g.:
-
-```yaml-rasa
-intents:
- - ask_is_bot:
-     triggers: action_is_bot
-```
-
-An intent can only be mapped to at most one action. The bot will run
-the mapped action once it receives a message of the triggering intent. Afterwards,
-it will listen for the next message. With the next
-user message, normal prediction will resume.
-
-If you do not want your intent-action mapping to affect the dialogue
-history, the mapped action must return a `UserUtteranceReverted()`
-event. This will delete the user's latest message, along with any events that
-happened after it, from the dialogue history. This means you should not
-include the intent-action interaction in your stories.
-
-For example, if a user asks “Are you a bot?” off-topic in the middle of the
-flow, you probably want to answer without that interaction affecting the next
-action prediction. A triggered custom action can do anything, but here's a
-simple example that dispatches a bot utterance and then reverts the interaction:
-
-```python
-class ActionIsBot(Action):
-  """Revertible mapped action for utter_is_bot"""
-
-  def name(self):
-      return "action_is_bot"
-
-  def run(self, dispatcher, tracker, domain):
-      dispatcher.utter_template(template="utter_is_bot")
-      return [UserUtteranceReverted()]
-```
-
-:::note
-If you use the `MappingPolicy` to predict bot utterance actions directly (e.g.
-`triggers: utter_{}`), these interactions must go in your stories, as in this
-case there is no `UserUtteranceReverted()` and the
-intent and the mapped response action will appear in the dialogue history.
-
-:::
-
-:::note
-The MappingPolicy is also responsible for executing the default actions `action_back`
-and `action_restart` in response to `/back` and `/restart`. If it is not included
-in your policy example these intents will not work.
-
-:::
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="fallback-policy"></a>
-
-#### Fallback Policy
-
-:::caution
-The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
-its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
-the `FallbackPolicy`, see the
-[migration guide](./migration-guide.mdx#migrating-from-the-fallback-policy).
-:::
-
-The `FallbackPolicy` invokes a predefined action if at least one of the following occurs:
-
-1. The intent recognition has a confidence below `nlu_threshold`.
-
-2. The highest ranked intent differs in confidence with the second highest
-   ranked intent by less than `ambiguity_threshold`.
-
-3. None of the dialogue policies predict an action with confidence higher than `core_threshold`.
-
-**Configuration:**
-
-The thresholds and fallback action can be adjusted in the policy configuration
-file as parameters of the `FallbackPolicy`:
-
-```yaml-rasa
-policies:
-  - name: "FallbackPolicy"
-    nlu_threshold: 0.3
-    ambiguity_threshold: 0.1
-    core_threshold: 0.3
-    fallback_action_name: 'action_default_fallback'
-```
-
-|                       |                                                                                                                 |
-|-----------------------|-----------------------------------------------------------------------------------------------------------------|
-|`nlu_threshold`        |Min confidence needed to accept an NLU prediction                                                                |
-|`ambiguity_threshold`  |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.       |
-|`core_threshold`       |Min confidence needed to accept an action prediction from Rasa Core                                              |
-|`fallback_action_name` |Name of the fallback action to be called if the confidence of intent or action is below the respective threshold |
-
-`action_default_fallback` is a default action in Rasa Core which sends the
-`utter_default` response to the user (you will have to define this response
-in the `responses:` section of your domain file). You can also choose your
-`fallback_action_name` to be one of your custom actions.
-
-You can also configure the `FallbackPolicy` in your python code:
-
-```python
-from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.keras_policy import TEDPolicy
-from rasa.core.agent import Agent
-
-fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
-                          core_threshold=0.3,
-                          nlu_threshold=0.3,
-                          ambiguity_threshold=0.1)
-
-agent = Agent("domain.yml", policies=[TEDPolicy(), fallback])
-```
-
-:::note
-You can include either the `FallbackPolicy` or the
-`TwoStageFallbackPolicy` in your configuration, but not both.
-
-:::
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="two-stage-fallback-policy"></a>
-
-#### Two-Stage Fallback Policy
-
-:::caution
-The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
-its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
-the `TwoStageFallbackPolicy`, see the
-[migration guide](./migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
-:::
-
-The `TwoStageFallbackPolicy` handles low NLU confidence in multiple stages
-by trying to disambiguate the user input.
-
-* If an NLU prediction has a low confidence score or is not significantly higher
-  than the second highest ranked prediction, the user is asked to affirm
-  the classification of the intent.
-
-    * If they affirm, the story continues as if the intent was classified
-      with high confidence from the beginning.
-
-    * If they deny, the user is asked to rephrase their message.
-
-* Rephrasing
-
-    * If the classification of the rephrased intent was confident, the story
-      continues as if the user had this intent from the beginning.
-
-    * If the rephrased intent was not classified with high confidence, the user
-      is asked to affirm the classified intent.
-
-* Second affirmation
-
-    * If the user affirms the intent, the story continues as if the user had
-      this intent from the beginning.
-
-    * If the user denies, the original intent is classified as the specified
-      `deny_suggestion_intent_name`, and an ultimate fallback action
-      is triggered (e.g. a handoff to a human).
-      
-
-##### Configuration
-
-Rasa provides the default implementations of
-`action_default_ask_affirmation` and `action_default_ask_rephrase`.
-The default implementation of `action_default_ask_rephrase` action utters
-the response `utter_ask_rephrase`, so be sure to specify this
-response in your domain file.
-The implementation of both actions can be overwritten with [custom actions](./actions#custom-actions).
-
-You can specify the core fallback action as well as the ultimate NLU
-fallback action as parameters to `TwoStageFallbackPolicy` in your
-policy configuration file.
-
-```yaml-rasa
-policies:
-  - name: TwoStageFallbackPolicy
-    nlu_threshold: 0.3
-    core_threshold: 0.3
-    ambiguity_threshold: 0.1
-    fallback_core_action_name: "action_default_fallback"
-    fallback_nlu_action_name: "action_default_fallback"
-    deny_suggestion_intent_name: "out_of_scope"
-```
-
-|                              |                                                                                                                                                                                      |
-|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|`nlu_threshold`               |Min confidence needed to accept an NLU prediction                                                                                                                                     |
-|`ambiguity_threshold`         |Min amount by which the confidence of the top intent must exceed that of the second highest ranked intent.                                                                            |
-|`core_threshold`              |Min confidence needed to accept an action prediction from Rasa Core                                                                                                                   |
-|`fallback_core_action_name`   |Name of the fallback action to be called if the confidence of Rasa Core action prediction is below the `core_threshold`. This action is to propose the recognized intents             |
-|`fallback_nlu_action_name`    |Name of the fallback action to be called if the confidence of Rasa NLU intent classification is below the `nlu_threshold`. This action is called when the user denies the second time |
-|`deny_suggestion_intent_name` |The name of the intent which is used to detect that the user denies the suggested intents                                                                                             |
-
-:::note
-You can include either the `FallbackPolicy` or the
-`TwoStageFallbackPolicy` in your configuration, but not both.
-
-:::
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="form-policy"></a>
-
-#### Form Policy
-
-:::caution
-The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
-its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
-the `FormPolicy`, see the
-[migration guide](./migration-guide.mdx#form-policy).
-:::
-
-The `FormPolicy` is an extension of the `MemoizationPolicy` which
-handles the filling of forms. Once a `FormAction` is called, the
-`FormPolicy` will continually predict the `FormAction` until all required
-slots in the form are filled.
-
-## Custom Policies
-
-You can also write custom policies and reference them in your configuration. In the example below, the
-last two lines show how to use a custom policy class and pass arguments to it.
-
-```yaml-rasa {9-10}
-policies:
-  - name: "TEDPolicy"
-    featurizer:
-    - name: MaxHistoryTrackerFeaturizer
-      max_history: 5
-      state_featurizer:
-        - name: BinarySingleStateFeaturizer
-  - name: "RulePolicy"
-  - name: "path.to.your.policy.class"
-    arg1: "..."
-```
 
 ## Configuring Policies
 
@@ -784,3 +518,59 @@ should be reshaped to
 `(num_unique_turns, max_history \* num_input_features)`. If numeric
 target class labels are needed instead of one-hot vectors, use
 `y.argmax(axis=-1)`.
+
+## Custom Policies
+
+You can also write custom policies and reference them in your configuration. In the example below, the
+last two lines show how to use a custom policy class and pass arguments to it.
+
+```yaml-rasa {9-10}
+policies:
+  - name: "TEDPolicy"
+    featurizer:
+    - name: MaxHistoryTrackerFeaturizer
+      max_history: 5
+      state_featurizer:
+        - name: BinarySingleStateFeaturizer
+  - name: "RulePolicy"
+  - name: "path.to.your.policy.class"
+    arg1: "..."
+```
+
+## Deprecated Policies 
+
+### Mapping Policy
+
+:::caution
+The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `MappingPolicy`, see the
+[migration guide](./migration-guide.mdx#migrating-from-the-mapping-policy).
+:::
+
+### Fallback Policy
+
+:::caution
+The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `FallbackPolicy`, see the
+[migration guide](./migration-guide.mdx#migrating-from-the-fallback-policy).
+:::
+
+### Two-Stage Fallback Policy
+
+:::caution
+The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `TwoStageFallbackPolicy`, see the
+[migration guide](./migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
+:::
+
+### Form Policy
+
+:::caution
+The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
+its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+the `FormPolicy`, see the
+[migration guide](./migration-guide.mdx#form-policy).
+:::
