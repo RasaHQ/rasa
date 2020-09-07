@@ -1,6 +1,7 @@
 import pytest
 
 from jsonschema import ValidationError
+from pep440_version_utils import Version
 
 import rasa.shared.utils.io
 from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
@@ -8,6 +9,8 @@ from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
 import rasa.shared.utils.validation as validation_utils
 import rasa.utils.io as io_utils
 import rasa.shared.nlu.training_data.schemas.data_schema as schema
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
 
 @pytest.mark.parametrize(
@@ -143,3 +146,39 @@ def test_validate_entity_dict_is_throwing_exceptions(invalid_data):
 )
 def test_entity_dict_is_valid(data):
     validation_utils.validate_training_data(data, schema.entity_dict_schema())
+
+
+async def test_future_training_data_format_version_not_compatible():
+
+    next_minor = str(Version(LATEST_TRAINING_DATA_FORMAT_VERSION).next_minor())
+
+    incompatible_version = {KEY_TRAINING_DATA_FORMAT_VERSION: next_minor}
+
+    with pytest.warns(UserWarning):
+        assert not validation_utils.validate_training_data_format_version(
+            incompatible_version, ""
+        )
+
+
+async def test_compatible_training_data_format_version():
+
+    prev_major = str(Version("1.0"))
+
+    compatible_version_1 = {KEY_TRAINING_DATA_FORMAT_VERSION: prev_major}
+    compatible_version_2 = {
+        KEY_TRAINING_DATA_FORMAT_VERSION: LATEST_TRAINING_DATA_FORMAT_VERSION
+    }
+
+    for version in [compatible_version_1, compatible_version_2]:
+        with pytest.warns(None):
+            assert validation_utils.validate_training_data_format_version(version, "")
+
+
+async def test_invalid_training_data_format_version_warns():
+
+    invalid_version_1 = {KEY_TRAINING_DATA_FORMAT_VERSION: 2.0}
+    invalid_version_2 = {KEY_TRAINING_DATA_FORMAT_VERSION: "Rasa"}
+
+    for version in [invalid_version_1, invalid_version_2]:
+        with pytest.warns(UserWarning):
+            assert validation_utils.validate_training_data_format_version(version, "")

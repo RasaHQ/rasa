@@ -61,7 +61,7 @@ class YAMLStoryWriter:
         Args:
             story_steps: Original story steps to be converted to the YAML.
         """
-        from rasa.validator import KEY_TRAINING_DATA_FORMAT_VERSION
+        from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
         stories = []
         for story_step in story_steps:

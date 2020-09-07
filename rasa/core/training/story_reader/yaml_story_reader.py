@@ -104,9 +104,7 @@ class YAMLStoryReader(StoryReader):
         """
         from rasa.validator import Validator
 
-        if not Validator.validate_training_data_format_version(
-            parsed_content, self.source_name
-        ):
+        if not validate_training_data_format_version(parsed_content, self.source_name):
             return []
 
         for key, parser_class in {

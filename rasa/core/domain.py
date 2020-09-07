@@ -35,7 +35,11 @@ from rasa.core.constants import (
 from rasa.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
-from rasa.shared.utils.validation import InvalidYamlFileError, validate_yaml_schema
+from rasa.shared.utils.validation import (
+    InvalidYamlFileError,
+    validate_yaml_schema,
+    validate_training_data_format_version,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +160,7 @@ class Domain:
             raise InvalidDomain(str(e))
 
         data = rasa.shared.utils.io.read_yaml(yaml)
-        if not Validator.validate_training_data_format_version(data, original_filename):
+        if not validate_training_data_format_version(data, original_filename):
             return Domain.empty()
 
         return cls.from_dict(data)

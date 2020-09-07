@@ -74,13 +74,11 @@ class RasaYAMLReader(TrainingDataReader):
         Returns:
             New `TrainingData` object with parsed training data.
         """
-        from rasa.validator import Validator
-
         self.validate(string)
 
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
-        if not Validator.validate_training_data_format_version(
+        if not validation.validate_training_data_format_version(
             yaml_content, self.filename
         ):
             return TrainingData()
@@ -372,7 +370,7 @@ class RasaYAMLWriter(TrainingDataWriter):
             target: Name of the target object to write the YAML to.
             training_data: TrainingData object.
         """
-        from rasa.validator import KEY_TRAINING_DATA_FORMAT_VERSION
+        from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
         from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
         nlu_items = []
