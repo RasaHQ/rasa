@@ -6,7 +6,7 @@ from rasa.cli.utils import print_success, print_warning
 from rasa.constants import DOCS_URL_RULES
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
-from rasa.utils.tensorflow.converter import TrainingDataConverter
+from rasa.utils.converter import TrainingDataConverter
 
 
 class StoryMarkdownToYamlConverter(TrainingDataConverter):
@@ -56,9 +56,3 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         writer.dump(output_core_path, steps)
 
         print_success(f"Converted Core file: '{source_path}' >> '{output_core_path}'.")
-
-    @classmethod
-    def converted_file_suffix(cls) -> Text:
-        """Returns suffix that should be appended to the converted training data file.
-        """
-        return "_converted.yml"

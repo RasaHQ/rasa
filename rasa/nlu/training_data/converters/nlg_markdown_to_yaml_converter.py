@@ -4,7 +4,7 @@ from typing import Text
 from rasa.cli.utils import print_success
 from rasa.nlu.training_data.formats import NLGMarkdownReader
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.utils.tensorflow.converter import TrainingDataConverter
+from rasa.utils.converter import TrainingDataConverter
 
 
 class NLGMarkdownToYamlConverter(TrainingDataConverter):
@@ -40,9 +40,3 @@ class NLGMarkdownToYamlConverter(TrainingDataConverter):
         writer.dump(output_nlg_path, yaml_training_data)
 
         print_success(f"Converted NLG file: '{source_path}' >> '{output_nlg_path}'.")
-
-    @classmethod
-    def converted_file_suffix(cls) -> Text:
-        """Returns suffix that should be appended to the converted training data file.
-        """
-        return "_converted.yml"

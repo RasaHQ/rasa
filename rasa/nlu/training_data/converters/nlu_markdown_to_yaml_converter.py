@@ -6,7 +6,7 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.nlu.utils.pattern_utils import read_lookup_table_file
-from rasa.utils.tensorflow.converter import TrainingDataConverter
+from rasa.utils.converter import TrainingDataConverter
 
 
 class NLUMarkdownToYamlConverter(TrainingDataConverter):
@@ -69,9 +69,3 @@ class NLUMarkdownToYamlConverter(TrainingDataConverter):
                 lookup_tables=[{"name": entity_name, "elements": examples_from_file}]
             ),
         )
-
-    @classmethod
-    def converted_file_suffix(cls) -> Text:
-        """Returns suffix that should be appended to the converted training data file.
-        """
-        return "_converted.yml"

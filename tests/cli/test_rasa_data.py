@@ -1,5 +1,7 @@
 import argparse
+import filecmp
 import os
+from pathlib import Path
 from unittest.mock import Mock
 import pytest
 from collections import namedtuple
@@ -121,6 +123,9 @@ def test_rasa_data_convert_nlu_to_yaml(
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
 
+    converted_single_file_folder = "converted_single_file"
+    os.mkdir(converted_single_file_folder)
+
     simple_nlu_md = """
     ## intent:greet
     - hey
@@ -143,7 +148,22 @@ def test_rasa_data_convert_nlu_to_yaml(
         converted_data_folder,
     )
 
-    assert len(os.listdir(converted_data_folder)) == 1
+    run_in_simple_project(
+        "data",
+        "convert",
+        "nlu",
+        "-f",
+        "yaml",
+        "--data",
+        "data/nlu/nlu.md",
+        "--out",
+        converted_single_file_folder,
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "nlu_converted.yml",
+        Path(converted_single_file_folder) / "nlu_converted.yml",
+    )
 
 
 def test_rasa_data_convert_stories_to_yaml(
@@ -151,6 +171,9 @@ def test_rasa_data_convert_stories_to_yaml(
 ):
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
+
+    converted_single_file_folder = "converted_single_file"
+    os.mkdir(converted_single_file_folder)
 
     simple_story_md = """
     ## happy path
@@ -174,7 +197,22 @@ def test_rasa_data_convert_stories_to_yaml(
         converted_data_folder,
     )
 
-    assert len(os.listdir(converted_data_folder)) == 1
+    run_in_simple_project(
+        "data",
+        "convert",
+        "core",
+        "-f",
+        "yaml",
+        "--data",
+        "data/stories.md",
+        "--out",
+        converted_single_file_folder,
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "stories_converted.yml",
+        Path(converted_single_file_folder) / "stories_converted.yml",
+    )
 
 
 def test_rasa_data_convert_nlg_to_yaml(
@@ -182,6 +220,9 @@ def test_rasa_data_convert_nlg_to_yaml(
 ):
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
+
+    converted_single_file_folder = "converted_single_file"
+    os.mkdir(converted_single_file_folder)
 
     simple_nlg_md = (
         "## ask name\n"
@@ -204,7 +245,22 @@ def test_rasa_data_convert_nlg_to_yaml(
         converted_data_folder,
     )
 
-    assert len(os.listdir(converted_data_folder)) == 1
+    run_in_simple_project(
+        "data",
+        "convert",
+        "nlg",
+        "-f",
+        "yaml",
+        "--data",
+        "data/responses.md",
+        "--out",
+        converted_single_file_folder,
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "responses_converted.yml",
+        Path(converted_single_file_folder) / "responses_converted.yml",
+    )
 
 
 def test_rasa_data_convert_nlu_lookup_tables_to_yaml(

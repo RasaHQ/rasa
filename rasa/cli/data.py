@@ -26,7 +26,7 @@ from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
 from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
     NLUMarkdownToYamlConverter,
 )
-from rasa.utils.tensorflow.converter import TrainingDataConverter
+from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
 
 logger = logging.getLogger(__name__)
@@ -281,23 +281,46 @@ def _convert_to_yaml(
         )
 
     num_of_files_converted = 0
-    for root, _, files in os.walk(training_data, followlinks=True):
-        for f in sorted(files):
-            source_path = Path(os.path.join(root, f))
 
-            if not is_valid_filetype(source_path):
-                continue
-
-            if converter.filter(source_path):
-                converter.convert_and_write(source_path, output)
-                num_of_files_converted += 1
-            else:
-                print_warning(f"Skipped file: '{source_path}'.")
+    if os.path.isfile(training_data):
+        if _convert_file_to_yaml(training_data, output, converter):
+            num_of_files_converted += 1
+    elif os.path.isdir(training_data):
+        for root, _, files in os.walk(training_data, followlinks=True):
+            for f in sorted(files):
+                source_path = Path(os.path.join(root, f))
+                if _convert_file_to_yaml(source_path, output, converter):
+                    num_of_files_converted += 1
 
     if num_of_files_converted:
         print_info(f"Converted {num_of_files_converted} file(s), saved in '{output}'.")
     else:
         print_warning(
-            f"Didn't convert any file in '{training_data}' folder. "
-            "Did you specify the correct folder?"
+            f"Didn't convert any files under '{training_data}' path. "
+            "Did you specify the correct file/directory?"
         )
+
+
+def _convert_file_to_yaml(
+    source_file: Path, target_dir: Path, converter: TrainingDataConverter
+) -> bool:
+    """Converts a single training data file to `YAML` format.
+
+    Args:
+        source_file: Training data file to be converted.
+        target_dir: Target directory for the converted file.
+        converter: Converter to be used.
+
+    Returns:
+        `True` if file was converted, `False` otherwise.
+    """
+    if not is_valid_filetype(source_file):
+        return False
+
+    if converter.filter(source_file):
+        converter.convert_and_write(source_file, target_dir)
+        return True
+
+    print_warning(f"Skipped file: '{source_file}'.")
+
+    return False

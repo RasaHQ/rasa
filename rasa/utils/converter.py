@@ -16,7 +16,7 @@ class TrainingDataConverter:
         Returns:
             `True` if the given file can be converted, `False` otherwise
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
@@ -26,13 +26,7 @@ class TrainingDataConverter:
             source_path: Path to the training data file.
             output_path: Path to the output directory.
         """
-        raise NotImplemented
-
-    @classmethod
-    def converted_file_suffix(cls) -> Text:
-        """Returns suffix that should be appended to the converted training data file.
-        """
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def generate_path_for_converted_training_data_file(
@@ -50,3 +44,9 @@ class TrainingDataConverter:
         return (
             output_directory / f"{source_file_path.stem}{cls.converted_file_suffix()}"
         )
+
+    @classmethod
+    def converted_file_suffix(cls) -> Text:
+        """Returns suffix that should be appended to the converted training data file.
+        """
+        return "_converted.yml"
