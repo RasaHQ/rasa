@@ -1,5 +1,5 @@
 module.exports = {
-  someSidebar: [
+  default: [
     'index',
     {
       type: 'category',
