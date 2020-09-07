@@ -122,6 +122,13 @@ If you want to adapt your model, start by modifying the following parameters:
   Sometimes the model needs more epochs to properly learn.
   Sometimes more epochs don't influence the performance.
   The lower the number of epochs the faster the model is trained.
+  
+
+:::info configure epochs
+Pass an appropriate number, for example 50,  of `epochs` to the `TEDPolicy`, otherwise the policy will
+be trained only for `1` epoch.
+
+:::
 
 * `hidden_layers_sizes`:
   This parameter allows you to define the number of feed forward layers and their output
@@ -151,23 +158,21 @@ If you want to adapt your model, start by modifying the following parameters:
   set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
   to learn.
 
-:::caution
-Pass an appropriate number, for example 50,  of `epochs` to the `TEDPolicy`, otherwise the policy will
-be trained only for `1` epoch.
 
-:::
-
-:::caution
-Default `max_history` for this policy is `None` which means it'll use the
-`FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to some finite value in order to
-use `MaxHistoryTrackerFeaturizer` for **faster training**. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for
+:::info speeding up training 
+Default `max_history` for this policy is `None`, which means it'll use the
+`FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to a finite value in order to
+use `MaxHistoryTrackerFeaturizer` for **faster training**. 
+See [Featurization of Conversations](./policies.mdx#featurization-conversations) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
 
 :::
 
-<details><summary>The above configuration parameters are the ones you should configure to fit your model to your data.
-However, additional parameters exist that can be adapted.</summary>
+The above configuration parameters are the ones you should configure to fit your model to your data.
+However, additional parameters exist that can be adapted.
+
+<details><summary>More configurable parameters</summary>
 
 ```
 +---------------------------------+------------------+--------------------------------------------------------------+
@@ -191,6 +196,7 @@ However, additional parameters exist that can be adapted.</summary>
 +---------------------------------+------------------+--------------------------------------------------------------+
 | batch_size                      | [8, 32]          | Initial and final value for batch sizes.                     |
 |                                 |                  | Batch size will be linearly increased for each epoch.        |
+|                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
 |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
@@ -250,6 +256,8 @@ However, additional parameters exist that can be adapted.</summary>
 +---------------------------------+------------------+--------------------------------------------------------------+
 | evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
 |                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
+|                                 |                  | Keep at 0 if your data set contains a lot of unique examples |
+|                                 |                  | of dialogue turns.                                           |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | tensorboard_log_directory       | None             | If you want to use tensorboard to visualize training         |
 |                                 |                  | metrics, set this option to a valid output directory. You    |
@@ -262,29 +270,6 @@ However, additional parameters exist that can be adapted.</summary>
 +---------------------------------+------------------+--------------------------------------------------------------+
 ```
 
-</details>
-
-:::caution
-If `evaluate_on_number_of_examples` is non zero, random examples will be picked by stratified split and
-used as **hold out** validation set, so they will be excluded from training data.
-We suggest to set it to zero if data set contains a lot of unique examples of dialogue turns.
-
-:::
-
-:::note
-For `cosine` similarity `maximum_positive_similarity` and `maximum_negative_similarity` should
-be between `-1` and `1`.
-
-:::
-
-:::note
-There is an option to use linearly increasing batch size. The idea comes from
-[https://arxiv.org/abs/1711.00489](https://arxiv.org/abs/1711.00489). In order to do it pass a list to `batch_size`, e.g.
-`"batch_size": [8, 32]` (default behavior). If constant `batch_size` is required, pass an `int`,
-e.g. `"batch_size": 8`.
-
-:::
-
 :::note
 The parameter `maximum_negative_similarity` is set to a negative value to mimic the original
 starspace algorithm in the case `maximum_negative_similarity = maximum_positive_similarity` and
@@ -292,6 +277,8 @@ starspace algorithm in the case `maximum_negative_similarity = maximum_positive_
 for details.
 
 :::
+
+</details>
 
 ### Memoization Policy
 
