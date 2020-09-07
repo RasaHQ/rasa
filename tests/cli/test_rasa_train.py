@@ -6,6 +6,7 @@ import pytest
 from typing import Callable
 from _pytest.pytester import RunResult
 
+import rasa.shared.utils.io
 from rasa import model
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data import training_data
@@ -38,7 +39,7 @@ def test_train(run_in_simple_project: Callable[..., RunResult]):
     )
 
     assert os.path.exists(os.path.join(temp_dir, "train_models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "train_models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "train_models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
     model_dir = model.get_model("train_models")
@@ -69,7 +70,7 @@ def test_train_persist_nlu_data(run_in_simple_project: Callable[..., RunResult])
     )
 
     assert os.path.exists(os.path.join(temp_dir, "train_models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "train_models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "train_models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
     model_dir = model.get_model("train_models")
@@ -122,11 +123,11 @@ def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
     )
 
     assert os.path.exists(os.path.join(temp_dir, "core_comparison_results"))
-    run_directories = io_utils.list_subdirectories(
+    run_directories = rasa.shared.utils.io.list_subdirectories(
         os.path.join(temp_dir, "core_comparison_results")
     )
     assert len(run_directories) == 2
-    model_files = io_utils.list_files(
+    model_files = rasa.shared.utils.io.list_files(
         os.path.join(temp_dir, "core_comparison_results", run_directories[0])
     )
     assert len(model_files) == 4
@@ -151,7 +152,7 @@ def test_train_no_domain_exists(
     )
 
     assert os.path.exists("train_models_no_domain")
-    files = io_utils.list_files("train_models_no_domain")
+    files = rasa.shared.utils.io.list_files("train_models_no_domain")
     assert len(files) == 1
 
     trained_model_path = "train_models_no_domain/nlu-model-only.tar.gz"
@@ -167,14 +168,14 @@ def test_train_skip_on_model_not_changed(
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
 
     file_name = files[0]
     run_in_simple_project_with_model("train")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
     assert file_name == files[0]
 
@@ -183,13 +184,13 @@ def test_train_force(run_in_simple_project_with_model: Callable[..., RunResult])
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
 
     run_in_simple_project_with_model("train", "--force")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 2
 
 
@@ -203,7 +204,7 @@ def test_train_with_only_nlu_data(run_in_simple_project: Callable[..., RunResult
     run_in_simple_project("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
@@ -217,7 +218,7 @@ def test_train_with_only_core_data(run_in_simple_project: Callable[..., RunResul
     run_in_simple_project("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
-    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    files = rasa.shared.utils.io.list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
@@ -277,7 +278,7 @@ def test_train_nlu(run_in_simple_project: Callable[..., RunResult]):
     )
 
     assert os.path.exists("train_models")
-    files = io_utils.list_files("train_models")
+    files = rasa.shared.utils.io.list_files("train_models")
     assert len(files) == 1
     assert os.path.basename(files[0]).startswith("nlu-")
     model_dir = model.get_model("train_models")
@@ -305,7 +306,7 @@ def test_train_nlu_persist_nlu_data(
     )
 
     assert os.path.exists("train_models")
-    files = io_utils.list_files("train_models")
+    files = rasa.shared.utils.io.list_files("train_models")
     assert len(files) == 1
     assert os.path.basename(files[0]).startswith("nlu-")
     model_dir = model.get_model("train_models")

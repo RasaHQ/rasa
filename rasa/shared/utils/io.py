@@ -1,8 +1,9 @@
+import glob
 import json
 import os
 import warnings
 from pathlib import Path
-from typing import Any, Text, Optional, Type, Union
+from typing import Any, Text, Optional, Type, Union, List
 
 DEFAULT_ENCODING = "utf-8"
 
@@ -112,3 +113,56 @@ def read_json_file(filename: Union[Text, Path]) -> Any:
             "Failed to read json from '{}'. Error: "
             "{}".format(os.path.abspath(filename), e)
         )
+
+
+def list_directory(path: Text) -> List[Text]:
+    """Returns all files and folders excluding hidden files.
+
+    If the path points to a file, returns the file. This is a recursive
+    implementation returning files in any depth of the path."""
+
+    if not isinstance(path, str):
+        raise ValueError(
+            "`resource_name` must be a string type. "
+            "Got `{}` instead".format(type(path))
+        )
+
+    if os.path.isfile(path):
+        return [path]
+    elif os.path.isdir(path):
+        results = []
+        for base, dirs, files in os.walk(path, followlinks=True):
+            # sort files for same order across runs
+            files = sorted(files, key=_filename_without_prefix)
+            # add not hidden files
+            good_files = filter(lambda x: not x.startswith("."), files)
+            results.extend(os.path.join(base, f) for f in good_files)
+            # add not hidden directories
+            good_directories = filter(lambda x: not x.startswith("."), dirs)
+            results.extend(os.path.join(base, f) for f in good_directories)
+        return results
+    else:
+        raise ValueError(
+            "Could not locate the resource '{}'.".format(os.path.abspath(path))
+        )
+
+
+def list_files(path: Text) -> List[Text]:
+    """Returns all files excluding hidden files.
+
+    If the path points to a file, returns the file."""
+
+    return [fn for fn in list_directory(path) if os.path.isfile(fn)]
+
+
+def _filename_without_prefix(file: Text) -> Text:
+    """Splits of a filenames prefix until after the first ``_``."""
+    return "_".join(file.split("_")[1:])
+
+
+def list_subdirectories(path: Text) -> List[Text]:
+    """Returns all folders excluding hidden files.
+
+    If the path points to a file, returns an empty list."""
+
+    return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]

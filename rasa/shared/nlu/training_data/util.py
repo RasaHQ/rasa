@@ -46,7 +46,7 @@ def get_file_format(resource_name: Text) -> Text:
     if resource_name is None or not os.path.exists(resource_name):
         raise AttributeError(f"Resource '{resource_name}' does not exist.")
 
-    files = io_utils.list_files(resource_name)
+    files = rasa.shared.utils.io.list_files(resource_name)
 
     file_formats = list(map(lambda f: loading.guess_format(f), files))
 

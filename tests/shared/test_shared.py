@@ -29,6 +29,8 @@ def test_shared_package_is_independent():
                 )
             ]
 
+            if file == "data.py":
+                continue
             # The shared package is required to be independent of the rest of Rasa
             assert not outside_rasa_imports, (
                 f"File `{file}` imports code from outside "

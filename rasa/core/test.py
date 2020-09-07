@@ -5,6 +5,7 @@ import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 import rasa.utils.io as io_utils
@@ -801,10 +802,10 @@ async def compare_models_in_dir(
     """
     number_correct = defaultdict(list)
 
-    for run in io_utils.list_subdirectories(model_dir):
+    for run in rasa.shared.utils.io.list_subdirectories(model_dir):
         number_correct_in_run = defaultdict(list)
 
-        for model in sorted(io_utils.list_files(run)):
+        for model in sorted(rasa.shared.utils.io.list_files(run)):
             if not model.endswith("tar.gz"):
                 continue
 

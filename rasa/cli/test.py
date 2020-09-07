@@ -107,7 +107,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
         if os.path.isdir(args.config):
-            args.config = io_utils.list_files(args.config)
+            args.config = rasa.shared.utils.io.list_files(args.config)
 
     if isinstance(args.config, list):
         logger.info(

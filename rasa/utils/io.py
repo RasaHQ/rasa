@@ -9,7 +9,6 @@ import tarfile
 import tempfile
 import warnings
 import zipfile
-import glob
 from asyncio import AbstractEventLoop
 from collections import OrderedDict
 from io import BytesIO as IOReader, StringIO
@@ -373,59 +372,6 @@ def create_validator(
                 raise ValidationError(message=error_message)
 
     return FunctionValidator
-
-
-def list_files(path: Text) -> List[Text]:
-    """Returns all files excluding hidden files.
-
-    If the path points to a file, returns the file."""
-
-    return [fn for fn in list_directory(path) if os.path.isfile(fn)]
-
-
-def list_subdirectories(path: Text) -> List[Text]:
-    """Returns all folders excluding hidden files.
-
-    If the path points to a file, returns an empty list."""
-
-    return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
-
-
-def _filename_without_prefix(file: Text) -> Text:
-    """Splits of a filenames prefix until after the first ``_``."""
-    return "_".join(file.split("_")[1:])
-
-
-def list_directory(path: Text) -> List[Text]:
-    """Returns all files and folders excluding hidden files.
-
-    If the path points to a file, returns the file. This is a recursive
-    implementation returning files in any depth of the path."""
-
-    if not isinstance(path, str):
-        raise ValueError(
-            "`resource_name` must be a string type. "
-            "Got `{}` instead".format(type(path))
-        )
-
-    if os.path.isfile(path):
-        return [path]
-    elif os.path.isdir(path):
-        results = []
-        for base, dirs, files in os.walk(path, followlinks=True):
-            # sort files for same order across runs
-            files = sorted(files, key=_filename_without_prefix)
-            # add not hidden files
-            good_files = filter(lambda x: not x.startswith("."), files)
-            results.extend(os.path.join(base, f) for f in good_files)
-            # add not hidden directories
-            good_directories = filter(lambda x: not x.startswith("."), dirs)
-            results.extend(os.path.join(base, f) for f in good_directories)
-        return results
-    else:
-        raise ValueError(
-            "Could not locate the resource '{}'.".format(os.path.abspath(path))
-        )
 
 
 def create_directory(directory_path: Text) -> None:

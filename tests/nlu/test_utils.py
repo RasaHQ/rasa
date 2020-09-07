@@ -6,6 +6,7 @@ import tempfile
 import shutil
 
 import rasa.shared.nlu.training_data.message
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.nlu import utils
 from pathlib import Path
@@ -41,13 +42,13 @@ def test_relative_normpath():
 
 def test_list_files_invalid_resource():
     with pytest.raises(ValueError) as execinfo:
-        io_utils.list_files(None)
+        rasa.shared.utils.io.list_files(None)
     assert "must be a string type" in str(execinfo.value)
 
 
 def test_list_files_non_existing_dir():
     with pytest.raises(ValueError) as execinfo:
-        io_utils.list_files("my/made_up/path")
+        rasa.shared.utils.io.list_files("my/made_up/path")
     assert "Could not locate the resource" in str(execinfo.value)
 
 
@@ -57,7 +58,7 @@ def test_list_files_ignores_hidden_files(tmpdir):
     # create a normal file
     normal_file = os.path.join(tmpdir.strpath, "normal_file")
     open(normal_file, "a").close()
-    assert io_utils.list_files(tmpdir.strpath) == [normal_file]
+    assert rasa.shared.utils.io.list_files(tmpdir.strpath) == [normal_file]
 
 
 def test_creation_of_existing_dir(tmpdir):

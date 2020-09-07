@@ -6,7 +6,6 @@ import typing
 from typing import Optional, Text
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -59,7 +58,7 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     if not os.path.exists(resource_name):
         raise ValueError(f"File '{resource_name}' does not exist.")
 
-    files = io_utils.list_files(resource_name)
+    files = rasa.shared.utils.io.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
     data_sets = [ds for ds in data_sets if ds]
     if len(data_sets) == 0:

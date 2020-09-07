@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Text, Optional, Dict, List, Union
 
+import rasa.shared.utils.io
 from rasa.shared import data
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
@@ -73,7 +74,7 @@ async def load_data_from_resource(
         raise ValueError(f"Resource '{resource}' does not exist.")
 
     return await load_data_from_files(
-        io_utils.list_files(resource),
+        rasa.shared.utils.io.list_files(resource),
         domain,
         template_variables,
         use_e2e,
