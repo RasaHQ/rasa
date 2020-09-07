@@ -15,8 +15,22 @@ from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER
 from rasa.nlu.constants import TEXT
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
+
+
+class InvalidStory(Exception):
+    """Exception that can be raised if story cannot be featurized."""
+
+    def __init__(self, message) -> None:
+        self.message = message
+
+    def __str__(self) -> Text:
+        # return message in error colours
+        return rasa.shared.utils.io.wrap_with_color(
+            self.message, color=rasa.shared.utils.io.bcolors.FAIL
+        )
 
 
 class TrackerFeaturizer:
@@ -249,10 +263,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                     # unpredictable actions can be
                     # only the first in the story
                     if delete_first_state:
-                        raise Exception(
-                            "Found two unpredictable "
-                            "actions in one story."
-                            "Check your story files."
+                        raise InvalidStory(
+                            f"Found two unpredictable actions in one story "
+                            f"'{tracker.sender_id}'. Check your story files."
                         )
                     delete_first_state = True
 
