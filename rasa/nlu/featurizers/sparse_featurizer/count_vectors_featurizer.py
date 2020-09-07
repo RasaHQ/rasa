@@ -77,7 +77,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings
-        # in case of word analyzer is used, use the lemma of the words
+        # indicates whether the featurizer should use the lemma of a word for
+        # counting (if available) or not
         "use_lemma": True,
     }
 
