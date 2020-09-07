@@ -1,4 +1,3 @@
-import json
 import os
 import re
 from typing import Any, Optional, Text
@@ -8,7 +7,7 @@ import rasa.shared.utils.io
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
-from rasa.shared.utils.io import read_json_file
+from rasa.shared.utils.io import read_json_file, json_to_string
 
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
@@ -21,12 +20,6 @@ def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
 def module_path_from_object(o: Any) -> Text:
     """Returns the fully qualified class path of the instantiated object."""
     return o.__class__.__module__ + "." + o.__class__.__name__
-
-
-def json_to_string(obj: Any, **kwargs: Any) -> Text:
-    indent = kwargs.pop("indent", 2)
-    ensure_ascii = kwargs.pop("ensure_ascii", False)
-    return json.dumps(obj, indent=indent, ensure_ascii=ensure_ascii, **kwargs)
 
 
 def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:

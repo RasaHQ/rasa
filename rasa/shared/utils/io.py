@@ -174,3 +174,9 @@ def list_subdirectories(path: Text) -> List[Text]:
 def get_text_hash(text: Text, encoding: Text = DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash for a text."""
     return md5(text.encode(encoding)).hexdigest()
+
+
+def json_to_string(obj: Any, **kwargs: Any) -> Text:
+    indent = kwargs.pop("indent", 2)
+    ensure_ascii = kwargs.pop("ensure_ascii", False)
+    return json.dumps(obj, indent=indent, ensure_ascii=ensure_ascii, **kwargs)

@@ -10,8 +10,7 @@ import rasa.shared.utils.io
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_STORIES_FILE
 from rasa.nlu.training_data import load_data
-from rasa.nlu.utils import json_to_string
-from rasa.utils import io
+from rasa.shared.utils.io import json_to_string
 
 
 def test_get_core_directory(project):
