@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.shared.utils.io
-import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -131,6 +130,8 @@ class EntityExtractor(Component):
         Returns:
             Entities.
         """
+        import rasa.nlu.utils.bilou_utils as bilou_utils
+
         entities = []
 
         last_entity_tag = NO_ENTITY_TAG
