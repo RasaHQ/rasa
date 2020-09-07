@@ -8,7 +8,6 @@ import matplotlib
 
 import rasa.shared.utils.io
 from rasa.constants import RESULTS_FILE
-import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
