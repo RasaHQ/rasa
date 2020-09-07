@@ -24,12 +24,6 @@ from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
 
-ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
-ESCAPE = re.compile(f'[{"".join(ESCAPE_DCT.values())}]')
-UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
-UNESCAPE = re.compile(f'[{"".join(UNESCAPE_DCT.values())}]')
-GROUP_COMPLETE_MATCH = 0
-
 YAML_LINE_MAX_WIDTH = 4096
 
 

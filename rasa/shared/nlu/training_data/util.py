@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, Optional, Text, Match
 
 from rasa.shared.nlu.constants import (
@@ -15,15 +16,14 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
 )
 import rasa.shared.utils.io
-from rasa.utils.io import (
-    ESCAPE_DCT,
-    GROUP_COMPLETE_MATCH,
-    ESCAPE,
-    UNESCAPE_DCT,
-    UNESCAPE,
-)
 
 logger = logging.getLogger(__name__)
+
+ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+ESCAPE = re.compile(f'[{"".join(ESCAPE_DCT.values())}]')
+UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
+UNESCAPE = re.compile(f'[{"".join(UNESCAPE_DCT.values())}]')
+GROUP_COMPLETE_MATCH = 0
 
 
 def transform_entity_synonyms(
