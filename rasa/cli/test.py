@@ -13,7 +13,7 @@ from rasa.constants import (
     DEFAULT_RESULTS_PATH,
     CONFIG_SCHEMA_FILE,
 )
-import rasa.utils.validation as validation_utils
+import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils as cli_utils
 import rasa.utils.io as io_utils
 

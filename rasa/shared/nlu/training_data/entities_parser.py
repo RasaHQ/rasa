@@ -44,7 +44,6 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
     Returns:
         Extracted entities.
     """
-    import rasa.nlu.utils as rasa_nlu_utils
 
     entities = []
     offset = 0
@@ -135,7 +134,7 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
         Deserialized and validated `json_str`.
     """
     import json
-    import rasa.utils.validation as validation_utils
+    import rasa.shared.utils.validation as validation_utils
     import rasa.nlu.schemas.data_schema as schema
 
     # add {} as they are not part of the regex

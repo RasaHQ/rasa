@@ -19,7 +19,7 @@ class RasaReader(JsonTrainingDataReader):
     def read_from_json(self, js: Dict[Text, Any], **_) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         import rasa.nlu.schemas.data_schema as schema
-        import rasa.utils.validation as validation_utils
+        import rasa.shared.utils.validation as validation_utils
 
         validation_utils.validate_training_data(js, schema.rasa_nlu_data_schema())
 

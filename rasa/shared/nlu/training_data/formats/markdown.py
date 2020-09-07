@@ -1,6 +1,5 @@
 import logging
 import re
-import typing
 from collections import OrderedDict
 from json import JSONDecodeError
 from pathlib import Path
@@ -142,7 +141,7 @@ class MarkdownReader(TrainingDataReader):
             a proper python dict
         """
         import json
-        import rasa.utils.validation as validation_utils
+        import rasa.shared.utils.validation as validation_utils
         import rasa.nlu.schemas.data_schema as schema
 
         # add {} as they are not part of the regex

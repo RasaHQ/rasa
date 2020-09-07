@@ -32,7 +32,7 @@ def test_shared_package_is_independent():
             excluded = [
                 "data.py",
                 "entities_parser.py",
-                "rasa.py",
+                # "rasa.py",
                 "markdown.py",
                 "rasa_yaml.py",
             ]

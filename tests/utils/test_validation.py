@@ -5,10 +5,9 @@ from jsonschema import ValidationError
 import rasa.shared.utils.io
 from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
 
-import rasa.utils.validation as validation_utils
+import rasa.shared.utils.validation as validation_utils
 import rasa.utils.io as io_utils
 import rasa.nlu.schemas.data_schema as schema
-from tests.conftest import DEFAULT_NLU_DATA
 
 
 @pytest.mark.parametrize(

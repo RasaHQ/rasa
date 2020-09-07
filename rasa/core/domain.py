@@ -35,7 +35,7 @@ from rasa.core.constants import (
 from rasa.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
+from rasa.shared.utils.validation import InvalidYamlFileError, validate_yaml_schema
 
 logger = logging.getLogger(__name__)
 

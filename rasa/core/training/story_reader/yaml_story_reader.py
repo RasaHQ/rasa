@@ -4,7 +4,7 @@ from typing import Dict, Text, List, Any, Optional, Union
 
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data import entities_parser
-from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
+from rasa.shared.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 
 import rasa.utils.io as io_utils
