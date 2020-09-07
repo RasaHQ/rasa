@@ -146,7 +146,7 @@ class YAMLStoryReader(StoryReader):
               `True` if all the keys are contained in the file, `False` otherwise.
         """
         try:
-            content = io_utils.read_yaml_file(file_path)
+            content = rasa.shared.utils.io.read_yaml_file(file_path)
             return any(key in content for key in keys)
         except Exception as e:
             # Using broad `Exception` because yaml library is not exposing all Errors

@@ -5,6 +5,7 @@ from typing import Callable, Text, List, Set
 import pytest
 
 import rasa.shared
+import rasa.shared.utils.io
 from rasa.shared.utils import io as io_utils
 from rasa.utils import io as io_utils
 
@@ -209,7 +210,7 @@ def test_emojis_in_tmp_file():
             - two £ (?u)\\b\\w+\\b f\u00fcr
         """
     test_file = io_utils.create_temporary_file(test_data)
-    content = io_utils.read_yaml_file(test_file)
+    content = rasa.shared.utils.io.read_yaml_file(test_file)
 
     assert content["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
     assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"

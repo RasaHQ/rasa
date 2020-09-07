@@ -468,7 +468,7 @@ def test_get_valid_config(parameters):
             config_path, parameters["mandatory_keys"], default_config_path
         )
 
-        config_data = io_utils.read_yaml_file(config_path)
+        config_data = rasa.shared.utils.io.read_yaml_file(config_path)
 
         for k in parameters["mandatory_keys"]:
             assert k in config_data

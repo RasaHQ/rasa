@@ -408,9 +408,9 @@ def test_train_nlu_success(
     default_domain_path: Text,
     tmp_path: Path,
 ):
-    domain_data = rasa_utils.io.read_yaml_file(default_domain_path)
-    config_data = rasa_utils.io.read_yaml_file(default_stack_config)
-    nlu_data = rasa_utils.io.read_yaml_file(default_nlu_data)
+    domain_data = rasa.shared.utils.io.read_yaml_file(default_domain_path)
+    config_data = rasa.shared.utils.io.read_yaml_file(default_stack_config)
+    nlu_data = rasa.shared.utils.io.read_yaml_file(default_nlu_data)
 
     # combine all data into our payload
     payload = {

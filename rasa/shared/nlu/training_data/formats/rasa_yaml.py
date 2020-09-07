@@ -341,7 +341,7 @@ class RasaYAMLReader(TrainingDataReader):
             return False
 
         try:
-            content = io_utils.read_yaml_file(filename)
+            content = rasa.shared.utils.io.read_yaml_file(filename)
 
             return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
         except (YAMLError, Warning) as e:

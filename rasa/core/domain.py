@@ -1130,7 +1130,7 @@ class Domain:
         if not is_likely_yaml_file(filename):
             return False
         try:
-            content = rasa.utils.io.read_yaml_file(filename)
+            content = rasa.shared.utils.io.read_yaml_file(filename)
             if any(key in content for key in ALL_DOMAIN_KEYS):
                 return True
         except YAMLError:

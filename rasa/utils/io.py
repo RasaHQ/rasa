@@ -112,15 +112,6 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
         )
 
 
-def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
-    """Parses a yaml file.
-
-    Args:
-        filename: The path to the file which should be read.
-    """
-    return read_yaml(read_file(filename, DEFAULT_ENCODING))
-
-
 def unarchive(byte_array: bytes, directory: Text) -> Text:
     """Tries to unpack a byte array interpreting it as an archive.
 

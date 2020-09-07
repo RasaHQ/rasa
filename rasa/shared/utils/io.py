@@ -5,7 +5,7 @@ import re
 import warnings
 from hashlib import md5
 from pathlib import Path
-from typing import Any, Text, Optional, Type, Union, List
+from typing import Any, Text, Optional, Type, Union, List, Dict
 
 from ruamel import yaml as yaml
 
@@ -251,3 +251,12 @@ def _is_ascii(text: Text) -> bool:
 
 
 YAML_VERSION = (1, 2)
+
+
+def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
+    """Parses a yaml file.
+
+    Args:
+        filename: The path to the file which should be read.
+    """
+    return read_yaml(read_file(filename, DEFAULT_ENCODING))

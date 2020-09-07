@@ -147,7 +147,7 @@ def test_dump_yaml_key_order(
     file.write_text(content)
 
     # load this file and ensure keys are in correct reverse-alphabetical order
-    data = io_utils.read_yaml_file(file)
+    data = rasa.shared.utils.io.read_yaml_file(file)
     assert list(data.keys()) == list(reversed(string.ascii_lowercase))
 
     # dumping `data` will result in alphabetical or reverse-alphabetical list of keys,
