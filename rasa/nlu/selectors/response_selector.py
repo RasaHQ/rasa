@@ -87,6 +87,7 @@ from rasa.nlu.constants import (
     TEXT,
     INTENT_NAME_KEY,
 )
+from rasa.nlu.training_data import training_data
 
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
@@ -333,14 +334,6 @@ class ResponseSelector(DIETClassifier):
 
         return model_data
 
-    @staticmethod
-    def _intent_response_key_to_template_key(intent_response_key: Text) -> Text:
-        return f"utter_{intent_response_key}"
-
-    @staticmethod
-    def _template_key_to_intent_response_key(template_key: Text) -> Text:
-        return template_key.split("utter_")[1]
-
     def _resolve_intent_response_key(
         self, label: Dict[Text, Optional[Text]]
     ) -> Optional[Text]:
@@ -358,7 +351,7 @@ class ResponseSelector(DIETClassifier):
         for key, responses in self.responses.items():
 
             # First check if the predicted label was the key itself
-            search_key = self._template_key_to_intent_response_key(key)
+            search_key = training_data.template_key_to_intent_response_key(key)
             if hash(search_key) == label.get("id"):
                 return search_key
 
@@ -380,7 +373,7 @@ class ResponseSelector(DIETClassifier):
             self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
         )
         label_response_templates = self.responses.get(
-            self._intent_response_key_to_template_key(label_intent_response_key)
+            training_data.intent_response_key_to_template_key(label_intent_response_key)
         )
 
         if label_intent_response_key and not label_response_templates:

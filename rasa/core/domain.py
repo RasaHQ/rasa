@@ -49,6 +49,7 @@ SESSION_CONFIG_KEY = "session_config"
 USED_ENTITIES_KEY = "used_entities"
 USE_ENTITIES_KEY = "use_entities"
 IGNORE_ENTITIES_KEY = "ignore_entities"
+IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -313,7 +314,7 @@ class Domain:
 
         properties.setdefault(USE_ENTITIES_KEY, True)
         properties.setdefault(IGNORE_ENTITIES_KEY, [])
-        properties.setdefault("is_retrieval_intent", False)
+        properties.setdefault(IS_RETRIEVAL_INTENT_KEY, False)
         if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
             properties[USE_ENTITIES_KEY] = []
 
@@ -348,14 +349,14 @@ class Domain:
 
     def _update_retrieval_intent_properties(self, retrieval_intents: List[Text]):
         for retrieval_intent in retrieval_intents:
-            self.intent_properties[retrieval_intent]["is_retrieval_intent"] = True
+            self.intent_properties[retrieval_intent][IS_RETRIEVAL_INTENT_KEY] = True
 
     @lazy_property
     def retrieval_intents(self) -> List[Text]:
         return [
             intent
             for intent in self.intent_properties
-            if self.intent_properties[intent]["is_retrieval_intent"]
+            if self.intent_properties[intent][IS_RETRIEVAL_INTENT_KEY]
         ]
 
     @classmethod
@@ -404,7 +405,7 @@ class Domain:
                 intent_name: {
                     USE_ENTITIES_KEY: True,
                     IGNORE_ENTITIES_KEY: [],
-                    "is_retrieval_intent": False,
+                    IS_RETRIEVAL_INTENT_KEY: False,
                 }
             }
         else:

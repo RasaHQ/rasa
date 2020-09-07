@@ -32,6 +32,14 @@ DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 logger = logging.getLogger(__name__)
 
 
+def intent_response_key_to_template_key(intent_response_key: Text) -> Text:
+    return f"{UTTER_PREFIX}{intent_response_key}"
+
+
+def template_key_to_intent_response_key(template_key: Text) -> Text:
+    return template_key.split(UTTER_PREFIX)[1]
+
+
 class TrainingData:
     """Holds loaded intent and entity training data."""
 
@@ -241,7 +249,9 @@ class TrainingData:
                 continue
 
             # look for corresponding bot utterance
-            story_lookup_key = f"{UTTER_PREFIX}{example.get_full_intent()}"
+            story_lookup_key = intent_response_key_to_template_key(
+                example.get_full_intent()
+            )
             assistant_utterances = self.responses.get(story_lookup_key, [])
             if assistant_utterances:
 
