@@ -1,23 +1,14 @@
 import json
 import os
 import re
-from typing import Any, Dict, Optional, Text
+from typing import Any, Optional, Text
 from pathlib import Path
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.shared.utils.io import read_json_file
-from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
-)
 
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
@@ -48,48 +39,6 @@ def write_to_file(filename: Text, text: Any) -> None:
     """Write a text to a file."""
 
     rasa.shared.utils.io.write_text_file(str(text), filename)
-
-
-def build_entity(
-    start: int,
-    end: int,
-    value: Text,
-    entity_type: Text,
-    role: Optional[Text] = None,
-    group: Optional[Text] = None,
-    **kwargs: Any,
-) -> Dict[Text, Any]:
-    """Builds a standard entity dictionary.
-
-    Adds additional keyword parameters.
-
-    Args:
-        start: start position of entity
-        end: end position of entity
-        value: text value of the entity
-        entity_type: name of the entity type
-        role: role of the entity
-        group: group of the entity
-        **kwargs: additional parameters
-
-    Returns:
-        an entity dictionary
-    """
-
-    entity = {
-        ENTITY_ATTRIBUTE_START: start,
-        ENTITY_ATTRIBUTE_END: end,
-        ENTITY_ATTRIBUTE_VALUE: value,
-        ENTITY_ATTRIBUTE_TYPE: entity_type,
-    }
-
-    if role:
-        entity[ENTITY_ATTRIBUTE_ROLE] = role
-    if group:
-        entity[ENTITY_ATTRIBUTE_GROUP] = group
-
-    entity.update(kwargs)
-    return entity
 
 
 def is_model_dir(model_dir: Text) -> bool:

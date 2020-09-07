@@ -2,6 +2,7 @@ import re
 from json import JSONDecodeError
 from typing import Text, List, Dict, Match, Optional, NamedTuple, Any
 
+import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
@@ -55,7 +56,7 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
         end_index = start_index + len(entity_attributes.text)
         offset += len(match.group(0)) - len(entity_attributes.text)
 
-        entity = rasa_nlu_utils.build_entity(
+        entity = rasa.shared.nlu.training_data.util.build_entity(
             start_index,
             end_index,
             entity_attributes.value,

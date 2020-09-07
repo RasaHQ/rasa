@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Any, Dict, Optional, Text, List, Tuple
 
-from rasa.nlu import utils
+import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
@@ -90,7 +90,9 @@ class DialogflowReader(TrainingDataReader):
             end = start + len(text)
             entity_type = chunk.get("alias", chunk["meta"])
             if entity_type != "@sys.ignore":
-                entity = utils.build_entity(start, end, text, entity_type)
+                entity = rasa.shared.nlu.training_data.util.build_entity(
+                    start, end, text, entity_type
+                )
 
         return entity
 
