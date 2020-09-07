@@ -7,7 +7,7 @@ import copy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 
-from rasa import data
+import rasa.shared.data
 from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
@@ -304,12 +304,11 @@ class TrainingData:
         return RasaYAMLWriter().dumps(no_responses_training_data)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
-
-        if data.is_likely_json_file(filename):
+        if rasa.shared.data.is_likely_json_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_json(indent=2), filename)
-        elif data.is_likely_markdown_file(filename):
+        elif rasa.shared.data.is_likely_markdown_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_markdown(), filename)
-        elif data.is_likely_yaml_file(filename):
+        elif rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
         else:
             ValueError(
@@ -318,9 +317,9 @@ class TrainingData:
             )
 
     def persist_nlg(self, filename: Text) -> None:
-        if data.is_likely_yaml_file(filename):
+        if rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
-        elif data.is_likely_markdown_file(filename):
+        elif rasa.shared.data.is_likely_markdown_file(filename):
             nlg_serialized_data = self.nlg_as_markdown()
             if nlg_serialized_data:
                 rasa.shared.utils.io.write_text_file(nlg_serialized_data, filename)
@@ -334,7 +333,7 @@ class TrainingData:
     def get_nlg_persist_filename(nlu_filename: Text) -> Text:
 
         extension = Path(nlu_filename).suffix
-        if data.is_likely_json_file(nlu_filename):
+        if rasa.shared.data.is_likely_json_file(nlu_filename):
             # backwards compatibility: previously NLG was always dumped as md. now
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use

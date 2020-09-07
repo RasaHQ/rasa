@@ -12,6 +12,7 @@ import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
 
+import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
 from rasa.nlu.constants import INTENT_NAME_KEY
@@ -849,11 +850,11 @@ def _get_nlu_target_format(export_path: Text) -> Text:
     guessed_format = loading.guess_format(export_path)
 
     if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
-        if data.is_likely_json_file(export_path):
+        if rasa.shared.data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif data.is_likely_markdown_file(export_path):
+        elif rasa.shared.data.is_likely_markdown_file(export_path):
             guessed_format = MARKDOWN
-        elif data.is_likely_yaml_file(export_path):
+        elif rasa.shared.data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
     return guessed_format

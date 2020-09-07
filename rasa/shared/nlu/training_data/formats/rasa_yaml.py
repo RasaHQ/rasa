@@ -3,8 +3,8 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
 
+import rasa.shared.data
 import rasa.shared.nlu.constants
-from rasa import data
 from rasa.shared.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
@@ -334,7 +334,7 @@ class RasaYAMLReader(TrainingDataReader):
             `True` if the `filename` is possibly a valid YAML NLU file,
             `False` otherwise.
         """
-        if not data.is_likely_yaml_file(filename):
+        if not rasa.shared.data.is_likely_yaml_file(filename):
             return False
 
         try:

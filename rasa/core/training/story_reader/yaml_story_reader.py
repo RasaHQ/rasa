@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
+import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data import entities_parser
 from rasa.shared.utils.validation import validate_yaml_schema, InvalidYamlFileError
@@ -127,7 +128,7 @@ class YAMLStoryReader(StoryReader):
             `True` in case the file is a Core YAML training data or rule data file,
             `False` otherwise.
         """
-        return rasa.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
+        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
             file_path, KEY_STORIES, KEY_RULES
         )
 
