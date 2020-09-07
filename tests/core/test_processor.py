@@ -182,6 +182,25 @@ async def test_reminder_scheduled(
     assert t.events[-1] == ActionExecuted("action_listen")
 
 
+async def test_trigger_external_latest_input_channel(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    input_channel = "test_input_channel_external"
+
+    tracker.update(UserUttered("test1"))
+    tracker.update(UserUttered("test2", input_channel=input_channel))
+
+    await default_processor.trigger_external_user_uttered(
+        "test3", None, tracker, default_channel
+    )
+
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+
+    assert tracker.get_latest_input_channel() == input_channel
+
+
 async def test_reminder_aborted(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
