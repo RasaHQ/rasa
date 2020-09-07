@@ -155,7 +155,7 @@ class Domain:
         except InvalidYamlFileError as e:
             raise InvalidDomain(str(e))
 
-        data = rasa.utils.io.read_yaml(yaml)
+        data = rasa.shared.utils.io.read_yaml(yaml)
         if not Validator.validate_training_data_format_version(data, original_filename):
             return Domain.empty()
 

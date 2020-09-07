@@ -3,6 +3,7 @@ from typing import Text, List
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
@@ -257,7 +258,7 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
     """
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = rasa.utils.io.read_yaml(stories)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(UserWarning) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -276,7 +277,7 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
     )
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = rasa.utils.io.read_yaml(stories)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -295,7 +296,7 @@ async def test_active_loop_is_parsed(default_domain: Domain):
     )
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = rasa.utils.io.read_yaml(stories)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)

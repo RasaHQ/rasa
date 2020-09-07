@@ -80,7 +80,7 @@ class YAMLStoryReader(StoryReader):
                 filename, rasa.shared.utils.io.DEFAULT_ENCODING
             )
             validate_yaml_schema(file_content, CORE_SCHEMA_FILE)
-            yaml_content = io_utils.read_yaml(file_content)
+            yaml_content = rasa.shared.utils.io.read_yaml(file_content)
         except (ValueError, ParserError) as e:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"

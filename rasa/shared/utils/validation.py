@@ -2,6 +2,7 @@ from typing import Text, Dict, Any
 
 from ruamel.yaml.constructor import DuplicateKeyError
 
+import rasa.shared.utils.io
 from rasa.constants import PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE, SCHEMA_UTILS_FILE
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 
@@ -38,7 +39,7 @@ def validate_yaml_schema(
         log.setLevel(logging.CRITICAL)
 
     try:
-        source_data = rasa.utils.io.read_yaml(yaml_file_content)
+        source_data = rasa.shared.utils.io.read_yaml(yaml_file_content)
     except YAMLError:
         raise InvalidYamlFileError(
             "The provided yaml file is invalid. You can use "

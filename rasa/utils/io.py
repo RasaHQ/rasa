@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import pickle
-import re
 import tarfile
 import tempfile
 import warnings
@@ -18,8 +17,8 @@ from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
 import ruamel.yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
 
-from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL, YAML_VERSION
-from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file
+from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file, read_yaml
 
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
@@ -62,73 +61,6 @@ def enable_async_loop_debugging(
     # Report all mistakes managing asynchronous resources.
     warnings.simplefilter("always", ResourceWarning)
     return event_loop
-
-
-def fix_yaml_loader() -> None:
-    """Ensure that any string read by yaml is represented as unicode."""
-
-    def construct_yaml_str(self, node):
-        # Override the default string handling function
-        # to always return unicode objects
-        return self.construct_scalar(node)
-
-    yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
-    yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
-
-
-def replace_environment_variables() -> None:
-    """Enable yaml loader to process the environment variables in the yaml."""
-    # eg. ${USER_NAME}, ${PASSWORD}
-    env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
-    yaml.add_implicit_resolver("!env_var", env_var_pattern)
-
-    def env_var_constructor(loader, node):
-        """Process environment variables found in the YAML."""
-        value = loader.construct_scalar(node)
-        expanded_vars = os.path.expandvars(value)
-        if "$" in expanded_vars:
-            not_expanded = [w for w in expanded_vars.split() if "$" in w]
-            raise ValueError(
-                "Error when trying to expand the environment variables"
-                " in '{}'. Please make sure to also set these environment"
-                " variables: '{}'.".format(value, not_expanded)
-            )
-        return expanded_vars
-
-    yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
-
-
-def read_yaml(content: Text) -> Any:
-    """Parses yaml from a text.
-
-    Args:
-        content: A text containing yaml content.
-
-    Raises:
-        ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
-    """
-    fix_yaml_loader()
-
-    replace_environment_variables()
-
-    yaml_parser = yaml.YAML(typ="safe")
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
-
-    if _is_ascii(content):
-        # Required to make sure emojis are correctly parsed
-        content = (
-            content.encode("utf-8")
-            .decode("raw_unicode_escape")
-            .encode("utf-16", "surrogatepass")
-            .decode("utf-16")
-        )
-
-    return yaml_parser.load(content) or {}
-
-
-def _is_ascii(text: Text) -> bool:
-    return all(ord(character) < 128 for character in text)
 
 
 def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
