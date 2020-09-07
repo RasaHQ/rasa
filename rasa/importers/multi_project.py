@@ -165,6 +165,19 @@ class MultiProjectImporter(TrainingDataImporter):
 
     async def get_domain(self) -> Domain:
         domains = [Domain.load(path) for path in self._domain_paths]
+
+        nlu_data = await self.get_nlu_data()
+        domains.append(
+            Domain(
+                nlu_data.intents,
+                entities=[],
+                slots=[],
+                templates={},
+                action_names=[],
+                forms=[],
+            )
+        )
+
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )

@@ -53,6 +53,16 @@ class RasaFileImporter(TrainingDataImporter):
         return utils.training_data_from_paths(self._nlu_files, language)
 
     async def get_domain(self) -> Domain:
+        nlu_data = await self.get_nlu_data()
+        nlu_domain_data = Domain(
+            nlu_data.intents,
+            entities=[],
+            slots=[],
+            templates={},
+            action_names=[],
+            forms=[],
+        )
+
         domain = Domain.empty()
         try:
             domain = Domain.load(self._domain_path)
@@ -63,4 +73,4 @@ class RasaFileImporter(TrainingDataImporter):
                 f"empty domain. Error: '{e.message}'"
             )
 
-        return domain
+        return domain.merge(nlu_domain_data)

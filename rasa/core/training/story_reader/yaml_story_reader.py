@@ -288,25 +288,7 @@ class YAMLStoryReader(StoryReader):
     def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)
         if utterance:
-            self._validate_that_utterance_is_in_domain(utterance)
             self.current_step_builder.add_user_messages([utterance])
-
-    def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
-        intent_name = utterance.intent.get(INTENT_NAME_KEY)
-
-        if not self.domain:
-            logger.debug(
-                "Skipped validating if intent is in domain as domain " "is `None`."
-            )
-            return
-
-        if intent_name not in self.domain.intents:
-            common_utils.raise_warning(
-                f"Issue found in '{self.source_name}': \n"
-                f"Found intent '{intent_name}' in stories which is not part of the "
-                f"domain.",
-                docs=DOCS_URL_STORIES,
-            )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
         utterances = []
