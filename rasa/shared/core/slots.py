@@ -161,9 +161,11 @@ class BooleanSlot(Slot):
 
 
 def bool_from_any(x: Any) -> bool:
+    """ Converts bool/float/int/str to bool or raises TypeError """
+    
     if isinstance(x, bool):
         return x
-    elif isinstance(x, float) or isinstance(x, int):
+    elif isinstance(x, (float, int)):
         return x == 1.
     elif isinstance(x, str) and x.isnumeric():
         return float(x) == 1.
