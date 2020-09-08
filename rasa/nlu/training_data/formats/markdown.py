@@ -8,6 +8,7 @@ from typing import Any, Text, Optional, Tuple, Dict, Union
 
 import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -111,7 +112,7 @@ class MarkdownReader(TrainingDataReader):
                     item, self.current_title
                 )
                 synonyms_parser.add_synonyms_from_entities(
-                    parsed.text, parsed.get("entities", []), self.entity_synonyms
+                    parsed.get(TEXT), parsed.get("entities", []), self.entity_synonyms
                 )
                 self.training_examples.append(parsed)
             elif self.current_section == SYNONYM:
