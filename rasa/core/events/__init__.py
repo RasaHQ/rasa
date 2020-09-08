@@ -1106,7 +1106,14 @@ class ActionExecuted(Event):
         if hasattr(self, "confidence"):
             confidence = self.confidence
 
-        d.update({"name": self.action_name, "policy": policy, "confidence": confidence})
+        d.update(
+            {
+                "name": self.action_name,
+                "policy": policy,
+                "confidence": confidence,
+                "action_text": self.action_text,
+            }
+        )
         return d
 
     def as_sub_state(self) -> Dict[Text, Text]:

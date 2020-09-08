@@ -281,6 +281,43 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
     assert not len(record)
 
 
+async def test_parsing_of_e2e_stories(default_domain: Domain):
+    yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
+    tracker = await training.load_data(
+        yaml_file,
+        default_domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+
+    assert len(tracker) == 1
+
+    actual = list(tracker[0].events)
+
+    expected = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": "simple"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "I am looking for a Kenyan restaurant",
+            {"name": None},
+            entities=[{"start": 19, "end": 25, "value": "Kenyan", "entity": "cuisine"}],
+        ),
+        ActionExecuted("", action_text="good for you"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(intent={"name": "goodbye"}),
+        ActionExecuted("utter_goodbye"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("One more thing", {"name": None}),
+        ActionExecuted("", action_text="What?"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+    assert actual == expected
+
+
 async def test_active_loop_is_parsed(default_domain: Domain):
     stories = (
         f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
