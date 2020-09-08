@@ -60,6 +60,8 @@ module.exports = {
   customFields: {
     // NOTE: all non-standard options should go in this object
   },
+  // FIXME: remove this option after launch
+  onBrokenLinks: 'warn',
   title: 'Rasa Open Source Documentation',
   tagline: 'Cras justo odio, dapibus ac facilisis in, egestas eget quam.',
   url: SITE_URL,
