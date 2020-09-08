@@ -331,8 +331,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   The lower and upper boundaries of the n-grams can be configured via the parameters `min_ngram` and `max_ngram`.
   By default both of them are set to `1`.
   By default the featurizer takes the lemma of a word instead of the word directly if it is available. The lemma
-  of a word is for example set by the `SpacyTokenizer`. You can disable this behavior
-  by setting `use_lemma` to `False`.
+  of a word is currently only set by the [SpacyTokenizer](../components/tokenizers.mdx#spacytokenizer). You can
+  disable this behavior by setting `use_lemma` to `False`.
 
 
   :::note

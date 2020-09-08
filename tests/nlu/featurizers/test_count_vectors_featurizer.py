@@ -438,8 +438,5 @@ def test_count_vector_featurizer_use_lemma(
     actual_seq_vecs = seq_vecs.toarray()
     actual_sen_vecs = sen_vecs.toarray()
 
-    print(actual_sen_vecs, sentence_features)
-    print(actual_seq_vecs, sequence_features)
-
     assert np.all(actual_seq_vecs[0] == sequence_features)
     assert np.all(actual_sen_vecs[-1] == sentence_features)
