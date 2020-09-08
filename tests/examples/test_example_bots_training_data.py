@@ -16,6 +16,11 @@ from rasa.importers.importer import TrainingDataImporter
             "examples/concertbot/data",
         ),
         (
+            "examples/formbot/config.yml",
+            "examples/formbot/domain.yml",
+            "examples/formbot/data",
+        ),
+        (
             "examples/knowledgebasebot/config.yml",
             "examples/knowledgebasebot/domain.yml",
             "examples/knowledgebasebot/data",
