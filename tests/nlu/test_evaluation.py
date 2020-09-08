@@ -50,11 +50,11 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token
 import json
 import os
-from rasa.nlu import training_data
+import rasa.shared.nlu.training_data.loading
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION, RANDOM_SEED
+from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -328,7 +328,9 @@ def test_confidence_merging():
 
 
 def test_drop_intents_below_freq():
-    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    td = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.json"
+    )
     clean_td = drop_intents_below_freq(td, 0)
     assert clean_td.intents == {
         "affirm",
@@ -355,7 +357,9 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
 
 
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
-    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    td = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.json"
+    )
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
@@ -382,8 +386,10 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
 
 
 def test_run_cv_evaluation_with_response_selector():
-    training_data_obj = training_data.load_data("data/examples/rasa/demo-rasa.md")
-    training_data_responses_obj = training_data.load_data(
+    training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses_obj = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa-responses.md"
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)

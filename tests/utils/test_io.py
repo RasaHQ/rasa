@@ -8,9 +8,6 @@ from prompt_toolkit.validation import ValidationError
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 
-os.environ["USER_NAME"] = "user"
-os.environ["PASS"] = "pass"
-
 
 @pytest.mark.parametrize("file, parents", [("A/test.md", "A"), ("A", "A")])
 def test_file_in_path(file, parents):

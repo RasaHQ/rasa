@@ -22,6 +22,7 @@ from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
 import rasa
 import rasa.constants
+import rasa.shared.constants
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.server
@@ -214,7 +215,7 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
             ]
             payload += "\n".join(content_lines)
 
-        training_data_version = f'{KEY_TRAINING_DATA_FORMAT_VERSION}: "{rasa.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"'
+        training_data_version = f'{KEY_TRAINING_DATA_FORMAT_VERSION}: "{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"'
 
         payload += f"\n{training_data_version}"
         response = requests.post(
@@ -235,7 +236,7 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
 # It also doesn't run on Windows because of Process-related calls and an attempt
 # to start/terminate a process. We will investigate this case further later:
 # https://github.com/RasaHQ/rasa/issues/6302
-@pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
+# @pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
 @pytest.mark.skip_on_windows
 def test_train_status_is_not_blocked_by_training(
     background_server: Process, shared_statuses: DictProxy, training_request: Process

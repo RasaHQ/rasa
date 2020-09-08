@@ -9,13 +9,15 @@ import pytest
 
 import rasa.shared
 import rasa.shared.utils.io
-from rasa.shared.utils import io as io_utils
 from rasa.utils import io as io_utils
+
+os.environ["USER_NAME"] = "user"
+os.environ["PASS"] = "pass"
 
 
 def test_raise_user_warning():
     with pytest.warns(UserWarning) as record:
-        io_utils.raise_warning("My warning.")
+        rasa.shared.utils.io.raise_warning("My warning.")
 
     assert len(record) == 1
     assert record[0].message.args[0] == "My warning."
@@ -23,7 +25,7 @@ def test_raise_user_warning():
 
 def test_raise_future_warning():
     with pytest.warns(FutureWarning) as record:
-        io_utils.raise_warning("My future warning.", FutureWarning)
+        rasa.shared.utils.io.raise_warning("My future warning.", FutureWarning)
 
     assert len(record) == 1
     assert record[0].message.args[0] == "My future warning."
@@ -31,7 +33,7 @@ def test_raise_future_warning():
 
 def test_raise_deprecation():
     with pytest.warns(DeprecationWarning) as record:
-        io_utils.raise_warning("My warning.", DeprecationWarning)
+        rasa.shared.utils.io.raise_warning("My warning.", DeprecationWarning)
 
     assert len(record) == 1
     assert record[0].message.args[0] == "My warning."
@@ -47,11 +49,11 @@ def test_read_file_with_not_existing_path():
     "list_function, expected",
     [
         (
-            io_utils.list_directory,
+            rasa.shared.utils.io.list_directory,
             {"subdirectory", "subdirectory/sub_file.txt", "file.txt"},
         ),
-        (io_utils.list_files, {"subdirectory/sub_file.txt", "file.txt"}),
-        (io_utils.list_subdirectories, {"subdirectory"}),
+        (rasa.shared.utils.io.list_files, {"subdirectory/sub_file.txt", "file.txt"}),
+        (rasa.shared.utils.io.list_subdirectories, {"subdirectory"}),
     ],
 )
 def test_list_directory(
