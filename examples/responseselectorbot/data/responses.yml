@@ -1,0 +1,12 @@
+version: "2.0"
+
+responses:
+  chitchat/ask_name:
+  - image: "https://i.imgur.com/zTvA58i.jpeg"
+    text: hello, my name is retrieval bot.
+  - text: Oh yeah, I am called the retrieval bot.
+
+  chitchat/ask_weather:
+  - text: Oh, it does look sunny right now in Berlin.
+    image: "https://i.imgur.com/vwv7aHN.png"
+  - text: I am not sure of the whole week but I can see the sun is out today.

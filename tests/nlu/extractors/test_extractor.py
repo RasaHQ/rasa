@@ -46,6 +46,37 @@ from rasa.nlu.training_data.formats import MarkdownReader
         (
             "I am flying from San Fransisco to Amsterdam",
             {
+                "entity": ["O", "O", "O", "O", "B-city", "L-city", "O", "U-city"],
+                "role": ["O", "O", "O", "O", "B-from", "L-from", "O", "U-to"],
+            },
+            {
+                "entity": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89],
+                "role": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89],
+            },
+            [
+                {
+                    "entity": "city",
+                    "start": 17,
+                    "end": 30,
+                    "value": "San Fransisco",
+                    "role": "from",
+                    "confidence_entity": 0.78,
+                    "confidence_role": 0.78,
+                },
+                {
+                    "entity": "city",
+                    "start": 34,
+                    "end": 43,
+                    "value": "Amsterdam",
+                    "role": "to",
+                    "confidence_entity": 0.89,
+                    "confidence_role": 0.89,
+                },
+            ],
+        ),
+        (
+            "I am flying from San Fransisco to Amsterdam",
+            {
                 "entity": ["O", "O", "O", "O", "city", "city", "O", "city"],
                 "group": ["O", "O", "O", "O", "1", "1", "O", "1"],
             },
@@ -194,7 +225,7 @@ def test_convert_tags_to_entities(
     extractor = EntityExtractor()
     tokenizer = WhitespaceTokenizer()
 
-    message = Message(text)
+    message = Message(data={TEXT: text})
     tokens = tokenizer.tokenize(message, TEXT)
 
     actual_entities = extractor.convert_predictions_into_entities(

@@ -3,14 +3,14 @@ from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.components import Component
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu.constants import ENTITIES
+from rasa.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 
 class EntitySynonymMapper(EntityExtractor):
@@ -40,7 +40,7 @@ class EntitySynonymMapper(EntityExtractor):
 
         for example in training_data.entity_examples:
             for entity in example.get(ENTITIES, []):
-                entity_val = example.text[entity["start"] : entity["end"]]
+                entity_val = example.get(TEXT)[entity["start"] : entity["end"]]
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -81,7 +81,7 @@ class EntitySynonymMapper(EntityExtractor):
             synonyms = rasa.utils.io.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Failed to load synonyms file from '{entity_synonyms_file}'.",
                 docs=DOCS_URL_TRAINING_DATA_NLU + "#entity-synonyms",
             )
@@ -103,7 +103,7 @@ class EntitySynonymMapper(EntityExtractor):
             if original != replacement:
                 original = original.lower()
                 if original in self.synonyms and self.synonyms[original] != replacement:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"Found conflicting synonym definitions "
                         f"for {repr(original)}. Overwriting target "
                         f"{repr(self.synonyms[original])} with "

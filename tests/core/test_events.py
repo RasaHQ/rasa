@@ -5,9 +5,9 @@ import pytz
 import time
 from datetime import datetime
 from dateutil import parser
-from typing import Type
+from typing import Type, Optional, Text
 
-from rasa.core import utils
+import rasa.shared.utils.common
 from rasa.core.events import (
     Event,
     UserUttered,
@@ -265,7 +265,7 @@ def test_correct_timestamp_setting(event_class):
     assert event.timestamp < event2.timestamp
 
 
-@pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
+@pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_event_metadata_dict(event_class: Type[Event]):
     metadata = {"foo": "bar", "quux": 42}
 
@@ -283,7 +283,7 @@ def test_event_metadata_dict(event_class: Type[Event]):
     assert event.as_dict()["metadata"] == metadata
 
 
-@pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
+@pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_event_default_metadata(event_class: Type[Event]):
     # Create an event without metadata. When converting the `Event` to a
     # `dict`, it should not include a `metadata` property - unless it's a
@@ -301,6 +301,18 @@ def test_event_default_metadata(event_class: Type[Event]):
         assert event.as_dict()["metadata"] == {}
     else:
         assert "metadata" not in event.as_dict()
+
+
+@pytest.mark.parametrize(
+    "event, intent_name",
+    [
+        (UserUttered("text", {}), None),
+        (UserUttered("dasd", {"name": None}), None),
+        (UserUttered("adasd", {"name": "intent"}), "intent"),
+    ],
+)
+def test_user_uttered_intent_name(event: UserUttered, intent_name: Optional[Text]):
+    assert event.intent_name == intent_name
 
 
 def test_md_format_message():

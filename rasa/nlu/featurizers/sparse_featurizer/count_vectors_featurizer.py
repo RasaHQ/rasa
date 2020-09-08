@@ -4,14 +4,15 @@ import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
 
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_COMPONENTS
-import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
@@ -19,11 +20,14 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     INTENT,
+    ACTION_TEXT,
+    INTENT_RESPONSE_KEY,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     RESPONSE,
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
     FEATURIZER_CLASS_ALIAS,
+    ACTION_NAME,
 )
 
 logger = logging.getLogger(__name__)
@@ -216,13 +220,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-
-        return message.get(attribute).split()
+        else:
+            return []
 
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == INTENT:
+        if attribute in [INTENT, ACTION_NAME, INTENT_RESPONSE_KEY]:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -291,7 +295,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             training_data_type = "NLU" if attribute == TEXT else "ResponseSelector"
 
             # if there is some text in tokens, warn if there is no oov token
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the {training_data_type} "
                 f"training examples. All unseen words will be ignored during prediction.",
@@ -399,6 +403,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
     ]:
+        if not self.vectorizers.get(attribute):
+            return [None], [None]
+
         sequence_features = []
         sentence_features = []
 
@@ -424,7 +431,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             sequence_features.append(seq_vec.tocoo())
 
-            if attribute in [TEXT, RESPONSE]:
+            if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 tokens_text = [" ".join(tokens)]
                 sentence_vec = self.vectorizers[attribute].transform(tokens_text)
                 sentence_vec.sort_indices()
@@ -531,20 +538,20 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 "didn't receive enough training data"
             )
             return
+        for attribute in self._attributes:
 
-        attribute = TEXT
-        message_tokens = self._get_processed_message_tokens_by_attribute(
-            message, attribute
-        )
+            message_tokens = self._get_processed_message_tokens_by_attribute(
+                message, attribute
+            )
 
-        # features shape (1, seq, dim)
-        sequence_features, sentence_features = self._create_features(
-            attribute, [message_tokens]
-        )
+            # features shape (1, seq, dim)
+            sequence_features, sentence_features = self._create_features(
+                attribute, [message_tokens]
+            )
 
-        self._set_attribute_features(
-            attribute, sequence_features, sentence_features, [message]
-        )
+            self._set_attribute_features(
+                attribute, sequence_features, sentence_features, [message]
+            )
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

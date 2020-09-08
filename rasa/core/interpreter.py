@@ -14,8 +14,10 @@ from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import raise_warning, class_from_module_path
+import rasa.shared.utils.io
+import rasa.shared.utils.common
 from rasa.utils.endpoints import EndpointConfig
+from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,9 @@ class NaturalLanguageInterpreter:
             return RegexInterpreter()
         else:
             return _create_from_endpoint_config(obj)
+
+    def featurize_message(self, message: Message) -> Optional[Message]:
+        pass
 
 
 class RegexInterpreter(NaturalLanguageInterpreter):
@@ -93,7 +98,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                     f"(instead parser found '{type(parsed_entities)}')"
                 )
         except (JSONDecodeError, ValueError) as e:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Failed to parse arguments in line "
                 f"'{user_input}'. Failed to decode parameters "
                 f"as a json object. Make sure the intent "
@@ -111,7 +116,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         try:
             return float(confidence_str.strip()[1:])
         except ValueError as e:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Invalid to parse confidence value in line "
                 f"'{confidence_str}'. Make sure the intent confidence is an "
                 f"@ followed by a decimal number. "
@@ -157,7 +162,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
         return self.synchronous_parse(text)
 
-    def synchronous_parse(self, text: Text,) -> Dict[Text, Any]:
+    def synchronous_parse(self, text: Text) -> Dict[Text, Any]:
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)
@@ -273,8 +278,21 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
+
         result = self.interpreter.parse(text)
 
+        return result
+
+    def featurize_message(self, message: Message) -> Optional[Message]:
+        """Featurize message using a trained NLU pipeline.
+        Args:
+            message: storing text to process
+        Returns:
+            message containing tokens and features which are the output of the NLU pipeline
+        """
+        if self.lazy_init and self.interpreter is None:
+            self._load_interpreter()
+        result = self.interpreter.featurize_message(message)
         return result
 
     def _load_interpreter(self) -> None:
@@ -302,7 +320,9 @@ def _load_from_module_name_in_endpoint_config(
     """Instantiate an event channel based on its class name."""
 
     try:
-        nlu_interpreter_class = class_from_module_path(endpoint_config.type)
+        nlu_interpreter_class = rasa.shared.utils.common.class_from_module_path(
+            endpoint_config.type
+        )
         return nlu_interpreter_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
         raise Exception(

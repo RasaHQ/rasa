@@ -16,6 +16,11 @@ from rasa.importers.importer import TrainingDataImporter
             "examples/concertbot/data",
         ),
         (
+            "examples/formbot/config.yml",
+            "examples/formbot/domain.yml",
+            "examples/formbot/data",
+        ),
+        (
             "examples/knowledgebasebot/config.yml",
             "examples/knowledgebasebot/domain.yml",
             "examples/knowledgebasebot/data",
@@ -42,7 +47,7 @@ async def test_example_bot_training_data_not_raises(
 ):
 
     importer = TrainingDataImporter.load_from_config(
-        config_file, domain_file, data_folder
+        config_file, domain_file, [data_folder]
     )
 
     with pytest.warns(None) as record:
