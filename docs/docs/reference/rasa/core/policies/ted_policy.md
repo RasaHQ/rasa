@@ -11,7 +11,6 @@ class TEDPolicy(Policy)
 
 Transformer Embedding Dialogue (TED) Policy is described in
 https://arxiv.org/abs/1910.00486.
-
 This policy has a pre-defined architecture, which comprises the
 following steps:
     - concatenate user input (user intent and entities), previous system actions,
@@ -29,7 +28,7 @@ following steps:
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, **kwargs: Any, ,) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, zero_state_features: Optional[Dict[Text, List["Features"]]] = None, **kwargs: Any, ,) -> None
 ```
 
 Declare instance variables with default values.
@@ -37,7 +36,7 @@ Declare instance variables with default values.
 #### train
 
 ```python
- | train(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+ | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
 ```
 
 Train the policy on given training trackers.
@@ -45,11 +44,10 @@ Train the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), **kwargs: Any, ,) -> List[float]
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> List[float]
 ```
 
 Predict the next action the bot should take.
-
 Return the list of probabilities for the next actions.
 
 #### persist
@@ -68,6 +66,5 @@ Persists the policy to a storage.
 ```
 
 Loads a policy from the storage.
-
 **Needs to load its featurizer**
 

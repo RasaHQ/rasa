@@ -139,3 +139,13 @@ A `TrainingDataImporter` that combines multiple importers.
 Uses multiple `TrainingDataImporter` instances
 to load the data as if they were a single instance.
 
+## E2EImporter Objects
+
+```python
+class E2EImporter(TrainingDataImporter)
+```
+
+Importer which
+- enhances the NLU training data with actions / user messages from the stories.
+- adds potential end-to-end bot messages from stories as actions to the domain
+

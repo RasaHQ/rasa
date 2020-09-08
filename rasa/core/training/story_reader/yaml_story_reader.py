@@ -1,21 +1,22 @@
 import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
-
-import rasa.shared.utils.io
-from rasa.nlu.training_data import entities_parser
-from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from ruamel.yaml.parser import ParserError
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
+import rasa.data
+
+from rasa.core.interpreter import RegexInterpreter
+from rasa.nlu.training_data import entities_parser
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from rasa.constants import TEST_STORIES_FILE_PREFIX, DOCS_URL_STORIES, DOCS_URL_RULES
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.core.constants import INTENT_MESSAGE_PREFIX, LOOP_NAME
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
-from rasa.nlu.constants import INTENT_NAME_KEY
-import rasa.data
+from rasa.nlu.constants import INTENT_NAME_KEY, ENTITIES
 
 logger = logging.getLogger(__name__)
 
@@ -355,11 +356,16 @@ class YAMLStoryReader(StoryReader):
             user_message = step[KEY_USER_MESSAGE].strip()
             entities = entities_parser.find_entities_in_training_example(user_message)
             plain_text = entities_parser.replace_entities(user_message)
+
+            if plain_text.startswith(INTENT_MESSAGE_PREFIX):
+                entities = (
+                    RegexInterpreter().synchronous_parse(plain_text).get(ENTITIES, [])
+                )
         else:
             raw_entities = step.get(KEY_ENTITIES, [])
             entities = self._parse_raw_entities(raw_entities)
-            plain_text = intent_name
-
+            # set plain_text to None because only intent was provided in the stories
+            plain_text = None
         return UserUttered(plain_text, intent, entities)
 
     @staticmethod
@@ -410,7 +416,7 @@ class YAMLStoryReader(StoryReader):
         self._add_event(action_name, {})
 
     def _parse_active_loop(self, active_loop_name: Optional[Text]) -> None:
-        self._add_event(ActiveLoop.type_name, {"name": active_loop_name})
+        self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})
 
     def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
 

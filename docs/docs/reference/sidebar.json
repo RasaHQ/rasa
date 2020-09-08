@@ -60,12 +60,14 @@
             "reference/rasa/utils/validation",
             "reference/rasa/utils/plotting",
             "reference/rasa/utils/endpoints",
+            "reference/rasa/utils/features",
             "reference/rasa/utils/common",
             {
               "items": [
                 "reference/rasa/utils/tensorflow/models",
                 "reference/rasa/utils/tensorflow/transformer",
                 "reference/rasa/utils/tensorflow/layers",
+                "reference/rasa/utils/tensorflow/model_data_utils",
                 "reference/rasa/utils/tensorflow/model_data",
                 "reference/rasa/utils/tensorflow/environment",
                 "reference/rasa/utils/tensorflow/crf"
@@ -85,7 +87,6 @@
             "reference/rasa/core/utils",
             "reference/rasa/core/restore",
             "reference/rasa/core/conversation",
-            "reference/rasa/core/featurizers",
             "reference/rasa/core/processor",
             "reference/rasa/core/training",
             "reference/rasa/core/lock",
@@ -146,7 +147,6 @@
                 "reference/rasa/core/training/interactive",
                 "reference/rasa/core/training/generator",
                 "reference/rasa/core/training/story_conflict",
-                "reference/rasa/core/training/data",
                 {
                   "items": [
                     "reference/rasa/core/training/story_writer/yaml_story_writer"
@@ -176,6 +176,14 @@
                 "reference/rasa/core/nlg/template"
               ],
               "label": "rasa.core.nlg",
+              "type": "category"
+            },
+            {
+              "items": [
+                "reference/rasa/core/featurizers/tracker_featurizers",
+                "reference/rasa/core/featurizers/single_state_featurizer"
+              ],
+              "label": "rasa.core.featurizers",
               "type": "category"
             },
             {
@@ -265,7 +273,6 @@
             },
             {
               "items": [
-                "reference/rasa/nlu/featurizers/featurizer",
                 {
                   "items": [
                     "reference/rasa/nlu/featurizers/dense_featurizer/lm_featurizer",

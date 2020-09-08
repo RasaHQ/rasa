@@ -148,3 +148,19 @@ Parse the input text, classify it and return pipeline result.
 
 The pipeline result usually contains intent and entities.
 
+#### featurize\_message
+
+```python
+ | featurize_message(message: Message) -> Message
+```
+
+Tokenize and featurize the input message
+
+**Arguments**:
+
+- `message` - message storing text to process;
+
+**Returns**:
+
+- `message` - it contains the tokens and features which are the output of the NLU pipeline;
+

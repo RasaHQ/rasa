@@ -11,14 +11,6 @@ class TrackerWithCachedStates(DialogueStateTracker)
 
 A tracker wrapper that caches the state creation of the tracker.
 
-#### past\_states
-
-```python
- | past_states(domain: Domain) -> deque
-```
-
-Return the states of the tracker based on the logged events.
-
 #### clear\_states
 
 ```python

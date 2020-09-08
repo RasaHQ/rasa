@@ -81,3 +81,19 @@ Parse a text message.
 
 Return a default value if the parsing of the text failed.
 
+#### featurize\_message
+
+```python
+ | featurize_message(message: Message) -> Optional[Message]
+```
+
+Featurize message using a trained NLU pipeline.
+
+**Arguments**:
+
+- `message` - storing text to process
+
+**Returns**:
+
+  message containing tokens and features which are the output of the NLU pipeline
+

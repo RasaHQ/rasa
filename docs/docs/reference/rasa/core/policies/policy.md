@@ -55,7 +55,7 @@ or both ML-based data and rule data, they need to override this method.
 #### featurize\_for\_training
 
 ```python
- | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, **kwargs: Any, ,) -> DialogueTrainingData
+ | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]
 ```
 
 Transform training trackers into a vector representation.
@@ -68,16 +68,21 @@ into a float vector which can be used by a ML model.
   training_trackers:
   the list of the :class:`rasa.core.trackers.DialogueStateTracker`
 - `domain` - the :class:`rasa.core.domain.Domain`
+- `interpreter` - the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
   
 
 **Returns**:
 
-  the :class:`rasa.core.training.data.DialogueTrainingData`
+  - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+  ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+  all training trackers
+  - the label ids (e.g. action ids) for every dialuge turn in all training
+  trackers
 
 #### train
 
 ```python
- | train(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+ | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
 ```
 
 Trains the policy on given training trackers.
@@ -92,7 +97,7 @@ Trains the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), **kwargs: Any, ,) -> List[float]
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> List[float]
 ```
 
 Predicts the next action the bot should take after seeing the tracker.

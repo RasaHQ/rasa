@@ -68,10 +68,19 @@ Return the current tracker state as an object.
 #### past\_states
 
 ```python
- | past_states(domain) -> deque
+ | past_states(domain: Domain) -> List[State]
 ```
 
 Generate the past states of this tracker based on the history.
+
+**Arguments**:
+
+- `domain` - a :class:`rasa.core.domain.Domain`
+  
+
+**Returns**:
+
+  a list of states
 
 #### change\_loop\_to
 
@@ -101,10 +110,10 @@ Toggle form validation
 
 Notify active loop that it was rejected
 
-#### set\_latest\_action\_name
+#### set\_latest\_action
 
 ```python
- | set_latest_action_name(action_name: Text) -> None
+ | set_latest_action(action: Dict[Text, Text]) -> None
 ```
 
 Set latest action name
@@ -358,10 +367,56 @@ Clears follow up action when it was executed.
 #### active\_loop\_name
 
 ```python
+ | @property
  | active_loop_name() -> Optional[Text]
 ```
 
 Get the name of the currently active loop.
 
 Returns: `None` if no active loop or the name of the currently active loop.
+
+#### latest\_action\_name
+
+```python
+ | @property
+ | latest_action_name() -> Optional[Text]
+```
+
+Get the name of the previously executed action or text of e2e action.
+
+Returns: name of the previously executed action or text of e2e action
+
+#### get\_active\_loop\_name
+
+```python
+get_active_loop_name(state: State) -> Optional[Text]
+```
+
+Get the name of current active loop.
+
+**Arguments**:
+
+- `state` - The state from which the name of active loop should be extracted
+  
+
+**Returns**:
+
+  the name of active loop or None
+
+#### is\_prev\_action\_listen\_in\_state
+
+```python
+is_prev_action_listen_in_state(state: State) -> bool
+```
+
+Check if action_listen is the previous executed action.
+
+**Arguments**:
+
+- `state` - The state for which the check should be performed
+  
+
+**Returns**:
+
+  boolean value indicating whether action_listen is previous action
 

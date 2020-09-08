@@ -45,7 +45,7 @@ Train on batch
 
 ```python
  | @staticmethod
- | batch_to_model_data_format(batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]], data_signature: Dict[Text, List[FeatureSignature]]) -> Dict[Text, List[tf.Tensor]]
+ | batch_to_model_data_format(batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]], data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]]) -> Dict[Text, Dict[Text, List[tf.Tensor]]]
 ```
 
 Convert input batch tensors into batch data format.

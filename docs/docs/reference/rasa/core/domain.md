@@ -159,41 +159,6 @@ Look up which action index corresponds to this action name.
 
 Returns all available slot state strings.
 
-#### prev\_action\_states
-
-```python
- | @lazy_property
- | prev_action_states() -> List[Text]
-```
-
-Returns all available previous action state strings.
-
-#### intent\_states
-
-```python
- | @lazy_property
- | intent_states() -> List[Text]
-```
-
-Returns all available previous action state strings.
-
-#### entity\_states
-
-```python
- | @lazy_property
- | entity_states() -> List[Text]
-```
-
-Returns all available previous action state strings.
-
-#### index\_of\_state
-
-```python
- | index_of_state(state_name: Text) -> Optional[int]
-```
-
-Provide the index of a state.
-
 #### input\_state\_map
 
 ```python
@@ -212,27 +177,10 @@ Provide a mapping from state names to indices.
 
 Returns all available states.
 
-#### get\_prev\_action\_states
-
-```python
- | get_prev_action_states(tracker: "DialogueStateTracker") -> Dict[Text, float]
-```
-
-Turn the previous taken action into a state name.
-
-#### get\_active\_form
-
-```python
- | @staticmethod
- | get_active_form(tracker: "DialogueStateTracker") -> Dict[Text, float]
-```
-
-Turn tracker&#x27;s active form into a state name.
-
 #### get\_active\_states
 
 ```python
- | get_active_states(tracker: "DialogueStateTracker") -> Dict[Text, float]
+ | get_active_states(tracker: "DialogueStateTracker") -> State
 ```
 
 Return a bag of active states from the tracker state.
@@ -240,7 +188,7 @@ Return a bag of active states from the tracker state.
 #### states\_for\_tracker\_history
 
 ```python
- | states_for_tracker_history(tracker: "DialogueStateTracker") -> List[Dict[Text, float]]
+ | states_for_tracker_history(tracker: "DialogueStateTracker") -> List[State]
 ```
 
 Array of states for each state of the trackers history.

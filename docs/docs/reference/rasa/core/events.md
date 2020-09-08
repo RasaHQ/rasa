@@ -63,6 +63,19 @@ The user has said something to the bot.
 
 As a side effect a new ``Turn`` will be created in the ``Tracker``.
 
+#### as\_sub\_state
+
+```python
+ | as_sub_state() -> Dict[Text, Union[None, Text, List[Optional[Text]]]]
+```
+
+Turns a UserUttered event into a substate containing information about entities,
+intent and text of the UserUttered
+
+**Returns**:
+
+  a dictionary with intent name, text and entities
+
 ## BotUttered Objects
 
 ```python
@@ -145,7 +158,7 @@ Schedules the asynchronous triggering of a user intent
 #### \_\_init\_\_
 
 ```python
- | __init__(intent: Text, trigger_date_time: datetime, entities: Optional[List[Dict]] = None, name: Optional[Text] = None, kill_on_user_message: bool = True, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None)
+ | __init__(intent: Text, trigger_date_time: datetime, entities: Optional[List[Dict]] = None, name: Optional[Text] = None, kill_on_user_message: bool = True, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates the reminder
@@ -175,7 +188,7 @@ Cancel certain jobs.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Optional[Text] = None, intent: Optional[Text] = None, entities: Optional[List[Dict]] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None)
+ | __init__(name: Optional[Text] = None, intent: Optional[Text] = None, entities: Optional[List[Dict]] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a ReminderCancelled event.
@@ -271,7 +284,20 @@ class ActionExecuted(Event)
 An operation describes an action taken + its result.
 
 It comprises an action and a list of events. operations will be appended
-to the latest ``Turn`` in the ``Tracker.turns``.
+to the latest `Turn`` in `Tracker.turns`.
+
+#### as\_sub\_state
+
+```python
+ | as_sub_state() -> Dict[Text, Text]
+```
+
+Turns ActionExecuted into a dictionary containing action name or action text.
+One action cannot have both set at the same time
+
+**Returns**:
+
+  a dictionary containing action name or action text with the corresponding key
 
 ## AgentUttered Objects
 

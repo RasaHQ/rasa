@@ -12,7 +12,7 @@ class UserMessageGenerator()
 #### message\_for\_data
 
 ```python
- | message_for_data(structured_info) -> Any
+ | message_for_data(structured_info: Dict[Text, Any]) -> Any
 ```
 
 Find a data sample with the same intent and entities.

@@ -23,7 +23,7 @@ the same dialogue state, which most policies cannot learn.
 #### \_\_init\_\_
 
 ```python
- | __init__(sliced_states: List[Optional[Dict[Text, float]]]) -> None
+ | __init__(sliced_states: List[State]) -> None
 ```
 
 Creates a `StoryConflict` from a given state.

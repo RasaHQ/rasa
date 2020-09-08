@@ -17,6 +17,43 @@ class Message()
 
 Get dict representation of message as it would appear in training data
 
+#### build
+
+```python
+ | @classmethod
+ | build(cls, text: Text, intent: Optional[Text] = None, entities: List[Dict[Text, Any]] = None, **kwargs: Any, ,) -> "Message"
+```
+
+Build a Message from `UserUttered` data.
+
+**Arguments**:
+
+- `text` - text of a user&#x27;s utterance
+- `intent` - an intent of the user utterance
+- `entities` - entities in the user&#x27;s utterance
+
+**Returns**:
+
+  Message
+
+#### build\_from\_action
+
+```python
+ | @classmethod
+ | build_from_action(cls, action_text: Optional[Text] = "", action_name: Optional[Text] = "", **kwargs: Any, ,) -> "Message"
+```
+
+Build a `Message` from `ActionExecuted` data.
+
+**Arguments**:
+
+- `action_text` - text of a bot&#x27;s utterance
+- `action_name` - name of an action executed
+
+**Returns**:
+
+  Message
+
 #### get\_full\_intent
 
 ```python
@@ -36,19 +73,17 @@ Get intent as it appears in training data
 #### get\_sparse\_features
 
 ```python
- | get_sparse_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[scipy.sparse.spmatrix]]
+ | get_sparse_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional["Features"], Optional["Features"]]
 ```
 
 Get all sparse features for the given attribute that are coming from the
 given list of featurizers.
-
 If no featurizers are provided, all available features will be considered.
 
 **Arguments**:
 
 - `attribute` - message attribute
 - `featurizers` - names of featurizers to consider
-  
 
 **Returns**:
 
@@ -57,19 +92,17 @@ If no featurizers are provided, all available features will be considered.
 #### get\_dense\_features
 
 ```python
- | get_dense_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]
+ | get_dense_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional["Features"], Optional["Features"]]
 ```
 
 Get all dense features for the given attribute that are coming from the given
 list of featurizers.
-
 If no featurizers are provided, all available features will be considered.
 
 **Arguments**:
 
 - `attribute` - message attribute
 - `featurizers` - names of featurizers to consider
-  
 
 **Returns**:
 
@@ -83,14 +116,12 @@ If no featurizers are provided, all available features will be considered.
 
 Check if there are any features present for the given attribute and
 featurizers.
-
 If no featurizers are provided, all available features will be considered.
 
 **Arguments**:
 
 - `attribute` - message attribute
 - `featurizers` - names of featurizers to consider
-  
 
 **Returns**:
 
