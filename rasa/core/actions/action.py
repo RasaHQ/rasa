@@ -142,10 +142,11 @@ def action_from_name(
     if name in defaults and name not in user_actions:
         return defaults[name]
     elif name.startswith(UTTER_PREFIX):
-        if is_retrieval_action(name, retrieval_intents):
-            return ActionRetrieveResponse(name)
-        else:
-            return ActionUtterTemplate(name)
+        return (
+            ActionRetrieveResponse(name)
+            if is_retrieval_action(name, retrieval_intents)
+            else ActionUtterTemplate(name)
+        )
     elif should_use_form_action:
         from rasa.core.actions.forms import FormAction
 
