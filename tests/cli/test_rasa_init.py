@@ -11,7 +11,8 @@ def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
     )  # avoid training an initial model
 
     required_files = [
-        "actions.py",
+        "actions/__init__.py",
+        "actions/actions.py",
         "domain.yml",
         "config.yml",
         "credentials.yml",
