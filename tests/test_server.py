@@ -243,7 +243,10 @@ def test_train_status_is_not_blocked_by_training(
     training_request.start()
 
     # Wait until the blocking training function was called
-    while shared_statuses.get("started_training") is not True:
+    start = time.time()
+    while (
+        shared_statuses.get("started_training") is not True and time.time() - start < 60
+    ):
         time.sleep(1)
 
     # Check if the number of currently running trainings was incremented
