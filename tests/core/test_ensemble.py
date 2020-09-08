@@ -216,7 +216,7 @@ def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
     form_name = "test-form"
     domain = f"""
     forms:
-      {form_name}: {{}}
+      - {form_name}
     """
     domain = Domain.from_yaml(domain)
 
