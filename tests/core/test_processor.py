@@ -611,7 +611,7 @@ async def test_handle_message_with_session_start(
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # make sure the sequence of events is as expected
-    assert list(tracker.events) == [
+    expected = [
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -642,8 +642,15 @@ async def test_handle_message_with_session_start(
             ],
         ),
         SlotSet(entity, slot_2[entity]),
+        ActionExecuted("utter_greet"),
+        BotUttered(
+            "hey there post-session start hello!",
+            metadata={"template_name": "utter_greet"},
+        ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
+    assert list(tracker.events) == expected
 
 
 # noinspection PyProtectedMember
@@ -698,7 +705,10 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 
 @pytest.mark.parametrize(
     "predict_function",
-    [lambda tracker, domain: [1, 0], lambda tracker, domain, some_bool=True: [1, 0]],
+    [
+        lambda tracker, domain, something_else: [1, 0, 2, 3],
+        lambda tracker, domain, some_bool=True: [1, 0],
+    ],
 )
 def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
     predict_function: Callable,

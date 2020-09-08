@@ -8,7 +8,8 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
@@ -214,11 +215,16 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def process(
         self, message: Message, *, tf_hub_module: Any = None, **kwargs: Any
     ) -> None:
-        sequence_features, sentence_features = self._compute_features(
-            [message], tf_hub_module
-        )
 
-        self._set_features([message], sequence_features, sentence_features, TEXT)
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            if message.get(attribute):
+                sequence_features, sentence_features = self._compute_features(
+                    [message], tf_hub_module, attribute=attribute
+                )
+
+                self._set_features(
+                    [message], sequence_features, sentence_features, attribute
+                )
 
     def _set_features(
         self,
