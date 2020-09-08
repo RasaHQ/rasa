@@ -418,8 +418,8 @@ class Domain:
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
 
-        self.forms = {}
-        self.form_names = []
+        self.forms: List[Dict[Text, Any]] = {}
+        self.form_names: List[Text] = []
         self._initialize_forms(forms)
 
         self.slots = slots
@@ -441,23 +441,24 @@ class Domain:
         self._check_domain_sanity()
 
     def _initialize_forms(self, forms: Union[Dict[Text, Any], List[Text]]) -> None:
-        """Initialize the domain's `form` attributes.
+        """Initialize the domain's `self.form` and `self.form_names` attributes.
 
         Args:
-            forms: Form names (type: list) or a form dictionary. Forms provided in
-                dictionary format have the form names as keys, and either empty
-                dictionaries as values, or objects containing `SlotMapping`s.
+            forms: Form names (if forms are a list) or a form dictionary. Forms
+                provided in dictionary format have the form names as keys, and either
+                empty dictionaries as values, or objects containing
+                `SlotMapping`s.
         """
         if not forms:
             # empty dict or empty list
             return
         elif isinstance(forms, dict):
             # dict with slot mappings
-            self.forms: Dict[Text, Any] = forms
+            self.forms = forms
             self.form_names = list(forms.keys())
         elif isinstance(forms, list) and isinstance(forms[0], str):
             # list of form names
-            self.forms: Dict[Text, Any] = {form_name: {} for form_name in forms}
+            self.forms = {form_name: {} for form_name in forms}
             self.form_names = forms
         else:
             rasa.shared.utils.io.raise_warning(
