@@ -291,3 +291,24 @@ async def test_adding_e2e_actions_to_domain(project: Text):
     domain = await importer.get_domain()
 
     assert all(action_name in domain.action_names for action_name in additional_actions)
+
+
+async def test_adding_retrieval_intents_to_domain(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = "data/test_domains/default_retrieval_intents.yml"
+    data_paths = [
+        "data/test_nlu/default_retrieval_intents.md",
+        "data/test_responses/default.md",
+    ]
+    existing = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, data_paths
+    )
+
+    nlu_importer = NluDataImporter(existing)
+    core_importer = CoreDataImporter(existing)
+
+    importer = CombinedDataImporter([nlu_importer, core_importer])
+    domain = await importer.get_domain()
+
+    assert domain.retrieval_intents == ["chitchat"]
+    assert domain.intent_properties["chitchat"].get("is_retrieval_intent")

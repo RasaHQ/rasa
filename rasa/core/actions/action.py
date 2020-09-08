@@ -24,7 +24,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_TEMPLATE_KEY,
     INTENT_RANKING_KEY,
     INTENT_NAME_KEY,
-    INTENT_RESPONSE_KEY,
 )
 
 from rasa.core.events import (
