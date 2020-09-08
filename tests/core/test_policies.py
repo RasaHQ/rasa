@@ -639,13 +639,9 @@ class TestFormPolicy(TestMemoizationPolicy):
         p = FormPolicy(priority=priority)
         return p
 
-<<<<<<< HEAD
-    def _test_for_previous_action_and_intent(self, states, intent, action_name) -> bool:
-=======
     def _test_for_previous_action_and_intent(
         self, states: List[State], intent: Text, action_name: Text
     ) -> bool:
->>>>>>> master
         previous_action_as_expected = False
         intent_as_expected = False
         if states[0].get(PREVIOUS_ACTION):

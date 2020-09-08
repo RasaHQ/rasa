@@ -345,8 +345,6 @@ stories:
         intent={"name": intent},
         entities=[{"entity": "name", "start": 6, "end": 22, "value": "test"}],
     )
-<<<<<<< HEAD
-=======
 
 
 def test_read_mixed_training_data_file(default_domain: Domain):
@@ -358,4 +356,3 @@ def test_read_mixed_training_data_file(default_domain: Domain):
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
         assert not len(record)
->>>>>>> master

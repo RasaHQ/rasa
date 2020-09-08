@@ -147,30 +147,10 @@ def test_get_label_set(targets, exclude_label, expected):
 async def test_interpreter_passed_to_agent(
     monkeypatch: MonkeyPatch, trained_rasa_model: Text
 ):
-<<<<<<< HEAD
-    from rasa.test import test_core
-    from rasa.core.interpreter import RasaNLUInterpreter
-
-    # Patching is bit more complicated as we have a module `train` and function
-    # with the same name 😬
-    monkeypatch.setattr(
-        sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
-    )
-
-    agent_load = Mock()
-    monkeypatch.setattr(Agent, "load", agent_load)
-
-    test_core(trained_rasa_model)
-
-    agent_load.assert_called_once()
-    _, _, kwargs = agent_load.mock_calls[0]
-    assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
-=======
     from rasa.core.interpreter import RasaNLUInterpreter
 
     agent = Agent.load(trained_rasa_model)
     assert isinstance(agent.interpreter, RasaNLUInterpreter)
->>>>>>> master
 
 
 async def test_e2e_warning_if_no_nlu_model(
