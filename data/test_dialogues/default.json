@@ -5,6 +5,7 @@
     {
       "py/object": "rasa.core.events.ActionExecuted",
       "action_name": "action_listen",
+      "action_text": null,
       "confidence": null,
       "policy": null,
       "timestamp": 1551952977.4850519,
@@ -55,6 +56,7 @@
     {
       "py/object": "rasa.core.events.ActionExecuted",
       "action_name": "utter_greet",
+      "action_text": null,
       "confidence": null,
       "policy": null,
       "timestamp": 1551953040.607782,
