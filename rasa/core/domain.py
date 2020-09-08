@@ -347,10 +347,6 @@ class Domain:
 
         return intent
 
-    def _update_retrieval_intent_properties(self, retrieval_intents: List[Text]):
-        for retrieval_intent in retrieval_intents:
-            self.intent_properties[retrieval_intent][IS_RETRIEVAL_INTENT_KEY] = True
-
     @lazy_property
     def retrieval_intents(self) -> List[Text]:
         return [

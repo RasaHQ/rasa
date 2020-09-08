@@ -2,7 +2,7 @@ import copy
 import json
 import logging
 import typing
-from typing import List, Text, Optional, Dict, Any
+from typing import List, Text, Optional, Dict, Any, Set
 import random
 
 import aiohttp
@@ -91,7 +91,7 @@ def default_action_names() -> List[Text]:
     return [a.name() for a in default_actions()] + [RULE_SNIPPET_ACTION_NAME]
 
 
-def construct_retrieval_action_names(retrieval_intents: List[Text]) -> List[Text]:
+def construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]:
 
     return [f"{UTTER_PREFIX}{intent}" for intent in retrieval_intents]
 
@@ -141,12 +141,10 @@ def action_from_name(
 
     if name in defaults and name not in user_actions:
         return defaults[name]
+    elif name.startswith(UTTER_PREFIX) and is_retrieval_action(name, retrieval_intents):
+        return ActionRetrieveResponse(name)
     elif name.startswith(UTTER_PREFIX):
-        return (
-            ActionRetrieveResponse(name)
-            if is_retrieval_action(name, retrieval_intents)
-            else ActionUtterTemplate(name)
-        )
+        return ActionUtterTemplate(name)
     elif should_use_form_action:
         from rasa.core.actions.forms import FormAction
 

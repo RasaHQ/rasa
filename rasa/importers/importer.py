@@ -1,6 +1,6 @@
 import asyncio
 from functools import reduce
-from typing import Text, Optional, List, Dict
+from typing import Text, Optional, List, Dict, Set
 import logging
 
 import rasa.shared.utils.common
@@ -11,6 +11,7 @@ from rasa.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
 from rasa.core.actions import action
+from rasa.core.domain import IS_RETRIEVAL_INTENT_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -252,28 +253,39 @@ class CombinedDataImporter(TrainingDataImporter):
         domains = [importer.get_domain() for importer in self._importers]
         domains = await asyncio.gather(*domains)
 
-        # Check if NLU data has any retrieval intents,
-        # if yes add corresponding retrieval actions with `utter_` prefix automatically to an empty domain.
-        nlu_data = await self.get_nlu_data()
-        if nlu_data.retrieval_intents:
-            domains.append(
-                self._get_domain_with_retrieval_actions(nlu_data.retrieval_intents)
-            )
-
         combined_domain = reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
-        # Make the domain known which intents are retrieval intents
-        combined_domain._update_retrieval_intent_properties(nlu_data.retrieval_intents)
+        # Check if NLU data has any retrieval intents,
+        # if yes add corresponding retrieval actions with `utter_` prefix
+        # automatically to an empty domain and update the properties of existing retrieval intents.
+        nlu_data = await self.get_nlu_data()
+        if nlu_data.retrieval_intents:
+
+            domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
+                nlu_data.retrieval_intents, combined_domain
+            )
+
+            combined_domain = combined_domain.merge(
+                domain_with_retrieval_intents, override=True
+            )
 
         return combined_domain
 
     @staticmethod
-    def _get_domain_with_retrieval_actions(retrieval_intents):
+    def _get_domain_with_retrieval_intents(
+        retrieval_intents: Set[Text], existing_domain: Domain
+    ) -> Domain:
+
+        modified_properties = []
+        for intent in retrieval_intents:
+            intent_property = existing_domain.intent_properties[intent]
+            intent_property[IS_RETRIEVAL_INTENT_KEY] = True
+            modified_properties.append({intent: intent_property})
 
         return Domain(
-            [],
+            modified_properties,
             [],
             [],
             {},
