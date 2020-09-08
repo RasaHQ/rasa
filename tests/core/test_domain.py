@@ -1,7 +1,7 @@
 import copy
 import json
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Text, Any, Union, Set
 
 import pytest
 
@@ -484,9 +484,26 @@ def test_merge_domain_with_forms():
                 "goodbye": {USED_ENTITIES_KEY: []},
             },
         ),
+        (
+            [
+                "greet",
+                "goodbye",
+                {"chitchat": {"is_retrieval_intent": True, "use_entities": None}},
+            ],
+            ["entity", "other", "third"],
+            {
+                "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "chitchat": {USED_ENTITIES_KEY: [], "is_retrieval_intent": True},
+            },
+        ),
     ],
 )
-def test_collect_intent_properties(intents, entities, intent_properties):
+def test_collect_intent_properties(
+    intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
+    entities: List[Text],
+    intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
+):
     Domain._add_default_intents(intent_properties, entities)
 
     assert Domain.collect_intent_properties(intents, entities) == intent_properties

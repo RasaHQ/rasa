@@ -21,6 +21,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_TEMPLATE_KEY,
     INTENT_RANKING_KEY,
     INTENT_NAME_KEY,
     INTENT_RESPONSE_KEY,
@@ -93,7 +94,10 @@ def default_action_names() -> List[Text]:
 
 def construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]:
 
-    return [f"{UTTER_PREFIX}{intent}" for intent in retrieval_intents]
+    return [
+        ActionRetrieveResponse.action_name_from_intent(intent)
+        for intent in retrieval_intents
+    ]
 
 
 def combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
@@ -122,9 +126,7 @@ def combine_with_templates(
 def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
 
     return (
-        True
-        if retrieval_intents and action_name.split(UTTER_PREFIX)[1] in retrieval_intents
-        else False
+        ActionRetrieveResponse.intent_name_from_action(action_name) in retrieval_intents
     )
 
 
@@ -157,11 +159,15 @@ def actions_from_names(
     action_names: List[Text],
     action_endpoint: Optional[EndpointConfig],
     user_actions: List[Text],
+    retrieval_intents: List[Text] = [],
 ) -> List["Action"]:
     """Converts the names of actions into class instances."""
 
     return [
-        action_from_name(name, action_endpoint, user_actions) for name in action_names
+        action_from_name(
+            name, action_endpoint, user_actions, retrieval_intents=retrieval_intents
+        )
+        for name in action_names
     ]
 
 
@@ -233,8 +239,13 @@ class ActionRetrieveResponse(Action):
         self.action_name = name
         self.silent_fail = silent_fail
 
-    def intent_name_from_action(self) -> Text:
-        return self.action_name.split(UTTER_PREFIX)[1]
+    @staticmethod
+    def intent_name_from_action(action_name) -> Text:
+        return action_name.split(UTTER_PREFIX)[1]
+
+    @staticmethod
+    def action_name_from_intent(intent_name) -> Text:
+        return f"{UTTER_PREFIX}{intent_name}"
 
     async def run(
         self,
@@ -249,8 +260,11 @@ class ActionRetrieveResponse(Action):
             RESPONSE_SELECTOR_PROPERTY_NAME
         ]
 
-        if self.intent_name_from_action() in response_selector_properties:
-            query_key = self.intent_name_from_action()
+        if (
+            self.intent_name_from_action(self.action_name)
+            in response_selector_properties
+        ):
+            query_key = self.intent_name_from_action(self.action_name)
         elif RESPONSE_SELECTOR_DEFAULT_INTENT in response_selector_properties:
             query_key = RESPONSE_SELECTOR_DEFAULT_INTENT
         else:
@@ -273,9 +287,9 @@ class ActionRetrieveResponse(Action):
         picked_message_idx = random.randint(0, len(possible_messages) - 1)
         picked_message = copy.deepcopy(possible_messages[picked_message_idx])
 
-        picked_message["template_name"] = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
-            INTENT_RESPONSE_KEY
-        ]
+        picked_message[RESPONSE_SELECTOR_TEMPLATE_KEY] = selected[
+            RESPONSE_SELECTOR_PREDICTION_KEY
+        ][RESPONSE_SELECTOR_TEMPLATE_KEY]
 
         return [create_bot_utterance(picked_message)]
 

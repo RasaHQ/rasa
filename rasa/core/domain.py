@@ -326,7 +326,6 @@ class Domain:
 
         properties.setdefault(USE_ENTITIES_KEY, True)
         properties.setdefault(IGNORE_ENTITIES_KEY, [])
-        properties.setdefault(IS_RETRIEVAL_INTENT_KEY, False)
         if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
             properties[USE_ENTITIES_KEY] = []
 
@@ -364,7 +363,7 @@ class Domain:
         return [
             intent
             for intent in self.intent_properties
-            if self.intent_properties[intent][IS_RETRIEVAL_INTENT_KEY]
+            if self.intent_properties[intent].get(IS_RETRIEVAL_INTENT_KEY)
         ]
 
     @classmethod
@@ -409,13 +408,7 @@ class Domain:
     ) -> Tuple[Text, Dict[Text, Any]]:
         if not isinstance(intent, dict):
             intent_name = intent
-            intent = {
-                intent_name: {
-                    USE_ENTITIES_KEY: True,
-                    IGNORE_ENTITIES_KEY: [],
-                    IS_RETRIEVAL_INTENT_KEY: False,
-                }
-            }
+            intent = {intent_name: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
         else:
             intent_name = list(intent.keys())[0]
 

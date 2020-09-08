@@ -268,7 +268,7 @@ def test_nlg_reads_text():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
     """
     )
@@ -277,7 +277,9 @@ def test_nlg_reads_text():
     result = reader.reads(responses_yml)
 
     assert result.responses == {
-        "chitchat/ask_weather": [{"text": "Where do you want to check the weather?"}]
+        "utter_chitchat/ask_weather": [
+            {"text": "Where do you want to check the weather?"}
+        ]
     }
 
 
@@ -285,7 +287,7 @@ def test_nlg_reads_any_multimedia():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
     """
@@ -295,7 +297,7 @@ def test_nlg_reads_any_multimedia():
     result = reader.reads(responses_yml)
 
     assert result.responses == {
-        "chitchat/ask_weather": [
+        "utter_chitchat/ask_weather": [
             {
                 "text": "Where do you want to check the weather?",
                 "image": "https://example.com/weather.jpg",
@@ -321,7 +323,7 @@ def test_nlg_fails_on_empty_response():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
     """
     )
 
@@ -335,11 +337,11 @@ def test_nlg_multimedia_load_dump_roundtrip():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
 
-        chitchat/ask_name:
+        utter_chitchat/ask_name:
         - text: My name is Sara.
     """
     )

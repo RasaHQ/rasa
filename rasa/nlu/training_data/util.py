@@ -4,6 +4,7 @@ import os
 from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
+from rasa.core.constants import UTTER_PREFIX
 from rasa.nlu.constants import ENTITIES, EXTRACTOR, PRETRAINED_EXTRACTORS
 import rasa.shared.utils.io
 
@@ -85,3 +86,11 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
             trainable_entities.append(entity)
 
     example[ENTITIES] = trainable_entities
+
+
+def intent_response_key_to_template_key(intent_response_key: Text) -> Text:
+    return f"{UTTER_PREFIX}{intent_response_key}"
+
+
+def template_key_to_intent_response_key(template_key: Text) -> Text:
+    return template_key.split(UTTER_PREFIX)[1]

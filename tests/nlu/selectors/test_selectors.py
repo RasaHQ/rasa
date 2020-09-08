@@ -1,5 +1,6 @@
 import pytest
 
+import rasa.nlu.training_data.util
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import load_data
 from rasa.nlu.train import Trainer, Interpreter
@@ -10,6 +11,7 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.nlu.training_data import training_data
 
 
 @pytest.mark.parametrize(
@@ -66,6 +68,12 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         parsed.get("response_selector")
         .get("default")
         .get("response")
+        .get("template_name")
+    ) is not None
+    assert (
+        parsed.get("response_selector")
+        .get("default")
+        .get("response")
         .get("response_templates")
     ) is not None
 
@@ -114,20 +122,28 @@ def test_resolve_intent_response_key_from_label(
 ):
 
     # use data that include some responses
-    training_data = load_data("data/examples/rasa/demo-rasa.md")
+    preset_training_data = load_data("data/examples/rasa/demo-rasa.md")
     training_data_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
-    training_data = training_data.merge(training_data_responses)
+    preset_training_data = preset_training_data.merge(training_data_responses)
 
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": train_on_text}
     )
-    response_selector.preprocess_train_data(training_data)
+    response_selector.preprocess_train_data(preset_training_data)
 
     label_intent_response_key = response_selector._resolve_intent_response_key(
         {"id": hash(predicted_label), "name": predicted_label}
     )
     assert resolved_intent_response_key == label_intent_response_key
     assert (
-        response_selector.responses[label_intent_response_key]
-        == training_data.responses[resolved_intent_response_key]
+        response_selector.responses[
+            rasa.nlu.training_data.util.intent_response_key_to_template_key(
+                label_intent_response_key
+            )
+        ]
+        == preset_training_data.responses[
+            rasa.nlu.training_data.util.intent_response_key_to_template_key(
+                resolved_intent_response_key
+            )
+        ]
     )

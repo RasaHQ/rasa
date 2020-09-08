@@ -82,16 +82,17 @@ def test_text_format():
         == "ActionUtterTemplate('my_action_name')"
     )
     assert (
-        "{}".format(ActionRetrieveResponse("respond_test"))
-        == "ActionRetrieveResponse('respond_test')"
+        "{}".format(ActionRetrieveResponse("utter_test"))
+        == "ActionRetrieveResponse('utter_test')"
     )
 
 
 def test_action_instantiation_from_names():
     instantiated_actions = action.actions_from_names(
-        ["random_name", "utter_test", "respond_test"],
+        ["random_name", "utter_test", "utter_faq"],
         None,
         ["random_name", "utter_test"],
+        retrieval_intents=["faq"],
     )
     assert len(instantiated_actions) == 3
     assert isinstance(instantiated_actions[0], RemoteAction)
@@ -101,16 +102,16 @@ def test_action_instantiation_from_names():
     assert instantiated_actions[1].name() == "utter_test"
 
     assert isinstance(instantiated_actions[2], ActionRetrieveResponse)
-    assert instantiated_actions[2].name() == "respond_test"
+    assert instantiated_actions[2].name() == "utter_faq"
 
 
 def test_domain_action_instantiation():
     domain = Domain(
-        intents={},
+        intents=[{"chitchat": {"is_retrieval_intent": True}}],
         entities=[],
         slots=[],
         templates={},
-        action_names=["my_module.ActionTest", "utter_test", "respond_test"],
+        action_names=["my_module.ActionTest", "utter_test", "utter_chitchat"],
         forms=[],
     )
 
@@ -130,7 +131,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
     assert instantiated_actions[11].name() == "my_module.ActionTest"
     assert instantiated_actions[12].name() == "utter_test"
-    assert instantiated_actions[13].name() == "respond_test"
+    assert instantiated_actions[13].name() == "utter_chitchat"
 
 
 async def test_remote_action_runs(
@@ -361,7 +362,7 @@ async def test_action_utter_retrieved_response(
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
@@ -370,6 +371,7 @@ async def test_action_utter_retrieved_response(
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
                         "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
                     }
                 }
             }
@@ -383,7 +385,8 @@ async def test_action_utter_retrieved_response(
         "text"
     )
     assert (
-        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
+        events[0].as_dict().get("metadata").get("template_name")
+        == "utter_chitchat/ask_name"
     )
 
 
@@ -392,7 +395,7 @@ async def test_action_utter_default_retrieved_response(
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
@@ -401,6 +404,7 @@ async def test_action_utter_default_retrieved_response(
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
                         "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
                     }
                 }
             }
@@ -415,7 +419,8 @@ async def test_action_utter_default_retrieved_response(
     )
 
     assert (
-        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
+        events[0].as_dict().get("metadata").get("template_name")
+        == "utter_chitchat/ask_name"
     )
 
 
@@ -424,7 +429,7 @@ async def test_action_utter_retrieved_empty_response(
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={

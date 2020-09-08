@@ -288,7 +288,11 @@ class CombinedDataImporter(TrainingDataImporter):
 
         modified_properties = []
         for intent in retrieval_intents:
-            intent_property = existing_domain.intent_properties[intent]
+            intent_property = (
+                existing_domain.intent_properties[intent]
+                if intent in existing_domain.intent_properties
+                else {}
+            )
             intent_property[IS_RETRIEVAL_INTENT_KEY] = True
             modified_properties.append({intent: intent_property})
 

@@ -24,22 +24,16 @@ from rasa.nlu.constants import (
     INTENT_NAME,
     TEXT,
 )
-from rasa.core.constants import UTTER_PREFIX
 from rasa.nlu.training_data.message import Message
-from rasa.nlu.training_data.util import check_duplicate_synonym
+from rasa.nlu.training_data.util import (
+    check_duplicate_synonym,
+    intent_response_key_to_template_key,
+)
 from rasa.nlu.utils import list_to_str
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
 logger = logging.getLogger(__name__)
-
-
-def intent_response_key_to_template_key(intent_response_key: Text) -> Text:
-    return f"{UTTER_PREFIX}{intent_response_key}"
-
-
-def template_key_to_intent_response_key(template_key: Text) -> Text:
-    return template_key.split(UTTER_PREFIX)[1]
 
 
 class TrainingData:
@@ -491,7 +485,7 @@ class TrainingData:
         responses = {}
         for ex in examples:
             if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
-                key = ex.get_full_intent()
+                key = intent_response_key_to_template_key(ex.get_full_intent())
                 responses[key] = self.responses[key]
         return responses
 

@@ -16,7 +16,11 @@ from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data.loading import guess_format, UNK, RASA_YAML, JSON, MARKDOWN
-from rasa.nlu.training_data.util import get_file_format
+from rasa.nlu.training_data.util import (
+    get_file_format,
+    template_key_to_intent_response_key,
+    intent_response_key_to_template_key,
+)
 
 
 def test_luis_data():
@@ -110,6 +114,22 @@ def test_composite_entities_data():
 
 
 @pytest.mark.parametrize(
+    "intent_response_key, template_key",
+    [["chitchat/ask_name", "utter_chitchat/ask_name"]],
+)
+def test_intent_response_key_to_template_key(intent_response_key, template_key):
+    assert intent_response_key_to_template_key(intent_response_key) == template_key
+
+
+@pytest.mark.parametrize(
+    "intent_response_key, template_key",
+    [["chitchat/ask_name", "utter_chitchat/ask_name"]],
+)
+def test_template_key_to_intent_response_key(intent_response_key, template_key):
+    assert template_key_to_intent_response_key(template_key) == intent_response_key
+
+
+@pytest.mark.parametrize(
     "files",
     [
         [
@@ -128,7 +148,10 @@ def test_demo_data(files):
     td = training_data_from_paths(files, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
+    assert set(td.responses.keys()) == {
+        "utter_chitchat/ask_name",
+        "utter_chitchat/ask_weather",
+    }
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
     assert len(td.response_examples) == 4
@@ -193,7 +216,10 @@ def test_train_test_split(filepaths):
 
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
+    assert set(td.responses.keys()) == {
+        "utter_chitchat/ask_name",
+        "utter_chitchat/ask_weather",
+    }
 
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
