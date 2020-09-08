@@ -97,7 +97,7 @@ class MitieEntityExtractor(EntityExtractor):
     def _prepare_mitie_sample(training_example: Message) -> Any:
         import mitie
 
-        text = training_example.text
+        text = training_example.get(TEXT)
         tokens = training_example.get(TOKENS_NAMES[TEXT])
         sample = mitie.ner_training_instance([t.text for t in tokens])
         for ent in training_example.get(ENTITIES, []):
@@ -135,7 +135,7 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text, message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
+            message.get(TEXT), message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
         )
         extracted = self.add_extractor_name(ents)
         message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)

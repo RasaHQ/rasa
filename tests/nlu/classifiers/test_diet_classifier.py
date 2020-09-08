@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import Mock
 
 from rasa.nlu.constants import FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
-from rasa.nlu.featurizers.featurizer import Features
+from rasa.utils.features import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
@@ -32,10 +32,10 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 def test_compute_default_label_features():
     label_features = [
-        Message("test a"),
-        Message("test b"),
-        Message("test c"),
-        Message("test d"),
+        Message(data={TEXT: "test a"}),
+        Message(data={TEXT: "test b"}),
+        Message(data={TEXT: "test c"}),
+        Message(data={TEXT: "test d"}),
     ]
 
     output = DIETClassifier._compute_default_label_features(label_features)
@@ -54,14 +54,14 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    "test a",
+                    data={TEXT: "test a"},
                     features=[
                         Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
                         Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
                     ],
                 ),
                 Message(
-                    "test b",
+                    data={TEXT: "test b"},
                     features=[
                         Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
                         Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
@@ -73,7 +73,7 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    "test a",
+                    data={TEXT: "test a"},
                     features=[
                         Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
                         Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
@@ -85,7 +85,7 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    "test a",
+                    data={TEXT: "test a"},
                     features=[
                         Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
                     ],
