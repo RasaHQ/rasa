@@ -3,6 +3,14 @@ from collections import defaultdict, deque
 import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
+from rasa.nlu.constants import (
+    ENTITIES,
+    INTENT,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT_NAME_KEY,
+    TEXT,
+)
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, Event
@@ -38,36 +46,37 @@ class UserMessageGenerator:
 
         d = defaultdict(list)
         for example in data.training_examples:
-            if example.get("intent", {}) is not None:
-                d[example.get("intent", {})].append(example)
+            if example.get(INTENT, {}) is not None:
+                d[example.get(INTENT, {})].append(example)
         return d
 
     @staticmethod
     def _contains_same_entity(entities, e) -> bool:
-        return entities.get(e.get("entity")) is None or entities.get(
-            e.get("entity")
-        ) != e.get("value")
+        return entities.get(e.get(ENTITY_ATTRIBUTE_TYPE)) is None or entities.get(
+            e.get(ENTITY_ATTRIBUTE_TYPE)
+        ) != e.get(ENTITY_ATTRIBUTE_VALUE)
 
-    def message_for_data(self, structured_info) -> Any:
+    def message_for_data(self, structured_info: Dict[Text, Any]) -> Any:
         """Find a data sample with the same intent and entities.
 
         Given the parsed data from a message (intent and entities) finds a
         message in the data that has the same intent and entities."""
 
-        if structured_info.get("intent") is not None:
-            intent_name = structured_info.get("intent", {}).get("name")
+        if structured_info.get(INTENT) is not None:
+            intent_name = structured_info.get(INTENT, {}).get(INTENT_NAME_KEY)
             usable_examples = self.mapping.get(intent_name, [])[:]
             random.shuffle(usable_examples)
             for example in usable_examples:
                 entities = {
-                    e.get("entity"): e.get("value") for e in example.get("entities", [])
+                    e.get(ENTITY_ATTRIBUTE_TYPE): e.get(ENTITY_ATTRIBUTE_VALUE)
+                    for e in example.get(ENTITIES, [])
                 }
-                for e in structured_info.get("entities", []):
+                for e in structured_info.get(ENTITIES, []):
                     if self._contains_same_entity(entities, e):
                         break
                 else:
-                    return example.text
-        return structured_info.get("text")
+                    return example.get(TEXT)
+        return structured_info.get(TEXT)
 
 
 def _fingerprint_node(graph, node, max_history) -> Set[Text]:
