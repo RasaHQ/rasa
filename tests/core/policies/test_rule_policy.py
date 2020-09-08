@@ -115,7 +115,7 @@ def test_all_policy_attributes_are_persisted(tmpdir: Path):
     )
     policy.persist(str(tmpdir))
 
-    persisted_policy: RulePolicy = RulePolicy.load(str(tmpdir))
+    persisted_policy = RulePolicy.load(tmpdir)
     assert persisted_policy.priority == priority
     assert persisted_policy.lookup == lookup
     assert persisted_policy._core_fallback_threshold == core_fallback_threshold

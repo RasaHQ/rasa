@@ -541,7 +541,7 @@ class RulePolicy(MemoizationPolicy):
         rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> MemoizationPolicy:
+    def load(cls, path: Union[Text, Path]) -> "RulePolicy":
         """Loads `RulePolicy` from path.
 
         Args:
