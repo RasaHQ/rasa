@@ -5,7 +5,6 @@ from unittest.mock import Mock, ANY
 
 import requests
 import time
-import tempfile
 import uuid
 
 from typing import List, Text, Type, Generator, NoReturn, Dict
@@ -188,10 +187,13 @@ def background_server(
 
 
 @pytest.fixture()
-def training_request(shared_statuses: DictProxy) -> Generator[Process, None, None]:
+def training_request(
+    shared_statuses: DictProxy, tmp_path: Path
+) -> Generator[Process, None, None]:
     def send_request() -> None:
-        payload = ""
+        payload = {}
         project_path = Path("examples") / "formbot"
+
         for file in [
             "domain.yml",
             "config.yml",
@@ -200,11 +202,19 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
             Path("data") / "nlu.yml",
         ]:
             full_path = project_path / file
-            payload += full_path.read_text()
+            # Read in as dictionaries to avoid that keys, which are specified in
+            # multiple files (such as 'version'), clash.
+            content = rasa.utils.io.read_yaml_file(full_path)
+            payload.update(content)
+
+        concatenated_payload_file = tmp_path / "concatenated.yml"
+        rasa.utils.io.write_yaml(payload, concatenated_payload_file)
+
+        payload_as_yaml = concatenated_payload_file.read_text()
 
         response = requests.post(
             "http://localhost:5005/model/train",
-            data=payload,
+            data=payload_as_yaml,
             headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
             params={"force_training": True},
         )
@@ -243,7 +253,10 @@ def test_train_status_is_not_blocked_by_training(
     training_request.start()
 
     # Wait until the blocking training function was called
-    while shared_statuses.get("started_training") is not True:
+    start = time.time()
+    while (
+        shared_statuses.get("started_training") is not True and time.time() - start < 60
+    ):
         time.sleep(1)
 
     # Check if the number of currently running trainings was incremented

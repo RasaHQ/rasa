@@ -14,16 +14,20 @@ from typing import (
     Deque,
     Iterable,
     Union,
+    FrozenSet,
+    Tuple,
 )
 
 import typing
 
+import rasa.shared.utils.io
 from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
     ACTION_NAME,
+    ACTION_TEXT,
 )
 from rasa.core.constants import (
     SHOULD_NOT_BE_SET,
@@ -51,14 +55,15 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     ActionExecutionRejected,
 )
 from rasa.core.domain import Domain, State  # pytype: disable=pyi-error
-from rasa.core.slots import Slot
-from rasa.utils import common as common_utils
-
+from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
     from rasa.core.training.structures import Story
 
 logger = logging.getLogger(__name__)
+
+# same as State but with Dict[...] substituted with FrozenSet[Tuple[...]]
+FrozenState = FrozenSet[Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text]]]]]]
 
 
 class EventVerbosity(Enum):
@@ -218,7 +223,7 @@ class DialogueStateTracker:
         return None
 
     @staticmethod
-    def freeze_current_state(state) -> frozenset:
+    def freeze_current_state(state: State) -> FrozenState:
         frozen_state = frozenset(
             {
                 key: frozenset(values.items())
@@ -229,11 +234,16 @@ class DialogueStateTracker:
         )
         return frozen_state
 
-    def past_states(self, domain) -> deque:
-        """Generate the past states of this tracker based on the history."""
+    def past_states(self, domain: Domain) -> List[State]:
+        """Generate the past states of this tracker based on the history.
 
-        generated_states = domain.states_for_tracker_history(self)
-        return deque(self.freeze_current_state(s) for s in generated_states)
+        Args:
+            domain: a :class:`rasa.core.domain.Domain`
+
+        Returns:
+            a list of states
+        """
+        return domain.states_for_tracker_history(self)
 
     def change_loop_to(self, loop_name: Text) -> None:
         """Set the currently active loop.
@@ -252,7 +262,7 @@ class DialogueStateTracker:
             self.active_loop = {}
 
     def change_form_to(self, form_name: Text) -> None:
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "`change_form_to` is deprecated and will be removed "
             "in future versions. Please use `change_loop_to` "
             "instead.",
@@ -732,14 +742,24 @@ class DialogueStateTracker:
 
     @property
     def latest_action_name(self) -> Optional[Text]:
-        """Get the name of the previously executed action if it was not e2e action.
+        """Get the name of the previously executed action or text of e2e action.
 
-        Returns: `None` if the action was e2e action.
+        Returns: name of the previously executed action or text of e2e action
         """
-        return self.latest_action.get(ACTION_NAME)
+        return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
+            ACTION_TEXT
+        )
 
 
 def get_active_loop_name(state: State) -> Optional[Text]:
+    """Get the name of current active loop.
+
+    Args:
+        state: The state from which the name of active loop should be extracted
+
+    Return:
+        the name of active loop or None
+    """
     if (
         not state.get(ACTIVE_LOOP)
         or state[ACTIVE_LOOP].get(LOOP_NAME) == SHOULD_NOT_BE_SET
@@ -749,6 +769,14 @@ def get_active_loop_name(state: State) -> Optional[Text]:
     return state[ACTIVE_LOOP].get(LOOP_NAME)
 
 
-def prev_action_listen_in_state(state: State) -> bool:
+def is_prev_action_listen_in_state(state: State) -> bool:
+    """Check if action_listen is the previous executed action.
+
+    Args:
+        state: The state for which the check should be performed
+
+    Return:
+        boolean value indicating whether action_listen is previous action
+    """
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME

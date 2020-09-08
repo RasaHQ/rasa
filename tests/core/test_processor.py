@@ -31,7 +31,7 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpr
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.nlu.constants import INTENT_NAME_KEY
@@ -180,6 +180,25 @@ async def test_reminder_scheduled(
         intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
     assert t.events[-1] == ActionExecuted("action_listen")
+
+
+async def test_trigger_external_latest_input_channel(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    input_channel = "test_input_channel_external"
+
+    tracker.update(UserUttered("test1"))
+    tracker.update(UserUttered("test2", input_channel=input_channel))
+
+    await default_processor.trigger_external_user_uttered(
+        "test3", None, tracker, default_channel
+    )
+
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+
+    assert tracker.get_latest_input_channel() == input_channel
 
 
 async def test_reminder_aborted(

@@ -467,7 +467,9 @@ class FormAction(LoopAction):
         logger.debug(f"Request next slot '{slot_name}'")
 
         action_to_ask_for_next_slot = action.action_from_name(
-            self._name_of_utterance(domain, slot_name), None, domain.user_actions
+            self._name_of_utterance(domain, slot_name),
+            self.action_endpoint,
+            domain.user_actions,
         )
         events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
@@ -516,7 +518,7 @@ class FormAction(LoopAction):
         """
         # no active_loop means that it is called during activation
         need_validation = not tracker.active_loop or (
-            tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
+            tracker.latest_action_name == ACTION_LISTEN_NAME
             and tracker.active_loop.get(LOOP_VALIDATE, True)
         )
         if need_validation:

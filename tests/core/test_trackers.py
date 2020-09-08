@@ -28,7 +28,14 @@ from rasa.core.events import (
     BotUttered,
     LegacyForm,
 )
-from rasa.core.slots import FloatSlot, BooleanSlot, ListSlot, TextSlot, DataSlot, Slot
+from rasa.shared.core.slots import (
+    FloatSlot,
+    BooleanSlot,
+    ListSlot,
+    TextSlot,
+    DataSlot,
+    Slot,
+)
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,

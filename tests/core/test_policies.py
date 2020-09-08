@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type
+from typing import Type, List, Text
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -23,7 +23,7 @@ from rasa.core.constants import (
 )
 from rasa.nlu.constants import INTENT, ACTION_NAME, ENTITIES
 from rasa.core.channels.channel import UserMessage
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted, ConversationPaused
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -639,7 +639,13 @@ class TestFormPolicy(TestMemoizationPolicy):
         p = FormPolicy(priority=priority)
         return p
 
+<<<<<<< HEAD
     def _test_for_previous_action_and_intent(self, states, intent, action_name) -> bool:
+=======
+    def _test_for_previous_action_and_intent(
+        self, states: List[State], intent: Text, action_name: Text
+    ) -> bool:
+>>>>>>> master
         previous_action_as_expected = False
         intent_as_expected = False
         if states[0].get(PREVIOUS_ACTION):

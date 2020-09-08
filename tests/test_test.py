@@ -147,6 +147,7 @@ def test_get_label_set(targets, exclude_label, expected):
 async def test_interpreter_passed_to_agent(
     monkeypatch: MonkeyPatch, trained_rasa_model: Text
 ):
+<<<<<<< HEAD
     from rasa.test import test_core
     from rasa.core.interpreter import RasaNLUInterpreter
 
@@ -164,6 +165,12 @@ async def test_interpreter_passed_to_agent(
     agent_load.assert_called_once()
     _, _, kwargs = agent_load.mock_calls[0]
     assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
+=======
+    from rasa.core.interpreter import RasaNLUInterpreter
+
+    agent = Agent.load(trained_rasa_model)
+    assert isinstance(agent.interpreter, RasaNLUInterpreter)
+>>>>>>> master
 
 
 async def test_e2e_warning_if_no_nlu_model(
@@ -225,6 +232,154 @@ def test_log_failed_stories(tmp_path: Path):
 
     assert dump.startswith("#")
     assert len(dump.split("\n")) == 1
+
+
+@pytest.mark.parametrize(
+    "entity_predictions,entity_targets",
+    [
+        (
+            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"}],
+            [
+                {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
+                {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
+            ],
+        ),
+        (
+            [
+                {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
+                {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
+            ],
+            [
+                {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
+                {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
+            ],
+        ),
+        (
+            [
+                {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
+                {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
+            ],
+            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"}],
+        ),
+        (
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 0,
+                    "end": 5,
+                    "entity": "person",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 22,
+                    "end": 28,
+                    "entity": "city",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                },
+            ],
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 22,
+                    "end": 28,
+                    "entity": "city",
+                }
+            ],
+        ),
+        (
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 0,
+                    "end": 5,
+                    "entity": "person",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                },
+            ],
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 22,
+                    "end": 28,
+                    "entity": "city",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                },
+            ],
+        ),
+        (
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                }
+            ],
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 0,
+                    "end": 5,
+                    "entity": "person",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 22,
+                    "end": 28,
+                    "entity": "city",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                },
+            ],
+        ),
+    ],
+)
+def test_evaluation_store_serialise(entity_predictions, entity_targets):
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+
+    store = EvaluationStore(
+        entity_predictions=entity_predictions, entity_targets=entity_targets
+    )
+
+    targets, predictions = store.serialise()
+
+    assert len(targets) == len(predictions)
+
+    i_pred = 0
+    i_target = 0
+    for i, prediction in enumerate(predictions):
+        target = targets[i]
+        if prediction != "None" and target != "None":
+            predicted = entity_predictions[i_pred]
+            assert prediction == TrainingDataWriter.generate_entity(
+                predicted.get("text"), predicted
+            )
+            assert predicted.get("start") == entity_targets[i_target].get("start")
+            assert predicted.get("end") == entity_targets[i_target].get("end")
+
+        if prediction != "None":
+            i_pred += 1
+        if target != "None":
+            i_target += 1
 
 
 async def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):

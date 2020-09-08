@@ -5,9 +5,11 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Type
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
 
 import rasa.core
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
@@ -17,7 +19,6 @@ from rasa.constants import (
     DOCS_URL_RULES,
 )
 
-from rasa.core import utils
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -36,7 +37,6 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils import common as common_utils
-from rasa.nlu.constants import ACTION_NAME, ACTION_TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,9 @@ class PolicyEnsemble:
             )
 
     @staticmethod
-    def _training_events_from_trackers(training_trackers) -> Dict[Text, Set[Event]]:
+    def _training_events_from_trackers(
+        training_trackers: List[DialogueStateTracker],
+    ) -> Dict[Text, Set[Event]]:
         events_metadata = defaultdict(set)
 
         for t in training_trackers:
@@ -79,9 +81,7 @@ class PolicyEnsemble:
             for event in t.events:
                 tracker.update(event)
                 if not isinstance(event, ActionExecuted):
-                    action_name = tracker.latest_action.get(
-                        ACTION_NAME
-                    ) or tracker.latest_action.get(ACTION_TEXT)
+                    action_name = tracker.latest_action_name
                     events_metadata[action_name].add(event)
 
         return events_metadata
@@ -114,7 +114,7 @@ class PolicyEnsemble:
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Found policies {v} with same priority {k} "
                     f"in PolicyEnsemble. When personalizing "
                     f"priorities, be sure to give all policies "
@@ -166,7 +166,7 @@ class PolicyEnsemble:
             is_rules_consuming_policy_available
             and not training_trackers_contain_rule_trackers
         ):
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Found a rule-based policy in your pipeline but "
                 f"no rule-based training data. Please add rule-based "
                 f"stories to your training data or "
@@ -178,7 +178,7 @@ class PolicyEnsemble:
             not is_rules_consuming_policy_available
             and training_trackers_contain_rule_trackers
         ):
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Found rule-based training data but no policy supporting rule-based "
                 f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
                 f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
@@ -265,7 +265,9 @@ class PolicyEnsemble:
         domain_spec_path = os.path.join(path, "metadata.json")
         rasa.utils.io.create_directory_for_file(domain_spec_path)
 
-        policy_names = [utils.module_path_from_instance(p) for p in self.policies]
+        policy_names = [
+            rasa.shared.utils.common.module_path_from_instance(p) for p in self.policies
+        ]
 
         metadata = {
             "action_fingerprints": self.action_fingerprints,
@@ -341,7 +343,9 @@ class PolicyEnsemble:
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
-        ensemble_cls = common_utils.class_from_module_path(metadata["ensemble_name"])
+        ensemble_cls = rasa.shared.utils.common.class_from_module_path(
+            metadata["ensemble_name"]
+        )
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
@@ -606,7 +610,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 tracker, domain, interpreter
             )
         else:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "The function `predict_action_probabilities` of "
                 "the `Policy` interface was changed to support "
                 "additional parameters. Please make sure to "
@@ -686,7 +690,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         )
 
         if (
-            tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
+            tracker.latest_action_name == ACTION_LISTEN_NAME
             and probabilities is not None
             and probabilities.index(max(probabilities))
             == domain.index_for_action(ACTION_LISTEN_NAME)

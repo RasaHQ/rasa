@@ -11,13 +11,9 @@ from ruamel.yaml import YAMLError
 
 import rasa.core.constants
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import (
-    raise_warning,
-    lazy_property,
-    sort_list_of_dicts_by_first_key,
-)
+from rasa.utils.common import lazy_property, sort_list_of_dicts_by_first_key
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.cli.utils import bcolors, wrap_with_color
 from rasa.constants import (
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
     DOMAIN_SCHEMA_FILE,
@@ -42,7 +38,7 @@ from rasa.core.constants import (
     LOOP_NAME,
 )
 from rasa.core.events import SlotSet, UserUttered
-from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
+from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
 from rasa.nlu.constants import ENTITIES
@@ -76,7 +72,8 @@ ALL_DOMAIN_KEYS = [
     KEY_E2E_ACTIONS,
 ]
 
-# State is a dictionary with origin as keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP);
+# State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
+# representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
 SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
 State = Dict[Text, SubState]
@@ -91,9 +88,11 @@ class InvalidDomain(Exception):
     def __init__(self, message) -> None:
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> Text:
         # return message in error colours
-        return wrap_with_color(self.message, color=bcolors.FAIL)
+        return rasa.shared.utils.io.wrap_with_color(
+            self.message, color=rasa.shared.utils.io.bcolors.FAIL
+        )
 
 
 class SessionConfig(NamedTuple):
@@ -344,7 +343,7 @@ class Domain:
         explicitly_included = isinstance(properties[USE_ENTITIES_KEY], list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Entities: '{ambiguous_entities}' are explicitly included and"
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
@@ -466,11 +465,11 @@ class Domain:
         self._check_domain_sanity()
 
     def __hash__(self) -> int:
-
         self_as_dict = self.as_dict()
         self_as_dict[KEY_INTENTS] = sort_list_of_dicts_by_first_key(
             self_as_dict[KEY_INTENTS]
         )
+        self_as_dict[KEY_ACTIONS] = self.action_names
         self_as_string = json.dumps(self_as_dict, sort_keys=True)
         text_hash = utils.get_text_hash(self_as_string)
 
@@ -609,9 +608,9 @@ class Domain:
         """Returns all available slot state strings."""
 
         return [
-            f"{s.name}_{i}"
-            for s in self.slots
-            for i in range(0, s.feature_dimensionality())
+            f"{slot.name}_{feature_index}"
+            for slot in self.slots
+            for feature_index in range(0, slot.feature_dimensionality())
         ]
 
     @lazy_property
@@ -631,29 +630,6 @@ class Domain:
             + self.form_names
         )
 
-    def _get_user_states(
-        self, tracker: "DialogueStateTracker"
-    ) -> Dict[Text, Dict[Text, Union[Text, Tuple[Text]]]]:
-        state_dict = {}
-
-        # Set all found entities with the state value 1.0, unless they should
-        # be ignored for the current intent
-        latest_message = tracker.latest_message
-
-        if not latest_message or latest_message == UserUttered.empty():
-            return state_dict
-
-        state_dict[USER] = latest_message.as_sub_state()
-
-        # filter entities based on intent config
-        entities = tuple(self._get_featurized_entities(latest_message))
-        if entities:
-            state_dict[USER][ENTITIES] = entities
-        elif state_dict[USER].get(ENTITIES):
-            del state_dict[USER][ENTITIES]
-
-        return state_dict
-
     def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
         intent_name = latest_message.intent.get(INTENT_NAME_KEY)
         intent_config = self.intent_config(intent_name)
@@ -666,11 +642,45 @@ class Domain:
 
         return entity_names.intersection(wanted_entities)
 
+    def _get_user_sub_state(
+        self, tracker: "DialogueStateTracker"
+    ) -> Dict[Text, Union[Text, Tuple[Text]]]:
+        """Turn latest UserUttered event into a substate containing intent,
+        text and set entities if present
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary containing intent, text and set entities
+        """
+        latest_message = tracker.latest_message
+        if not latest_message or latest_message.is_empty():
+            return {}
+
+        sub_state = latest_message.as_sub_state()
+
+        # filter entities based on intent config
+        # sub_state will be transformed to frozenset therefore we need to
+        # convert the list to the tuple
+        # sub_state is transformed to frozenset because we will later hash it
+        # for deduplication
+        entities = tuple(self._get_featurized_entities(latest_message))
+        if entities:
+            sub_state[ENTITIES] = entities
+        else:
+            sub_state.pop(ENTITIES, None)
+
+        return sub_state
+
     @staticmethod
-    def _get_slots_states(
+    def _get_slots_sub_state(
         tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Dict[Text, Union[Text, Tuple[float]]]]:
-        # Set all set slots with the featurization of the stored value
+    ) -> Dict[Text, Union[Text, Tuple[float]]]:
+        """Set all set slots with the featurization of the stored value
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping slot names to their featurization
+        """
 
         # proceed with values only if the user of a bot have done something
         # at the previous step i.e., when the state is not empty.
@@ -685,44 +695,57 @@ class Domain:
                 elif any(slot.as_feature()):
                     # only add slot if some of the features are not zero
                     slots[slot_name] = tuple(slot.as_feature())
-        if slots:
-            return {SLOTS: slots}
 
-        return {}
+        return slots
 
     @staticmethod
-    def _get_prev_action_states(
+    def _get_prev_action_sub_state(
         tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Dict[Text, Text]]:
-        """Turn the previous taken action into a state name."""
-        latest_action = tracker.latest_action
-
-        if latest_action:
-            return {PREVIOUS_ACTION: latest_action}
-        else:
-            return {}
+    ) -> Dict[Text, Text]:
+        """Turn the previous taken action into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary with the information on latest action
+        """
+        return tracker.latest_action
 
     @staticmethod
-    def _get_active_loop_states(
+    def _get_active_loop_sub_state(
         tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Dict[Text, Text]]:
-        """Turn tracker's active loop into a state name."""
+    ) -> Dict[Text, Text]:
+        """Turn tracker's active loop into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping "name" to active loop name if present
+        """
 
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         active_loop = tracker.active_loop.get(LOOP_NAME)
-        if active_loop is not None:
-            return {ACTIVE_LOOP: {LOOP_NAME: active_loop}}
+        if active_loop:
+            return {LOOP_NAME: active_loop}
         else:
             return {}
 
+    @staticmethod
+    def _clean_state(state: State) -> State:
+        return {
+            state_type: sub_state
+            for state_type, sub_state in state.items()
+            if sub_state
+        }
+
     def get_active_states(self, tracker: "DialogueStateTracker") -> State:
         """Return a bag of active states from the tracker state."""
-        state_dict = self._get_user_states(tracker)
-        state_dict.update(self._get_slots_states(tracker))
-        state_dict.update(self._get_prev_action_states(tracker))
-        state_dict.update(self._get_active_loop_states(tracker))
-        return state_dict
+        state = {
+            USER: self._get_user_sub_state(tracker),
+            SLOTS: self._get_slots_sub_state(tracker),
+            PREVIOUS_ACTION: self._get_prev_action_sub_state(tracker),
+            ACTIVE_LOOP: self._get_active_loop_sub_state(tracker),
+        }
+        return self._clean_state(state)
 
     def states_for_tracker_history(
         self, tracker: "DialogueStateTracker"
@@ -858,6 +881,8 @@ class Domain:
             A cleaned dictionary version of the domain.
         """
         domain_data = self.as_dict()
+        # remove e2e actions from domain before we display it
+        domain_data.pop(KEY_E2E_ACTIONS, None)
 
         for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):
             for name, intent in intent_info.items():
@@ -1095,7 +1120,7 @@ class Domain:
 
         if missing_templates:
             for template in missing_templates:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Action '{template}' is listed as a "
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "

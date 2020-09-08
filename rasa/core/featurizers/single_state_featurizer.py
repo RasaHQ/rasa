@@ -1,10 +1,10 @@
 import logging
 import numpy as np
 import scipy.sparse
-from typing import List, Optional, Dict, Text, Union, Tuple
+from typing import List, Optional, Dict, Text, Set
 from collections import defaultdict
 
-from rasa.utils import common as common_utils
+import rasa.shared.utils.io
 from rasa.core.domain import Domain, State, SubState
 from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -18,17 +18,31 @@ from rasa.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.training_data.message import Message
-from rasa.core.trackers import prev_action_listen_in_state
+from rasa.core.trackers import is_prev_action_listen_in_state
 
 logger = logging.getLogger(__name__)
 
 
 class SingleStateFeaturizer:
+    """Base class to transform the dialogue state into an ML format.
+
+    Subclasses of SingleStateFeaturizer will decide how a bot will
+    transform the dialogue state into a dictionary mapping an attribute
+    to its features. Possible attributes are: INTENT, TEXT, ACTION_NAME,
+    ACTION_TEXT, ENTITIES, SLOTS and ACTIVE_LOOP. Each attribute will be
+    featurized into a list of `rasa.utils.features.Features`.
+    """
+
     def __init__(self) -> None:
         self._default_feature_states = {}
         self.action_texts = []
 
     def prepare_from_domain(self, domain: Domain) -> None:
+        """Gets necessary information for featurization from domain.
+
+        Args:
+            domain: a :class:`rasa.core.domain.Domain`
+        """
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:
             return {
@@ -89,61 +103,48 @@ class SingleStateFeaturizer:
 
     @staticmethod
     def _to_sparse_sentence_features(
-        sparse_sequence_features: List["Features"], attribute: Text
+        sparse_sequence_features: List["Features"],
     ) -> List["Features"]:
-        sparse_sentence_features = []
-        for feature in sparse_sequence_features:
-            sparse_sentence_features.append(
-                Features(
-                    scipy.sparse.coo_matrix(feature.features.sum(0)),
-                    FEATURE_TYPE_SENTENCE,
-                    attribute,
-                    feature.origin,
-                )
+        return [
+            Features(
+                scipy.sparse.coo_matrix(feature.features.sum(0)),
+                FEATURE_TYPE_SENTENCE,
+                feature.attribute,
+                feature.origin,
             )
-        return sparse_sentence_features
+            for feature in sparse_sequence_features
+        ]
 
-    def _extract_state_features(
-        self,
-        sub_state: SubState,
-        interpreter: Optional[NaturalLanguageInterpreter],
-        sparse: bool = False,
+    def _get_features_from_parsed_message(
+        self, parsed_message: Optional[Message], attributes: Set[Text]
     ) -> Dict[Text, List["Features"]]:
+        if parsed_message is None:
+            return {}
 
         output = defaultdict(list)
-        message = Message(data=sub_state)
-        # remove entities from possible attributes
-        attributes = set(
-            attribute for attribute in sub_state.keys() if attribute != ENTITIES
-        )
+        for attribute in attributes:
+            all_features = parsed_message.get_sparse_features(
+                attribute
+            ) + parsed_message.get_dense_features(attribute)
 
-        if interpreter is not None:
-            parsed_message = interpreter.synchronous_parse_message(message)
-            for attribute in attributes:
-                if parsed_message is not None:
-                    all_features = parsed_message.get_sparse_features(
-                        attribute
-                    ) + parsed_message.get_dense_features(attribute)
-                else:
-                    all_features = ()
+            for features in all_features:
+                if features is not None:
+                    output[attribute].append(features)
 
-                for features in all_features:
-                    if features is not None:
-                        output[attribute].append(features)
+        # if features for INTENT or ACTION_NAME exist,
+        # they are always sparse sequence features;
+        # transform them to sentence sparse features
+        if output.get(INTENT):
+            output[INTENT] = self._to_sparse_sentence_features(output[INTENT])
+        if output.get(ACTION_NAME):
+            output[ACTION_NAME] = self._to_sparse_sentence_features(output[ACTION_NAME])
 
-            # transform sequence sparse features to sentence sparse features
-            # for intent and action_name
-            if output.get(INTENT):
-                output[INTENT] = self._to_sparse_sentence_features(
-                    output[INTENT], INTENT
-                )
-            if output.get(ACTION_NAME):
-                output[ACTION_NAME] = self._to_sparse_sentence_features(
-                    output[ACTION_NAME], ACTION_NAME
-                )
+        return output
 
+    @staticmethod
+    def _get_name_attribute(attributes: Set[Text]) -> Optional[Text]:
         # there is always either INTENT or ACTION_NAME
-        name_attribute = next(
+        return next(
             (
                 attribute
                 for attribute in attributes
@@ -151,8 +152,30 @@ class SingleStateFeaturizer:
             ),
             None,
         )
+
+    def _extract_state_features(
+        self,
+        sub_state: SubState,
+        interpreter: NaturalLanguageInterpreter,
+        sparse: bool = False,
+    ) -> Dict[Text, List["Features"]]:
+
+        message = Message(data=sub_state)
+        # remove entities from possible attributes
+        attributes = set(
+            attribute for attribute in sub_state.keys() if attribute != ENTITIES
+        )
+
+        parsed_message = interpreter.featurize_message(message)
+        output = self._get_features_from_parsed_message(parsed_message, attributes)
+
+        # check that name attributes have features
+        name_attribute = self._get_name_attribute(attributes)
         if name_attribute and name_attribute not in output:
             # nlu pipeline didn't create features for user or action
+            # this might happen, for example, when we have action_name in the state
+            # but it did not get featurized because only character level
+            # CountVectorsFeaturizer was included in the config.
             output[name_attribute] = self._create_features(
                 sub_state, name_attribute, sparse
             )
@@ -160,8 +183,17 @@ class SingleStateFeaturizer:
         return output
 
     def encode_state(
-        self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
+        self, state: State, interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List["Features"]]:
+        """Encode the given state with the help of the given interpreter.
+
+        Args:
+            state: The state to encode
+            interpreter: The interpreter used to encode the state
+
+        Returns:
+            A dictionary of state_type to list of features.
+        """
         state_features = {}
         for state_type, sub_state in state.items():
             if state_type == PREVIOUS_ACTION:
@@ -170,7 +202,7 @@ class SingleStateFeaturizer:
                 )
             # featurize user only if it is "real" user input,
             # i.e. input from a turn after action_listen
-            if state_type == USER and prev_action_listen_in_state(state):
+            if state_type == USER and is_prev_action_listen_in_state(state):
                 state_features.update(
                     self._extract_state_features(sub_state, interpreter, sparse=True)
                 )
@@ -187,9 +219,8 @@ class SingleStateFeaturizer:
         return state_features
 
     def _encode_action(
-        self, action: Text, interpreter: Optional[NaturalLanguageInterpreter]
+        self, action: Text, interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List["Features"]]:
-
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
         else:
@@ -198,8 +229,17 @@ class SingleStateFeaturizer:
         return self._extract_state_features(action_as_sub_state, interpreter)
 
     def encode_all_actions(
-        self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
+        self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List["Features"]]]:
+        """Encode all action from the domain using the given interpreter.
+
+        Args:
+            domain: The domain that contains the actions.
+            interpreter: The interpreter used to encode the actions.
+
+        Returns:
+            A list of encoded actions.
+        """
 
         return [
             self._encode_action(action, interpreter) for action in domain.action_names
@@ -209,7 +249,7 @@ class SingleStateFeaturizer:
 class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
         super().__init__()
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in the future. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
@@ -217,17 +257,20 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
-    def encode_state(
-        self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
+    def _extract_state_features(
+        self,
+        sub_state: SubState,
+        interpreter: NaturalLanguageInterpreter,
+        sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
-        # ignore nlu interpreter to create binary features
-        return super().encode_state(state, None)
+        # create a special method that doesn't use passed interpreter
+        name_attribute = self._get_name_attribute(set(sub_state.keys()))
+        if name_attribute:
+            return {
+                name_attribute: self._create_features(sub_state, name_attribute, sparse)
+            }
 
-    def encode_all_actions(
-        self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> List[Dict[Text, List["Features"]]]:
-        # ignore nlu interpreter to create binary features
-        return super().encode_all_actions(domain, None)
+        return {}
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
@@ -235,7 +278,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         super().__init__()
         # it is hard to fully mimic old behavior, but SingleStateFeaturizer
         # does the same thing if nlu pipeline is configured correctly
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in the future. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",

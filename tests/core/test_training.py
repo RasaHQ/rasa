@@ -5,8 +5,12 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
+<<<<<<< HEAD
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
+=======
+from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
+>>>>>>> master
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, RasaNLUInterpreter
 from rasa.core.train import train
@@ -96,7 +100,11 @@ async def test_training_script_without_max_history_set(tmp_path: Path):
             if type(policy) == FormPolicy:
                 assert policy.featurizer.max_history == 2
             elif type(policy) == MemoizationPolicy:
+<<<<<<< HEAD
                 assert policy.featurizer.max_history == 5
+=======
+                assert policy.featurizer.max_history == OLD_DEFAULT_MAX_HISTORY
+>>>>>>> master
             else:
                 assert policy.featurizer.max_history is None
 

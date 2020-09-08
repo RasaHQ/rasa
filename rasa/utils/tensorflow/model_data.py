@@ -71,6 +71,15 @@ class RasaModelData:
     def get(
         self, key: Text, sub_key: Optional[Text] = None
     ) -> Union[Dict[Text, List[np.ndarray]], List[np.ndarray]]:
+        """Get the data under the given keys.
+
+        Args:
+            key: The key.
+            sub_key: The optional sub key.
+
+        Returns:
+            The requested data.
+        """
         if sub_key is None and key in self.data:
             return self.data[key]
 
@@ -80,12 +89,30 @@ class RasaModelData:
         return []
 
     def items(self) -> ItemsView:
+        """Return the items of the data attribute.
+
+        Returns:
+            The items of data.
+        """
         return self.data.items()
 
     def values(self) -> ValuesView[Dict[Text, List[np.ndarray]]]:
+        """Return the values of the data attribute.
+
+        Returns:
+            The values of data.
+        """
         return self.data.values()
 
     def keys(self, key: Optional[Text] = None) -> List[Text]:
+        """Return the keys of the data attribute.
+
+        Args:
+            key: The optional key.
+
+        Returns:
+            The keys of the data.
+        """
         if key is None:
             return list(self.data.keys())
 
@@ -95,6 +122,11 @@ class RasaModelData:
         return []
 
     def first_data_example(self) -> Data:
+        """Return the data with just one feature example per key, sub-key.
+
+        Returns:
+            The simplified data.
+        """
         out_data = {}
         for key, attribute_data in self.data.items():
             out_data[key] = {}
@@ -102,8 +134,16 @@ class RasaModelData:
                 out_data[key][sub_key] = [feature[:1] for feature in features]
         return out_data
 
-    def feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
-        """Check if feature key is present and features are available."""
+    def does_feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
+        """Check if feature key (and sub-key) is present and features are available.
+
+        Args:
+            key: The key.
+            sub_key: The optional sub-key.
+
+        Returns:
+            True, if no features for the given keys exists, False otherwise.
+        """
         if sub_key:
             return (
                 key not in self.data
@@ -122,7 +162,13 @@ class RasaModelData:
     def number_of_examples(self, data: Optional[Data] = None) -> int:
         """Obtain number of examples in data.
 
+        Args:
+            data: The data.
+
         Raises: A ValueError if number of examples differ for different features.
+
+        Returns:
+            The number of examples in data.
         """
         if not data:
             data = self.data
@@ -150,8 +196,15 @@ class RasaModelData:
         return example_lengths[0]
 
     def feature_dimension(self, key: Text, sub_key: Text) -> int:
-        """Get the feature dimension of the given key."""
+        """Get the feature dimension of the given key.
 
+        Args:
+            key: The key.
+            sub_key: The optional sub-key.
+
+        Returns:
+            The feature dimension.
+        """
         if key not in self.data or sub_key not in self.data[key]:
             return 0
 
@@ -163,7 +216,12 @@ class RasaModelData:
         return number_of_features
 
     def add_data(self, data: Data, key_prefix: Optional[Text] = None) -> None:
-        """Add incoming data to data."""
+        """Add incoming data to data.
+
+        Args:
+            data: The data to add.
+            key_prefix: Optional key prefix to use in front of the key value.
+        """
         for key, attribute_data in data.items():
             for sub_key, features in attribute_data.items():
                 if key_prefix:
@@ -177,6 +235,11 @@ class RasaModelData:
         """Add list of features to data under specified key.
 
         Should update number of examples.
+
+        Args:
+            key: The key
+            sub_key: The sub-key
+            features: The features to add.
         """
         if features is None:
             return
@@ -194,7 +257,14 @@ class RasaModelData:
     def add_lengths(
         self, key: Text, sub_key: Text, from_key: Text, from_sub_key: Text
     ) -> None:
-        """Adds np.array of lengths of sequences to data under given key."""
+        """Adds np.array of lengths of sequences to data under given key.
+
+        Args:
+            key: The key to add the lengths to
+            sub_key: The sub-key to add the lengths to
+            from_key: The key to take the lengths from
+            from_sub_key: The sub-key to take the lengths from
+        """
         if not self.data.get(from_key) or not self.data.get(from_key, {}).get(
             from_sub_key
         ):
@@ -211,7 +281,15 @@ class RasaModelData:
     def split(
         self, number_of_test_examples: int, random_seed: int
     ) -> Tuple["RasaModelData", "RasaModelData"]:
-        """Create random hold out test set using stratified split."""
+        """Create random hold out test set using stratified split.
+
+        Args:
+            number_of_test_examples: Number of test examples.
+            random_seed: Random seed.
+
+        Returns:
+            A tuple of train and test RasaModelData.
+        """
 
         self._check_label_key()
 
@@ -273,6 +351,10 @@ class RasaModelData:
         """Get signature of RasaModelData.
 
         Signature stores the shape and whether features are sparse or not for every key.
+
+        Returns:
+            A dictionary of key and sub-key to a list of feature signatures
+            (same structure as the data attribute).
         """
 
         return {
@@ -292,7 +374,16 @@ class RasaModelData:
     def as_tf_dataset(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
     ) -> tf.data.Dataset:
-        """Create tf dataset."""
+        """Create tf dataset.
+
+        Args:
+            batch_size: The batch size to use.
+            batch_strategy: The batch strategy to use.
+            shuffle: Boolean indicating whether the data should be shuffled or not.
+
+        Returns:
+            The tf.data.Dataset.
+        """
 
         shapes, types = self._get_shapes_types()
 
@@ -310,7 +401,19 @@ class RasaModelData:
         end: Optional[int] = None,
         tuple_sizes: Optional[Dict[Text, int]] = None,
     ) -> Tuple[Optional[np.ndarray]]:
-        """Slices model data into batch using given start and end value."""
+        """Slices model data into batch using given start and end value.
+
+        Args:
+            data: The data to prepare.
+            start: The start index of the batch
+            end: The end index of the batch
+            tuple_sizes: In case the feature is not present we propagate the batch with
+              None. Tuple sizes contains the number of how many None values to add for
+              what kind of feature.
+
+        Returns:
+            The features of the batch.
+        """
 
         if not data:
             data = self.data
@@ -346,7 +449,11 @@ class RasaModelData:
         return tuple(batch_data)
 
     def _get_shapes_types(self) -> Tuple:
-        """Extract shapes and types from model data."""
+        """Extract shapes and types from model data.
+
+        Returns:
+            A tuple of shapes and a tuple of types.
+        """
 
         types = []
         shapes = []
@@ -382,7 +489,14 @@ class RasaModelData:
         return tuple(shapes), tuple(types)
 
     def _shuffled_data(self, data: Data) -> Data:
-        """Shuffle model data."""
+        """Shuffle model data.
+
+        Args:
+            data: The data to shuffle
+
+        Returns:
+            The shuffled data.
+        """
 
         ids = np.random.permutation(self.num_examples)
         return self._data_for_ids(data, ids)
@@ -393,6 +507,14 @@ class RasaModelData:
         This batching strategy puts rare classes approximately in every other batch,
         by repeating them. Mimics stratified batching, but also takes into account
         that more populated classes should appear more often.
+
+        Args:
+            data: The data.
+            batch_size: The batch size.
+            shuffle: Boolean indicating whether to shuffle the data or not.
+
+        Returns:
+            The balanced data.
         """
         self._check_label_key()
 
@@ -469,7 +591,16 @@ class RasaModelData:
     def _gen_batch(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
     ) -> Generator[Tuple[Optional[np.ndarray]], None, None]:
-        """Generate batches."""
+        """Generate batches.
+
+        Args:
+            batch_size: The batch size
+            batch_strategy: The batch strategy.
+            shuffle: Boolean indicating whether to shuffle the data or not.
+
+        Returns:
+            A generator over the batches.
+        """
 
         data = self.data
         num_examples = self.num_examples
@@ -492,8 +623,16 @@ class RasaModelData:
 
     def _check_train_test_sizes(
         self, number_of_test_examples: int, label_counts: Dict[Any, int]
-    ):
-        """Check whether the test data set is too large or too small."""
+    ) -> None:
+        """Check whether the test data set is too large or too small.
+
+        Args:
+            number_of_test_examples: number of test examples
+            label_counts: number of labels
+
+        Raises:
+            A ValueError if the number of examples does not fit.
+        """
 
         if number_of_test_examples >= self.num_examples - len(label_counts):
             raise ValueError(
@@ -501,7 +640,7 @@ class RasaModelData:
                 f"train set should be at least equal to number of classes "
                 f"{len(label_counts)}."
             )
-        elif number_of_test_examples < len(label_counts):
+        if number_of_test_examples < len(label_counts):
             raise ValueError(
                 f"Test set of {number_of_test_examples} is too small. It should "
                 f"be at least equal to number of classes {label_counts}."
@@ -509,7 +648,15 @@ class RasaModelData:
 
     @staticmethod
     def _data_for_ids(data: Optional[Data], ids: np.ndarray) -> Data:
-        """Filter model data by ids."""
+        """Filter model data by ids.
+
+        Args:
+            data: The data to filter
+            ids: The ids
+
+        Returns:
+            The filtered data
+        """
 
         new_data = defaultdict(lambda: defaultdict(list))
 
@@ -525,7 +672,16 @@ class RasaModelData:
     def _split_by_label_ids(
         self, data: Optional[Data], label_ids: np.ndarray, unique_label_ids: np.ndarray
     ) -> List["RasaModelData"]:
-        """Reorganize model data into a list of model data with the same labels."""
+        """Reorganize model data into a list of model data with the same labels.
+
+        Args:
+            data: The data
+            label_ids: The label ids
+            unique_label_ids: The unique label ids
+
+        Returns:
+            Reorganized RasaModelData
+        """
 
         label_data = []
         for label_id in unique_label_ids:
@@ -539,7 +695,12 @@ class RasaModelData:
             )
         return label_data
 
-    def _check_label_key(self):
+    def _check_label_key(self) -> None:
+        """Check if the label key exists.
+
+        Raises:
+            ValueError if the label key and sub-key is not in data.
+        """
         if (
             self.label_key is not None
             and self.label_sub_key is not None
@@ -556,7 +717,15 @@ class RasaModelData:
     def _convert_train_test_split(
         self, output_values: List[Any], solo_values: List[Any]
     ) -> Tuple["RasaModelData", "RasaModelData"]:
-        """Converts the output of sklearn's train_test_split into model data."""
+        """Converts the output of sklearn's train_test_split into model data.
+
+        Args:
+            output_values: output values of sklearn's train_test_split
+            solo_values: list of solo values
+
+        Returns:
+            The test and train RasaModelData
+        """
 
         data_train = defaultdict(lambda: defaultdict(list))
         data_val = defaultdict(lambda: defaultdict(list))
@@ -594,7 +763,15 @@ class RasaModelData:
         feature_1: Union[np.ndarray, scipy.sparse.spmatrix],
         feature_2: Union[np.ndarray, scipy.sparse.spmatrix],
     ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
-        """Concatenate features."""
+        """Concatenate features.
+
+        Args:
+            feature_1: Features to concatenate.
+            feature_2: Features to concatenate.
+
+        Returns:
+            The combined features.
+        """
 
         if isinstance(feature_1, scipy.sparse.spmatrix) and isinstance(
             feature_2, scipy.sparse.spmatrix
@@ -614,6 +791,12 @@ class RasaModelData:
         For multi-label y, map each distinct row to a string representation
         using join because str(row) uses an ellipsis if len(row) > 1000.
         Idea taken from sklearn's stratify split.
+
+        Args:
+            label_ids: The label ids.
+
+        Returns:
+            The single dim label array.
         """
 
         if label_ids.ndim == 1:
@@ -635,6 +818,12 @@ class RasaModelData:
         """Pad data of different lengths.
 
         Sequential data is padded with zeros. Zeros are added to the end of data.
+
+        Args:
+            array_of_dense: The array to pad.
+
+        Returns:
+            The padded array.
         """
 
         if array_of_dense[0].ndim < 2:
@@ -655,7 +844,14 @@ class RasaModelData:
 
     @staticmethod
     def _scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
-        """Convert a scipy matrix into indices, data, and shape."""
+        """Convert a scipy matrix into indices, data, and shape.
+
+        Args:
+            array_of_sparse: The sparse data array.
+
+        Returns:
+            A list of dense numpy arrays representing the sparse data.
+        """
 
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
