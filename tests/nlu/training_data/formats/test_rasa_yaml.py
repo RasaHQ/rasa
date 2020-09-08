@@ -365,5 +365,4 @@ def test_read_mixed_training_data_file():
 
     with pytest.warns(None) as record:
         reader.read(training_data_file)
-
-    assert not len(record)
+        assert not len(record)

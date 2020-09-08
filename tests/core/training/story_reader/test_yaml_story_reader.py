@@ -355,5 +355,4 @@ def test_read_mixed_training_data_file(default_domain: Domain):
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
-
-    assert not len(record)
+        assert not len(record)
