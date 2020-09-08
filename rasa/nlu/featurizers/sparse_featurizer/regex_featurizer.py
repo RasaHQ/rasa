@@ -14,12 +14,14 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     RESPONSE,
     TEXT,
+    ACTION_TEXT,
     TOKENS_NAMES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
 )
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
@@ -66,7 +68,7 @@ class RegexFeaturizer(SparseFeaturizer):
         )
 
         for example in training_data.training_examples:
-            for attribute in [TEXT, RESPONSE]:
+            for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
                 self._text_features_with_regex(example, attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -125,7 +127,7 @@ class RegexFeaturizer(SparseFeaturizer):
         sentence_features = np.zeros([1, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
-            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
+            matches = re.finditer(pattern["pattern"], message.get(TEXT), flags=flags)
             matches = list(matches)
 
             for token_index, t in enumerate(tokens):

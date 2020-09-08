@@ -20,6 +20,7 @@ from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisL
 class FakeRedisLockStore(RedisLockStore):
     """Fake `RedisLockStore` using `fakeredis` library."""
 
+    # noinspection PyMissingConstructor
     def __init__(self):
         import fakeredis
 
@@ -27,8 +28,6 @@ class FakeRedisLockStore(RedisLockStore):
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
-
-        super(RedisLockStore, self).__init__()
 
 
 def test_issue_ticket():
