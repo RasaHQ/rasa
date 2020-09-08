@@ -107,8 +107,6 @@ class TEDPolicy(Policy):
           (https://arxiv.org/abs/1709.03856) idea.
     """
 
-    SUPPORTS_ONLINE_TRAINING = True
-
     # please make sure to update the docs when changing a default parameter
     defaults = {
         # ## Architecture of the used neural network

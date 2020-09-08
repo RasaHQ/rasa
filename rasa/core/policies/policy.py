@@ -62,7 +62,6 @@ class SupportedData(Enum):
 
 
 class Policy:
-    SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod
     def supported_data() -> SupportedData:

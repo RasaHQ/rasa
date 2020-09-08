@@ -3,7 +3,8 @@ from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
 import json
 
-from rasa.core.events import FormValidation
+import rasa.shared.utils.io
+from rasa.core.events import FormValidation, UserUttered
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.domain import Domain, InvalidDomain, State
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -52,10 +53,27 @@ DO_NOT_VALIDATE_LOOP = "do_not_validate_loop"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
 
+class InvalidRules(Exception):
+    """Exception that can be raised when domain is not valid."""
+
+    def __init__(self, message) -> None:
+        self.message = message
+
+    def __str__(self):
+        # return message in error colours
+        return rasa.shared.utils.io.wrap_with_color(
+            self.message, color=rasa.shared.utils.io.bcolors.FAIL
+        )
+
+
 class RulePolicy(MemoizationPolicy):
     """Policy which handles all the rules"""
 
+    # rules use explicit json strings
     ENABLE_FEATURE_STRING_COMPRESSION = False
+
+    # number of user inputs that is allowed in case rules are restricted
+    ALLOWED_NUMBER_OF_USER_INPUTS = 1
 
     @staticmethod
     def supported_data() -> SupportedData:
@@ -74,6 +92,7 @@ class RulePolicy(MemoizationPolicy):
         core_fallback_threshold: float = 0.3,
         core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         enable_fallback_prediction: bool = True,
+        restrict_rules: bool = True,
     ) -> None:
         """Create a `RulePolicy` object.
 
@@ -95,6 +114,7 @@ class RulePolicy(MemoizationPolicy):
         self._core_fallback_threshold = core_fallback_threshold
         self._fallback_action_name = core_fallback_action_name
         self._enable_fallback_prediction = enable_fallback_prediction
+        self._restrict_rules = restrict_rules
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
@@ -223,6 +243,23 @@ class RulePolicy(MemoizationPolicy):
                 lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
         return lookup
 
+    def _check_rule_trackers(self, rule_trackers):
+        bad_rules = []
+        for tracker in rule_trackers:
+            number_of_user_uttered = sum(
+                isinstance(event, UserUttered) for event in tracker.events
+            )
+            if number_of_user_uttered > self.ALLOWED_NUMBER_OF_USER_INPUTS:
+                bad_rules.append(tracker.sender_id)
+
+        if bad_rules:
+            raise InvalidRules(
+                f"Found rules {bad_rules} that contain more than "
+                f"{self.ALLOWED_NUMBER_OF_USER_INPUTS} user inputs. "
+                f"Rules are not meant to hardcode a state machine. "
+                f"Please use stories for these cases."
+            )
+
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
@@ -243,6 +280,9 @@ class RulePolicy(MemoizationPolicy):
             rule_trackers_as_states,
             rule_trackers_as_actions,
         ) = self.featurizer.training_states_and_actions(rule_trackers, domain)
+
+        if self._restrict_rules:
+            self._check_rule_trackers(rule_trackers)
 
         rules_lookup = self._create_lookup_from_states(
             rule_trackers_as_states, rule_trackers_as_actions
