@@ -1086,6 +1086,18 @@ components:
         this parsing information will be used.
       required: ["text"]
 
+    LatestAction:
+      type: object
+      properties:
+        action_name:
+          type: string
+          description: latest action name
+        action_text:
+          type: string
+          description: text of last bot utterance
+      description: >-
+        Latest bot action.
+
     Event:
       type: object
       properties:
@@ -1220,6 +1232,8 @@ components:
           type: string
           description: Name of last bot action
           example: action_listen
+        latest_action:
+          $ref: '#/components/schemas/LatestAction'
         active_loop:
           type: object
           description: Name of the active loop
