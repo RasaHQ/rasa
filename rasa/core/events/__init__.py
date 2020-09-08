@@ -83,7 +83,7 @@ def md_format_message(
 
 def first_key(d: Dict[Text, Any], default_key: Any) -> Any:
     if len(d) > 1:
-        for k in d.items():
+        for k in d.keys():
             if k != default_key:
                 # we return the first key that is not the default key
                 return k
