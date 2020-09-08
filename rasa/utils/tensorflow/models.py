@@ -680,15 +680,11 @@ class TransformerRasaModel(RasaModel):
     ) -> None:
         sparse = False
         dense = False
-        for is_sparse, feature_dimension in data_signature:
+        for is_sparse, _ in data_signature:
             if is_sparse:
                 sparse = True
             else:
                 dense = True
-                # TODO remove that, but need nlu experiments
-                # if dense features are present
-                # use the feature dimension of the dense features
-                dense_dim = feature_dimension
 
         if sparse:
             self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(

@@ -52,7 +52,6 @@ from rasa.utils.tensorflow.constants import (
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
-    DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -88,6 +87,7 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     SEQUENCE,
     SENTENCE,
+    DENSE_DIMENSION,
 )
 
 
@@ -171,9 +171,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
-        DENSE_DIMENSION: {TEXT: 512, LABEL: 20},
+        DENSE_DIMENSION: {TEXT: 128, LABEL: 20},
         # Default dimension to use for concatenating sequence and sentence features.
-        CONCAT_DIMENSION: {TEXT: 512, LABEL: 20},
+        CONCAT_DIMENSION: {TEXT: 128, LABEL: 20},
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
