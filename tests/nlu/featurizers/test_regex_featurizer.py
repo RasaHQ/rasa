@@ -75,7 +75,7 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer({})
-    message = Message(sentence, data={RESPONSE: sentence})
+    message = Message(data={TEXT: sentence, RESPONSE: sentence})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
@@ -139,7 +139,7 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     # adds tokens to the message
     component_config = {"name": "SpacyTokenizer"}
     tokenizer = SpacyTokenizer(component_config)
-    message = Message(sentence)
+    message = Message(data={TEXT: sentence})
     message.set("text_spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
@@ -176,7 +176,7 @@ def test_regex_featurizer_no_sequence(sentence, expected, expected_cls, spacy_nl
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer()
-    message = Message(sentence)
+    message = Message(data={TEXT: sentence})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
@@ -196,7 +196,7 @@ def test_regex_featurizer_train():
     featurizer = RegexFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "hey how are you today 19.12.2019 ?"
-    message = Message(sentence)
+    message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
     WhitespaceTokenizer().train(TrainingData([message]))
@@ -209,6 +209,10 @@ def test_regex_featurizer_train():
     expected_cls = np.array([1, 1, 1])
 
     seq_vecs, sen_vec = message.get_sparse_features(TEXT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert (6, 3) == seq_vecs.shape
     assert (1, 3) == sen_vec.shape
@@ -216,6 +220,10 @@ def test_regex_featurizer_train():
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
     seq_vecs, sen_vec = message.get_sparse_features(RESPONSE, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert (6, 3) == seq_vecs.shape
     assert (1, 3) == sen_vec.shape
@@ -223,6 +231,10 @@ def test_regex_featurizer_train():
     assert np.all(sen_vec.toarray()[-1] == expected_cls)
 
     seq_vecs, sen_vec = message.get_sparse_features(INTENT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vec:
+        sen_vec = sen_vec.features
 
     assert seq_vecs is None
     assert sen_vec is None
@@ -254,7 +266,7 @@ def test_regex_featurizer_case_sensitive(
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer()
-    message = Message(sentence)
+    message = Message(data={TEXT: sentence})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
