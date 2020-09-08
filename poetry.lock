@@ -3070,6 +3070,7 @@ transformers = ["transformers"]
 
 [metadata]
 content-hash = "24d096168f11e5ba8d004849e082468504c99ce3c98560e80289185b493c3a59"
+lock-version = "1.0"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
