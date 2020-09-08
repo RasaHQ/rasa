@@ -241,7 +241,7 @@ def test_domain_to_dict():
     config:
       store_entities_as_slots: true
     entities: []
-    forms: {}
+    forms: []
     intents: []
     responses:
       utter_greet:

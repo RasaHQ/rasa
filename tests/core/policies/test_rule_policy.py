@@ -149,7 +149,7 @@ async def test_predict_form_action_if_in_form():
       {REQUESTED_SLOT}:
         type: unfeaturized
     forms:
-      - {form_name}
+  - {form_name}
 """
     )
 
@@ -192,7 +192,7 @@ async def test_predict_form_action_if_multiple_turns():
       {REQUESTED_SLOT}:
         type: unfeaturized
     forms:
-      - {form_name}
+  - {form_name}
 """
     )
 
@@ -240,7 +240,7 @@ async def test_predict_action_listen_after_form():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+      - {form_name}
     """
     )
 
@@ -284,7 +284,7 @@ async def test_dont_predict_form_if_already_finished():
       {REQUESTED_SLOT}:
         type: unfeaturized
     forms:
-      - {form_name}
+    - {form_name}
 """
     )
 
@@ -334,7 +334,7 @@ async def test_form_unhappy_path():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -379,7 +379,7 @@ async def test_form_unhappy_path_from_general_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -434,7 +434,7 @@ async def test_form_unhappy_path_from_in_form_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -507,7 +507,7 @@ async def test_form_unhappy_path_from_story():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -577,7 +577,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -664,7 +664,7 @@ async def test_form_unhappy_path_no_validation_from_story():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -730,7 +730,7 @@ async def test_form_unhappy_path_without_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -773,7 +773,7 @@ async def test_form_activation_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -812,7 +812,7 @@ async def test_failing_form_activation_due_to_no_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -850,7 +850,7 @@ def test_form_submit_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
     """
     )
 
@@ -905,7 +905,7 @@ def test_immediate_submit():
           {slot}:
             type: unfeaturized
         forms:
-          - {form_name}
+        - {form_name}
         entities:
         - {entity}
     """

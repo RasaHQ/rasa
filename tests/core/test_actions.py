@@ -706,7 +706,7 @@ def test_get_form_action_without_slot_mapping():
     actions:
     - my_action
     forms:
-      {form_action_name}: {{}}
+    - {form_action_name}
     """
     )
 

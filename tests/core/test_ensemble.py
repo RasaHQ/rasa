@@ -174,7 +174,7 @@ def test_fallback_mapping_restart():
 def test_mapping_wins_over_form(events: List[Event]):
     domain = """
     forms:
-      test-form: {}
+    - test-form
     """
     domain = Domain.from_yaml(domain)
     tracker = DialogueStateTracker.from_events("test", events, [])
@@ -216,7 +216,7 @@ def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
     form_name = "test-form"
     domain = f"""
     forms:
-      - {form_name}
+    - {form_name}
     """
     domain = Domain.from_yaml(domain)
 
