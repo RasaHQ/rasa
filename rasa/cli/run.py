@@ -48,7 +48,7 @@ def run_actions(args: argparse.Namespace):
     import rasa_sdk.__main__ as sdk
 
     args.actions = args.actions or DEFAULT_ACTIONS_PATH
-
+    print("running actions at", args.actions)
     sdk.main_from_args(args)
 
 
