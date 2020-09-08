@@ -2,22 +2,21 @@ const path = require('path');
 const { remarkProgramOutput } = require('./plugins/program_output');
 const { rehypePlugins, remarkPlugins } = require('@rasahq/docusaurus-theme-tabula');
 
-const isDev = process.env.NODE_ENV === 'development';
 
-// FIXME: when deploying this for real, change to '/docs/rasa/'
+// FIXME: remove "next/" when releasing + remove the "next/" in
+// http://github.com/RasaHQ/rasa-website/blob/master/netlify.toml
 const BASE_URL = '/docs/rasa/next/';
 const SITE_URL = 'https://rasa.com';
 
-// this allows switching doc sites in development
+// NOTE: this allows switching between local dev instances of rasa/rasa-x
+const isDev = process.env.NODE_ENV === 'development';
 const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
+/* VERSIONING: WIP */
+
+const routeBasePath = '/';
 let versions = [];
-try {
-  versions = require('./versions.json');
-} catch (ex) {
-  // Nothing to do here, in dev mode, only
-  // one version of the doc is available
-}
+try { versions = require('./versions.json'); } catch (ex) { console.info('no versions.json file found; assuming dev mode.') }
 
 const legacyVersion = {
   label: 'Legacy 1.x',
@@ -29,34 +28,32 @@ const allVersions = {
   label: 'Versions',
   to: '/', // "fake" link
   position: 'left',
-  items:
-    versions.length > 0
-      ? [
-          {
-            label: versions[0],
-            to: '/',
-            activeBaseRegex: versions[0],
-          },
-          ...versions.slice(1).map((version) => ({
-            label: version,
-            to: `${version}/`,
-            activeBaseRegex: version,
-          })),
-          {
-            label: 'Master/Unreleased',
-            to: 'next/',
-            activeBaseRegex: `next`,
-          },
-          legacyVersion,
-        ]
-      : [
-          {
-            label: 'Master/Unreleased',
-            to: '/',
-            activeBaseRegex: `/`,
-          },
-          legacyVersion,
-        ],
+  items: versions.length > 0 ? [
+    {
+      label: versions[0],
+      to: '/',
+      activeBaseRegex: versions[0],
+    },
+    ...versions.slice(1).map((version) => ({
+      label: version,
+      to: `${version}/`,
+      activeBaseRegex: version,
+    })),
+    {
+      label: 'Master/Unreleased',
+      to: 'next/',
+      activeBaseRegex: `next`,
+    },
+    legacyVersion,
+  ]
+: [
+    {
+      label: 'Master/Unreleased',
+      to: '/',
+      activeBaseRegex: `/`,
+    },
+    legacyVersion,
+  ],
 }
 
 module.exports = {
@@ -85,41 +82,15 @@ module.exports = {
       },
       items: [
         {
-          href: `${SITE_URL}/docs/rasa-overview/`,
-          label: 'Overview of Rasa',
-          position: 'left',
-          target: '_self',
-        },
-        {
           label: 'Rasa Open Source',
-          to: path.join('/', BASE_URL), // for purpose of route match styling
+          to: path.join('/', BASE_URL),
           position: 'left',
-          items: [
-            {
-              to: path.join('/', BASE_URL),
-              label: 'Usage',
-            },
-            {
-              to: path.join('/', BASE_URL, 'api'),
-              label: 'API',
-            },
-          ],
         },
         {
           label: 'Rasa X',
           position: 'left',
-          items: [
-            {
-              href: `${SWAP_URL}/docs/rasa-x/next/`,
-              label: 'Usage',
-              target: '_self',
-            },
-            {
-              href: `${SWAP_URL}/docs/rasa-x/next/api`,
-              label: 'API',
-              target: '_self',
-            },
-          ],
+          href: `${SWAP_URL}/docs/rasa-x/next/`,
+          target: '_self',
         },
         {
           target: '_self',
@@ -135,9 +106,6 @@ module.exports = {
         },
       ],
     },
-    // prism: {
-    //   theme: require('prism-react-renderer/themes/oceanicNext')
-    // },
     footer: {
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
@@ -151,7 +119,7 @@ module.exports = {
   ],
   plugins: [
     ['@docusaurus/plugin-content-docs/', {
-      routeBasePath: '/',
+      routeBasePath,
       sidebarPath: require.resolve('./sidebars.js'),
       editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
       showLastUpdateTime: true,
@@ -163,16 +131,6 @@ module.exports = {
         ...remarkPlugins,
         remarkProgramOutput,
       ],
-      /*
-        VERSIONING
-        TODO: figure out these options (new since alpha 62)
-      */
-      // excludeNextVersionDocs: false,
-      // includeCurrentVersion: true,
-      // disableVersioning: false,
-      // lastVersion: undefined,
-      // onlyIncludeVersions: undefined,
-      versions: {},
     }],
     ['@docusaurus/plugin-content-pages', {}],
     ['@docusaurus/plugin-sitemap',
@@ -181,18 +139,6 @@ module.exports = {
         changefreq: 'weekly',
         priority: 0.5,
       }],
-    /*
-    TODO: configure this plugin:
-    https://v2.docusaurus.io/docs/using-plugins#docusaurusplugin-ideal-image
-     */
-    ['@docusaurus/plugin-ideal-image', {}],
-    /*
-    TODO: configure this plugin:
-    https://v2.docusaurus.io/docs/using-plugins#docusaurusplugin-client-redirects
-     */
-    // ['@docusaurus/plugin-client-redirects', {
-    //   fromExtensions: ['html', 'htm']
-    // }],
     isDev && ['@docusaurus/plugin-debug', {}],
     [path.resolve(__dirname, './plugins/google-tagmanager'), {}],
   ].filter(Boolean),
