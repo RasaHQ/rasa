@@ -1094,11 +1094,7 @@ components:
           description: latest action name
         action_text:
           type: string
-<<<<<<< HEAD
-          description: latest action text
-=======
           description: text of last bot utterance
->>>>>>> master
       description: >-
         Latest bot action.
 
