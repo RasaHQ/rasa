@@ -14,18 +14,10 @@ from rasa.cli.utils import (
     print_warning,
 )
 from rasa.constants import DEFAULT_DATA_PATH
-from rasa.core.training.converters.story_markdown_to_yaml_converter import (
-    StoryMarkdownToYamlConverter,
-)
+
 from rasa.data import is_valid_filetype
 from rasa.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data
-from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
-    NLGMarkdownToYamlConverter,
-)
-from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
-    NLUMarkdownToYamlConverter,
-)
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
 
@@ -231,6 +223,10 @@ def _validate_story_structure(validator: Validator, args: argparse.Namespace) ->
 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
+    from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
+        NLUMarkdownToYamlConverter,
+    )
+
     if args.format in ["json", "md"]:
         convert_training_data(args.data, args.out, args.format, args.language)
     elif args.format == "yaml":
@@ -243,6 +239,10 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
 
 
 def _convert_core_data(args: argparse.Namespace) -> None:
+    from rasa.core.training.converters.story_markdown_to_yaml_converter import (
+        StoryMarkdownToYamlConverter,
+    )
+
     if args.format == "yaml":
         _convert_to_yaml(args, StoryMarkdownToYamlConverter())
     else:
@@ -253,6 +253,10 @@ def _convert_core_data(args: argparse.Namespace) -> None:
 
 
 def _convert_nlg_data(args: argparse.Namespace) -> None:
+    from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
+        NLGMarkdownToYamlConverter,
+    )
+
     if args.format == "yaml":
         _convert_to_yaml(args, NLGMarkdownToYamlConverter())
     else:
