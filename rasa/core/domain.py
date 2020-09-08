@@ -19,6 +19,7 @@ from rasa.constants import (
     DOMAIN_SCHEMA_FILE,
     DOCS_URL_DOMAINS,
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+    DOCS_URL_FORMS,
 )
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
@@ -259,9 +260,6 @@ class Domain:
         combined[KEY_INTENTS] = merge_lists_of_dicts(
             combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
         )
-        combined[KEY_FORMS] = merge_lists_of_dicts(
-            combined[KEY_FORMS], domain_dict[KEY_FORMS], override
-        )
 
         # remove existing forms from new actions
         for form in combined[KEY_FORMS]:
@@ -271,7 +269,7 @@ class Domain:
         for key in [KEY_ENTITIES, KEY_ACTIONS]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
-        for key in [KEY_RESPONSES, KEY_SLOTS]:
+        for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
@@ -412,7 +410,7 @@ class Domain:
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
-        forms: List[Union[Text, Dict]],
+        forms: Union[Dict[Text, Any], List[Text]],
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
@@ -420,14 +418,9 @@ class Domain:
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
 
-        # Forms used to be a list of form names. Now they can also contain
-        # `SlotMapping`s
-        if not forms or (forms and isinstance(forms[0], str)):
-            self.form_names = forms
-            self.forms: List[Dict] = [{form_name: {}} for form_name in forms]
-        elif isinstance(forms[0], dict):
-            self.forms: List[Dict] = forms
-            self.form_names = [list(f.keys())[0] for f in forms]
+        self.forms = {}
+        self.form_names = []
+        self._initialize_forms(forms)
 
         self.slots = slots
         self.templates = templates
@@ -446,6 +439,32 @@ class Domain:
 
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
+
+    def _initialize_forms(self, forms: Union[Dict[Text, Any], List[Text]]) -> None:
+        """Initialize the domain's `form` attributes.
+
+        Args:
+            forms: Form names (type: list) or a form dictionary. Forms provided in
+                dictionary format have the form names as keys, and either empty
+                dictionaries as values, or objects containing `SlotMapping`s.
+        """
+        if not forms:
+            # empty dict or empty list
+            return
+        elif isinstance(forms, dict):
+            # dict with slot mappings
+            self.forms: Dict[Text, Any] = forms
+            self.form_names = list(forms.keys())
+        elif isinstance(forms, list) and isinstance(forms[0], str):
+            # list of form names
+            self.forms: Dict[Text, Any] = {form_name: {} for form_name in forms}
+            self.form_names = forms
+        else:
+            rasa.shared.utils.io.raise_warning(
+                f"The `forms` section in the domain needs to contain a dictionary. "
+                f"Instead found an object of type '{type(forms)}'.",
+                docs=DOCS_URL_FORMS,
+            )
 
     def __hash__(self) -> int:
         self_as_dict = self.as_dict()
@@ -1137,7 +1156,7 @@ class Domain:
 
         return False
 
-    def slot_mapping_for_form(self, form_name: Text) -> Dict:
+    def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
         """Retrieve the slot mappings for a form which are defined in the domain.
 
         Options:
@@ -1153,9 +1172,7 @@ class Domain:
         Returns:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
-        return next(
-            (form[form_name] for form in self.forms if form_name in form.keys()), {}
-        )
+        return self.forms.get(form_name, {})
 
 
 class TemplateDomain(Domain):
