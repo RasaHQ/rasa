@@ -5,7 +5,6 @@ from unittest.mock import Mock, ANY
 
 import requests
 import time
-import tempfile
 import uuid
 
 from typing import List, Text, Type, Generator, NoReturn, Dict
@@ -18,6 +17,8 @@ import pytest
 from freezegun import freeze_time
 from mock import MagicMock
 from multiprocessing import Process, Manager
+
+from rasa.validator import KEY_TRAINING_DATA_FORMAT_VERSION
 
 import rasa
 import rasa.constants
@@ -192,6 +193,7 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
     def send_request() -> None:
         payload = ""
         project_path = Path("examples") / "formbot"
+
         for file in [
             "domain.yml",
             "config.yml",
@@ -200,8 +202,21 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
             Path("data") / "nlu.yml",
         ]:
             full_path = project_path / file
-            payload += full_path.read_text()
+            content = full_path.read_text()
 
+            # Remove "version: 2.0" from each file as this will lead to a YAML error
+            # to multiple specification of the same key, when concatenating the file.
+            content_lines = content.split("\n")
+            content_lines = [
+                line
+                for line in content_lines
+                if not line.startswith(KEY_TRAINING_DATA_FORMAT_VERSION)
+            ]
+            payload += "\n".join(content_lines)
+
+        training_data_version = f'{KEY_TRAINING_DATA_FORMAT_VERSION}: "{rasa.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"'
+
+        payload += f"\n{training_data_version}"
         response = requests.post(
             "http://localhost:5005/model/train",
             data=payload,
@@ -243,7 +258,10 @@ def test_train_status_is_not_blocked_by_training(
     training_request.start()
 
     # Wait until the blocking training function was called
-    while shared_statuses.get("started_training") is not True:
+    start = time.time()
+    while (
+        shared_statuses.get("started_training") is not True and time.time() - start < 60
+    ):
         time.sleep(1)
 
     # Check if the number of currently running trainings was incremented
