@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
 from rasa.core import jobs
 from rasa.core.actions.action import (
@@ -41,7 +42,6 @@ from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils import common as common_utils
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ class MessageProcessor:
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction "
                 "and execution.",
                 docs=DOCS_URL_POLICIES,
@@ -115,7 +115,7 @@ class MessageProcessor:
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction."
                 "You should set a policy before training a model.",
                 docs=DOCS_URL_POLICIES,
@@ -224,9 +224,6 @@ class MessageProcessor:
         processing and saved at a later stage.
         """
 
-        # preprocess message if necessary
-        if self.message_preprocessor is not None:
-            message.text = self.message_preprocessor(message.text)
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.get_tracker_with_session_start(
@@ -386,7 +383,7 @@ class MessageProcessor:
         elif not entities:
             entity_list = []
         else:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Invalid entity specification: {entities}. Assuming no entities."
             )
             entity_list = []
@@ -420,7 +417,7 @@ class MessageProcessor:
 
         intent = parse_data["intent"][INTENT_NAME_KEY]
         if intent and intent not in self.domain.intents:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Interpreter parsed an intent '{intent}' "
                 f"which is not defined in the domain. "
                 f"Please make sure all intents are listed in the domain.",
@@ -431,7 +428,7 @@ class MessageProcessor:
         for element in entities:
             entity = element["entity"]
             if entity and entity not in self.domain.entities:
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Interpreter parsed an entity '{entity}' "
                     f"which is not defined in the domain. "
                     f"Please make sure all entities are listed in the domain.",
@@ -441,17 +438,34 @@ class MessageProcessor:
     def _get_action(self, action_name) -> Optional[Action]:
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
-    async def _parse_message(self, message, tracker: DialogueStateTracker = None):
+    async def parse_message(
+        self, message: UserMessage, tracker: Optional[DialogueStateTracker] = None
+    ) -> Dict[Text, Any]:
+        """Interprete the passed message using the NLU interpreter.
+
+        Arguments:
+            message: Message to handle
+            tracker: Dialogue context of the message
+
+        Returns:
+            Parsed data extracted from the message.
+        """
+        # preprocess message if necessary
+        if self.message_preprocessor is not None:
+            text = self.message_preprocessor(message.text)
+        else:
+            text = message.text
+
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
-        if message.text.startswith(INTENT_MESSAGE_PREFIX):
+        if text.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(
-                message.text, message.message_id, tracker
+                text, message.message_id, tracker
             )
         else:
             parse_data = await self.interpreter.parse(
-                message.text, message.message_id, tracker, metadata=message.metadata,
+                text, message.message_id, tracker, metadata=message.metadata
             )
 
         logger.debug(
@@ -472,7 +486,7 @@ class MessageProcessor:
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = await self._parse_message(message, tracker)
+            parse_data = await self.parse_message(message, tracker)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
@@ -686,7 +700,7 @@ class MessageProcessor:
                     if e.key == REQUESTED_SLOT and tracker.active_loop:
                         pass
                     else:
-                        common_utils.raise_warning(
+                        rasa.shared.utils.io.raise_warning(
                             f"Action '{action_name}' set a slot type '{e.key}' which "
                             f"it never set during the training. This "
                             f"can throw off the prediction. Make sure to "

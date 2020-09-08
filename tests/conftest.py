@@ -48,6 +48,10 @@ DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.yml"
 pytest_plugins = ["pytester"]
 
 
+# these tests are run separately
+collect_ignore_glob = ["docs/*.py"]
+
+
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
@@ -246,6 +250,17 @@ async def rasa_server_without_api() -> Sanic:
     app = rasa.core.run._create_app_without_api()
     channel.register([RestInput()], app, "/webhooks/")
     return app
+
+
+@pytest.fixture(scope="session")
+def project() -> Text:
+    import tempfile
+    from rasa.cli.scaffold import create_initial_project
+
+    directory = tempfile.mkdtemp()
+    create_initial_project(directory)
+
+    return directory
 
 
 def get_test_client(server: Sanic) -> SanicTestClient:

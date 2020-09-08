@@ -13,12 +13,16 @@ def test_spacy_featurizer_cls_vector(spacy_nlp):
     featurizer = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today"
-    message = Message(sentence)
+    message = Message(data={TEXT: sentence})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
 
     featurizer._set_spacy_features(message)
 
     seq_vecs, sen_vecs = message.get_dense_features(TEXT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vecs:
+        sen_vecs = sen_vecs.features
 
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
@@ -97,14 +101,19 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
 
     ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
-    greet = {"intent": "greet", "text_features": [0.5]}
+    greet = {TEXT: sentence, "intent": "greet", "text_features": [0.5]}
 
-    message = Message(sentence, greet)
+    message = Message(data=greet)
     message.set(SPACY_DOCS[TEXT], doc)
 
     ftr._set_spacy_features(message)
 
     seq_vecs, sen_vecs = message.get_dense_features(TEXT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vecs:
+        sen_vecs = sen_vecs.features
+
     vecs = seq_vecs[0][:5]
 
     assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
@@ -124,8 +133,8 @@ def test_spacy_featurizer_casing(spacy_nlp):
 
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:
-        doc = spacy_nlp(e.text)
-        doc_capitalized = spacy_nlp(e.text.capitalize())
+        doc = spacy_nlp(e.get(TEXT))
+        doc_capitalized = spacy_nlp(e.get(TEXT).capitalize())
 
         vecs = ftr._features_for_doc(doc)
         vecs_capitalized = ftr._features_for_doc(doc_capitalized)
@@ -142,7 +151,7 @@ def test_spacy_featurizer_train(spacy_nlp):
     featurizer = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today"
-    message = Message(sentence)
+    message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
@@ -154,6 +163,10 @@ def test_spacy_featurizer_train(spacy_nlp):
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
 
     seq_vecs, sen_vecs = message.get_dense_features(TEXT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vecs:
+        sen_vecs = sen_vecs.features
 
     assert 5 == len(seq_vecs)
     assert 1 == len(sen_vecs)
@@ -161,6 +174,10 @@ def test_spacy_featurizer_train(spacy_nlp):
     assert np.allclose(sen_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sen_vecs = message.get_dense_features(RESPONSE, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vecs:
+        sen_vecs = sen_vecs.features
 
     assert 5 == len(seq_vecs)
     assert 1 == len(sen_vecs)
@@ -168,6 +185,10 @@ def test_spacy_featurizer_train(spacy_nlp):
     assert np.allclose(sen_vecs[-1][:5], expected_cls, atol=1e-5)
 
     seq_vecs, sen_vecs = message.get_dense_features(INTENT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vecs:
+        sen_vecs = sen_vecs.features
 
     assert seq_vecs is None
     assert sen_vecs is None
@@ -184,12 +205,16 @@ def test_spacy_featurizer_using_empty_model():
 
     ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
-    message = Message(sentence)
+    message = Message(data={TEXT: sentence})
     message.set(SPACY_DOCS[TEXT], doc)
 
     ftr._set_spacy_features(message)
 
     seq_vecs, sen_vecs = message.get_dense_features(TEXT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vecs:
+        sen_vecs = sen_vecs.features
 
     assert seq_vecs is None
     assert sen_vecs is None

@@ -10,6 +10,7 @@ from dateutil import parser
 from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
 
+import rasa.shared.utils.common
 from rasa.core import utils
 from typing import Union
 
@@ -17,8 +18,21 @@ from rasa.core.constants import (
     IS_EXTERNAL,
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    LOOP_VALIDATE,
+    LOOP_NAME,
 )
-from rasa.nlu.constants import INTENT_NAME_KEY
+
+
+from rasa.nlu.constants import (
+    INTENT,
+    TEXT,
+    ACTION_NAME,
+    ACTION_TEXT,
+    ENTITIES,
+    INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -56,18 +70,27 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
     return [e for e in entities if isinstance(e, dict)]
 
 
-def md_format_message(text, intent, entities) -> Text:
-    from rasa.nlu.training_data.formats import MarkdownReader
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+def md_format_message(
+    text: Text, intent: Optional[Text], entities: Union[Text, List[Any]]
+) -> Text:
+    """Uses NLU parser information to generate a message with inline entity annotations.
 
-    message_from_md = MarkdownReader().parse_training_example(text)
+    Arguments:
+        text: text of the message
+        intent: intent of the message
+        entities: entities of the message
+
+    Return:
+        Message with entities annotated inline, e.g.
+        `I am from [Berlin]{"entity": "city"}`.
+    """
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.nlu.training_data import entities_parser
+
+    message_from_md = entities_parser.parse_training_example(text, intent)
     deserialised_entities = deserialise_entities(entities)
     return TrainingDataWriter.generate_message(
-        {
-            "text": message_from_md.text,
-            "intent": intent,
-            "entities": deserialised_entities,
-        }
+        {"text": message_from_md.get(TEXT), "entities": deserialised_entities}
     )
 
 
@@ -186,7 +209,7 @@ class Event:
         """Returns a slots class by its type name."""
         from rasa.core import utils
 
-        for cls in utils.all_subclasses(Event):
+        for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
         if type_name == "topic":
@@ -218,7 +241,7 @@ class UserUttered(Event):
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
-    ):
+    ) -> None:
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
@@ -227,16 +250,16 @@ class UserUttered(Event):
 
         super().__init__(timestamp, metadata)
 
+        self.parse_data = {
+            "intent": self.intent,
+            "entities": self.entities,
+            "text": text,
+            "message_id": self.message_id,
+            "metadata": self.metadata,
+        }
+
         if parse_data:
-            self.parse_data = parse_data
-        else:
-            self.parse_data = {
-                "intent": self.intent,
-                "entities": self.entities,
-                "text": text,
-                "message_id": self.message_id,
-                "metadata": self.metadata,
-            }
+            self.parse_data.update(**parse_data)
 
     @staticmethod
     def _from_parse_data(
@@ -267,17 +290,21 @@ class UserUttered(Event):
             )
         )
 
-    def __eq__(self, other) -> bool:
+    @property
+    def intent_name(self) -> Optional[Text]:
+        return self.intent.get(INTENT_NAME_KEY)
+
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, UserUttered):
             return False
         else:
             return (
                 self.text,
-                self.intent.get(INTENT_NAME_KEY),
+                self.intent_name,
                 [jsonpickle.encode(ent) for ent in self.entities],
             ) == (
                 other.text,
-                other.intent.get(INTENT_NAME_KEY),
+                other.intent_name,
                 [jsonpickle.encode(ent) for ent in other.entities],
             )
 
@@ -289,6 +316,9 @@ class UserUttered(Event):
     @staticmethod
     def empty() -> "UserUttered":
         return UserUttered(None)
+
+    def is_empty(self) -> bool:
+        return not self.text and not self.intent_name and not self.entities
 
     def as_dict(self) -> Dict[Text, Any]:
         _dict = super().as_dict()
@@ -302,6 +332,25 @@ class UserUttered(Event):
             }
         )
         return _dict
+
+    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+        """Turns a UserUttered event into a substate containing information about entities,
+        intent and text of the UserUttered
+        Returns:
+            a dictionary with intent name, text and entities
+        """
+        entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
+        out = {}
+        # During training we expect either intent_name or text to be set.
+        # During prediction both will be set.
+        if self.intent_name:
+            out[INTENT] = self.intent_name
+        if self.text:
+            out[TEXT] = self.text
+        if entities:
+            out[ENTITIES] = entities
+
+        return out
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -320,10 +369,15 @@ class UserUttered(Event):
             raise ValueError(f"Failed to parse bot uttered event. {e}")
 
     def as_story_string(self, e2e: bool = False) -> Text:
+        # TODO figure out how to print if TED chose to use text,
+        #  during prediction there will be always intent
         if self.intent:
             if self.entities:
                 ent_string = json.dumps(
-                    {ent["entity"]: ent["value"] for ent in self.entities},
+                    {
+                        entity[ENTITY_ATTRIBUTE_TYPE]: entity[ENTITY_ATTRIBUTE_VALUE]
+                        for entity in self.entities
+                    },
                     ensure_ascii=False,
                 )
             else:
@@ -333,7 +387,9 @@ class UserUttered(Event):
                 intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
             )
             if e2e:
-                message = md_format_message(self.text, self.intent, self.entities)
+                message = md_format_message(
+                    self.text, self.intent.get(INTENT_NAME_KEY), self.entities
+                )
                 return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
             else:
                 return parse_string
@@ -617,7 +673,7 @@ class ReminderScheduled(Event):
         kill_on_user_message: bool = True,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         """Creates the reminder
 
         Args:
@@ -719,7 +775,7 @@ class ReminderCancelled(Event):
         entities: Optional[List[Dict]] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         """Creates a ReminderCancelled event.
 
         If all arguments are `None`, this will cancel all reminders.
@@ -847,7 +903,7 @@ class StoryExported(Event):
         path: Optional[Text] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
-    ):
+    ) -> None:
         self.path = path
         super().__init__(timestamp, metadata)
 
@@ -984,7 +1040,8 @@ class ActionExecuted(Event):
     """An operation describes an action taken + its result.
 
     It comprises an action and a list of events. operations will be appended
-    to the latest ``Turn`` in the ``Tracker.turns``."""
+    to the latest `Turn`` in `Tracker.turns`.
+    """
 
     type_name = "action"
 
@@ -995,11 +1052,14 @@ class ActionExecuted(Event):
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
-    ):
+        action_text: Optional[Text] = None,
+    ) -> None:
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
+        self.action_text = action_text
+
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
@@ -1014,7 +1074,11 @@ class ActionExecuted(Event):
         if not isinstance(other, ActionExecuted):
             return False
         else:
-            return self.action_name == other.action_name
+            equal = self.action_name == other.action_name
+            if hasattr(self, "action_text") and hasattr(other, "action_text"):
+                equal = equal and self.action_text == other.action_text
+
+            return equal
 
     def as_story_string(self) -> Text:
         return self.action_name
@@ -1029,12 +1093,13 @@ class ActionExecuted(Event):
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
+                parameters.get("action_text"),
             )
         ]
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        policy = None  # for backwards compatibility (persisted evemts)
+        policy = None  # for backwards compatibility (persisted events)
         if hasattr(self, "policy"):
             policy = self.policy
         confidence = None
@@ -1044,9 +1109,19 @@ class ActionExecuted(Event):
         d.update({"name": self.action_name, "policy": policy, "confidence": confidence})
         return d
 
-    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+    def as_sub_state(self) -> Dict[Text, Text]:
+        """Turns ActionExecuted into a dictionary containing action name or action text.
+        One action cannot have both set at the same time
+        Returns:
+            a dictionary containing action name or action text with the corresponding key
+        """
+        if self.action_name:
+            return {ACTION_NAME: self.action_name}
+        else:
+            return {ACTION_TEXT: self.action_text}
 
-        tracker.set_latest_action_name(self.action_name)
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        tracker.set_latest_action(self.as_sub_state())
         tracker.clear_followup_action()
 
 
@@ -1115,12 +1190,11 @@ class AgentUttered(Event):
             raise ValueError(f"Failed to parse agent uttered event. {e}")
 
 
-class Form(Event):
-    """If `name` is not None: activates a form with `name`
-        else deactivates active form
+class ActiveLoop(Event):
+    """If `name` is not None: activates a loop with `name` else deactivates active loop.
     """
 
-    type_name = "form"
+    type_name = "active_loop"
 
     def __init__(
         self,
@@ -1132,27 +1206,27 @@ class Form(Event):
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
-        return f"Form({self.name})"
+        return f"Loop({self.name})"
 
     def __hash__(self) -> int:
         return hash(self.name)
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, Form):
+        if not isinstance(other, ActiveLoop):
             return False
         else:
             return self.name == other.name
 
     def as_story_string(self) -> Text:
-        props = json.dumps({"name": self.name})
-        return f"{self.type_name}{props}"
+        props = json.dumps({LOOP_NAME: self.name})
+        return f"{ActiveLoop.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters) -> List["Form"]:
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> List["ActiveLoop"]:
         """Called to convert a parsed story line into an event."""
         return [
-            Form(
-                parameters.get("name"),
+            ActiveLoop(
+                parameters.get(LOOP_NAME),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
             )
@@ -1160,16 +1234,33 @@ class Form(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update({"name": self.name})
+        d.update({LOOP_NAME: self.name})
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker.change_form_to(self.name)
+        tracker.change_loop_to(self.name)
+
+
+class LegacyForm(ActiveLoop):
+    """Legacy handler of old `Form` events.
+
+    The `ActiveLoop` event used to be called `Form`. This class is there to handle old
+    legacy events which were stored with the old type name `form`.
+    """
+
+    type_name = "form"
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
+        # event type.
+        d["event"] = ActiveLoop.type_name
+        return d
 
 
 class FormValidation(Event):
-    """Event added by FormPolicy to notify form action
-        whether or not to validate the user input"""
+    """Event added by FormPolicy and RulePolicy to notify form action
+       whether or not to validate the user input."""
 
     type_name = "form_validation"
 
@@ -1197,14 +1288,14 @@ class FormValidation(Event):
     @classmethod
     def _from_parameters(cls, parameters) -> "FormValidation":
         return FormValidation(
-            parameters.get("validate"),
+            parameters.get(LOOP_VALIDATE),
             parameters.get("timestamp"),
             parameters.get("metadata"),
         )
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update({"validate": self.validate})
+        d.update({LOOP_VALIDATE: self.validate})
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
@@ -1291,7 +1382,6 @@ class SessionStarted(Event):
         logger.warning(
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
-        return None
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         # noinspection PyProtectedMember

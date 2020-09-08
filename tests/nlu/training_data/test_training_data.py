@@ -1,10 +1,16 @@
+import asyncio
+from pathlib import Path
 from typing import Text
 
 import pytest
 
 import rasa.utils.io as io_utils
+from rasa.core.domain import Domain
+from rasa.core.events import UserUttered, ActionExecuted
+from rasa.core.training.structures import StoryStep, StoryGraph
+from rasa.importers.importer import TrainingDataImporter, E2EImporter
 from rasa.nlu import training_data
-from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
+from rasa.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -159,19 +165,21 @@ def test_demo_data(files):
 def test_demo_data_filter_out_retrieval_intents(files):
     from rasa.importers.utils import training_data_from_paths
 
-    td = training_data_from_paths(files, language="en")
-    assert len(td.training_examples) == 46
+    training_data = training_data_from_paths(files, language="en")
+    assert len(training_data.training_examples) == 46
 
-    td1 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is None)
-    assert len(td1.training_examples) == 42
-
-    td2 = td.filter_training_examples(
-        lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is not None
+    training_data_filtered = training_data.filter_training_examples(
+        lambda ex: ex.get(INTENT_RESPONSE_KEY) is None
     )
-    assert len(td2.training_examples) == 4
+    assert len(training_data_filtered.training_examples) == 42
+
+    training_data_filtered_2 = training_data.filter_training_examples(
+        lambda ex: ex.get(INTENT_RESPONSE_KEY) is not None
+    )
+    assert len(training_data_filtered_2.training_examples) == 4
 
     # make sure filtering operation doesn't mutate the source training data
-    assert len(td.training_examples) == 46
+    assert len(training_data.training_examples) == 46
 
 
 @pytest.mark.parametrize(
@@ -222,11 +230,11 @@ def test_train_test_split_with_random_seed(filepaths):
 
     td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
     td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
-    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
-    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
+    train_1_intent_examples = [e.get(TEXT) for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.get(TEXT) for e in td_train_2.intent_examples]
 
-    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
-    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+    test_1_intent_examples = [e.get(TEXT) for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.get(TEXT) for e in td_test_2.intent_examples]
 
     assert train_1_intent_examples == train_2_intent_examples
     assert test_1_intent_examples == test_2_intent_examples
@@ -292,7 +300,9 @@ def test_repeated_entities(tmp_path):
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    start, end = MitieEntityExtractor.find_entity(
+        entities[0], example.get(TEXT), tokens
+    )
     assert start == 9
     assert end == 10
 
@@ -325,7 +335,9 @@ def test_multiword_entities(tmp_path):
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    start, end = MitieEntityExtractor.find_entity(
+        entities[0], example.get(TEXT), tokens
+    )
     assert start == 4
     assert end == 7
 
@@ -548,3 +560,37 @@ def test_custom_attributes(tmp_path):
     assert len(td.training_examples) == 1
     example = td.training_examples[0]
     assert example.get("sentiment") == 0.8
+
+
+async def test_without_additional_e2e_examples(tmp_path: Path):
+    domain_path = tmp_path / "domain.yml"
+    domain_path.write_text(Domain.empty().as_yaml())
+
+    config_path = tmp_path / "config.yml"
+    config_path.touch()
+
+    existing = TrainingDataImporter.load_from_dict(
+        {}, str(config_path), str(domain_path), []
+    )
+
+    stories = StoryGraph(
+        [
+            StoryStep(
+                events=[
+                    UserUttered("greet_from_stories", {"name": "greet_from_stories"}),
+                    ActionExecuted("utter_greet_from_stories"),
+                ]
+            )
+        ]
+    )
+
+    # Patch to return our test stories
+    existing.get_stories = asyncio.coroutine(lambda *args: stories)
+
+    importer = E2EImporter(existing)
+
+    training_data = await importer.get_nlu_data()
+
+    assert training_data.training_examples
+    assert training_data.is_empty()
+    assert not training_data.without_empty_e2e_examples().training_examples

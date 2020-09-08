@@ -54,8 +54,20 @@ Currently, the latest training data format specification for Rasa 2.x is 2.0.
 
 Here's a short example which keeps all training data in a single file:
 
-```yaml
+```yaml-rasa
 version: "2.0"
+
+nlu:
+- intent: greet
+  examples: |
+    - Hey
+    - Hi
+    - hey there [Sara](name)
+
+- intent: faq/language
+  examples: |
+    - What language do you speak?
+    - Do you only handle english?
 
 stories:
 - story: greet and faq
@@ -71,29 +83,23 @@ rules:
   - intent: greet
   - action: utter_greet
 
-nlu:
-- intent: greet
-  examples: |
-  - Hey
-  - Hi
-  - hey there [Sara](name)
-
-- intent: faq/language
-  examples: |
-  - What language do you speak?
-  - Do you only handle english?
-
-e2e_tests:
-- user: |
-    hey
-  intent: greet
-- action: utter_greet
-- user: |
-    what language do you speak
-  intent: faq/language
-- action: respond_faq
 ```
 
+If you want to specify your test stories, you need to put them into a separate file:
+```yaml-rasa title="tests/test_stories.yml"
+stories:
+- story: greet and ask language
+- steps:
+  - user: |
+      hey
+    intent: greet
+  - action: utter_greet
+  - user: |
+      what language do you speak
+    intent: faq/language
+  - action: respond_faq
+```
+They use the same format as the story training data.
 
 ## NLU Training Data
 
@@ -101,7 +107,7 @@ e2e_tests:
 **intent**, i.e. what the user is trying to convey or accomplish with their
 message. Training examples can also include **entities**. Entities are structured
 pieces of information that can be extracted from a user's message. You can also
-add extra information such as regular expressions and lookup tables to your 
+add extra information such as regular expressions and lookup tables to your
 training data to help the model identify intents and entities correctly.
 
 NLU training data is defined under the `nlu` key. Items that can be added under this key are:
@@ -109,38 +115,42 @@ NLU training data is defined under the `nlu` key. Items that can be added under 
 - [Training examples](#training-examples) grouped by user intent e.g.
   optionally with annotated [entities](#entities)
 
-```yaml
+```yaml-rasa
+nlu:
 - intent: check_balance
   examples: |
-  - What's my [credit](account) balance?
-  - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
+    - What's my [credit](account) balance?
+    - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
 ```
 
 - [Synonyms](#synonyms)
 
-```yaml
+```yaml-rasa
+nlu:
 - synonym: credit
   examples: |
-  - credit card account
-  - credit account
+    - credit card account
+    - credit account
 ```
 
 - [Regular expressions](#regular-expression-features)
 
-```yaml
+```yaml-rasa
+nlu:
 - regex: account_number
   examples: |
-  - \d{10:12}
+    - \d{10:12}
 ```
 
 - [Lookup tables](#lookup-tables)
 
-```yaml
+```yaml-rasa
+nlu:
 - lookup: banks
   examples: |
-  - JPMC
-  - Comerica
-  - Bank of America
+    - JPMC
+    - Comerica
+    - Bank of America
 ```
 
 ### Training Examples
@@ -148,22 +158,22 @@ NLU training data is defined under the `nlu` key. Items that can be added under 
 Training examples are grouped by [intent](glossary.mdx#intent) and listed under the
 `examples` key. Usually, you'll list one example per line as follows:
 
-```yaml
+```yaml-rasa
 nlu:
 - intent: greet
   examples: |
-  - hey
-  - hi
-  - whats up
+    - hey
+    - hi
+    - whats up
 ```
 
 However, it's also possible to use an extended format if you have a custom NLU component and need metadata for your examples:
 
 
-```yaml
+```yaml-rasa
 nlu:
 - intent: greet
-  examples: 
+  examples:
   - text: |
       hi
     metadata:
@@ -172,19 +182,31 @@ nlu:
       hey there!
 ```
 
-The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the components in the NLU pipeline. In the example above, the sentiment of 
+The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the components in the NLU pipeline. In the example above, the sentiment of
 the example could be used by a custom component in the pipeline for sentiment analysis.
 
 ### Entities
 
 [Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) based on a character pattern.
 
-Entities are annotated in training examples with minimally the entity's name. 
+Entities are annotated in training examples with minimally the entity's name.
 In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
 
-The syntax for annotating an entity is: 
+In training examples, entity annotation would look like this:
 
-```yaml
+```yaml-rasa
+nlu:
+- intent: check_balance
+  examples: |
+    - how much do I have on my [savings]("account") account
+    - how much money is in my [checking]{"entity": "account"} account
+    - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
+
+```
+
+The full possible syntax for annotating an entity is:
+
+```text
 [<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}
 ```
 
@@ -193,18 +215,6 @@ The `value` keyword refers to synonyms, which are explained in the
 following section. To understand what the labels `role` and `group` are
 for, see the section on [entity roles and groups](nlu-training-data.mdx#entities-roles-and-groups).
 
-In training examples, entity annotation would look like this:
-
-```yaml
-nlu:
-- intent: check_balance
-  examples: |
-  - how much do I have on my [savings]("account") account
-  - how much money is in my [checking]{"entity": "account"} account
-  - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
-
-```
-
 
 ### Synonyms
 
@@ -212,22 +222,23 @@ Synonyms provide a way to normalize your training data by mapping an
 extracted entity to a value other than the literal text extracted.
 Synonyms can be defined in the format:
 
-```yaml
+```yaml-rasa
+nlu:
 - synonym: credit
   examples: |
-  - credit card account
-  - credit account
+    - credit card account
+    - credit account
 ```
 
 Synonyms can also be defined in-line in your training examples by
 specifying the `value` of the entity:
 
-```yaml
+```yaml-rasa
 nlu:
 - intent: check_balance
   examples: |
-  - how much do I have on my [credit card account]{"entity": "account", "value": "credit"}
-  - how much do I owe on my [credit account]{"entity": "account", "value": "credit"}
+    - how much do I have on my [credit card account]{"entity": "account", "value": "credit"}
+    - how much do I owe on my [credit account]{"entity": "account", "value": "credit"}
 ```
 
 To use the synonyms defined in your training data, you need to make sure the
@@ -236,7 +247,7 @@ pipeline in your configuration file contains the
 should define synonyms when there are multiple ways users refer to the same
 thing.
 
-#### Example 
+#### Example
 
 Let's say you had an entity `account`, and you expect the
 value "credit". Your users also refer to their "credit" account as "credit
@@ -257,21 +268,22 @@ recognize these as entities and replace them with `credit`.
 
 ### Regular Expressions
 
-You can use regular expressions to improve intent classification and 
+You can use regular expressions to improve intent classification and
 entity extraction in combination with the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) components in the pipeline.
 
-#### Regular Expressions for Intent Classification 
+#### Regular Expressions for Intent Classification
 
-You can use regular expressions to improve intent classification by including the `RegexFeaturizer` component in your pipeline. When using the `RegexFeaturizer`, a regex does not act as a rule for classifying an intent. It only provides a feature that the intent classifier will use 
+You can use regular expressions to improve intent classification by including the `RegexFeaturizer` component in your pipeline. When using the `RegexFeaturizer`, a regex does not act as a rule for classifying an intent. It only provides a feature that the intent classifier will use
 to learn patterns for intent classification.
-Currently, all intent classifiers make use of available regex features. 
+Currently, all intent classifiers make use of available regex features.
 
-The name of a regex in this case is a human readable description. It can help you remember what a regex is used for, and it is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for greeting might look like this: 
+The name of a regex in this case is a human readable description. It can help you remember what a regex is used for, and it is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for greeting might look like this:
 
-```yaml
+```yaml-rasa
+nlu:
 - regex: greet
   examples: |
-  - hey[^\\s]*
+    - hey[^\\s]*
 ```
 
 The intent being matched could be `greet`,`say_hi`, `hallo` or anything else.
@@ -295,7 +307,7 @@ If your entity has a deterministic structure (like an account number), you can u
   `DIETClassifier` component. Other entity extractors, like
   `MitieEntityExtractor` or `SpacyEntityExtractor`, won't use the generated
   features and their presence will not improve entity recognition for
-  these extractors. 
+  these extractors.
 
 2. For rule-based entity extraction using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) component in the pipeline.
 
@@ -305,10 +317,11 @@ If your entity has a deterministic structure (like an account number), you can u
 In both cases, the format for defining the regex is the same.
 For example, a regex for extracting a bank account number that is 10-12 digits long mightlook like this:
 
-```yaml
+```yaml-rasa
+nlu:
 - regex: account_number
   examples: |
-  - \d{10:12}
+    - \d{10:12}
 ```
 
 
@@ -317,7 +330,7 @@ For example, a regex for extracting a bank account number that is 10-12 digits l
 When using the `RegexFeaturizer`, a regular expression only provides a feature
 that helps the model learn an association between intents/entities and inputs
 that fit the regular expression. In order for the model to learn this association,
-you must provide example inputs that include that regular expression! 
+you must provide example inputs that include that regular expression!
 :::
 
 
@@ -326,11 +339,12 @@ you must provide example inputs that include that regular expression!
 Lookup tables provide a convenient way to supply a list of entity
 examples. The format is as follows:
 
-```yaml
+```yaml-rasa
+nlu:
 - lookup: banks
   examples: |
-  - JPMC
-  - Bank of America
+    - JPMC
+    - Bank of America
 ```
 
 The name of the lookup table is subject to the same constraints as the
@@ -369,23 +383,23 @@ model. [**Stories**](stories.mdx) are used to train a machine learning model
 to identify patterns in conversations and generalize to unseen conversation paths.
 **[Rules](rules.mdx)** describe parts of conversations that should always
 follow the same path and are used to train the
-[RulePolicy](policies.mdx#rule-policy). 
+[RulePolicy](policies.mdx#rule-policy).
 
 
 ### Stories
 
 Stories are composed of:
-  
-  - `story`: The story's name. The name is arbitrary and not used in training; 
+
+  - `story`: The story's name. The name is arbitrary and not used in training;
     you can use it as a human-readable reference for the story.
-  - `metadata`: arbitrary and optional, not used in training, 
+  - `metadata`: arbitrary and optional, not used in training,
     you can use it to store relevant information about the story
     like e.g. the author
   - a list of `steps`: The user messages and actions that make up the story
 
 For example:
 
-```yaml
+```yaml-rasa
 stories:
 - story: Greet the user
   metadata:
@@ -420,17 +434,20 @@ messages the users can send to mean the same thing.
 
 User messages follow the format:
 
-```yaml
+```yaml-rasa
+stories:
+- story: user message structure
   steps:
-    - intent: <intent name>  # Required
-      entities: # Optional
-      - <entity_name>: <entity value> 
+    - intent: intent_name  # Required
+      entities:  # Optional
+      - entity_name: entity_value
 ```
 
 For example, to represent the sentence
 `I want to check my credit balance`, where `credit` is an entity:
 
-```yaml {3-5}
+```yaml-rasa {4-6}
+stories:
 - story: story with entities
   steps:
   - intent: account_balance
@@ -455,7 +472,8 @@ While writing stories, you will encounter three types of actions:
 1. [**Responses**](domain.mdx#responses): start with `utter_` and
    send a specific message to the user. e.g.
 
-```yaml {4}
+```yaml-rasa {5}
+stories:
 - story: story with a response
   steps:
   - intent: greet
@@ -465,7 +483,8 @@ While writing stories, you will encounter three types of actions:
 2. [**Retrieval actions**](retrieval-actions.mdx): start with `respond_`
    and send a message selected by a retrieval model. e.g.
 
-```yaml {4}
+```yaml-rasa {5}
+stories:
 - story: story with a retrieval action
   steps:
   - intent: faq
@@ -475,7 +494,8 @@ While writing stories, you will encounter three types of actions:
 3. [**Custom actions**](custom-actions.mdx): start with `action_`, run
    arbitrary code and send any number of messages (or none).
 
-```yaml {4}
+```yaml-rasa {5}
+stories:
 - story: story with a custom action
   steps:
   - intent: feedback
@@ -489,17 +509,18 @@ A [form](glossary.mdx#form) is a specific kind of custom action that contains th
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
 Once defined, the [happy path](glossary.mdx#happy-unhappy-paths)
-for a form should be specified as a [rule](forms.mdx), but interruptions of forms or 
-other "unhappy paths" should be included in stories so that the model can 
+for a form should be specified as a [rule](forms.mdx), but interruptions of forms or
+other "unhappy paths" should be included in stories so that the model can
 generalize to unseen conversation sequences.
 As a step in a story, a form takes the following basic format:
 
 
-```yaml
+```yaml-rasa
+stories:
 - story: story with a form
   steps:
   - intent: find_restaurant
-  - action: restaurant_form         # Activate the form
+  - action: restaurant_form                # Activate the form
   - active_loop: restaurant_form           # This form is currently active
   - active_loop: null                      # Form complete, no form is active
   - action: utter_restaurant_found
@@ -510,14 +531,15 @@ The `action` step activates the form and begins looping over the required slots.
 step indicates that there is a currently active form. Much like a `slot_was_set` step,
 a `form` step doesn't **set** a form to active but indicates that it should already be activated.
 In the same way, the  `active_loop: null` step indicates that no form should be active before the subsequent
-steps are taken. 
+steps are taken.
 
-A form can be interrupted and remain active; in this case the interruption should come after the 
-`action: <form to activate>` step and be followed by the `active_loop: <active form>` step. 
+A form can be interrupted and remain active; in this case the interruption should come after the
+`action: <form to activate>` step and be followed by the `active_loop: <active form>` step.
 An interruption of a form could look like this:
 
-```yaml
-- rule: interrupted food
+```yaml-rasa
+stories:
+- story: interrupted food
   steps:
     - intent: request_restaurant
     - action: restaurant_form
@@ -531,14 +553,15 @@ An interruption of a form could look like this:
 
 #### Slots
 
-A slot event is specified under the key `slot_was_set:` with the 
+A slot event is specified under the key `slot_was_set:` with the
 slot name and optionally the slot's value.
 
-**[Slots](domain.mdx#slots)** act as the bots memory. 
+**[Slots](domain.mdx#slots)** act as the bots memory.
 Slots are **set** by entities or by custom actions and **referenced**
 by stories in `slot_was_set` steps. For example:
 
-```yaml {4-5}
+```yaml-rasa {5-6}
+stories:
 - story: story with a slot
   steps:
   - intent: celebrate_bot
@@ -555,7 +578,8 @@ Whether or not you need to include the slot's value depends on the
 influence the dialogue. If the value doesn't matter, list only
 the slot's name:
 
-```yaml {4-5}
+```yaml-rasa {5-6}
+stories:
 - story: story with a slot
   steps:
   - intent: greet
@@ -574,7 +598,7 @@ action **before** the `slot_was_set` step.
 #### Checkpoints
 
 Checkpoints are specified with the `checkpoint:` key, either at the beginning
-or the end of a story. 
+or the end of a story.
 
 
 Checkpoints are ways to connect stories together. They can be either the first
@@ -583,7 +607,8 @@ will be connected to each other story that starts with the checkpoint of the
 same name when the model is trained. Here is an example of a story that ends
 with a checkpoint, and one that starts with the same checkpoint:
 
-```yaml
+```yaml-rasa
+stories:
 - story: story_with_a_checkpoint_1
   steps:
   - intent: greet
@@ -600,12 +625,13 @@ with a checkpoint, and one that starts with the same checkpoint:
 Checkpoints at the beginning of stories can also be conditional on
 slots being set, for example:
 
-```yaml {5-7}
+```yaml-rasa {6-8}
+stories:
 - story: story_with_a_conditional_checkpoint
   steps:
   - checkpoint: greet_checkpoint
     # This checkpoint should only apply if slots are set to the specified value
-    slots: 
+    slots:
     - context_scenario: holiday
     - holiday_name: thanksgiving
   - intent: greet
@@ -617,7 +643,7 @@ Checkpoints can help simplify your training data and reduce redundancy in it,
 but **do not overuse them**. Using lots of checkpoints can quickly make your
 stories hard to understand. It makes sense to use them if a sequence of steps
 is repeated often in different stories, but stories without checkpoints
-are easier to read and write. 
+are easier to read and write.
 
 #### OR statement
 
@@ -628,7 +654,8 @@ same way. Stories with `or` steps will be converted into multiple
 separate stories at training time. For example, the following story would be converted
 to two stories at training time:
 
-```yaml {5-7}
+```yaml-rasa {6-8}
+stories:
 - story: story with OR
   steps:
   - intent: signup_newsletter
@@ -655,7 +682,7 @@ under which the rule should apply.
 
 A rule that with a condition looks like this:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Only say `hey` when the user provided a name
   condition:
@@ -670,22 +697,16 @@ Read more about writing rules [here](rules.mdx#writing-a-rule).
 
 ## Test Conversations
 
-Test conversations combine both NLU and Core training data into a end-to-end story
-for evaluation.
+Test conversations use stories to test your bot. The tests check if a message is
+classified correctly as well as the action predictions.
 
-:::info Test Only
-This format is only used for end-to-end evaluation and cannot be used for training.
-:::
+Test stories use the same format as [stories](#stories),
+except that user message steps can include a `user` to specify the actual
+text and entity annotations of the user message. Here's an example of a
+test conversation:
 
-Test conversations are listed under the `e2e_tests` key. 
-Their format is similar to the [story](#stories) format,
-except that user message steps can include a `user` key which specifies the actual
-text and entity annotation of the user message.
-
-Here's an example of a test conversation:
-
-```yaml
-e2e_tests:
+```yaml-rasa
+stories:
 - story: A basic end-to-end test
   steps:
   - user: |
@@ -701,3 +722,11 @@ e2e_tests:
     intent: inform
   - action: utter_ask_price
 ```
+
+Running the tests can be done using the CLI:
+```bash
+rasa test
+```
+
+If you want to know more about testing head over to
+[Testing Your Assistant](testing-your-assistant.mdx).

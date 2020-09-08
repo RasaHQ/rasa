@@ -53,7 +53,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "MitieIntentClassifier"
   ```
@@ -116,7 +116,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   During the training of the SVM a hyperparameter search is run to find the best parameter set.
   In the configuration you can specify the parameters that will get tried.
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "SklearnIntentClassifier"
     # Specifies the list of regularization values to
@@ -187,7 +187,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
 * **Configuration**
 
-  ```yaml
+  ```yaml-rasa
   pipeline:
   - name: "KeywordIntentClassifier"
     case_sensitive: True
@@ -364,10 +364,10 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     +---------------------------------+------------------+--------------------------------------------------------------+
     | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
     +---------------------------------+------------------+--------------------------------------------------------------+
-    | dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
+    | dense_dimension                 | text: 128        | Dense dimension for sparse features to use if no dense       |
     |                                 | label: 20        | features are present.                                        |
     +---------------------------------+------------------+--------------------------------------------------------------+
-    | concat_dimension                | text: 512        | Concat dimension for sequence and sentence features.         |
+    | concat_dimension                | text: 128        | Concat dimension for sequence and sentence features.         |
     |                                 | label: 20        |                                                              |
     +---------------------------------+------------------+--------------------------------------------------------------+
     | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
@@ -524,7 +524,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     [Fallback Action](./fallback-handoff.mdx#fallbackactions) which handles message with uncertain
     NLU predictions.
 
-    ```yaml
+    ```yaml-rasa
     rules:
 
     - rule: Ask the user to rephrase in case of low NLU confidence

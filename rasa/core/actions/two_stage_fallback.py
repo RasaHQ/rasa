@@ -12,14 +12,14 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE, LOOP_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
     Event,
     UserUtteranceReverted,
     ActionExecuted,
     UserUttered,
-    Form,
+    ActiveLoop,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -177,8 +177,10 @@ def _last_n_intent_names(
 def _user_should_affirm(
     tracker: DialogueStateTracker, events_so_far: List[Event]
 ) -> bool:
-    form_was_just_activated = any(isinstance(event, Form) for event in events_so_far)
-    if form_was_just_activated:
+    fallback_was_just_activated = any(
+        isinstance(event, ActiveLoop) for event in events_so_far
+    )
+    if fallback_was_just_activated:
         return True
 
     return _last_intent_name(tracker) == DEFAULT_NLU_FALLBACK_INTENT_NAME

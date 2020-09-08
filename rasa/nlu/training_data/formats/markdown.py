@@ -8,11 +8,12 @@ from typing import Any, Text, Optional, Tuple, Dict, Union
 
 import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.nlu.constants import TEXT
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from rasa.utils.io import encode_string, decode_string
 
 GROUP_ENTITY_VALUE = "value"
@@ -21,7 +22,7 @@ GROUP_ENTITY_DICT = "entity_dict"
 GROUP_ENTITY_TEXT = "entity_text"
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import Message, TrainingData
+    from rasa.nlu.training_data import TrainingData
 
 INTENT = "intent"
 SYNONYM = "synonym"
@@ -49,8 +50,6 @@ class MarkdownReader(TrainingDataReader):
         self.regex_features = []
         self.lookup_tables = []
 
-        self._deprecated_synonym_format_was_used = False
-
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
         from rasa.nlu.training_data import TrainingData
@@ -64,19 +63,6 @@ class MarkdownReader(TrainingDataReader):
             else:
                 self._parse_item(line)
                 self._load_files(line)
-
-        if self._deprecated_synonym_format_was_used:
-            raise_warning(
-                "You are using the deprecated training data format to declare synonyms."
-                " Please use the following format: \n"
-                '[<entity-text>]{"entity": "<entity-type>", "value": '
-                '"<entity-synonym>"}.'
-                "\nYou can use the following command to update your training data file:"
-                "\nsed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"
-                '"entity": "\\2", "value": "\\3"}/g\' nlu.md',
-                category=FutureWarning,
-                docs=DOCS_URL_TRAINING_DATA_NLU,
-            )
 
         return TrainingData(
             self.training_examples,
@@ -116,12 +102,18 @@ class MarkdownReader(TrainingDataReader):
         """Parses an md list item line based on the current section type."""
         import rasa.nlu.training_data.lookup_tables_parser as lookup_tables_parser
         import rasa.nlu.training_data.synonyms_parser as synonyms_parser
+        from rasa.nlu.training_data import entities_parser
 
         match = re.match(item_regex, line)
         if match:
             item = match.group(1)
             if self.current_section == INTENT:
-                parsed = self.parse_training_example(item)
+                parsed = entities_parser.parse_training_example(
+                    item, self.current_title
+                )
+                synonyms_parser.add_synonyms_from_entities(
+                    parsed.get(TEXT), parsed.get("entities", []), self.entity_synonyms
+                )
                 self.training_examples.append(parsed)
             elif self.current_section == SYNONYM:
                 synonyms_parser.add_synonym(
@@ -162,7 +154,7 @@ class MarkdownReader(TrainingDataReader):
         try:
             data = json.loads(f"{{{json_str}}}")
         except JSONDecodeError as e:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Incorrect training data format ('{{{json_str}}}'), make sure your "
                 f"data is valid. For more information about the format visit "
                 f"{DOCS_URL_TRAINING_DATA_NLU}."
@@ -172,24 +164,6 @@ class MarkdownReader(TrainingDataReader):
         validation_utils.validate_training_data(data, schema.entity_dict_schema())
 
         return data
-
-    def parse_training_example(self, example: Text) -> "Message":
-        """Extract entities and synonyms, and convert to plain text."""
-        from rasa.nlu.training_data import Message
-        import rasa.nlu.training_data.entities_parser as entities_parser
-        import rasa.nlu.training_data.synonyms_parser as synonyms_parser
-
-        entities = entities_parser.find_entities_in_training_example(example)
-        plain_text = entities_parser.replace_entities(example)
-        synonyms_parser.add_synonyms_from_entities(
-            plain_text, entities, self.entity_synonyms
-        )
-
-        message = Message.build(plain_text, self.current_title)
-
-        if len(entities) > 0:
-            message.set("entities", entities)
-        return message
 
     def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""

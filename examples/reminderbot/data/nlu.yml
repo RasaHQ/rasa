@@ -1,5 +1,4 @@
 version: "2.0"
-
 nlu:
   - intent: greet
     examples: |
@@ -32,14 +31,14 @@ nlu:
       - I must not forget to call [santa]{"entity":"name"}
       - I must not forget to call [Daksh]{"entity":"name"}
       - I must not forget to call [Juste]{"entity":"name"}
-  
+
   - intent: ask_id
     examples: |
       - what's the conversation id?
       - id
       - What is the ID of this conversation?
       - How do I send a POST request to this conversation?
-  
+
   - intent: ask_forget_reminders
     examples: |
       - forget about it

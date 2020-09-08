@@ -14,13 +14,29 @@ from typing import (
     Deque,
     Iterable,
     Union,
+    FrozenSet,
+    Tuple,
 )
 
+import typing
+
+import rasa.shared.utils.io
 from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
+    ACTION_NAME,
+    ACTION_TEXT,
+)
+from rasa.core.constants import (
+    SHOULD_NOT_BE_SET,
+    ACTIVE_LOOP,
+    LOOP_NAME,
+    LOOP_VALIDATE,
+    LOOP_REJECTED,
+    TRIGGER_MESSAGE,
+    PREVIOUS_ACTION,
 )
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
@@ -34,14 +50,20 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     ActionReverted,
     UserUtteranceReverted,
     BotUttered,
-    Form,
+    ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
 )
-from rasa.core.domain import Domain  # pytype: disable=pyi-error
-from rasa.core.slots import Slot
+from rasa.core.domain import Domain, State  # pytype: disable=pyi-error
+from rasa.shared.core.slots import Slot
+
+if typing.TYPE_CHECKING:
+    from rasa.core.training.structures import Story
 
 logger = logging.getLogger(__name__)
+
+# same as State but with Dict[...] substituted with FrozenSet[Tuple[...]]
+FrozenState = FrozenSet[Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text]]]]]]
 
 
 class EventVerbosity(Enum):
@@ -152,7 +174,7 @@ class DialogueStateTracker:
         self._paused = False
         # A deterministically scheduled action to be executed next
         self.followup_action = ACTION_LISTEN_NAME
-        self.latest_action_name = None
+        self.latest_action = None
         # Stores the most recent message sent by the user
         self.latest_message = None
         self.latest_bot_utterance = None
@@ -183,8 +205,8 @@ class DialogueStateTracker:
             "paused": self.is_paused(),
             "events": _events,
             "latest_input_channel": self.get_latest_input_channel(),
-            # TODO: Should we add a `active_loop` key and provide both keys for a while?
-            "active_form": self.active_loop,
+            ACTIVE_LOOP: self.active_loop,
+            "latest_action": self.latest_action,
             "latest_action_name": self.latest_action_name,
         }
 
@@ -200,44 +222,75 @@ class DialogueStateTracker:
 
         return None
 
-    def past_states(self, domain) -> deque:
-        """Generate the past states of this tracker based on the history."""
+    @staticmethod
+    def freeze_current_state(state: State) -> FrozenState:
+        frozen_state = frozenset(
+            {
+                key: frozenset(values.items())
+                if isinstance(values, Dict)
+                else frozenset(values)
+                for key, values in state.items()
+            }.items()
+        )
+        return frozen_state
 
-        generated_states = domain.states_for_tracker_history(self)
-        return deque(frozenset(s.items()) for s in generated_states)
+    def past_states(self, domain: Domain) -> List[State]:
+        """Generate the past states of this tracker based on the history.
 
-    def change_form_to(self, form_name: Text) -> None:
-        """Activate or deactivate a form"""
-        if form_name is not None:
+        Args:
+            domain: a :class:`rasa.core.domain.Domain`
+
+        Returns:
+            a list of states
+        """
+        return domain.states_for_tracker_history(self)
+
+    def change_loop_to(self, loop_name: Text) -> None:
+        """Set the currently active loop.
+
+        Args:
+            loop_name: The name of loop which should be marked as active.
+        """
+        if loop_name is not None:
             self.active_loop = {
-                "name": form_name,
-                "validate": True,
-                "rejected": False,
-                "trigger_message": self.latest_message.parse_data,
+                LOOP_NAME: loop_name,
+                LOOP_VALIDATE: True,
+                LOOP_REJECTED: False,
+                TRIGGER_MESSAGE: self.latest_message.parse_data,
             }
         else:
             self.active_loop = {}
 
+    def change_form_to(self, form_name: Text) -> None:
+        rasa.shared.utils.io.raise_warning(
+            "`change_form_to` is deprecated and will be removed "
+            "in future versions. Please use `change_loop_to` "
+            "instead.",
+            category=DeprecationWarning,
+        )
+        self.change_loop_to(form_name)
+
     def set_form_validation(self, validate: bool) -> None:
         """Toggle form validation"""
-        self.active_loop["validate"] = validate
+        self.active_loop[LOOP_VALIDATE] = validate
 
     def reject_action(self, action_name: Text) -> None:
-        """Notify active form that it was rejected"""
-        if action_name == self.active_loop.get("name"):
-            self.active_loop["rejected"] = True
+        """Notify active loop that it was rejected"""
+        if action_name == self.active_loop_name:
+            self.active_loop[LOOP_REJECTED] = True
 
-    def set_latest_action_name(self, action_name: Text) -> None:
+    def set_latest_action(self, action: Dict[Text, Text]) -> None:
         """Set latest action name
             and reset form validation and rejection parameters
         """
-        self.latest_action_name = action_name
-        if self.active_loop.get("name"):
-            # reset form validation if some form is active
-            self.active_loop["validate"] = True
-        if action_name == self.active_loop.get("name"):
-            # reset form rejection if it was predicted again
-            self.active_loop["rejected"] = False
+        self.latest_action = action
+        if self.active_loop_name:
+            # reset form validation if some loop is active
+            self.active_loop[LOOP_VALIDATE] = True
+
+        if action.get(ACTION_NAME) == self.active_loop_name:
+            # reset loop rejection if it was predicted again
+            self.active_loop[LOOP_REJECTED] = False
 
     def current_slot_values(self) -> Dict[Text, Any]:
         """Return the currently set values of the slots"""
@@ -338,10 +391,10 @@ class DialogueStateTracker:
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events."""
 
-        form_names = [
+        loop_names = [
             event.name
             for event in self.events
-            if isinstance(event, Form) and event.name
+            if isinstance(event, ActiveLoop) and event.name
         ]
 
         applied_events = []
@@ -360,7 +413,7 @@ class DialogueStateTracker:
                 self._undo_till_previous(ActionExecuted, applied_events)
             elif (
                 isinstance(event, ActionExecuted)
-                and event.action_name in form_names
+                and event.action_name in loop_names
                 and not self._first_loop_execution_or_unhappy_path(
                     event.action_name, applied_events
                 )
@@ -389,17 +442,17 @@ class DialogueStateTracker:
         next_action: Optional[Text] = None
 
         for event in reversed(applied_events):
-            # Stop looking for a previous form execution if there is a form deactivation
-            # event because it means that the current form is running for the first
-            # time and previous form events belong to different forms.
-            if isinstance(event, Form) and event.name is None:
+            # Stop looking for a previous loop execution if there is a loop deactivation
+            # event because it means that the current loop is running for the first
+            # time and previous loop events belong to different loops.
+            if isinstance(event, ActiveLoop) and event.name is None:
                 return True
 
             if self._is_within_unhappy_path(loop_action_name, event, next_action):
                 return True
 
             if isinstance(event, ActionExecuted):
-                # We found a previous execution of the form and we are not within an
+                # We found a previous execution of the loop and we are not within an
                 # unhappy path.
                 if event.action_name == loop_action_name:
                     return False
@@ -416,20 +469,20 @@ class DialogueStateTracker:
     ) -> bool:
         # When actual users are talking to the action has to return an
         # `ActionExecutionRejected` in order to enter an unhappy path.
-        form_was_rejected_previously = (
+        loop_was_rejected_previously = (
             isinstance(event, ActionExecutionRejected)
             and event.action_name == loop_action_name
         )
         # During the policy training there are no `ActionExecutionRejected` events
         # which let us see whether we are within an unhappy path. Hence, we check if a
-        # different action was executed instead of the form after last user utterance.
+        # different action was executed instead of the loop after last user utterance.
         other_action_after_latest_user_utterance = (
             isinstance(event, UserUttered)
             and next_action_in_the_future is not None
             and next_action_in_the_future != loop_action_name
         )
 
-        return form_was_rejected_previously or other_action_after_latest_user_utterance
+        return loop_was_rejected_previously or other_action_after_latest_user_utterance
 
     @staticmethod
     def _undo_till_previous_loop_execution(
@@ -462,8 +515,8 @@ class DialogueStateTracker:
 
         if not isinstance(dialogue, Dialogue):
             raise ValueError(
-                "story {} is not of type Dialogue. "
-                "Have you deserialized it?".format(dialogue)
+                f"story {dialogue} is not of type Dialogue. "
+                f"Have you deserialized it?"
             )
 
         self._reset()
@@ -512,7 +565,7 @@ class DialogueStateTracker:
             for e in domain.slots_for_entities(event.parse_data["entities"]):
                 self.update(e)
 
-    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
+    def as_story(self, include_source: bool = False) -> "Story":
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
@@ -523,7 +576,18 @@ class DialogueStateTracker:
             if include_source
             else self.sender_id
         )
-        story = Story.from_events(self.applied_events(), story_name)
+        return Story.from_events(self.applied_events(), story_name)
+
+    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
+        """Dump the tracker as a story in the Rasa Core story format.
+
+        Returns:
+            The dumped tracker as a string.
+        """
+        # TODO: we need to revisit all usages of this, the caller needs to specify
+        #       the format. this likely points to areas where we are not properly
+        #       handling markdown vs yaml
+        story = self.as_story(include_source)
         return story.as_story_string(flat=True, e2e=e2e)
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
@@ -597,7 +661,7 @@ class DialogueStateTracker:
 
         self._reset_slots()
         self._paused = False
-        self.latest_action_name = None
+        self.latest_action = {}
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
@@ -616,9 +680,8 @@ class DialogueStateTracker:
             self.slots[key].value = value
         else:
             logger.error(
-                "Tried to set non existent slot '{}'. Make sure you "
-                "added all your slots to your domain file."
-                "".format(key)
+                f"Tried to set non existent slot '{key}'. Make sure you "
+                f"added all your slots to your domain file."
             )
 
     def _create_events(self, evts: List[Event]) -> Deque[Event]:
@@ -663,12 +726,57 @@ class DialogueStateTracker:
         ]
         return new_slots
 
-    def active_form_name(self) -> Optional[Text]:
-        """Get the name of the currently active form.
+    # pytype: disable=bad-return-type
+    @property
+    def active_loop_name(self) -> Optional[Text]:
+        """Get the name of the currently active loop.
 
-        Returns: `None` if no active form or the name of the currenly active form.
+        Returns: `None` if no active loop or the name of the currently active loop.
         """
-        if not self.active_loop:
+        if not self.active_loop or self.active_loop.get(LOOP_NAME) == SHOULD_NOT_BE_SET:
             return None
 
-        return self.active_loop.get("name")
+        return self.active_loop.get(LOOP_NAME)
+
+    # pytype: enable=bad-return-type
+
+    @property
+    def latest_action_name(self) -> Optional[Text]:
+        """Get the name of the previously executed action or text of e2e action.
+
+        Returns: name of the previously executed action or text of e2e action
+        """
+        return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
+            ACTION_TEXT
+        )
+
+
+def get_active_loop_name(state: State) -> Optional[Text]:
+    """Get the name of current active loop.
+
+    Args:
+        state: The state from which the name of active loop should be extracted
+
+    Return:
+        the name of active loop or None
+    """
+    if (
+        not state.get(ACTIVE_LOOP)
+        or state[ACTIVE_LOOP].get(LOOP_NAME) == SHOULD_NOT_BE_SET
+    ):
+        return
+
+    return state[ACTIVE_LOOP].get(LOOP_NAME)
+
+
+def is_prev_action_listen_in_state(state: State) -> bool:
+    """Check if action_listen is the previous executed action.
+
+    Args:
+        state: The state for which the check should be performed
+
+    Return:
+        boolean value indicating whether action_listen is previous action
+    """
+    prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+    return prev_action_name == ACTION_LISTEN_NAME

@@ -12,7 +12,7 @@ from rasa.core.actions.forms import FormAction, REQUESTED_SLOT
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain
 from rasa.core.events import (
-    Form,
+    ActiveLoop,
     SlotSet,
     UserUttered,
     ActionExecuted,
@@ -48,7 +48,7 @@ responses:
         tracker,
         domain,
     )
-    assert events[:-1] == [Form(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
+    assert events[:-1] == [ActiveLoop(form_name), SlotSet(REQUESTED_SLOT, slot_name)]
     assert isinstance(events[-1], BotUttered)
 
 
@@ -83,7 +83,7 @@ async def test_activate_with_prefilled_slot():
         domain,
     )
     assert events == [
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(slot_name, slot_value),
         SlotSet(REQUESTED_SLOT, next_slot_to_request),
     ]
@@ -124,10 +124,10 @@ async def test_activate_and_immediate_deactivate():
         domain,
     )
     assert events == [
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(slot_name, slot_value),
         SlotSet(REQUESTED_SLOT, None),
-        Form(None),
+        ActiveLoop(None),
     ]
 
 
@@ -136,7 +136,7 @@ async def test_set_slot_and_deactivate():
     slot_name = "num_people"
     slot_value = "dasdasdfasdf"
     events = [
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(REQUESTED_SLOT, slot_name),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(slot_value),
@@ -164,7 +164,7 @@ async def test_set_slot_and_deactivate():
     assert events == [
         SlotSet(slot_name, slot_value),
         SlotSet(REQUESTED_SLOT, None),
-        Form(None),
+        ActiveLoop(None),
     ]
 
 
@@ -174,7 +174,7 @@ async def test_action_rejection():
     tracker = DialogueStateTracker.from_events(
         sender_id="bla",
         evts=[
-            Form(form_name),
+            ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, slot_to_fill),
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("haha", {"name": "greet"}),
@@ -216,7 +216,7 @@ async def test_action_rejection():
                 SlotSet("num_people", "so_clean"),
                 SlotSet("num_tables", 5),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
         ),
         # Validate function returns extra Slot Event
@@ -230,7 +230,7 @@ async def test_action_rejection():
                 SlotSet("some_other_slot", 2),
                 SlotSet("num_tables", 5),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
         ),
         # Validate function only validates one of the candidates
@@ -240,7 +240,7 @@ async def test_action_rejection():
                 SlotSet("num_people", "so_clean"),
                 SlotSet("num_tables", 5),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
         ),
         # Validate function says slot is invalid
@@ -271,7 +271,7 @@ async def test_validate_slots(
     slot_name = "num_people"
     slot_value = "hi"
     events = [
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(REQUESTED_SLOT, slot_name),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(slot_value, entities=[{"entity": "num_tables", "value": 5}]),
@@ -359,10 +359,10 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
         )
 
     assert events == [
-        Form(form_name),
+        ActiveLoop(form_name),
         SlotSet(slot_name, expected_slot_value),
         SlotSet(REQUESTED_SLOT, None),
-        Form(None),
+        ActiveLoop(None),
     ]
 
 
@@ -996,9 +996,10 @@ async def test_ask_for_slot(
     slot_name = "sun"
 
     action_from_name = Mock(return_value=action.ActionListen())
+    endpoint_config = Mock()
     monkeypatch.setattr(action, action.action_from_name.__name__, action_from_name)
 
-    form = FormAction("my_form", None)
+    form = FormAction("my_form", endpoint_config)
     await form._ask_for_slot(
         Domain.from_dict(domain),
         None,
@@ -1007,4 +1008,4 @@ async def test_ask_for_slot(
         DialogueStateTracker.from_events("dasd", []),
     )
 
-    action_from_name.assert_called_once_with(expected_action, None, ANY)
+    action_from_name.assert_called_once_with(expected_action, endpoint_config, ANY)

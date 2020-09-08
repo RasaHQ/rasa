@@ -3,8 +3,8 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-import rasa.utils.common as common_utils
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
@@ -15,6 +15,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_END,
+    TEXT,
 )
 from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
@@ -59,7 +60,7 @@ class RegexEntityExtractor(EntityExtractor):
         )
 
         if not self.patterns:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "No lookup tables or regexes defined in the training data that have "
                 "a name equal to any entity in the training data. In order for this "
                 "component to work you need to define valid lookup tables or regexes "
@@ -86,7 +87,7 @@ class RegexEntityExtractor(EntityExtractor):
             flags = re.IGNORECASE
 
         for pattern in self.patterns:
-            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
+            matches = re.finditer(pattern["pattern"], message.get(TEXT), flags=flags)
             matches = list(matches)
 
             for match in matches:
@@ -97,7 +98,9 @@ class RegexEntityExtractor(EntityExtractor):
                         ENTITY_ATTRIBUTE_TYPE: pattern["name"],
                         ENTITY_ATTRIBUTE_START: start_index,
                         ENTITY_ATTRIBUTE_END: end_index,
-                        ENTITY_ATTRIBUTE_VALUE: message.text[start_index:end_index],
+                        ENTITY_ATTRIBUTE_VALUE: message.get(TEXT)[
+                            start_index:end_index
+                        ],
                     }
                 )
 

@@ -3,11 +3,10 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
-from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -121,32 +120,6 @@ def _required_component_in_pipeline(
     return False
 
 
-def _check_deprecated_attributes(component: "Component") -> None:
-    """Checks that the component doesn't have deprecated attributes.
-
-    Args:
-        component: The :class:`rasa.nlu.components.Component`.
-    """
-
-    if hasattr(component, "provides"):
-        raise_warning(
-            f"'{component.name}' contains property 'provides', "
-            f"which is deprecated. There is no need to specify "
-            f"the list of attributes that a component provides.",
-            category=FutureWarning,
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-    if hasattr(component, "requires"):
-        raise_warning(
-            f"'{component.name}' contains property 'requires', "
-            f"which is deprecated. Use 'required_components()' method "
-            f"to specify which components are required to be present "
-            f"in the pipeline by this component.",
-            category=FutureWarning,
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
-
 def validate_required_components(pipeline: List["Component"]) -> None:
     """Validates that all required components are present in the pipeline.
 
@@ -155,7 +128,6 @@ def validate_required_components(pipeline: List["Component"]) -> None:
     """
 
     for i, component in enumerate(pipeline):
-        _check_deprecated_attributes(component)
 
         missing_components = []
         for required_component in component.required_components():
@@ -208,7 +180,7 @@ def validate_required_components_from_data(
     if data.response_examples and not any_components_in_pipeline(
         ["ResponseSelector"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data with examples for training a response "
             "selector, but your NLU pipeline does not include a response selector "
             "component. To train a model on your response selector data, add a "
@@ -218,7 +190,7 @@ def validate_required_components_from_data(
     if data.entity_examples and not any_components_in_pipeline(
         TRAINABLE_EXTRACTORS, pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data consisting of entity examples, but "
             "your NLU pipeline does not include an entity extractor trained on "
             "your training data. To extract non-pretrained entities, add one of "
@@ -229,7 +201,7 @@ def validate_required_components_from_data(
         {"DIETClassifier", "CRFEntityExtractor"}, pipeline
     ):
         if data.entity_roles_groups_used():
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "You have defined training data with entities that have roles/groups, "
                 "but your NLU pipeline does not include a 'DIETClassifier' or a "
                 "'CRFEntityExtractor'. To train entities that have roles/groups, "
@@ -240,7 +212,7 @@ def validate_required_components_from_data(
     if data.regex_features and not any_components_in_pipeline(
         ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data with regexes, but "
             "your NLU pipeline does not include a 'RegexFeaturizer' or a "
             "'RegexEntityExtractor'. To use regexes, include either a "
@@ -250,7 +222,7 @@ def validate_required_components_from_data(
     if data.lookup_tables and not any_components_in_pipeline(
         ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data consisting of lookup tables, but "
             "your NLU pipeline does not include a 'RegexFeaturizer' or a "
             "'RegexEntityExtractor'. To use lookup tables, include either a "
@@ -261,7 +233,7 @@ def validate_required_components_from_data(
         if not any_components_in_pipeline(
             ["CRFEntityExtractor", "DIETClassifier"], pipeline
         ):
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include any components that use these "
                 "features. To make use of lookup tables, add a 'DIETClassifier' or a "
@@ -278,7 +250,7 @@ def validate_required_components_from_data(
                 has_pattern_feature = "pattern" in itertools.chain(*crf_features)
 
             if not has_pattern_feature:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     "You have defined training data consisting of lookup tables, but "
                     "your NLU pipeline's 'CRFEntityExtractor' does not include the "
                     "'pattern' feature. To featurize lookup tables, add the 'pattern' "
@@ -288,7 +260,7 @@ def validate_required_components_from_data(
     if data.entity_synonyms and not any_components_in_pipeline(
         ["EntitySynonymMapper"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined synonyms in your training data, but "
             "your NLU pipeline does not include an 'EntitySynonymMapper'. "
             "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."

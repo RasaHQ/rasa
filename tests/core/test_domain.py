@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
 
 from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core.constants import (
@@ -16,9 +15,9 @@ from rasa.core.constants import (
 )
 from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
-from rasa.core.domain import Domain, InvalidDomain, SessionConfig
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.slots import TextSlot, UnfeaturizedSlot
+from rasa.core.domain import Domain, InvalidDomain, SessionConfig, State
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
@@ -46,18 +45,16 @@ async def test_create_train_data_no_history(default_domain):
 
     assert hashed == [
         "[{}]",
-        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
-        '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_default": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_default": 1.0, "prev_utter_default": 1.0, ' '"slot_name_0": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1.0, ' '"slot_name_0": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -78,52 +75,36 @@ async def test_create_train_data_with_history(default_domain):
     hashed = sorted(hashed)
 
     assert hashed == [
-        "[null, null, null, {}]",
-        "[null, null, {}, "
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
-        "[null, null, {}, " '{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        "[null, {}, "
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
-        "[null, {}, "
-        '{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}, '
-        '{"intent_default": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
-        '{"intent_default": 1.0, '
-        '"prev_utter_default": 1.0, "slot_name_0": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1.0}, '
-        '{"intent_goodbye": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1.0}, '
-        '{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
-        '[{}, {"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}, '
-        '{"intent_default": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
-        '[{}, {"intent_greet": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1.0}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        "[{}]",
     ]
 
 
+def check_for_too_many_entities_and_remove_them(state: State) -> State:
+    # we ignore entities where there are > 1 of them:
+    # entities come from dictionary keys; as a result, they are stored
+    # in different order in the tuple which makes the test unstable
+    if (
+        state.get("user")
+        and state.get("user", {}).get("entities")
+        and len(state.get("user").get("entities")) > 1
+    ):
+        state.get("user")["entities"] = ()
+    return state
+
+
 async def test_create_train_data_unfeaturized_entities():
+    import copy
+
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"
     domain = Domain.load(domain_file)
@@ -138,25 +119,29 @@ async def test_create_train_data_unfeaturized_entities():
     # decoded needs to be sorted
     hashed = []
     for states in decoded:
-        hashed.append(json.dumps(states, sort_keys=True))
+        new_states = [
+            check_for_too_many_entities_and_remove_them(state) for state in states
+        ]
+
+        hashed.append(json.dumps(new_states, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
     assert hashed == [
         "[{}]",
-        '[{"intent_why": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_why": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_thank": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_thank": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
-        '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        '[{"entity_name": 1.0, "entity_other": 1.0, "intent_default": 1.0, "prev_utter_default": 1.0}]',
-        '[{"entity_name": 1.0, "entity_other": 1.0, "intent_default": 1.0, "prev_action_listen": 1.0}]',
-        '[{"entity_name": 1.0, "entity_other": 1.0, "entity_unrelated_recognized_entity": 1.0, "intent_ask": 1.0, "prev_utter_default": 1.0}]',
-        '[{"entity_name": 1.0, "entity_other": 1.0, "entity_unrelated_recognized_entity": 1.0, "intent_ask": 1.0, "prev_action_listen": 1.0}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "why"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "thank"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"entities": [], "intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"entities": [], "intent": "ask"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "why"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "thank"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [], "intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [], "intent": "ask"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -260,6 +245,7 @@ def test_domain_to_dict():
         "entities": [],
         "forms": [],
         "intents": [],
+        "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
         "session_config": {
             "carry_over_slots_to_new_session": True,
@@ -277,6 +263,7 @@ actions:
 - action_save_world
 config:
   store_entities_as_slots: true
+e2e_actions: []
 entities: []
 forms: []
 intents: []
@@ -293,44 +280,6 @@ slots: {{}}"""
     actual_yaml = domain.as_yaml()
 
     assert actual_yaml.strip() == test_yaml.strip()
-
-
-def test_domain_to_yaml_deprecated_templates():
-    test_yaml = f"""actions:
-- utter_greet
-config:
-  store_entities_as_slots: true
-entities: []
-forms: []
-intents: []
-templates:
-  utter_greet:
-  - text: hey there!
-session_config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
-
-    target_yaml = f"""actions:
-- utter_greet
-config:
-  store_entities_as_slots: true
-entities: []
-forms: []
-intents: []
-responses:
-  utter_greet:
-  - text: hey there!
-session_config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
-
-    domain = Domain.from_yaml(test_yaml)
-    # python 3 and 2 are different here, python 3 will have a leading set
-    # of --- at the beginning of the yml
-    assert domain.as_yaml().strip().endswith(target_yaml.strip())
-    assert Domain.from_yaml(domain.as_yaml()) is not None
 
 
 def test_merge_yaml_domains():
@@ -412,6 +361,58 @@ session_config:
     assert merged.session_config == SessionConfig(40, True)
 
 
+def test_merge_with_empty_domain():
+    domain = Domain.from_yaml(
+        """config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+responses:
+  utter_goodbye:
+  - text: bye!
+  utter_greet:
+  - text: hey you!"""
+    )
+
+    merged = Domain.empty().merge(domain)
+
+    assert merged.as_dict() == domain.as_dict()
+
+
+def test_merge_with_empty_other_domain():
+    domain = Domain.from_yaml(
+        """config:
+  store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+responses:
+  utter_goodbye:
+  - text: bye!
+  utter_greet:
+  - text: hey you!"""
+    )
+
+    merged = domain.merge(Domain.empty(), override=True)
+
+    assert merged.as_dict() == domain.as_dict()
+
+
 def test_merge_domain_with_forms():
     test_yaml_1 = """
     forms:
@@ -491,17 +492,16 @@ def test_collect_intent_properties(intents, entities, intent_properties):
     assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
-def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
-    root = tmpdir_factory.mktemp("Parent Bot")
+def test_load_domain_from_directory_tree(tmp_path: Path):
     root_domain = {"actions": ["utter_root", "utter_root2"]}
-    utils.dump_obj_as_yaml_to_file(root / "domain_pt1.yml", root_domain)
+    utils.dump_obj_as_yaml_to_file(tmp_path / "domain_pt1.yml", root_domain)
 
-    subdirectory_1 = root / "Skill 1"
+    subdirectory_1 = tmp_path / "Skill 1"
     subdirectory_1.mkdir()
     skill_1_domain = {"actions": ["utter_skill_1"]}
     utils.dump_obj_as_yaml_to_file(subdirectory_1 / "domain_pt2.yml", skill_1_domain)
 
-    subdirectory_2 = root / "Skill 2"
+    subdirectory_2 = tmp_path / "Skill 2"
     subdirectory_2.mkdir()
     skill_2_domain = {"actions": ["utter_skill_2"]}
     utils.dump_obj_as_yaml_to_file(subdirectory_2 / "domain_pt3.yml", skill_2_domain)
@@ -514,7 +514,7 @@ def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
         subsubdirectory / "domain_pt4.yaml", skill_2_1_domain
     )
 
-    actual = Domain.load(str(root))
+    actual = Domain.load(str(tmp_path))
     expected = [
         "utter_root",
         "utter_root2",
@@ -694,7 +694,7 @@ def test_clean_domain_for_file():
             {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "entities": ["name", "unrelated_recognized_entity", "other"],
         "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
@@ -707,35 +707,6 @@ def test_clean_domain_for_file():
     }
 
     assert cleaned == expected
-
-
-def test_clean_domain_deprecated_templates():
-    domain_path = "data/test_domains/default_deprecated_templates.yml"
-    cleaned = Domain.load(domain_path).cleaned_domain()
-
-    expected = {
-        "intents": [
-            {"greet": {USE_ENTITIES_KEY: ["name"]}},
-            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
-            {"goodbye": {USE_ENTITIES_KEY: []}},
-            {"thank": {USE_ENTITIES_KEY: []}},
-            "ask",
-            {"why": {USE_ENTITIES_KEY: []}},
-            "pure_intent",
-        ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
-        "responses": {
-            "utter_greet": [{"text": "hey there!"}],
-            "utter_goodbye": [{"text": "goodbye :("}],
-            "utter_default": [{"text": "default message"}],
-        },
-        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
-    }
-
-    expected = Domain.from_dict(expected)
-    actual = Domain.from_dict(cleaned)
-
-    assert hash(actual) == hash(expected)
 
 
 def test_add_knowledge_base_slots(default_domain):
@@ -820,42 +791,6 @@ def test_domain_as_dict_with_session_config():
 )
 def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
     assert session_config.are_sessions_enabled() == enabled
-
-
-def test_domain_utterance_actions_deprecated_templates():
-    new_yaml = f"""config:
-  store_entities_as_slots: true
-entities: []
-forms: []
-intents: []
-templates:
-  utter_greet:
-  - text: hey there!
-  utter_goodbye:
-  - text: bye!
-session_config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
-
-    old_yaml = f"""config:
-  store_entities_as_slots: true
-entities: []
-forms: []
-intents: []
-responses:
-  utter_greet:
-  - text: hey there!
-  utter_goodbye:
-  - text: bye!
-session_config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
-
-    old_domain = Domain.from_yaml(old_yaml)
-    new_domain = Domain.from_yaml(new_yaml)
-    assert hash(old_domain) == hash(new_domain)
 
 
 def test_domain_from_dict_does_not_change_input():

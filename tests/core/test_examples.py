@@ -1,16 +1,19 @@
 import sys
 
 import json
-import os
+from pathlib import Path
+from typing import Text
+
 from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
+from rasa.importers.importer import TrainingDataImporter
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 
-async def test_moodbot_example(unpacked_trained_moodbot_path):
+async def test_moodbot_example(unpacked_trained_moodbot_path: Text):
     agent = Agent.load(unpacked_trained_moodbot_path)
 
     responses = await agent.handle_text("/greet")
@@ -25,15 +28,22 @@ async def test_moodbot_example(unpacked_trained_moodbot_path):
 
 async def test_formbot_example():
     sys.path.append("examples/formbot/")
+    project = Path("examples/formbot/")
+    config = str(project / "config.yml")
+    domain = str(project / "domain.yml")
+    training_dir = project / "data"
+    training_files = [
+        str(training_dir / "rules.yml"),
+        str(training_dir / "stories.yml"),
+    ]
+    importer = TrainingDataImporter.load_from_config(config, domain, training_files)
 
-    p = "examples/formbot/"
-    stories = os.path.join(p, "data", "stories.md")
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     endpoints = AvailableEndpoints(action=endpoint)
     agent = await train(
-        os.path.join(p, "domain.yml"),
-        stories,
-        os.path.join(p, "models", "dialogue"),
+        domain,
+        importer,
+        str(project / "models" / "dialogue"),
         endpoints=endpoints,
         policy_config="examples/formbot/config.yml",
     )

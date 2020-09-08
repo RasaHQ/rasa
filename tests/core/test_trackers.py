@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type
 
@@ -11,7 +12,7 @@ import rasa.utils.io
 from rasa.core import training, restore
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.agent import Agent
-from rasa.core.constants import REQUESTED_SLOT
+from rasa.core.constants import REQUESTED_SLOT, LOOP_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
     SlotSet,
@@ -22,11 +23,19 @@ from rasa.core.events import (
     UserUtteranceReverted,
     SessionStarted,
     Event,
-    Form,
+    ActiveLoop,
     ActionExecutionRejected,
     BotUttered,
+    LegacyForm,
 )
-from rasa.core.slots import FloatSlot, BooleanSlot, ListSlot, TextSlot, DataSlot, Slot
+from rasa.shared.core.slots import (
+    FloatSlot,
+    BooleanSlot,
+    ListSlot,
+    TextSlot,
+    DataSlot,
+    Slot,
+)
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,
@@ -46,6 +55,7 @@ from tests.core.utilities import (
     user_uttered,
     get_tracker,
 )
+from rasa.nlu.constants import ACTION_NAME
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -128,14 +138,14 @@ def test_tracker_store(store, pair):
     assert restored == tracker
 
 
-async def test_tracker_write_to_story(tmpdir, moodbot_domain: Domain):
+async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain
     )
-    p = tmpdir.join("export.md")
-    tracker.export_stories_to_file(p.strpath)
+    p = tmp_path / "export.md"
+    tracker.export_stories_to_file(str(p))
     trackers = await training.load_data(
-        p.strpath,
+        str(p),
         moodbot_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
@@ -365,7 +375,7 @@ def test_revert_action_event(default_domain: Domain):
     # Expecting count of 4:
     #   +3 executed actions
     #   +1 final state
-    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(list(tracker.generate_all_prior_trackers())) == 4
 
     tracker.update(ActionReverted())
@@ -374,7 +384,7 @@ def test_revert_action_event(default_domain: Domain):
     #   +3 executed actions
     #   +1 final state
     #   -1 reverted action
-    assert tracker.latest_action_name == "my_action"
+    assert tracker.latest_action.get(ACTION_NAME) == "my_action"
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     dialogue = tracker.as_dialogue()
@@ -383,7 +393,7 @@ def test_revert_action_event(default_domain: Domain):
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
-    assert tracker.latest_action_name == "my_action"
+    assert tracker.latest_action.get(ACTION_NAME) == "my_action"
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
@@ -406,7 +416,7 @@ def test_revert_user_utterance_event(default_domain: Domain):
     # Expecting count of 6:
     #   +5 executed actions
     #   +1 final state
-    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(list(tracker.generate_all_prior_trackers())) == 6
 
     tracker.update(UserUtteranceReverted())
@@ -416,7 +426,7 @@ def test_revert_user_utterance_event(default_domain: Domain):
     #   +1 final state
     #   -2 rewound actions associated with the /goodbye
     #   -1 rewound action from the listen right before /goodbye
-    assert tracker.latest_action_name == "my_action_1"
+    assert tracker.latest_action.get(ACTION_NAME) == "my_action_1"
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     dialogue = tracker.as_dialogue()
@@ -425,7 +435,7 @@ def test_revert_user_utterance_event(default_domain: Domain):
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
-    assert tracker.latest_action_name == "my_action_1"
+    assert tracker.latest_action.get(ACTION_NAME) == "my_action_1"
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
@@ -450,7 +460,7 @@ def test_traveling_back_in_time(default_domain: Domain):
     # Expecting count of 4:
     #   +3 executed actions
     #   +1 final state
-    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(tracker.events) == 4
     assert len(list(tracker.generate_all_prior_trackers())) == 4
 
@@ -459,22 +469,22 @@ def test_traveling_back_in_time(default_domain: Domain):
     # Expecting count of 2:
     #   +1 executed actions
     #   +1 final state
-    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(tracker.events) == 2
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
-async def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
+async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
     trackers = await default_agent.load_data(DEFAULT_STORIES_FILE)
 
     for tracker in trackers:
-        out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
+        out_path = tmp_path / "dumped_tracker.json"
 
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
-        rasa.utils.io.dump_obj_as_json_to_file(out_path.strpath, dumped)
+        rasa.utils.io.dump_obj_as_json_to_file(str(out_path), dumped)
 
         restored_tracker = restore.load_tracker_from_json(
-            out_path.strpath, default_agent.domain
+            str(out_path), default_agent.domain
         )
 
         assert restored_tracker == tracker
@@ -489,7 +499,7 @@ def test_read_json_dump(default_agent: Agent):
     )
 
     assert len(restored_tracker.events) == 7
-    assert restored_tracker.latest_action_name == "action_listen"
+    assert restored_tracker.latest_action.get(ACTION_NAME) == "action_listen"
     assert not restored_tracker.is_paused()
     assert restored_tracker.sender_id == "mysender"
     assert restored_tracker.events[-1].timestamp == 1517821726.211042
@@ -732,7 +742,7 @@ def test_tracker_does_not_modify_slots(
                 user_uttered("fill_whole_form"),
                 # Form executes and fills slots.
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet("slot1", "value"),
                 SlotSet("slot2", "value2"),
             ],
@@ -740,7 +750,7 @@ def test_tracker_does_not_modify_slots(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("fill_whole_form"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet("slot1", "value"),
                 SlotSet("slot2", "value2"),
             ],
@@ -752,10 +762,10 @@ def test_tracker_does_not_modify_slots(
                 user_uttered("fill_whole_form"),
                 # Form executes and fills all slots right away. Form finishes.
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet("slot1", "value"),
                 SlotSet("slot2", "value2"),
-                Form(None),
+                ActiveLoop(None),
                 # Form is done. Regular conversation continues.
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("intent outside form"),
@@ -764,10 +774,10 @@ def test_tracker_does_not_modify_slots(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("fill_whole_form"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet("slot1", "value"),
                 SlotSet("slot2", "value2"),
-                Form(None),
+                ActiveLoop(None),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("intent outside form"),
             ],
@@ -779,7 +789,7 @@ def test_tracker_does_not_modify_slots(
                 user_uttered("greet"),
                 # Form executes and requests slot.
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 # User fills slot.
                 ActionExecuted(ACTION_LISTEN_NAME),
@@ -787,17 +797,17 @@ def test_tracker_does_not_modify_slots(
                 # Form deactivates after all slots are finished.
                 ActionExecuted("loop"),
                 SlotSet("slot", "value"),
-                Form(None),
+                ActiveLoop(None),
                 SlotSet(REQUESTED_SLOT, None),
             ],
             [
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 SlotSet("slot", "value"),
-                Form(None),
+                ActiveLoop(None),
                 SlotSet(REQUESTED_SLOT, None),
             ],
         ),
@@ -805,13 +815,13 @@ def test_tracker_does_not_modify_slots(
             [
                 # Form was executed before and finished.
                 ActionExecuted("loop"),
-                Form(None),
+                ActiveLoop(None),
                 # Form gets triggered again (for whatever reason)..
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 # Form executes and requests slot.
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 # User fills slot.
                 ActionExecuted(ACTION_LISTEN_NAME),
@@ -819,19 +829,19 @@ def test_tracker_does_not_modify_slots(
                 # Form deactivates after all slots are finished.
                 ActionExecuted("loop"),
                 SlotSet("slot", "value"),
-                Form(None),
+                ActiveLoop(None),
                 SlotSet(REQUESTED_SLOT, None),
             ],
             [
                 ActionExecuted("loop"),
-                Form(None),
+                ActiveLoop(None),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 SlotSet("slot", "value"),
-                Form(None),
+                ActiveLoop(None),
                 SlotSet(REQUESTED_SLOT, None),
             ],
         ),
@@ -839,7 +849,7 @@ def test_tracker_does_not_modify_slots(
             [
                 user_uttered("trigger form"),
                 ActionExecuted("form"),
-                Form("form"),
+                ActiveLoop("form"),
                 SlotSet(REQUESTED_SLOT, "some slot"),
                 BotUttered("ask slot"),
                 ActionExecuted(ACTION_LISTEN_NAME),
@@ -848,18 +858,18 @@ def test_tracker_does_not_modify_slots(
                 ActionExecuted("form"),
                 SlotSet("some slot", "value"),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
             [
                 user_uttered("trigger form"),
                 ActionExecuted("form"),
-                Form("form"),
+                ActiveLoop("form"),
                 SlotSet(REQUESTED_SLOT, "some slot"),
                 BotUttered("ask slot"),
                 SlotSet("some slot", "value"),
                 SlotSet("some slot", "value"),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
         ),
     ],
@@ -882,7 +892,7 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 # User sends chitchat instead of answering form.
                 ActionExecuted(ACTION_LISTEN_NAME),
@@ -900,13 +910,13 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted("loop"),
                 SlotSet("slot", "value"),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
             [
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("chitchat"),
@@ -916,7 +926,7 @@ def test_applied_events_with_loop_happy_path(
                 SlotSet(REQUESTED_SLOT, "bla"),
                 SlotSet("slot", "value"),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
         ),
         (
@@ -925,7 +935,7 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 # User sends chitchat instead of answering form.
                 ActionExecuted(ACTION_LISTEN_NAME),
@@ -944,13 +954,13 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted("loop"),
                 SlotSet("slot", "value"),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
             [
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("chitchat"),
@@ -962,7 +972,7 @@ def test_applied_events_with_loop_happy_path(
                 SlotSet(REQUESTED_SLOT, "bla"),
                 SlotSet("slot", "value"),
                 SlotSet(REQUESTED_SLOT, None),
-                Form(None),
+                ActiveLoop(None),
             ],
         ),
         (
@@ -971,7 +981,7 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 # User sends chitchat instead of answering form.
                 ActionExecuted(ACTION_LISTEN_NAME),
@@ -984,7 +994,7 @@ def test_applied_events_with_loop_happy_path(
                 # User wants to quit form.
                 user_uttered("Stop the form"),
                 ActionExecuted("some action"),
-                Form(None),
+                ActiveLoop(None),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("outside the form"),
             ],
@@ -992,7 +1002,7 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("chitchat"),
@@ -1001,7 +1011,7 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("Stop the form"),
                 ActionExecuted("some action"),
-                Form(None),
+                ActiveLoop(None),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("outside the form"),
             ],
@@ -1011,7 +1021,7 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("chitchat"),
@@ -1019,13 +1029,13 @@ def test_applied_events_with_loop_happy_path(
                 # This indicates we are in an unhappy path.
                 ActionExecuted("handle_chitchat"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
             ],
             [
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 SlotSet(REQUESTED_SLOT, "bla"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("chitchat"),
@@ -1033,7 +1043,7 @@ def test_applied_events_with_loop_happy_path(
                 # This indicates we are in an unhappy path.
                 ActionExecuted("handle_chitchat"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
             ],
         ),
         (
@@ -1041,7 +1051,7 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("chitchat"),
                 ActionExecuted("handle_chitchat"),
@@ -1053,7 +1063,7 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("greet"),
                 ActionExecuted("loop"),
-                Form("loop"),
+                ActiveLoop("loop"),
                 ActionExecuted(ACTION_LISTEN_NAME),
                 user_uttered("chitchat"),
                 # Different action than form action indicates unhappy path
@@ -1072,3 +1082,41 @@ def test_applied_events_with_loop_unhappy_path(
     applied = tracker.applied_events()
 
     assert applied == expected_applied_events
+
+
+def test_reading_of_trackers_with_legacy_form_events():
+    loop_name1 = "my loop"
+    loop_name2 = "my form"
+    tracker = DialogueStateTracker.from_dict(
+        "sender",
+        events_as_dict=[
+            {"event": ActiveLoop.type_name, LOOP_NAME: loop_name1},
+            {"event": LegacyForm.type_name, LOOP_NAME: None},
+            {"event": LegacyForm.type_name, LOOP_NAME: loop_name2},
+        ],
+    )
+
+    expected_events = [ActiveLoop(loop_name1), LegacyForm(None), LegacyForm(loop_name2)]
+    assert list(tracker.events) == expected_events
+    assert tracker.active_loop[LOOP_NAME] == loop_name2
+
+
+def test_writing_trackers_with_legacy_form_events():
+    loop_name = "my loop"
+    tracker = DialogueStateTracker.from_events(
+        "sender", evts=[ActiveLoop(loop_name), LegacyForm(None), LegacyForm("some")]
+    )
+
+    events_as_dict = [event.as_dict() for event in tracker.events]
+
+    for event in events_as_dict:
+        assert event["event"] == ActiveLoop.type_name
+
+
+def test_change_form_to_deprecation_warning():
+    tracker = DialogueStateTracker.from_events("conversation", evts=[])
+    new_form = "new form"
+    with pytest.warns(DeprecationWarning):
+        tracker.change_form_to(new_form)
+
+    assert tracker.active_loop_name == new_form

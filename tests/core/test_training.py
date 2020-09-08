@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, RasaNLUInterpreter
 from rasa.core.train import train
@@ -25,7 +26,7 @@ async def test_story_visualization(
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        "data/test_stories/stories.md", default_domain, interpreter=RegexInterpreter()
+        "data/test_stories/stories.md", default_domain
     )
     out_file = str(tmp_path / "graph.html")
     generated_graph = await visualize_stories(
@@ -51,7 +52,7 @@ async def test_story_visualization_with_merging(
     import rasa.core.training.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
-        stories_file, default_domain, interpreter=RegexInterpreter()
+        stories_file, default_domain
     )
     generated_graph = await visualize_stories(
         story_steps,
@@ -93,11 +94,10 @@ async def test_training_script_without_max_history_set(tmp_path: Path):
         if hasattr(policy.featurizer, "max_history"):
             if type(policy) == FormPolicy:
                 assert policy.featurizer.max_history == 2
+            elif type(policy) == MemoizationPolicy:
+                assert policy.featurizer.max_history == OLD_DEFAULT_MAX_HISTORY
             else:
-                assert (
-                    policy.featurizer.max_history
-                    == policy.featurizer.MAX_HISTORY_DEFAULT
-                )
+                assert policy.featurizer.max_history is None
 
 
 async def test_training_script_with_max_history_set(tmp_path: Path):

@@ -3,11 +3,13 @@ import logging
 from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
+import rasa.shared.utils.io
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
@@ -22,7 +24,6 @@ import numpy as np
 import tensorflow as tf
 
 import rasa.utils.train_utils as train_utils
-import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +172,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         **kwargs: Any,
     ) -> None:
         if config is not None and config.language != "en":
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Since ``ConveRT`` model is trained only on an english "
                 f"corpus of conversations, this featurizer should only be "
                 f"used if your training data is in english language. "
@@ -214,11 +215,16 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def process(
         self, message: Message, *, tf_hub_module: Any = None, **kwargs: Any
     ) -> None:
-        sequence_features, sentence_features = self._compute_features(
-            [message], tf_hub_module
-        )
 
-        self._set_features([message], sequence_features, sentence_features, TEXT)
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            if message.get(attribute):
+                sequence_features, sentence_features = self._compute_features(
+                    [message], tf_hub_module, attribute=attribute
+                )
+
+                self._set_features(
+                    [message], sequence_features, sentence_features, attribute
+                )
 
     def _set_features(
         self,

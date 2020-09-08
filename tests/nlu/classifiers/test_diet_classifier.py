@@ -1,9 +1,11 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 from unittest.mock import Mock
 
 from rasa.nlu.constants import FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
-from rasa.nlu.featurizers.featurizer import Features
+from rasa.utils.features import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
@@ -30,10 +32,10 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 def test_compute_default_label_features():
     label_features = [
-        Message("test a"),
-        Message("test b"),
-        Message("test c"),
-        Message("test d"),
+        Message(data={TEXT: "test a"}),
+        Message(data={TEXT: "test b"}),
+        Message(data={TEXT: "test c"}),
+        Message(data={TEXT: "test d"}),
     ]
 
     output = DIETClassifier._compute_default_label_features(label_features)
@@ -52,14 +54,14 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    "test a",
+                    data={TEXT: "test a"},
                     features=[
                         Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
                         Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
                     ],
                 ),
                 Message(
-                    "test b",
+                    data={TEXT: "test b"},
                     features=[
                         Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
                         Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
@@ -71,7 +73,7 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    "test a",
+                    data={TEXT: "test a"},
                     features=[
                         Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
                         Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
@@ -83,7 +85,7 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    "test a",
+                    data={TEXT: "test a"},
                     features=[
                         Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
                     ],
@@ -100,13 +102,13 @@ def test_check_labels_features_exist(messages, expected):
 
 
 async def _train_persist_load_with_different_settings(
-    pipeline, component_builder, tmpdir
+    pipeline, component_builder, tmp_path
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/examples/rasa/demo-rasa-multi-intent.md",
         component_builder=component_builder,
     )
@@ -150,7 +152,7 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
     )
 
 
-async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
+async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Path):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -164,7 +166,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
     with pytest.raises(Exception) as e:
         await train(
             _config,
-            path=tmpdir.strpath,
+            path=str(tmp_path),
             data=DEFAULT_DATA_PATH,
             component_builder=component_builder,
         )
@@ -216,7 +218,7 @@ def as_pipeline(*components):
 )
 async def test_softmax_normalization(
     component_builder,
-    tmpdir,
+    tmp_path,
     classifier_params,
     data_path,
     output_length,
@@ -231,7 +233,7 @@ async def test_softmax_normalization(
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data=data_path,
         component_builder=component_builder,
     )
