@@ -36,7 +36,6 @@ from rasa.utils.tensorflow.constants import (
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
-    DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -72,6 +71,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
+    DENSE_DIMENSION,
 )
 from rasa.nlu.constants import (
     RESPONSE,
