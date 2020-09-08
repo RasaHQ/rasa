@@ -25,10 +25,10 @@ from rasa.nlu.constants import (
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
-    RESPONSE,
     INTENT_RESPONSE_KEY,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    ACTION_NAME,
 )
 
 logger = logging.getLogger(__name__)
@@ -221,13 +221,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-
-        return message.get(attribute).split()
+        else:
+            return []
 
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute in [INTENT, INTENT_RESPONSE_KEY]:
+        if attribute in [INTENT, ACTION_NAME, INTENT_RESPONSE_KEY]:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -404,6 +404,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
     ]:
+        if not self.vectorizers.get(attribute):
+            return [None], [None]
+
         sequence_features = []
         sentence_features = []
 
@@ -429,7 +432,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
             sequence_features.append(seq_vec.tocoo())
 
-            if attribute in [TEXT, RESPONSE]:
+            if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 tokens_text = [" ".join(tokens)]
                 sentence_vec = self.vectorizers[attribute].transform(tokens_text)
                 sentence_vec.sort_indices()
@@ -536,20 +539,20 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 "didn't receive enough training data"
             )
             return
+        for attribute in self._attributes:
 
-        attribute = TEXT
-        message_tokens = self._get_processed_message_tokens_by_attribute(
-            message, attribute
-        )
+            message_tokens = self._get_processed_message_tokens_by_attribute(
+                message, attribute
+            )
 
-        # features shape (1, seq, dim)
-        sequence_features, sentence_features = self._create_features(
-            attribute, [message_tokens]
-        )
+            # features shape (1, seq, dim)
+            sequence_features, sentence_features = self._create_features(
+                attribute, [message_tokens]
+            )
 
-        self._set_attribute_features(
-            attribute, sequence_features, sentence_features, [message]
-        )
+            self._set_attribute_features(
+                attribute, sequence_features, sentence_features, [message]
+            )
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

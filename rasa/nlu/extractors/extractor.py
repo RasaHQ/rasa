@@ -25,7 +25,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
 )
-import rasa.nlu.utils.bilou_utils as bilou_utils
 
 
 class EntityExtractor(Component):
@@ -104,7 +103,7 @@ class EntityExtractor(Component):
             data[ENTITIES] = entities
             filtered.append(
                 Message(
-                    text=message.text,
+                    text=message.get(TEXT),
                     data=data,
                     output_properties=message.output_properties,
                     time=message.time,
@@ -133,6 +132,8 @@ class EntityExtractor(Component):
         Returns:
             Entities.
         """
+        import rasa.nlu.utils.bilou_utils as bilou_utils
+
         entities = []
 
         last_entity_tag = NO_ENTITY_TAG
@@ -342,7 +343,7 @@ class EntityExtractor(Component):
                     or entity_end not in token_end_positions
                 ):
                     rasa.shared.utils.io.raise_warning(
-                        f"Misaligned entity annotation in message '{example.text}' "
+                        f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
                         f"end values of entities in the training data match the token "
                         f"boundaries (e.g. entities don't include trailing whitespaces "

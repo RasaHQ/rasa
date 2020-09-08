@@ -20,6 +20,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import loading
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.structures import Story
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 
 
 async def test_persist_and_read_test_story_graph(
@@ -224,7 +225,9 @@ async def test_persist_form_story():
         ActionExecuted("utter_goodbye"),
         ActionExecuted("action_listen"),
     ]
-    [tracker.update(e) for e in events]
+
+    for event in events:
+        tracker.update(event)
 
     assert story in tracker.export_stories()
 
@@ -295,9 +298,8 @@ async def test_read_rules_without_stories(default_domain: Domain):
     assert events[1] == SlotSet("requested_slot", "some_slot")
     assert events[2] == ActionExecuted("...")
     assert events[3] == UserUttered(
-        'inform{"some_slot":"bla"}',
-        {"name": "inform", "confidence": 1.0},
-        [{"entity": "some_slot", "start": 6, "end": 25, "value": "bla"}],
+        intent={"name": "inform", "confidence": 1.0},
+        entities=[{"entity": "some_slot", "start": 6, "end": 25, "value": "bla"}],
     )
     assert events[4] == ActionExecuted("loop_q_form")
 

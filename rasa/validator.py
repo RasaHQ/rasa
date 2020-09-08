@@ -12,6 +12,7 @@ from rasa.core.events import UserUttered
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph
 from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
@@ -76,7 +77,7 @@ class Validator:
 
         duplication_hash = defaultdict(set)
         for example in self.intents.intent_examples:
-            text = example.text
+            text = example.get(TEXT)
             duplication_hash[text].add(example.get("intent"))
 
         for text, intents in duplication_hash.items():

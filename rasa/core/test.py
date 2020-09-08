@@ -391,7 +391,7 @@ def _collect_user_uttered_predictions(
 def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
     from rasa.core.events import ActionExecutionRejected
 
-    rejected_action_name: Text = partial_tracker.active_loop["name"]
+    rejected_action_name: Text = partial_tracker.active_loop_name
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
@@ -406,7 +406,7 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
-    gold = event.action_name
+    gold = event.action_name or event.action_text
 
     if circuit_breaker_tripped:
         predicted = "circuit breaker tripped"
@@ -470,7 +470,7 @@ def _form_might_have_been_rejected(
     domain: Domain, tracker: DialogueStateTracker, predicted_action_name: Text
 ) -> bool:
     return (
-        tracker.active_loop.get("name") == predicted_action_name
+        tracker.active_loop_name == predicted_action_name
         and predicted_action_name in domain.form_names
     )
 

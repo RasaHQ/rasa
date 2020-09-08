@@ -3,6 +3,7 @@ from typing import Text, List, Dict, Any
 import pytest
 
 import rasa.shared.nlu.training_data.entities_parser as entities_parser
+from rasa.shared.nlu.constants import TEXT
 
 
 @pytest.mark.parametrize(
@@ -118,13 +119,13 @@ def test_markdown_entity_regex(
 def test_parse_training_example():
     message = entities_parser.parse_training_example("Hello!", intent="greet")
     assert message.get("intent") == "greet"
-    assert message.text == "Hello!"
+    assert message.get(TEXT) == "Hello!"
 
 
 def test_parse_empty_example():
     message = entities_parser.parse_training_example("")
     assert message.get("intent") is None
-    assert message.text == ""
+    assert message.get(TEXT) == ""
 
 
 def test_parse_training_example_with_entities():
@@ -132,7 +133,7 @@ def test_parse_training_example_with_entities():
         "I am from [Berlin](city).", intent="inform"
     )
     assert message.get("intent") == "inform"
-    assert message.text == "I am from Berlin."
+    assert message.get(TEXT) == "I am from Berlin."
     assert message.get("entities") == [
         {"start": 10, "end": 16, "value": "Berlin", "entity": "city"}
     ]

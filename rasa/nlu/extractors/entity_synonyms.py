@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.components import Component
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.shared.nlu.constants import ENTITIES
+from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -41,7 +41,7 @@ class EntitySynonymMapper(EntityExtractor):
 
         for example in training_data.entity_examples:
             for entity in example.get(ENTITIES, []):
-                entity_val = example.text[entity["start"] : entity["end"]]
+                entity_val = example.get(TEXT)[entity["start"] : entity["end"]]
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
     def process(self, message: Message, **kwargs: Any) -> None:

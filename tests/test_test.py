@@ -7,6 +7,7 @@ from typing import Text
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
+from unittest.mock import Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -142,6 +143,15 @@ def test_get_label_set(targets, exclude_label, expected):
 
     actual = get_unique_labels(targets, exclude_label)
     assert set(expected) == set(actual)
+
+
+async def test_interpreter_passed_to_agent(
+    monkeypatch: MonkeyPatch, trained_rasa_model: Text
+):
+    from rasa.core.interpreter import RasaNLUInterpreter
+
+    agent = Agent.load(trained_rasa_model)
+    assert isinstance(agent.interpreter, RasaNLUInterpreter)
 
 
 async def test_e2e_warning_if_no_nlu_model(

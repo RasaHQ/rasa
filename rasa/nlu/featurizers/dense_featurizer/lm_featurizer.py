@@ -51,7 +51,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def process(self, message: Message, **kwargs: Any) -> None:
         """Sets the dense features from the language model doc to the incoming
         message."""
-        self._set_lm_features(message)
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            self._set_lm_features(message, attribute)
 
     def _set_lm_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the precomputed word vectors to the messages features."""

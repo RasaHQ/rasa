@@ -3,10 +3,11 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Dict, Text, List, Any, Union
+from typing import Dict, Text, List, Any, Union, Tuple
 
 import rasa.data
 import rasa.shared.data
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
@@ -160,7 +161,7 @@ class MarkdownStoryReader(StoryReader):
         return re.sub(r"<!--.*?-->", "", line).strip()
 
     @staticmethod
-    def _parse_event_line(line):
+    def _parse_event_line(line: Text) -> Tuple[Text, Dict[Text, Text]]:
         """Tries to parse a single line as an event with arguments."""
 
         # the regex matches "slot{"a": 1}"
@@ -201,7 +202,7 @@ class MarkdownStoryReader(StoryReader):
         parsed_messages = []
         for m in e2e_messages:
             message = self.parse_e2e_message(m)
-            parsed = self._parse_message(message.text, line_num)
+            parsed = self._parse_message(message.get(TEXT), line_num)
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
@@ -244,11 +245,17 @@ class MarkdownStoryReader(StoryReader):
 
     def _parse_message(self, message: Text, line_num: int) -> UserUttered:
         parse_data = RegexInterpreter().synchronous_parse(message)
+
+        text = None
+        if self.use_e2e:
+            text = parse_data.get("text")
+
         utterance = UserUttered(
-            message, parse_data.get("intent"), parse_data.get("entities"), parse_data
+            text, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
+
         if self.domain and intent_name not in self.domain.intents:
             rasa.shared.utils.io.raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "

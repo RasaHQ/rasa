@@ -102,37 +102,43 @@ class SklearnIntentClassifier(IntentClassifier):
                 "Skipping training of intent classifier.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
-        else:
-            y = self.transform_labels_str2num(labels)
-            X = np.stack(
-                [
-                    self._get_sentence_features(example)
-                    for example in training_data.intent_examples
-                ]
-            )
-            # reduce dimensionality
-            X = np.reshape(X, (len(X), -1))
+            return
 
-            self.clf = self._create_classifier(num_threads, y)
+        y = self.transform_labels_str2num(labels)
+        X = np.stack(
+            [
+                self._get_sentence_features(example)
+                for example in training_data.intent_examples
+            ]
+        )
+        # reduce dimensionality
+        X = np.reshape(X, (len(X), -1))
 
-            with warnings.catch_warnings():
-                # sklearn raises lots of
-                # "UndefinedMetricWarning: F - score is ill - defined"
-                # if there are few intent examples, this is needed to prevent it
-                warnings.simplefilter("ignore")
-                self.clf.fit(X, y)
+        self.clf = self._create_classifier(num_threads, y)
+
+        with warnings.catch_warnings():
+            # sklearn raises lots of
+            # "UndefinedMetricWarning: F - score is ill - defined"
+            # if there are few intent examples, this is needed to prevent it
+            warnings.simplefilter("ignore")
+            self.clf.fit(X, y)
 
     @staticmethod
     def _get_sentence_features(message: Message) -> np.ndarray:
         _, sentence_features = message.get_dense_features(TEXT)
-        return sentence_features[0]
+        if sentence_features is not None:
+            return sentence_features.features[0]
 
-    def _num_cv_splits(self, y) -> int:
+        raise ValueError(
+            "No sentence features present. Not able to train sklearn policy."
+        )
+
+    def _num_cv_splits(self, y: np.ndarray) -> int:
         folds = self.component_config["max_cross_validation_folds"]
         return max(2, min(folds, np.min(np.bincount(y)) // 5))
 
     def _create_classifier(
-        self, num_threads: int, y
+        self, num_threads: int, y: np.ndarray
     ) -> "sklearn.model_selection.GridSearchCV":
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC

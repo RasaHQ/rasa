@@ -1,4 +1,4 @@
-from typing import Union, Text, Optional
+from typing import Union, Text, Optional, List, Any, Tuple
 
 import numpy as np
 import scipy.sparse
@@ -13,15 +13,15 @@ class Features:
         self,
         features: Union[np.ndarray, scipy.sparse.spmatrix],
         feature_type: Text,
-        message_attribute: Text,
-        origin: Text,
+        attribute: Text,
+        origin: Union[Text, List[Text]],
     ) -> None:
         self._validate_feature_type(feature_type)
 
         self.features = features
         self.type = feature_type
         self.origin = origin
-        self.message_attribute = message_attribute
+        self.attribute = attribute
 
     @staticmethod
     def _validate_feature_type(feature_type: Text) -> None:
@@ -47,9 +47,7 @@ class Features:
         """
         return not self.is_sparse()
 
-    def combine_with_features(
-        self, additional_features: Optional[Union[np.ndarray, scipy.sparse.spmatrix]]
-    ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+    def combine_with_features(self, additional_features: Optional["Features"]) -> None:
         """Combine the incoming features with this instance's features.
 
         Args:
@@ -59,38 +57,53 @@ class Features:
             Combined features.
         """
         if additional_features is None:
-            return self.features
+            return
 
-        if self.is_dense() and isinstance(additional_features, np.ndarray):
-            return self._combine_dense_features(self.features, additional_features)
+        if self.is_dense() and additional_features.is_dense():
+            self._combine_dense_features(additional_features)
+        elif self.is_sparse() and additional_features.is_sparse():
+            self._combine_sparse_features(additional_features)
+        else:
+            raise ValueError("Cannot combine sparse and dense features.")
 
-        if self.is_sparse() and isinstance(additional_features, scipy.sparse.spmatrix):
-            return self._combine_sparse_features(self.features, additional_features)
-
-        raise ValueError("Cannot combine sparse and dense features.")
-
-    @staticmethod
-    def _combine_dense_features(
-        features: np.ndarray, additional_features: np.ndarray
-    ) -> np.ndarray:
-        if features.ndim != additional_features.ndim:
+    def _combine_dense_features(self, additional_features: "Features") -> None:
+        if self.features.ndim != additional_features.features.ndim:
             raise ValueError(
                 f"Cannot combine dense features as sequence dimensions do not "
-                f"match: {features.ndim} != {additional_features.ndim}."
+                f"match: {self.features.ndim} != {additional_features.features.ndim}."
             )
 
-        return np.concatenate((features, additional_features), axis=-1)
+        self.features = np.concatenate(
+            (self.features, additional_features.features), axis=-1
+        )
 
-    @staticmethod
-    def _combine_sparse_features(
-        features: scipy.sparse.spmatrix, additional_features: scipy.sparse.spmatrix
-    ) -> scipy.sparse.spmatrix:
+    def _combine_sparse_features(self, additional_features: "Features") -> None:
         from scipy.sparse import hstack
 
-        if features.shape[0] != additional_features.shape[0]:
+        if self.features.shape[0] != additional_features.features.shape[0]:
             raise ValueError(
                 f"Cannot combine sparse features as sequence dimensions do not "
-                f"match: {features.shape[0]} != {additional_features.shape[0]}."
+                f"match: {self.features.shape[0]} != {additional_features.features.shape[0]}."
             )
 
-        return hstack([features, additional_features])
+        self.features = hstack([self.features, additional_features.features])
+
+    def __key__(
+        self,
+    ) -> Tuple[
+        Text, Text, Union[np.ndarray, scipy.sparse.spmatrix], Union[Text, List[Text]]
+    ]:
+        return (self.type, self.attribute, self.features, self.origin)
+
+    def __hash__(self) -> int:
+        return hash(self.__key__())
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Features):
+            return False
+
+        return (
+            other.type == self.type
+            and other.attribute == self.attribute
+            and other.features == self.features
+        )

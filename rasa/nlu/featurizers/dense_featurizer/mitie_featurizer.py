@@ -53,7 +53,7 @@ class MitieFeaturizer(DenseFeaturizer):
     ) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        for example in training_data.intent_examples:
+        for example in training_data.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self.process_training_example(
                     example, attribute, mitie_feature_extractor
@@ -73,12 +73,16 @@ class MitieFeaturizer(DenseFeaturizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        tokens = message.get(TOKENS_NAMES[TEXT])
-        sequence_features, sentence_features = self.features_for_tokens(
-            tokens, mitie_feature_extractor
-        )
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            tokens = message.get(TOKENS_NAMES[attribute])
+            if tokens:
+                sequence_features, sentence_features = self.features_for_tokens(
+                    tokens, mitie_feature_extractor
+                )
 
-        self._set_features(message, sequence_features, sentence_features, TEXT)
+                self._set_features(
+                    message, sequence_features, sentence_features, attribute
+                )
 
     def _set_features(
         self,

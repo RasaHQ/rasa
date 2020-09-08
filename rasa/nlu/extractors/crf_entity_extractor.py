@@ -222,7 +222,7 @@ class CRFEntityExtractor(EntityExtractor):
         tags, confidences = self._tag_confidences(tokens, predictions)
 
         return self.convert_predictions_into_entities(
-            message.text, tokens, tags, confidences
+            message.get(TEXT), tokens, tags, confidences
         )
 
     def _add_tag_to_crf_token(
@@ -477,9 +477,9 @@ class CRFEntityExtractor(EntityExtractor):
             return None
 
         tokens = message.get(TOKENS_NAMES[TEXT])
-        if len(tokens) != len(features):
+        if len(tokens) != len(features.features):
             rasa.shared.utils.io.raise_warning(
-                f"Number of dense features ({len(features)}) for attribute "
+                f"Number of dense features ({len(features.features)}) for attribute "
                 f"'TEXT' does not match number of tokens ({len(tokens)}).",
                 docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
@@ -487,7 +487,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         # convert to python-crfsuite feature format
         features_out = []
-        for feature in features:
+        for feature in features.features:
             feature_dict = {
                 str(index): token_features
                 for index, token_features in enumerate(feature)

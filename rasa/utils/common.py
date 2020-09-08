@@ -60,7 +60,6 @@ def set_log_level(log_level: Optional[int] = None):
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
     a default log level will be used."""
-    import logging
 
     if not log_level:
         log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)

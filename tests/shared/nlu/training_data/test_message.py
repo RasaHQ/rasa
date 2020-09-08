@@ -5,7 +5,13 @@ import numpy as np
 import scipy.sparse
 
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.constants import (
+    TEXT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    ACTION_TEXT,
+    ACTION_NAME,
+)
 import rasa.shared.nlu.training_data.message
 from rasa.shared.nlu.training_data.message import Message
 
@@ -29,7 +35,7 @@ from rasa.shared.nlu.training_data.message import Message
             ],
             TEXT,
             [],
-            [1, 2, 1, 1, 1, 0],
+            [1, 1, 0, 1, 2, 1],
             [1, 2, 2],
         ),
         (
@@ -53,11 +59,15 @@ def test_get_dense_features(
     expected_sen_features: Optional[List[Features]],
 ):
 
-    message = Message("This is a test sentence.", features=features)
+    message = Message(data={TEXT: "This is a test sentence."}, features=features)
 
     actual_seq_features, actual_sen_features = message.get_dense_features(
         attribute, featurizers
     )
+    if actual_seq_features:
+        actual_seq_features = actual_seq_features.features
+    if actual_sen_features:
+        actual_sen_features = actual_sen_features.features
 
     assert np.all(actual_sen_features == expected_sen_features)
     assert np.all(actual_seq_features == expected_seq_features)
@@ -104,7 +114,7 @@ def test_get_dense_features(
             ],
             TEXT,
             [],
-            [1, 2, 1, 1, 1, 0],
+            [1, 1, 0, 1, 2, 1],
             [1, 2, 2],
         ),
         (
@@ -142,11 +152,15 @@ def test_get_sparse_features(
     expected_seq_features: Optional[List[Features]],
     expected_sen_features: Optional[List[Features]],
 ):
-    message = Message("This is a test sentence.", features=features)
+    message = Message(data={TEXT: "This is a test sentence."}, features=features)
 
     actual_seq_features, actual_sen_features = message.get_sparse_features(
         attribute, featurizers
     )
+    if actual_seq_features:
+        actual_seq_features = actual_seq_features.features
+    if actual_sen_features:
+        actual_sen_features = actual_sen_features.features
 
     if expected_seq_features is None:
         assert actual_seq_features is None
@@ -228,7 +242,7 @@ def test_features_present(
     featurizers: List[Text],
     expected: bool,
 ):
-    message = Message("This is a test sentence.", features=features)
+    message = Message(data={TEXT: "This is a test sentence."}, features=features)
 
     actual = message.features_present(attribute, featurizers)
 
@@ -242,3 +256,11 @@ def test_ordered():
         ("b", 1),
         ("c", "a"),
     ]
+
+
+def test_build_from_action():
+    test_action_name = "test_action_name"
+    test_action_text = "test action text"
+    assert Message.build_from_action(
+        action_text=test_action_text, action_name=test_action_name
+    ) == Message(data={ACTION_NAME: test_action_name, ACTION_TEXT: test_action_text})

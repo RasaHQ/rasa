@@ -18,8 +18,6 @@ from freezegun import freeze_time
 from mock import MagicMock
 from multiprocessing import Process, Manager
 
-from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
-
 import rasa
 import rasa.constants
 import rasa.shared.constants
@@ -190,9 +188,11 @@ def background_server(
 
 
 @pytest.fixture()
-def training_request(shared_statuses: DictProxy) -> Generator[Process, None, None]:
+def training_request(
+    shared_statuses: DictProxy, tmp_path: Path
+) -> Generator[Process, None, None]:
     def send_request() -> None:
-        payload = ""
+        payload = {}
         project_path = Path("examples") / "formbot"
 
         for file in [
@@ -203,24 +203,19 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
             Path("data") / "nlu.yml",
         ]:
             full_path = project_path / file
-            content = full_path.read_text()
+            # Read in as dictionaries to avoid that keys, which are specified in
+            # multiple files (such as 'version'), clash.
+            content = rasa.shared.utils.io.read_yaml_file(full_path)
+            payload.update(content)
 
-            # Remove "version: 2.0" from each file as this will lead to a YAML error
-            # to multiple specification of the same key, when concatenating the file.
-            content_lines = content.split("\n")
-            content_lines = [
-                line
-                for line in content_lines
-                if not line.startswith(KEY_TRAINING_DATA_FORMAT_VERSION)
-            ]
-            payload += "\n".join(content_lines)
+        concatenated_payload_file = tmp_path / "concatenated.yml"
+        rasa.shared.utils.io.write_yaml(payload, concatenated_payload_file)
 
-        training_data_version = f'{KEY_TRAINING_DATA_FORMAT_VERSION}: "{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"'
+        payload_as_yaml = concatenated_payload_file.read_text()
 
-        payload += f"\n{training_data_version}"
         response = requests.post(
             "http://localhost:5005/model/train",
-            data=payload,
+            data=payload_as_yaml,
             headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
             params={"force_training": True},
         )
@@ -236,7 +231,7 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
 # It also doesn't run on Windows because of Process-related calls and an attempt
 # to start/terminate a process. We will investigate this case further later:
 # https://github.com/RasaHQ/rasa/issues/6302
-# @pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
+@pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
 @pytest.mark.skip_on_windows
 def test_train_status_is_not_blocked_by_training(
     background_server: Process, shared_statuses: DictProxy, training_request: Process

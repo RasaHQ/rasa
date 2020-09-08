@@ -98,7 +98,6 @@ class TrainingDataWriter:
     @staticmethod
     def generate_entity(text: Text, entity: Dict[Text, Any]) -> Text:
         """Generates text for an entity object."""
-        import json
 
         entity_text = text[
             entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]

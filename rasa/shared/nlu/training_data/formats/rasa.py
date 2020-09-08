@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, Text
 
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
@@ -33,7 +34,13 @@ class RasaReader(JsonTrainingDataReader):
 
         training_examples = []
         for ex in common_examples:
-            msg = Message.build(**ex)
+            # taking care of custom entries
+            msg = Message.build(
+                text=ex.pop(TEXT, ""),
+                intent=ex.pop(INTENT, None),
+                entities=ex.pop(ENTITIES, None),
+                **ex,
+            )
             training_examples.append(msg)
 
         return TrainingData(

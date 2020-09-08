@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, Text
 
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 import rasa.shared.utils.io
 
@@ -32,18 +33,19 @@ class LuisReader(JsonTrainingDataReader):
                 )
 
         for s in js["utterances"]:
-            text = s.get("text")
-            intent = s.get("intent")
+            text = s.get(TEXT)
+            intent = s.get(INTENT)
             entities = []
-            for e in s.get("entities") or []:
+            for e in s.get(ENTITIES) or []:
                 start, end = e["startPos"], e["endPos"] + 1
                 val = text[start:end]
                 entities.append(
                     {"entity": e["entity"], "value": val, "start": start, "end": end}
                 )
 
-            data = {"entities": entities}
+            data = {ENTITIES: entities}
             if intent:
-                data["intent"] = intent
-            training_examples.append(Message(text, data))
+                data[INTENT] = intent
+            data[TEXT] = text
+            training_examples.append(Message(data=data))
         return TrainingData(training_examples, regex_features=regex_features)

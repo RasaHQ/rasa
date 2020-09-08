@@ -1,19 +1,24 @@
 import copy
 import logging
 from enum import Enum
-from typing import Any, List, Optional, Text, Dict, Callable, Type, Union
+import typing
+from typing import Any, List, Optional, Text, Dict, Callable, Type, Union, Tuple
+import numpy as np
 
 import rasa.utils.common
 from rasa.core.domain import Domain
-from rasa.core.featurizers import (
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer,
 )
-from rasa.core.featurizers import TrackerFeaturizer
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.data import DialogueTrainingData
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+
+if typing.TYPE_CHECKING:
+    from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
@@ -73,7 +78,7 @@ class Policy:
 
     @staticmethod
     def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
+        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
 
     @classmethod
     def _create_featurizer(
@@ -120,8 +125,9 @@ class Policy:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> DialogueTrainingData:
+    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
         """Transform training trackers into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
@@ -131,12 +137,19 @@ class Policy:
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.core.domain.Domain`
+            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
 
         Returns:
-            the :class:`rasa.core.training.data.DialogueTrainingData`
+            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+              all training trackers
+            - the label ids (e.g. action ids) for every dialuge turn in all training
+              trackers
         """
 
-        training_data = self.featurizer.featurize_trackers(training_trackers, domain)
+        state_features, label_ids = self.featurizer.featurize_trackers(
+            training_trackers, domain, interpreter
+        )
 
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
@@ -144,13 +157,14 @@ class Policy:
                 "Limit training data to {} training samples."
                 "".format(max_training_samples)
             )
-            training_data.limit_training_data_to(max_training_samples)
+            state_features = state_features[:max_training_samples]
+            label_ids = label_ids[:max_training_samples]
 
-        return training_data
+        return state_features, label_ids
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -170,7 +184,7 @@ class Policy:
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predicts the next action the bot should take after seeing the tracker.

@@ -7,6 +7,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
@@ -47,7 +48,6 @@ async def test_can_read_test_story_with_entities_slot_autofill(default_domain: D
     assert len(trackers) == 2
 
     assert trackers[0].events[-3] == UserUttered(
-        "greet",
         intent={"name": "greet", "confidence": 1.0},
         parse_data={
             "text": "/greet",
@@ -60,7 +60,6 @@ async def test_can_read_test_story_with_entities_slot_autofill(default_domain: D
     assert trackers[0].events[-1] == ActionExecuted("action_listen")
 
     assert trackers[1].events[-4] == UserUttered(
-        "greet",
         intent={"name": "greet", "confidence": 1.0},
         entities=[{"entity": "name", "value": "peter"}],
         parse_data={
@@ -75,7 +74,7 @@ async def test_can_read_test_story_with_entities_slot_autofill(default_domain: D
     assert trackers[1].events[-1] == ActionExecuted("action_listen")
 
 
-async def test_can_read_test_story_with_entities_without_value(default_domain: Domain,):
+async def test_can_read_test_story_with_entities_without_value(default_domain: Domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities_with_no_value.yml",
         default_domain,
@@ -86,7 +85,6 @@ async def test_can_read_test_story_with_entities_without_value(default_domain: D
     assert len(trackers) == 1
 
     assert trackers[0].events[-4] == UserUttered(
-        "greet",
         intent={"name": "greet", "confidence": 1.0},
         entities=[{"entity": "name", "value": ""}],
         parse_data={
@@ -127,7 +125,7 @@ async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
     # one for leading slash
     assert len(record) == 1
 
-    assert tracker[0].latest_message == UserUttered("simple", {"name": "simple"})
+    assert tracker[0].latest_message == UserUttered(intent={"name": "simple"})
 
 
 async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
@@ -196,9 +194,8 @@ def test_rule_with_condition(rule_steps_without_stories: List[StoryStep]):
         SlotSet("requested_slot", "some_slot"),
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
         UserUttered(
-            "inform",
-            {"name": "inform", "confidence": 1.0},
-            [{"entity": "some_slot", "value": "bla"}],
+            intent={"name": "inform", "confidence": 1.0},
+            entities=[{"entity": "some_slot", "value": "bla"}],
         ),
         ActionExecuted("loop_q_form"),
     ]
@@ -209,7 +206,7 @@ def test_rule_without_condition(rule_steps_without_stories: List[StoryStep]):
     assert rule.block_name == "Rule without condition"
     assert rule.events == [
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-        UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
+        UserUttered(intent={"name": "explain", "confidence": 1.0}),
         ActionExecuted("utter_explain_some_slot"),
         ActionExecuted("loop_q_form"),
         ActiveLoop("loop_q_form"),
@@ -223,7 +220,7 @@ def test_rule_with_explicit_wait_for_user_message(
     assert rule.block_name == "Rule which explicitly waits for user input when finished"
     assert rule.events == [
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-        UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
+        UserUttered(intent={"name": "explain", "confidence": 1.0}),
         ActionExecuted("utter_explain_some_slot"),
     ]
 
@@ -233,7 +230,7 @@ def test_rule_which_hands_over_at_end(rule_steps_without_stories: List[StoryStep
     assert rule.block_name == "Rule after which another action should be predicted"
     assert rule.events == [
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-        UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
+        UserUttered(intent={"name": "explain", "confidence": 1.0}),
         ActionExecuted("utter_explain_some_slot"),
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
     ]
@@ -243,7 +240,7 @@ def test_conversation_start_rule(rule_steps_without_stories: List[StoryStep]):
     rule = rule_steps_without_stories[4]
     assert rule.block_name == "Rule which only applies to conversation start"
     assert rule.events == [
-        UserUttered("explain", {"name": "explain", "confidence": 1.0}, []),
+        UserUttered(intent={"name": "explain", "confidence": 1.0}),
         ActionExecuted("utter_explain_some_slot"),
     ]
 
@@ -325,3 +322,27 @@ def test_is_not_test_story_file_without_test_prefix(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.shared.utils.io.write_yaml({"stories": []}, path)
     assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+
+
+def test_end_to_end_story_with_shortcut_intent():
+    intent = "greet"
+    plain_text = f'/{intent}{{"name": "test"}}'
+    story = f"""
+stories:
+- story: my story
+  steps:
+  - user: |
+      {plain_text}
+    intent: {intent}
+    """
+
+    story_as_yaml = rasa.utils.io.read_yaml(story)
+
+    steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
+    user_uttered = steps[0].events[0]
+
+    assert user_uttered == UserUttered(
+        plain_text,
+        intent={"name": intent},
+        entities=[{"entity": "name", "start": 6, "end": 22, "value": "test"}],
+    )

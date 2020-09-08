@@ -21,6 +21,8 @@ from rasa.core.events import BotUttered, ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import interactive
 from rasa.importers.rasa import TrainingDataImporter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.loading import RASA, MARKDOWN, UNK
 from rasa.utils.endpoints import EndpointConfig
@@ -537,9 +539,9 @@ async def test_filter_intents_before_save_nlu_file():
     # Test method interactive._filter_messages
     from random import choice
 
-    greet = {"intent": "greet", "text_features": [0.5]}
-    goodbye = {"intent": "goodbye", "text_features": [0.5]}
-    test_msgs = [Message("How are you?", greet), Message("I am inevitable", goodbye)]
+    greet = {"text": "How are you?", "intent": "greet", "text_features": [0.5]}
+    goodbye = {"text": "I am inevitable", "intent": "goodbye", "text_features": [0.5]}
+    test_msgs = [Message(data=greet), Message(data=goodbye)]
 
     domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
     domain = Domain.load(domain_file)
@@ -547,7 +549,9 @@ async def test_filter_intents_before_save_nlu_file():
 
     msgs = test_msgs.copy()
     if intents:
-        msgs.append(Message("/" + choice(intents), greet))
+        another_greet = greet.copy()
+        another_greet[TEXT] = INTENT_MESSAGE_PREFIX + choice(intents)
+        msgs.append(Message(data=another_greet))
 
     assert test_msgs == interactive._filter_messages(msgs)
 

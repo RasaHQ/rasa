@@ -1,13 +1,7 @@
 import numpy as np
 import pytest
 
-from rasa.nlu.classifiers.diet_classifier import (
-    DIETClassifier,
-    TEXT_SENTENCE_FEATURES,
-    TEXT_SEQUENCE_FEATURES,
-    LABEL_SEQUENCE_FEATURES,
-    LABEL_SENTENCE_FEATURES,
-)
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
@@ -19,8 +13,8 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
-from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
-from rasa.utils.tensorflow.constants import FEATURIZERS
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE, TEXT
+from rasa.utils.tensorflow.constants import FEATURIZERS, SENTENCE, SEQUENCE, LABEL
 
 
 @pytest.mark.parametrize(
@@ -50,7 +44,7 @@ def test_calculate_cls_vector(pooling, features, expected):
 
 
 def test_flexible_nlu_pipeline():
-    message = Message("This is a test message.", data={"intent": "test"})
+    message = Message(data={TEXT: "This is a test message.", "intent": "test"})
     training_data = TrainingData([message, message, message, message, message])
 
     tokenizer = WhitespaceTokenizer()
@@ -99,16 +93,10 @@ def test_flexible_nlu_pipeline():
     )
     model_data = classifier.preprocess_train_data(training_data)
 
-    assert len(model_data.get(TEXT_SENTENCE_FEATURES)) == 1
-    assert len(model_data.get(TEXT_SEQUENCE_FEATURES)) == 1
-    assert len(model_data.get(LABEL_SEQUENCE_FEATURES)) == 1
-    assert len(model_data.get(LABEL_SENTENCE_FEATURES)) == 0
-    assert model_data.get(TEXT_SEQUENCE_FEATURES)[0][0].shape == (
-        5,
-        sequence_feature_dim,
-    )
-    assert model_data.get(TEXT_SENTENCE_FEATURES)[0][0].shape == (
-        1,
-        sentence_feature_dim,
-    )
-    assert model_data.get(LABEL_SEQUENCE_FEATURES)[0][0].shape == (1, 1)
+    assert len(model_data.get(TEXT).get(SENTENCE)) == 1
+    assert len(model_data.get(TEXT).get(SEQUENCE)) == 1
+    assert len(model_data.get(LABEL).get(SEQUENCE)) == 1
+    assert model_data.get(LABEL).get(SENTENCE) is None
+    assert model_data.get(TEXT).get(SEQUENCE)[0][0].shape == (5, sequence_feature_dim)
+    assert model_data.get(TEXT).get(SENTENCE)[0][0].shape == (1, sentence_feature_dim)
+    assert model_data.get(LABEL).get(SEQUENCE)[0][0].shape == (1, 1)

@@ -22,7 +22,7 @@ from rasa.nlu.constants import (
     NUMBER_OF_SUB_TOKENS,
     NO_LENGTH_RESTRICTION,
 )
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -716,7 +716,14 @@ class HFTransformersNLP(Component):
             message: Incoming message object
         """
 
-        message.set(
-            LANGUAGE_MODEL_DOCS[TEXT],
-            self._get_docs_for_batch([message], attribute=TEXT, inference_mode=True)[0],
-        )
+        # process of all featurizers operates only on TEXT and ACTION_TEXT attributes,
+        # because all other attributes are labels which are featurized during training
+        # and their features are stored by the model itself.
+        for attribute in {TEXT, ACTION_TEXT}:
+            if message.get(attribute):
+                message.set(
+                    LANGUAGE_MODEL_DOCS[attribute],
+                    self._get_docs_for_batch(
+                        [message], attribute=attribute, inference_mode=True
+                    )[0],
+                )
