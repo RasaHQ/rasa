@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Text, Dict
 
 import rasa.utils.endpoints as endpoints_utils
 from rasa.constants import DOCS_URL_COMPONENTS
-from rasa.nlu.constants import ENTITIES
+from rasa.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -177,7 +177,7 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         if self._url() is not None:
             reference_time = self._reference_time_from_message(message)
-            matches = self._duckling_parse(message.text, reference_time)
+            matches = self._duckling_parse(message.get(TEXT), reference_time)
             all_extracted = convert_duckling_format_to_rasa(matches)
             dimensions = self.component_config["dimensions"]
             extracted = DucklingHTTPExtractor.filter_irrelevant_entities(

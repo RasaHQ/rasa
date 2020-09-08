@@ -99,7 +99,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         filled_slots: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> Dict[Text, Any]:
-        """"Combine slot values and key word arguments to fill templates."""
+        """Combine slot values and key word arguments to fill templates."""
 
         # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
