@@ -48,7 +48,7 @@ KEY_METADATA = "metadata"
 
 MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL = "-"
 
-NLU_SCHEMA_FILE = "nlu/schemas/nlu.yml"
+NLU_SCHEMA_FILE = "utils/schemas/nlu.yml"
 
 STRIP_SYMBOLS = "\n\r "
 
