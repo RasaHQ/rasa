@@ -5,6 +5,7 @@
     {
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
+      "action_text": null,
       "confidence":null,
       "policy":null,
       "timestamp":1551883958.346432,
@@ -63,6 +64,7 @@
     {
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_greet",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883975.6456478,
@@ -90,6 +92,7 @@
     {
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883979.098331,
@@ -148,6 +151,7 @@
     {
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_cheer_up",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883985.031668,
@@ -166,6 +170,7 @@
     {
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_did_that_help",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883985.940413,
@@ -184,6 +189,7 @@
     {
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883986.958556,
@@ -242,6 +248,7 @@
     {
       "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_goodbye",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551883991.061463,

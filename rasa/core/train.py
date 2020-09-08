@@ -80,7 +80,6 @@ async def train_comparison_models(
 ):
     """Train multiple models for comparison of policies"""
     from rasa import model
-    from rasa.importers.importer import TrainingDataImporter
 
     exclusion_percentages = exclusion_percentages or []
     policy_configs = policy_configs or []
