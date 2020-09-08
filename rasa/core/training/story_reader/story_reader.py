@@ -1,11 +1,17 @@
 import logging
 from typing import Optional, Dict, Text, List, Any
 
+from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.core.actions.action import (
+    LEGACY_ACTION_DEACTIVATE_LOOP_NAME,
+    ACTION_DEACTIVATE_LOOP_NAME,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Event
 from rasa.core.exceptions import StoryParseError
 from rasa.core.training.story_reader.story_step_builder import StoryStepBuilder
 from rasa.core.training.structures import StoryStep
+import rasa.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +65,7 @@ class StoryReader:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
 
-    def _add_event(self, event_name, parameters):
+    def _add_event(self, event_name: Text, parameters: Dict):
 
         # add 'name' only if event is not a SlotSet,
         # because there might be a slot with slot_key='name'
@@ -82,6 +88,7 @@ class StoryReader:
             )
 
         for p in parsed_events:
+            _map_legacy_event_names(p)
             self.current_step_builder.add_event(p)
 
     def _add_checkpoint(
@@ -96,3 +103,17 @@ class StoryReader:
             )
 
         self.current_step_builder.add_checkpoint(name, conditions)
+
+
+def _map_legacy_event_names(event: Event) -> None:
+    if (
+        isinstance(event, ActionExecuted)
+        and event.action_name == LEGACY_ACTION_DEACTIVATE_LOOP_NAME
+    ):
+        rasa.utils.common.raise_deprecation_warning(
+            f"Using action '{event.action_name}' is deprecated. Please use "
+            f"'{ACTION_DEACTIVATE_LOOP_NAME}' instead. Support for "
+            f"'{event.action_name}' will be removed in Rasa Open Source version "
+            f"{NEXT_MAJOR_VERSION_FOR_DEPRECATIONS}."
+        )
+        event.action_name = ACTION_DEACTIVATE_LOOP_NAME

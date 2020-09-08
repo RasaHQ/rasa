@@ -56,7 +56,8 @@ ACTION_SESSION_START_NAME = "action_session_start"
 
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
-ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
+LEGACY_ACTION_DEACTIVATE_LOOP_NAME = "action_deactivate_form"
+ACTION_DEACTIVATE_LOOP_NAME = "action_deactivate_loop"
 
 ACTION_REVERT_FALLBACK_EVENTS_NAME = "action_revert_fallback_events"
 
@@ -78,7 +79,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionRestart(),
         ActionSessionStart(),
         ActionDefaultFallback(),
-        ActionDeactivateForm(),
+        ActionDeactivateLoop(),
         ActionRevertFallbackEvents(),
         ActionDefaultAskAffirmation(),
         ActionDefaultAskRephrase(),
@@ -440,11 +441,11 @@ class ActionDefaultFallback(ActionUtterTemplate):
         return evts + [UserUtteranceReverted()]
 
 
-class ActionDeactivateForm(Action):
-    """Deactivates a form"""
+class ActionDeactivateLoop(Action):
+    """Deactivates an active loop."""
 
     def name(self) -> Text:
-        return ACTION_DEACTIVATE_FORM_NAME
+        return ACTION_DEACTIVATE_LOOP_NAME
 
     async def run(
         self,
