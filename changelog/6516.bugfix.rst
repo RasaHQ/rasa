@@ -1,0 +1,1 @@
+Fix bug where some [Rule Policy](./policies.mdx#rule-policy) attributes were not loaded from a persisted model.
