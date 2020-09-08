@@ -2,7 +2,8 @@ import json
 import logging
 import os
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 import rasa.utils.io
@@ -170,17 +171,17 @@ class SklearnPolicy(Policy):
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
 
         if self.model:
             self.featurizer.persist(path)
 
             meta = {"priority": self.priority}
 
-            meta_file = os.path.join(path, "sklearn_policy.json")
+            meta_file = Path(path) / "sklearn_policy.json"
             rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
-            filename = os.path.join(path, "sklearn_model.pkl")
+            filename = Path(path) / "sklearn_model.pkl"
             rasa.utils.io.pickle_dump(filename, self._state)
         else:
             rasa.shared.utils.io.raise_warning(
@@ -189,7 +190,7 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Text) -> Policy:
+    def load(cls, path: Union[Text, Path]) -> Policy:
         filename = os.path.join(path, "sklearn_model.pkl")
         if not os.path.exists(path):
             raise OSError(

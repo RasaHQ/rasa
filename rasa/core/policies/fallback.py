@@ -1,7 +1,8 @@
 import json
 import logging
 import os
-from typing import Any, List, Text, Optional, Dict, Tuple
+from pathlib import Path
+from typing import Any, List, Text, Optional, Dict, Tuple, Union
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
@@ -188,10 +189,10 @@ class FallbackPolicy(Policy):
 
         return result
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to storage."""
 
-        config_file = os.path.join(path, "fallback_policy.json")
+        config_file = Path(path) / "fallback_policy.json"
         meta = {
             "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
@@ -203,11 +204,12 @@ class FallbackPolicy(Policy):
         rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
-    def load(cls, path: Text) -> "FallbackPolicy":
+    def load(cls, path: Union[Text, Path]) -> "FallbackPolicy":
         meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "fallback_policy.json")
-            if os.path.isfile(meta_path):
+        path = Path(path)
+        if path.exists():
+            meta_path = path / "fallback_policy.json"
+            if meta_path.is_file():
                 meta = json.loads(rasa.utils.io.read_file(meta_path))
 
         return cls(**meta)

@@ -1,10 +1,12 @@
 import io
+from pathlib import Path
+
 import jsonpickle
 import logging
 import numpy as np
 import os
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Any
+from typing import Tuple, List, Optional, Dict, Text, Any, Union
 
 import rasa.utils.io
 from rasa.core import utils
@@ -427,8 +429,8 @@ class TrackerFeaturizer:
         X, _ = self._featurize_states(trackers_as_states)
         return X
 
-    def persist(self, path) -> None:
-        featurizer_file = os.path.join(path, "featurizer.json")
+    def persist(self, path: Union[Text, Path]) -> None:
+        featurizer_file = Path(path) / "featurizer.json"
         rasa.utils.io.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker

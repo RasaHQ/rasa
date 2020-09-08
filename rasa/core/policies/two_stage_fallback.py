@@ -2,7 +2,8 @@ import json
 import logging
 import os
 import typing
-from typing import List, Text, Optional, Any
+from pathlib import Path
+from typing import List, Text, Optional, Any, Union
 
 import rasa.utils.io
 from rasa.core.actions.action import (
@@ -214,9 +215,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         else:
             return confidence_scores_for(ACTION_DEFAULT_ASK_REPHRASE_NAME, 1.0, domain)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to storage."""
-        config_file = os.path.join(path, "two_stage_fallback_policy.json")
+        config_file = Path(path) / "two_stage_fallback_policy.json"
         meta = {
             "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
@@ -230,11 +231,12 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
-    def load(cls, path: Text) -> "FallbackPolicy":
+    def load(cls, path: Union[Text, Path]) -> "FallbackPolicy":
         meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "two_stage_fallback_policy.json")
-            if os.path.isfile(meta_path):
+        path = Path(path)
+        if path.exists():
+            meta_path = path / "two_stage_fallback_policy.json"
+            if path.is_file():
                 meta = json.loads(rasa.utils.io.read_file(meta_path))
 
         return cls(**meta)

@@ -1,5 +1,7 @@
+import json
 import logging
-from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
+from pathlib import Path
+from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
 
 import re
 from collections import defaultdict
@@ -25,6 +27,7 @@ from rasa.core.actions.action import (
     RULE_SNIPPET_ACTION_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
 )
+import rasa.utils.io
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
@@ -517,3 +520,45 @@ class RulePolicy(MemoizationPolicy):
                 domain.index_for_action(self._fallback_action_name)
             ] = self._core_fallback_threshold
         return result
+
+    def persist(self, path: Union[Text, Path]) -> None:
+        """Persists `RulePolicy` to storage.
+
+        Args:
+            path: Path to persist policy to.
+        """
+        self.featurizer.persist(path)
+
+        memorized_file = Path(path) / "memorized_turns.json"
+        data = {
+            "priority": self.priority,
+            "lookup": self.lookup,
+            "core_fallback_threshold": self._core_fallback_threshold,
+            "core_fallback_action_name": self._fallback_action_name,
+            "enable_fallback_prediction": self._enable_fallback_prediction,
+        }
+        rasa.utils.io.create_directory_for_file(memorized_file)
+        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
+
+    @classmethod
+    def load(cls, path: Union[Text, Path]) -> MemoizationPolicy:
+        """Loads `RulePolicy` from path.
+
+        Args:
+            path: Path to load policy from.
+
+        Returns:
+            An instance of `RulePolicy`.
+        """
+        featurizer = TrackerFeaturizer.load(path)
+        memorized_file = Path(path) / "memorized_turns.json"
+        if memorized_file.is_file():
+            data = json.loads(rasa.utils.io.read_file(memorized_file))
+            return cls(featurizer=featurizer, **data)
+
+        logger.info(
+            f"Couldn't load memoization for policy. "
+            f"File '{memorized_file}' doesn't exist. Falling back to empty "
+            f"turn memory."
+        )
+        return cls()

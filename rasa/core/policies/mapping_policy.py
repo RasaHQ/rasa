@@ -2,7 +2,8 @@ import logging
 import json
 import os
 import typing
-from typing import Any, List, Text, Optional
+from pathlib import Path
+from typing import Any, List, Text, Optional, Union
 
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
@@ -174,22 +175,23 @@ class MappingPolicy(Policy):
             )
         return result
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Only persists the priority."""
 
-        config_file = os.path.join(path, "mapping_policy.json")
+        config_file = Path(path) / "mapping_policy.json"
         meta = {"priority": self.priority}
         rasa.utils.io.create_directory_for_file(config_file)
         rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
-    def load(cls, path: Text) -> "MappingPolicy":
+    def load(cls, path: Union[Text, Path]) -> "MappingPolicy":
         """Returns the class with the configured priority."""
 
         meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "mapping_policy.json")
-            if os.path.isfile(meta_path):
+        path = Path(path)
+        if path.exists():
+            meta_path = path / "mapping_policy.json"
+            if meta_path.is_file():
                 meta = json.loads(rasa.utils.io.read_file(meta_path))
 
         return cls(**meta)

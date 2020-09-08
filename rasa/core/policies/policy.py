@@ -1,6 +1,7 @@
 import copy
 import logging
 from enum import Enum
+from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Callable, Type, Union
 
 import rasa.utils.common
@@ -187,7 +188,7 @@ class Policy:
 
         raise NotImplementedError("Policy must have the capacity to predict.")
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage.
 
         Args:
@@ -197,7 +198,7 @@ class Policy:
         raise NotImplementedError("Policy must have the capacity to persist itself.")
 
     @classmethod
-    def load(cls, path: Text) -> "Policy":
+    def load(cls, path: Union[Text, Path]) -> "Policy":
         """Loads a policy from the storage.
 
         Needs to load its featurizer.

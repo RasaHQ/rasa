@@ -4,8 +4,10 @@ import base64
 import json
 import logging
 import os
+from pathlib import Path
+
 from tqdm import tqdm
-from typing import Optional, Any, Dict, List, Text
+from typing import Optional, Any, Dict, List, Text, Union
 
 import rasa.utils.io
 
@@ -23,23 +25,23 @@ logger = logging.getLogger(__name__)
 
 class MemoizationPolicy(Policy):
     """The policy that remembers exact examples of
-        `max_history` turns from training stories.
+    `max_history` turns from training stories.
 
-        Since `slots` that are set some time in the past are
-        preserved in all future feature vectors until they are set
-        to None, this policy implicitly remembers and most importantly
-        recalls examples in the context of the current dialogue
-        longer than `max_history`.
+    Since `slots` that are set some time in the past are
+    preserved in all future feature vectors until they are set
+    to None, this policy implicitly remembers and most importantly
+    recalls examples in the context of the current dialogue
+    longer than `max_history`.
 
-        This policy is not supposed to be the only policy in an ensemble,
-        it is optimized for precision and not recall.
-        It should get a 100% precision because it emits probabilities of 1.1
-        along it's predictions, which makes every mistake fatal as
-        no other policy can overrule it.
+    This policy is not supposed to be the only policy in an ensemble,
+    it is optimized for precision and not recall.
+    It should get a 100% precision because it emits probabilities of 1.1
+    along it's predictions, which makes every mistake fatal as
+    no other policy can overrule it.
 
-        If it is needed to recall turns from training dialogues where
-        some slots might not be set during prediction time, and there are
-        training stories for this, use AugmentedMemoizationPolicy.
+    If it is needed to recall turns from training dialogues where
+    some slots might not be set during prediction time, and there are
+    training stories for this, use AugmentedMemoizationPolicy.
     """
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
@@ -107,7 +109,7 @@ class MemoizationPolicy(Policy):
 
         if self.max_history:
             assert len(trackers_as_states[0]) == self.max_history, (
-                f"Trying to memorizefeaturized data with {len(trackers_as_states[0])} "
+                f"Trying to memorize featurized data with {len(trackers_as_states[0])} "
                 f"historic turns. Expected: {self.max_history}"
             )
 
@@ -223,11 +225,11 @@ class MemoizationPolicy(Policy):
 
         return result
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
 
         self.featurizer.persist(path)
 
-        memorized_file = os.path.join(path, "memorized_turns.json")
+        memorized_file = Path(path) / "memorized_turns.json"
         data = {
             "priority": self.priority,
             "max_history": self.max_history,
@@ -237,45 +239,44 @@ class MemoizationPolicy(Policy):
         rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
-    def load(cls, path: Text) -> "MemoizationPolicy":
-
+    def load(cls, path: Union[Text, Path]) -> "MemoizationPolicy":
         featurizer = TrackerFeaturizer.load(path)
-        memorized_file = os.path.join(path, "memorized_turns.json")
-        if os.path.isfile(memorized_file):
+        memorized_file = Path(path) / "memorized_turns.json"
+        if memorized_file.is_file():
             data = json.loads(rasa.utils.io.read_file(memorized_file))
             return cls(
                 featurizer=featurizer, priority=data["priority"], lookup=data["lookup"]
             )
-        else:
-            logger.info(
-                "Couldn't load memoization for policy. "
-                "File '{}' doesn't exist. Falling back to empty "
-                "turn memory.".format(memorized_file)
-            )
-            return cls()
+
+        logger.info(
+            f"Couldn't load memoization for policy. "
+            f"File '{memorized_file}' doesn't exist. Falling back to empty "
+            f"turn memory."
+        )
+        return cls()
 
 
 class AugmentedMemoizationPolicy(MemoizationPolicy):
     """The policy that remembers examples from training stories
-        for `max_history` turns.
+    for `max_history` turns.
 
-        If it is needed to recall turns from training dialogues
-        where some slots might not be set during prediction time,
-        add relevant stories without such slots to training data.
-        E.g. reminder stories.
+    If it is needed to recall turns from training dialogues
+    where some slots might not be set during prediction time,
+    add relevant stories without such slots to training data.
+    E.g. reminder stories.
 
-        Since `slots` that are set some time in the past are
-        preserved in all future feature vectors until they are set
-        to None, this policy has a capability to recall the turns
-        up to `max_history` from training stories during prediction
-        even if additional slots were filled in the past
-        for current dialogue.
+    Since `slots` that are set some time in the past are
+    preserved in all future feature vectors until they are set
+    to None, this policy has a capability to recall the turns
+    up to `max_history` from training stories during prediction
+    even if additional slots were filled in the past
+    for current dialogue.
     """
 
     @staticmethod
     def _back_to_the_future_again(tracker) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
-            the new featurization for the future"""
+        the new featurization for the future"""
 
         idx_of_first_action = None
         idx_of_second_action = None
@@ -305,7 +306,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
     def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[Text]:
         """Recursively go to the past to correctly forget slots,
-            and then back to the future to recall."""
+        and then back to the future to recall."""
 
         logger.debug("Launch DeLorean...")
         mcfly_tracker = self._back_to_the_future_again(tracker)
