@@ -149,7 +149,7 @@ async def test_predict_form_action_if_in_form():
       {REQUESTED_SLOT}:
         type: unfeaturized
     forms:
-  - {form_name}
+    - {form_name}
 """
     )
 
@@ -192,7 +192,7 @@ async def test_predict_form_action_if_multiple_turns():
       {REQUESTED_SLOT}:
         type: unfeaturized
     forms:
-  - {form_name}
+    - {form_name}
 """
     )
 
@@ -240,7 +240,7 @@ async def test_predict_action_listen_after_form():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-      - {form_name}
+        - {form_name}
     """
     )
 
