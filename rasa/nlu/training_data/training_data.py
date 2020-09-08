@@ -318,8 +318,8 @@ class TrainingData:
         elif data.is_likely_yaml_file(filename):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_yaml())
         else:
-            ValueError(
-                "Unsupported file format detected. Supported file formats are 'json' "
+            raise ValueError(
+                "Unsupported file format detected. Supported file formats are 'json', 'yml' "
                 "and 'md'."
             )
 
@@ -331,7 +331,7 @@ class TrainingData:
             if nlg_serialized_data:
                 rasa.nlu.utils.write_to_file(filename, nlg_serialized_data)
         else:
-            ValueError(
+            raise ValueError(
                 "Unsupported file format detected. Supported file formats are 'md' "
                 "and 'yml'."
             )
