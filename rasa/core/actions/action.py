@@ -91,7 +91,7 @@ def default_action_names() -> List[Text]:
     return [a.name() for a in default_actions()] + [RULE_SNIPPET_ACTION_NAME]
 
 
-def construct_retrieval_action_names(retrieval_intents) -> List[Text]:
+def construct_retrieval_action_names(retrieval_intents: List[Text]) -> List[Text]:
 
     return [f"{UTTER_PREFIX}{intent}" for intent in retrieval_intents]
 
