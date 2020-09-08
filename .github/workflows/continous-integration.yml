@@ -18,7 +18,7 @@ on:
 #                       repo on hub.docker.com. used to pull and upload containers
 
 env:
-  # needed to fix issues with boto during testing:x
+  # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
 
