@@ -967,7 +967,7 @@ def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
 
 
 class OnlyRulePolicy(Policy):
-    """Test policy that supports both rule-based and ML-based training data."""
+    """Test policy that supports only rule-based training data."""
 
     @staticmethod
     def supported_data() -> SupportedData:

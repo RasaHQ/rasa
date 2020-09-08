@@ -57,7 +57,7 @@ class RulePolicy(MemoizationPolicy):
         """The type of data supported by this policy.
 
         Returns:
-            The data type supported by this policy (rule data).
+            The data type supported by this policy (ML and rule data).
         """
         return SupportedData.ML_AND_RULE_DATA
 
