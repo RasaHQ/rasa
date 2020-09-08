@@ -50,7 +50,7 @@ def get_file_format(resource_name: Text) -> Text:
     if fformat in [loading.MARKDOWN, loading.RASA_YAML] and all(
         f == fformat for f in file_formats
     ):
-        return fformat
+        return {loading.MARKDOWN: "md", loading.RASA_YAML: "yml"}[fformat]
 
     return "json"
 
