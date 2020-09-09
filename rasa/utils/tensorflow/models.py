@@ -103,7 +103,7 @@ class RasaModel(tf.keras.models.Model):
         self.checkpoint_model = checkpoint_model
         self.best_model_file = None
         if self.checkpoint_model:
-            model_checkpoint_dir = io.create_temporary_directory()
+            model_checkpoint_dir = rasa.util.io.create_temporary_directory()
             self.best_model_file = os.path.join(
                 model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
             )
@@ -490,8 +490,8 @@ class RasaModel(tf.keras.models.Model):
                         tf.summary.scalar(metric.name, metric.result(), step=step)
 
     def _update_best_metrics_so_far(self, current_results: Dict[Text, Text]) -> bool:
-# Initialize best_metrics_so_far with the first results 
-if not self.best_metrics_so_far:
+        # Initialize best_metrics_so_far with the first results
+        if not self.best_metrics_so_far:
             keys = filter(
                 lambda k: True if (k.endswith("_acc") or k.endswith("_f1")) else False,
                 current_results.keys(),
