@@ -100,8 +100,9 @@ class RasaModel(tf.keras.models.Model):
         self.tensorboard_log_on_epochs = True
 
         self.best_metrics_so_far = {}
+        self.checkpoint_model = checkpoint_model
         self.best_model_file = None
-        if checkpoint_model:
+        if self.checkpoint_model:
             model_checkpoint_dir = io.create_temporary_directory()
             self.best_model_file = os.path.join(
                 model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
@@ -230,7 +231,7 @@ class RasaModel(tf.keras.models.Model):
 
                     val_results = self._get_metric_results(prefix="val_")
                     improved = self._update_best_metrics_so_far(val_results)
-                    if improved and self.best_model_file is not None:
+                    if improved and self.checkpoint_model:
                         logger.debug(f"Creating model checkpoint at epoch={epoch}...")
                         best_model_epoch = epoch
                         self.save(self.best_model_file, overwrite=True)
@@ -240,7 +241,7 @@ class RasaModel(tf.keras.models.Model):
             progress_bar.set_postfix(postfix_dict)
 
         # Checkpoint the model one last time after training
-        if evaluate_on_num_examples > 0 and self.best_model_file is not None:
+        if evaluate_on_num_examples > 0 and self.checkpoint_model is not None:
             epoch_batch_size = self.linearly_increasing_batch_size(
                 epochs, batch_size, epochs
             )
