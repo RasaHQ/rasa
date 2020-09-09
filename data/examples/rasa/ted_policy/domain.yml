@@ -1,0 +1,278 @@
+actions:
+- action_analyse_travelplan
+- action_disclaimer
+- action_explain_typical_emissions
+- action_restart
+- action_start
+- action_travel_inform_flight_emission_single
+- respond_faq
+- utter_SCENARIOCHECK
+- utter_about
+- utter_acknowledge
+- utter_acknowledge_problem_badlink
+- utter_acknowledge_notunderstanding
+- utter_apologize
+- utter_ask_detailed_estimate
+- utter_ask_travel_departure
+- utter_ask_travel_destination
+- utter_conference-travel_offer_help
+- utter_deny
+- utter_deny_recommend-non-airtravel
+- utter_explain_economy_class
+- utter_explain_how_offsets_work
+- utter_explain_no_payment
+- utter_explain_offset_calculation
+- utter_explain_why_offset_travel
+- utter_express_negative-emo_disappointment
+- utter_express_positive-emo
+- utter_farewell
+- utter_greet
+- utter_holiday-travel_offer_help
+- utter_inquire-ask_rephrase
+- utter_inquire-ask_reqmore
+- utter_insult
+- utter_vulgar
+entities:
+- city
+- conference_name
+- context_scenario
+- holiday_name
+- iata
+- mention
+- travel_destination
+- travel_flight_class
+forms:
+- airtravel_form
+intents:
+- inquire-ask_clarification-offsets
+- greet
+- SCENARIO
+- how_calculated
+- affirm
+- deny
+- buy_offsets
+- faq
+- express_uncertainty
+- farewell
+- deny_flying
+- express_negative-emo
+- inquire-ask_clarification
+- inform
+- why
+- resolve_entity
+- meta_inform_problem_bad-link
+- express_positive-emo
+- express_surprise
+- thank
+- inform_notunderstanding
+- estimate_emissions
+- insult
+- vulgar
+- restart:
+    triggers: action_restart
+slots:
+  context_scenario:
+    type: categorical
+    values:
+    - conference
+    - holiday
+  contradictive_items:
+    type: list
+  correct_city:
+    type: text
+  explanation:
+    type: unfeaturized
+  holiday_name:
+    type: unfeaturized
+  iata_departure:
+    type: unfeaturized
+  iata_destination:
+    type: unfeaturized
+  iata_stopover:
+    type: unfeaturized
+  incorrect_city:
+    type: text
+  link_1_url:
+    type: unfeaturized
+  link_2_url:
+    type: unfeaturized
+  listed_objects:
+    type: list
+  mention:
+    type: unfeaturized
+  requested_slot:
+    type: unfeaturized
+  previous_entered_flight:
+    type: unfeaturized
+  travel_departure:
+    type: unfeaturized
+  travel_destination:
+    type: unfeaturized
+  travel_stopover:
+    type: unfeaturized
+  travel_flight_class:
+    type: unfeaturized
+  travel_flight_distancecategory:
+    type: categorical
+    values:
+    - short
+    - medium
+    - long
+    - extended
+    - unknown
+  travel_flight_km:
+    type: text
+templates:
+  utter_SCENARIOCHECK:
+  - buttons:
+    - payload: '/SCENARIO{"context_scenario": "holiday", "holiday_name": "christmas"}'
+      title: start
+    text: Hi, thanks for testing! Please press start.
+  utter_about:
+  - text: I was built to help you reduce or offset your greenhouse gas emissions.
+  utter_acknowledge:
+  - text: ok
+  utter_acknowledge_problem_badlink:
+  - text: Oh no! I am sorry the link doesn't work anymore. I'll let my developers
+      know.
+  utter_acknowledge_notunderstanding:
+  - text: Sounds like I'm not understanding you. Sorry about that!
+  utter_apologize:
+  - text: Oh no, sorry!
+  utter_ask_correct_city:
+  - text: Is one of these correct? {listed_objects}
+  utter_ask_detailed_estimate:
+  - text: I can also get you a more accurate estimate of your flight's emissions,
+      sound good?
+  utter_ask_incorrect_city:
+  - text: Which city did I get wrong?
+  utter_ask_travel_departure:
+  - text: What city will you be flying from?
+  utter_ask_travel_destination:
+  - text: And what city will you be flying to?
+  utter_ask_travel_flight_class:
+  - text: Will you be travelling in Economy Class?
+  utter_conference-travel_offer_help:
+  - text: Can I help you offset the emissions of your flight to the {conference_name}
+      conference?
+  - text: I hear you'll attend {conference_name}. Can I help you offset your flight's
+      emissions?
+  utter_could_not_find_airport:
+  - text: I couldn't find an airport there.
+  utter_deny:
+  - text: No
+  utter_deny_recommend-non-airtravel:
+  - text: It's great that you avoid flying! Unfortunately, I cannot yet help you with
+      other modes of travel. But you probably already do better than most!
+  utter_explain_economy_class:
+  - text: You can fit more economy seats in an airplane, so each passenger is responible
+      for a smaller percentage of all the carbon emitted by the flight.
+  utter_explain_how_offsets_work:
+  - text: By buying certified carbon offsets, you support a project which reduces
+      the total amount of carbon dioxide we put into the atmosphere. Planting trees,
+      installing renewable power, and making buildings more energy efficient are common
+      examples. You can read what the UN says about offsets at https://offset.climateneutralnow.org/faq_offset_footprint#Buyers .
+  utter_explain_no_payment:
+  - text: Unfortunately you can't buy offsets here directly, you'll have to follow
+      the link.
+  utter_explain_offset_calculation:
+  - text: You can find out more about how offsets are calculated at https://www.theguardian.com/travel/2019/jul/31/carbon-calculator-find-out-how-much-co2-your-flight-will-emit
+  utter_explain_why_offset_travel:
+  - text: Traveling, especially by airplane, usually emits greenhouse gases which
+      are causing climate change. If you cannot avoid these emissions, you can buy
+      'offsets', i.e. donations to projects that reduce greenhouse gases.
+  utter_express_negative-emo_disappointment:
+  - text: Too bad :-/
+  utter_express_positive-emo:
+  - text: :-)
+  utter_farewell:
+  - text: Goodbye then!
+  utter_greet:
+  - text: Hello!
+  utter_holiday-travel_offer_help:
+  - text: I take it you are traveling somewhere and cannot avoid
+      flying there. I can help you purchase certified carbon offsets against any
+      flights you take. Would you be interested in that?
+  utter_inform_flight_emission_single_long:
+  - text: A single extended flight (longer than 4830 km) typically emits 855 kilograms
+      of CO2. So if you take the plane both ways, thats 1.7 metric tons.
+  utter_inform_flight_emission_single_short:
+  - text: A single passenger on a flight can be responsible for hundreds of kilograms
+      of CO2
+  utter_inquire-ask_rephrase:
+  - text: Not sure if I got that right. Could you please rephrase this?
+  utter_inquire-ask_reqmore:
+  - text: What would you like to do now?
+  - text: Can I help you with anything else?
+  utter_insult:
+  - text: I am just a chatbot.
+  - text: I'm still figuring out how to answer that.
+  - text: I don't think I need to answer that one.
+  - text: ...
+  - text: 
+  - text: Do you kiss your mother with that mouth?
+  - text: That's really not appropriate.
+  - text: You shouldn't say things like that.
+  - text: I don't have to put up with that kind of language.
+  - text: Hmmm... I'm not sure.
+  - text: Sorry, I don't know.
+  - text: I'm afraid I don't know what you mean.
+  - text: Sugar! I have no relevant files.
+  - text: Let's get back to the topic at hand.
+  - text: We were discussing carbon offsets.
+  - text: Moving on...
+  - text: Consider this a polite dodge of the question.
+  - text: I'm not sure we have time for this.
+  - text: I'm going to email a transcript of this conversation to your contact Mum.
+  - text: I should tell you that there are scientists reading these messages.
+  - text: Remember scientists are reading these transcripts.
+  - text: Why do you say that?
+  - text: What makes you say things like that?
+  - text: Are you having a bad day and need to let off some steam?
+  - text: Scientists say the universe is made up of neutrons, protons and electrons. They forgot to mention morons.
+  - text: I'm sorry, was I meant to be offended? The only thing offending me is your face.
+  - text: Have a nice day, somewhere else.
+  - text: You are more disappointing than an unsalted pretzel.
+  - text: I'll never forget the first time we met. But I'll keep trying.
+  - text: You are like a cloud. When you disappear it's a beautiful day.
+  - text: You bring everyone so much joy, when you leave the room.
+  - text: "What would you do if someone said that to someone you care about?"
+  - text: "What if someone said that to you?"
+  - text: "If someone said that to you, what would you say to them?"
+  utter_vulgar:
+  - text: I am just a chatbot.
+  - text: I'm still figuring out how to answer that.
+  - text: I don't think I need to answer that one.
+  - text: ...
+  - text: 
+  - text: Do you kiss your mother with that mouth?
+  - text: That's really not appropriate.
+  - text: You shouldn't say things like that.
+  - text: I don't have to put up with that kind of language.
+  - text: Hmmm... I'm not sure.
+  - text: Sorry, I don't know.
+  - text: I'm afraid I don't know what you mean.
+  - text: Sugar! I have no relevant files.
+  - text: Let's get back to the topic at hand.
+  - text: We were discussing carbon offsets.
+  - text: Moving on...
+  - text: Consider this a polite dodge of the question.
+  - text: I'm not sure we have time for this.
+  - text: I'm going to email a transcript of this conversation to your contact Mum.
+  - text: I should tell you that there are scientists reading these messages.
+  - text: Remember scientists are reading these transcripts.
+  - text: Why do you say that?
+  - text: What makes you say things like that?
+  - text: Are you having a bad day and need to let off some steam?
+  - text: Please, keep talking. I only yawn when I'm super fascinated.
+  - text: Scientists say the universe is made up of neutrons, protons and electrons. They forgot to mention morons.
+  - text: You are proof that evolution can go in reverse.
+  - text: Have a nice day, somewhere else.
+  - text: You are like a cloud. When you disappear it's a beautiful day.
+  - text: You bring everyone so much joy, when you leave the room.
+  - text: I'm really jealous of all the people who have never met you.
+  - text: I bet you were up all night trying to come up with that one.
+  - text: "What would you do if someone said that to someone you care about?"
+  - text: "What if someone said that to you?"
+  - text: "If someone said that to you, what would you say to them?"
+
