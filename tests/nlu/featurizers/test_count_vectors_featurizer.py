@@ -1,8 +1,11 @@
+from typing import List, Any
+
 import numpy as np
 import pytest
 import scipy.sparse
 from typing import Text
 
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import (
@@ -12,6 +15,7 @@ from rasa.nlu.constants import (
     RESPONSE,
     ACTION_NAME,
     ACTION_TEXT,
+    SPACY_DOCS,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
@@ -486,6 +490,46 @@ def test_count_vectors_featurizer_train():
     assert sen_vec is None
     assert (1, 1) == seq_vec.shape
     assert np.all(seq_vec.toarray()[0] == np.array([1]))
+
+
+@pytest.mark.parametrize(
+    "sentence, sequence_features, sentence_features, use_lemma",
+    [
+        ("go goes went go", [[1, 0, 0]], [[2, 1, 1]], False),
+        ("go goes went go", [[1]], [[4]], True),
+    ],
+)
+def test_count_vector_featurizer_use_lemma(
+    spacy_nlp: Any,
+    sentence: Text,
+    sequence_features: List[List[int]],
+    sentence_features: List[List[int]],
+    use_lemma: bool,
+):
+    ftr = CountVectorsFeaturizer({"use_lemma": use_lemma})
+
+    train_message = Message(data={TEXT: sentence})
+    train_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
+    test_message = Message(data={TEXT: sentence})
+    test_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
+
+    SpacyTokenizer().process(train_message)
+    SpacyTokenizer().process(test_message)
+
+    ftr.train(TrainingData([train_message]))
+
+    ftr.process(test_message)
+
+    seq_vecs, sen_vecs = test_message.get_sparse_features(TEXT, [])
+
+    assert isinstance(seq_vecs.features, scipy.sparse.coo_matrix)
+    assert isinstance(sen_vecs.features, scipy.sparse.coo_matrix)
+
+    actual_seq_vecs = seq_vecs.features.toarray()
+    actual_sen_vecs = sen_vecs.features.toarray()
+
+    assert np.all(actual_seq_vecs[0] == sequence_features)
+    assert np.all(actual_sen_vecs[-1] == sentence_features)
 
 
 @pytest.mark.parametrize(
