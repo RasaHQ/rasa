@@ -345,3 +345,14 @@ stories:
         intent={"name": intent},
         entities=[{"entity": "name", "start": 6, "end": 22, "value": "test"}],
     )
+
+
+def test_read_mixed_training_data_file(default_domain: Domain):
+    training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
+
+    reader = YAMLStoryReader(default_domain)
+    yaml_content = rasa.utils.io.read_yaml_file(training_data_file)
+
+    with pytest.warns(None) as record:
+        reader.read_from_parsed_yaml(yaml_content)
+        assert not len(record)
