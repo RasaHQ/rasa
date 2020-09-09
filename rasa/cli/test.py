@@ -3,6 +3,7 @@ import logging
 import os
 from typing import List
 
+import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.cli.arguments import test as arguments
 from rasa.constants import (
@@ -63,7 +64,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
     stories = cli_utils.get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
-    stories = data.get_test_directory(stories)
+    stories = rasa.shared.data.get_test_directory(stories)
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
@@ -97,7 +98,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
     nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    nlu_data = data.get_nlu_directory(nlu_data)
+    nlu_data = rasa.shared.data.get_nlu_directory(nlu_data)
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 

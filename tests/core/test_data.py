@@ -6,6 +6,7 @@ import pytest
 from pathlib import Path
 
 import rasa.data as data
+import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.loading import load_data
 from tests.conftest import DEFAULT_NLU_DATA
@@ -15,7 +16,7 @@ from rasa.shared.utils.io import json_to_string
 
 def test_get_core_directory(project):
     data_dir = os.path.join(project, "data")
-    core_directory = data.get_core_directory([data_dir])
+    core_directory = rasa.shared.data.get_core_directory([data_dir])
     core_files = os.listdir(core_directory)
 
     assert len(core_files) == 2
@@ -25,7 +26,7 @@ def test_get_core_directory(project):
 
 def test_get_nlu_directory(project):
     data_dir = os.path.join(project, "data")
-    nlu_directory = data.get_nlu_directory([data_dir])
+    nlu_directory = rasa.shared.data.get_nlu_directory([data_dir])
 
     nlu_files = os.listdir(nlu_directory)
 
@@ -35,7 +36,7 @@ def test_get_nlu_directory(project):
 
 def test_get_nlu_file(project):
     data_file = os.path.join(project, "data/nlu.yml")
-    nlu_directory = data.get_nlu_directory(data_file)
+    nlu_directory = rasa.shared.data.get_nlu_directory(data_file)
 
     nlu_files = os.listdir(nlu_directory)
 
@@ -48,8 +49,12 @@ def test_get_nlu_file(project):
 
 def test_get_core_nlu_files(project):
     data_dir = os.path.join(project, "data")
-    nlu_files = data.get_data_files([data_dir], data.is_nlu_file)
-    core_files = data.get_data_files([data_dir], data.is_story_file)
+    nlu_files = rasa.shared.data.get_data_files(
+        [data_dir], rasa.shared.data.is_nlu_file
+    )
+    core_files = rasa.shared.data.get_data_files(
+        [data_dir], rasa.shared.data.is_story_file
+    )
     assert len(nlu_files) == 1
     assert list(nlu_files)[0].endswith("nlu.yml")
 
@@ -60,7 +65,9 @@ def test_get_core_nlu_files(project):
 
 def test_get_core_nlu_directories(project):
     data_dir = os.path.join(project, "data")
-    core_directory, nlu_directory = data.get_core_nlu_directories([data_dir])
+    core_directory, nlu_directory = rasa.shared.data.get_core_nlu_directories(
+        [data_dir]
+    )
 
     nlu_files = os.listdir(nlu_directory)
 
@@ -75,7 +82,7 @@ def test_get_core_nlu_directories(project):
 
 
 def test_get_core_nlu_directories_with_none():
-    directories = data.get_core_nlu_directories(None)
+    directories = rasa.shared.data.get_core_nlu_directories(None)
 
     assert all(directories)
     assert all(not os.listdir(directory) for directory in directories)
@@ -97,7 +104,9 @@ def test_same_file_names_get_resolved(tmp_path):
     shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_one)
     shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_two)
 
-    core_directory, nlu_directory = data.get_core_nlu_directories([str(tmp_path)])
+    core_directory, nlu_directory = rasa.shared.data.get_core_nlu_directories(
+        [str(tmp_path)]
+    )
 
     nlu_files = os.listdir(nlu_directory)
 
@@ -162,7 +171,9 @@ def test_same_file_names_get_resolved(tmp_path):
 def test_find_nlu_files_with_different_formats(test_input, expected):
     examples_dir = "data/examples"
     data_dir = os.path.join(examples_dir, test_input)
-    nlu_files = data.get_data_files([data_dir], data.is_nlu_file)
+    nlu_files = rasa.shared.data.get_data_files(
+        [data_dir], rasa.shared.data.is_nlu_file
+    )
     assert [Path(f) for f in nlu_files] == [Path(f) for f in expected]
 
 
@@ -180,7 +191,7 @@ def test_is_nlu_file_with_json():
 
     rasa.shared.utils.io.write_text_file(json_to_string(test), file)
 
-    assert data.is_nlu_file(file)
+    assert rasa.shared.data.is_nlu_file(file)
 
 
 def test_is_not_nlu_file_with_json():
@@ -188,10 +199,12 @@ def test_is_not_nlu_file_with_json():
     file = os.path.join(directory, "test.json")
     rasa.shared.utils.io.write_text_file('{"test": "a"}', file)
 
-    assert not data.is_nlu_file(file)
+    assert not rasa.shared.data.is_nlu_file(file)
 
 
 def test_get_story_file_with_yaml():
     examples_dir = "data/test_yaml_stories"
-    core_files = data.get_data_files([examples_dir], data.is_story_file)
+    core_files = rasa.shared.data.get_data_files(
+        [examples_dir], rasa.shared.data.is_story_file
+    )
     assert core_files

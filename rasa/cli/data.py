@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import List
 
+import rasa.shared.data
 from rasa import data
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
@@ -153,7 +154,7 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     from rasa.shared.nlu.training_data.util import get_file_format
 
     data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    data_path = data.get_nlu_directory(data_path)
+    data_path = rasa.shared.data.get_nlu_directory(data_path)
 
     nlu_data = load_data(data_path)
     fformat = get_file_format(data_path)

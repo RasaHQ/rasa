@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, List, Optional, Text, Union
 
+import rasa.shared.data
 from rasa import data
 from rasa.core.domain import Domain
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -27,8 +28,12 @@ class RasaFileImporter(TrainingDataImporter):
 
         self._domain_path = domain_path
 
-        self._nlu_files = data.get_data_files(training_data_paths, data.is_nlu_file)
-        self._story_files = data.get_data_files(training_data_paths, data.is_story_file)
+        self._nlu_files = rasa.shared.data.get_data_files(
+            training_data_paths, rasa.shared.data.is_nlu_file
+        )
+        self._story_files = rasa.shared.data.get_data_files(
+            training_data_paths, rasa.shared.data.is_story_file
+        )
 
         self.config = autoconfig.get_configuration(config_file, training_type)
 
