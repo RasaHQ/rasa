@@ -22,7 +22,7 @@ from rasa.core.events import (
 )
 from rasa.core.trackers import DialogueStateTracker, FrozenState
 from rasa.shared.core.slots import Slot
-from rasa.core.training.structures import (
+from rasa.shared.core.training_data.structures import (
     StoryGraph,
     STORY_START,
     StoryStep,

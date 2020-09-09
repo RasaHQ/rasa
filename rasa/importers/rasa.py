@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Text, Union
 
 from rasa import data
 from rasa.core.domain import Domain
-from rasa.core.training.structures import StoryGraph
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.importers import utils, autoconfig
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.autoconfig import TrainingType

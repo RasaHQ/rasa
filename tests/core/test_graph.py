@@ -1,4 +1,4 @@
-from rasa.core.training.structures import StoryGraph
+from rasa.shared.core.training_data.structures import StoryGraph
 
 
 def check_graph_is_sorted(g, sorted_nodes, removed_edges):

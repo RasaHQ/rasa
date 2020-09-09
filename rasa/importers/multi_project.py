@@ -9,7 +9,7 @@ from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.core.training.structures import StoryGraph
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.utils.common import mark_as_experimental_feature
 import rasa.shared.utils.io
 
