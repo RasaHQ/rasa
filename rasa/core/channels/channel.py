@@ -31,8 +31,6 @@ class UserMessage:
 
      Includes the channel the responses should be sent to."""
 
-    DEFAULT_SENDER_ID = "default"
-
     def __init__(
         self,
         text: Optional[Text] = None,

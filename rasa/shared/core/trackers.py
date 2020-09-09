@@ -21,6 +21,7 @@ from typing import (
 import typing
 
 import rasa.shared.utils.io
+from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -364,10 +365,9 @@ class DialogueStateTracker:
 
     def init_copy(self) -> "DialogueStateTracker":
         """Creates a new state tracker with the same initial values."""
-        from rasa.core.channels.channel import UserMessage
 
         return DialogueStateTracker(
-            UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
+            DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
 
     def generate_all_prior_trackers(

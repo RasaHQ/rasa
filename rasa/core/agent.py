@@ -17,6 +17,7 @@ from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 import rasa.core.interpreter
+from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -568,7 +569,7 @@ class Agent:
         text_message: Union[Text, Dict[Text, Any]],
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         output_channel: Optional[OutputChannel] = None,
-        sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID,
+        sender_id: Optional[Text] = DEFAULT_SENDER_ID,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 

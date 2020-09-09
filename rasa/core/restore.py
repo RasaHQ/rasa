@@ -8,6 +8,7 @@ import rasa.cli.utils
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.cli import utils as cli_utils
+from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import console
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
@@ -122,7 +123,7 @@ def load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueStateT
     """Read the json dump from the file and instantiate a tracker it."""
 
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
-    sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
+    sender_id = tracker_json.get("sender_id", DEFAULT_SENDER_ID)
     return DialogueStateTracker.from_dict(
         sender_id, tracker_json.get("events", []), domain.slots
     )

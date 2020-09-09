@@ -8,6 +8,7 @@ import pytest
 from rasa.core import training
 from rasa.core.actions.action import ActionRevertFallbackEvents
 from rasa.core.constants import USER
+from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
@@ -96,8 +97,8 @@ class PolicyTestCollection:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     @pytest.fixture(scope="module")
-    def tracker(self, default_domain):
-        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID, default_domain.slots)
+    def tracker(self, default_domain: Domain) -> DialogueStateTracker:
+        return DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
 
     @pytest.fixture(scope="module")
     async def trained_policy(self, featurizer, priority):
@@ -136,9 +137,7 @@ class PolicyTestCollection:
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
-        tracker = DialogueStateTracker(
-            UserMessage.DEFAULT_SENDER_ID, default_domain.slots
-        )
+        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
         )
@@ -240,9 +239,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         classes = [1, 3]
         new_trackers = []
         for tr in trackers:
-            new_tracker = DialogueStateTracker(
-                UserMessage.DEFAULT_SENDER_ID, default_domain.slots
-            )
+            new_tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
@@ -722,14 +719,12 @@ class TestMappingPolicy(PolicyTestCollection):
         assert loaded.featurizer is None
 
     @pytest.fixture(scope="module")
-    def domain_with_mapping(self):
+    def domain_with_mapping(self) -> Domain:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_MAPPING)
 
     @pytest.fixture
-    def tracker(self, domain_with_mapping):
-        return DialogueStateTracker(
-            UserMessage.DEFAULT_SENDER_ID, domain_with_mapping.slots
-        )
+    def tracker(self, domain_with_mapping: Domain) -> DialogueStateTracker:
+        return DialogueStateTracker(DEFAULT_SENDER_ID, domain_with_mapping.slots)
 
     @pytest.fixture(
         params=[

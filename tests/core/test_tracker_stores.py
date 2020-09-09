@@ -10,6 +10,7 @@ from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
+from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
@@ -50,14 +51,14 @@ def get_or_create_tracker_store(store: TrackerStore) -> None:
     slot_key = "location"
     slot_val = "Easter Island"
 
-    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    tracker = store.get_or_create_tracker(DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
     assert tracker.get_slot(slot_key) == slot_val
 
     store.save(tracker)
 
-    again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    again = store.get_or_create_tracker(DEFAULT_SENDER_ID)
     assert again.get_slot(slot_key) == slot_val
 
 
@@ -237,7 +238,7 @@ def _tracker_store_and_tracker_with_slot_set() -> Tuple[
     slot_val = "French"
 
     store = InMemoryTrackerStore(domain)
-    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    tracker = store.get_or_create_tracker(DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
 
@@ -248,9 +249,7 @@ def test_tracker_serialisation():
     store, tracker = _tracker_store_and_tracker_with_slot_set()
     serialised = store.serialise_tracker(tracker)
 
-    assert tracker == store.deserialise_tracker(
-        UserMessage.DEFAULT_SENDER_ID, serialised
-    )
+    assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
 
 
 def test_deprecated_pickle_deserialisation():
@@ -270,9 +269,7 @@ def test_deprecated_pickle_deserialisation():
     # deprecation warning should be emitted
 
     with pytest.warns(FutureWarning) as record:
-        assert tracker == store.deserialise_tracker(
-            UserMessage.DEFAULT_SENDER_ID, serialised
-        )
+        assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
     assert len(record) == 1
     assert (
         "Deserialisation of pickled trackers is deprecated" in record[0].message.args[0]

@@ -21,7 +21,7 @@ from rasa.shared.core.events import BotUttered, ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.training import interactive
 from rasa.importers.rasa import TrainingDataImporter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.loading import RASA, MARKDOWN, UNK
@@ -567,10 +567,7 @@ def test_get_nlu_target_format(path: Text, expected_format: Text):
 @pytest.mark.parametrize(
     "trackers, expected_trackers",
     [
-        (
-            [DialogueStateTracker.from_events("one", [])],
-            [deque([]), UserMessage.DEFAULT_SENDER_ID],
-        ),
+        ([DialogueStateTracker.from_events("one", [])], [deque([]), DEFAULT_SENDER_ID]),
         (
             [
                 str(i)
@@ -578,7 +575,7 @@ def test_get_nlu_target_format(path: Text, expected_format: Text):
                     interactive.MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION + 1
                 )
             ],
-            [UserMessage.DEFAULT_SENDER_ID],
+            [DEFAULT_SENDER_ID],
         ),
     ],
 )

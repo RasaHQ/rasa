@@ -34,7 +34,11 @@ from rasa.constants import (
     DEFAULT_RESPONSE_TIMEOUT,
     MINIMUM_COMPATIBLE_VERSION,
 )
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_BASE_URL
+from rasa.shared.constants import (
+    DOCS_URL_TRAINING_DATA_NLU,
+    DOCS_BASE_URL,
+    DEFAULT_SENDER_ID,
+)
 from rasa.shared.core.domain import InvalidDomain
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -896,12 +900,11 @@ def create_app(
             "predict the next action.",
         )
 
-        sender_id = UserMessage.DEFAULT_SENDER_ID
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json
         try:
             tracker = DialogueStateTracker.from_dict(
-                sender_id, request_params, app.agent.domain.slots
+                DEFAULT_SENDER_ID, request_params, app.agent.domain.slots
             )
         except Exception as e:
             logger.debug(traceback.format_exc())

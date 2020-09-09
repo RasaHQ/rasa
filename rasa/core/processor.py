@@ -33,7 +33,11 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_DOMAINS
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DOCS_URL_DOMAINS,
+    DEFAULT_SENDER_ID,
+)
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
@@ -206,7 +210,7 @@ class MessageProcessor:
             Tracker for the conversation. Creates an empty tracker in case it's a new
             conversation.
         """
-        conversation_id = conversation_id or UserMessage.DEFAULT_SENDER_ID
+        conversation_id = conversation_id or DEFAULT_SENDER_ID
         return self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )

@@ -52,7 +52,7 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
 )
 import rasa.core.interpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
@@ -1398,7 +1398,7 @@ def _print_help(skip_visualization: bool) -> None:
 async def record_messages(
     endpoint: EndpointConfig,
     file_importer: TrainingDataImporter,
-    conversation_id: Text = UserMessage.DEFAULT_SENDER_ID,
+    conversation_id: Text = DEFAULT_SENDER_ID,
     max_message_limit: Optional[int] = None,
     skip_visualization: bool = False,
 ) -> None:
