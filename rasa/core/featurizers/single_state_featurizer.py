@@ -5,7 +5,8 @@ from typing import List, Optional, Dict, Text, Set
 from collections import defaultdict
 
 import rasa.shared.utils.io
-from rasa.core.domain import Domain, State, SubState
+from rasa.core.domain import Domain
+from rasa.shared.core.domain import SubState, State
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER, SLOTS
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP
