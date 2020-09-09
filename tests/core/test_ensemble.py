@@ -26,10 +26,11 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
     ACTION_LISTEN_NAME,
 )
-from rasa.core.constants import USER_INTENT_RESTART, FORM_POLICY_PRIORITY
+from rasa.core.constants import FORM_POLICY_PRIORITY
 from rasa.core.events import ActionExecuted
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
+from rasa.shared.core.constants import USER_INTENT_RESTART
 
 
 class WorkingPolicy(Policy):

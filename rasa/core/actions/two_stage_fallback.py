@@ -2,7 +2,6 @@ import copy
 import time
 from typing import List, Text, Optional
 
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.actions import action
 from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
@@ -12,7 +11,6 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE, LOOP_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
     Event,
@@ -23,6 +21,8 @@ from rasa.core.events import (
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.utils.endpoints import EndpointConfig
 
 ACTION_TWO_STAGE_FALLBACK_NAME = "two_stage_fallback"

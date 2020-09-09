@@ -21,7 +21,7 @@ from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
-from rasa.core.domain import SessionConfig
+from rasa.shared.core.domain import SessionConfig
 from rasa.core.events import UserUttered
 from rasa.core.exporter import Exporter
 from rasa.core.policies import Policy
@@ -31,7 +31,6 @@ from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
-import rasa.utils.io as io_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STACK_CONFIG,

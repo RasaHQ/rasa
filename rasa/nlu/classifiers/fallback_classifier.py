@@ -1,7 +1,7 @@
 import logging
 from typing import Any, List, Type, Text, Dict, Union, Tuple, Optional
 
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component

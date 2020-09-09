@@ -3,7 +3,7 @@ from typing import Text
 import os
 
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
-from rasa.core.constants import DEFAULT_INTENTS
+from rasa.shared.core.constants import DEFAULT_INTENTS
 from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.rasa import RasaFileImporter

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import numpy as np
 
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
+from rasa.constants import DOCS_URL_POLICIES
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -20,7 +20,8 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
-from rasa.core.constants import USER_INTENT_RESTART, UTTER_PREFIX, REQUESTED_SLOT
+from rasa.core.constants import UTTER_PREFIX, REQUESTED_SLOT
+from rasa.shared.core.constants import USER_INTENT_RESTART
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
@@ -33,7 +34,7 @@ from rasa.core.events import (
     UserUttered,
 )
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_DOMAINS
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore

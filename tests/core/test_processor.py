@@ -9,13 +9,14 @@ from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable
 from unittest.mock import patch, Mock
+from tests.utilities import latest_request
 
 from rasa.core import jobs
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
-
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
-from rasa.core.domain import SessionConfig, Domain
+from rasa.core.domain import Domain
+from rasa.shared.core.domain import SessionConfig
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,
@@ -36,9 +37,8 @@ from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
-from tests.utilities import latest_request
-
-from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL, DEFAULT_INTENTS
+from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
+from rasa.shared.core.constants import DEFAULT_INTENTS
 
 import logging
 

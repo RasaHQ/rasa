@@ -31,7 +31,8 @@ from rasa.core.actions.action import (
 from rasa.core.actions.forms import FormAction
 from rasa.core.actions.two_stage_fallback import ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain, SessionConfig
+from rasa.core.domain import Domain
+from rasa.shared.core.domain import SessionConfig
 from rasa.core.events import (
     Restarted,
     SlotSet,
@@ -44,7 +45,7 @@ from rasa.core.events import (
     UserUttered,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
-from rasa.core.constants import USER_INTENT_SESSION_START
+from rasa.shared.core.constants import USER_INTENT_SESSION_START
 from rasa.core.trackers import DialogueStateTracker, ACTIVE_LOOP
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request

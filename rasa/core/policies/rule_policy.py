@@ -1,11 +1,10 @@
+import json
 import logging
 from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
-import json
-
 from rasa.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.domain import Domain, InvalidDomain, State
+from rasa.core.domain import Domain, State
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
@@ -17,12 +16,14 @@ from rasa.core.trackers import (
 from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import (
     FORM_POLICY_PRIORITY,
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
-    USER_INTENT_SESSION_START,
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     LOOP_REJECTED,
+)
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    USER_INTENT_SESSION_START,
 )
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -33,6 +34,7 @@ from rasa.core.actions.action import (
     ACTION_DEFAULT_FALLBACK_NAME,
 )
 from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.domain import InvalidDomain
 from rasa.shared.nlu.constants import ACTION_NAME
 
 if TYPE_CHECKING:

@@ -8,13 +8,10 @@ import random
 import aiohttp
 
 import rasa.core
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.shared.constants import DOCS_BASE_URL
 from rasa.core import events
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
     REQUESTED_SLOT,
-    USER_INTENT_OUT_OF_SCOPE,
     UTTER_PREFIX,
     RESPOND_PREFIX,
 )
@@ -26,8 +23,9 @@ from rasa.nlu.constants import (
     INTENT_RANKING_KEY,
     INTENT_NAME_KEY,
 )
+from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY
-
 from rasa.core.events import (
     UserUtteranceReverted,
     UserUttered,

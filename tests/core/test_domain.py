@@ -12,13 +12,19 @@ from rasa.core.constants import (
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
-    DEFAULT_INTENTS,
 )
-from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
-from rasa.core.domain import Domain, InvalidDomain, SessionConfig, State
+from rasa.core.domain import Domain, State
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
+from rasa.shared.core.constants import DEFAULT_INTENTS
+from rasa.shared.core.domain import (
+    InvalidDomain,
+    SessionConfig,
+    USED_ENTITIES_KEY,
+    USE_ENTITIES_KEY,
+    IGNORE_ENTITIES_KEY
+)
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,

@@ -8,24 +8,24 @@ from functools import partial
 from multiprocessing import Process
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
-import numpy as np
-from aiohttp import ClientError
-from colorclass import Color
 
-import rasa.shared.data
-import rasa.shared.utils.io
-from rasa.shared.nlu.constants import TEXT
-from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
-from rasa.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
-
+import numpy as np
+from aiohttp import ClientError
+from colorclass import Color
 import questionary
-import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa.core import constants, run, train, utils
+import rasa.shared.data
+import rasa.shared.utils.io
+import rasa.cli.utils
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.core.constants import USER_INTENT_RESTART
+from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.core import run, train, utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
@@ -1276,7 +1276,7 @@ async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -
 
     message = await _ask_questions(question, conversation_id, endpoint, lambda a: not a)
 
-    if message == (INTENT_MESSAGE_PREFIX + constants.USER_INTENT_RESTART):
+    if message == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
         raise RestartConversation()
 
     await send_message(endpoint, conversation_id, message)

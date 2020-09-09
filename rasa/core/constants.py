@@ -1,5 +1,3 @@
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-
 DEFAULT_SERVER_PORT = 5005
 
 DEFAULT_SERVER_FORMAT = "{}://localhost:{}"
@@ -30,22 +28,6 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 # start of special user message section
 EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
-
-USER_INTENT_RESTART = "restart"
-
-USER_INTENT_SESSION_START = "session_start"
-
-USER_INTENT_BACK = "back"
-
-USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
-
-DEFAULT_INTENTS = [
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
-    USER_INTENT_OUT_OF_SCOPE,
-    USER_INTENT_SESSION_START,
-    DEFAULT_NLU_FALLBACK_INTENT_NAME,
-]
 
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 

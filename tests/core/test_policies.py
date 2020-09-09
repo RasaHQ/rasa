@@ -16,12 +16,11 @@ from rasa.core.actions.action import (
     ACTION_BACK_NAME,
 )
 from rasa.core.constants import (
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
     PREVIOUS_ACTION,
     USER,
 )
 from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.shared.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted, ConversationPaused

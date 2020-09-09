@@ -1,5 +1,5 @@
 import importlib
-from typing import Text, Optional, Any, List, Callable
+from typing import Text, Dict, Optional, Any, List, Callable
 
 
 def class_from_module_path(
@@ -38,6 +38,11 @@ def all_subclasses(cls: Any) -> List[Any]:
 def module_path_from_instance(inst: Any) -> Text:
     """Return the module path of an instance's class."""
     return inst.__module__ + "." + inst.__class__.__name__
+
+
+def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
+    """Sorts a list of dictionaries by their first key."""
+    return sorted(dicts, key=lambda d: list(d.keys())[0])
 
 
 def lazy_property(function: Callable) -> Any:

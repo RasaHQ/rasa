@@ -11,11 +11,10 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
-    DOCS_URL_DOMAINS,
     DOCS_URL_STORIES,
     LEGACY_DOCS_BASE_URL,
 )
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_DOMAINS
 from rasa.core.events import UserUttered
 from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter

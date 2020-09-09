@@ -16,14 +16,15 @@ from rasa.core.actions.action import (
 
 from rasa.core.events import UserUttered, ActionExecuted
 
-from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.shared.core.domain import InvalidDomain
 from rasa.shared.nlu.constants import ACTION_NAME
 
 if typing.TYPE_CHECKING:

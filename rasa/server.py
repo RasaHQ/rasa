@@ -11,14 +11,20 @@ from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Text, Union, Dict
 
-import rasa.shared.utils.io
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import HTTPResponse
+from sanic_cors import CORS
+from sanic_jwt import Initialize, exceptions
+
 import rasa
 import rasa.core.utils
-from rasa.utils import common as common_utils
+import rasa.shared.utils.io
 import rasa.utils.endpoints
 import rasa.utils.io
+from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa.utils import common as common_utils
 from rasa import model
 from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
@@ -27,6 +33,7 @@ from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
 )
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_BASE_URL
+from rasa.shared.core.domain import InvalidDomain
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
@@ -34,7 +41,6 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
-from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
 from rasa.core.lock_store import LockStore
 from rasa.core.test import test
@@ -44,11 +50,6 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
-from sanic import Sanic, response
-from sanic.request import Request
-from sanic.response import HTTPResponse
-from sanic_cors import CORS
-from sanic_jwt import Initialize, exceptions
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext

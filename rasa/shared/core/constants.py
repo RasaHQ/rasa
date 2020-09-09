@@ -1,1 +1,16 @@
+import rasa.shared.constants as constants
+
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
+
+USER_INTENT_RESTART = "restart"
+USER_INTENT_BACK = "back"
+USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
+USER_INTENT_SESSION_START = "session_start"
+
+DEFAULT_INTENTS = [
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_SESSION_START,
+    constants.DEFAULT_NLU_FALLBACK_INTENT_NAME,
+]

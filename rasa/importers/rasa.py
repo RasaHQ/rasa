@@ -2,12 +2,13 @@ import logging
 from typing import Dict, List, Optional, Text, Union
 
 from rasa import data
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain
 from rasa.core.training.structures import StoryGraph
 from rasa.importers import utils, autoconfig
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.autoconfig import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.core.domain import InvalidDomain
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)

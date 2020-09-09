@@ -1,7 +1,7 @@
 from typing import List, Text
 
 import pytest
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 
 from rasa.core import training
 from rasa.core.actions.action import (
@@ -14,8 +14,8 @@ from rasa.core.actions.action import (
     RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.constants import (
-    REQUESTED_SLOT,
+from rasa.core.constants import REQUESTED_SLOT
+from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
