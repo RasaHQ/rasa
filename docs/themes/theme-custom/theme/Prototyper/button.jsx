@@ -1,13 +1,13 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleNotch } from '@fortawesome/free-solid-svg-icons'
+import { faCircleNotch } from '@fortawesome/free-solid-svg-icons';
 
 // FIXME: surely not the right place for this
 const COLOR_PURPLE_RASA = '#5a17ee';
 const COLOR_DISABLED_GREY = '#bbb';
 const COLOR_WHITE = '#fff';
 
-const Button = ({loading, style, ...props}) => (
+const Button = ({ loading, style, ...props }) => (
   <>
     <button
       {...props}
@@ -23,12 +23,14 @@ const Button = ({loading, style, ...props}) => (
         ...style,
       }}
     />
-    {loading ? <FontAwesomeIcon icon={faCircleNotch} spin style={styles.spinner} color={COLOR_DISABLED_GREY} /> : undefined}
+    {loading ? (
+      <FontAwesomeIcon icon={faCircleNotch} spin style={styles.spinner} color={COLOR_DISABLED_GREY} />
+    ) : undefined}
   </>
 );
 
 const styles = {
-  spinner: { marginLeft: 8 }
+  spinner: { marginLeft: 8 },
 };
 
 export default Button;
