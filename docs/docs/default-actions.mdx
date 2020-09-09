@@ -48,7 +48,7 @@ If you define a `utter_restart` response in your domain, this will be sent to th
 
 This action starts a new conversation session, and is executed in the following
 situations:
-  * at the beginning of each conversation new conversation
+  * at the beginning of each new conversation
   * after a user was inactive for a period defined by the `session_expiration_time` parameter in the domain's
 [Session configuration](./domain.mdx#session-config).
   * when a user sends a "/session_start" message during a conversation
@@ -109,17 +109,45 @@ class ActionSessionStart(Action):
         return events
 ```
 
+## action_default_fallback
 
-The available default actions are:
+This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.
+It is triggered by low action prediction confidence, if you have this [fallback mechanism](./fallback-handoff.mdx) enabled.
 
-|                                 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|`action_listen`                  |Do nothing, and wait for the next user input                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-|`action_restart`                 |Reset the whole conversation, including any slots. Can be triggered during a conversation by sending a "/restart" message if the RulePolicy is included in the configuration.                                                                                                                                                   |
-|`action_session_start`           |Start a new conversation session. Take all set slots, mark the beginning of a new conversation session and re-apply the existing `SlotSet` events. This action is triggered automatically after an inactivity period defined by the `session_expiration_time` parameter in the domain's [Session configuration](./domain.mdx#session-config). Can be triggered manually during a conversation by entering `/session_start`. All conversations begin with an `action_session_start`. |
-|`action_default_fallback`        |Undo the last user message (as if the user did not send it and the bot did not react) and utter a message that the bot did not understand. See [Fallback Policy](./policies.mdx#fallback-policy).                                                                                                                                                                                                                                                                                           |
-|`action_deactivate_form`         |Deactivate the active form and reset the requested slot. See also See also [Handling unhappy paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths).                                                                                                                                                                                                                                                                                                                                                             |
-|`action_revert_fallback_events`  |Revert events that occurred during the [TwoStageFallbackPolicy](./policies.mdx#two-stage-fallback-policy).                                                                                                                                                                                                                                                                                                                                                                    |
-|`action_default_ask_affirmation` |Ask the user to affirm their intent. It is suggested to overwrite this default action with a custom action to have more meaningful prompts.                                                                                                                                                                                                                                                                                                                                               |
-|`action_default_ask_rephrase`    |Ask the user to rephrase their intent.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-|`action_back`                    |Undo the last user message (as if the user did not send it and the bot did not react). Can be triggered during a conversation by entering `/back` if the MappingPolicy is included in the policy configuration.                                                                                                                                                                                                                                                                           |
+## action_deactivate_loop
+
+This action deactivates the active loop and resets the requested slot. This is used when
+[handling unhappy paths in forms](./forms.mdx#writing-stories--rules-for-unhappy-form-paths).
+
+## action_revert_fallback_events
+
+:::caution Deprecated!
+The `action_revert_fallback_events` action is deprecated since the 2.0 release.
+The [`action_two_stage_fallback`](./default-actions#action_two_stage_fallback) action
+now handles all [two-stage fallback behaviour](./fallback-handoff.mdx)
+:::
+
+## action_two_stage_fallback
+
+This is a fallback loop that can be used to handle low NLU confidence. Read more about
+[handling low NLU confidence](./fallback-handoff#handling-low-nlu-confidence).
+
+## action_default_ask_affirmation
+
+This action is used by the `action_two_stage_fallback` loop. It asks the user to confirm
+the intent of their message. This action can be customised to be more personalised
+to your specific use case.
+
+<!-- TODO: should we show how to personalise this here? -->
+
+## action_default_ask_rephrase
+
+This action is used by the `action_two_stage_fallback` loop if the user denies the
+intent `action_default_ask_affirmation` displays. It asks the user to rephrase
+their message.
+
+## action_back
+
+This action undoes the last user-bot interaction. It can be triggered by the user
+by sending a "/back" message to the assistant if the [RulePolicy](./policies.mdx#rule-policy) is configured.
+                                                                                                                                                                                                                                                                        |
