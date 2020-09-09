@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Text, Dict, Type, List
 
 import pytest
+
+import rasa.shared.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
 from rasa.core.events import SlotSet, UserUttered, ActionExecuted
 from rasa.core.training.structures import StoryStep, StoryGraph
@@ -18,8 +20,8 @@ from rasa.importers.rasa import RasaFileImporter
 
 from rasa.importers.multi_project import MultiProjectImporter
 
-from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT, TEXT
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT_NAME, TEXT
+from rasa.shared.nlu.training_data.message import Message
 
 
 async def test_use_of_interface():
@@ -108,7 +110,9 @@ def test_load_from_config(tmpdir: Path):
 
     config_path = str(tmpdir / "config.yml")
 
-    io_utils.write_yaml({"importers": [{"name": "MultiProjectImporter"}]}, config_path)
+    rasa.shared.utils.io.write_yaml(
+        {"importers": [{"name": "MultiProjectImporter"}]}, config_path
+    )
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)

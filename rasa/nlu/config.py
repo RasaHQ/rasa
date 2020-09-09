@@ -11,7 +11,7 @@ from rasa.constants import (
     DOCS_URL_PIPELINE,
     DOCS_URL_MIGRATION_GUIDE,
 )
-from rasa.nlu.utils import json_to_string
+from rasa.shared.utils.io import json_to_string
 
 logger = logging.getLogger(__name__)
 

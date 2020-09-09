@@ -6,10 +6,11 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
-from rasa.nlu.training_data import util
+from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.nlu.config import InvalidConfigError
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.model import Metadata
@@ -73,7 +74,6 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
 )
 from rasa.nlu.constants import (
-    RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     RESPONSE_SELECTOR_RESPONSES_KEY,
@@ -81,12 +81,10 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_RANKING_KEY,
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
-    INTENT_RESPONSE_KEY,
-    INTENT,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
-    TEXT,
     INTENT_NAME_KEY,
 )
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, INTENT_RESPONSE_KEY
 
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel

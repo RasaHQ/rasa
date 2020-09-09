@@ -17,7 +17,7 @@ from rasa.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
-from rasa.nlu.constants import ACTION_NAME
+from rasa.shared.nlu.constants import ACTION_NAME
 
 logger = logging.getLogger(__name__)
 

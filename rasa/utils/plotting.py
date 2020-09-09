@@ -6,8 +6,8 @@ import numpy as np
 from typing import List, Text, Optional, Union, Any
 import matplotlib
 
+import rasa.shared.utils.io
 from rasa.constants import RESULTS_FILE
-import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +170,9 @@ def plot_curve(
     ax = plt.gca()
 
     # load results from file
-    data = io_utils.read_json_file(os.path.join(output_directory, RESULTS_FILE))
+    data = rasa.shared.utils.io.read_json_file(
+        os.path.join(output_directory, RESULTS_FILE)
+    )
     x = number_of_examples
 
     # compute mean of all the runs for different configs

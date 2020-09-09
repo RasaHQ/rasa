@@ -4,16 +4,15 @@ import re
 from typing import Text, List, Optional, Dict, Any
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import (
-    TEXT,
-    TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
+from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.shared.nlu.constants import (
     INTENT,
-    ACTION_NAME,
     INTENT_RESPONSE_KEY,
     RESPONSE_IDENTIFIER_DELIMITER,
+    ACTION_NAME,
 )
 
 logger = logging.getLogger(__name__)
