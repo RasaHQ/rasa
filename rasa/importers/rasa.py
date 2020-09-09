@@ -3,13 +3,12 @@ from typing import Dict, List, Optional, Text, Union
 
 import rasa.shared.data
 from rasa import data
-from rasa.core.domain import Domain
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.importers import utils, autoconfig
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.autoconfig import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.core.domain import InvalidDomain
+from rasa.shared.core.domain import InvalidDomain, Domain
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)

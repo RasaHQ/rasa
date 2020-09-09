@@ -11,8 +11,6 @@ import rasa.core
 from rasa.shared.core import events
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT,
-    UTTER_PREFIX,
     RESPOND_PREFIX,
 )
 from rasa.nlu.constants import (
@@ -35,6 +33,8 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     RULE_SNIPPET_ACTION_NAME,
+    REQUESTED_SLOT,
+    UTTER_PREFIX,
 )
 from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY, INTENT_NAME_KEY
 from rasa.shared.core.events import (
@@ -52,7 +52,7 @@ from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
-    from rasa.core.domain import Domain
+    from rasa.shared.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
 

@@ -10,7 +10,7 @@ import numpy as np
 import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,

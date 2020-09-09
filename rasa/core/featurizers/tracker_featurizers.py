@@ -9,8 +9,7 @@ import numpy as np
 
 import rasa.utils.io as io_utils
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.domain import Domain
-from rasa.shared.core.domain import State
+from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -53,7 +52,7 @@ class TrackerFeaturizer:
 
         Args:
             tracker: a :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: a :class:`rasa.core.domain.Domain`
+            domain: a :class:`rasa.shared.core.domain.Domain`
 
         Returns:
             a list of states

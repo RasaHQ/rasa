@@ -3,7 +3,7 @@ from typing import List, Any, Text
 import pytest
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     Event,
     ActionExecutionRejected,

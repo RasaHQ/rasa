@@ -9,7 +9,7 @@ import os
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, Event
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY

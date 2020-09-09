@@ -239,7 +239,7 @@ class DialogueStateTracker:
         """Generate the past states of this tracker based on the history.
 
         Args:
-            domain: a :class:`rasa.core.domain.Domain`
+            domain: a :class:`rasa.shared.core.domain.Domain`
 
         Returns:
             a list of states

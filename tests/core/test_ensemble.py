@@ -13,7 +13,7 @@ from rasa.core.policies.ensemble import (
     InvalidPolicyConfig,
     SimplePolicyEnsemble,
 )
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.trackers import DialogueStateTracker
 

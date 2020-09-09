@@ -304,7 +304,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
 
 def _validate_domain(domain_path: Text):
     from rasa.shared.core.domain import InvalidDomain
-    from rasa.core.domain import Domain
+    from rasa.shared.core.domain import Domain
 
     try:
         Domain.load(domain_path)

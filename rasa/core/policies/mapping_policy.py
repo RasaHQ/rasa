@@ -18,8 +18,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     ACTION_BACK_NAME,
 )
-from rasa.shared.core.domain import InvalidDomain
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy

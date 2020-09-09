@@ -9,7 +9,6 @@ import rasa.utils.io
 
 from rasa.shared.core.events import UserUttered, ActionExecuted
 
-from rasa.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
@@ -23,7 +22,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
 )
-from rasa.shared.core.domain import InvalidDomain
+from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 
 if typing.TYPE_CHECKING:

@@ -1,6 +1,6 @@
 from typing import Iterable, Text, Optional, Dict, List
 
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.training_data import TrainingData
 

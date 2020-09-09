@@ -15,13 +15,12 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
-from rasa.core.constants import UTTER_PREFIX, REQUESTED_SLOT
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
-)
-from rasa.core.domain import Domain
+    REQUESTED_SLOT, UTTER_PREFIX)
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,

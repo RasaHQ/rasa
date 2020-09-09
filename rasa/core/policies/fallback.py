@@ -10,7 +10,7 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBA
 import rasa.utils.io
 from rasa.utils import common as common_utils
 
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.shared.core.trackers import DialogueStateTracker

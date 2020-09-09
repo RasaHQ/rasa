@@ -1,6 +1,6 @@
 from typing import Text, List, Tuple
 
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.training.story_conflict import (
     StoryConflict,
     find_story_conflicts,

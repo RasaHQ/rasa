@@ -12,7 +12,7 @@ import pytest
 import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble

@@ -1,6 +1,7 @@
 import pytest
 from typing import Text
 
+import rasa.shared.core.domain
 import rasa.shared.nlu.interpreter
 from sanic import Sanic
 from asyncio import AbstractEventLoop
@@ -59,7 +60,7 @@ async def test_load_agent_on_start_with_good_model_file(
 
     assert isinstance(agent.interpreter, interpreter.RasaNLUInterpreter)
     assert isinstance(agent.policy_ensemble, policies.PolicyEnsemble)
-    assert isinstance(agent.domain, domain.Domain)
+    assert isinstance(agent.domain, rasa.shared.core.domain.Domain)
 
 
 async def test_load_agent_on_start_with_bad_model_file(
@@ -80,4 +81,4 @@ async def test_load_agent_on_start_with_bad_model_file(
     # Fallback agent was loaded even if model was unusable
     assert isinstance(agent.interpreter, rasa.shared.nlu.interpreter.RegexInterpreter)
     assert agent.policy_ensemble is None
-    assert isinstance(agent.domain, domain.Domain)
+    assert isinstance(agent.domain, rasa.shared.core.domain.Domain)

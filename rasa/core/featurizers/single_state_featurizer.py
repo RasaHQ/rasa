@@ -5,8 +5,7 @@ from typing import List, Optional, Dict, Text, Set
 from collections import defaultdict
 
 import rasa.shared.utils.io
-from rasa.core.domain import Domain
-from rasa.shared.core.domain import SubState, State
+from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER, SLOTS
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP
@@ -43,7 +42,7 @@ class SingleStateFeaturizer:
         """Gets necessary information for featurization from domain.
 
         Args:
-            domain: a :class:`rasa.core.domain.Domain`
+            domain: a :class:`rasa.shared.core.domain.Domain`
         """
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:

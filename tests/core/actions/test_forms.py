@@ -7,10 +7,10 @@ from aioresponses import aioresponses
 
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.core.actions.forms import FormAction, REQUESTED_SLOT
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
+from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,

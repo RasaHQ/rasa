@@ -6,7 +6,7 @@ import os
 import rasa.shared.data
 from rasa import data
 import rasa.utils.io as io_utils
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.shared.nlu.training_data.training_data import TrainingData

@@ -11,7 +11,7 @@ from rasa.shared.nlu.training_data.formats import RasaReader
 import rasa.utils.io
 from rasa import model
 from rasa.core import utils
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.importers.multi_project import MultiProjectImporter
 
 

@@ -25,8 +25,7 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
 )
-from rasa.shared.core.domain import InvalidDomain
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.events import (
     SlotSet,
     ActionExecuted,
@@ -565,7 +564,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
 
@@ -643,7 +642,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
           other than the MemoizationPolicy
 
         Args:
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             probabilities: the list of probabilities for the next actions
             policy_name: the name of the picked policy
 
@@ -684,7 +683,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
 

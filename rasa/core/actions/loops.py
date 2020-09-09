@@ -6,7 +6,7 @@ from rasa.shared.core.events import Event, ActiveLoop
 
 if TYPE_CHECKING:
     from rasa.core.channels import OutputChannel
-    from rasa.core.domain import Domain
+    from rasa.shared.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.trackers import DialogueStateTracker
 

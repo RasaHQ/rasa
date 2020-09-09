@@ -7,24 +7,18 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
-from rasa.core.constants import (
-    DEFAULT_KNOWLEDGE_BASE_ACTION,
-    SLOT_LISTED_ITEMS,
-    SLOT_LAST_OBJECT,
-    SLOT_LAST_OBJECT_TYPE,
-)
 from rasa.core import training, utils
-from rasa.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
-from rasa.shared.core.constants import DEFAULT_INTENTS
+from rasa.shared.core.constants import DEFAULT_INTENTS, SLOT_LISTED_ITEMS, SLOT_LAST_OBJECT, SLOT_LAST_OBJECT_TYPE, \
+    DEFAULT_KNOWLEDGE_BASE_ACTION
 from rasa.shared.core.domain import (
     InvalidDomain,
     SessionConfig,
     USED_ENTITIES_KEY,
     USE_ENTITIES_KEY,
     IGNORE_ENTITIES_KEY,
-    State)
+    State, Domain)
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,

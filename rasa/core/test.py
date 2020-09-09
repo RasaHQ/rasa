@@ -11,7 +11,7 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 import rasa.utils.io as io_utils
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.nlu.constants import ENTITY_ATTRIBUTE_TEXT
 from rasa.shared.nlu.constants import (
     INTENT,

@@ -5,7 +5,7 @@ import pytest
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,

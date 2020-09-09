@@ -11,8 +11,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES
-from rasa.core.domain import Domain
-from rasa.shared.core.domain import State
+from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,

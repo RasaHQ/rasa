@@ -8,7 +8,7 @@ from typing import Dict, Optional, Text, Union, List
 
 import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
 from rasa.utils.common import TempDirectoryPath
 
@@ -128,7 +128,7 @@ async def train_comparison_models(
 
 async def get_no_of_stories(story_file: Text, domain: Text) -> int:
     """Get number of stories in a file."""
-    from rasa.core.domain import Domain
+    from rasa.shared.core.domain import Domain
     from rasa.shared.core.training_data import loading
 
     stories = await loading.load_data_from_files(

@@ -12,7 +12,7 @@ from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import console
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 

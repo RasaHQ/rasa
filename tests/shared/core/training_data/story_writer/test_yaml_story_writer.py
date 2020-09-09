@@ -4,7 +4,7 @@ from typing import Text
 
 import pytest
 
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (

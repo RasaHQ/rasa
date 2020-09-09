@@ -14,7 +14,7 @@ from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 import rasa.core.interpreter
 from rasa.shared.constants import DEFAULT_SENDER_ID

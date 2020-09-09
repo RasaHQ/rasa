@@ -4,7 +4,7 @@ from typing import Text, Optional, List, Dict
 import logging
 
 import rasa.shared.utils.common
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.training_data.structures import StoryGraph

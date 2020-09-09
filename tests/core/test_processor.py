@@ -14,8 +14,7 @@ from tests.utilities import latest_request
 from rasa.core import jobs
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
-from rasa.core.domain import Domain
-from rasa.shared.core.domain import SessionConfig
+from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,

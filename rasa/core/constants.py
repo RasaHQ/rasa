@@ -14,16 +14,11 @@ DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
 DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
-REQUESTED_SLOT = "requested_slot"
 # rules allow setting a value of slots or active_loops to None;
 # generator substitutes `None`s with this constant to notify rule policy that
 # a value should not be set during prediction to activate a rule
 
 # slots for knowledge base
-SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
-SLOT_LAST_OBJECT = "knowledge_base_last_object"
-SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
-DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 # start of special user message section
 
@@ -45,7 +40,6 @@ FALLBACK_POLICY_PRIORITY = 4
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
 FORM_POLICY_PRIORITY = 5
-UTTER_PREFIX = "utter_"
 RESPOND_PREFIX = "respond_"
 
 DIALOGUE = "dialogue"

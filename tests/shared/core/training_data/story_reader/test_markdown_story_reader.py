@@ -6,7 +6,7 @@ import pytest
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,

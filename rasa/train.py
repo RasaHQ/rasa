@@ -9,7 +9,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.model import FingerprintComparisonResult
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 

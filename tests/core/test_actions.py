@@ -20,8 +20,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain
-from rasa.shared.core.domain import SessionConfig
+from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import (
     Restarted,
     SlotSet,

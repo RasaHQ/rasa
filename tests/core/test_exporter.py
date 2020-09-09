@@ -7,7 +7,7 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker

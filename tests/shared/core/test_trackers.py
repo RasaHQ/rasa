@@ -15,10 +15,9 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     LOOP_NAME,
-)
+    REQUESTED_SLOT)
 from rasa.core.agent import Agent
-from rasa.core.constants import REQUESTED_SLOT
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     SlotSet,
     UserUttered,

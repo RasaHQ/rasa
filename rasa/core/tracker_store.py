@@ -31,7 +31,7 @@ from rasa.core.constants import (
     POSTGRESQL_POOL_SIZE,
 )
 from rasa.shared.core.conversation import Dialogue
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SessionStarted
 from rasa.shared.core.trackers import (
     ActionExecuted,
