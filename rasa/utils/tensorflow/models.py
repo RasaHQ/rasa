@@ -228,8 +228,8 @@ class RasaModel(tf.keras.models.Model):
                         )
 
                     val_results = self._get_metric_results(prefix="val_")
-                    improved = self._update_best_metrics_so_far(val_results)
-                    if improved and self.checkpoint_model:
+                    model_improved = self._does_model_improve(val_results)
+                    if model_improved and self.checkpoint_model:
                         logger.debug(f"Creating model checkpoint at epoch={epoch}...")
                         best_model_epoch = epoch
                         self.save(self.best_model_file, overwrite=True)
@@ -253,7 +253,7 @@ class RasaModel(tf.keras.models.Model):
             )
 
             val_results = self._get_metric_results(prefix="val_")
-            if self._update_best_metrics_so_far(val_results):
+            if self._does_model_improve(val_results):
                 logger.debug(f"Creating model checkpoint after training...")
                 best_model_epoch = epoch
                 self.save(self.best_model_file, overwrite=True)
@@ -489,7 +489,7 @@ class RasaModel(tf.keras.models.Model):
                     if metric.name in self.metrics_to_log:
                         tf.summary.scalar(metric.name, metric.result(), step=step)
 
-    def _update_best_metrics_so_far(self, current_results: Dict[Text, Text]) -> bool:
+    def _does_model_improve(self, current_results: Dict[Text, Text]) -> bool:
         # Initialize best_metrics_so_far with the first results
         if not self.best_metrics_so_far:
             keys = filter(
