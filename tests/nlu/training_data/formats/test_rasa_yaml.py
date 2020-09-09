@@ -6,7 +6,7 @@ import pytest
 import rasa.utils.io as io_utils
 from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.nlu.constants import INTENT
-from rasa.nlu.training_data.formats import MarkdownReader
+from rasa.nlu.training_data.formats import MarkdownReader, NLGMarkdownReader
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader, RasaYAMLWriter
 
 MULTILINE_INTENT_EXAMPLES = f"""
@@ -377,8 +377,13 @@ def test_responses_are_converted_from_markdown():
     """
     )
 
-    result = MarkdownReader().reads(responses_md)
+    result = NLGMarkdownReader().reads(responses_md)
     dumped = RasaYAMLWriter().dumps(result)
 
     validation_reader = RasaYAMLReader()
     dumped_result = validation_reader.reads(dumped)
+
+    assert dumped_result.responses == result.responses
+
+    # dumping again should also not change the format
+    assert dumped == RasaYAMLWriter().dumps(dumped_result)
