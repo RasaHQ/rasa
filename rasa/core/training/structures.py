@@ -363,7 +363,7 @@ class StoryGraph:
             # changing all of them.
 
             for s, e in cyclic_edge_ids:
-                cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)
+                cid = generate_id(max_chars=GENERATED_HASH_LENGTH)
                 prefix = GENERATED_CHECKPOINT_PREFIX + CHECKPOINT_CYCLE_PREFIX
                 # need abbreviations otherwise they are not visualized well
                 sink_cp_name = prefix + "SINK_" + cid
@@ -663,3 +663,22 @@ class StoryGraph:
         """Checks if `StoryGraph` is empty."""
 
         return not self.story_steps
+
+
+def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
+    """Generate a random UUID.
+
+    Args:
+        prefix: String to prefix the ID with.
+        max_chars: Maximum number of characters.
+
+    Returns:
+        Generated random UUID.
+    """
+    import uuid
+
+    gid = uuid.uuid4().hex
+    if max_chars:
+        gid = gid[:max_chars]
+
+    return f"{prefix}{gid}"
