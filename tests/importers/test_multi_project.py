@@ -237,7 +237,7 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
 async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     tmp_path: Path, test_stories_filename: Text, test_story: Text
 ):
-    from rasa.core.training.structures import StoryGraph
+    from rasa.shared.core.training_data.structures import StoryGraph
     import rasa.shared.core.training_data.loading as core_loading
 
     config = {"imports": ["bots/Bot A"]}

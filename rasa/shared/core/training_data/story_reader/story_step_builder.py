@@ -1,11 +1,11 @@
 import logging
 from typing import Text, Optional, Dict, Any, List
 
-import rasa.core.training.structures
+import rasa.shared.core.training_data.structures
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.core.events import UserUttered
-from rasa.core.training.structures import (
+from rasa.shared.core.training_data.structures import (
     Checkpoint,
     GENERATED_CHECKPOINT_PREFIX,
     GENERATED_HASH_LENGTH,
@@ -89,7 +89,7 @@ class StoryStepBuilder:
             # we need to copy the blocks and create one
             # copy for each possible message
             prefix = GENERATED_CHECKPOINT_PREFIX + "OR_"
-            generated_checkpoint = rasa.core.training.structures.generate_id(
+            generated_checkpoint = rasa.shared.core.training_data.structures.generate_id(
                 prefix, GENERATED_HASH_LENGTH
             )
             updated_steps = []

@@ -14,7 +14,7 @@ from rasa.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
-from rasa.core.training.structures import StoryStep
+from rasa.shared.core.training_data.structures import StoryStep
 
 
 @pytest.fixture()

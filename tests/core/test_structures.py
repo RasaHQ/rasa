@@ -2,7 +2,7 @@ from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted, SlotSet, UserUttered, ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.structures import Story
+from rasa.shared.core.training_data.structures import Story
 
 domain = Domain.load("examples/moodbot/domain.yml")
 

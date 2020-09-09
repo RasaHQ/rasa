@@ -21,7 +21,7 @@ from rasa.shared.core.training_data import loading
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
 )
-from rasa.core.training.structures import Story
+from rasa.shared.core.training_data.structures import Story
 
 
 async def test_persist_and_read_test_story_graph(

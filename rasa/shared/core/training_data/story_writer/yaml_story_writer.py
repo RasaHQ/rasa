@@ -23,7 +23,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_USER_MESSAGE,
     KEY_ACTIVE_LOOP,
 )
-from rasa.core.training.structures import StoryStep, Checkpoint
+from rasa.shared.core.training_data.structures import StoryStep, Checkpoint
 
 
 class YAMLStoryWriter:

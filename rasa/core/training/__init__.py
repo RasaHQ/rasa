@@ -3,7 +3,7 @@ from typing import Text, List, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from rasa.core.domain import Domain
     from rasa.core.trackers import DialogueStateTracker
-    from rasa.core.training.structures import StoryGraph
+    from rasa.shared.core.training_data.structures import StoryGraph
     from rasa.importers.importer import TrainingDataImporter
 
 
@@ -14,7 +14,7 @@ async def extract_rule_data(
     exclusion_percentage: int = None,
 ) -> "StoryGraph":
     from rasa.shared.core.training_data import loading
-    from rasa.core.training.structures import StoryGraph
+    from rasa.shared.core.training_data.structures import StoryGraph
 
     story_steps = await loading.load_data_from_resource(
         resource_name,
@@ -31,7 +31,7 @@ async def extract_story_graph(
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
-    from rasa.core.training.structures import StoryGraph
+    from rasa.shared.core.training_data.structures import StoryGraph
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(

@@ -57,7 +57,7 @@ from rasa.core.domain import Domain, State  # pytype: disable=pyi-error
 from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
-    from rasa.core.training.structures import Story
+    from rasa.shared.core.training_data.structures import Story
 
 logger = logging.getLogger(__name__)
 
@@ -568,7 +568,7 @@ class DialogueStateTracker:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
-        from rasa.core.training.structures import Story
+        from rasa.shared.core.training_data.structures import Story
 
         story_name = (
             f"{self.sender_id} ({self.sender_source})"

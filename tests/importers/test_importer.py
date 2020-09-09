@@ -8,7 +8,7 @@ import pytest
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
 from rasa.core.events import SlotSet, UserUttered, ActionExecuted
-from rasa.core.training.structures import StoryStep, StoryGraph
+from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.importers.importer import (
     CombinedDataImporter,
     TrainingDataImporter,
@@ -106,8 +106,6 @@ def test_load_from_dict(
 
 
 def test_load_from_config(tmpdir: Path):
-    import rasa.utils.io as io_utils
-
     config_path = str(tmpdir / "config.yml")
 
     rasa.shared.utils.io.write_yaml(

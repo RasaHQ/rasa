@@ -7,7 +7,7 @@ from rasa.shared.exceptions import RasaCoreException
 from rasa.shared.core.training_data.story_reader.story_step_builder import (
     StoryStepBuilder,
 )
-from rasa.core.training.structures import StoryStep
+from rasa.shared.core.training_data.structures import StoryStep
 
 logger = logging.getLogger(__name__)
 

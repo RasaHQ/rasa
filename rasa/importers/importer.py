@@ -7,7 +7,7 @@ import rasa.shared.utils.common
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa.core.training.structures import StoryGraph
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import INTENT_NAME, TEXT

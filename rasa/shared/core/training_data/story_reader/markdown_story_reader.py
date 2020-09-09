@@ -22,7 +22,7 @@ from rasa.shared.core.training_data.story_reader.story_reader import (
     StoryReader,
     StoryParseError,
 )
-from rasa.core.training.structures import StoryStep, FORM_PREFIX
+from rasa.shared.core.training_data.structures import StoryStep, FORM_PREFIX
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)

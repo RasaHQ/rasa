@@ -9,7 +9,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.shared.core.training_data.generator import TrainingDataGenerator
-from rasa.core.training.structures import StoryGraph, StoryStep
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     INTENT,
