@@ -1,5 +1,7 @@
 import logging
-from typing import Any, Dict, List, Text
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Text, Union
 
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
@@ -7,8 +9,16 @@ from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
+import rasa.shared.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
+
+
+# looks for pattern like:
+# ##
+# * intent/response_key
+#   - response_text
+NLG_MARKDOWN_MARKER_REGEX = re.compile(r"##\s*.*\n\*[^:]*\/.*\n\s*\t*\-.*")
 
 
 class NLGMarkdownReader(TrainingDataReader):
@@ -75,6 +85,19 @@ class NLGMarkdownReader(TrainingDataReader):
             responses[story_intent] = story_bot_utterances
 
         return responses
+
+    @staticmethod
+    def is_markdown_nlg_file(filename: Union[Text, Path]) -> bool:
+        """Checks if given file contains NLG training data.
+
+        Args:
+            filename: Path to the training data file.
+
+        Returns:
+            `True` if file contains NLG training data, `False` otherwise.
+        """
+        content = io_utils.read_file(filename)
+        return re.search(NLG_MARKDOWN_MARKER_REGEX, content) is not None
 
 
 class NLGMarkdownWriter(TrainingDataWriter):
