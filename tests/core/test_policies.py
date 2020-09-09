@@ -7,7 +7,7 @@ import pytest
 
 from rasa.core import training
 from rasa.core.actions.action import ActionRevertFallbackEvents
-from rasa.core.constants import PREVIOUS_ACTION, USER
+from rasa.core.constants import USER
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
@@ -18,6 +18,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
+    PREVIOUS_ACTION,
 )
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, State

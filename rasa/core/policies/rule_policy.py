@@ -14,12 +14,7 @@ from rasa.core.trackers import (
     is_prev_action_listen_in_state,
 )
 from rasa.shared.core.training_data.generator import TrackerWithCachedStates
-from rasa.core.constants import (
-    FORM_POLICY_PRIORITY,
-    SHOULD_NOT_BE_SET,
-    PREVIOUS_ACTION,
-    LOOP_REJECTED,
-)
+from rasa.core.constants import FORM_POLICY_PRIORITY
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
@@ -30,6 +25,9 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_BACK_NAME,
     RULE_SNIPPET_ACTION_NAME,
+    SHOULD_NOT_BE_SET,
+    PREVIOUS_ACTION,
+    LOOP_REJECTED,
 )
 from rasa.shared.core.domain import InvalidDomain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY

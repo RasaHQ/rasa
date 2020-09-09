@@ -27,6 +27,9 @@ from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
     LOOP_NAME,
+    ACTIVE_LOOP,
+    LOOP_VALIDATE,
+    LOOP_REJECTED,
 )
 from rasa.core import run, train, utils
 from rasa.core.actions.action import default_action_names
@@ -36,8 +39,6 @@ from rasa.core.constants import (
     DEFAULT_SERVER_PORT,
     REQUESTED_SLOT,
     UTTER_PREFIX,
-    LOOP_VALIDATE,
-    LOOP_REJECTED,
 )
 from rasa.core.domain import Domain
 import rasa.shared.core.events
@@ -52,7 +53,7 @@ from rasa.shared.core.events import (
 )
 import rasa.core.interpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP
+from rasa.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,

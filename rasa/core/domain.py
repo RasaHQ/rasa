@@ -44,12 +44,14 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT_TYPE,
     SLOT_LISTED_ITEMS,
     USER,
+    SLOTS,
+)
+from rasa.shared.core.constants import (
+    LOOP_NAME,
+    SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    SLOTS,
-    SHOULD_NOT_BE_SET,
 )
-from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.slots import UnfeaturizedSlot, CategoricalSlot
@@ -705,4 +707,3 @@ class Domain(BaseDomain):
         return next(
             (form[form_name] for form in self.forms if form_name in form.keys()), {}
         )
-

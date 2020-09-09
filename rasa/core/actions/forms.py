@@ -5,14 +5,11 @@ import logging
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import REQUESTED_SLOT, UTTER_PREFIX, LOOP_VALIDATE
+from rasa.core.constants import REQUESTED_SLOT, UTTER_PREFIX
 from rasa.core.domain import Domain
 
-from rasa.core.actions.action import (
-    ActionExecutionRejection,
-    RemoteAction,
-)
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, LOOP_VALIDATE
 from rasa.shared.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker

@@ -18,7 +18,6 @@ REQUESTED_SLOT = "requested_slot"
 # rules allow setting a value of slots or active_loops to None;
 # generator substitutes `None`s with this constant to notify rule policy that
 # a value should not be set during prediction to activate a rule
-SHOULD_NOT_BE_SET = "should_not_be_set"
 
 # slots for knowledge base
 SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
@@ -69,10 +68,4 @@ POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
 # the keys for State (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a SubState
 USER = "user"
-PREVIOUS_ACTION = "prev_action"
-ACTIVE_LOOP = "active_loop"
 SLOTS = "slots"
-
-LOOP_VALIDATE = "validate"
-LOOP_REJECTED = "rejected"
-TRIGGER_MESSAGE = "trigger_message"
