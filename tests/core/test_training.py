@@ -23,7 +23,7 @@ from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_
 async def test_story_visualization(
     stories_file: Text, default_domain: Domain, tmp_path: Path
 ):
-    import rasa.core.training.loading as core_loading
+    import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
         "data/test_stories/stories.md", default_domain
@@ -49,7 +49,7 @@ async def test_story_visualization(
 async def test_story_visualization_with_merging(
     stories_file: Text, default_domain: Domain
 ):
-    import rasa.core.training.loading as core_loading
+    import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
         stories_file, default_domain

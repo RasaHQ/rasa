@@ -13,7 +13,7 @@ async def extract_rule_data(
     use_e2e: bool = False,
     exclusion_percentage: int = None,
 ) -> "StoryGraph":
-    from rasa.core.training import loading
+    from rasa.shared.core.training_data import loading
     from rasa.core.training.structures import StoryGraph
 
     story_steps = await loading.load_data_from_resource(
@@ -32,7 +32,7 @@ async def extract_story_graph(
     exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
     from rasa.core.training.structures import StoryGraph
-    import rasa.core.training.loading as core_loading
+    import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
         resource_name,

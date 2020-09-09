@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Dict, Text
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
 import os
 
 import rasa.shared.utils.io
@@ -239,7 +238,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     tmp_path: Path, test_stories_filename: Text, test_story: Text
 ):
     from rasa.core.training.structures import StoryGraph
-    import rasa.core.training.loading as core_loading
+    import rasa.shared.core.training_data.loading as core_loading
 
     config = {"imports": ["bots/Bot A"]}
     config_path = str(tmp_path / "config.yml")

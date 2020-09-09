@@ -89,7 +89,7 @@ async def test_graph_persistence(
 ):
     from os.path import isfile
     from networkx.drawing import nx_pydot
-    import rasa.core.training.loading as core_loading
+    import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
         stories_file, default_domain
@@ -119,7 +119,7 @@ async def test_graph_persistence(
 )
 async def test_merge_nodes(stories_file: Text, default_domain: Domain, tmp_path: Path):
     from os.path import isfile
-    import rasa.core.training.loading as core_loading
+    import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
         stories_file, default_domain

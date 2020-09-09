@@ -20,7 +20,7 @@ async def story_graph_from_paths(
     exclusion_percentage: Optional[int] = None,
 ) -> StoryGraph:
 
-    from rasa.core.training import loading
+    from rasa.shared.core.training_data import loading
 
     story_steps = await loading.load_data_from_files(
         files, domain, template_variables, use_e2e, exclusion_percentage

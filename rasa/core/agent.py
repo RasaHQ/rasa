@@ -781,7 +781,7 @@ class Agent:
         fontsize: int = 12,
     ) -> None:
         from rasa.core.training.visualization import visualize_stories
-        from rasa.core.training import loading
+        from rasa.shared.core.training_data import loading
 
         """Visualize the loaded training data from the resource."""
 
