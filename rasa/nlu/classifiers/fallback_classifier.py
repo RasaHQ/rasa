@@ -19,7 +19,7 @@ AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
 logger = logging.getLogger(__name__)
 
 
-class FallbackClassifier(Component):
+class FallbackClassifier(IntentClassifier):
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
