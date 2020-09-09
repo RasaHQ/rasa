@@ -25,6 +25,7 @@ KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
 KEY_E2E_ACTIONS = "e2e_actions"
 
+
 class SessionConfig(NamedTuple):
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
