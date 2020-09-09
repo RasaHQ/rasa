@@ -508,9 +508,9 @@ def test_count_vector_featurizer_use_lemma(
 ):
     ftr = CountVectorsFeaturizer({"use_lemma": use_lemma})
 
-    train_message = Message(sentence)
+    train_message = Message(data={TEXT: sentence})
     train_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
-    test_message = Message(sentence)
+    test_message = Message(data={TEXT: sentence})
     test_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
 
     SpacyTokenizer().process(train_message)
@@ -522,11 +522,11 @@ def test_count_vector_featurizer_use_lemma(
 
     seq_vecs, sen_vecs = test_message.get_sparse_features(TEXT, [])
 
-    assert isinstance(seq_vecs, scipy.sparse.coo_matrix)
-    assert isinstance(sen_vecs, scipy.sparse.coo_matrix)
+    assert isinstance(seq_vecs.features, scipy.sparse.coo_matrix)
+    assert isinstance(sen_vecs.features, scipy.sparse.coo_matrix)
 
-    actual_seq_vecs = seq_vecs.toarray()
-    actual_sen_vecs = sen_vecs.toarray()
+    actual_seq_vecs = seq_vecs.features.toarray()
+    actual_sen_vecs = sen_vecs.features.toarray()
 
     assert np.all(actual_seq_vecs[0] == sequence_features)
     assert np.all(actual_sen_vecs[-1] == sentence_features)
