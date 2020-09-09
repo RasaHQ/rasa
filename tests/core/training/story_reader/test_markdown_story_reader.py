@@ -3,6 +3,7 @@ from typing import Dict, Text
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
 from rasa.core.domain import Domain
@@ -29,7 +30,7 @@ async def test_persist_and_read_test_story_graph(
         "data/test_stories/stories.md", default_domain
     )
     out_path = tmp_path / "persisted_story.md"
-    rasa.utils.io.write_text_file(graph.as_story_string(), str(out_path))
+    rasa.shared.utils.io.write_text_file(graph.as_story_string(), str(out_path))
 
     recovered_trackers = await training.load_data(
         str(out_path),

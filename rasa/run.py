@@ -3,7 +3,7 @@ import typing
 from typing import Dict, Text
 
 from rasa.cli.utils import print_warning
-from rasa.constants import DOCS_BASE_URL
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.core.lock_store import LockStore
 
 logger = logging.getLogger(__name__)

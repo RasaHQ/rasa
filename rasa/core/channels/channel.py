@@ -16,7 +16,7 @@ from typing import (
 )
 
 from rasa.cli import utils as cli_utils
-from rasa.constants import DOCS_BASE_URL
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.core import utils
 
 try:

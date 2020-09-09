@@ -32,11 +32,8 @@ from rasa.core.events import (
     SlotSet,
     UserUttered,
 )
-from rasa.core.interpreter import (
-    INTENT_MESSAGE_PREFIX,
-    NaturalLanguageInterpreter,
-    RegexInterpreter,
-)
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
