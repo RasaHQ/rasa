@@ -3,7 +3,7 @@ from typing import Optional, Dict, Text, List, Any
 
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Event
-from rasa.core.exceptions import StoryParseError
+from rasa.core.exceptions import RasaCoreException
 from rasa.shared.core.training_data.story_reader.story_step_builder import (
     StoryStepBuilder,
 )
@@ -98,3 +98,10 @@ class StoryReader:
             )
 
         self.current_step_builder.add_checkpoint(name, conditions)
+
+
+class StoryParseError(RasaCoreException, ValueError):
+    """Raised if there is an error while parsing a story file."""
+
+    def __init__(self, message) -> None:
+        self.message = message

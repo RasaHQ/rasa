@@ -16,9 +16,11 @@ from rasa.constants import (
 )
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_DOMAINS
 from rasa.core.events import UserUttered
-from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter
-from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
+from rasa.shared.core.training_data.story_reader.story_reader import (
+    StoryReader,
+    StoryParseError,
+)
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
 from rasa.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.io

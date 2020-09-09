@@ -131,11 +131,6 @@ def default_nlu_data():
     return DEFAULT_NLU_DATA
 
 
-@pytest.fixture(scope="session")
-def default_domain() -> Domain:
-    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-
-
 @pytest.fixture
 def default_channel() -> OutputChannel:
     return CollectingOutputChannel()

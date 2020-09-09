@@ -21,6 +21,7 @@ from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
+from rasa.core.domain import Domain
 from rasa.shared.core.domain import SessionConfig
 from rasa.core.events import UserUttered
 from rasa.core.exporter import Exporter
@@ -123,6 +124,11 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 def default_domain_path() -> Text:
     return DEFAULT_DOMAIN_PATH_WITH_SLOTS
+
+
+@pytest.fixture(scope="session")
+def default_domain() -> Domain:
+    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
 
 @pytest.fixture(scope="session")

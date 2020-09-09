@@ -7,13 +7,6 @@ class RasaCoreException(RasaException):
     """Basic exception for errors raised by Rasa Core."""
 
 
-class StoryParseError(RasaCoreException, ValueError):
-    """Raised if there is an error while parsing a story file."""
-
-    def __init__(self, message) -> None:
-        self.message = message
-
-
 class UnsupportedDialogueModelError(RasaCoreException):
     """Raised when a model is too old to be loaded.
 

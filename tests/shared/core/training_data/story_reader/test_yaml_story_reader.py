@@ -11,7 +11,9 @@ from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
 from rasa.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
-from rasa.shared.core.training_data.story_reader.story_reader import YAMLStoryReader
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.core.training.structures import StoryStep
 
 
