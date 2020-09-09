@@ -31,7 +31,7 @@ from rasa.core.events import (
 )
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.rule_policy import RulePolicy, InvalidRule
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.generator import TrackerWithCachedStates
 
@@ -93,8 +93,37 @@ def _form_activation_rule(
     )
 
 
+def test_restrict_multiple_user_inputs_in_rules():
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+    """
+    )
+    policy = RulePolicy(restrict_rules=True)
+    greet_events = [
+        UserUttered(intent={"name": GREET_INTENT_NAME}),
+        ActionExecuted(UTTER_GREET_ACTION),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+    forbidden_rule = DialogueStateTracker.from_events(
+        "bla",
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ]
+        + greet_events * (policy.ALLOWED_NUMBER_OF_USER_INPUTS + 1),
+    )
+    forbidden_rule.is_rule_tracker = True
+    with pytest.raises(InvalidRule):
+        policy.train([forbidden_rule], domain, RegexInterpreter())
+
+
 def test_rule_policy_has_max_history_none():
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     assert policy.featurizer.max_history is None
 
 
@@ -108,7 +137,7 @@ actions:
     """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
     # remove first ... action and utter_greet and last action_listen from greet rule
     new_conversation = DialogueStateTracker.from_events(
@@ -155,7 +184,7 @@ async def test_predict_form_action_if_in_form():
 """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
 
     form_conversation = DialogueStateTracker.from_events(
@@ -198,7 +227,7 @@ async def test_predict_form_action_if_multiple_turns():
 """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
 
     form_conversation = DialogueStateTracker.from_events(
@@ -246,7 +275,7 @@ async def test_predict_action_listen_after_form():
     """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
 
     form_conversation = DialogueStateTracker.from_events(
@@ -290,7 +319,7 @@ async def test_dont_predict_form_if_already_finished():
 """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
 
     form_conversation = DialogueStateTracker.from_events(
@@ -340,7 +369,7 @@ async def test_form_unhappy_path():
     """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
 
     unhappy_form_conversation = DialogueStateTracker.from_events(
@@ -385,7 +414,7 @@ async def test_form_unhappy_path_from_general_rule():
     """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     # RulePolicy should memorize that unhappy_rule overrides GREET_RULE
     policy.train([GREET_RULE], domain, RegexInterpreter())
 
@@ -462,7 +491,7 @@ async def test_form_unhappy_path_from_in_form_rule():
         is_rule_tracker=True,
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     # RulePolicy should memorize that unhappy_rule overrides GREET_RULE
     policy.train([GREET_RULE, unhappy_rule], domain, RegexInterpreter())
 
@@ -534,7 +563,7 @@ async def test_form_unhappy_path_from_story():
         ],
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE, unhappy_story], domain, RegexInterpreter())
 
     # Check that RulePolicy predicts action to handle unhappy path
@@ -613,7 +642,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
         is_rule_tracker=True,
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     # RulePolicy should memorize that unhappy_rule overrides GREET_RULE
     policy.train([GREET_RULE, unhappy_rule], domain, RegexInterpreter())
 
@@ -701,7 +730,7 @@ async def test_form_unhappy_path_no_validation_from_story():
         ],
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([unhappy_story], domain, RegexInterpreter())
 
     # Check that RulePolicy predicts no validation to handle unhappy path
@@ -748,7 +777,7 @@ async def test_form_unhappy_path_without_rule():
     """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
 
     conversation_events = [
@@ -793,7 +822,7 @@ async def test_form_activation_rule():
     )
 
     form_activation_rule = _form_activation_rule(domain, form_name, other_intent)
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE, form_activation_rule], domain, RegexInterpreter())
 
     conversation_events = [
@@ -832,7 +861,7 @@ async def test_failing_form_activation_due_to_no_rule():
     """
     )
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
 
     conversation_events = [
@@ -873,7 +902,7 @@ def test_form_submit_rule():
 
     form_submit_rule = _form_submit_rule(domain, submit_action_name, form_name)
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE, form_submit_rule], domain, RegexInterpreter())
 
     form_conversation = DialogueStateTracker.from_events(
@@ -931,7 +960,7 @@ def test_immediate_submit():
     form_activation_rule = _form_activation_rule(domain, form_name, GREET_INTENT_NAME)
     form_submit_rule = _form_submit_rule(domain, submit_action_name, form_name)
 
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train(
         [GREET_RULE, form_activation_rule, form_submit_rule], domain, RegexInterpreter()
     )
@@ -974,7 +1003,7 @@ async def trained_rule_policy(trained_rule_policy_domain: Domain) -> RulePolicy:
         "examples/rules/data/rules.yml", trained_rule_policy_domain
     )
 
-    rule_policy = RulePolicy()
+    rule_policy = RulePolicy(restrict_rules=False)
     rule_policy.train(trackers, trained_rule_policy_domain, RegexInterpreter())
 
     return rule_policy
@@ -1047,7 +1076,7 @@ async def test_one_stage_fallback_rule():
         ],
         is_rule_tracker=True,
     )
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train(
         [greet_rule_which_only_applies_at_start, fallback_recover_rule],
         domain,
@@ -1107,7 +1136,7 @@ actions:
 - {UTTER_GREET_ACTION}
     """
     )
-    policy = RulePolicy()
+    policy = RulePolicy(restrict_rules=False)
     policy.train([GREET_RULE], domain, RegexInterpreter())
     new_conversation = DialogueStateTracker.from_events(
         "bla2",
@@ -1128,7 +1157,7 @@ actions:
 @pytest.mark.parametrize(
     "rule_policy, expected_confidence, expected_prediction",
     [
-        (RulePolicy(), 0.3, ACTION_DEFAULT_FALLBACK_NAME),
+        (RulePolicy(restrict_rules=False), 0.3, ACTION_DEFAULT_FALLBACK_NAME),
         (
             RulePolicy(
                 core_fallback_threshold=0.1,

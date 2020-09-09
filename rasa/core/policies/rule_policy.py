@@ -54,7 +54,7 @@ DO_NOT_VALIDATE_LOOP = "do_not_validate_loop"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
 
-class InvalidRules(Exception):
+class InvalidRule(Exception):
     """Exception that can be raised when domain is not valid."""
 
     def __init__(self, message) -> None:
@@ -254,7 +254,7 @@ class RulePolicy(MemoizationPolicy):
                 bad_rules.append(tracker.sender_id)
 
         if bad_rules:
-            raise InvalidRules(
+            raise InvalidRule(
                 f"Found rules {bad_rules} that contain more than "
                 f"{self.ALLOWED_NUMBER_OF_USER_INPUTS} user inputs. "
                 f"Rules are not meant to hardcode a state machine. "
