@@ -3,6 +3,7 @@ LEGACY_DOCS_BASE_URL = "https://legacy-docs-v1.rasa.com"
 DOCS_URL_TRAINING_DATA_NLU = DOCS_BASE_URL + "/nlu/training-data-format/"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
 DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
+DOCS_URL_RULES = DOCS_BASE_URL + "/core/rules/"
 
 INTENT_MESSAGE_PREFIX = "/"
 
@@ -21,3 +22,4 @@ DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION = True
 DEFAULT_NLU_FALLBACK_INTENT_NAME = "nlu_fallback"
 
 DEFAULT_E2E_TESTS_PATH = "tests"
+TEST_STORIES_FILE_PREFIX = "test_"

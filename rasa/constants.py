@@ -16,7 +16,6 @@ DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
-TEST_STORIES_FILE_PREFIX = "test_"
 TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
 NLG_DATA_FILE = "responses.md"
@@ -31,7 +30,6 @@ DEFAULT_RASA_PORT = 5005
 
 DOCS_URL_POLICIES = DOCS_BASE_URL + "/core/policies/"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
-DOCS_URL_RULES = DOCS_BASE_URL + "/core/rules/"
 DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/user-guide/connectors/"

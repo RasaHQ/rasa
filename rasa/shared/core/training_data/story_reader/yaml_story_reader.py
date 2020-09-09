@@ -11,8 +11,12 @@ from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
 from ruamel.yaml.parser import ParserError
 
-from rasa.constants import TEST_STORIES_FILE_PREFIX, DOCS_URL_RULES
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_STORIES
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DOCS_URL_STORIES,
+    TEST_STORIES_FILE_PREFIX,
+    DOCS_URL_RULES,
+)
 
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
