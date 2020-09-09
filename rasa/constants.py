@@ -29,7 +29,6 @@ DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 
 DOCS_URL_POLICIES = DOCS_BASE_URL + "/core/policies/"
-DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
 DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/user-guide/connectors/"

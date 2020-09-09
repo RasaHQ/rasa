@@ -10,15 +10,22 @@ from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
-from rasa.shared.core.constants import DEFAULT_INTENTS, SLOT_LISTED_ITEMS, SLOT_LAST_OBJECT, SLOT_LAST_OBJECT_TYPE, \
-    DEFAULT_KNOWLEDGE_BASE_ACTION
+from rasa.shared.core.constants import (
+    DEFAULT_INTENTS,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
+    DEFAULT_KNOWLEDGE_BASE_ACTION,
+)
 from rasa.shared.core.domain import (
     InvalidDomain,
     SessionConfig,
     USED_ENTITIES_KEY,
     USE_ENTITIES_KEY,
     IGNORE_ENTITIES_KEY,
-    State, Domain)
+    State,
+    Domain,
+)
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
@@ -244,7 +251,7 @@ def test_domain_to_dict():
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         "entities": [],
-        "forms": [],
+        "forms": {},
         "intents": [],
         "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
@@ -266,7 +273,7 @@ config:
   store_entities_as_slots: true
 e2e_actions: []
 entities: []
-forms: []
+forms: {{}}
 intents: []
 responses:
   utter_greet:
@@ -424,7 +431,7 @@ def test_merge_domain_with_forms():
 
     test_yaml_2 = """
     forms:
-    - my_form3:
+      my_form3:
         slot1:
           type: from_text
     """

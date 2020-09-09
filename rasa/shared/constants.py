@@ -4,6 +4,7 @@ DOCS_URL_TRAINING_DATA_NLU = DOCS_BASE_URL + "/nlu/training-data-format/"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
 DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
 DOCS_URL_RULES = DOCS_BASE_URL + "/core/rules/"
+DOCS_URL_FORMS = DOCS_BASE_URL + "/core/forms/"
 
 INTENT_MESSAGE_PREFIX = "/"
 

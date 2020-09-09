@@ -81,6 +81,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings
+        # indicates whether the featurizer should use the lemma of a word for
+        # counting (if available) or not
+        "use_lemma": True,
     }
 
     @classmethod
@@ -117,6 +120,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
+
+        # use the lemma of the words or not
+        self.use_lemma = self.component_config["use_lemma"]
 
     # noinspection PyPep8Naming
     def _load_OOV_params(self) -> None:
@@ -214,13 +220,15 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
 
-    @staticmethod
     def _get_message_tokens_by_attribute(
-        message: "Message", attribute: Text
+        self, message: "Message", attribute: Text
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
-            return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
+            return [
+                t.lemma if self.use_lemma else t.text
+                for t in message.get(TOKENS_NAMES[attribute])
+            ]
         else:
             return []
 
@@ -499,7 +507,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         spacy_nlp = kwargs.get("spacy_nlp")
         if spacy_nlp is not None:
             # create spacy lemma_ for OOV_words
-            self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
+            self.OOV_words = [
+                t.lemma_ if self.use_lemma else t.text
+                for w in self.OOV_words
+                for t in spacy_nlp(w)
+            ]
 
         # process sentences and collect data for all attributes
         processed_attribute_tokens = self._get_all_attributes_processed_tokens(
