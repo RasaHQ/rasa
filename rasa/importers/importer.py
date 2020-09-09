@@ -275,9 +275,7 @@ class CombinedDataImporter(TrainingDataImporter):
                 nlu_data.retrieval_intents, combined_domain
             )
 
-            combined_domain = combined_domain.merge(
-                domain_with_retrieval_intents, override=True
-            )
+            combined_domain = combined_domain.merge(domain_with_retrieval_intents)
 
         return combined_domain
 
@@ -285,8 +283,19 @@ class CombinedDataImporter(TrainingDataImporter):
     def _get_domain_with_retrieval_intents(
         retrieval_intents: Set[Text], existing_domain: Domain
     ) -> Domain:
+        """Construct a domain which has all the information for retrieval intents listed in the NLU training data.
 
-        intent_modified_properties = []
+        Args:
+            retrieval_intents: Set of retrieval intents defined in the NLU training data.
+            existing_domain: Domain which is already loaded from the domain file.
+
+        Returns: domain with retrieval actions added to action names and properties for retrieval intents updated.
+        """
+
+        # Get all the properties already defined
+        # for each retrieval intent in other domains
+        # and add the retrieval intent property to them
+        retrieval_intent_properties = []
         for intent in retrieval_intents:
             intent_properties = (
                 existing_domain.intent_properties[intent]
@@ -294,10 +303,10 @@ class CombinedDataImporter(TrainingDataImporter):
                 else {}
             )
             intent_properties[IS_RETRIEVAL_INTENT_KEY] = True
-            intent_modified_properties.append({intent: intent_properties})
+            retrieval_intent_properties.append({intent: intent_properties})
 
         return Domain(
-            intent_modified_properties,
+            retrieval_intent_properties,
             [],
             [],
             {},

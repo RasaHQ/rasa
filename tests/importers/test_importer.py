@@ -300,12 +300,12 @@ async def test_adding_retrieval_intents_to_domain(project: Text):
         "data/test_nlu/default_retrieval_intents.md",
         "data/test_responses/default.md",
     ]
-    existing = TrainingDataImporter.load_from_dict(
+    base_data_importer = TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, data_paths
     )
 
-    nlu_importer = NluDataImporter(existing)
-    core_importer = CoreDataImporter(existing)
+    nlu_importer = NluDataImporter(base_data_importer)
+    core_importer = CoreDataImporter(base_data_importer)
 
     importer = CombinedDataImporter([nlu_importer, core_importer])
     domain = await importer.get_domain()

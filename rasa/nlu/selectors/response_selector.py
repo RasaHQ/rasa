@@ -79,7 +79,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
-    RESPONSE_SELECTOR_TEMPLATE_KEY,
+    RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
     INTENT_RESPONSE_KEY,
     INTENT,
@@ -87,7 +87,6 @@ from rasa.nlu.constants import (
     TEXT,
     INTENT_NAME_KEY,
 )
-from rasa.nlu.training_data import training_data
 
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
@@ -416,7 +415,7 @@ class ResponseSelector(DIETClassifier):
                 RESPONSE_SELECTOR_RESPONSES_KEY: label_response_templates,
                 PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
                 INTENT_RESPONSE_KEY: label_intent_response_key,
-                RESPONSE_SELECTOR_TEMPLATE_KEY: util.intent_response_key_to_template_key(
+                RESPONSE_SELECTOR_TEMPLATE_NAME_KEY: util.intent_response_key_to_template_key(
                     label_intent_response_key
                 ),
             },

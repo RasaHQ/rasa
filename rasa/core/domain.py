@@ -360,6 +360,7 @@ class Domain:
 
     @lazy_property
     def retrieval_intents(self) -> List[Text]:
+        """List all retrieval intents present in the domain according to the intent properties."""
         return [
             intent
             for intent in self.intent_properties
@@ -631,6 +632,7 @@ class Domain:
     @lazy_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
+
         return (
             self.intents
             + self.entities

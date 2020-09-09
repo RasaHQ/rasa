@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Text
+from typing import Text, List
 
 import pytest
 
@@ -142,23 +142,29 @@ def test_template_key_to_intent_response_key(intent_response_key, template_key):
         ],
     ],
 )
-def test_demo_data(files):
+def test_demo_data(files: List[Text]):
     from rasa.importers.utils import training_data_from_paths
 
-    td = training_data_from_paths(files, language="en")
-    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
-    assert td.entities == {"location", "cuisine"}
-    assert set(td.responses.keys()) == {
+    trainingdata = training_data_from_paths(files, language="en")
+    assert trainingdata.intents == {
+        "affirm",
+        "greet",
+        "restaurant_search",
+        "goodbye",
+        "chitchat",
+    }
+    assert trainingdata.entities == {"location", "cuisine"}
+    assert set(trainingdata.responses.keys()) == {
         "utter_chitchat/ask_name",
         "utter_chitchat/ask_weather",
     }
-    assert len(td.training_examples) == 46
-    assert len(td.intent_examples) == 46
-    assert len(td.response_examples) == 4
-    assert len(td.entity_examples) == 11
-    assert len(td.responses) == 2
+    assert len(trainingdata.training_examples) == 46
+    assert len(trainingdata.intent_examples) == 46
+    assert len(trainingdata.response_examples) == 4
+    assert len(trainingdata.entity_examples) == 11
+    assert len(trainingdata.responses) == 2
 
-    assert td.entity_synonyms == {
+    assert trainingdata.entity_synonyms == {
         "Chines": "chinese",
         "Chinese": "chinese",
         "chines": "chinese",
@@ -166,7 +172,7 @@ def test_demo_data(files):
         "veggie": "vegetarian",
     }
 
-    assert td.regex_features == [
+    assert trainingdata.regex_features == [
         {"name": "greet", "pattern": r"hey[^\s]*"},
         {"name": "zipcode", "pattern": r"[0-9]{5}"},
     ]
@@ -209,39 +215,51 @@ def test_demo_data_filter_out_retrieval_intents(files):
     "filepaths",
     [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
 )
-def test_train_test_split(filepaths):
+def test_train_test_split(filepaths: List[Text]):
     from rasa.importers.utils import training_data_from_paths
 
-    td = training_data_from_paths(filepaths, language="en")
+    trainingdata = training_data_from_paths(filepaths, language="en")
 
-    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
-    assert td.entities == {"location", "cuisine"}
-    assert set(td.responses.keys()) == {
+    assert trainingdata.intents == {
+        "affirm",
+        "greet",
+        "restaurant_search",
+        "goodbye",
+        "chitchat",
+    }
+    assert trainingdata.entities == {"location", "cuisine"}
+    assert set(trainingdata.responses.keys()) == {
         "utter_chitchat/ask_name",
         "utter_chitchat/ask_weather",
     }
 
-    assert len(td.training_examples) == 46
-    assert len(td.intent_examples) == 46
-    assert len(td.response_examples) == 4
+    assert len(trainingdata.training_examples) == 46
+    assert len(trainingdata.intent_examples) == 46
+    assert len(trainingdata.response_examples) == 4
 
-    td_train, td_test = td.train_test_split(train_frac=0.8)
+    trainingdata_train, trainingdata_test = trainingdata.train_test_split(
+        train_frac=0.8
+    )
 
-    assert len(td_test.training_examples) + len(td_train.training_examples) == 46
-    assert len(td_train.training_examples) == 34
-    assert len(td_test.training_examples) == 12
+    assert (
+        len(trainingdata_test.training_examples)
+        + len(trainingdata_train.training_examples)
+        == 46
+    )
+    assert len(trainingdata_train.training_examples) == 34
+    assert len(trainingdata_test.training_examples) == 12
 
-    assert len(td.number_of_examples_per_intent.keys()) == len(
-        td_test.number_of_examples_per_intent.keys()
+    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
+        trainingdata_test.number_of_examples_per_intent.keys()
     )
-    assert len(td.number_of_examples_per_intent.keys()) == len(
-        td_train.number_of_examples_per_intent.keys()
+    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
+        trainingdata_train.number_of_examples_per_intent.keys()
     )
-    assert len(td.number_of_examples_per_response.keys()) == len(
-        td_test.number_of_examples_per_response.keys()
+    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
+        trainingdata_test.number_of_examples_per_response.keys()
     )
-    assert len(td.number_of_examples_per_response.keys()) == len(
-        td_train.number_of_examples_per_response.keys()
+    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
+        trainingdata_train.number_of_examples_per_response.keys()
     )
 
 

@@ -21,7 +21,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
-    RESPONSE_SELECTOR_TEMPLATE_KEY,
+    RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
     INTENT_RANKING_KEY,
     INTENT_NAME_KEY,
 )
@@ -92,6 +92,13 @@ def default_action_names() -> List[Text]:
 
 
 def construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]:
+    """List names of all retrieval actions corresponding to passed retrieval intents.
+
+    Args:
+        retrieval_intents: List of retrieval intents defined in the NLU training data.
+
+    Returns: Names of corresponding retrieval actions
+    """
 
     return [
         ActionRetrieveResponse.action_name_from_intent(intent)
@@ -123,6 +130,15 @@ def combine_with_templates(
 
 
 def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
+    """Check if an action name is a retrieval action.
+
+    The name for a retrieval action has an extra `utter_` prefix added to the corresponding retrieval intent name.
+    Args:
+        action_name: Name of the action.
+        retrieval_intents: List of retrieval intents defined in the NLU training data.
+
+    Returns: True or False depending on whether the resolved intent name is present in the list of retrieval intents.
+    """
 
     return (
         ActionRetrieveResponse.intent_name_from_action(action_name) in retrieval_intents
@@ -240,10 +256,12 @@ class ActionRetrieveResponse(Action):
 
     @staticmethod
     def intent_name_from_action(action_name) -> Text:
+        """Resolve the name of the intent from the action name."""
         return action_name.split(UTTER_PREFIX)[1]
 
     @staticmethod
     def action_name_from_intent(intent_name) -> Text:
+        """Resolve the action name from the name of the intent."""
         return f"{UTTER_PREFIX}{intent_name}"
 
     async def run(
@@ -286,9 +304,9 @@ class ActionRetrieveResponse(Action):
         picked_message_idx = random.randint(0, len(possible_messages) - 1)
         picked_message = copy.deepcopy(possible_messages[picked_message_idx])
 
-        picked_message[RESPONSE_SELECTOR_TEMPLATE_KEY] = selected[
+        picked_message[RESPONSE_SELECTOR_TEMPLATE_NAME_KEY] = selected[
             RESPONSE_SELECTOR_PREDICTION_KEY
-        ][RESPONSE_SELECTOR_TEMPLATE_KEY]
+        ][RESPONSE_SELECTOR_TEMPLATE_NAME_KEY]
 
         return [create_bot_utterance(picked_message)]
 
