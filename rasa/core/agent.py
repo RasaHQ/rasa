@@ -780,7 +780,7 @@ class Agent:
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
-        from rasa.core.training.visualization import visualize_stories
+        from rasa.shared.core.training_data.visualization import visualize_stories
         from rasa.shared.core.training_data import loading
 
         """Visualize the loaded training data from the resource."""

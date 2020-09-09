@@ -53,8 +53,8 @@ from rasa.core.events import (
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP
-from rasa.core.training import visualization
-from rasa.core.training.visualization import (
+from rasa.shared.core.training_data import visualization
+from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
 )
@@ -851,8 +851,6 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
-    from rasa import data
-
     guessed_format = loading.guess_format(export_path)
 
     if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:

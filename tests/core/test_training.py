@@ -12,7 +12,7 @@ from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
 
-from rasa.core.training.visualization import visualize_stories
+from rasa.shared.core.training_data.visualization import visualize_stories
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 

@@ -272,7 +272,6 @@ class Story:
     def dump_to_file(
         self, filename: Text, flat: bool = False, e2e: bool = False
     ) -> None:
-        from rasa.utils import io
 
         rasa.shared.utils.io.write_text_file(
             self.as_story_string(flat, e2e), filename, append=True
@@ -602,7 +601,7 @@ class StoryGraph:
 
     def visualize(self, output_file: Optional[Text] = None) -> "nx.MultiDiGraph":
         import networkx as nx
-        from rasa.core.training import visualization  # pytype: disable=pyi-error
+        from rasa.shared.core.training_data import visualization
         from colorhash import ColorHash
 
         graph = nx.MultiDiGraph()
