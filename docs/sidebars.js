@@ -57,6 +57,7 @@ module.exports = {
           collapsed: true,
           items: [
             'glossary',
+            'telemetry',
             require("./docs/reference/sidebar.json"),
           ],
         },

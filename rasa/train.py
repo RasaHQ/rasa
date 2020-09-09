@@ -6,7 +6,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.importers.importer import TrainingDataImporter
-from rasa import model
+from rasa import model, telemetry
 from rasa.model import FingerprintComparisonResult
 from rasa.core.domain import Domain
 from rasa.nlu.model import Interpreter
@@ -180,6 +180,7 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
         )
+    await telemetry.track_model_training(file_importer, model_type="rasa")
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
@@ -361,6 +362,8 @@ async def train_core_async(
         )
         return
 
+    await telemetry.track_model_training(file_importer, model_type="core")
+
     return await _train_core_with_validated_data(
         file_importer,
         output=output,
@@ -486,14 +489,16 @@ async def _train_nlu_async(
         config, training_data_paths=[nlu_data]
     )
 
-    training_datas = await file_importer.get_nlu_data()
-    if training_datas.is_empty():
+    training_data = await file_importer.get_nlu_data()
+    if training_data.is_empty():
         print_error(
             f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
             f"Please verify the data format. "
             f"The NLU model training will be skipped now."
         )
         return
+
+    await telemetry.track_model_training(file_importer, model_type="nlu")
 
     return await _train_nlu_with_validated_data(
         file_importer,

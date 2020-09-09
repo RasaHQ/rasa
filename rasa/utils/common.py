@@ -12,7 +12,6 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL,
     ENV_LOG_LEVEL_LIBRARIES,
-    GLOBAL_USER_CONFIG_PATH,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
 import rasa.shared.utils.io
@@ -46,11 +45,15 @@ def arguments_of(func: Callable) -> List[Text]:
     return list(inspect.signature(func).parameters.keys())
 
 
-def read_global_config() -> Dict[Text, Any]:
-    """Read global Rasa configuration."""
+def read_global_config(path: Text) -> Dict[Text, Any]:
+    """Read global Rasa configuration.
+
+    Args:
+        path: Path to the configuration
+    """
     # noinspection PyBroadException
     try:
-        return rasa.utils.io.read_config_file(GLOBAL_USER_CONFIG_PATH)
+        return rasa.utils.io.read_config_file(path)
     except Exception:
         # if things go south we pretend there is no config
         return {}
@@ -233,12 +236,17 @@ def minimal_kwargs(
 def write_global_config_value(name: Text, value: Any) -> None:
     """Read global Rasa configuration."""
 
+    # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
+    # in tests
+    config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
     try:
-        os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
-        c = read_global_config()
+        c = read_global_config(config_path)
         c[name] = value
-        rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
+        rasa.core.utils.dump_obj_as_yaml_to_file(
+            rasa.constants.GLOBAL_USER_CONFIG_PATH, c
+        )
     except Exception as e:
         logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
 
@@ -252,10 +260,14 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         else:
             raise ValueError(f"Configuration '{name}' key not found.")
 
-    if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
+    # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
+    # in tests
+    config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
+
+    if not os.path.exists(config_path):
         return not_found()
 
-    c = read_global_config()
+    c = read_global_config(config_path)
 
     if name in c:
         return c[name]

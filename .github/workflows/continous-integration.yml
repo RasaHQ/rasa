@@ -16,6 +16,8 @@ on:
 #               RasaHQ/rasa on pypi (account credentials in 1password)
 # - DOCKERHUB_PASSWORD: password for an account with write access to the rasa
 #                       repo on hub.docker.com. used to pull and upload containers
+# - RASA_OSS_TELEMETRY_WRITE_KEY: key to write to segment. used to report telemetry
+#                                 they key will be added to the distributions
 
 env:
   # needed to fix issues with boto during testing:
@@ -210,6 +212,11 @@ jobs:
     - name: Pull latest${{ matrix.image.tag_ext }} Docker image for caching
       run: docker pull rasa/rasa:latest${{ matrix.image.tag_ext }} || true
 
+    - name: Copy Segment write key to the package
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+      run: |
+        echo "${{ secret.RASA_OSS_TELEMETRY_WRITE_KEY }}" > rasa/segment_key
+
     - name: Build latest${{ matrix.image.tag_ext }} Docker image
       run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
 
@@ -252,6 +259,10 @@ jobs:
       uses: Gr1N/setup-poetry@v1
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Copy Segment write key to the package
+      run: |
+        echo "${{ secret.RASA_OSS_TELEMETRY_WRITE_KEY }}" > rasa/segment_key
 
     - name: Build ⚒️ Distributions
       run: poetry build

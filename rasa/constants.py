@@ -50,6 +50,7 @@ DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/nlu/components/"
 DOCS_URL_TRAINING_DATA_NLU = DOCS_BASE_URL + "/nlu/training-data-format/"
 DOCS_URL_MIGRATE_GOOGLE = DOCS_BASE_URL + "/migrate-from/google-dialogflow-to-rasa/"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide/"
+DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/"
 
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 
@@ -67,6 +68,12 @@ CONFIG_AUTOCONFIGURABLE_KEYS = (
     CONFIG_AUTOCONFIGURABLE_KEYS_CORE + CONFIG_AUTOCONFIGURABLE_KEYS_NLU
 )
 
+# Key in global config file which contains whether the user agreed to telemetry
+# reporting these are reused in Rasa X. Keep this in mind when changing their names.
+CONFIG_FILE_TELEMETRY_KEY = "metrics"
+CONFIG_TELEMETRY_ID = "rasa_user_id"
+CONFIG_TELEMETRY_ENABLED = "enabled"
+CONFIG_TELEMETRY_DATE = "date"
 
 MINIMUM_COMPATIBLE_VERSION = "2.0.0a1"
 

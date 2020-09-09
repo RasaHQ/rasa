@@ -11,6 +11,7 @@ from rasa.cli import (
     train,
     interactive,
     shell,
+    telemetry,
     test,
     visualize,
     data,
@@ -56,6 +57,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     shell.add_subparser(subparsers, parents=parent_parsers)
     train.add_subparser(subparsers, parents=parent_parsers)
     interactive.add_subparser(subparsers, parents=parent_parsers)
+    telemetry.add_subparser(subparsers, parents=parent_parsers)
     test.add_subparser(subparsers, parents=parent_parsers)
     visualize.add_subparser(subparsers, parents=parent_parsers)
     data.add_subparser(subparsers, parents=parent_parsers)
