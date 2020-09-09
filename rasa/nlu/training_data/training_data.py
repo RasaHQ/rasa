@@ -20,6 +20,8 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     INTENT,
     ENTITIES,
+    ACTION_NAME,
+    INTENT_NAME,
     TEXT,
 )
 from rasa.nlu.training_data.message import Message
@@ -423,11 +425,13 @@ class TrainingData:
         for example in self.training_examples:
             if example.get(INTENT_RESPONSE_KEY) and not example.get(RESPONSE):
                 rasa.shared.utils.io.raise_warning(
-                    f"Your training data contains an example '{example.text[:20]}...' "
+                    f"Your training data contains an example "
+                    f"'{example.get(TEXT)[:20]}...' "
                     f"for the {example.get_full_intent()} intent. "
                     f"You either need to add a response phrase or correct the "
                     f"intent for this example in your training data. "
-                    f"If you intend to use Response Selector in the pipeline, the training ."
+                    f"If you intend to use Response Selector in the pipeline, the "
+                    f"training ."
                 )
 
     def train_test_split(
@@ -568,9 +572,35 @@ class TrainingData:
         """Checks if any training data was loaded."""
 
         lists_to_check = [
-            self.training_examples,
+            self._training_examples_without_empty_e2e_examples(),
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
+
+    def without_empty_e2e_examples(self) -> "TrainingData":
+        """Removes training data examples from intent labels and action names which
+        were added for end-to-end training.
+
+        Returns:
+            Itself but without training examples which don't have a text or intent.
+        """
+        training_examples = copy.deepcopy(self.training_examples)
+        entity_synonyms = self.entity_synonyms.copy()
+        regex_features = copy.deepcopy(self.regex_features)
+        lookup_tables = copy.deepcopy(self.lookup_tables)
+        responses = copy.deepcopy(self.responses)
+        copied = TrainingData(
+            training_examples, entity_synonyms, regex_features, lookup_tables, responses
+        )
+        copied.training_examples = self._training_examples_without_empty_e2e_examples()
+
+        return copied
+
+    def _training_examples_without_empty_e2e_examples(self) -> List[Message]:
+        return [
+            example
+            for example in self.training_examples
+            if not example.get(ACTION_NAME) and not example.get(INTENT_NAME)
+        ]

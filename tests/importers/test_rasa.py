@@ -8,9 +8,6 @@ from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.rasa import RasaFileImporter
 
-# noinspection PyUnresolvedReferences
-from tests.core.conftest import project
-
 
 async def test_rasa_file_importer(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
