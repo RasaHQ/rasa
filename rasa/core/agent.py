@@ -40,6 +40,7 @@ from rasa.model import (
 )
 from rasa.nlu.utils import is_url
 import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
 
@@ -775,7 +776,7 @@ class Agent:
         resource_name: Text,
         output_file: Text,
         max_history: Optional[int] = None,
-        nlu_training_data: Optional[Text] = None,
+        nlu_training_data: Optional[TrainingData] = None,
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:

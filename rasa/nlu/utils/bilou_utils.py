@@ -2,21 +2,23 @@ import logging
 from typing import List, Tuple, Text, Optional, Dict, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.training_data import Message
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    ENTITIES,
     TOKENS_NAMES,
-    TEXT,
     BILOU_ENTITIES,
-    NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_START,
     BILOU_ENTITIES_GROUP,
     BILOU_ENTITIES_ROLE,
-    ENTITY_ATTRIBUTE_ROLE,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
 
 logger = logging.getLogger(__name__)
