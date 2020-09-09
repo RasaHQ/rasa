@@ -5,8 +5,6 @@ import uuid
 from pathlib import Path
 from typing import Text, Optional, Union, List, Tuple, Callable, Set, Iterable
 
-from rasa.shared.nlu.training_data import loading as nlu_loading
-
 YAML_FILE_EXTENSIONS = {".yml", ".yaml"}
 JSON_FILE_EXTENSIONS = {".json"}
 MARKDOWN_FILE_EXTENSIONS = {".md"}
@@ -180,6 +178,8 @@ def is_nlu_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a nlu file, otherwise `False`.
     """
+    from rasa.shared.nlu.training_data import loading as nlu_loading
+
     return nlu_loading.guess_format(file_path) != nlu_loading.UNK
 
 
