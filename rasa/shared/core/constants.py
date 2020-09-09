@@ -49,3 +49,7 @@ ACTIVE_LOOP = "active_loop"
 LOOP_VALIDATE = "validate"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"
+
+EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
+ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
+IS_EXTERNAL = "is_external"

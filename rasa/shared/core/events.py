@@ -13,12 +13,13 @@ from typing import List, Dict, Text, Any, Type, Optional
 import rasa.shared.utils.common
 from typing import Union
 
-from rasa.core.constants import (
-    IS_EXTERNAL,
+from rasa.shared.core.constants import (
+    LOOP_NAME,
+    LOOP_VALIDATE,
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    IS_EXTERNAL,
 )
-from rasa.shared.core.constants import LOOP_NAME, LOOP_VALIDATE
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     INTENT,
