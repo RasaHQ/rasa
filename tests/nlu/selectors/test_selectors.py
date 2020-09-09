@@ -1,5 +1,6 @@
 import pytest
 
+from rasa.nlu import train
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import load_data
 from rasa.nlu.train import Trainer, Interpreter
@@ -8,6 +9,9 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    CHECKPOINT_MODEL,
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
 
@@ -131,3 +135,50 @@ def test_resolve_intent_response_key_from_label(
         response_selector.responses[label_intent_response_key]
         == training_data.responses[resolved_intent_response_key]
     )
+
+
+async def test_train_model_checkpointing(component_builder, tmpdir):
+    from pathlib import Path
+
+    model_name = "rs-checkpointed-model"
+    #best_model_file = Path(tmpdir.strpath,  model_name)
+    best_model_file = Path('/Users/thomas/research/code/carbon-bot/models/response_selector', model_name)
+    assert not best_model_file.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "ResponseSelector",
+                    EPOCHS: 5,
+                    EVAL_NUM_EXAMPLES: 10,
+                    EVAL_NUM_EPOCHS: 1,
+                    CHECKPOINT_MODEL: True
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    await train(
+        _config,
+        #path=Path(tmpdir.strpath),
+        path=Path('/Users/thomas/research/code/carbon-bot/models/response_selector'),
+        data="data/examples/rasa/response_selector",
+        component_builder=component_builder,
+        fixed_model_name=model_name
+    )
+
+    assert best_model_file.exists()
+
+    '''
+    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+        - metadata.json
+        - checkpoint
+        - component_1_CountVectorsFeaturizer (as per the pipeline above)
+        - component_2_DIETClassifier files (more than 1 file)
+    '''
+    #all_files = list(best_model_file.rglob("*.*"))
+    #assert len(all_files) > 4
