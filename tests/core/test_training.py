@@ -7,7 +7,8 @@ from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
 from rasa.core.domain import Domain
-from rasa.core.interpreter import RegexInterpreter, RasaNLUInterpreter
+from rasa.core.interpreter import RasaNLUInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy

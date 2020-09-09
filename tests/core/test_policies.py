@@ -24,7 +24,7 @@ from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted, ConversationPaused
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import SupportedData, Policy
 from rasa.core.policies.rule_policy import RulePolicy

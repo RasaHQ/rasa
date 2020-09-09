@@ -5,7 +5,7 @@ from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 from rasa.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.domain import Domain, State
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
 from rasa.core.trackers import (

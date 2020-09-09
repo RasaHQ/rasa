@@ -13,7 +13,7 @@ from rasa.importers.importer import TrainingDataImporter
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
-    from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
 
 

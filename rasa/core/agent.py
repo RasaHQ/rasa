@@ -17,7 +17,7 @@ from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 import rasa.core.interpreter
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble

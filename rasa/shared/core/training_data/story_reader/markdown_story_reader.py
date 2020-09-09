@@ -17,7 +17,7 @@ from rasa.shared.constants import (
     DOCS_URL_STORIES,
 )
 from rasa.core.events import UserUttered
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.core.training_data.story_reader.story_reader import (
     StoryReader,
     StoryParseError,

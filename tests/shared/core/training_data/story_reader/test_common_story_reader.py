@@ -13,7 +13,7 @@ from rasa.core.events import UserUttered, ActionExecuted, SessionStarted
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME_KEY
 from rasa.utils.tensorflow.model_data_utils import surface_attributes
 

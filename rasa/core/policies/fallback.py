@@ -11,7 +11,7 @@ import rasa.utils.io
 from rasa.utils import common as common_utils
 
 from rasa.core.domain import Domain
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.generator import TrackerWithCachedStates

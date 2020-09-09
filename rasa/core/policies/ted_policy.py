@@ -19,7 +19,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, ENTITIES
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, ACTIVE_LOOP, SLOTS
 from rasa.core.trackers import DialogueStateTracker

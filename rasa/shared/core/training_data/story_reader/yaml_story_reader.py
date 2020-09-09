@@ -5,7 +5,7 @@ from typing import Dict, Text, List, Any, Optional, Union
 import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation

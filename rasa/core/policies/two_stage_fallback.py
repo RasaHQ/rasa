@@ -10,7 +10,7 @@ import rasa.utils.io
 from rasa.core.events import UserUttered, ActionExecuted
 
 from rasa.core.domain import Domain
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker

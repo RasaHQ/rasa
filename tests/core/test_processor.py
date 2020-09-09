@@ -27,7 +27,8 @@ from rasa.core.events import (
     Event,
     SlotSet,
 )
-from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpreter
+from rasa.core.interpreter import RasaNLUHttpInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor

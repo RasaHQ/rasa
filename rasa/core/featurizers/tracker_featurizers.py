@@ -13,7 +13,7 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features

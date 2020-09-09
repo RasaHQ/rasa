@@ -5,7 +5,7 @@ from rasa.core.domain import Domain
 import numpy as np
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, ENTITIES, TEXT, INTENT
 from rasa.core.constants import SLOTS, ACTIVE_LOOP
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 import scipy.sparse
 
 

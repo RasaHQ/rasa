@@ -4,7 +4,7 @@ from typing import List, Any, Text
 import pytest
 import copy
 
-from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import Policy
@@ -25,8 +25,12 @@ from rasa.core.constants import FORM_POLICY_PRIORITY
 from rasa.core.events import ActionExecuted
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
-from rasa.shared.core.constants import USER_INTENT_RESTART, ACTION_LISTEN_NAME, ACTION_RESTART_NAME, \
-    ACTION_DEFAULT_FALLBACK_NAME
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+)
 
 
 class WorkingPolicy(Policy):

@@ -5,7 +5,7 @@ from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
 import rasa.core.interpreter
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.model import FingerprintComparisonResult

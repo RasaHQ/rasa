@@ -3,11 +3,8 @@ import rasa.nlu
 import pytest
 
 import rasa.core.interpreter
-from rasa.core.interpreter import (
-    RasaNLUHttpInterpreter,
-    RasaNLUInterpreter,
-    RegexInterpreter,
-)
+from rasa.core.interpreter import RasaNLUHttpInterpreter, RasaNLUInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.model import get_model_subdirectories, get_model
 from rasa.nlu.model import Interpreter
 from rasa.utils.endpoints import EndpointConfig
