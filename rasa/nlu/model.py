@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
 import rasa.utils.io
-from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
 from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
@@ -413,8 +412,6 @@ class Interpreter:
         """
 
         for component in self.pipeline:
-            if not isinstance(
-                component, (EntityExtractor, IntentClassifier, FallbackClassifier)
-            ):
+            if not isinstance(component, (EntityExtractor, IntentClassifier)):
                 component.process(message, **self.context)
         return message
