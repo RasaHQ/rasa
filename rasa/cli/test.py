@@ -11,8 +11,8 @@ from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
-    CONFIG_SCHEMA_FILE,
 )
+from rasa.shared.constants import CONFIG_SCHEMA_FILE
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils as cli_utils
 import rasa.utils.io as io_utils

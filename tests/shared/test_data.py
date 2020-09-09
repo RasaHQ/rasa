@@ -1,6 +1,6 @@
 import pytest
 
-import rasa.shared
+import rasa.shared.data
 
 
 @pytest.mark.parametrize(

@@ -4,7 +4,6 @@ from typing import Text
 import pytest
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import INTENT
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
@@ -359,3 +358,13 @@ def test_nlg_multimedia_load_dump_roundtrip():
 
     # dumping again should also not change the format
     assert dumped == RasaYAMLWriter().dumps(dumped_result)
+
+
+def test_read_mixed_training_data_file():
+    training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
+
+    reader = RasaYAMLReader()
+
+    with pytest.warns(None) as record:
+        reader.read(training_data_file)
+        assert not len(record)

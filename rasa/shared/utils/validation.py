@@ -11,10 +11,10 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
     PACKAGE_NAME,
-    SCHEMA_UTILS_FILE,
-    SCHEMA_EXTENSIONS_FILE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     DOCS_BASE_URL,
+    SCHEMA_EXTENSIONS_FILE,
+    RESPONSES_SCHEMA_FILE,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ def validate_yaml_schema(
     try:
         schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
         schema_utils_file = pkg_resources.resource_filename(
-            PACKAGE_NAME, SCHEMA_UTILS_FILE
+            PACKAGE_NAME, RESPONSES_SCHEMA_FILE
         )
         schema_extensions = pkg_resources.resource_filename(
             PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE

@@ -25,8 +25,9 @@ RESULTS_FILE = "results.json"
 NUMBER_OF_TRAINING_STORIES_FILE = "num_stories.json"
 PERCENTAGE_KEY = "__percentage__"
 
-CONFIG_SCHEMA_FILE = "shared/nlu/training_data/schemas/config.yml"
-DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
+PACKAGE_NAME = "rasa"
+
+DOMAIN_SCHEMA_FILE = "utils/schemas/domain.yml"
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
