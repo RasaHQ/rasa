@@ -6,13 +6,13 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.train_utils as train_utils
 import numpy as np
 
 from rasa.nlu.constants import (
-    TEXT,
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKEN_IDS,
@@ -22,6 +22,7 @@ from rasa.nlu.constants import (
     NUMBER_OF_SUB_TOKENS,
     NO_LENGTH_RESTRICTION,
 )
+from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -715,7 +716,14 @@ class HFTransformersNLP(Component):
             message: Incoming message object
         """
 
-        message.set(
-            LANGUAGE_MODEL_DOCS[TEXT],
-            self._get_docs_for_batch([message], attribute=TEXT, inference_mode=True)[0],
-        )
+        # process of all featurizers operates only on TEXT and ACTION_TEXT attributes,
+        # because all other attributes are labels which are featurized during training
+        # and their features are stored by the model itself.
+        for attribute in {TEXT, ACTION_TEXT}:
+            if message.get(attribute):
+                message.set(
+                    LANGUAGE_MODEL_DOCS[attribute],
+                    self._get_docs_for_batch(
+                        [message], attribute=attribute, inference_mode=True
+                    )[0],
+                )

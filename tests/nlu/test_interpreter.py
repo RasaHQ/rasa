@@ -9,10 +9,8 @@ from rasa.core.interpreter import (
     RegexInterpreter,
 )
 from rasa.model import get_model_subdirectories, get_model
-from rasa.nlu import registry, training_data
 from rasa.nlu.model import Interpreter
 from rasa.utils.endpoints import EndpointConfig
-from tests.nlu import utilities
 
 
 @pytest.mark.parametrize(

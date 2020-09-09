@@ -1,29 +1,30 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
-    EXTRACTOR,
-    ENTITIES,
     TOKENS_NAMES,
-    TEXT,
-    NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    INTENT,
+    EXTRACTOR,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
-from rasa.nlu.training_data import Message
-import rasa.nlu.utils.bilou_utils as bilou_utils
 
 
 class EntityExtractor(Component):
@@ -102,7 +103,7 @@ class EntityExtractor(Component):
             data[ENTITIES] = entities
             filtered.append(
                 Message(
-                    text=message.text,
+                    text=message.get(TEXT),
                     data=data,
                     output_properties=message.output_properties,
                     time=message.time,
@@ -131,6 +132,8 @@ class EntityExtractor(Component):
         Returns:
             Entities.
         """
+        import rasa.nlu.utils.bilou_utils as bilou_utils
+
         entities = []
 
         last_entity_tag = NO_ENTITY_TAG
@@ -340,7 +343,7 @@ class EntityExtractor(Component):
                     or entity_end not in token_end_positions
                 ):
                     rasa.shared.utils.io.raise_warning(
-                        f"Misaligned entity annotation in message '{example.text}' "
+                        f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
                         f"end values of entities in the training data match the token "
                         f"boundaries (e.g. entities don't include trailing whitespaces "

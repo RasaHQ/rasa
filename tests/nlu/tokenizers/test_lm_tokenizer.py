@@ -1,14 +1,14 @@
 import pytest
 
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TEXT,
-    INTENT,
     TOKENS_NAMES,
     LANGUAGE_MODEL_DOCS,
     TOKEN_IDS,
     NUMBER_OF_SUB_TOKENS,
 )
+from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 
@@ -352,7 +352,7 @@ def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer(component_config)
 
-    message = Message(text)
+    message = Message.build(text=text)
     message.set(INTENT, text)
 
     td = TrainingData([message])
@@ -374,7 +374,7 @@ def test_lm_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer()
 
-    message = Message(text)
+    message = Message.build(text=text)
 
     td = TrainingData([message])
 

@@ -5,18 +5,18 @@ from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TEXT,
     SPACY_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
 )
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
 if typing.TYPE_CHECKING:
@@ -53,7 +53,7 @@ class SpacyFeaturizer(DenseFeaturizer):
         **kwargs: Any,
     ) -> None:
 
-        for example in training_data.intent_examples:
+        for example in training_data.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(example, attribute)
 
@@ -61,7 +61,8 @@ class SpacyFeaturizer(DenseFeaturizer):
         return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        self._set_spacy_features(message)
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            self._set_spacy_features(message, attribute)
 
     def _set_spacy_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the spacy word vectors to the messages features."""

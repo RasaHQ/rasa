@@ -121,7 +121,7 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
 def load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueStateTracker:
     """Read the json dump from the file and instantiate a tracker it."""
 
-    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
     return DialogueStateTracker.from_dict(
         sender_id, tracker_json.get("events", []), domain.slots

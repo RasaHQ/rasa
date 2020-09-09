@@ -11,6 +11,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from mock import Mock
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions import action
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -20,8 +21,10 @@ from rasa.core.events import BotUttered, ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import interactive
 from rasa.importers.rasa import TrainingDataImporter
-from rasa.nlu.training_data import Message
-from rasa.nlu.training_data.loading import RASA, MARKDOWN, UNK
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.loading import RASA, MARKDOWN, UNK
 from rasa.utils.endpoints import EndpointConfig
 from tests import utilities
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
@@ -137,7 +140,7 @@ def test_bot_output_format():
 
 def test_latest_user_message():
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
     m = interactive.latest_user_message(tracker_json.get("events"))
 
@@ -154,7 +157,7 @@ def test_latest_user_message_on_no_events():
 
 def test_all_events_before_user_msg():
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     evts = tracker_json.get("events")
 
     m = interactive.all_events_before_latest_user_msg(evts)
@@ -168,7 +171,9 @@ def test_all_events_before_user_msg_on_no_events():
 
 
 async def test_print_history(mock_endpoint):
-    tracker_dump = rasa.utils.io.read_file("data/test_trackers/tracker_moodbot.json")
+    tracker_dump = rasa.shared.utils.io.read_file(
+        "data/test_trackers/tracker_moodbot.json"
+    )
 
     sender_id = uuid.uuid4().hex
 
@@ -184,7 +189,9 @@ async def test_print_history(mock_endpoint):
 
 
 async def test_is_listening_for_messages(mock_endpoint):
-    tracker_dump = rasa.utils.io.read_file("data/test_trackers/tracker_moodbot.json")
+    tracker_dump = rasa.shared.utils.io.read_file(
+        "data/test_trackers/tracker_moodbot.json"
+    )
 
     sender_id = uuid.uuid4().hex
 
@@ -203,7 +210,7 @@ async def test_is_listening_for_messages(mock_endpoint):
 
 def test_splitting_conversation_at_restarts():
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    evts = json.loads(rasa.utils.io.read_file(tracker_dump)).get("events")
+    evts = json.loads(rasa.shared.utils.io.read_file(tracker_dump)).get("events")
     evts_wo_restarts = evts[:]
     evts.insert(2, {"event": "restart"})
     evts.append({"event": "restart"})
@@ -426,7 +433,9 @@ def test_validate_user_message():
 
 
 async def test_undo_latest_msg(mock_endpoint):
-    tracker_dump = rasa.utils.io.read_file("data/test_trackers/tracker_moodbot.json")
+    tracker_dump = rasa.shared.utils.io.read_file(
+        "data/test_trackers/tracker_moodbot.json"
+    )
 
     sender_id = uuid.uuid4().hex
 
@@ -480,7 +489,7 @@ async def test_interactive_domain_persistence(
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = rasa.utils.io.read_json_file(tracker_dump)
+    tracker_json = rasa.shared.utils.io.read_json_file(tracker_dump)
 
     events = tracker_json.get("events", [])
 
@@ -530,9 +539,9 @@ async def test_filter_intents_before_save_nlu_file():
     # Test method interactive._filter_messages
     from random import choice
 
-    greet = {"intent": "greet", "text_features": [0.5]}
-    goodbye = {"intent": "goodbye", "text_features": [0.5]}
-    test_msgs = [Message("How are you?", greet), Message("I am inevitable", goodbye)]
+    greet = {"text": "How are you?", "intent": "greet", "text_features": [0.5]}
+    goodbye = {"text": "I am inevitable", "intent": "goodbye", "text_features": [0.5]}
+    test_msgs = [Message(data=greet), Message(data=goodbye)]
 
     domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
     domain = Domain.load(domain_file)
@@ -540,7 +549,9 @@ async def test_filter_intents_before_save_nlu_file():
 
     msgs = test_msgs.copy()
     if intents:
-        msgs.append(Message("/" + choice(intents), greet))
+        another_greet = greet.copy()
+        another_greet[TEXT] = INTENT_MESSAGE_PREFIX + choice(intents)
+        msgs.append(Message(data=another_greet))
 
     assert test_msgs == interactive._filter_messages(msgs)
 

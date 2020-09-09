@@ -4,7 +4,7 @@ from typing import List, Text
 import logging
 
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(
@@ -97,7 +97,7 @@ def test_log_longer_sequence(
     transformers_nlp = HFTransformersNLP(transformers_config)
 
     text = " ".join(["hi"] * sequence_length)
-    message = Message(text)
+    message = Message.build(text)
 
     caplog.set_level(logging.DEBUG)
     transformers_nlp.process(message)

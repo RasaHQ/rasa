@@ -3,18 +3,19 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Dict, Text, List, Any, Union
+from typing import Dict, Text, List, Any, Union, Tuple
 
 import rasa.data
-from rasa.nlu.training_data import Message
-import rasa.utils.io as io_utils
+import rasa.shared.data
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.message import Message
 from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
     DOCS_URL_DOMAINS,
     DOCS_URL_STORIES,
     LEGACY_DOCS_BASE_URL,
 )
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import UserUttered
 from rasa.core.exceptions import StoryParseError
 from rasa.core.interpreter import RegexInterpreter
@@ -35,7 +36,9 @@ class MarkdownStoryReader(StoryReader):
         """Given a md file reads the contained stories."""
 
         try:
-            with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
+            with open(
+                filename, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+            ) as f:
                 lines = f.readlines()
 
             return await self._process_lines(lines)
@@ -158,7 +161,7 @@ class MarkdownStoryReader(StoryReader):
         return re.sub(r"<!--.*?-->", "", line).strip()
 
     @staticmethod
-    def _parse_event_line(line):
+    def _parse_event_line(line: Text) -> Tuple[Text, Dict[Text, Text]]:
         """Tries to parse a single line as an event with arguments."""
 
         # the regex matches "slot{"a": 1}"
@@ -199,7 +202,7 @@ class MarkdownStoryReader(StoryReader):
         parsed_messages = []
         for m in e2e_messages:
             message = self.parse_e2e_message(m)
-            parsed = self._parse_message(message.text, line_num)
+            parsed = self._parse_message(message.get(TEXT), line_num)
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
@@ -226,7 +229,7 @@ class MarkdownStoryReader(StoryReader):
                 "end-to-end testing at {}/user-guide/testing-your-assistant/"
                 "#end-to-end-testing/".format(line, LEGACY_DOCS_BASE_URL)
             )
-        from rasa.nlu.training_data import entities_parser
+        from rasa.shared.nlu.training_data import entities_parser
 
         intent = match.group(2)
         message = match.group(4)
@@ -242,11 +245,17 @@ class MarkdownStoryReader(StoryReader):
 
     def _parse_message(self, message: Text, line_num: int) -> UserUttered:
         parse_data = RegexInterpreter().synchronous_parse(message)
+
+        text = None
+        if self.use_e2e:
+            text = parse_data.get("text")
+
         utterance = UserUttered(
-            message, parse_data.get("intent"), parse_data.get("entities"), parse_data
+            text, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
+
         if self.domain and intent_name not in self.domain.intents:
             rasa.shared.utils.io.raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "
@@ -268,14 +277,16 @@ class MarkdownStoryReader(StoryReader):
             `True` in case the file is a Core Markdown training data or rule data file,
             `False` otherwise.
         """
-        if not rasa.data.is_likely_markdown_file(file_path) or rasa.data.is_nlu_file(
+        if not rasa.shared.data.is_likely_markdown_file(
             file_path
-        ):
+        ) or rasa.data.is_nlu_file(file_path):
             return False
 
         try:
             with open(
-                file_path, encoding=io_utils.DEFAULT_ENCODING, errors="surrogateescape"
+                file_path,
+                encoding=rasa.shared.utils.io.DEFAULT_ENCODING,
+                errors="surrogateescape",
             ) as lines:
                 return any(
                     MarkdownStoryReader._contains_story_or_rule_pattern(line)
@@ -301,7 +312,7 @@ class MarkdownStoryReader(StoryReader):
         Returns:
             `True` if it's a file containing test stories, otherwise `False`.
         """
-        if not rasa.data.is_likely_markdown_file(file_path):
+        if not rasa.shared.data.is_likely_markdown_file(file_path):
             return False
 
         dirname = os.path.dirname(file_path)

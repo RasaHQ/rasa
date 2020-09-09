@@ -16,6 +16,8 @@ from typing import (
     Dict,
     Any,
 )
+
+import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
 
@@ -25,22 +27,24 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     PREDICTED_CONFIDENCE_KEY,
-    EXTRACTOR,
-    PRETRAINED_EXTRACTORS,
-    NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
-    RESPONSE,
-    INTENT,
-    INTENT_RESPONSE_KEY,
-    TEXT,
-    ENTITIES,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
     INTENT_NAME_KEY,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    RESPONSE,
+    INTENT_RESPONSE_KEY,
+    ENTITIES,
+    EXTRACTOR,
+    PRETRAINED_EXTRACTORS,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
@@ -1300,7 +1304,7 @@ def get_eval_data(
     should_eval_entities = is_entity_extractor_present(interpreter)
 
     for example in tqdm(test_data.training_examples):
-        result = interpreter.parse(example.text, only_output_properties=False)
+        result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
             intent_prediction = result.get(INTENT, {}) or {}
@@ -1459,13 +1463,13 @@ def run_evaluation(
 
     Returns: dictionary containing evaluation results
     """
-    import rasa.nlu.training_data
+    import rasa.shared.nlu.training_data.loading
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = rasa.nlu.training_data.load_data(
+    test_data = rasa.shared.nlu.training_data.loading.load_data(
         data_path, interpreter.model_metadata.language
     )
 
@@ -1844,7 +1848,7 @@ def compare_nlu(
         io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
-        io_utils.write_text_file(test.nlu_as_markdown(), test_path)
+        rasa.shared.utils.io.write_text_file(test.nlu_as_markdown(), test_path)
 
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
@@ -1859,10 +1863,10 @@ def compare_nlu(
             train_nlu_split_path = os.path.join(train_split_path, TRAIN_DATA_FILE)
             train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
             io_utils.create_path(train_nlu_split_path)
-            io_utils.write_text_file(
+            rasa.shared.utils.io.write_text_file(
                 train_included.nlu_as_markdown(), train_nlu_split_path
             )
-            io_utils.write_text_file(
+            rasa.shared.utils.io.write_text_file(
                 train_included.nlg_as_markdown(), train_nlg_split_path
             )
 
