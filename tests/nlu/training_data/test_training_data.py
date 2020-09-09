@@ -15,8 +15,8 @@ from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.loading import guess_format, UNK, RASA_YAML, JSON, MARKDOWN
-from rasa.nlu.training_data.util import get_file_format
+from rasa.nlu.training_data.loading import guess_format, UNK
+from rasa.nlu.training_data.util import get_file_format, DEFAULT_FILE_FORMAT
 
 
 def test_luis_data():
@@ -516,10 +516,10 @@ def test_training_data_conversion(
 @pytest.mark.parametrize(
     "data_file,expected_format",
     [
-        ("data/examples/luis/demo-restaurants_v5.json", JSON),
-        ("data/examples", JSON),
-        ("data/examples/rasa/demo-rasa.md", MARKDOWN),
-        ("data/rasa_yaml_examples", RASA_YAML),
+        ("data/examples/luis/demo-restaurants_v5.json", DEFAULT_FILE_FORMAT),
+        ("data/examples", DEFAULT_FILE_FORMAT),
+        ("data/examples/rasa/demo-rasa.md", "md"),
+        ("data/rasa_yaml_examples", "yml"),
     ],
 )
 def test_get_supported_file_format(data_file: Text, expected_format: Text):

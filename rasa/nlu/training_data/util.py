@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from collections import defaultdict
 from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
@@ -8,6 +9,8 @@ from rasa.nlu.constants import ENTITIES, EXTRACTOR, PRETRAINED_EXTRACTORS
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_FILE_FORMAT = "json"
 
 
 def transform_entity_synonyms(
@@ -34,6 +37,15 @@ def check_duplicate_synonym(
 
 
 def get_file_format(resource_name: Text) -> Text:
+    """
+    Get the file format of a resource. It supports both a folder and
+    a file, and tries to guess the format as follows:
+
+    - if the resource is a file and has a known format, return this format
+    - if the resource is a folder and all the resources have the
+      same known format, return it
+    - otherwise, default to DEFAULT_FILE_FORMAT (json).
+    """
     from rasa.nlu.training_data import loading
 
     if resource_name is None or not os.path.exists(resource_name):
@@ -44,15 +56,17 @@ def get_file_format(resource_name: Text) -> Text:
     file_formats = list(map(lambda f: loading.guess_format(f), files))
 
     if not file_formats:
-        return "json"
+        return DEFAULT_FILE_FORMAT
+
+    knwon_file_formats = defaultdict(
+        lambda: DEFAULT_FILE_FORMAT, {loading.MARKDOWN: "md", loading.RASA_YAML: "yml"}
+    )
 
     fformat = file_formats[0]
-    if fformat in [loading.MARKDOWN, loading.RASA_YAML] and all(
-        f == fformat for f in file_formats
-    ):
-        return {loading.MARKDOWN: "md", loading.RASA_YAML: "yml"}[fformat]
+    if all(f == fformat for f in file_formats):
+        return knwon_file_formats[fformat]
 
-    return "json"
+    return DEFAULT_FILE_FORMAT
 
 
 def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
