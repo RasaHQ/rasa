@@ -706,6 +706,3 @@ class Domain(BaseDomain):
             (form[form_name] for form in self.forms if form_name in form.keys()), {}
         )
 
-
-class TemplateDomain(Domain):
-    pass
