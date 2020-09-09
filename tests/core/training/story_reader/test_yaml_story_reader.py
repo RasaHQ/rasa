@@ -7,7 +7,6 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
-from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
@@ -352,7 +351,7 @@ def test_read_mixed_training_data_file(default_domain: Domain):
     training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = rasa.utils.io.read_yaml_file(training_data_file)
+    yaml_content = rasa.shared.utils.io.read_yaml_file(training_data_file)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
