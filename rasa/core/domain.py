@@ -50,8 +50,8 @@ from rasa.core.constants import (
     ACTIVE_LOOP,
     SLOTS,
     SHOULD_NOT_BE_SET,
-    LOOP_NAME,
 )
+from rasa.shared.core.constants import LOOP_NAME
 from rasa.core.events import SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot

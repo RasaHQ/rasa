@@ -32,14 +32,13 @@ from rasa.shared.nlu.constants import (
 from rasa.core.constants import (
     SHOULD_NOT_BE_SET,
     ACTIVE_LOOP,
-    LOOP_NAME,
     LOOP_VALIDATE,
     LOOP_REJECTED,
     TRIGGER_MESSAGE,
     PREVIOUS_ACTION,
 )
 from rasa.core import events  # pytype: disable=pyi-error
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, LOOP_NAME
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.core.events import (  # pytype: disable=pyi-error
     UserUttered,

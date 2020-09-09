@@ -73,7 +73,6 @@ PREVIOUS_ACTION = "prev_action"
 ACTIVE_LOOP = "active_loop"
 SLOTS = "slots"
 
-LOOP_NAME = "name"
 LOOP_VALIDATE = "validate"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"

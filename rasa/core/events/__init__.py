@@ -19,8 +19,8 @@ from rasa.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     LOOP_VALIDATE,
-    LOOP_NAME,
 )
+from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     INTENT,
