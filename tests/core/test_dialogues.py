@@ -5,7 +5,7 @@ import pytest
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.conversation import Dialogue
+from rasa.shared.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.tracker_store import InMemoryTrackerStore
 from tests.core.conftest import (

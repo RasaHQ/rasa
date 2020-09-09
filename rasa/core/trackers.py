@@ -39,7 +39,7 @@ from rasa.core.constants import (
 )
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, LOOP_NAME
-from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
+from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.core.events import (  # pytype: disable=pyi-error
     UserUttered,
     ActionExecuted,

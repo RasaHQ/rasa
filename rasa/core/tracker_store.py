@@ -30,7 +30,7 @@ from rasa.core.constants import (
     POSTGRESQL_MAX_OVERFLOW,
     POSTGRESQL_POOL_SIZE,
 )
-from rasa.core.conversation import Dialogue
+from rasa.shared.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity

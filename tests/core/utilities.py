@@ -2,7 +2,7 @@ import itertools
 
 import contextlib
 import typing
-from typing import Text, List, Optional, Text, Any, Dict
+from typing import List, Optional, Text, Any, Dict
 
 import jsonpickle
 import os
@@ -16,7 +16,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 if typing.TYPE_CHECKING:
-    from rasa.core.conversation import Dialogue
+    from rasa.shared.core.conversation import Dialogue
 
 
 def tracker_from_dialogue_file(
