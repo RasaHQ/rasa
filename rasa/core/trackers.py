@@ -54,7 +54,7 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
     SessionStarted,
     ActionExecutionRejected,
 )
-from rasa.shared.core.domain import BaseDomain, State # pytype: disable=pyi-error
+from rasa.shared.core.domain import BaseDomain, State  # pytype: disable=pyi-error
 from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
