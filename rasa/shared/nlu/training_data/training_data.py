@@ -156,7 +156,7 @@ class TrainingData:
         return {
             ex.get(INTENT)
             for ex in self.training_examples
-            if ex.get(RESPONSE) is not None
+            if ex.get(INTENT_RESPONSE_KEY)
         }
 
     @lazy_property

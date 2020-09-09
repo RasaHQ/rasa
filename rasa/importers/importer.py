@@ -1,6 +1,6 @@
 import asyncio
 from functools import reduce
-from typing import Text, Optional, List, Dict, Set
+from typing import Text, Optional, List, Dict, Set, Any
 import logging
 
 import rasa.shared.utils.common
@@ -257,22 +257,32 @@ class CombinedDataImporter(TrainingDataImporter):
 
         return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
-    async def get_domain(self) -> Domain:
+    async def _get_user_defined_domain(self) -> Domain:
+        """Construct domain out of user defined domain files."""
+
         domains = [importer.get_domain() for importer in self._importers]
         domains = await asyncio.gather(*domains)
 
-        combined_domain = reduce(
+        return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
+    async def get_domain(self) -> Domain:
+        """Merge user defined domain with properties of retrieval intents in NLU data."""
+
+        combined_domain = await self._get_user_defined_domain()
+        user_defined_nlu_data = await self._get_user_defined_nlu_data()
+
         # Check if NLU data has any retrieval intents, if yes
         # add corresponding retrieval actions with `utter_` prefix automatically
-        # to an empty domain and update the properties of existing retrieval intents.
-        nlu_data = await self.get_nlu_data()
-        if nlu_data.retrieval_intents:
+        # to an empty domain, update the properties of existing retrieval intents
+        # and merge response templates
+        if user_defined_nlu_data.retrieval_intents:
 
             domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
-                nlu_data.retrieval_intents, combined_domain
+                user_defined_nlu_data.retrieval_intents,
+                user_defined_nlu_data.responses,
+                combined_domain,
             )
 
             combined_domain = combined_domain.merge(domain_with_retrieval_intents)
@@ -281,7 +291,9 @@ class CombinedDataImporter(TrainingDataImporter):
 
     @staticmethod
     def _get_domain_with_retrieval_intents(
-        retrieval_intents: Set[Text], existing_domain: Domain
+        retrieval_intents: Set[Text],
+        response_templates: Dict[Text, List[Dict[Text, Any]]],
+        existing_domain: Domain,
     ) -> Domain:
         """Construct a domain consisting of retrieval intents listed in the NLU training data.
 
@@ -311,7 +323,7 @@ class CombinedDataImporter(TrainingDataImporter):
             retrieval_intent_properties,
             [],
             [],
-            {},
+            response_templates,
             action.construct_retrieval_action_names(retrieval_intents),
             [],
         )
@@ -332,13 +344,43 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), stories, StoryGraph([])
         )
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    async def _get_user_defined_nlu_data(
+        self, language: Optional[Text] = "en"
+    ) -> TrainingData:
+        """Fetch all the NLU data defined by the user."""
+
         nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
         nlu_data = await asyncio.gather(*nlu_data)
 
         return reduce(
             lambda merged, other: merged.merge(other), nlu_data, TrainingData()
         )
+
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        """Merge NLU data defined by the user and response templates defined in the domain."""
+
+        user_defined_nlu_data = await self._get_user_defined_nlu_data(language)
+        user_defined_domain = await self._get_user_defined_domain()
+
+        return user_defined_nlu_data.merge(
+            self._get_nlu_data_with_responses(user_defined_domain.templates)
+        )
+
+    @staticmethod
+    def _get_nlu_data_with_responses(
+        response_templates: Dict[Text, List[Dict[Text, Any]]]
+    ) -> TrainingData:
+        """Construct training data object with only the response templates supplied.
+
+        Args:
+            response_templates: Response templates the NLU data should
+            be initialized with.
+
+        Returns: TrainingData object with response templates.
+
+        """
+
+        return TrainingData(responses=response_templates)
 
 
 class E2EImporter(TrainingDataImporter):
