@@ -9,8 +9,10 @@ from rasa.core.domain import Domain
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
 )
-from rasa.shared.core.training_data.story_reader import StoryReader
-from rasa.shared.core.training_data.story_reader import YAMLStoryReader
+from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.core.training.structures import StoryStep
 from rasa.shared.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSIONS
 

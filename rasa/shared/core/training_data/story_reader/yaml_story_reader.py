@@ -16,7 +16,7 @@ from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
-from rasa.shared.core.training_data.story_reader import StoryReader
+from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
 from rasa.nlu.constants import INTENT_NAME_KEY
 

@@ -291,7 +291,9 @@ def _write_nlu_yaml(
 def _write_core_yaml(
     training_data_path: Path, output_path: Path, source_path: Path
 ) -> None:
-    from rasa.shared.core.training_data.story_reader import KEY_ACTIVE_LOOP
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        KEY_ACTIVE_LOOP,
+    )
 
     reader = MarkdownStoryReader()
     writer = YAMLStoryWriter()

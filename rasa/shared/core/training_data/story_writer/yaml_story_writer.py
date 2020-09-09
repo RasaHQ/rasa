@@ -9,7 +9,7 @@ from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarStri
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.events import UserUttered, ActionExecuted, SlotSet, ActiveLoop
-from rasa.shared.core.training_data.story_reader import (
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_STORIES,
     KEY_STORY_NAME,
     KEY_USER_INTENT,

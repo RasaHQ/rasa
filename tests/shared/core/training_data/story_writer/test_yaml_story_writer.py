@@ -10,7 +10,9 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
 )
-from rasa.shared.core.training_data.story_reader import YAMLStoryReader
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
