@@ -330,6 +330,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   If you want to use character n-grams, set `analyzer` to `char` or `char_wb`.
   The lower and upper boundaries of the n-grams can be configured via the parameters `min_ngram` and `max_ngram`.
   By default both of them are set to `1`.
+  By default the featurizer takes the lemma of a word instead of the word directly if it is available. The lemma
+  of a word is currently only set by the [SpacyTokenizer](../components/tokenizers.mdx#spacytokenizer). You can
+  disable this behavior by setting `use_lemma` to `False`.
+
 
   :::note
   Option `char_wb` creates character n-grams only from text inside word boundaries;
@@ -454,6 +458,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     | OOV_words         | []                      | List of words to be treated as 'OOV_token' during training.  |
     +-------------------+-------------------------+--------------------------------------------------------------+
     | alias             | CountVectorFeaturizer   | Alias name of featurizer.                                    |
+    +-------------------+-------------------------+--------------------------------------------------------------+
+    | use_lemma         | True                    | Use the lemma of words for featurization.                    |
     +-------------------+-------------------------+--------------------------------------------------------------+
     ```
 
