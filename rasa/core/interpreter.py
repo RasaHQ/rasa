@@ -13,7 +13,7 @@ from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.nlu.training_data.message import Message

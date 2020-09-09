@@ -21,7 +21,6 @@ from rasa.core.constants import (
     LOOP_VALIDATE,
     LOOP_NAME,
 )
-from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     INTENT,
@@ -30,6 +29,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ACTION_TEXT,
     ACTION_NAME,
+    INTENT_NAME_KEY,
 )
 
 if typing.TYPE_CHECKING:

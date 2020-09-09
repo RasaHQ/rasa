@@ -35,7 +35,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 import rasa.cli.utils as rasa_cli_utils
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa

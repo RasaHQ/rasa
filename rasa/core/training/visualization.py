@@ -4,7 +4,6 @@ import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
 import rasa.shared.utils.io
-from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, Event
@@ -17,6 +16,7 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITIES,
+    INTENT_NAME_KEY,
 )
 
 if TYPE_CHECKING:

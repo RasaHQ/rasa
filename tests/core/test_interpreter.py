@@ -3,7 +3,7 @@ from aioresponses import aioresponses
 
 from rasa.core.interpreter import RasaNLUHttpInterpreter, RegexInterpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request, json_of_latest_request
 

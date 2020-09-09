@@ -9,17 +9,18 @@ import numpy as np
 import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES
 from rasa.core import jobs
-from rasa.core.actions.action import (
-    Action,
-    ActionExecutionRejection,
-)
+from rasa.core.actions.action import Action, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
     UserMessage,
 )
 from rasa.core.constants import UTTER_PREFIX, REQUESTED_SLOT
-from rasa.shared.core.constants import USER_INTENT_RESTART, ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
@@ -37,7 +38,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)

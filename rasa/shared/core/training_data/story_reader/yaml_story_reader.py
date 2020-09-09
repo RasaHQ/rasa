@@ -6,7 +6,7 @@ import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.core.constants import LOOP_NAME
 from rasa.core.interpreter import RegexInterpreter
-from rasa.shared.nlu.constants import ENTITIES
+from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
 from ruamel.yaml.parser import ParserError
@@ -18,7 +18,6 @@ from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
-from rasa.nlu.constants import INTENT_NAME_KEY
 
 logger = logging.getLogger(__name__)
 

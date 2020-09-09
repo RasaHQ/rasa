@@ -6,17 +6,19 @@ import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.core.actions.action import (
-    ActionRevertFallbackEvents,
+from rasa.core.actions.action import ActionRevertFallbackEvents
+from rasa.core.constants import PREVIOUS_ACTION, USER
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_BACK_NAME,
 )
-from rasa.core.constants import (
-    PREVIOUS_ACTION,
-    USER,
-)
-from rasa.shared.nlu.constants import ACTION_NAME
-from rasa.shared.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK, ACTION_LISTEN_NAME, ACTION_RESTART_NAME, \
-    ACTION_DEFAULT_FALLBACK_NAME, ACTION_DEFAULT_ASK_AFFIRMATION_NAME, ACTION_DEFAULT_ASK_REPHRASE_NAME, \
-    ACTION_BACK_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted, ConversationPaused
@@ -33,7 +35,6 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,

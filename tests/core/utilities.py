@@ -12,7 +12,7 @@ import rasa.utils.io
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 if typing.TYPE_CHECKING:

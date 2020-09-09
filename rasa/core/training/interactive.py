@@ -21,10 +21,9 @@ from questionary import Choice, Form, Question
 import rasa.shared.data
 import rasa.shared.utils.io
 import rasa.cli.utils
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
 from rasa.shared.core.constants import USER_INTENT_RESTART, ACTION_LISTEN_NAME
-from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.core import run, train, utils
 from rasa.core.actions.action import default_action_names
 from rasa.core.channels.channel import UserMessage

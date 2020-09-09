@@ -24,13 +24,15 @@ from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
-    ACTION_LISTEN_NAME, ACTION_RESTART_NAME, ACTION_SESSION_START_NAME, ACTION_DEFAULT_FALLBACK_NAME, ACTION_BACK_NAME)
-from rasa.core.actions.action import (
-    RULE_SNIPPET_ACTION_NAME,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_BACK_NAME,
 )
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import InvalidDomain
-from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error

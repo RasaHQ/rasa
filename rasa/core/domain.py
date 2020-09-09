@@ -30,15 +30,12 @@ from rasa.shared.core.domain import (
     KEY_E2E_ACTIONS,
 )
 import rasa.utils.io
-from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.common import sort_list_of_dicts_by_first_key
 from rasa.constants import (
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
 )
-from rasa.shared.constants import (
-    DOCS_URL_DOMAINS
-)
+from rasa.shared.constants import DOCS_URL_DOMAINS
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
@@ -58,7 +55,7 @@ from rasa.core.constants import (
 from rasa.core.events import SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
-from rasa.shared.nlu.constants import ENTITIES
+from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
 from rasa.shared.utils.common import lazy_property
 
 logger = logging.getLogger(__name__)

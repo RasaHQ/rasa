@@ -31,7 +31,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
-    INTENT_NAME_KEY,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -45,6 +44,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
+    INTENT_NAME_KEY,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder

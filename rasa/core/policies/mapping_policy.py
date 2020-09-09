@@ -7,13 +7,17 @@ from typing import Any, List, Text, Optional
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
 from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
     USER_INTENT_SESSION_START,
-    ACTION_LISTEN_NAME, ACTION_RESTART_NAME, ACTION_SESSION_START_NAME, ACTION_BACK_NAME)
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_BACK_NAME,
+)
 from rasa.shared.core.domain import InvalidDomain
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted

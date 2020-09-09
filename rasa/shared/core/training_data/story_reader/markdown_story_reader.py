@@ -7,7 +7,7 @@ from typing import Dict, Text, List, Any, Union, Tuple
 
 import rasa.data
 import rasa.shared.data
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
 from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
@@ -22,7 +22,6 @@ from rasa.shared.core.training_data.story_reader.story_reader import (
     StoryParseError,
 )
 from rasa.core.training.structures import StoryStep, FORM_PREFIX
-from rasa.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
