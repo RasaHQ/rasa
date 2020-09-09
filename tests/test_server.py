@@ -43,6 +43,7 @@ from sanic import Sanic
 from sanic.testing import SanicTestClient
 from tests.nlu.utilities import ResponseTest
 from tests.conftest import get_test_client
+from tests.utilities import json_of_latest_request, latest_request
 from ruamel.yaml import StringIO
 
 
