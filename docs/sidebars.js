@@ -1,16 +1,55 @@
+// FIXME: remove this when we have the sidebar dropdown in the theme
+let versions = [];
+try { versions = require('./versions.json'); } catch (ex) {}
+
+const legacyVersion = {
+  type: 'link',
+  label: 'Legacy 1.x',
+  href: 'https://legacy-docs-v1.rasa.com',
+};
+
+const allVersionItems = versions.length > 0
+? [
+    {
+      type: 'link',
+      label: versions[0],
+      href: '/',
+    },
+    ...versions.slice(1).map((version) => ({
+      type: 'link',
+      label: version,
+      href: `/${version}/`,
+    })),
+    {
+      type: 'link',
+      label: 'Master/Unreleased',
+      href: '/next/',
+    },
+    legacyVersion,
+  ]
+: [
+    {
+      type: 'link',
+      label: 'Master/Unreleased',
+      href: '/',
+    },
+    legacyVersion,
+  ];
+// end FIXME
+
 module.exports = {
-  someSidebar: [
+  default: [
+    'index',
     {
       type: 'category',
       label: 'Building Assistants',
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'category',
           label: 'Getting Started',
           collapsed: true,
           items: [
-            'index',
             'prototype-an-assistant',
             'installation',
             // 'cheatsheet',
@@ -21,11 +60,7 @@ module.exports = {
           type: 'category',
           label: 'Best Practices',
           collapsed: true,
-          items: [
-            'conversation-driven-development',
-            'generating-nlu-data',
-            'writing-stories',
-          ],
+          items: ['conversation-driven-development', 'generating-nlu-data', 'writing-stories'],
         },
         {
           type: 'category',
@@ -55,27 +90,19 @@ module.exports = {
           type: 'category',
           label: 'Reference',
           collapsed: true,
-          items: [
-            'glossary',
-            require("./docs/reference/sidebar.json"),
-          ],
+          items: ['glossary', require('./docs/reference/sidebar.json')],
         },
-      ]
+      ],
     },
     {
       type: 'category',
       label: 'Concepts',
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'category',
           label: 'Training Data',
-          items: [
-            'training-data-format',
-            'nlu-training-data',
-            'stories',
-            'rules',
-          ],
+          items: ['training-data-format', 'nlu-training-data', 'stories', 'rules'],
         },
         'domain',
         {
@@ -150,15 +177,9 @@ module.exports = {
         {
           type: 'category',
           label: 'Architecture', // name still confusing with architecture page elsewhere
-          items: [
-            'tracker-stores',
-            'event-brokers',
-            'model-storage',
-            'lock-stores',
-            'nlg',
-          ],
+          items: ['tracker-stores', 'event-brokers', 'model-storage', 'lock-stores', 'nlg'],
         },
-      ]
+      ],
     },
     {
       type: 'category',
@@ -170,10 +191,7 @@ module.exports = {
           type: 'category',
           label: 'HTTP API',
           collapsed: true,
-          items: [
-            'http-api',
-            'http-api-spec',
-          ],
+          items: ['http-api', 'http-api-spec'],
         },
         'jupyter-notebooks',
       ],
@@ -182,10 +200,14 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: [
-        'changelog',
-        'migration-guide',
-      ],
+      items: ['changelog', 'migration-guide'],
+    },
+    // FIXME: remove this when we have the sidebar dropdown in the theme
+    {
+      type: 'category',
+      label: 'Docs Versions',
+      collapsed: true,
+      items: allVersionItems,
     },
   ],
 };
