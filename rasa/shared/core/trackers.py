@@ -55,7 +55,7 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
     SessionStarted,
     ActionExecutionRejected,
 )
-from rasa.shared.core.domain import BaseDomain, State  # pytype: disable=pyi-error
+from rasa.shared.core.domain import Domain, State  # pytype: disable=pyi-error
 from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
@@ -235,7 +235,7 @@ class DialogueStateTracker:
         )
         return frozen_state
 
-    def past_states(self, domain: BaseDomain) -> List[State]:
+    def past_states(self, domain: Domain) -> List[State]:
         """Generate the past states of this tracker based on the history.
 
         Args:
@@ -552,7 +552,7 @@ class DialogueStateTracker:
 
         return Dialogue(self.sender_id, list(self.events))
 
-    def update(self, event: Event, domain: Optional[BaseDomain] = None) -> None:
+    def update(self, event: Event, domain: Optional[Domain] = None) -> None:
         """Modify the state of the tracker according to an ``Event``. """
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")

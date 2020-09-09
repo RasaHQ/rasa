@@ -56,6 +56,7 @@ State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
 
+
 class SessionConfig(NamedTuple):
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
@@ -83,7 +84,7 @@ class InvalidDomain(Exception):
         return io_utils.wrap_with_color(self.message, color=io_utils.bcolors.FAIL)
 
 
-class BaseDomain:
+class Domain:
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
@@ -134,11 +135,11 @@ class BaseDomain:
         self._check_domain_sanity()
 
     @classmethod
-    def empty(cls) -> "BaseDomain":
+    def empty(cls) -> "Domain":
         return cls([], [], [], {}, [], [])
 
     @classmethod
-    def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "BaseDomain":
+    def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
 
         try:
             validation_utils.validate_yaml_schema(yaml, constants.DOMAIN_SCHEMA_FILE)
@@ -149,12 +150,12 @@ class BaseDomain:
         if not validation_utils.validate_training_data_format_version(
             data, original_filename
         ):
-            return BaseDomain.empty()
+            return Domain.empty()
 
         return cls.from_dict(data)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "BaseDomain":
+    def from_dict(cls, data: Dict) -> "Domain":
         utter_templates = data.get(KEY_RESPONSES, {})
         slots = cls._collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
@@ -174,7 +175,7 @@ class BaseDomain:
         )
 
     @classmethod
-    def load(cls, paths: Union[List[Text], Text]) -> "BaseDomain":
+    def load(cls, paths: Union[List[Text], Text]) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -183,7 +184,7 @@ class BaseDomain:
         elif not isinstance(paths, list) and not isinstance(paths, set):
             paths = [paths]
 
-        domain = BaseDomain.empty()
+        domain = Domain.empty()
         for path in paths:
             other = cls.from_path(path)
             domain = domain.merge(other)
@@ -191,7 +192,7 @@ class BaseDomain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Text) -> "BaseDomain":
+    def from_path(cls, path: Text) -> "Domain":
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
@@ -207,7 +208,7 @@ class BaseDomain:
         return domain
 
     @classmethod
-    def from_file(cls, path: Text) -> "BaseDomain":
+    def from_file(cls, path: Text) -> "Domain":
         return cls.from_yaml(io_utils.read_file(path), path)
 
     @staticmethod
@@ -216,7 +217,9 @@ class BaseDomain:
 
         # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
         if session_expiration_time_min is None:
-            session_expiration_time_min = constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
+            session_expiration_time_min = (
+                constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
+            )
 
         carry_over_slots = session_config.get(
             CARRY_OVER_SLOTS_KEY, constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
@@ -225,15 +228,15 @@ class BaseDomain:
         return SessionConfig(session_expiration_time_min, carry_over_slots)
 
     @classmethod
-    def from_directory(cls, path: Text) -> "BaseDomain":
+    def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
 
-        domain = BaseDomain.empty()
+        domain = Domain.empty()
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
-                if BaseDomain.is_domain_file(full_path):
-                    other = BaseDomain.from_file(full_path)
+                if Domain.is_domain_file(full_path):
+                    other = Domain.from_file(full_path)
                     domain = other.merge(domain)
 
         return domain
@@ -333,7 +336,7 @@ class BaseDomain:
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
 
-        return self.as_dict() == BaseDomain.empty().as_dict()
+        return self.as_dict() == Domain.empty().as_dict()
 
     def as_dict(self) -> Dict[Text, Any]:
         return {
@@ -421,11 +424,11 @@ class BaseDomain:
         """Returns all available states."""
 
         return (
-                self.intents
-                + self.entities
-                + self.slot_states
-                + self.action_names
-                + self.form_names
+            self.intents
+            + self.entities
+            + self.slot_states
+            + self.action_names
+            + self.form_names
         )
 
     @property
@@ -871,7 +874,7 @@ class BaseDomain:
     def _slot_definitions(self) -> Dict[Any, Dict[str, Any]]:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
-    def merge(self, domain: Optional["BaseDomain"], override: bool = False) -> "BaseDomain":
+    def merge(self, domain: Optional["Domain"], override: bool = False) -> "Domain":
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
@@ -888,9 +891,9 @@ class BaseDomain:
         combined = self.as_dict()
 
         def merge_dicts(
-                d1: Dict[Text, Any],
-                d2: Dict[Text, Any],
-                override_existing_values: bool = False,
+            d1: Dict[Text, Any],
+            d2: Dict[Text, Any],
+            override_existing_values: bool = False,
         ) -> Dict[Text, Any]:
             if override_existing_values:
                 a, b = d1.copy(), d2.copy()
@@ -903,9 +906,9 @@ class BaseDomain:
             return sorted(list(set(l1 + l2)))
 
         def merge_lists_of_dicts(
-                dict_list1: List[Dict],
-                dict_list2: List[Dict],
-                override_existing_values: bool = False,
+            dict_list1: List[Dict],
+            dict_list2: List[Dict],
+            override_existing_values: bool = False,
         ) -> List[Dict]:
             dict1 = {list(i.keys())[0]: i for i in dict_list1}
             dict2 = {list(i.keys())[0]: i for i in dict_list2}
@@ -955,7 +958,9 @@ class BaseDomain:
         The value of this slot will hold the name of the slot which the user
         needs to fill in next (either explicitly or implicitly) as part of a form.
         """
-        if self.form_names and core_constants.REQUESTED_SLOT not in [s.name for s in self.slots]:
+        if self.form_names and core_constants.REQUESTED_SLOT not in [
+            s.name for s in self.slots
+        ]:
             self.slots.append(slots.UnfeaturizedSlot(core_constants.REQUESTED_SLOT))
 
     def add_knowledge_base_slots(self) -> None:
@@ -992,7 +997,7 @@ class BaseDomain:
             self._raise_action_not_found_exception(action_name)
 
         should_use_form_action = (
-                action_name in self.form_names and self.slot_mapping_for_form(action_name)
+            action_name in self.form_names and self.slot_mapping_for_form(action_name)
         )
 
         return action.action_from_name(
@@ -1092,9 +1097,7 @@ class BaseDomain:
         """Write domain to a file."""
 
         domain_data = self.as_dict()
-        io_utils.write_yaml(
-            domain_data, filename, should_preserve_key_order=True
-        )
+        io_utils.write_yaml(domain_data, filename, should_preserve_key_order=True)
 
     def persist_clean(self, filename: Text) -> None:
         """Write cleaned domain to a file."""
@@ -1116,9 +1119,7 @@ class BaseDomain:
         """Warn user of utterance names which have no specified template."""
 
         utterances = [
-            a
-            for a in self.action_names
-            if a.startswith(core_constants.UTTER_PREFIX)
+            a for a in self.action_names if a.startswith(core_constants.UTTER_PREFIX)
         ]
 
         missing_templates = [t for t in utterances if t not in self.templates.keys()]
@@ -1186,7 +1187,3 @@ class BaseDomain:
         text_hash = io_utils.get_text_hash(self_as_string)
 
         return int(text_hash, 16)
-
-
-class Domain(BaseDomain):
-    pass

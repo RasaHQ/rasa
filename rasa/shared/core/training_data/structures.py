@@ -9,7 +9,7 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Unio
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.shared.core.conversation import Dialogue
-from rasa.shared.core.domain import BaseDomain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event, SessionStarted
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -187,7 +187,7 @@ class StoryStep:
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
 
     def explicit_events(
-        self, domain: BaseDomain, should_append_final_listen: bool = True
+        self, domain: Domain, should_append_final_listen: bool = True
     ) -> List[Union[Event, List[Event]]]:
         """Returns events contained in the story step including implicit events.
 
@@ -245,7 +245,7 @@ class Story:
             story_step.add_event(event)
         return Story([story_step], story_name)
 
-    def as_dialogue(self, sender_id: Text, domain: BaseDomain) -> Dialogue:
+    def as_dialogue(self, sender_id: Text, domain: Domain) -> Dialogue:
         events = []
         for step in self.story_steps:
             events.extend(

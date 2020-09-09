@@ -10,7 +10,7 @@ from typing import Optional, List, Text, Set, Dict, Tuple, Deque, Any
 
 from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.shared.core.constants import SHOULD_NOT_BE_SET
-from rasa.shared.core.domain import BaseDomain, State
+from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
@@ -54,7 +54,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         sender_id: Text,
         slots: Optional[List[Slot]],
         max_event_history: Optional[int] = None,
-        domain: Optional[BaseDomain] = None,
+        domain: Optional[Domain] = None,
         is_augmented: bool = False,
         is_rule_tracker: bool = False,
     ) -> None:
@@ -74,7 +74,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
-        domain: Optional[BaseDomain] = None,
+        domain: Optional[Domain] = None,
         is_rule_tracker: bool = False,
     ) -> "TrackerWithCachedStates":
         tracker = cls(
@@ -84,7 +84,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             tracker.update(e)
         return tracker
 
-    def past_states_for_hashing(self, domain: BaseDomain) -> Deque[FrozenState]:
+    def past_states_for_hashing(self, domain: Domain) -> Deque[FrozenState]:
         # we need to make sure this is the same domain, otherwise things will
         # go south. but really, the same tracker shouldn't be used across
         # domains
@@ -107,7 +107,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             for frozen_state in frozen_states
         ]
 
-    def past_states(self, domain: BaseDomain) -> List[State]:
+    def past_states(self, domain: Domain) -> List[State]:
         states_for_hashing = self.past_states_for_hashing(domain)
         return self._unfreeze_states(states_for_hashing)
 
@@ -195,7 +195,7 @@ class TrainingDataGenerator:
     def __init__(
         self,
         story_graph: StoryGraph,
-        domain: BaseDomain,
+        domain: Domain,
         remove_duplicates: bool = True,
         unique_last_num_states: Optional[int] = None,
         augmentation_factor: int = 50,

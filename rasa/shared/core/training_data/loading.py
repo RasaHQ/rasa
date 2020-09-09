@@ -5,7 +5,7 @@ from typing import Text, Optional, Dict, List, Union
 
 import rasa.shared.data
 import rasa.shared.utils.io
-from rasa.shared.core.domain import BaseDomain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
 )
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def _get_reader(
     filename: Text,
-    domain: BaseDomain,
+    domain: Domain,
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
 ) -> StoryReader:
@@ -38,7 +38,7 @@ def _get_reader(
 
 def _guess_reader(
     filename: Text,
-    domain: BaseDomain,
+    domain: Domain,
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
 ) -> StoryReader:
@@ -55,7 +55,7 @@ def _guess_reader(
 
 async def load_data_from_resource(
     resource: Union[Text, Path],
-    domain: BaseDomain,
+    domain: Domain,
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
@@ -87,7 +87,7 @@ async def load_data_from_resource(
 
 async def load_data_from_files(
     story_files: List[Text],
-    domain: BaseDomain,
+    domain: Domain,
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
