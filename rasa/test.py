@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import typing
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
@@ -13,6 +14,9 @@ from rasa.constants import (
 import rasa.cli.utils as cli_utils
 import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
+
+if typing.TYPE_CHECKING:
+    from rasa.core.agent import Agent
 
 logger = logging.getLogger(__name__)
 
@@ -92,31 +96,25 @@ def test(
     model: Text,
     stories: Text,
     nlu_data: Text,
-    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
 ):
     if additional_arguments is None:
         additional_arguments = {}
 
-    test_core(model, stories, endpoints, output, additional_arguments)
+    test_core(model, stories, output, additional_arguments)
     test_nlu(model, nlu_data, output, additional_arguments)
 
 
 def test_core(
     model: Optional[Text] = None,
     stories: Optional[Text] = None,
-    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
-):
-    import rasa.core.test
-    import rasa.core.utils as core_utils
+) -> None:
     import rasa.model
-    from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+    from rasa.core.interpreter import RegexInterpreter
     from rasa.core.agent import Agent
-
-    _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
 
     if additional_arguments is None:
         additional_arguments = {}
@@ -133,35 +131,37 @@ def test_core(
         )
         return
 
-    core_path, nlu_path = rasa.model.get_model_subdirectories(unpacked_model)
+    _agent = Agent.load(unpacked_model)
 
-    if not core_path:
+    if _agent.policy_ensemble is None:
         cli_utils.print_error(
             "Unable to test: could not find a Core model. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
 
-    use_e2e = additional_arguments.get("e2e", False)
+    if isinstance(_agent.interpreter, RegexInterpreter):
+        cli_utils.print_warning(
+            "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
+            "evaluation. If you added actual user messages to your test stories "
+            "this will likely lead to the tests failing. In that case, you need "
+            "to train a NLU model first, e.g. using `rasa train`."
+        )
 
-    _interpreter = RegexInterpreter()
-    if use_e2e:
-        if nlu_path:
-            _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
-        else:
-            cli_utils.print_warning(
-                "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
-                "evaluation."
-            )
+    from rasa.core.test import test
 
-    _agent = Agent.load(unpacked_model, interpreter=_interpreter)
+    kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
 
-    kwargs = utils.minimal_kwargs(
-        additional_arguments, rasa.core.test, ["stories", "agent"]
-    )
+    _test_core(stories, _agent, output, **kwargs)
+
+
+def _test_core(
+    stories: Optional[Text], agent: "Agent", output_directory: Text, **kwargs: Any
+) -> None:
+    from rasa.core.test import test
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
-        rasa.core.test(stories, _agent, out_directory=output, **kwargs)
+        test(stories, agent, out_directory=output_directory, **kwargs)
     )
 
 

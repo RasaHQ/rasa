@@ -145,7 +145,7 @@ def test_crf_use_dense_features(spacy_nlp: Any):
     spacy_tokenizer = SpacyTokenizer()
 
     text = "Rasa is a company in Berlin"
-    message = Message(text)
+    message = Message(data={TEXT: text})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
     spacy_tokenizer.process(message)
@@ -155,7 +155,10 @@ def test_crf_use_dense_features(spacy_nlp: Any):
     features = crf_extractor._crf_tokens_to_features(text_data)
 
     assert "0:text_dense_features" in features[0]
-    dense_features = message.get_dense_features(TEXT, [])
+    dense_features, _ = message.get_dense_features(TEXT, [])
+    if dense_features:
+        dense_features = dense_features.features
+
     for i in range(0, len(dense_features[0])):
         assert (
             features[0]["0:text_dense_features"]["text_dense_features"][str(i)]

@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -22,7 +23,6 @@ from rasa.nlu.constants import (
     INTENT,
 )
 from rasa.nlu.training_data import Message
-import rasa.utils.common as common_utils
 
 
 class EntityExtractor(Component):
@@ -101,7 +101,7 @@ class EntityExtractor(Component):
             data[ENTITIES] = entities
             filtered.append(
                 Message(
-                    text=message.text,
+                    text=message.get(TEXT),
                     data=data,
                     output_properties=message.output_properties,
                     time=message.time,
@@ -130,29 +130,65 @@ class EntityExtractor(Component):
         Returns:
             Entities.
         """
+        import rasa.nlu.utils.bilou_utils as bilou_utils
+
         entities = []
 
         last_entity_tag = NO_ENTITY_TAG
         last_role_tag = NO_ENTITY_TAG
         last_group_tag = NO_ENTITY_TAG
+        last_token_end = -1
 
         for idx, token in enumerate(tokens):
             current_entity_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_TYPE, idx)
 
             if current_entity_tag == NO_ENTITY_TAG:
                 last_entity_tag = NO_ENTITY_TAG
+                last_token_end = token.end
                 continue
 
             current_group_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_GROUP, idx)
+            current_group_tag = bilou_utils.tag_without_prefix(current_group_tag)
             current_role_tag = self.get_tag_for(tags, ENTITY_ATTRIBUTE_ROLE, idx)
+            current_role_tag = bilou_utils.tag_without_prefix(current_role_tag)
 
-            new_tag_found = (
-                last_entity_tag != current_entity_tag
-                or last_group_tag != current_group_tag
-                or last_role_tag != current_role_tag
+            group_or_role_changed = (
+                last_group_tag != current_group_tag or last_role_tag != current_role_tag
             )
 
+            if bilou_utils.bilou_prefix_from_tag(current_entity_tag):
+                # checks for new bilou tag
+                # new bilou tag begins are not with I- , L- tags
+                new_bilou_tag_starts = last_entity_tag != current_entity_tag and (
+                    bilou_utils.LAST
+                    != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                    and bilou_utils.INSIDE
+                    != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                )
+
+                # to handle bilou tags such as only I-, L- tags without B-tag
+                # and handle multiple U-tags consecutively
+                new_unigram_bilou_tag_starts = (
+                    last_entity_tag == NO_ENTITY_TAG
+                    or bilou_utils.UNIT
+                    == bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                )
+
+                new_tag_found = (
+                    new_bilou_tag_starts
+                    or new_unigram_bilou_tag_starts
+                    or group_or_role_changed
+                )
+                last_entity_tag = current_entity_tag
+                current_entity_tag = bilou_utils.tag_without_prefix(current_entity_tag)
+            else:
+                new_tag_found = (
+                    last_entity_tag != current_entity_tag or group_or_role_changed
+                )
+                last_entity_tag = current_entity_tag
+
             if new_tag_found:
+                # new entity found
                 entity = self._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
@@ -163,14 +199,31 @@ class EntityExtractor(Component):
                     confidences,
                 )
                 entities.append(entity)
-            else:
+            elif token.start - last_token_end <= 1:
+                # current token has the same entity tag as the token before and
+                # the two tokens are only separated by at most one symbol (e.g. space,
+                # dash, etc.)
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidences is not None:
                     self._update_confidence_values(entities, confidences, idx)
+            else:
+                # the token has the same entity tag as the token before but the two
+                # tokens are separated by at least 2 symbols (e.g. multiple spaces,
+                # a comma and a space, etc.)
+                entity = self._create_new_entity(
+                    list(tags.keys()),
+                    current_entity_tag,
+                    current_group_tag,
+                    current_role_tag,
+                    token,
+                    idx,
+                    confidences,
+                )
+                entities.append(entity)
 
-            last_entity_tag = current_entity_tag
             last_group_tag = current_group_tag
             last_role_tag = current_role_tag
+            last_token_end = token.end
 
         for entity in entities:
             entity[ENTITY_ATTRIBUTE_VALUE] = text[
@@ -287,8 +340,8 @@ class EntityExtractor(Component):
                     entity_start not in token_start_positions
                     or entity_end not in token_end_positions
                 ):
-                    common_utils.raise_warning(
-                        f"Misaligned entity annotation in message '{example.text}' "
+                    rasa.shared.utils.io.raise_warning(
+                        f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
                         f"end values of entities in the training data match the token "
                         f"boundaries (e.g. entities don't include trailing whitespaces "

@@ -11,7 +11,7 @@ from rasa.constants import DOCS_URL_CONNECTORS
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
 
-from rasa.utils.common import raise_warning
+from rasa.utils import common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class MattermostBot(OutputChannel):
             return None
 
     def __init__(
-        self, url: Text, token: Text, bot_channel: Text, webhook_url: Optional[Text],
+        self, url: Text, token: Text, bot_channel: Text, webhook_url: Optional[Text]
     ) -> None:
         self.url = url
         self.token = token
@@ -132,12 +132,11 @@ class MattermostInput(InputChannel):
 
         # pytype: disable=attribute-error
         if credentials.get("pw") is not None or credentials.get("user") is not None:
-            raise_warning(
+            common_utils.raise_deprecation_warning(
                 "Mattermost recently switched to bot accounts. 'user' and 'pw' "
                 "should not be used anymore, you should rather convert your "
                 "account to a bot account and use a token. Password based "
                 "authentication will be removed in a future Rasa Open Source version.",
-                FutureWarning,
                 docs=DOCS_URL_CONNECTORS + "mattermost/",
             )
             token = MattermostBot.token_from_login(
@@ -146,7 +145,7 @@ class MattermostInput(InputChannel):
         else:
             token = credentials.get("token")
 
-        return cls(credentials.get("url"), token, credentials.get("webhook_url"),)
+        return cls(credentials.get("url"), token, credentials.get("webhook_url"))
         # pytype: enable=attribute-error
 
     def __init__(self, url: Text, token: Text, webhook_url: Text) -> None:
@@ -207,7 +206,7 @@ class MattermostInput(InputChannel):
     ):
         try:
             out_channel = MattermostBot(
-                self.url, self.token, bot_channel, self.webhook_url,
+                self.url, self.token, bot_channel, self.webhook_url
             )
             user_msg = UserMessage(
                 message,

@@ -15,6 +15,7 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_SESSION_START_NAME,
+    RULE_SNIPPET_ACTION_NAME,
     ActionBack,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
@@ -27,6 +28,8 @@ from rasa.core.actions.action import (
     RemoteAction,
     ActionSessionStart,
 )
+from rasa.core.actions.forms import FormAction
+from rasa.core.actions.two_stage_fallback import ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain, SessionConfig
 from rasa.core.events import (
@@ -34,7 +37,7 @@ from rasa.core.events import (
     SlotSet,
     UserUtteranceReverted,
     BotUttered,
-    Form,
+    ActiveLoop,
     SessionStarted,
     ActionExecuted,
     Event,
@@ -42,7 +45,7 @@ from rasa.core.events import (
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.constants import USER_INTENT_SESSION_START
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker, ACTIVE_LOOP
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -108,12 +111,12 @@ def test_domain_action_instantiation():
         slots=[],
         templates={},
         action_names=["my_module.ActionTest", "utter_test", "respond_test"],
-        form_names=[],
+        forms=[],
     )
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 12
+    assert len(instantiated_actions) == 14
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -122,10 +125,12 @@ def test_domain_action_instantiation():
     assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
-    assert instantiated_actions[8].name() == ACTION_BACK_NAME
-    assert instantiated_actions[9].name() == "my_module.ActionTest"
-    assert instantiated_actions[10].name() == "utter_test"
-    assert instantiated_actions[11].name() == "respond_test"
+    assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
+    assert instantiated_actions[9].name() == ACTION_BACK_NAME
+    assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[11].name() == "my_module.ActionTest"
+    assert instantiated_actions[12].name() == "utter_test"
+    assert instantiated_actions[13].name() == "respond_test"
 
 
 async def test_remote_action_runs(
@@ -162,7 +167,8 @@ async def test_remote_action_runs(
                     "message_id": None,
                     "metadata": {},
                 },
-                "active_form": {},
+                ACTIVE_LOOP: {},
+                "latest_action": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
@@ -216,7 +222,8 @@ async def test_remote_action_logs_events(
                     "message_id": None,
                     "metadata": {},
                 },
-                "active_form": {},
+                ACTIVE_LOOP: {},
+                "latest_action": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
@@ -281,7 +288,7 @@ async def test_remote_action_utterances_with_none_values(
         BotUttered(
             "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
         ),
-        Form("restaurant_form"),
+        ActiveLoop("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]
 
@@ -360,8 +367,10 @@ async def test_action_utter_retrieved_response(
         parse_data={
             "response_selector": {
                 "chitchat": {
-                    "response": {"name": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                    }
                 }
             }
         },
@@ -389,8 +398,10 @@ async def test_action_utter_default_retrieved_response(
         parse_data={
             "response_selector": {
                 "default": {
-                    "response": {"name": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                    }
                 }
             }
         },
@@ -401,6 +412,10 @@ async def test_action_utter_default_retrieved_response(
 
     assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
         "text"
+    )
+
+    assert (
+        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
     )
 
 
@@ -415,8 +430,10 @@ async def test_action_utter_retrieved_empty_response(
         parse_data={
             "response_selector": {
                 "dummy": {
-                    "response": {"name": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                    }
                 }
             }
         },
@@ -665,3 +682,48 @@ async def test_action_default_ask_rephrase(
             "can you rephrase that?", metadata={"template_name": "utter_ask_rephrase"}
         )
     ]
+
+
+def test_get_form_action():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    forms:
+    - {form_action_name}:
+        my_slot:
+        - type: from_text
+    """
+    )
+
+    actual = domain.action_for_name(form_action_name, None)
+    assert isinstance(actual, FormAction)
+
+
+def test_get_form_action_without_slot_mapping():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        f"""
+    actions:
+    - my_action
+    forms:
+    - {form_action_name}
+    """
+    )
+
+    actual = domain.action_for_name(form_action_name, None)
+    assert isinstance(actual, RemoteAction)
+
+
+def test_get_form_action_if_not_in_forms():
+    form_action_name = "my_business_logic"
+    domain = Domain.from_yaml(
+        """
+    actions:
+    - my_action
+    """
+    )
+
+    with pytest.raises(NameError):
+        assert not domain.action_for_name(form_action_name, None)

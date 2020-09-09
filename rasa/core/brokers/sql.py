@@ -3,9 +3,7 @@ import json
 import logging
 from typing import Any, Dict, Optional, Text
 
-from rasa.constants import DOCS_URL_EVENT_BROKERS
 from rasa.core.brokers.broker import EventBroker
-from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)

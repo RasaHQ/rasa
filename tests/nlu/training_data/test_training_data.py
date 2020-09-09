@@ -1,15 +1,22 @@
-import pytest
-import tempfile
+import asyncio
+from pathlib import Path
+from typing import Text
 
-from rasa.nlu.constants import TEXT, RESPONSE_KEY_ATTRIBUTE
+import pytest
+
+import rasa.utils.io as io_utils
+from rasa.core.domain import Domain
+from rasa.core.events import UserUttered, ActionExecuted
+from rasa.core.training.structures import StoryStep, StoryGraph
+from rasa.importers.importer import TrainingDataImporter, E2EImporter
 from rasa.nlu import training_data
+from rasa.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.loading import guess_format, UNK, load_data
+from rasa.nlu.training_data.loading import guess_format, UNK, RASA_YAML, JSON, MARKDOWN
 from rasa.nlu.training_data.util import get_file_format
-import rasa.utils.io as io_utils
 
 
 def test_luis_data():
@@ -97,9 +104,9 @@ def test_composite_entities_data():
     assert td.entities == {"location", "topping", "size"}
     assert td.entity_groups == {"1", "2"}
     assert td.entity_roles == {"to", "from"}
-    assert td.examples_per_entity["entity 'location'"] == 8
-    assert td.examples_per_entity["group '1'"] == 9
-    assert td.examples_per_entity["role 'from'"] == 3
+    assert td.number_of_examples_per_entity["entity 'location'"] == 8
+    assert td.number_of_examples_per_entity["group '1'"] == 9
+    assert td.number_of_examples_per_entity["role 'from'"] == 3
 
 
 @pytest.mark.parametrize(
@@ -121,12 +128,12 @@ def test_demo_data(files):
     td = training_data_from_paths(files, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
     assert len(td.response_examples) == 4
     assert len(td.entity_examples) == 11
-    assert len(td.nlg_stories) == 2
+    assert len(td.responses) == 2
 
     assert td.entity_synonyms == {
         "Chines": "chinese",
@@ -158,19 +165,21 @@ def test_demo_data(files):
 def test_demo_data_filter_out_retrieval_intents(files):
     from rasa.importers.utils import training_data_from_paths
 
-    td = training_data_from_paths(files, language="en")
-    assert len(td.training_examples) == 46
+    training_data = training_data_from_paths(files, language="en")
+    assert len(training_data.training_examples) == 46
 
-    td1 = td.filter_training_examples(lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is None)
-    assert len(td1.training_examples) == 42
-
-    td2 = td.filter_training_examples(
-        lambda ex: ex.get(RESPONSE_KEY_ATTRIBUTE) is not None
+    training_data_filtered = training_data.filter_training_examples(
+        lambda ex: ex.get(INTENT_RESPONSE_KEY) is None
     )
-    assert len(td2.training_examples) == 4
+    assert len(training_data_filtered.training_examples) == 42
+
+    training_data_filtered_2 = training_data.filter_training_examples(
+        lambda ex: ex.get(INTENT_RESPONSE_KEY) is not None
+    )
+    assert len(training_data_filtered_2.training_examples) == 4
 
     # make sure filtering operation doesn't mutate the source training data
-    assert len(td.training_examples) == 46
+    assert len(training_data.training_examples) == 46
 
 
 @pytest.mark.parametrize(
@@ -181,15 +190,33 @@ def test_train_test_split(filepaths):
     from rasa.importers.utils import training_data_from_paths
 
     td = training_data_from_paths(filepaths, language="en")
+
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
+    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
+
     assert len(td.training_examples) == 46
     assert len(td.intent_examples) == 46
+    assert len(td.response_examples) == 4
 
     td_train, td_test = td.train_test_split(train_frac=0.8)
 
-    assert len(td_train.training_examples) == 35
-    assert len(td_test.training_examples) == 11
+    assert len(td_test.training_examples) + len(td_train.training_examples) == 46
+    assert len(td_train.training_examples) == 34
+    assert len(td_test.training_examples) == 12
+
+    assert len(td.number_of_examples_per_intent.keys()) == len(
+        td_test.number_of_examples_per_intent.keys()
+    )
+    assert len(td.number_of_examples_per_intent.keys()) == len(
+        td_train.number_of_examples_per_intent.keys()
+    )
+    assert len(td.number_of_examples_per_response.keys()) == len(
+        td_test.number_of_examples_per_response.keys()
+    )
+    assert len(td.number_of_examples_per_response.keys()) == len(
+        td_train.number_of_examples_per_response.keys()
+    )
 
 
 @pytest.mark.parametrize(
@@ -203,11 +230,11 @@ def test_train_test_split_with_random_seed(filepaths):
 
     td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
     td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
-    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
-    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
+    train_1_intent_examples = [e.get(TEXT) for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.get(TEXT) for e in td_train_2.intent_examples]
 
-    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
-    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+    test_1_intent_examples = [e.get(TEXT) for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.get(TEXT) for e in td_test_2.intent_examples]
 
     assert train_1_intent_examples == train_2_intent_examples
     assert test_1_intent_examples == test_2_intent_examples
@@ -273,7 +300,9 @@ def test_repeated_entities(tmp_path):
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    start, end = MitieEntityExtractor.find_entity(
+        entities[0], example.get(TEXT), tokens
+    )
     assert start == 9
     assert end == 10
 
@@ -306,7 +335,9 @@ def test_multiword_entities(tmp_path):
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+    start, end = MitieEntityExtractor.find_entity(
+        entities[0], example.get(TEXT), tokens
+    )
     assert start == 4
     assert end == 7
 
@@ -482,33 +513,28 @@ def test_training_data_conversion(
     #     f.write(td.as_json(indent=2))
 
 
-def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
+@pytest.mark.parametrize(
+    "data_file,expected_format",
+    [
+        ("data/examples/luis/demo-restaurants_v5.json", JSON),
+        ("data/examples", JSON),
+        ("data/examples/rasa/demo-rasa.md", MARKDOWN),
+        ("data/rasa_yaml_examples", RASA_YAML),
+    ],
+)
+def test_get_supported_file_format(data_file: Text, expected_format: Text):
+    fformat = get_file_format(data_file)
+    assert fformat == expected_format
 
-    assert fformat == "json"
 
-    fformat = get_file_format("data/examples")
-
-    assert fformat == "json"
-
-    fformat = get_file_format("examples/moodbot/data/nlu.md")
-
-    assert fformat == "md"
-
+@pytest.mark.parametrize("data_file", ["path-does-not-exists", None])
+def test_get_non_existing_file_format_raises(data_file: Text):
     with pytest.raises(AttributeError):
-        get_file_format("path-does-not-exists")
-
-    with pytest.raises(AttributeError):
-        get_file_format(None)
+        get_file_format(data_file)
 
 
 def test_guess_format_from_non_existing_file_path():
     assert guess_format("not existing path") == UNK
-
-
-def test_load_data_from_non_existing_file():
-    with pytest.raises(ValueError):
-        load_data("some path")
 
 
 def test_is_empty():
@@ -534,3 +560,37 @@ def test_custom_attributes(tmp_path):
     assert len(td.training_examples) == 1
     example = td.training_examples[0]
     assert example.get("sentiment") == 0.8
+
+
+async def test_without_additional_e2e_examples(tmp_path: Path):
+    domain_path = tmp_path / "domain.yml"
+    domain_path.write_text(Domain.empty().as_yaml())
+
+    config_path = tmp_path / "config.yml"
+    config_path.touch()
+
+    existing = TrainingDataImporter.load_from_dict(
+        {}, str(config_path), str(domain_path), []
+    )
+
+    stories = StoryGraph(
+        [
+            StoryStep(
+                events=[
+                    UserUttered("greet_from_stories", {"name": "greet_from_stories"}),
+                    ActionExecuted("utter_greet_from_stories"),
+                ]
+            )
+        ]
+    )
+
+    # Patch to return our test stories
+    existing.get_stories = asyncio.coroutine(lambda *args: stories)
+
+    importer = E2EImporter(existing)
+
+    training_data = await importer.get_nlu_data()
+
+    assert training_data.training_examples
+    assert training_data.is_empty()
+    assert not training_data.without_empty_e2e_examples().training_examples

@@ -1,0 +1,430 @@
+---
+id: chitchat-faqs
+sidebar_label: Chitchat and FAQs
+title: Chitchat and FAQs
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+FAQ assistants are the simplest assistants to build and a good place to get started.
+These assistants allow the user to ask a simple question and get a response. You're
+going to build a basic FAQ assistant using features of Rasa designed specifically
+for this type of assistant. You can handle chitchat in the same way.
+
+In this section you will read about the following topics:
+
+* [Responding to simple messages](./chitchat-faqs.mdx#responding-to-simple-messages)
+  with the `MemoizationPolicy`
+
+* [Handling FAQs](./chitchat-faqs.mdx#handling-faqs-using-a-response-selector)
+  using a `ResponseSelector`
+
+## Prerequisites
+
+You should [first install Rasa](installation.mdx) and
+[prototype an assistant](prototype-an-assistant.mdx) to make sure
+you understand the basic concepts of intents, stories and domains.
+
+For this tutorial, you can create a new Rasa project using the CLI:
+
+```bash
+rasa init
+```
+
+If you want to start from scratch, you should remove the default content from
+the `data/nlu.yml`, `data/stories.yml` and `domain.yml` files.
+
+## Responding to simple messages
+
+Responding to single messages requires the assistant to recognize the message and
+trigger a response.
+
+Rasa Open Source uses what is called a `MemoizationPolicy` to
+predict what it needs to do once it receives such a message.
+
+:::note MemoizationPolicy
+If the `policies` key in your `config.py` is empty (or only contains
+comments) the `MemoizationPolicy` will be added automatically using
+[config suggestions](model-configuration.mdx#suggested-config).
+You do not need to do configure any policies.
+
+If you customized your `policies`, you need to make sure the
+[Memoization Policy](policies.mdx#memoization-policy)
+is part of your configuration:
+
+```yaml-rasa title="config.yml"
+policies:
+- name: MemoizationPolicy
+  max_history: 1
+
+# ... your other policies
+```
+
+:::
+
+### 1. Creating intents
+
+The first step is to define the messages you want the bot to handle. You can copy
+over some user message training data from Sara to train your
+intents. Sara is the Rasa assistant that helps users to get started with our
+Rasa products, you can find more training data to use in your projects
+[here](https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md).
+
+Add the training data to your bot, you'll need to add it to the training data files:
+
+```yaml-rasa title="data/nlu.yml"
+nlu:
+- intent: greet
+  examples: |
+    - Hi
+    - Hey
+    - Hi bot
+    - Hey bot
+    - Hello
+    - Good morning
+    - hi again
+    - hi folks
+
+- intent: bye
+  examples: |
+    - goodbye
+    - goodnight
+    - good bye
+    - good night
+    - see ya
+    - toodle-oo
+    - bye bye
+    - gotta go
+    - farewell
+
+- intent: thank
+  examples: |
+    - Thanks
+    - Thank you
+    - Thank you so much
+    - Thanks bot
+    - Thanks for that
+    - cheers
+```
+
+### 2. Writing stories
+
+Now that you've defined your intents, you'll need to add some [stories](stories.mdx)
+for the `goodbye`, `thank` and `greet` intents.
+You can add the following stories to define how the bot will respond to the intents:
+
+```yaml-rasa title="data/stories.yml"
+stories:
+
+- story: greet           # name of the story
+  steps:
+  - intent: greet        # intent of the user message
+  - action: utter_greet  # reaction of the bot
+
+- story: thank
+  steps:
+  - intent: thank
+  - action: utter_noworries
+
+- story: goodbye
+  steps:
+  - intent: bye
+  - action: utter_bye
+```
+
+:::note Lots of intents
+Do you have lots of intents that you want to respond to? In that case you should
+check out [Handling FAQs](./chitchat-faqs.mdx#handling-faqs-using-a-response-selector).
+You'll avoid the need to specify one story for each of your intents.
+:::
+
+You'll need to tie all these pieces together by adding the intents, actions
+and responses to our [domain](domain.mdx):
+
+```yaml-rasa title="domain.yml"
+intents:
+- greet
+- bye
+- thank
+
+responses:
+  utter_noworries:
+  - text: No worries!
+
+  utter_greet:
+  - text: Hi
+
+  utter_bye:
+  - text: Bye!
+```
+
+### 3. Using the bot
+You can now train a first model and test the bot, by running the following commands:
+
+```bash
+rasa train
+rasa shell
+```
+
+This bot should now be able to reply to the intents we defined consistently, and in any order.
+
+For example:
+
+<img alt="Memoization Policy Conversation" src={useBaseUrl("/img/memoization_policy_convo.png")} />
+
+### 4. Testing the bot
+
+While it's good to test the bot interactively, you should also add story tests that
+can later be included as part of a [CI/CD system](./setting-up-ci-cd).
+[Story tests](./testing-your-assistant#end-to-end-testing)
+include user messages, bot actions and responses. This ensures that
+the dialogue handling is tested as well as the message handling.
+The initial project already contains test conversations, you can replace
+them with some test conversations for your assistant:
+
+```yaml-rasa title="tests/test_stories.yml"
+stories:
+- story: greet and goodybe
+  steps:
+  - user: |
+     Hi!
+    intent: greet
+  - action: utter_greet
+  - user: |
+     Bye
+    intent: bye
+  - action: utter_bye
+
+- story: greet and thanks
+  steps:
+  - user: |
+     Hello there
+    intent: greet
+  - action: utter_greet
+  - user: |
+     thanks a bunch
+    intent: thank
+  - action: utter_noworries
+
+- story: greet and thanks and goodbye
+  steps:
+  - user: |
+     Hey
+    intent: greet
+  - action: utter_greet
+  - user: |
+     thanks you
+    intent: thank
+  - action: utter_noworries
+  - user: |
+     bye bye
+    intent: bye
+  - action: utter_bye
+```
+
+This test file contains three separate test stories. You can
+test your bot on all of them using `rasa test`:
+
+```bash
+rasa test --stories tests/test_stories.yml
+```
+
+The test command will produce a directory named `results`. It will contain a file
+called `failed_stories.yml`, where any test cases that failed will be printed. It will
+also specify whether it was an NLU or Core prediction that went wrong.  As part of a
+CI/CD pipeline, the test option `--fail-on-prediction-errors` can be used to throw
+an exception that stops the pipeline:
+
+```bash
+rasa test --stories tests/test_stories.yml --fail-on-prediction-errors
+```
+
+## Handling FAQs using a Response Selector
+
+When you need to handle lots of different messages like FAQs or chitchat, the above
+approach using the `MemoizationPolicy` will become cumbersome. You will need to write
+one story for each of the different intents.
+
+The [ResponseSelector](components/selectors.mdx#responseselector) is designed to
+make it easier to handle conversation patterns like small talk and FAQ messages.
+When you use the `ResponseSelector`, you only need one story to handle all FAQs,
+instead of adding one story for each intent.
+
+:::note More details on the Response Selector
+
+This walk through shows you how to use the response selector. If you want to know
+more about how it works under the hood, head over to this [blog post](https://blog.rasa.com/response-retrieval-models/) and the
+[Retrieval Actions](./retrieval-actions.mdx) page.
+:::
+
+### 1. Creating intents
+
+People often ask Sara different questions surrounding the Rasa products, so let's
+start with three intents: `ask_channels`, `ask_languages`, and `ask_rasax`.
+
+Similar to the `MemoizationPolicy`, you'll need to define the intents and add some
+training data for them:
+
+```yaml-rasa title="data/nlu.yml"
+nlu:
+- intent: faq/ask_channels
+  examples: |
+    - What channels of communication does rasa support?
+    - what channels do you support?
+    - what chat channels does rasa uses
+    - channels supported by Rasa
+    - which messaging channels does rasa support?
+
+- intent: faq/ask_languages
+  examples: |
+    - what language does rasa support?
+    - which language do you support?
+    - which languages supports rasa
+    - can I use rasa also for another laguage?
+    - languages supported
+
+- intent: faq/ask_rasax
+  examples: |
+    - I want information about rasa x
+    - i want to learn more about Rasa X
+    - what is rasa x?
+    - Can you tell me about rasa x?
+    - Tell me about rasa x
+    - tell me what is rasa x
+```
+:::info FAQ/ prefix
+It's important that these intents have a common prefix that is separated by a `/`.
+E.g. in the above example, all intents share the `faq/` prefix. This is necessary
+for the intents to be recognized by the `ResponseSelector`.
+
+:::
+
+### 2. Creating responses
+
+Next, you'll need to define the responses associated with these FAQs in a new
+file:
+
+```yaml-rasa title="data/responses.yml"
+responses:
+  faq/ask_channels:
+  - text: |
+      We have a comprehensive list of [supported connectors](https://rasa.com/docs/core/connectors/), but if
+      you don't see the one you're looking for, you can always create a custom connector by following
+      [this guide](./connectors/custom-connectors.mdx).
+
+  faq/ask_languages:
+  - text: "You can use Rasa to build assistants in any language you want!"
+
+  faq/ask_rasax:
+  - text: "Rasa X is a tool to learn from real conversations and improve your assistant. Read more [here](https://rasa.com/docs/rasa-x/)"
+```
+
+### 3. Configuring the bot
+
+The `ResponseSelector` should already be at the end of your pipeline configuration:
+
+```yaml-rasa title="config.yml" {14-15}
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 100
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    epochs: 100
+```
+
+Now that we've defined the message handling side, we need to make
+the dialogue handling parts aware of these changes. First, we need to add the
+new intents to our domain:
+
+```yaml-rasa title="domain.yml"
+intents:
+  - greet
+  - bye
+  - thank
+  - faq
+```
+
+We'll also need to add a [retrieval action](./retrieval-actions.mdx),
+which takes care of sending the response predicted from the `ResponseSelector`
+back to the user, to the list of actions. These actions always have to start
+with the `respond_` prefix:
+
+```yaml-rasa title="domain.yml"
+actions:
+  - respond_faq
+```
+
+Next we'll write a story so that the dialogue engine knows which action to predict:
+
+```yaml-rasa title="data/stories.yml"
+stories:
+- story: Some question from FAQ
+  steps:
+  - intent: faq
+  - action: respond_faq
+```
+
+This prediction is handled by the `MemoizationPolicy`, as we described earlier.
+
+### 4. Using the bot
+
+After all of the changes are done, train a new model and test the modified FAQs:
+
+```bash
+rasa train
+rasa shell
+```
+
+### 5. Testing the bot
+
+At this stage it makes sense to add a few test cases for our conversations:
+
+```yaml-rasa title="tests/test_stories.yml"
+stories:
+- story: ask channels
+  steps:
+  - user: |
+     What messaging channels does Rasa support?
+    intent: faq
+  - action: respond_faq
+
+- story: ask languages
+  steps:
+  - user: |
+     Which languages can I build assistants in?
+    intent: faq
+  - action: respond_faq
+
+- story: ask rasa x
+  steps:
+  - user: |
+     What's Rasa X?
+    intent: faq
+  - action: respond_faq
+```
+### Response Selector Checklist
+
+Using the features we described in this tutorial, you can easily build a context-less assistant.
+
+Here's a **minimal checklist of files you need to modify** to build a basic FAQ assistant:
+
+* `data/nlu.yml`: Add user message training data for `faq/` intents
+
+* `data/responses.yml`: Add responses associated with `faq/` intents
+
+* `config.yml`: Add `ResponseSelector` in your NLU pipeline
+
+* `domain.yml`: Add a retrieval action `respond_faq` and the intent `faq`
+
+* `data/stories.yml`: Add a simple story for FAQs
+
+* `tests/test_stories.yml`: Add E2E test stories for your FAQs

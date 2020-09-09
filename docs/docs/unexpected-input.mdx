@@ -1,0 +1,241 @@
+---
+id: unexpected-input
+sidebar_label: Handling Unexpected Input
+title: Handling Unexpected Input
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="handling-unexpected-user-input"></a>
+
+All expected user inputs should be handled by the form we defined above, i.e. if the
+user provides the information the bot asks for. However, in real situations, the user
+will often behave differently. In this section we'll go through various forms of
+“interjections” and how to handle them within Rasa.
+
+The decision to handle these types of user input should always come from reviewing
+real conversations. You should first build part of your assistant, test it with real users
+(whether that's your end user, or your colleague) and then add what's missing. You shouldn't
+try to implement every possible edge case that you think might happen, because in the end
+your users may never actually behave in that way.
+[Rasa X](https://rasa.com/docs/rasa-x/)
+is a tool that can help you review conversations and make these types of decisions.
+
+## Generic interjections
+
+If you have generic interjections that should always have the same single response no
+matter the context, you can use the [Mapping Policy](./policies.mdx#mapping-policy) to handle these. It will always
+predict the same action for an intent, and when combined with a forgetting mechanism,
+you don't need to write any stories either.
+
+For example, let's say you see users having conversations like the following one with
+your assistant, where they write a greeting in the middle of a conversation -
+maybe because they were gone for a few minutes:
+
+
+
+<img alt="Greeting Interjection" src={useBaseUrl("/img/greet_interjection.png")} width="240" />
+
+The greet intent is a good example where we will always give the same response and
+yet we don't want the intent to affect the dialogue history. To do this, the response
+must be an action that returns the `UserUtteranceReverted()` event to remove the
+interaction from the dialogue history.
+
+First, open the `domain.yml` file and modify the greet intent and add a new block `\`actions\`` in
+the file, next, add the `action_greet` as shown here:
+
+```yaml
+intents:
+  - greet: {triggers: action_greet}
+  - bye
+  - thank
+  - faq
+  - contact_sales
+  - inform
+
+actions:
+  - action_greet
+```
+
+Remove any stories using the “greet” intent if you have them.
+
+Next, we need to define `action_greet`. Add the following action to your `actions.py` file:
+
+```python
+from rasa_sdk import Action
+from rasa_sdk.events import UserUtteranceReverted
+
+class ActionGreetUser(Action):
+"""Revertible mapped action for utter_greet"""
+
+def name(self):
+    return "action_greet"
+
+def run(self, dispatcher, tracker, domain):
+    dispatcher.utter_template("utter_greet", tracker)
+    return [UserUtteranceReverted()]
+```
+
+To test the modified intents, we need to re-start our action server:
+
+```bash
+rasa run actions
+```
+
+Then we can retrain the model, and try out our additions:
+
+```bash
+rasa train
+rasa shell
+```
+
+FAQs are another kind of generic interjections that should always get the same response.
+For example, a user might ask a related FAQ in the middle of filling a form:
+
+
+
+<img alt="Generic Interjections" src={useBaseUrl("/img/generic_interjection.png")} width="240" />
+
+To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:
+
+```md
+## just sales, continue
+* contact_sales
+    - sales_form
+    - active_loop{"name": "sales_form"}
+* faq
+    - respond_faq
+    - sales_form
+    - active_loop{"name": null}
+```
+
+This will break out of the form and deal with the users FAQ question, and then return back to the original task.
+For example:
+
+
+
+<img alt="Generic Interjection Handled" src={useBaseUrl("/img/generic_interjection_handled.png")} width="240" />
+
+If you find it difficult to write stories in this format, you can always use [Interactive Learning](./writing-stories.mdx#using-interactive-learning)
+to help you create them.
+
+As always, make sure to add an end to end test case to your test_stories.md file.
+
+## Contextual questions
+
+You can also handle contextual questions,
+like the user asking the question “Why do you need to know that”. The user could ask this based on a certain slot
+the bot has requested, and the response should differ for each slot. For example:
+
+
+
+<img alt="Contextual Interjection" src={useBaseUrl("/img/contextual_interjection.png")} width="240" />
+
+To handle this, we need to make the `requested_slot` featurized, and assign it the categorical type:
+
+```yaml
+slots:
+  requested_slot:
+    type: categorical
+    values:
+      - business_email
+      - company
+      - person_name
+      - use_case
+      - budget
+      - job_function
+```
+
+This means that Core will pay attention to the value of the slot when making a prediction
+(read more about other [featurized slots](./domain.mdx#slots), whereas
+unfeaturized slots are only used for storing information. The stories for this should look as follows:
+
+```md
+## explain email
+* contact_sales
+    - sales_form
+    - active_loop{"name": "sales_form"}
+    - slot{"requested_slot": "business_email"}
+* explain
+    - utter_explain_why_email
+    - sales_form
+    - active_loop{"name": null}
+
+## explain budget
+* contact_sales
+    - sales_form
+    - active_loop{"name": "sales_form"}
+    - slot{"requested_slot": "budget"}
+* explain
+    - utter_explain_why_budget
+    - sales_form
+    - active_loop{"name": null}
+```
+
+We'll need to add the intent and utterances we just added to our `domain.yml` file:
+
+```yaml
+intents:
+- greet: {triggers: action_greet_user}
+- bye
+- thank
+- faq
+- explain
+
+responses:
+  utter_explain_why_budget:
+  - text: We need to know your budget to recommend a subscription
+  utter_explain_why_email:
+  - text: We need your email so we can contact you
+```
+
+Finally, we'll need to add some NLU data for the explain intent:
+
+```md
+## intent:explain
+- why
+- why is that
+- why do you need it
+- why do you need to know that?
+- could you explain why you need it?
+```
+
+Then you can retrain your bot and test it again:
+
+```bash
+rasa train
+rasa shell
+```
+
+:::note
+You will need to add a story for each of the values of the `requested_slot` slot
+for the bot to handle every case of “Why do you need to know that”
+
+:::
+
+Don't forget to add a few end to end stories to your `test_stories.md` for testing as well.
+
+:::note
+Here's a minimal checklist of  of files we modified to handle unexpected user input:
+
+* `actions.py`: Define `action_greet`
+
+* `data/nlu.yml`: Add training data for an `explain` intent
+
+* `domain.yml`:
+
+    * Map intent `greet` to  `action_greet_user`
+
+    * Make `requested_slot` a categorical slot with all required slots as values
+
+    * Add the `explain` intent
+
+    * Add responses for contextual question interruptions
+
+* `data/stories.yml`:
+
+    * Remove stories using mapped intents if you have them
+
+    * Add stories with FAQ & contextual interruptions in the middle of filling a form
+
+:::

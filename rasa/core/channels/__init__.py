@@ -5,7 +5,6 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
     CollectingOutputChannel,
-    RestInput,
 )
 
 # this prevents IDE's from optimizing the imports - we need to import the
@@ -20,6 +19,7 @@ from rasa.core.channels.console import CmdlineInput  # nopep8
 from rasa.core.channels.facebook import FacebookInput  # nopep8
 from rasa.core.channels.mattermost import MattermostInput  # nopep8
 from rasa.core.channels.rasa_chat import RasaChatInput  # nopep8
+from rasa.core.channels.rest import RestInput  # nopep8
 from rasa.core.channels.rocketchat import RocketChatInput  # nopep8
 from rasa.core.channels.slack import SlackInput  # nopep8
 from rasa.core.channels.telegram import TelegramInput  # nopep8
@@ -44,7 +44,7 @@ input_channel_classes: List[Type[InputChannel]] = [
     HangoutsInput,
 ]
 
-# Mapping from a input channel name to its class to allow name based lookup.
+# Mapping from an input channel name to its class to allow name based lookup.
 BUILTIN_CHANNELS: Dict[Text, Type[InputChannel]] = {
     c.name(): c for c in input_channel_classes
 }

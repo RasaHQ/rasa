@@ -12,7 +12,9 @@ import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
 
-from rasa.nlu.training_data.loading import MARKDOWN, RASA
+import rasa.shared.utils.io
+from rasa.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
@@ -21,17 +23,19 @@ import questionary
 import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa.cli import utils as cli_utils
 from rasa.core import constants, run, train, utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
     DEFAULT_SERVER_PORT,
-    DEFAULT_SERVER_URL,
     REQUESTED_SLOT,
     UTTER_PREFIX,
+    LOOP_NAME,
+    LOOP_VALIDATE,
+    LOOP_REJECTED,
 )
+from rasa.nlu.constants import TEXT
 from rasa.core.domain import Domain
 import rasa.core.events
 from rasa.core.events import (
@@ -44,7 +48,7 @@ from rasa.core.events import (
     UserUtteranceReverted,
 )
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
-from rasa.core.trackers import EventVerbosity, DialogueStateTracker
+from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP
 from rasa.core.training import visualization
 from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
@@ -71,9 +75,9 @@ logger = logging.getLogger(__name__)
 MAX_VISUAL_HISTORY = 3
 
 PATHS = {
-    "stories": "data/stories.md",
-    "nlu": "data/nlu.md",
-    "backup": "data/nlu_interactive.md",
+    "stories": "data/stories.yml",
+    "nlu": "data/nlu.yml",
+    "backup": "data/nlu_interactive.yml",
     "domain": "domain.yml",
 }
 
@@ -257,7 +261,7 @@ def format_bot_output(message: BotUttered) -> Text:
 
     if data.get("buttons"):
         output += "\nButtons:"
-        choices = cli_utils.button_choices_from_message_data(
+        choices = rasa.cli.utils.button_choices_from_message_data(
             data, allow_free_text_input=True
         )
         for choice in choices:
@@ -266,13 +270,13 @@ def format_bot_output(message: BotUttered) -> Text:
     if data.get("elements"):
         output += "\nElements:"
         for idx, element in enumerate(data.get("elements")):
-            element_str = cli_utils.element_to_string(element, idx)
+            element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
 
     if data.get("quick_replies"):
         output += "\nQuick replies:"
         for idx, element in enumerate(data.get("quick_replies")):
-            element_str = cli_utils.element_to_string(element, idx)
+            element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
 
@@ -320,14 +324,21 @@ async def _ask_questions(
 def _selection_choices_from_intent_prediction(
     predictions: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
-    """"Given a list of ML predictions create a UI choice list."""
+    """Given a list of ML predictions create a UI choice list."""
 
-    sorted_intents = sorted(predictions, key=lambda k: (-k["confidence"], k["name"]))
+    sorted_intents = sorted(
+        predictions, key=lambda k: (-k["confidence"], k[INTENT_NAME_KEY])
+    )
 
     choices = []
     for p in sorted_intents:
-        name_with_confidence = f'{p.get("confidence"):03.2f} {p.get("name"):40}'
-        choice = {"name": name_with_confidence, "value": p.get("name")}
+        name_with_confidence = (
+            f'{p.get("confidence"):03.2f} {p.get(INTENT_NAME_KEY):40}'
+        )
+        choice = {
+            INTENT_NAME_KEY: name_with_confidence,
+            "value": p.get(INTENT_NAME_KEY),
+        }
         choices.append(choice)
 
     return choices
@@ -416,15 +427,15 @@ async def _request_intent_from_user(
 
     predictions = latest_message.get("parse_data", {}).get("intent_ranking", [])
 
-    predicted_intents = {p["name"] for p in predictions}
+    predicted_intents = {p[INTENT_NAME_KEY] for p in predictions}
 
     for i in intents:
         if i not in predicted_intents:
-            predictions.append({"name": i, "confidence": 0.0})
+            predictions.append({INTENT_NAME_KEY: i, "confidence": 0.0})
 
     # convert intents to ui list and add <other> as a free text alternative
     choices = [
-        {"name": "<create_new_intent>", "value": OTHER_INTENT}
+        {INTENT_NAME_KEY: "<create_new_intent>", "value": OTHER_INTENT}
     ] + _selection_choices_from_intent_prediction(predictions)
 
     intent_name = await _request_selection_from_intents(
@@ -433,11 +444,12 @@ async def _request_intent_from_user(
 
     if intent_name == OTHER_INTENT:
         intent_name = await _request_free_text_intent(conversation_id, endpoint)
-        selected_intent = {"name": intent_name, "confidence": 1.0}
+        selected_intent = {INTENT_NAME_KEY: intent_name, "confidence": 1.0}
     else:
         # returns the selected intent with the original probability value
         selected_intent = next(
-            (x for x in predictions if x["name"] == intent_name), {"name": None}
+            (x for x in predictions if x[INTENT_NAME_KEY] == intent_name),
+            {INTENT_NAME_KEY: None},
         )
 
     return selected_intent
@@ -479,7 +491,7 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     def format_user_msg(user_event: UserUttered, max_width: int) -> Text:
         intent = user_event.intent or {}
-        intent_name = intent.get("name", "")
+        intent_name = intent.get(INTENT_NAME_KEY, "")
         _confidence = intent.get("confidence", 1.0)
         _md = _as_md_message(user_event.parse_data)
 
@@ -560,8 +572,8 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strings = []
     for k, s in tracker_dump.get("slots", {}).items():
-        colored_value = cli_utils.wrap_with_color(
-            str(s), color=rasa.cli.utils.bcolors.WARNING
+        colored_value = rasa.shared.utils.io.wrap_with_color(
+            str(s), color=rasa.shared.utils.io.bcolors.WARNING
         )
         slot_strings.append(f"{k}: {colored_value}")
     return slot_strings
@@ -578,9 +590,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    await _write_stories_to_file(story_path, events, domain)
-    await _write_nlu_to_file(nlu_path, events)
-    await _write_domain_to_file(domain_path, events, domain)
+    _write_stories_to_file(story_path, events, domain)
+    _write_nlu_to_file(nlu_path, events)
+    _write_domain_to_file(domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -745,7 +757,9 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
         if event.get("event") == UserUttered.type_name:
             data = event.get("parse_data", {})
             rasa_nlu_training_data_utils.remove_untrainable_entities_from(data)
-            msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
+            msg = Message.build(
+                data["text"], data["intent"][INTENT_NAME_KEY], data["entities"]
+            )
             messages.append(msg)
         elif event.get("event") == UserUtteranceReverted.type_name and messages:
             messages.pop()  # user corrected the nlu, remove incorrect example
@@ -759,7 +773,7 @@ def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
     return [evt for evt in events if evt.get("event") == ActionExecuted.type_name]
 
 
-async def _write_stories_to_file(
+def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
@@ -793,14 +807,12 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
 
     filtered_messages = []
     for msg in msgs:
-        if not msg.text.startswith(INTENT_MESSAGE_PREFIX):
+        if not msg.get(TEXT).startswith(INTENT_MESSAGE_PREFIX):
             filtered_messages.append(msg)
     return filtered_messages
 
 
-async def _write_nlu_to_file(
-    export_nlu_path: Text, events: List[Dict[Text, Any]]
-) -> None:
+def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> None:
     """Write the nlu data of the conversation_id to the file paths."""
     from rasa.nlu.training_data import TrainingData
 
@@ -822,7 +834,9 @@ async def _write_nlu_to_file(
     # need to guess the format of the file before opening it to avoid a read
     # in a write
     nlu_format = _get_nlu_target_format(export_nlu_path)
-    if nlu_format == MARKDOWN:
+    if nlu_format == RASA_YAML:
+        stringified_training_data = nlu_data.nlu_as_yaml()
+    elif nlu_format == MARKDOWN:
         stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
@@ -831,13 +845,17 @@ async def _write_nlu_to_file(
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
+    from rasa import data
+
     guessed_format = loading.guess_format(export_path)
 
-    if guessed_format not in {MARKDOWN, RASA}:
-        if export_path.endswith(".json"):
+    if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
+        if data.is_likely_json_file(export_path):
             guessed_format = RASA
-        else:
+        elif data.is_likely_markdown_file(export_path):
             guessed_format = MARKDOWN
+        elif data.is_likely_yaml_file(export_path):
+            guessed_format = RASA_YAML
 
     return guessed_format
 
@@ -856,7 +874,7 @@ def _intents_from_messages(messages: List[Message]) -> Set[Text]:
     return distinct_intents
 
 
-async def _write_domain_to_file(
+def _write_domain_to_file(
     domain_path: Text, events: List[Dict[Text, Any]], old_domain: Domain
 ) -> None:
     """Write an updated domain file to the file path."""
@@ -869,7 +887,12 @@ async def _write_domain_to_file(
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
-        {e["name"] for e in actions if e["name"] not in default_action_names()}
+        {
+            e["name"]
+            for e in actions
+            if e["name"] not in default_action_names()
+            and e["name"] not in old_domain.form_names
+        }
     )
 
     new_domain = Domain(
@@ -878,7 +901,7 @@ async def _write_domain_to_file(
         slots=[],
         templates=templates,
         action_names=collected_actions,
-        form_names=[],
+        forms=[],
     )
 
     old_domain.merge(new_domain).persist_clean(domain_path)
@@ -929,21 +952,20 @@ async def _predict_till_next_listen(
         if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
             "buttons", None
         ):
-            response = _get_button_choice(last_event)
-            if response != cli_utils.FREE_TEXT_INPUT_PROMPT:
-                await send_message(endpoint, conversation_id, response)
+            user_selection = _get_button_choice(last_event)
+            if user_selection != rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
+                await send_message(endpoint, conversation_id, user_selection)
 
 
 def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
     data = last_event["data"]
     message = last_event.get("text", "")
 
-    choices = cli_utils.button_choices_from_message_data(
+    choices = rasa.cli.utils.button_choices_from_message_data(
         data, allow_free_text_input=True
     )
     question = questionary.select(message, choices)
-    response = cli_utils.payload_from_button_question(question)
-    return response
+    return rasa.cli.utils.payload_from_button_question(question)
 
 
 async def _correct_wrong_nlu(
@@ -987,8 +1009,8 @@ async def _correct_wrong_action(
 def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check if the form got rejected with the most recent action name."""
     return (
-        tracker.get("active_form", {}).get("name")
-        and action_name != tracker["active_form"]["name"]
+        tracker.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+        and action_name != tracker[ACTIVE_LOOP][LOOP_NAME]
         and action_name != ACTION_LISTEN_NAME
     )
 
@@ -996,9 +1018,9 @@ def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
 def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check whether the form is called again after it was rejected."""
     return (
-        tracker.get("active_form", {}).get("rejected")
+        tracker.get(ACTIVE_LOOP, {}).get(LOOP_REJECTED)
         and tracker.get("latest_action_name") == ACTION_LISTEN_NAME
-        and action_name == tracker.get("active_form", {}).get("name")
+        and action_name == tracker.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
     )
 
 
@@ -1022,10 +1044,12 @@ async def _confirm_form_validation(
     if not validate_input:
         # notify form action to skip validation
         await send_event(
-            endpoint, conversation_id, {"event": "form_validation", "validate": False}
+            endpoint,
+            conversation_id,
+            {"event": "form_validation", LOOP_VALIDATE: False},
         )
 
-    elif not tracker.get("active_form", {}).get("validate"):
+    elif not tracker.get(ACTIVE_LOOP, {}).get(LOOP_VALIDATE):
         # handle contradiction with learned behaviour
         warning_question = questionary.confirm(
             "ERROR: FormPolicy predicted no form validation "
@@ -1039,7 +1063,7 @@ async def _confirm_form_validation(
         await _ask_questions(warning_question, conversation_id, endpoint)
         # notify form action to validate an input
         await send_event(
-            endpoint, conversation_id, {"event": "form_validation", "validate": True}
+            endpoint, conversation_id, {"event": "form_validation", LOOP_VALIDATE: True}
         )
 
 
@@ -1077,7 +1101,7 @@ async def _validate_action(
             conversation_id,
             {
                 "event": "action_execution_rejected",
-                "name": tracker["active_form"]["name"],
+                LOOP_NAME: tracker[ACTIVE_LOOP][LOOP_NAME],
             },
         )
 
@@ -1096,7 +1120,7 @@ async def _validate_action(
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
-    from rasa.nlu.training_data.formats import MarkdownWriter
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data["text"]
@@ -1104,7 +1128,7 @@ def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     if not parse_data.get("entities"):
         parse_data["entities"] = []
 
-    return MarkdownWriter.generate_message_md(parse_data)
+    return TrainingDataWriter.generate_message(parse_data)
 
 
 def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -> bool:
@@ -1114,7 +1138,7 @@ def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -
     `/greet`. Return `True` if the intent is a known one."""
 
     parse_data = latest_message.get("parse_data", {})
-    intent = parse_data.get("intent", {}).get("name")
+    intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
 
     if intent in intents:
         return True
@@ -1131,7 +1155,7 @@ async def _validate_user_text(
 
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
-    intent = parse_data.get("intent", {}).get("name")
+    intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
     entities = parse_data.get("entities", [])
     if entities:
         message = (
@@ -1199,7 +1223,7 @@ async def _correct_entities(
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
-    from rasa.nlu.training_data.formats import MarkdownReader
+    from rasa.nlu.training_data import entities_parser
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)
@@ -1208,8 +1232,7 @@ async def _correct_entities(
     )
 
     annotation = await _ask_questions(question, conversation_id, endpoint)
-    # noinspection PyProtectedMember
-    parse_annotated = MarkdownReader().parse_training_example(annotation)
+    parse_annotated = entities_parser.parse_training_example(annotation)
 
     corrected_entities = _merge_annotated_and_original_entities(
         parse_annotated, parse_original
@@ -1233,8 +1256,13 @@ def _merge_annotated_and_original_entities(
     return entities
 
 
-def _is_same_entity_annotation(entity, other) -> Any:
-    return entity["value"] == other["value"] and entity["entity"] == other["entity"]
+def _is_same_entity_annotation(entity: Dict[Text, Any], other: Dict[Text, Any]) -> bool:
+    return (
+        entity["value"] == other["value"]
+        and entity["entity"] == other["entity"]
+        and entity.get("group") == other.get("group")
+        and entity.get("role") == other.get("group")
+    )
 
 
 async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -> None:

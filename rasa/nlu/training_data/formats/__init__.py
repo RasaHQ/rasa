@@ -7,3 +7,4 @@ from rasa.nlu.training_data.formats.markdown_nlg import (
     NLGMarkdownReader,
     NLGMarkdownWriter,
 )
+from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLReader

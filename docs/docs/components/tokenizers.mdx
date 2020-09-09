@@ -1,0 +1,281 @@
+---
+id: tokenizers
+sidebar_label: Tokenizers
+title: Tokenizers
+---
+
+Tokenizers split text into tokens.
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+modeling hierarchical intent structure, use the following flags with any tokenizer:
+
+* `intent_tokenization_flag` indicates whether to tokenize intent labels or not. Set it to `True`, so that intent
+  labels are tokenized.
+
+* `intent_split_symbol` sets the delimiter string to split the intent labels, default is underscore
+  (`_`).
+
+
+## WhitespaceTokenizer
+
+
+* **Short**
+
+  Tokenizer using whitespaces as a separator
+
+
+
+* **Outputs**
+
+  `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+* **Requires**
+
+  Nothing
+
+
+
+* **Description**
+
+  Creates a token for every whitespace separated character sequence.
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "WhitespaceTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
+
+
+## JiebaTokenizer
+
+
+* **Short**
+
+  Tokenizer using Jieba for Chinese language
+
+
+
+* **Outputs**
+
+  `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+* **Requires**
+
+  Nothing
+
+
+
+* **Description**
+
+  Creates tokens using the Jieba tokenizer specifically for Chinese
+  language. It will only work for the Chinese language.
+
+  :::note
+  To use `JiebaTokenizer` you need to install Jieba with `pip install jieba`.
+
+  :::
+
+
+
+* **Configuration**
+
+  User's custom dictionary files can be auto loaded by specifying the files' directory path via `dictionary_path`.
+  If the `dictionary_path` is `None` (the default), then no custom dictionary will be used.
+
+  ```yaml-rasa
+  pipeline:
+  - name: "JiebaTokenizer"
+    dictionary_path: "path/to/custom/dictionary/dir"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
+
+
+## MitieTokenizer
+
+
+* **Short**
+
+  Tokenizer using MITIE
+
+
+
+* **Outputs**
+
+  `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+* **Requires**
+
+  [MitieNLP](../components/language-models.mdx#mitienlp)
+
+
+
+* **Description**
+
+  Creates tokens using the MITIE tokenizer.
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "MitieTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
+
+
+## SpacyTokenizer
+
+
+* **Short**
+
+  Tokenizer using spaCy
+
+
+
+* **Outputs**
+
+  `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+* **Requires**
+
+  [SpacyNLP](../components/language-models.mdx#spacynlp)
+
+
+
+* **Description**
+
+  Creates tokens using the spaCy tokenizer.
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "SpacyTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
+
+
+## ConveRTTokenizer
+
+
+* **Short**
+
+  Tokenizer using [ConveRT](https://github.com/PolyAI-LDN/polyai-models#convert) model.
+
+
+
+* **Outputs**
+
+  `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+* **Requires**
+
+  Nothing
+
+
+
+* **Description**
+
+  Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](../components/featurizers.mdx#convertfeaturizer) is used.
+
+  :::note
+  Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
+  be used if your training data is in English language.
+
+  :::
+
+  :::note
+  To use `ConveRTTokenizer`, install Rasa Open Source with `pip install rasa[convert]`.
+
+  :::
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "ConveRTTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
+
+
+## LanguageModelTokenizer
+
+
+* **Short**
+
+  Tokenizer from pre-trained language models
+
+
+
+* **Outputs**
+
+  `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+* **Requires**
+
+  [HFTransformersNLP](../components/language-models.mdx#hftransformersnlp)
+
+
+
+* **Description**
+
+  Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#hftransformersnlp) component.
+  Must be used whenever the [LanguageModelFeaturizer](../components/featurizers.mdx#languagemodelfeaturizer) is used.
+
+
+
+* **Configuration**
+
+  ```yaml-rasa
+  pipeline:
+  - name: "LanguageModelTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+  ```

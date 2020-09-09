@@ -6,13 +6,12 @@ import os
 from rasa import data
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
-from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa.core.training.dsl import StoryFileReader
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
-from rasa.utils.common import raise_warning, mark_as_experimental_feature
+from rasa.utils.common import mark_as_experimental_feature
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +30,7 @@ class MultiProjectImporter(TrainingDataImporter):
         else:
             self._domain_paths = []
         self._story_paths = []
+        self._e2e_story_paths = []
         self._nlu_paths = []
         self._imports = []
         self._additional_paths = training_data_paths or []
@@ -38,9 +38,8 @@ class MultiProjectImporter(TrainingDataImporter):
 
         self._init_from_dict(self.config, self._project_directory)
 
-        extra_story_files, extra_nlu_files = data.get_core_nlu_files(
-            training_data_paths
-        )
+        extra_nlu_files = data.get_data_files(training_data_paths, data.is_nlu_file)
+        extra_story_files = data.get_data_files(training_data_paths, data.is_story_file)
         self._story_paths += extra_story_files
         self._nlu_paths += extra_nlu_files
 
@@ -64,7 +63,9 @@ class MultiProjectImporter(TrainingDataImporter):
             parent_directory = os.path.dirname(path)
             self._init_from_dict(config, parent_directory)
         else:
-            raise_warning(f"'{path}' does not exist or is not a valid config file.")
+            rasa.shared.utils.io.raise_warning(
+                f"'{path}' does not exist or is not a valid config file."
+            )
 
     def _init_from_dict(self, _dict: Dict[Text, Any], parent_directory: Text) -> None:
         imports = _dict.get("imports") or []
@@ -95,7 +96,9 @@ class MultiProjectImporter(TrainingDataImporter):
                     # Check next file
                     continue
 
-                if data.is_domain_file(full_path):
+                if data.is_test_stories_file(full_path):
+                    self._e2e_story_paths.append(full_path)
+                elif Domain.is_domain_file(full_path):
                     self._domain_paths.append(full_path)
                 elif data.is_nlu_file(full_path):
                     self._nlu_paths.append(full_path)
@@ -171,20 +174,19 @@ class MultiProjectImporter(TrainingDataImporter):
 
     async def get_stories(
         self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        story_steps = await StoryFileReader.read_from_files(
-            self._story_paths,
+        story_paths = self._story_paths if not use_e2e else self._e2e_story_paths
+
+        return await utils.story_graph_from_paths(
+            story_paths,
             await self.get_domain(),
-            interpreter,
             template_variables,
             use_e2e,
             exclusion_percentage,
         )
-        return StoryGraph(story_steps)
 
     async def get_config(self) -> Dict:
         return self.config

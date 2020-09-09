@@ -1,3 +1,9 @@
+from pathlib import Path
+from typing import Text
+
+import pytest
+
+from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.core.training import visualization
 import rasa.utils.io
@@ -73,16 +79,21 @@ def test_common_action_prefix_unequal():
     assert num_common == 0
 
 
-async def test_graph_persistence(default_domain, tmpdir):
+@pytest.mark.parametrize(
+    "stories_file",
+    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
+)
+async def test_graph_persistence(
+    stories_file: Text, default_domain: Domain, tmp_path: Path
+):
     from os.path import isfile
     from networkx.drawing import nx_pydot
-    from rasa.core.training.dsl import StoryFileReader
-    from rasa.core.interpreter import RegexInterpreter
+    import rasa.core.training.loading as core_loading
 
-    story_steps = await StoryFileReader.read_from_file(
-        "data/test_stories/stories.md", default_domain, interpreter=RegexInterpreter()
+    story_steps = await core_loading.load_data_from_resource(
+        stories_file, default_domain
     )
-    out_file = tmpdir.join("graph.html").strpath
+    out_file = str(tmp_path / "graph.html")
     generated_graph = await visualization.visualize_stories(
         story_steps,
         default_domain,
@@ -101,15 +112,18 @@ async def test_graph_persistence(default_domain, tmpdir):
     assert "graph = `{}`".format(generated_graph.to_string()) in content
 
 
-async def test_merge_nodes(default_domain, tmpdir):
+@pytest.mark.parametrize(
+    "stories_file",
+    ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
+)
+async def test_merge_nodes(stories_file: Text, default_domain: Domain, tmp_path: Path):
     from os.path import isfile
-    from rasa.core.training.dsl import StoryFileReader
-    from rasa.core.interpreter import RegexInterpreter
+    import rasa.core.training.loading as core_loading
 
-    story_steps = await StoryFileReader.read_from_file(
-        "data/test_stories/stories.md", default_domain, interpreter=RegexInterpreter()
+    story_steps = await core_loading.load_data_from_resource(
+        stories_file, default_domain
     )
-    out_file = tmpdir.join("graph.html").strpath
+    out_file = str(tmp_path / "graph.html")
     await visualization.visualize_stories(
         story_steps,
         default_domain,

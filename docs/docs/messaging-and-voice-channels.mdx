@@ -1,0 +1,72 @@
+---
+id: messaging-and-voice-channels
+sidebar_label: Connecting to a Channel
+title: Connecting to a Channel
+description: Check out how to make your Rasa assistant available on platforms like Facebook Messenger, Slack, Telegram or even your very own website.
+---
+
+<!-- TODO: needs full general information about setting them up, what url to hit it at, etc. -->
+
+To make your assistant available on a messaging platform you need to provide credentials
+in a `credentials.yml` file.
+An example file is created when you run `rasa init`, so it's easiest to edit that file
+and add your credentials there. Here is an example with Facebook credentials:
+
+```yaml-rasa title="credentials.yml"
+facebook:
+  verify: "rasa-bot"
+  secret: "3e34709d01ea89032asdebfe5a74518"
+  page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
+```
+
+Learn how to make your assistant available on:
+
+* [Your Own Website](./connectors/your-own-website.mdx)
+
+* [Facebook Messenger](./connectors/facebook-messenger.mdx)
+
+* [Slack](./connectors/slack.mdx)
+
+* [Telegram](./connectors/telegram.mdx)
+
+* [Twilio](./connectors/twilio.mdx)
+
+* [Microsoft Bot Framework](./connectors/microsoft-bot-framework.mdx)
+
+* [Cisco Webex Teams](./connectors/cisco-webex-teams.mdx)
+
+* [RocketChat](./connectors/rocketchat.mdx)
+
+* [Mattermost](./connectors/mattermost.mdx)
+
+* [Google Hangouts Chat](./connectors/hangouts.mdx)
+
+* [Custom Connectors](./connectors/custom-connectors.mdx)
+
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="using-ngrok"></a>
+
+## Testing Channels on Your Local Machine with Ngrok
+
+You can use [ngrok](https://ngrok.com/) to create a connection to your local
+computer that is publicly available on the internet.
+You don't need this when running Rasa on a server because, you can set up a domain
+name to point to that server's IP address, or use the IP address itself.
+
+After installing ngrok, run:
+
+```bash
+ngrok http 5005; rasa run
+```
+
+Your webhook address will look like the following:
+
+* `https://yyyyyy.ngrok.io/webhooks/<CHANNEL>/webhook`, e.g.
+
+* `https://yyyyyy.ngrok.io/webhooks/facebook/webhook`
+
+:::caution
+With the free-tier of ngrok, you can run into limits on how many connections you can make per minute.
+As of writing this, it is set to 40 connections / minute.
+
+:::

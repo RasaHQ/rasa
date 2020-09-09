@@ -30,7 +30,13 @@ class MyComponent(Component):
     # This attribute is designed for instance method: `can_handle_language`.
     # Default value is None which means it can handle all languages.
     # This is an important feature for backwards compatibility of components.
-    language_list = None
+    supported_language_list = None
+
+    # Defines what language(s) this component can NOT handle.
+    # This attribute is designed for instance method: `can_handle_language`.
+    # Default value is None which means it can handle all languages.
+    # This is an important feature for backwards compatibility of components.
+    not_supported_language_list = None
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         super().__init__(component_config)

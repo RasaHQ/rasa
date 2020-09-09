@@ -1,0 +1,67 @@
+---
+id: hangouts
+sidebar_label: Google Hangouts Chat
+title: Google Hangouts Chat
+description: Build a Rasa Chat Bot on Google Hangouts Chat
+---
+
+## Hangouts Chat Setup
+
+This channel works similar to the standard Rasa REST channel. For each request from the channel, your bot will
+send one response. The response will be displayed to the user either as text or a so-called card (for
+more information, see the Cards section).
+
+In order to connect your Rasa bot to Google Hangouts Chat, you first need to create a project in
+Google Developer Console that includes the Hangouts API. There you can specify your bot's endpoint
+and also obtain your project id, which determines the scope for the OAuth2 authorization in case you
+want to use OAuth2. The Hangouts Chat API sends a Bearer token with every request, but it is up to
+the bot to actually verify the token, hence the channel also works without this.
+For more information see the official Google resources [https://developers.google.com/hangouts/chat](https://developers.google.com/hangouts/chat).
+
+The possibility to implement asynchronous communication between Hangouts Chat and bot exists, but due
+to the usually synchronous nature of Rasa bots, this functionality is not included in this channel.
+
+### Running On Hangouts Chat
+
+If you want to connect to Hangouts Chat using the run script, e.g. using:
+
+```bash
+rasa run
+```
+
+you don't need to supply a `credentials.yml`.
+
+If you want to use OAuth2, simply put the project id obtained from the Google Developer Console into it.
+
+```yaml-rasa
+hangouts:
+  project_id: "12345678901"
+```
+
+The endpoint for receiving Hangouts Chat messages is
+`http://localhost:5005/webhooks/hangouts/webhook`, replacing
+the host and port with the appropriate values. Hangouts Chat only forwards
+messages to endpoints via `https`, so take appropriate measures to add
+it to your setup.
+
+### Cards and Interactive Cards
+
+There are two ways in which Hangouts Chat will display bot messages, either as text or card. For each recevied
+request, your bot will send all messages in one response. If one of those messages is a card (e.g. an image),
+all other messages are converted to card format as well.
+
+Interactive cards trigger the `CARD_CLICKED` event for user interactions, e.g. when a button is clicked. When
+creating an interactive card, e.g. via `dispatcher.utter_button_message()` in your `actions.py`, you can
+specify a payload for each button that is going to be returned with the `CARD_CLICKED` event and extracted
+by the `HangoutsInput` channel (for example
+`buttons=[{"text":"Yes!", "payload":"/affirm"}, {"text":"Nope.", "payload":"/deny"}])`.
+Updating cards is not yet supported.
+
+For more detailed information on cards, visit the
+[Hangouts docs](https://developers.google.com/hangouts/chat/reference).
+
+### Other Hangouts Chat Events
+
+Except for `MESSAGE` and `CARD_CLICKED`, Hangouts Chat knows two other event types, `ADDED_TO_SPACE` and
+`REMOVED_FROM_SPACE`, which are triggered when your bot is added or removed from a direct message or chat room
+space. The default intent names for these events can be modified in the `HangoutsInput` constructor method.

@@ -4,14 +4,15 @@ import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
 
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_COMPONENTS
-import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
+from rasa.utils.features import Features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
@@ -19,9 +20,12 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     INTENT,
+    INTENT_RESPONSE_KEY,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    RESPONSE,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
     FEATURIZER_CLASS_ALIAS,
+    ACTION_NAME,
 )
 
 logger = logging.getLogger(__name__)
@@ -51,11 +55,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # 'char_wb' creates character n-grams inside word boundaries
         # n-grams at the edges of words are padded with space.
         "analyzer": "word",  # use 'char' or 'char_wb' for character
-        # regular expression for tokens
-        # only used if analyzer == 'word'
-        # WARNING this pattern is used during training
-        # but not currently used during inference!
-        "token_pattern": r"(?u)\b\w\w+\b",
         # remove accents during the preprocessing step
         "strip_accents": None,  # {'ascii', 'unicode', None}
         # list of stop words
@@ -79,6 +78,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings
+        # indicates whether the featurizer should use the lemma of a word for
+        # counting (if available) or not
+        "use_lemma": True,
     }
 
     @classmethod
@@ -92,9 +94,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # set analyzer
         self.analyzer = self.component_config["analyzer"]
-
-        # regular expression for tokens
-        self.token_pattern = self.component_config["token_pattern"]
 
         # remove accents during the preprocessing step
         self.strip_accents = self.component_config["strip_accents"]
@@ -118,6 +117,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
+
+        # use the lemma of the words or not
+        self.use_lemma = self.component_config["use_lemma"]
 
     # noinspection PyPep8Naming
     def _load_OOV_params(self) -> None:
@@ -215,20 +217,22 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
 
-    @staticmethod
     def _get_message_tokens_by_attribute(
-        message: "Message", attribute: Text
+        self, message: "Message", attribute: Text
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
-            return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-
-        return message.get(attribute).split()
+            return [
+                t.lemma if self.use_lemma else t.text
+                for t in message.get(TOKENS_NAMES[attribute])
+            ]
+        else:
+            return []
 
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == INTENT:
+        if attribute in [INTENT, ACTION_NAME, INTENT_RESPONSE_KEY]:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -297,7 +301,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             training_data_type = "NLU" if attribute == TEXT else "ResponseSelector"
 
             # if there is some text in tokens, warn if there is no oov token
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the {training_data_type} "
                 f"training examples. All unseen words will be ignored during prediction.",
@@ -330,9 +334,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         for attribute in attribute_tokens.keys():
             list_of_tokens = attribute_tokens[attribute]
-            if attribute in [RESPONSE, TEXT]:
-                # vocabulary should not contain CLS token
-                list_of_tokens = [tokens[:-1] for tokens in list_of_tokens]
             attribute_texts[attribute] = [" ".join(tokens) for tokens in list_of_tokens]
 
         return attribute_texts
@@ -342,7 +343,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         self.vectorizers = self._create_shared_vocab_vectorizers(
             {
-                "token_pattern": self.token_pattern,
                 "strip_accents": self.strip_accents,
                 "lowercase": self.lowercase,
                 "stop_words": self.stop_words,
@@ -376,7 +376,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         self.vectorizers = self._create_independent_vocab_vectorizers(
             {
-                "token_pattern": self.token_pattern,
                 "strip_accents": self.strip_accents,
                 "lowercase": self.lowercase,
                 "stop_words": self.stop_words,
@@ -405,71 +404,90 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     f"training data. Skipping training a CountVectorizer for it."
                 )
 
-    def _create_sequence(
+    def _create_features(
         self, attribute: Text, all_tokens: List[List[Text]]
-    ) -> List[Optional[scipy.sparse.coo_matrix]]:
+    ) -> Tuple[
+        List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
+    ]:
+        if not self.vectorizers.get(attribute):
+            return [None], [None]
 
-        X = []
+        sequence_features = []
+        sentence_features = []
 
         for i, tokens in enumerate(all_tokens):
             if not tokens:
                 # nothing to featurize
-                X.append(None)
+                sequence_features.append(None)
+                sentence_features.append(None)
                 continue
 
             # vectorizer.transform returns a sparse matrix of size
             # [n_samples, n_features]
             # set input to list of tokens if sequence should be returned
             # otherwise join all tokens to a single string and pass that as a list
-            tokens_without_cls = tokens
-            if attribute in [TEXT, RESPONSE]:
-                tokens_without_cls = tokens[:-1]
-
-            if not tokens_without_cls:
+            if not tokens:
                 # attribute is not set (e.g. response not present)
-                X.append(None)
+                sequence_features.append(None)
+                sentence_features.append(None)
                 continue
 
-            seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
+            seq_vec = self.vectorizers[attribute].transform(tokens)
             seq_vec.sort_indices()
 
-            if attribute in [TEXT, RESPONSE]:
-                tokens_text = [" ".join(tokens_without_cls)]
-                cls_vec = self.vectorizers[attribute].transform(tokens_text)
-                cls_vec.sort_indices()
+            sequence_features.append(seq_vec.tocoo())
 
-                x = scipy.sparse.vstack([seq_vec, cls_vec])
+            if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+                tokens_text = [" ".join(tokens)]
+                sentence_vec = self.vectorizers[attribute].transform(tokens_text)
+                sentence_vec.sort_indices()
+
+                sentence_features.append(sentence_vec.tocoo())
             else:
-                x = seq_vec
+                sentence_features.append(None)
 
-            X.append(x.tocoo())
-
-        return X
+        return sequence_features, sentence_features
 
     def _get_featurized_attribute(
         self, attribute: Text, all_tokens: List[List[Text]]
-    ) -> Optional[List[Optional[scipy.sparse.coo_matrix]]]:
+    ) -> Tuple[
+        List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
+    ]:
         """Return features of a particular attribute for complete data"""
 
         if self._check_attribute_vocabulary(attribute):
             # count vectorizer was trained
-            return self._create_sequence(attribute, all_tokens)
+            return self._create_features(attribute, all_tokens)
         else:
-            return None
+            return [], []
 
     def _set_attribute_features(
-        self, attribute: Text, attribute_features: List, training_data: TrainingData
+        self,
+        attribute: Text,
+        sequence_features: List[scipy.sparse.spmatrix],
+        sentence_features: List[scipy.sparse.spmatrix],
+        examples: List[Message],
     ) -> None:
         """Set computed features of the attribute to corresponding message objects"""
-        for i, message in enumerate(training_data.training_examples):
+        for i, message in enumerate(examples):
             # create bag for each example
-            if attribute_features[i] is not None:
-                final_features = Features(
-                    attribute_features[i],
+            if sequence_features[i] is not None:
+                final_sequence_features = Features(
+                    sequence_features[i],
+                    FEATURE_TYPE_SEQUENCE,
                     attribute,
                     self.component_config[FEATURIZER_CLASS_ALIAS],
                 )
-                message.add_features(final_features)
+                message.add_features(final_sequence_features)
+
+            if sentence_features[i] is not None:
+                final_sentence_features = Features(
+                    sentence_features[i],
+                    FEATURE_TYPE_SENTENCE,
+                    attribute,
+                    self.component_config[FEATURIZER_CLASS_ALIAS],
+                )
+                message.add_features(final_sentence_features)
 
     def train(
         self,
@@ -486,7 +504,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         spacy_nlp = kwargs.get("spacy_nlp")
         if spacy_nlp is not None:
             # create spacy lemma_ for OOV_words
-            self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
+            self.OOV_words = [
+                t.lemma_ if self.use_lemma else t.text
+                for w in self.OOV_words
+                for t in spacy_nlp(w)
+            ]
 
         # process sentences and collect data for all attributes
         processed_attribute_tokens = self._get_all_attributes_processed_tokens(
@@ -504,13 +526,16 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # transform for all attributes
         for attribute in self._attributes:
-            attribute_features = self._get_featurized_attribute(
+            sequence_features, sentence_features = self._get_featurized_attribute(
                 attribute, processed_attribute_tokens[attribute]
             )
 
-            if attribute_features is not None:
+            if sequence_features and sentence_features:
                 self._set_attribute_features(
-                    attribute, attribute_features, training_data
+                    attribute,
+                    sequence_features,
+                    sentence_features,
+                    training_data.training_examples,
                 )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -523,20 +548,20 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 "didn't receive enough training data"
             )
             return
+        for attribute in self._attributes:
 
-        attribute = TEXT
-        message_tokens = self._get_processed_message_tokens_by_attribute(
-            message, attribute
-        )
-
-        # features shape (1, seq, dim)
-        features = self._create_sequence(attribute, [message_tokens])
-
-        if features[0] is not None:
-            final_features = Features(
-                features[0], attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
+            message_tokens = self._get_processed_message_tokens_by_attribute(
+                message, attribute
             )
-            message.add_features(final_features)
+
+            # features shape (1, seq, dim)
+            sequence_features, sentence_features = self._create_features(
+                attribute, [message_tokens]
+            )
+
+            self._set_attribute_features(
+                attribute, sequence_features, sentence_features, [message]
+            )
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""
@@ -587,7 +612,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Create vectorizers for all attributes with shared vocabulary"""
 
         shared_vectorizer = CountVectorizer(
-            token_pattern=parameters["token_pattern"],
+            token_pattern=r"(?u)\b\w+\b",
             strip_accents=parameters["strip_accents"],
             lowercase=parameters["lowercase"],
             stop_words=parameters["stop_words"],
@@ -619,7 +644,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             attribute_vocabulary = vocabulary[attribute] if vocabulary else None
 
             attribute_vectorizer = CountVectorizer(
-                token_pattern=parameters["token_pattern"],
+                token_pattern=r"(?u)\b\w+\b",
                 strip_accents=parameters["strip_accents"],
                 lowercase=parameters["lowercase"],
                 stop_words=parameters["stop_words"],

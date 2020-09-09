@@ -2,14 +2,7 @@ import pytest
 
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import (
-    CLS_TOKEN,
-    TEXT,
-    SPACY_DOCS,
-    INTENT,
-    RESPONSE,
-    TOKENS_NAMES,
-)
+from rasa.nlu.constants import TEXT, SPACY_DOCS, INTENT, RESPONSE, TOKENS_NAMES
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
 
@@ -31,7 +24,7 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 def test_spacy(text, expected_tokens, expected_indices, spacy_nlp):
     tk = SpacyTokenizer()
 
-    message = Message(text)
+    message = Message.build(text=text)
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
     tokens = tk.tokenize(message, attribute=TEXT)
@@ -51,7 +44,7 @@ def test_spacy(text, expected_tokens, expected_indices, spacy_nlp):
 def test_spacy_pos_tags(text, expected_pos_tags, spacy_nlp):
     tk = SpacyTokenizer()
 
-    message = Message(text)
+    message = Message.build(text=text)
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
     tokens = tk.tokenize(message, attribute=TEXT)
@@ -61,18 +54,12 @@ def test_spacy_pos_tags(text, expected_pos_tags, spacy_nlp):
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
-    [
-        (
-            "Forecast for lunch",
-            ["Forecast", "for", "lunch", CLS_TOKEN],
-            [(0, 8), (9, 12), (13, 18), (19, 26)],
-        )
-    ],
+    [("Forecast for lunch", ["Forecast", "for", "lunch"], [(0, 8), (9, 12), (13, 18)])],
 )
 def test_train_tokenizer(text, expected_tokens, expected_indices, spacy_nlp):
     tk = SpacyTokenizer()
 
-    message = Message(text)
+    message = Message.build(text=text)
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
     message.set(RESPONSE, text)
     message.set(SPACY_DOCS[RESPONSE], spacy_nlp(text))
@@ -102,7 +89,7 @@ def test_custom_intent_symbol(text, expected_tokens, spacy_nlp):
 
     tk = SpacyTokenizer(component_config)
 
-    message = Message(text)
+    message = Message.build(text=text)
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
     message.set(INTENT, text)
 

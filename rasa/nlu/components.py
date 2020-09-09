@@ -3,11 +3,10 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
-from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -97,7 +96,7 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
 
     if len(tokenizer_names) > 1:
         raise InvalidConfigError(
-            f"More then one tokenizer is used: {tokenizer_names}. "
+            f"More than one tokenizer is used: {tokenizer_names}. "
             f"You can use only one tokenizer."
         )
 
@@ -121,32 +120,6 @@ def _required_component_in_pipeline(
     return False
 
 
-def _check_deprecated_attributes(component: "Component") -> None:
-    """Checks that the component doesn't have deprecated attributes.
-
-    Args:
-        component: The :class:`rasa.nlu.components.Component`.
-    """
-
-    if hasattr(component, "provides"):
-        raise_warning(
-            f"'{component.name}' contains property 'provides', "
-            f"which is deprecated. There is no need to specify "
-            f"the list of attributes that a component provides.",
-            category=FutureWarning,
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-    if hasattr(component, "requires"):
-        raise_warning(
-            f"'{component.name}' contains property 'requires', "
-            f"which is deprecated. Use 'required_components()' method "
-            f"to specify which components are required to be present "
-            f"in the pipeline by this component.",
-            category=FutureWarning,
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
-
 def validate_required_components(pipeline: List["Component"]) -> None:
     """Validates that all required components are present in the pipeline.
 
@@ -155,7 +128,6 @@ def validate_required_components(pipeline: List["Component"]) -> None:
     """
 
     for i, component in enumerate(pipeline):
-        _check_deprecated_attributes(component)
 
         missing_components = []
         for required_component in component.required_components():
@@ -208,7 +180,7 @@ def validate_required_components_from_data(
     if data.response_examples and not any_components_in_pipeline(
         ["ResponseSelector"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data with examples for training a response "
             "selector, but your NLU pipeline does not include a response selector "
             "component. To train a model on your response selector data, add a "
@@ -218,7 +190,7 @@ def validate_required_components_from_data(
     if data.entity_examples and not any_components_in_pipeline(
         TRAINABLE_EXTRACTORS, pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data consisting of entity examples, but "
             "your NLU pipeline does not include an entity extractor trained on "
             "your training data. To extract non-pretrained entities, add one of "
@@ -229,7 +201,7 @@ def validate_required_components_from_data(
         {"DIETClassifier", "CRFEntityExtractor"}, pipeline
     ):
         if data.entity_roles_groups_used():
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "You have defined training data with entities that have roles/groups, "
                 "but your NLU pipeline does not include a 'DIETClassifier' or a "
                 "'CRFEntityExtractor'. To train entities that have roles/groups, "
@@ -238,28 +210,30 @@ def validate_required_components_from_data(
             )
 
     if data.regex_features and not any_components_in_pipeline(
-        ["RegexFeaturizer"], pipeline
+        ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data with regexes, but "
-            "your NLU pipeline does not include a 'RegexFeaturizer'. "
-            "To featurize regexes, include a 'RegexFeaturizer' in your pipeline."
+            "your NLU pipeline does not include a 'RegexFeaturizer' or a "
+            "'RegexEntityExtractor'. To use regexes, include either a "
+            "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
         )
 
     if data.lookup_tables and not any_components_in_pipeline(
-        ["RegexFeaturizer"], pipeline
+        ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data consisting of lookup tables, but "
-            "your NLU pipeline does not include a 'RegexFeaturizer'. "
-            "To featurize lookup tables, add a 'RegexFeaturizer' to your pipeline."
+            "your NLU pipeline does not include a 'RegexFeaturizer' or a "
+            "'RegexEntityExtractor'. To use lookup tables, include either a "
+            "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
         )
 
     if data.lookup_tables:
         if not any_components_in_pipeline(
             ["CRFEntityExtractor", "DIETClassifier"], pipeline
         ):
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include any components that use these "
                 "features. To make use of lookup tables, add a 'DIETClassifier' or a "
@@ -276,7 +250,7 @@ def validate_required_components_from_data(
                 has_pattern_feature = "pattern" in itertools.chain(*crf_features)
 
             if not has_pattern_feature:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     "You have defined training data consisting of lookup tables, but "
                     "your NLU pipeline's 'CRFEntityExtractor' does not include the "
                     "'pattern' feature. To featurize lookup tables, add the 'pattern' "
@@ -286,7 +260,7 @@ def validate_required_components_from_data(
     if data.entity_synonyms and not any_components_in_pipeline(
         ["EntitySynonymMapper"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined synonyms in your training data, but "
             "your NLU pipeline does not include an 'EntitySynonymMapper'. "
             "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."
@@ -392,7 +366,13 @@ class Component(metaclass=ComponentMetaclass):
     # This attribute is designed for instance method: `can_handle_language`.
     # Default value is None which means it can handle all languages.
     # This is an important feature for backwards compatibility of components.
-    language_list = None
+    supported_language_list = None
+
+    # Defines what language(s) this component can NOT handle.
+    # This attribute is designed for instance method: `can_handle_language`.
+    # Default value is None which means it can handle all languages.
+    # This is an important feature for backwards compatibility of components.
+    not_supported_language_list = None
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
@@ -648,10 +628,16 @@ class Component(metaclass=ComponentMetaclass):
         """
 
         # if language_list is set to `None` it means: support all languages
-        if language is None or cls.language_list is None:
+        if language is None or (
+            cls.supported_language_list is None
+            and cls.not_supported_language_list is None
+        ):
             return True
 
-        return language in cls.language_list
+        language_list = cls.supported_language_list or []
+        not_supported_language_list = cls.not_supported_language_list or []
+
+        return language in language_list or language not in not_supported_language_list
 
 
 C = typing.TypeVar("C", bound=Component)

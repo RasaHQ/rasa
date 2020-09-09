@@ -1,39 +1,17 @@
-import numpy as np
-import logging
-import scipy.sparse
 from typing import Optional, Text, Dict, Any, Union, List, Tuple
 
-from rasa.nlu.training_data import Message
-from rasa.core.constants import DIALOGUE
-from rasa.nlu.constants import (
-    TEXT,
-    TOKENS_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-    POSITION_OF_CLS_TOKEN,
-    NUMBER_OF_SUB_TOKENS,
-)
+import numpy as np
+
+from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
+from rasa.utils import common as common_utils
 from rasa.utils.tensorflow.constants import (
-    LABEL,
-    HIDDEN_LAYERS_SIZES,
-    NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    DENSE_DIMENSION,
     LOSS_TYPE,
     SIMILARITY_TYPE,
-    NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    REGULARIZATION_CONSTANT,
-    USE_MAX_NEG_SIM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
-    EMBEDDING_DIMENSION,
-    DROP_RATE_DIALOGUE,
-    DROP_RATE_LABEL,
-    NEGATIVE_MARGIN_SCALE,
-    DROP_RATE,
     EPOCHS,
     SOFTMAX,
     MARGIN,
@@ -41,9 +19,6 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     COSINE,
 )
-
-
-logger = logging.getLogger(__name__)
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
@@ -87,8 +62,8 @@ def align_token_features(
 ) -> np.ndarray:
     """Align token features to match tokens.
 
-    ConveRT might split up tokens into sub-tokens. We need to take the mean of
-    the sub-token vectors and take that as token vector.
+    ConveRTTokenizer, LanguageModelTokenizers might split up tokens into sub-tokens.
+    We need to take the mean of the sub-token vectors and take that as token vector.
 
     Args:
         list_of_tokens: tokens for examples
@@ -125,22 +100,6 @@ def align_token_features(
                 ][token_idx + offset]
 
     return out_token_features
-
-
-def sequence_to_sentence_features(
-    features: Union[np.ndarray, scipy.sparse.spmatrix]
-) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
-    """Extract the CLS token vector as sentence features.
-    Features is a sequence. The last token is the CLS token. The feature vector of
-    this token contains the sentence features."""
-
-    if features is None:
-        return None
-
-    if isinstance(features, scipy.sparse.spmatrix):
-        return scipy.sparse.coo_matrix(features.tocsr()[-1])
-
-    return np.expand_dims(features[-1], axis=0)
 
 
 def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -186,20 +145,25 @@ def load_tf_hub_model(model_url: Text) -> Any:
 
 
 def _replace_deprecated_option(
-    old_option: Text, new_option: Union[Text, List[Text]], config: Dict[Text, Any]
+    old_option: Text,
+    new_option: Union[Text, List[Text]],
+    config: Dict[Text, Any],
+    warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 ) -> Dict[Text, Any]:
     if old_option in config:
         if isinstance(new_option, str):
-            logger.warning(
+            common_utils.raise_deprecation_warning(
                 f"Option '{old_option}' got renamed to '{new_option}'. "
-                f"Please update your configuration file."
+                f"Please update your configuration file.",
+                warn_until_version=warn_until_version,
             )
             config[new_option] = config[old_option]
         else:
-            logger.warning(
+            common_utils.raise_deprecation_warning(
                 f"Option '{old_option}' got renamed to "
                 f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
-                f"Please update your configuration file."
+                f"Please update your configuration file.",
+                warn_until_version=warn_until_version,
             )
             option_dict = config.get(new_option[0], {})
             option_dict[new_option[1]] = config[old_option]
@@ -218,64 +182,6 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
 
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_pre_dial", [HIDDEN_LAYERS_SIZES, DIALOGUE], config
-    )
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_bot", [HIDDEN_LAYERS_SIZES, LABEL], config
-    )
-    config = _replace_deprecated_option("droprate", DROP_RATE, config)
-    config = _replace_deprecated_option("droprate_a", DROP_RATE_DIALOGUE, config)
-    config = _replace_deprecated_option("droprate_b", DROP_RATE_LABEL, config)
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_a", [HIDDEN_LAYERS_SIZES, TEXT], config
-    )
-    config = _replace_deprecated_option(
-        "hidden_layers_sizes_b", [HIDDEN_LAYERS_SIZES, LABEL], config
-    )
-    config = _replace_deprecated_option(
-        "num_transformer_layers", NUM_TRANSFORMER_LAYERS, config
-    )
-    config = _replace_deprecated_option("num_heads", NUM_HEADS, config)
-    config = _replace_deprecated_option("dense_dim", DENSE_DIMENSION, config)
-    config = _replace_deprecated_option("embed_dim", EMBEDDING_DIMENSION, config)
-    config = _replace_deprecated_option("num_neg", NUM_NEG, config)
-    config = _replace_deprecated_option("mu_pos", MAX_POS_SIM, config)
-    config = _replace_deprecated_option("mu_neg", MAX_NEG_SIM, config)
-    config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_NEG_SIM, config)
-    config = _replace_deprecated_option("C2", REGULARIZATION_CONSTANT, config)
-    config = _replace_deprecated_option("C_emb", NEGATIVE_MARGIN_SCALE, config)
-    config = _replace_deprecated_option(
-        "evaluate_every_num_epochs", EVAL_NUM_EPOCHS, config
-    )
-    config = _replace_deprecated_option(
-        "evaluate_on_num_examples", EVAL_NUM_EXAMPLES, config
-    )
+    # note: call _replace_deprecated_option() here when there are options to deprecate
 
     return config
-
-
-def tokens_without_cls(
-    message: Message, attribute: Text = TEXT
-) -> Optional[List[Token]]:
-    """Return tokens of given message without __CLS__ token.
-
-    All tokenizers add a __CLS__ token to the end of the list of tokens for
-    text and responses. The token captures the sentence features.
-
-    Args:
-        message: The message.
-        attribute: Return tokens of provided attribute.
-
-    Returns:
-        Tokens without CLS token.
-    """
-    # return all tokens up to __CLS__ token for text and responses
-    if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-        tokens = message.get(TOKENS_NAMES[attribute])
-        if tokens is not None:
-            return tokens[:POSITION_OF_CLS_TOKEN]
-        return None
-
-    # we don't add the __CLS__ token for intents, return all tokens
-    return message.get(TOKENS_NAMES[attribute])

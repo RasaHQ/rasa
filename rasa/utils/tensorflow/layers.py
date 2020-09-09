@@ -2,11 +2,15 @@ import logging
 from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
+import rasa.utils.tensorflow.crf
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
 
 logger = logging.getLogger(__name__)
+
+# https://github.com/tensorflow/addons#gpu-and-cpu-custom-ops-1
+tfa.options.TF_ADDONS_PY_OPS = True
 
 
 class SparseDropout(tf.keras.layers.Dropout):
@@ -460,7 +464,9 @@ class CRF(tf.keras.layers.Layer):
         self.built = True
 
     # noinspection PyMethodOverriding
-    def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
+    def call(
+        self, logits: tf.Tensor, sequence_lengths: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Decodes the highest scoring sequence of tags.
 
         Arguments:
@@ -471,16 +477,23 @@ class CRF(tf.keras.layers.Layer):
         Returns:
             A [batch_size, max_seq_len] matrix, with dtype `tf.int32`.
             Contains the highest scoring tag indices.
+            A [batch_size, max_seq_len] matrix, with dtype `tf.float32`.
+            Contains the confidence values of the highest scoring tag indices.
         """
-        pred_ids, _ = tfa.text.crf.crf_decode(
+        predicted_ids, scores, _ = rasa.utils.tensorflow.crf.crf_decode(
             logits, self.transition_params, sequence_lengths
         )
         # set prediction index for padding to `0`
         mask = tf.sequence_mask(
-            sequence_lengths, maxlen=tf.shape(pred_ids)[1], dtype=pred_ids.dtype
+            sequence_lengths,
+            maxlen=tf.shape(predicted_ids)[1],
+            dtype=predicted_ids.dtype,
         )
 
-        return pred_ids * mask
+        confidence_values = scores * tf.cast(mask, tf.float32)
+        predicted_ids = predicted_ids * mask
+
+        return predicted_ids, confidence_values
 
     def loss(
         self, logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor

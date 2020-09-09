@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, Text, Optional, Union
 
-from rasa.utils import common
+import rasa.shared.utils.common
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -69,17 +69,21 @@ def _create_from_endpoint_config(
 
         broker = KafkaEventBroker.from_endpoint_config(endpoint_config)
     else:
-        broker = _load_from_module_string(endpoint_config)
+        broker = _load_from_module_name_in_endpoint_config(endpoint_config)
 
     if broker:
         logger.debug(f"Instantiated event broker to '{broker.__class__.__name__}'.")
     return broker
 
 
-def _load_from_module_string(broker_config: EndpointConfig,) -> Optional["EventBroker"]:
+def _load_from_module_name_in_endpoint_config(
+    broker_config: EndpointConfig,
+) -> Optional["EventBroker"]:
     """Instantiate an event broker based on its class name."""
     try:
-        event_broker_class = common.class_from_module_path(broker_config.type)
+        event_broker_class = rasa.shared.utils.common.class_from_module_path(
+            broker_config.type
+        )
         return event_broker_class.from_endpoint_config(broker_config)
     except (AttributeError, ImportError) as e:
         logger.warning(

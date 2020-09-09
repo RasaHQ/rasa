@@ -3,7 +3,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.nlu.constants import ENTITIES
+from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
@@ -11,8 +11,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
-import rasa.utils.train_utils as train_utils
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -98,15 +97,15 @@ class MitieEntityExtractor(EntityExtractor):
     def _prepare_mitie_sample(training_example: Message) -> Any:
         import mitie
 
-        text = training_example.text
-        tokens = train_utils.tokens_without_cls(training_example)
+        text = training_example.get(TEXT)
+        tokens = training_example.get(TOKENS_NAMES[TEXT])
         sample = mitie.ner_training_instance([t.text for t in tokens])
         for ent in training_example.get(ENTITIES, []):
             try:
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Failed to use example '{text}' to train MITIE "
                     f"entity extractor. Example will be skipped."
                     f"Error: {e}"
@@ -117,7 +116,7 @@ class MitieEntityExtractor(EntityExtractor):
                 # input - e.g. on overlapping entities
                 sample.add_entity(list(range(start, end)), ent["entity"])
             except Exception as e:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Failed to add entity example "
                     f"'{str(e)}' of sentence '{str(text)}'. "
                     f"Example will be ignored. Reason: "
@@ -136,9 +135,7 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text,
-            train_utils.tokens_without_cls(message),
-            mitie_feature_extractor,
+            message.get(TEXT), message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
         )
         extracted = self.add_extractor_name(ents)
         message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)

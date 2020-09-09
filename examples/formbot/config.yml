@@ -14,7 +14,6 @@ pipeline:
   - name: EntitySynonymMapper
 
 policies:
-  - name: FallbackPolicy
-  - name: MemoizationPolicy
-  - name: FormPolicy
-  - name: MappingPolicy
+  - name: TEDPolicy
+  - name: AugmentedMemoizationPolicy
+  - name: RulePolicy

@@ -8,8 +8,21 @@ import rasa.nlu
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
+from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
+    IntentClassifier,
+)
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
+from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
+
+from rasa.nlu.constants import (
+    INTENT_NAME_KEY,
+    TEXT,
+    INTENT,
+    ENTITIES,
+    PREDICTED_CONFIDENCE_KEY,
+)
+
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
@@ -181,9 +194,12 @@ class Trainer:
             )
 
         # data gets modified internally during the training - hence the copy
-        working_data = copy.deepcopy(data)
+        working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
+            if isinstance(component, (EntityExtractor, IntentClassifier)):
+                working_data = working_data.without_empty_e2e_examples()
+
             logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)
@@ -251,7 +267,11 @@ class Interpreter:
     # that will be returned by `parse`
     @staticmethod
     def default_output_attributes() -> Dict[Text, Any]:
-        return {"intent": {"name": None, "confidence": 0.0}, "entities": []}
+        return {
+            TEXT: "",
+            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
+            ENTITIES: [],
+        }
 
     @staticmethod
     def ensure_model_compatibility(
@@ -368,7 +388,10 @@ class Interpreter:
             output["text"] = ""
             return output
 
-        message = Message(text, self.default_output_attributes(), time=time)
+        data = self.default_output_attributes()
+        data[TEXT] = text
+
+        message = Message(data=data, time=time)
 
         for component in self.pipeline:
             component.process(message, **self.context)
@@ -376,3 +399,17 @@ class Interpreter:
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
+
+    def featurize_message(self, message: Message) -> Message:
+        """
+        Tokenize and featurize the input message
+        Args:
+            message: message storing text to process;
+        Returns:
+            message: it contains the tokens and features which are the output of the NLU pipeline;
+        """
+
+        for component in self.pipeline:
+            if not isinstance(component, (EntityExtractor, IntentClassifier)):
+                component.process(message, **self.context)
+        return message

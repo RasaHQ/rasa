@@ -1,0 +1,310 @@
+---
+id: fallback-handoff
+sidebar_label: Fallback and Human Handoff
+title: Fallback and Human Handoff
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+<!-- TODO: add info about human handoff -->
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="failing-gracefully"></a>
+
+Even if you design your bot perfectly, users will inevitably say things to your
+assistant that you did not anticipate. In these cases, your assistant will fail,
+and it's important you ensure it does so gracefully.
+
+## Fallback policy
+
+One of the most common failures is low NLU confidence, which is handled very nicely with
+the TwoStageFallbackPolicy. You can enable it by adding the following to your configuration file,
+
+```yaml
+policies:
+  - name: TwoStageFallbackPolicy
+    nlu_threshold: 0.8
+```
+
+and adding the `out_of_scope` intent to your `domain.yml` file:
+
+```yaml
+intents:
+- out_of_scope
+```
+
+When the nlu confidence falls below the defined threshold, the bot will prompt the user to
+rephrase their message. If the bot isn't able to get their message three times, there
+will be a final action where the bot can e.g. hand off to a human.
+
+To try this out, retrain your model and send a message like “order me a pizza” to your bot:
+
+```bash
+rasa train
+rasa shell
+```
+
+There are also a bunch of ways in which you can customize this policy. In Sara, our demo bot,
+we've customized it to suggest intents to the user within a certain confidence range to make
+it easier for the user to give the bot the information it needs.
+
+This is done by customizing the action `ActionDefaultAskAffirmation` as shown in the
+[Sara rasa-demo action server](https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L443)
+We define some intent mappings to make it more intuitive to the user what an intent means.
+
+
+## Fallback Actions
+
+Sometimes you want to revert to a fallback action, such as replying,
+`"Sorry, I didn't understand that"`. You can handle fallback cases by adding appropriate
+rules. Rasa Open Source comes with two default implementations for handling these
+fallbacks.
+In addition, you can also use [Custom Actions](./actions.mdx#custom-actions) to run any
+custom code.
+
+### Handling Low NLU Confidence
+
+Although Rasa's [Intent Classifier](./components/intent-classifiers.mdx) will
+generalize to unseen messages, some
+messages might receive a low classification confidence.
+To handle messages with low confidence, we recommend adding the
+[FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier) to your NLU pipeline.
+The [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier) will
+predict an intent `nlu_fallback` when all other intent predictions fall below
+the configured confidence threshold.
+
+#### Writing Stories / Rules for Messages with Low Confidence
+
+When you add the [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier)  to
+your NLU pipeline, you can treat
+messages with low classification confidence as any other intent. The following
+[Rule](./rules.mdx) will ask the user to rephrase when they send a message that is
+classified with low confidence:
+
+```yaml
+rules:
+- rule: Ask the user to rephrase whenever they send a message with low NLU confidence
+  steps:
+  - intent: nlu_fallback
+  - action: utter_please_rephrase
+```
+
+Using [Rules](./rules.mdx) or [Stories](./stories.mdx) you can implement any desired
+fallback behavior.
+
+#### Two-Stage-Fallback
+
+The `Two-Stage-Fallback` handles low NLU confidence in multiple stages
+by trying to disambiguate the user input.
+
+##### Requirements
+
+* Add the [RulePolicy](./policies.mdx#rule-policy) to your policy configuration
+  before using the `Two-Stage-Fallback`
+* Before using the `Two-Stage-Fallback`, make sure to add the
+  `out_of_scope` intent to your [Domain](./domain.mdx).
+  When users send messages with
+  the intent `out_of_scope` during the fallback (e.g. by pressing a button),
+  Rasa Open Source will know that the users denied the given intent suggestions.
+
+##### Usage
+
+- If an NLU prediction has a low confidence score, the user is asked to affirm
+  the classification of the intent.  (Default action:
+  `action_default_ask_affirmation`)
+
+    - If they affirm by sending a message with high NLU confidence (e.g. by pressing
+      a button), the story continues as if the intent was classified
+      with high confidence from the beginning.
+    - If they deny by sending a message with the intent `out_of_scope`, the user is
+      asked to rephrase their message.
+
+- Rephrasing  (default action: `action_default_ask_rephrase`)
+
+    - If the classification of the rephrased intent was confident, the story
+      continues as if the user had this intent from the beginning.
+    - If the rephrased intent was not classified with high confidence, the user
+      is asked to affirm the classified intent.
+
+- Second affirmation  (default action: `action_default_ask_affirmation`)
+
+    - If they affirm by sending a message with high NLU confidence (e.g. by pressing
+      a button), the story continues as if the user had this intent from the beginning.
+    - If the user denies by sending a message with the intent `out_of_scope`, the
+      original intent is classified as the specifies `deny_suggestion_intent_name`,
+      and an ultimate fallback action `fallback_nlu_action_name` is
+      triggered (e.g. a handoff to a human).
+
+Rasa Open Source provides default implementations for
+`action_default_ask_affirmation` and `action_default_ask_rephrase`.
+The default implementation of `action_default_ask_rephrase` utters
+the response `utter_ask_rephrase`, so make sure to specify this
+response in your domain file.
+The implementation of both actions can be overwritten with
+[Custom Actions](./actions.mdx#custom-actions).
+
+To use the `Two-Stage-Fallback` for messages with low NLU confidence, add the
+following [Rule](./rules.mdx) to your training data. This rule will make sure that the
+`Two-Stage-Fallback` will be activated whenever a message is received with
+low classification confidence.
+
+```yaml
+rules:
+- rule: Implementation of the Two-Stage-Fallback
+  steps:
+  - intent: nlu_fallback
+  - action: two_stage_fallback
+  - active_loop: two_stage_fallback
+```
+
+### Handling Low Core Confidence
+
+As users might send unexpected messages,
+it is possible that their behavior will lead them down unknown conversation paths.
+Rasa's machine learning policies such as the [TED Policy](./policies.mdx#ted-policy)
+are optimized to handle these unknown paths.
+
+To handle cases where even the machine learning policies can't predict the
+next action with high confidence, make sure to add the
+[Rule Policy](./policies.mdx#rule-policy) to your
+policy configuration. The [Rule Policy](./policies.mdx#rule-policy) will predict a
+default action if no [Policy](./policies.mdx) has a next action prediction with
+confidence above a configurable threshold.
+
+You can configure the action that is run in case low of Core confidence as well as
+the corresponding confidence threshold as follows:
+
+```yaml
+policies:
+- name: RulePolicy
+  # Confidence threshold for the `core_fallback_action_name` to apply.
+  # The action will apply if no other action was predicted with
+  # a confidence >= core_fallback_threshold
+  core_fallback_threshold: 0.4
+  core_fallback_action_name: "action_default_fallback"
+  enable_fallback_prediction: True
+```
+
+:::note
+
+If you do not want the `Rule Policy` to predict a default action in case of low Core
+confidence, specify `enable_fallback_prediction: False` in the configuration of the
+policy.
+:::
+
+
+`action_default_fallback` is a default action in Rasa Open Source that sends the
+`utter_default` response to the user. Make sure to specify
+the `utter_default` in your domain file. It will also revert back to the
+state of the conversation before the user message that caused the
+fallback, so it will not influence the prediction of future actions.
+
+You can also create your own custom action to use as a fallback (see
+[Custom Actions](./actions.mdx#custom-actions) for more info on custom actions).
+The following snippet is an implementation of a custom action which does the same as
+`action_default_fallback` but dispatches a different template
+`my_custom_fallback_template`:
+
+```python
+from typing import Any, Text, Dict, List
+
+from rasa_sdk import Action, Tracker
+from rasa_sdk.events import UserUtteranceReverted
+from rasa_sdk.executor import CollectingDispatcher
+
+class ActionDefaultFallback(Action):
+    """Executes the fallback action and goes back to the previous state
+    of the dialogue"""
+
+    def name(self) -> Text:
+        return ACTION_DEFAULT_FALLBACK_NAME
+
+    async def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        dispatcher.utter_message(template="my_custom_fallback_template")
+
+        # Revert user message which led to fallback.
+        return [UserUtteranceReverted()]
+```
+
+
+
+<img alt="Intent Mappings" src={useBaseUrl("/img/intent_mappings.png")} width="240" />
+
+## Out of scope intent
+
+It is good practice to also handle questions you know your users may ask, but for which you haven't necessarily implemented a user goal yet.
+
+You can define an `out_of_scope` intent to handle generic out of scope requests, like “I'm hungry” and have
+the bot respond with a default message like “Sorry, I can't handle that request”:
+
+```md
+* out_of_scope
+  utter_out_of_scope
+```
+
+We'll need to add NLU data for the `out_of_scope` intent as well:
+
+```md
+## intent:out_of_scope
+- I want to order food
+- What is 2 + 2?
+- Who's the US President?
+- I need a job
+```
+
+And finally we'll add a response to our `domain.yml` file:
+
+```yaml
+responses:
+  utter_out_of_scope:
+  - text: Sorry, I can't handle that request.
+```
+
+We can now re-train, and test this addition
+
+```bash
+rasa train
+rasa shell
+```
+
+Going one step further, if you observe your users asking for certain things, that you'll
+want to turn into a user goal in future, you can handle these as separate intents, to let
+the user know you've understood their message, but don't have a solution quite yet. E.g.,
+let's say the user asks “I want to apply for a job at Rasa”, we can then reply with
+“I understand you're looking for a job, but I'm afraid I can't handle that skill yet.”
+
+```md
+* ask_job
+  utter_job_not_handled
+```
+
+:::note
+Here's a minimal checklist of files we modified to help our assistant fail gracefully:
+
+* `data/nlu.yml`:
+
+    * Add training data for the `out_of_scope` intent & any specific out of scope intents that you want to handle seperately
+
+* `data/stories.yml`:
+
+    * Add stories for any specific out of scope intents
+
+* `domain.yml`:
+
+    * Add the `out_of_scope` intent & any specific out of scope intents
+
+    * Add an `utter_out_of_scope` response & responses for any specific out of scope intents
+
+* `actions.py`:
+
+    * Customize `ActionDefaultAskAffirmation` to suggest intents for the user to choose from
+
+* `config.yml`:
+
+    * Add the TwoStageFallbackPolicy to the `policies` section
+
+:::

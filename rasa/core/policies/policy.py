@@ -1,31 +1,89 @@
 import copy
 import logging
-from typing import Any, List, Optional, Text, Dict, Callable
+from enum import Enum
+import typing
+from typing import Any, List, Optional, Text, Dict, Callable, Type, Union, Tuple
+import numpy as np
 
 import rasa.utils.common
 from rasa.core.domain import Domain
-from rasa.core.featurizers import (
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer,
 )
-from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.data import DialogueTrainingData
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+
+if typing.TYPE_CHECKING:
+    from rasa.utils.features import Features
 
 
 logger = logging.getLogger(__name__)
+
+
+class SupportedData(Enum):
+    """Enumeration of a policy's supported training data type."""
+
+    # policy only supports ML-based training data ("stories")
+    ML_DATA = 1
+
+    # policy only supports rule-based data ("rules")
+    RULE_DATA = 2
+
+    # policy supports both ML-based and rule-based data ("stories" as well as "rules")
+    ML_AND_RULE_DATA = 3
+
+    @staticmethod
+    def trackers_for_policy(
+        policy: Union["Policy", Type["Policy"]], trackers: List[DialogueStateTracker]
+    ) -> List[DialogueStateTracker]:
+        """Return trackers for a given policy.
+
+        Args:
+            policy: Policy or policy type to return trackers for.
+            trackers: Trackers to split.
+
+        Returns:
+            Trackers from ML-based training data and/or rule-based data.
+        """
+        supported_data = policy.supported_data()
+
+        if supported_data == SupportedData.RULE_DATA:
+            return [tracker for tracker in trackers if tracker.is_rule_tracker]
+
+        if supported_data == SupportedData.ML_DATA:
+            return [tracker for tracker in trackers if not tracker.is_rule_tracker]
+
+        # `supported_data` is `SupportedData.ML_AND_RULE_DATA`
+        return trackers
 
 
 class Policy:
     SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod
+    def supported_data() -> SupportedData:
+        """The type of data supported by this policy.
+
+        By default, this is only ML-based training data. If policies support rule data,
+        or both ML-based data and rule data, they need to override this method.
+
+        Returns:
+            The data type supported by this policy (ML-based training data).
+        """
+        return SupportedData.ML_DATA
+
+    @staticmethod
     def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
+        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
 
     @classmethod
-    def _create_featurizer(cls, featurizer=None) -> TrackerFeaturizer:
+    def _create_featurizer(
+        cls, featurizer: Optional[TrackerFeaturizer] = None
+    ) -> TrackerFeaturizer:
         if featurizer:
             return copy.deepcopy(featurizer)
         else:
@@ -67,8 +125,9 @@ class Policy:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> DialogueTrainingData:
+    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
         """Transform training trackers into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
@@ -78,12 +137,19 @@ class Policy:
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.core.domain.Domain`
+            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
 
         Returns:
-            the :class:`rasa.core.training.data.DialogueTrainingData`
+            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+              all training trackers
+            - the label ids (e.g. action ids) for every dialuge turn in all training
+              trackers
         """
 
-        training_data = self.featurizer.featurize_trackers(training_trackers, domain)
+        state_features, label_ids = self.featurizer.featurize_trackers(
+            training_trackers, domain, interpreter
+        )
 
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
@@ -91,14 +157,16 @@ class Policy:
                 "Limit training data to {} training samples."
                 "".format(max_training_samples)
             )
-            training_data.limit_training_data_to(max_training_samples)
+            state_features = state_features[:max_training_samples]
+            label_ids = label_ids[:max_training_samples]
 
-        return training_data
+        return state_features, label_ids
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers.
@@ -107,18 +175,25 @@ class Policy:
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.core.domain.Domain`
+            interpreter: Interpreter which can be used by the polices for featurization.
         """
 
         raise NotImplementedError("Policy must have the capacity to train.")
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
 
         Returns:
              the list of probabilities for the next actions

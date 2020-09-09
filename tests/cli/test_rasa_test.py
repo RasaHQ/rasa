@@ -3,7 +3,7 @@ from shutil import copyfile
 
 from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
-from rasa.utils.io import list_files, write_yaml_file
+from rasa.utils.io import list_files, write_yaml
 from typing import Callable
 from _pytest.pytester import RunResult
 
@@ -21,6 +21,14 @@ def test_test_core_no_plot(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
+    write_yaml(
+        {
+            "pipeline": "KeywordIntentClassifier",
+            "policies": [{"name": "MemoizationPolicy"}],
+        },
+        "config2.yml",
+    )
+
     run_in_simple_project_with_model("test")
 
     assert os.path.exists("results")
@@ -61,14 +69,15 @@ def test_test_nlu_cross_validation(run_in_simple_project: Callable[..., RunResul
 
 
 def test_test_nlu_comparison(run_in_simple_project: Callable[..., RunResult]):
-    copyfile("config.yml", "config-1.yml")
+    write_yaml({"pipeline": "KeywordIntentClassifier"}, "config.yml")
+    write_yaml({"pipeline": "KeywordIntentClassifier"}, "config2.yml")
 
     run_in_simple_project(
         "test",
         "nlu",
         "--config",
         "config.yml",
-        "config-1.yml",
+        "config2.yml",
         "--run",
         "2",
         "--percentages",
@@ -102,11 +111,11 @@ def test_test_core_comparison(
 def test_test_core_comparison_after_train(
     run_in_simple_project: Callable[..., RunResult]
 ):
-    write_yaml_file(
+    write_yaml(
         {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_1.yml"
     )
 
-    write_yaml_file(
+    write_yaml(
         {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_2.yml"
     )
 
@@ -117,14 +126,12 @@ def test_test_core_comparison_after_train(
         "config_1.yml",
         "config_2.yml",
         "--stories",
-        "data/stories.md",
+        "data/stories.yml",
         "--runs",
         "2",
         "--percentages",
         "25",
         "75",
-        "--augmentation",
-        "5",
         "--out",
         "comparison_models",
     )

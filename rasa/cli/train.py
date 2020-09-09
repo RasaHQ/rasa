@@ -87,11 +87,6 @@ def train_core(
     loop = asyncio.get_event_loop()
     output = train_path or args.out
 
-    import traceback
-
-    traceback.print_stack()
-    print(f"args.domain={args.domain}")
-
     args.domain = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
@@ -107,14 +102,6 @@ def train_core(
             args.config = args.config[0]
 
         config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
-
-        print(f"domain={args.domain}")
-        print(f"config={config}")
-        print(f"stories={story_file}")
-        print(f"output={output}")
-        print(f"train_path={train_path}")
-        print(f"fixed_model_name={args.fixed_model_name}")
-        print(f"additional_arguments={additional_arguments}")
 
         return train_core(
             domain=args.domain,
@@ -181,6 +168,17 @@ def _get_valid_config(
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
+    """Get a config from a config file and check if it is valid.
+
+    Exit if the config isn't valid.
+
+    Args:
+        config: Path to the config file.
+        mandatory_keys: The keys that have to be specified in the config file.
+        default_config: default config to use if the file at `config` doesn't exist.
+
+    Returns: The path to the config file if the config is valid.
+    """
     config = get_validated_path(config, "config", default_config)
 
     if not os.path.exists(config):

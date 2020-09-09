@@ -4,8 +4,10 @@ import os
 import typing
 from typing import Any, List, Text, Optional
 
-from rasa.constants import DOCS_URL_POLICIES
+from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
+from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.utils import common as common_utils
 
 from rasa.core.actions.action import (
     ACTION_BACK_NAME,
@@ -20,10 +22,12 @@ from rasa.core.constants import (
 )
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -48,6 +52,12 @@ class MappingPolicy(Policy):
         """Create a new Mapping policy."""
 
         super().__init__(priority=priority)
+
+        common_utils.raise_deprecation_warning(
+            f"'{MappingPolicy.__name__}' is deprecated and will be removed in "
+            "the future. It is recommended to use the 'RulePolicy' instead.",
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
 
     @classmethod
     def validate_against_domain(
@@ -75,8 +85,9 @@ class MappingPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
@@ -84,7 +95,11 @@ class MappingPolicy(Policy):
         pass
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
     ) -> List[float]:
         """Predicts the assigned action.
 
@@ -94,7 +109,7 @@ class MappingPolicy(Policy):
 
         result = self._default_predictions(domain)
 
-        intent = tracker.latest_message.intent.get("name")
+        intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
         if intent == USER_INTENT_RESTART:
             action = ACTION_RESTART_NAME
         elif intent == USER_INTENT_BACK:
@@ -109,7 +124,7 @@ class MappingPolicy(Policy):
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"MappingPolicy tried to predict unknown "
                         f"action '{action}'. Make sure all mapped actions are "
                         f"listed in the domain.",

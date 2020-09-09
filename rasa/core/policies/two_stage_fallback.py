@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import typing
-from typing import List, Text, Optional
+from typing import List, Text, Optional, Any
 
 import rasa.utils.io
 from rasa.core.actions.action import (
@@ -17,10 +17,12 @@ from rasa.core.events import UserUttered, ActionExecuted
 
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
+from rasa.nlu.constants import INTENT_NAME_KEY, ACTION_NAME
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -99,27 +101,30 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             return
 
         for p in ensemble.policies:
-            if isinstance(p, cls):
-                fallback_intent = getattr(p, "deny_suggestion_intent_name")
-                if domain is None or fallback_intent not in domain.intents:
-                    raise InvalidDomain(
-                        "The intent '{0}' must be present in the "
-                        "domain file to use TwoStageFallbackPolicy. "
-                        "Either include the intent '{0}' in your domain "
-                        "or exclude the TwoStageFallbackPolicy from your "
-                        "policy configuration".format(fallback_intent)
-                    )
+            if not isinstance(p, TwoStageFallbackPolicy):
+                continue
+            if domain is None or p.deny_suggestion_intent_name not in domain.intents:
+                raise InvalidDomain(
+                    "The intent '{0}' must be present in the "
+                    "domain file to use TwoStageFallbackPolicy. "
+                    "Either include the intent '{0}' in your domain "
+                    "or exclude the TwoStageFallbackPolicy from your "
+                    "policy configuration".format(p.deny_suggestion_intent_name)
+                )
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
     ) -> List[float]:
-        """Predicts the next action if NLU confidence is low.
-        """
+        """Predicts the next action if NLU confidence is low."""
 
         nlu_data = tracker.latest_message.parse_data
-        last_intent_name = nlu_data["intent"].get("name", None)
+        last_intent_name = nlu_data["intent"].get(INTENT_NAME_KEY, None)
         should_nlu_fallback = self.should_nlu_fallback(
-            nlu_data, tracker.latest_action_name
+            nlu_data, tracker.latest_action.get(ACTION_NAME)
         )
         user_rephrased = has_user_rephrased(tracker)
 
@@ -175,7 +180,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         return result
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
-        action_requires_input = tracker.latest_action_name in [
+        action_requires_input = tracker.latest_action.get(ACTION_NAME) in [
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name,

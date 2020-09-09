@@ -1,0 +1,111 @@
+---
+id: http-api
+sidebar_label: Using the HTTP API
+title: Using the HTTP API
+description: Read about Rasa's HTTP API that has endpoints for conversations, training models, and configuring your bot.
+---
+
+## Enabling the HTTP API
+
+By default, running a Rasa server does not enable the API endpoints. Interactions
+with the bot can happen over the exposed `webhooks/<channel>/webhook` endpoints.
+
+To enable the API for direct interaction with conversation trackers and other
+bot endpoints, add the `--enable-api` parameter to your run command:
+
+```bash
+rasa run --enable-api
+```
+
+Note that you start the server with an NLU-only model, not all the available endpoints
+can be called. Some endpoints will return a 409 status code, as a trained
+dialogue model is needed to process the request.
+
+
+:::caution
+Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
+by enabling an authentication method. See [Security Considerations](./model-storage.mdx#server-security).
+
+:::
+
+By default, the HTTP server runs as a single process. You can change the number
+of worker processes using the `SANIC_WORKERS` environment variable. It is
+recommended that you set the number of workers to the number of available CPU cores
+(check out the
+[Sanic docs](https://sanic.readthedocs.io/en/latest/sanic/deploying.html#workers)
+for more details). This will only work in combination with the
+`RedisLockStore` (see [Lock Stores](./lock-stores)).
+
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-security"></a>
+
+## Security Considerations
+
+We recommend to not expose the Rasa Server to the outside world, but
+rather connect to it from your backend over a private connection (e.g.
+between docker containers).
+
+Nevertheless, there are two authentication methods built in:
+
+### Token Based Auth
+
+Pass in the token using `--auth-token thisismysecret` when starting
+the server:
+
+```bash
+rasa run \
+    -m models \
+    --enable-api \
+    --log-file out.log \
+    --auth-token thisismysecret
+```
+
+Your requests should pass the token, in our case `thisismysecret`,
+as a parameter:
+
+```bash
+curl -XGET localhost:5005/conversations/default/tracker?token=thisismysecret
+```
+
+### JWT Based Auth
+
+Enable JWT based authentication using `--jwt-secret thisismysecret`.
+Requests to the server need to contain a valid JWT token in
+the `Authorization` header that is signed using this secret
+and the `HS256` algorithm.
+
+The token's payload must contain an object under the `user` key,
+which in turn must contain the `username` and `role` attributes.
+If the `role` is `admin`, all endpoints are accessible.
+If the `role` is `user`, endpoints with a `sender_id` parameter are only accessible
+if the `sender_id` matches the payload's `username` property.
+
+```bash
+rasa run \
+    -m models \
+    --enable-api \
+    --log-file out.log \
+    --jwt-secret thisismysecret
+```
+
+Your requests should have set a proper JWT header:
+
+```text
+"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
+                 "zdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIi"
+                 "wiaWF0IjoxNTE2MjM5MDIyfQ.qdrr2_a7Sd80gmCWjnDomO"
+                 "Gl8eZFVfKXA6jhncgRn-I"
+```
+
+The following is an example payload for a JWT token:
+
+```json
+{
+    "user": {
+        "username": "<sender_id>",
+        "role": "user"
+    }
+}
+```
+
+To create and encode the token, you can use tools such as the [JWT Debugger](https://jwt.io/), or a Python module such as [PyJWT](https://pyjwt.readthedocs.io/en/latest/).

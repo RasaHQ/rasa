@@ -3,19 +3,19 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
 
 import rasa.core.utils
 import rasa.utils.io
-from rasa.cli import utils
-from rasa.cli.utils import bcolors
 from rasa.constants import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL,
     ENV_LOG_LEVEL_LIBRARIES,
     GLOBAL_USER_CONFIG_PATH,
+    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,6 @@ def set_log_level(log_level: Optional[int] = None):
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
     a default log level will be used."""
-    import logging
 
     if not log_level:
         log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
@@ -158,6 +157,18 @@ def update_asyncio_log_level() -> None:
     logging.getLogger("asyncio").setLevel(log_level)
 
 
+def set_log_and_warnings_filters() -> None:
+    """
+    Set log filters on the root logger, and duplicate filters for warnings.
+
+    Filters only propagate on handlers, not loggers.
+    """
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(RepeatedLogFilter())
+
+    warnings.filterwarnings("once", category=UserWarning)
+
+
 def obtain_verbosity() -> int:
     """Returns a verbosity level according to the set log level."""
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
@@ -183,32 +194,12 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     return sorted(dicts, key=lambda d: list(d.keys())[0])
 
 
-# noinspection PyUnresolvedReferences
-def class_from_module_path(
-    module_path: Text, lookup_path: Optional[Text] = None
-) -> Any:
-    """Given the module name and path of a class, tries to retrieve the class.
-
-    The loaded class can be used to instantiate new objects. """
-    import importlib
-
-    # load the module, will raise ImportError if module cannot be loaded
-    if "." in module_path:
-        module_name, _, class_name = module_path.rpartition(".")
-        m = importlib.import_module(module_name)
-        # get the class, will raise AttributeError if class cannot be found
-        return getattr(m, class_name)
-    else:
-        module = globals().get(module_path, locals().get(module_path))
-        if module is not None:
-            return module
-
-        if lookup_path:
-            # last resort: try to import the class from the lookup path
-            m = importlib.import_module(lookup_path)
-            return getattr(m, module_path)
-        else:
-            raise ImportError(f"Cannot retrieve class from path {module_path}.")
+def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
+    """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
+    x = list(collection)
+    if len(x) >= 2:
+        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
+    return "".join(collection)
 
 
 def minimal_kwargs(
@@ -315,51 +306,42 @@ def lazy_property(function: Callable) -> Any:
     return _lazyprop
 
 
-def raise_warning(
+def raise_deprecation_warning(
     message: Text,
-    category: Optional[Type[Warning]] = None,
+    warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
     docs: Optional[Text] = None,
     **kwargs: Any,
 ) -> None:
-    """Emit a `warnings.warn` with sensible defaults and a colored warning msg."""
+    """
+    Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
+    a version until which we'll warn, and after which the support for the feature will
+    be removed.
+    """
+    if warn_until_version not in message:
+        message = f"{message} (will be removed in {warn_until_version})"
 
-    original_formatter = warnings.formatwarning
+    # need the correct stacklevel now
+    kwargs.setdefault("stacklevel", 3)
+    # we're raising a `FutureWarning` instead of a `DeprecationWarning` because
+    # we want these warnings to be visible in the terminal of our users
+    # https://docs.python.org/3/library/warnings.html#warning-categories
+    rasa.shared.utils.io.raise_warning(message, FutureWarning, docs, **kwargs)
 
-    def should_show_source_line() -> bool:
-        if "stacklevel" not in kwargs:
-            if category == UserWarning or category is None:
-                return False
-            if category == FutureWarning:
-                return False
-        return True
 
-    def formatwarning(
-        message: Text,
-        category: Optional[Type[Warning]],
-        filename: Text,
-        lineno: Optional[int],
-        line: Optional[Text] = None,
-    ):
-        """Function to format a warning the standard way."""
+class RepeatedLogFilter(logging.Filter):
+    """Filter repeated log records."""
 
-        if not should_show_source_line():
-            if docs:
-                line = f"More info at {docs}"
-            else:
-                line = ""
+    last_log = None
 
-        formatted_message = original_formatter(
-            message, category, filename, lineno, line
+    def filter(self, record):
+        current_log = (
+            record.levelno,
+            record.pathname,
+            record.lineno,
+            record.msg,
+            record.args,
         )
-        return utils.wrap_with_color(formatted_message, color=bcolors.WARNING)
-
-    if "stacklevel" not in kwargs:
-        # try to set useful defaults for the most common warning categories
-        if category == DeprecationWarning:
-            kwargs["stacklevel"] = 3
-        elif category in (UserWarning, FutureWarning):
-            kwargs["stacklevel"] = 2
-
-    warnings.formatwarning = formatwarning
-    warnings.warn(message, category=category, **kwargs)
-    warnings.formatwarning = original_formatter
+        if current_log != self.last_log:
+            self.last_log = current_log
+            return True
+        return False

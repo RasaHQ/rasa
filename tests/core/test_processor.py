@@ -7,15 +7,15 @@ import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from typing import Optional, Text, List
-from unittest.mock import patch
+from typing import Optional, Text, List, Callable
+from unittest.mock import patch, Mock
 
 from rasa.core import jobs
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
-from rasa.core.domain import SessionConfig
+from rasa.core.domain import SessionConfig, Domain
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,
@@ -27,14 +27,18 @@ from rasa.core.events import (
     Event,
     SlotSet,
 )
-from rasa.core.interpreter import RasaNLUHttpInterpreter
-from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
-from rasa.core.slots import Slot
+from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpreter
+from rasa.core.policies import SimplePolicyEnsemble
+from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.processor import MessageProcessor
+from rasa.shared.core.slots import Slot
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
 
-from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
+from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL, DEFAULT_INTENTS
 
 import logging
 
@@ -54,8 +58,6 @@ async def test_message_processor(
 
 
 async def test_message_id_logging(default_processor: MessageProcessor):
-    from rasa.core.trackers import DialogueStateTracker
-
     message = UserMessage("If Meg was an egg would she still have a leg?")
     tracker = DialogueStateTracker("1", [])
     await default_processor._handle_message_with_tracker(message, tracker)
@@ -67,16 +69,16 @@ async def test_message_id_logging(default_processor: MessageProcessor):
 
 async def test_parsing(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "boy"}')
-    parsed = await default_processor._parse_message(message)
-    assert parsed["intent"]["name"] == "greet"
+    parsed = await default_processor.parse_message(message)
+    assert parsed["intent"][INTENT_NAME_KEY] == "greet"
     assert parsed["entities"][0]["entity"] == "name"
 
 
-async def test_log_unseen_feature(default_processor: MessageProcessor):
+async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/dislike{"test_entity": "RASA"}')
-    parsed = await default_processor._parse_message(message)
+    parsed = await default_processor.parse_message(message)
     with pytest.warns(UserWarning) as record:
-        default_processor._log_unseen_features(parsed)
+        default_processor._check_for_unseen_features(parsed)
     assert len(record) == 2
 
     assert (
@@ -94,9 +96,9 @@ async def test_default_intent_recognized(
     default_processor: MessageProcessor, default_intent: Text
 ):
     message = UserMessage(default_intent)
-    parsed = await default_processor._parse_message(message)
+    parsed = await default_processor.parse_message(message)
     with pytest.warns(None) as record:
-        default_processor._log_unseen_features(parsed)
+        default_processor._check_for_unseen_features(parsed)
     assert len(record) == 0
 
 
@@ -109,9 +111,7 @@ async def test_http_parsing():
 
         inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         try:
-            await MessageProcessor(inter, None, None, None, None)._parse_message(
-                message
-            )
+            await MessageProcessor(inter, None, None, None, None).parse_message(message)
         except KeyError:
             pass  # logger looks for intent and entities, so we except
 
@@ -125,7 +125,7 @@ async def mocked_parse(self, text, message_id=None, tracker=None):
     value from the tracker's state."""
 
     return {
-        "intent": {"name": "", "confidence": 0.0},
+        "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
         "entities": [],
         "text": text,
         "requested_language": tracker.get_slot("requested_language"),
@@ -176,9 +176,29 @@ async def test_reminder_scheduled(
     assert t.events[-4] == ActionExecuted("action_schedule_reminder")
     assert isinstance(t.events[-3], ReminderScheduled)
     assert t.events[-2] == UserUttered(
-        f"{EXTERNAL_MESSAGE_PREFIX}remind", intent={"name": "remind", IS_EXTERNAL: True}
+        f"{EXTERNAL_MESSAGE_PREFIX}remind",
+        intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
     assert t.events[-1] == ActionExecuted("action_listen")
+
+
+async def test_trigger_external_latest_input_channel(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    input_channel = "test_input_channel_external"
+
+    tracker.update(UserUttered("test1"))
+    tracker.update(UserUttered("test2", input_channel=input_channel))
+
+    await default_processor.trigger_external_user_uttered(
+        "test3", None, tracker, default_channel
+    )
+
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+
+    assert tracker.get_latest_input_channel() == input_channel
 
 
 async def test_reminder_aborted(
@@ -260,7 +280,7 @@ async def test_reminder_cancelled_multi_user(
     assert (
         UserUttered(
             f"{EXTERNAL_MESSAGE_PREFIX}greet",
-            intent={"name": "greet", IS_EXTERNAL: True},
+            intent={INTENT_NAME_KEY: "greet", IS_EXTERNAL: True},
         )
         not in tracker_0.events
     )
@@ -270,7 +290,7 @@ async def test_reminder_cancelled_multi_user(
     assert (
         UserUttered(
             f"{EXTERNAL_MESSAGE_PREFIX}greet",
-            intent={"name": "greet", IS_EXTERNAL: True},
+            intent={INTENT_NAME_KEY: "greet", IS_EXTERNAL: True},
         )
         in tracker_1.events
     )
@@ -610,13 +630,13 @@ async def test_handle_message_with_session_start(
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # make sure the sequence of events is as expected
-    assert list(tracker.events) == [
+    expected = [
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
             f"/greet{json.dumps(slot_1)}",
-            {"name": "greet", "confidence": 1.0},
+            {INTENT_NAME_KEY: "greet", "confidence": 1.0},
             [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
         ),
         SlotSet(entity, slot_1[entity]),
@@ -630,7 +650,7 @@ async def test_handle_message_with_session_start(
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
             f"/greet{json.dumps(slot_2)}",
-            {"name": "greet", "confidence": 1.0},
+            {INTENT_NAME_KEY: "greet", "confidence": 1.0},
             [
                 {
                     "entity": entity,
@@ -641,8 +661,15 @@ async def test_handle_message_with_session_start(
             ],
         ),
         SlotSet(entity, slot_2[entity]),
+        ActionExecuted("utter_greet"),
+        BotUttered(
+            "hey there post-session start hello!",
+            metadata={"template_name": "utter_greet"},
+        ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
+    assert list(tracker.events) == expected
 
 
 # noinspection PyProtectedMember
@@ -663,3 +690,63 @@ async def test_should_predict_another_action(
         default_processor.should_predict_another_action(action_name)
         == should_predict_another_action
     )
+
+
+def test_get_next_action_probabilities_passes_interpreter_to_policies(
+    monkeypatch: MonkeyPatch,
+):
+    policy = TEDPolicy()
+    test_interpreter = Mock()
+
+    def predict_action_probabilities(
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs,
+    ) -> List[float]:
+        assert interpreter == test_interpreter
+        return [1, 0]
+
+    policy.predict_action_probabilities = predict_action_probabilities
+    ensemble = SimplePolicyEnsemble(policies=[policy])
+
+    domain = Domain.empty()
+
+    processor = MessageProcessor(
+        test_interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+    )
+
+    # This should not raise
+    processor._get_next_action_probabilities(
+        DialogueStateTracker.from_events("lala", [ActionExecuted(ACTION_LISTEN_NAME)])
+    )
+
+
+@pytest.mark.parametrize(
+    "predict_function",
+    [
+        lambda tracker, domain, something_else: [1, 0, 2, 3],
+        lambda tracker, domain, some_bool=True: [1, 0],
+    ],
+)
+def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
+    predict_function: Callable,
+):
+    policy = TEDPolicy()
+
+    policy.predict_action_probabilities = predict_function
+
+    ensemble = SimplePolicyEnsemble(policies=[policy])
+    interpreter = Mock()
+    domain = Domain.empty()
+
+    processor = MessageProcessor(
+        interpreter, ensemble, domain, InMemoryTrackerStore(domain), Mock()
+    )
+
+    with pytest.warns(DeprecationWarning):
+        processor._get_next_action_probabilities(
+            DialogueStateTracker.from_events(
+                "lala", [ActionExecuted(ACTION_LISTEN_NAME)]
+            )
+        )

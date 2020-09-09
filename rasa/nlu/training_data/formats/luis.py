@@ -3,7 +3,8 @@ import typing
 from typing import Any, Dict, Text
 
 from rasa.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
-from rasa.utils.common import raise_warning
+from rasa.nlu.constants import TEXT, INTENT, ENTITIES
+import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -22,7 +23,7 @@ class LuisReader(JsonTrainingDataReader):
         max_tested_luis_schema_version = 5
         major_version = int(js["luis_schema_version"].split(".")[0])
         if major_version > max_tested_luis_schema_version:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Your luis data schema version {js['luis_schema_version']} "
                 f"is higher than 5.x.x. "
                 f"Training may not be performed correctly. "
@@ -35,18 +36,19 @@ class LuisReader(JsonTrainingDataReader):
                 )
 
         for s in js["utterances"]:
-            text = s.get("text")
-            intent = s.get("intent")
+            text = s.get(TEXT)
+            intent = s.get(INTENT)
             entities = []
-            for e in s.get("entities") or []:
+            for e in s.get(ENTITIES) or []:
                 start, end = e["startPos"], e["endPos"] + 1
                 val = text[start:end]
                 entities.append(
                     {"entity": e["entity"], "value": val, "start": start, "end": end}
                 )
 
-            data = {"entities": entities}
+            data = {ENTITIES: entities}
             if intent:
-                data["intent"] = intent
-            training_examples.append(Message(text, data))
+                data[INTENT] = intent
+            data[TEXT] = text
+            training_examples.append(Message(data=data))
         return TrainingData(training_examples, regex_features=regex_features)

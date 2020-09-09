@@ -1,11 +1,12 @@
-import json
-import tempfile
 import os
 from typing import Text, List
+from unittest.mock import Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
-import rasa.utils.io as io_utils
+from rasa.importers import autoconfig
+from rasa.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu import config, load_data
 from rasa.nlu import components
@@ -40,22 +41,32 @@ def test_invalid_many_tokenizers_in_config():
 
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(nlu_config))
-    assert "More then one tokenizer is used" in str(execinfo.value)
+    assert "More than one tokenizer is used" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(
     "_config",
     [
         {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyFeaturizer"}]},
-        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "ConveRTFeaturizer"}]},
-        {
-            "pipeline": [
-                {"name": "ConveRTTokenizer"},
-                {"name": "LanguageModelFeaturizer"},
-            ]
-        },
+        pytest.param(
+            {
+                "pipeline": [
+                    {"name": "WhitespaceTokenizer"},
+                    {"name": "ConveRTFeaturizer"},
+                ]
+            },
+        ),
+        pytest.param(
+            {
+                "pipeline": [
+                    {"name": "ConveRTTokenizer"},
+                    {"name": "LanguageModelFeaturizer"},
+                ]
+            },
+        ),
     ],
 )
+@pytest.mark.skip_on_windows
 def test_missing_required_component(_config):
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(_config))
@@ -149,13 +160,17 @@ def config_files_in(config_directory: Text):
     "config_file",
     config_files_in("data/configs_for_docs") + config_files_in("docker/configs"),
 )
-def test_train_docker_and_docs_configs(config_file: Text):
-    content = io_utils.read_yaml_file(config_file)
+async def test_train_docker_and_docs_configs(
+    config_file: Text, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setattr(autoconfig, "_dump_config", Mock())
+    importer = RasaFileImporter(config_file=config_file)
+    imported_config = await importer.get_config()
 
-    loaded_config = config.load(config_file)
+    loaded_config = config.load(imported_config)
 
     assert len(loaded_config.component_names) > 1
-    assert loaded_config.language == content["language"]
+    assert loaded_config.language == imported_config["language"]
 
 
 @pytest.mark.parametrize(

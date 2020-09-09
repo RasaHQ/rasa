@@ -1,0 +1,321 @@
+---
+id: business-logic
+sidebar_label: Handling Business Logic
+title: Handling Business Logic
+---
+
+
+A lot of conversational assistants have user goals that involve collecting a bunch of information
+from the user before being able to do something for them. This is called slot filling. For
+example, in the banking industry you may have a user goal of transferring money, where you
+need to collect information about which account to transfer from, whom to transfer to and the
+amount to transfer. This type of behavior can and should be handled in a rule based way, as it
+is clear how this information should be collected.
+
+For this type of use case, we can use Forms and our FormPolicy. The [FormPolicy](./policies.mdx#form-policy)
+works by predicting the form as the next action until all information is gathered from the user.
+
+As an example, we will build out the SalesForm from Sara. The user wants to contact
+our sales team, and for this we need to gather the following pieces of information:
+
+* Their job
+
+* Their bot use case
+
+* Their name
+
+* Their email
+
+* Their budget
+
+* Their company
+
+We will start by defining the `SalesForm` as a new class in the file called `actions.py`.
+The first method we need to define is the name, which like in a regular Action
+returns the name that will be used in our stories:
+
+```python
+from rasa_sdk.forms import FormAction
+
+class SalesForm(FormAction):
+    """Collects sales information and adds it to the spreadsheet"""
+
+    def name(self):
+        return "sales_form"
+```
+
+Next we have to define the `required_slots` method which specifies which pieces of information to
+ask for, i.e. which slots to fill.
+
+```python
+@staticmethod
+def required_slots(tracker):
+    return [
+        "job_function",
+        "use_case",
+        "budget",
+        "person_name",
+        "company",
+        "business_email",
+        ]
+```
+
+Note: you can customize the required slots function not to be static. E.g. if the `job_function` is a
+developer, you could add a `required_slot` about the users experience level with Rasa
+
+Once you've done that, you'll need to specify how the bot should ask for this information. This
+is done by specifying `utter_ask_{slotname}` responses in your `domain.yml` file. For the above
+we'll need to specify the following:
+
+```yaml
+utter_ask_business_email:
+  - text: What's your business email?
+utter_ask_company:
+  - text: What company do you work for?
+utter_ask_budget:
+  - text: "What's your annual budget for conversational AI? 💸"
+utter_ask_job_function:
+  - text: "What's your job? 🕴"
+utter_ask_person_name:
+  - text: What's your name?
+utter_ask_use_case:
+  - text: What's your use case?
+```
+
+We'll also need to define all these slots in our `domain.yml` file:
+
+```yaml
+slots:
+  company:
+    type: unfeaturized
+  job_function:
+    type: unfeaturized
+  person_name:
+    type: unfeaturized
+  budget:
+    type: unfeaturized
+  business_email:
+    type: unfeaturized
+  use_case:
+    type: unfeaturized
+```
+
+Going back to our Form definition, we need to define the `submit` method as well,
+which will do something with the information the user has provided once the form is complete:
+
+```python
+def submit(
+    self,
+    dispatcher: CollectingDispatcher,
+    tracker: Tracker,
+    domain: Dict[Text, Any],
+) -> List[Dict]:
+
+    dispatcher.utter_message("Thanks for getting in touch, we'll contact you soon")
+    return []
+```
+
+In this case, we only tell the user that we'll be in touch with them, however
+usually you would send this information to an API or a database. See the [rasa-demo](https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py#L148)
+for an example of how to store this information in a spreadsheet.
+
+We'll need to add the form we just created to a new section in our `domain.yml` file:
+
+```yaml
+forms:
+  - sales_form
+```
+
+We also need to create an intent to activate the form, as well as an intent for providing all the
+information the form asks the user for. For the form activation intent, we can create an
+intent called `contact_sales`. Add the following training data to your nlu file:
+
+```md
+## intent:contact_sales
+- I wanna talk to your sales people.
+- I want to talk to your sales people
+- I want to speak with sales
+- Sales
+- Please schedule a sales call
+- Please connect me to someone from sales
+- I want to get in touch with your sales guys
+- I would like to talk to someone from your sales team
+- sales please
+```
+
+You can view the full intent [here](https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md#intentcontact_sales))
+
+We will also create an intent called `inform` which covers any sort of information the user
+provides to the bot. *The reason we put all this under one intent, is because there is no
+real intent behind providing information, only the entity is important.* Add the following
+data to your NLU file:
+
+```md
+## intent:inform
+- [100k](budget)
+- [100k](budget)
+- [240k/year](budget)
+- [150,000 USD](budget)
+- I work for [Rasa](company)
+- The name of the company is [ACME](company)
+- company: [Rasa Technologies](company)
+- it's a small company from the US, the name is [Hooli](company)
+- it's a tech company, [Rasa](company)
+- [ACME](company)
+- [Rasa Technologies](company)
+- [maxmeier@firma.de](business_email)
+- [bot-fan@bots.com](business_email)
+- [maxmeier@firma.de](business_email)
+- [bot-fan@bots.com](business_email)
+- [my email is email@rasa.com](business_email)
+- [engineer](job_function)
+- [brand manager](job_function)
+- [marketing](job_function)
+- [sales manager](job_function)
+- [growth manager](job_function)
+- [CTO](job_function)
+- [CEO](job_function)
+- [COO](job_function)
+- [John Doe](person_name)
+- [Jane Doe](person_name)
+- [Max Mustermann](person_name)
+- [Max Meier](person_name)
+- We plan to build a [sales bot](use_case) to increase our sales by 500%.
+- we plan to build a [sales bot](use_case) to increase our revenue by 100%.
+- a [insurance tool](use_case) that consults potential customers on the best life insurance to choose.
+- we're building a [conversational assistant](use_case) for our employees to book meeting rooms.
+```
+
+:::note
+Entities like `business_email` and `budget` would usually be handled by pretrained entity extractors
+(e.g. [DucklingHTTPExtractor](./components/entity-extractors.mdx#ducklinghttpextractor)
+or [SpacyEntityExtractor](./components/entity-extractors.mdx#spacyentityextractor)), but for this tutorial
+we want to avoid any additional setup.
+
+:::
+
+The intents and entities will need to be added to your `domain.yml` file as well:
+
+```yaml
+intents:
+  - greet
+  - bye
+  - thank
+  - faq
+  - contact_sales
+  - inform
+
+entities:
+  - company
+  - job_function
+  - person_name
+  - budget
+  - business_email
+  - use_case
+```
+
+A story for a form is very simple, as all the slot collection form happens inside the form, and
+therefore doesn't need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
+to your `stories.md` file:
+
+```md
+## sales form
+* contact_sales
+    - sales_form                   <!--Run the sales_form action-->
+    - active_loop{"name": "sales_form"}   <!--Activate the form-->
+    - active_loop{"name": null}           <!--Deactivate the form-->
+```
+
+As a final step, let's add the FormPolicy to our config file:
+
+```yaml
+policies:
+  - name: MemoizationPolicy
+  - name: TEDPolicy
+  - name: MappingPolicy
+  - name: FormPolicy
+```
+
+At this point, you already have a working form, so let's try it out. Make sure to uncomment the
+`action_endpoint` in your `endpoints.yml` to make Rasa aware of the action server that will run our form:
+
+```yaml
+action_endpoint:
+ url: "http://localhost:5055/webhook"
+```
+
+Then start the action server in a new terminal window:
+
+```bash
+rasa run actions
+```
+
+Then you can retrain and talk to your bot:
+
+```bash
+rasa train
+rasa shell
+```
+
+This simple form will work out of the box, however you will likely want to add a bit
+more capability to handle different situations. One example of this is validating
+slots, to make sure the user provided information correctly (read more about it
+[here](./forms.mdx#validating-user-input)).
+
+Another example is that you may want to fill slots from things other than entities
+of the same name. E.g. for the “use case” situation in our Form, we would expect
+the user to type a full sentence and not something that you could necessarily
+extract as an entity. In this case we can make use of the `slot_mappings` method,
+where you can describe what your entities should be extracted from. Here we can
+use the `from_text` method to extract the users whole message:
+
+```python
+def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict[Text, Any]]]]:
+    """A dictionary to map required slots to
+    - an extracted entity
+    - intent: value pairs
+    - a whole message
+    or a list of them, where a first match will be picked"""
+    return {"use_case": self.from_text(intent="inform")}
+```
+
+Now our bot will extract the full user message when asking for the use case slot,
+and we don't need to use the `use_case` entity defined before.
+
+All of the methods within a form can be customized to handle different branches in your
+business logic. Read more about this [here](./forms.mdx).
+However, you should make sure not to handle any unhappy paths inside the form. These
+should be handled by writing regular stories, so your model can learn this behavior.
+
+:::note
+Here's a minimal checklist of files we modified to handle business logic using a form action:
+
+* `actions.py`: Define the form action, including the `required_slots`, `slot_mappings` and `submit` methods
+
+* `data/nlu.yml`:
+
+    * Add examples for an intent to activate the form
+
+    * Add examples for an `inform` intent to fill the form
+
+* `domain.yml`:
+
+    * Add all slots required by the form
+
+    * Add `utter_ask_{slot}` responses for all required slots
+
+    * Add your form action to the `forms` section
+
+    * Add all intents and entities from your NLU training data
+
+* `data/stories.yml`: Add a story for the form
+
+* `config.yml`:
+
+    * Add the `FormPolicy` to your policies
+
+    * Add entity extractors to your pipeline
+
+* `endpoints.yml`: Define the `action_endpoint`
+
+:::

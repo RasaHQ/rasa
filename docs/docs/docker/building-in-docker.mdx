@@ -1,0 +1,277 @@
+---
+id: building-in-docker
+sidebar_label: Building a Rasa Assistant in Docker
+title: Building a Rasa Assistant in Docker
+description: Learn how to build a Rasa assistant in Docker.
+---
+<!-- this file is version specific, do not use `@site/...` syntax -->
+import variables from '../variables.json';
+
+If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
+on your local machine. If you already have a model you're satisfied with, see
+[Deploying Your Rasa Assistant](../how-to-deploy.mdx#deploying-your-rasa-assistant) to learn how to deploy your model.
+
+## Installing Docker
+
+If you're not sure if you have Docker installed, you can check by running:
+
+```bash
+docker -v
+# Docker version 18.09.2, build 6247962
+```
+
+If Docker is installed on your machine, the output should show you your installed
+versions of Docker. If the command doesn't work, you'll have to install Docker.
+See [Docker Installation](https://docs.docker.com/install/) for details.
+
+## Setting up your Rasa Project
+
+Just like starting a project from scratch, you'll use the `rasa init` command to create a project.
+The only difference is that you'll be running Rasa inside a Docker container, using
+the image `rasa/rasa`. To initialize your project, run:
+
+<pre><code parentName="pre" className="language-bash">
+{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full init --no-prompt`}</code></pre>
+
+What does this command mean?
+
+<ul>
+  <li><inlineCode>-v $(pwd):/app</inlineCode> mounts your current working directory to the working directory
+    in the Docker container. This means that files you create on your computer will be
+    visible inside the container, and files created in the container will
+    get synced back to your computer.</li>
+  <li><inlineCode>rasa/rasa</inlineCode> is the name of the docker image to run. '{variables.release}-full' is the name of the tag,
+    which specifies the version and dependencies.</li>
+
+  <li>the Docker image has the <inlineCode>rasa</inlineCode> command as its entrypoint, which means you don't
+    have to type <inlineCode>rasa init</inlineCode>, just <inlineCode>init</inlineCode> is enough.</li>
+</ul>
+
+Running this command will produce a lot of output. What happens is:
+
+* a Rasa project is created
+
+* an initial model is trained using the project's training data.
+
+To check that the command completed correctly, look at the contents of your working directory:
+
+```bash
+ls -1
+```
+
+The initial project files should all be there, as well as a `models` directory that contains your trained model.
+
+:::note
+If you run into permission errors, it may be because the `rasa/rasa` images
+run as user `1001` as a best practice, to avoid giving the container `root` permissions.
+Hence, all files created by these containers will be owned by user `1001`. See the [Docker documentation](https://docs.docker.com/edge/engine/reference/commandline/run/)
+if you want to run the containers as a different user.
+
+:::
+
+## Talking to Your Assistant
+
+To talk to your newly-trained assistant, run this command:
+
+<pre><code parentName="pre" className="language-bash">
+{`docker run -it -v $(pwd):/app rasa/rasa:${variables.release}-full shell`}</code></pre>
+
+This will start a shell where you can chat to your assistant.
+Note that this command includes the flags `-it`, which means that you are running
+Docker interactively, and you are able to give input via the command line.
+For commands which require interactive input, like `rasa shell` and `rasa interactive`,
+you need to pass the `-it` flags.
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="model-training-docker"></a>
+
+## Training a Model
+
+If you edit the NLU or Core training data or edit the `config.yml` file, you'll need to
+retrain your Rasa model. You can do so by running:
+
+<pre><code parentName="pre" className="language-bash">
+{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full train --domain domain.yml --data data --out models`}</code></pre>
+
+Here's what's happening in that command:
+
+<ul>
+  <li><inlineCode>-v $(pwd):/app</inlineCode>: Mounts your project directory into the Docker
+  container so that Rasa can train a model on your training data</li>
+
+  <li>rasa/rasa:{variables.release}-full: Use the Rasa image with the tag '{variables.release}-full'</li>
+
+  <li><inlineCode>train</inlineCode>: Execute the <inlineCode>rasa train</inlineCode> command within the container. For more
+  information see <a href="/command-line-interface">Command Line Interface</a>.</li>
+</ul>
+
+In this case, we've also passed values for the location of the domain file, training
+data, and the models output directory to show how these can be customized.
+You can also leave these out, since we are passing the default values.
+
+## Customizing your Model
+
+<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="choosing-a-tag"></a>
+
+### Choosing a Tag
+
+<p>
+  All <inlineCode>rasa/rasa</inlineCode> image tags start with a version number. The current version is  {variables.release}. The tags are:
+</p>
+
+* `{version}`
+
+* `{version}-full`
+
+* `{version}-spacy-en`
+
+* `{version}-spacy-de`
+
+* `{version}-mitie-en`
+
+The `{version}-full` tag includes all possible pipeline dependencies, allowing you to change your `config.yml`
+as you like without worrying about missing dependencies. The plain `{version}` tag includes all the
+dependencies you need to run the default pipeline created by `rasa init`.
+
+To keep images as small as possible, we also publish different tags of the `rasa/rasa` image
+with different dependencies installed. See [Tuning Your Model](../tuning-your-model.mdx) for more dependency information
+specific to your pipeline. For example, if you are using components with pre-trained word vectors from spaCy or
+MITIE, you should choose the corresponding tag.
+
+If your model has a dependency that is not included in any of the tags (for example, a different spaCy language model),
+you can build a docker image that extends the `rasa/rasa` image.
+
+:::note
+You can see a list of all the versions and tags of the Rasa Open Source
+Docker image on [DockerHub](https://hub.docker.com/r/rasa/rasa/).
+
+:::
+
+:::caution
+The `latest` tags correspond to the current master build. These tags are not recommended for use,
+as they are not guaranteed to be stable.
+
+:::
+
+### Adding Custom Components
+
+If you are using a custom NLU component or policy in your `config.yml`, you have to add the module file to your
+Docker container. You can do this by either mounting the file or by including it in your
+own custom image (e.g. if the custom component or policy has extra dependencies). Make sure
+that your module is in the Python module search path by setting the
+environment variable `PYTHONPATH=$PYTHONPATH:<directory of your module>`.
+
+### Adding Custom Actions
+
+To create more sophisticated assistants, you will want to use [Custom Actions](../actions.mdx#custom-actions).
+Continuing the example from above, you might want to add an action which tells
+the user a joke to cheer them up.
+
+Start by creating the custom actions in a directory `actions` in your working directory:
+
+```bash
+mkdir actions
+mv actions.py actions/actions.py
+# Rasa SDK expects a python module.
+# Therefore, make sure that you have this file in the directory.
+touch actions/__init__.py
+```
+
+Then build a custom action using the Rasa SDK by editing `actions/actions.py`, for example:
+
+```python
+import requests
+import json
+from rasa_sdk import Action
+
+
+class ActionJoke(Action):
+  def name(self):
+    return "action_joke"
+
+  def run(self, dispatcher, tracker, domain):
+    request = requests.get('http://api.icndb.com/jokes/random').json()  # make an api call
+    joke = request['value']['joke']  # extract a joke from returned json response
+    dispatcher.utter_message(text=joke)  # send the message back to the user
+    return []
+```
+
+In `data/stories.md`, replace `utter_cheer_up` in with the custom action `action_joke`
+tell your bot to use this new action.
+
+In `domain.yml`, add a section for custom actions, including your new action:
+
+```yaml-rasa
+actions:
+  - action_joke
+```
+
+After updating your domain and stories, you have to retrain your model:
+
+<pre><code parentName="pre" className="language-bash">
+{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full train`}</code></pre>
+
+Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:
+
+```bash
+docker network create my-project
+```
+
+You can then run the actions with the following command:
+
+<pre><code parentName="pre" className="language-bash">
+{`docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:${variables.rasa_sdk_version}`}</code></pre>
+
+
+Here's what's happening in that command:
+
+* `-d`: Runs the container in detached mode so that you can run the rasa container in the same window.
+
+* `-v $(pwd):/app`: Mounts your project directory into the Docker
+  container so that the action server can run the code in the `actions` folder
+
+* `net my-project`: Run the server on a specific network so that the rasa container can find it
+
+* `--name action-server`: Gives the server a specific name for the rasa server to reference
+
+* <code>rasa/rasa-sdk:{variables.rasa_sdk_version}</code> : Uses the Rasa SDK image with the tag {`${variables.rasa_sdk_version}`}
+
+Because the action server is running in detached mode, if you want to stop the container,
+do it with `docker stop action-server`. You can also run `docker ps` at any time to see all
+of your currently running containers.
+
+To instruct the Rasa server to use the action server, you have to tell Rasa its location.
+Add this endpoint to your `endpoints.yml`, referencing the `--name` you gave the server:
+
+```yaml-rasa
+action_endpoint:
+  url: "http://action-server:5055/webhook"
+```
+
+Now you can talk to your bot again via the `shell` command:
+
+<pre><code parentName="pre" className="language-bash">
+{`docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:${variables.release}-full shell`}</code></pre>
+
+:::note
+If you stop and restart the `action-server` container, you might see an error like this:
+
+```
+docker: Error response from daemon: Conflict. The container name "/action-server" is
+already in use by container "f7ffc625e81ad4ad54cf8704e6ad85123c71781ca0a8e4b862f41c5796c33530".
+You have to remove (or rename) that container to be able to reuse that name.
+```
+
+If that happens, it means you have a (stopped) container with the name already. You can remove it via:
+
+```bash
+docker rm action-server
+```
+
+:::
+
+## Deploying your Assistant
+
+Work on your bot until you have a minimum viable assistant that can handle your happy paths. After
+that, you'll want to deploy your model to get feedback from real test users. To do so, you can deploy the
+model you created with Rasa X via one of our [recommended deployment methods](../how-to-deploy.mdx#recommended-deployment-methods).
+Or, you can do a [Rasa-only deployment in Docker Compose](./deploying-in-docker-compose.mdx#deploying-rasa-in-docker-compose).
