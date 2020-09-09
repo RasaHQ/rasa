@@ -488,7 +488,8 @@ class RasaModel(tf.keras.models.Model):
                         tf.summary.scalar(metric.name, metric.result(), step=step)
 
     def _update_best_metrics_so_far(self, current_results: Dict[Text, Text]) -> bool:
-        if len(self.best_metrics_so_far) <= 0:  # Init with actual result keys
+# Initialize best_metrics_so_far with the first results 
+if not self.best_metrics_so_far:
             keys = filter(
                 lambda k: True if (k.endswith("_acc") or k.endswith("_f1")) else False,
                 current_results.keys(),
