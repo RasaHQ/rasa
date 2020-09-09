@@ -33,9 +33,13 @@
         },
         {
           "items": [
+            "reference/rasa/shared/exceptions",
+            "reference/rasa/shared/data",
             {
               "items": [
+                "reference/rasa/shared/utils/pykwalify_extensions",
                 "reference/rasa/shared/utils/io",
+                "reference/rasa/shared/utils/validation",
                 "reference/rasa/shared/utils/common"
               ],
               "label": "rasa.shared.utils",
@@ -47,6 +51,47 @@
               ],
               "label": "rasa.shared.core",
               "type": "category"
+            },
+            {
+              "items": [
+                {
+                  "items": [
+                    "reference/rasa/shared/nlu/training_data/loading",
+                    "reference/rasa/shared/nlu/training_data/entities_parser",
+                    "reference/rasa/shared/nlu/training_data/lookup_tables_parser",
+                    "reference/rasa/shared/nlu/training_data/util",
+                    "reference/rasa/shared/nlu/training_data/features",
+                    "reference/rasa/shared/nlu/training_data/synonyms_parser",
+                    "reference/rasa/shared/nlu/training_data/training_data",
+                    "reference/rasa/shared/nlu/training_data/message",
+                    {
+                      "items": [
+                        "reference/rasa/shared/nlu/training_data/schemas/data_schema"
+                      ],
+                      "label": "rasa.shared.nlu.training_data.schemas",
+                      "type": "category"
+                    },
+                    {
+                      "items": [
+                        "reference/rasa/shared/nlu/training_data/formats/wit",
+                        "reference/rasa/shared/nlu/training_data/formats/dialogflow",
+                        "reference/rasa/shared/nlu/training_data/formats/rasa_yaml",
+                        "reference/rasa/shared/nlu/training_data/formats/rasa",
+                        "reference/rasa/shared/nlu/training_data/formats/readerwriter",
+                        "reference/rasa/shared/nlu/training_data/formats/markdown_nlg",
+                        "reference/rasa/shared/nlu/training_data/formats/markdown",
+                        "reference/rasa/shared/nlu/training_data/formats/luis"
+                      ],
+                      "label": "rasa.shared.nlu.training_data.formats",
+                      "type": "category"
+                    }
+                  ],
+                  "label": "rasa.shared.nlu.training_data",
+                  "type": "category"
+                }
+              ],
+              "label": "rasa.shared.nlu",
+              "type": "category"
             }
           ],
           "label": "rasa.shared",
@@ -55,12 +100,9 @@
         {
           "items": [
             "reference/rasa/utils/train_utils",
-            "reference/rasa/utils/pykwalify_extensions",
             "reference/rasa/utils/io",
-            "reference/rasa/utils/validation",
             "reference/rasa/utils/plotting",
             "reference/rasa/utils/endpoints",
-            "reference/rasa/utils/features",
             "reference/rasa/utils/common",
             {
               "items": [
@@ -266,13 +308,6 @@
             },
             {
               "items": [
-                "reference/rasa/nlu/schemas/data_schema"
-              ],
-              "label": "rasa.nlu.schemas",
-              "type": "category"
-            },
-            {
-              "items": [
                 {
                   "items": [
                     "reference/rasa/nlu/featurizers/dense_featurizer/lm_featurizer",
@@ -314,33 +349,6 @@
                 "reference/rasa/nlu/classifiers/fallback_classifier"
               ],
               "label": "rasa.nlu.classifiers",
-              "type": "category"
-            },
-            {
-              "items": [
-                "reference/rasa/nlu/training_data/loading",
-                "reference/rasa/nlu/training_data/entities_parser",
-                "reference/rasa/nlu/training_data/lookup_tables_parser",
-                "reference/rasa/nlu/training_data/util",
-                "reference/rasa/nlu/training_data/synonyms_parser",
-                "reference/rasa/nlu/training_data/training_data",
-                "reference/rasa/nlu/training_data/message",
-                {
-                  "items": [
-                    "reference/rasa/nlu/training_data/formats/wit",
-                    "reference/rasa/nlu/training_data/formats/dialogflow",
-                    "reference/rasa/nlu/training_data/formats/rasa_yaml",
-                    "reference/rasa/nlu/training_data/formats/rasa",
-                    "reference/rasa/nlu/training_data/formats/readerwriter",
-                    "reference/rasa/nlu/training_data/formats/markdown_nlg",
-                    "reference/rasa/nlu/training_data/formats/markdown",
-                    "reference/rasa/nlu/training_data/formats/luis"
-                  ],
-                  "label": "rasa.nlu.training_data.formats",
-                  "type": "category"
-                }
-              ],
-              "label": "rasa.nlu.training_data",
               "type": "category"
             }
           ],

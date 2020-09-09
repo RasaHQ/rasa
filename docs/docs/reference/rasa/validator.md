@@ -111,25 +111,3 @@ Checks whether the domain returned by the importer is empty.
 
 An empty domain is invalid.
 
-#### validate\_training\_data\_format\_version
-
-```python
- | @staticmethod
- | validate_training_data_format_version(yaml_file_content: Dict[Text, Any], filename: Text) -> bool
-```
-
-Validates version on the training data content using `version` field
-and warns users if the file is not compatible with the current version of
-Rasa Open Source.
-
-**Arguments**:
-
-- `yaml_file_content` - Raw content of training data file as a dictionary.
-- `filename` - Name of the validated file.
-  
-
-**Returns**:
-
-  `True` if the file can be processed by current version of Rasa Open Source,
-  `False` otherwise.
-

@@ -28,5 +28,6 @@ of components previous to this one.
 
 **Arguments**:
 
-- `message` - The :class:`rasa.nlu.training_data.message.Message` to process.
+- `message` - The :class:`rasa.shared.nlu.training_data.message.Message` to
+  process.
 

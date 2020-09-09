@@ -16,6 +16,14 @@ Exception wrapping lower level exceptions that may happen while training
 - `failed_target_project` - name of the failed project
 - `message` - explanation of why the request is invalid
 
+#### load\_data\_from\_endpoint
+
+```python
+async load_data_from_endpoint(data_endpoint: EndpointConfig, language: Optional[Text] = "en") -> "TrainingData"
+```
+
+Load training data from a URL.
+
 #### create\_persistor
 
 ```python

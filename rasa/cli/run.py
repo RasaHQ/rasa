@@ -10,8 +10,8 @@ from rasa.constants import (
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
-    DOCS_BASE_URL,
 )
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)

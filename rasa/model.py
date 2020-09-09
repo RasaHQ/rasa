@@ -7,6 +7,7 @@ import typing
 from pathlib import Path
 from typing import Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.cli.utils import print_success, create_output_path
 from rasa.constants import (
@@ -336,7 +337,7 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
-        return rasa.utils.io.read_json_file(fingerprint_path)
+        return rasa.shared.utils.io.read_json_file(fingerprint_path)
     else:
         return {}
 

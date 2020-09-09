@@ -218,18 +218,10 @@ get_file_hash(path: Text) -> Text
 
 Calculate the md5 hash of a file.
 
-#### get\_text\_hash
-
-```python
-get_text_hash(text: Text, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text
-```
-
-Calculate the md5 hash for a text.
-
 #### get\_dict\_hash
 
 ```python
-get_dict_hash(data: Dict, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text
+get_dict_hash(data: Dict, encoding: Text = rasa.shared.utils.io.DEFAULT_ENCODING) -> Text
 ```
 
 Calculate the md5 hash of a dictionary.

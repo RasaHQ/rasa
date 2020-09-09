@@ -35,31 +35,6 @@ write_to_file(filename: Text, text: Any) -> None
 
 Write a text to a file.
 
-#### build\_entity
-
-```python
-build_entity(start: int, end: int, value: Text, entity_type: Text, role: Optional[Text] = None, group: Optional[Text] = None, **kwargs: Any, ,) -> Dict[Text, Any]
-```
-
-Builds a standard entity dictionary.
-
-Adds additional keyword parameters.
-
-**Arguments**:
-
-- `start` - start position of entity
-- `end` - end position of entity
-- `value` - text value of the entity
-- `entity_type` - name of the entity type
-- `role` - role of the entity
-- `group` - group of the entity
-- `**kwargs` - additional parameters
-  
-
-**Returns**:
-
-  an entity dictionary
-
 #### is\_model\_dir
 
 ```python

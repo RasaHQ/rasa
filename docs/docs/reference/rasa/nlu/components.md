@@ -109,7 +109,7 @@ Validates that all components are present in the pipeline based on data.
 **Arguments**:
 
 - `pipeline` - The list of the :class:`rasa.nlu.components.Component`s.
-- `data` - The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+- `data` - The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
 
 ## MissingArgumentError Objects
 
@@ -312,7 +312,7 @@ of components previous to this one.
 **Arguments**:
 
   training_data:
-  The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+  The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
 - `config` - The model configuration parameters.
 
 #### process
@@ -334,7 +334,7 @@ of components previous to this one.
 
 **Arguments**:
 
-- `message` - The :class:`rasa.nlu.training_data.message.Message` to process.
+- `message` - The :class:`rasa.shared.nlu.training_data.message.Message` to process.
 
 #### persist
 
@@ -410,12 +410,13 @@ previous to this one in the pipeline.
 
 **Arguments**:
 
-- `message` - The :class:`rasa.nlu.training_data.message.Message` to process.
+- `message` - The :class:`rasa.shared.nlu.training_data.message.Message` to
+  process.
   
 
 **Returns**:
 
-  The processed :class:`rasa.nlu.training_data.message.Message`.
+  The processed :class:`rasa.shared.nlu.training_data.message.Message`.
 
 #### can\_handle\_language
 

@@ -29,3 +29,15 @@ module_path_from_instance(inst: Any) -> Text
 
 Return the module path of an instance&#x27;s class.
 
+#### lazy\_property
+
+```python
+lazy_property(function: Callable) -> Any
+```
+
+Allows to avoid recomputing a property over and over.
+
+The result gets stored in a local var. Computation of the property
+will happen once, on the first call of the property. All
+succeeding calls will use the value stored in the private property.
+

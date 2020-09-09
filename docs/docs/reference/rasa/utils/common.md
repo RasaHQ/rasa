@@ -162,18 +162,6 @@ Iterate through all the updates and update a value in the original dictionary.
 If the updates contain a key that is not present in the original dict, it will
 be ignored.
 
-#### lazy\_property
-
-```python
-lazy_property(function: Callable) -> Any
-```
-
-Allows to avoid recomputing a property over and over.
-
-The result gets stored in a local var. Computation of the property
-will happen once, on the first call of the property. All
-succeeding calls will use the value stored in the private property.
-
 #### raise\_deprecation\_warning
 
 ```python

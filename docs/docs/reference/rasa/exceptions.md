@@ -3,14 +3,6 @@ sidebar_label: rasa.exceptions
 title: rasa.exceptions
 ---
 
-## RasaException Objects
-
-```python
-class RasaException(Exception)
-```
-
-Base exception class for all errors raised by Rasa.
-
 ## ModelNotFound Objects
 
 ```python
