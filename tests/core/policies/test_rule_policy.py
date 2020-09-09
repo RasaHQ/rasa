@@ -28,7 +28,7 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"

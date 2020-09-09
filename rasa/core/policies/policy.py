@@ -14,7 +14,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 if typing.TYPE_CHECKING:

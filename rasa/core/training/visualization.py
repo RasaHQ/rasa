@@ -8,7 +8,7 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa.core.training.generator import TrainingDataGenerator
+from rasa.shared.core.training_data.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph, StoryStep
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
@@ -298,7 +298,6 @@ def visualization_html_path() -> Text:
 def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     """Plots the graph and persists it into a html file."""
     import networkx as nx
-    import rasa.utils.io as io_utils
 
     expg = nx.nx_pydot.to_pydot(graph)
 

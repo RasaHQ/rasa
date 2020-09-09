@@ -14,7 +14,7 @@ from rasa.core.domain import Domain
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)

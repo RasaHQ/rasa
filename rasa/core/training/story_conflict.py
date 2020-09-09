@@ -7,7 +7,7 @@ from rasa.core.domain import PREV_PREFIX, Domain, State
 from rasa.core.events import ActionExecuted, Event
 from rasa.shared.nlu.constants import INTENT
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 

@@ -304,7 +304,7 @@ async def _generate_trackers(
     max_stories: Optional[int] = None,
     use_e2e: bool = False,
 ) -> List[Any]:
-    from rasa.core.training.generator import TrainingDataGenerator
+    from rasa.shared.core.training_data.generator import TrainingDataGenerator
 
     from rasa.core import training
 

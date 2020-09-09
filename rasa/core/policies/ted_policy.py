@@ -23,7 +23,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, ACTIVE_LOOP, SLOTS
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature

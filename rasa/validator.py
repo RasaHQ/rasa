@@ -9,7 +9,7 @@ from rasa.core.constants import UTTER_PREFIX
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.events import UserUttered
-from rasa.core.training.generator import TrainingDataGenerator
+from rasa.shared.core.training_data.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph
 from rasa.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT

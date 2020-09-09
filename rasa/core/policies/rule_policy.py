@@ -13,7 +13,7 @@ from rasa.core.trackers import (
     get_active_loop_name,
     is_prev_action_listen_in_state,
 )
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 from rasa.core.constants import (
     FORM_POLICY_PRIORITY,
     SHOULD_NOT_BE_SET,

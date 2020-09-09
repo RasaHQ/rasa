@@ -20,7 +20,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 from rasa.utils.common import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
@@ -158,7 +158,6 @@ class MemoizationPolicy(Policy):
         return lookup
 
     def _create_feature_key(self, states: List[State]) -> Text:
-        from rasa.utils import io
 
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
