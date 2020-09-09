@@ -115,7 +115,7 @@ def main() -> None:
         # user has not provided a subcommand, let's print the help
         logger.error("No command specified.")
         arg_parser.print_help()
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

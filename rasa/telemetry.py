@@ -9,7 +9,7 @@ import multiprocessing
 import os
 from pathlib import Path
 import platform
-from subprocess import CalledProcessError, STDOUT, check_output
+from subprocess import CalledProcessError, STDOUT, check_output  # skipcq:BAN-B404
 import sys
 import textwrap
 from typing import Any, Dict, Optional, Text
@@ -64,12 +64,13 @@ TELEMETRY_DISABLED = "Telemetry Disabled"
 
 
 def print_telemetry_reporting_info() -> None:
+    """Print telemetry information to std out."""
     message = textwrap.dedent(
         f"""
-      Rasa reports anonymous usage telemetry to help improve Rasa Open Source 
+      Rasa reports anonymous usage telemetry to help improve Rasa Open Source
       for all its users.
-      
-      If you'd like to opt-out, you can use `rasa telemetry disable` 
+
+      If you'd like to opt-out, you can use `rasa telemetry disable`
       To learn more, checkout {DOCS_URL_TELEMETRY}"""
     ).strip()
 
@@ -154,6 +155,7 @@ def ensure_telemetry_enabled(f):
                     return await f(*args, **kwargs)
             except Exception as e:
                 logger.debug(f"Skipping telemetry reporting: {e}")
+            return None
 
         return decorated
     else:
@@ -165,6 +167,7 @@ def ensure_telemetry_enabled(f):
                     return f(*args, **kwargs)
             except Exception as e:
                 logger.debug(f"Skipping telemetry reporting: {e}")
+            return None
 
         return decorated
 
@@ -326,9 +329,11 @@ def _project_hash() -> Text:
         project hash
     """
     try:
-        remote = check_output(["git", "remote", "get-url", "origin"], stderr=STDOUT)
+        remote = check_output(
+            ["git", "remote", "get-url", "origin"], stderr=STDOUT
+        )  # skipcq:BAN-B607
         return hashlib.sha256(remote).hexdigest()
-    except CalledProcessError or OSError:
+    except (CalledProcessError, OSError):
         working_dir = Path(os.getcwd()).absolute()
         return hashlib.sha256(str(working_dir).encode("utf-8")).hexdigest()
 

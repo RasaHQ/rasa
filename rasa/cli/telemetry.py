@@ -8,8 +8,10 @@ from rasa.constants import DOCS_URL_TELEMETRY
 
 # noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: argparse._SubParsersAction,  # skipcq:PYL-W0212
+    parents: List[argparse.ArgumentParser],
 ):
+    """Add all telemetry tracking parsers."""
     telemetry_parser = subparsers.add_parser(
         "telemetry",
         parents=parents,
@@ -36,7 +38,8 @@ def add_subparser(
     telemetry_parser.set_defaults(func=inform_about_telemetry)
 
 
-def inform_about_telemetry(args: argparse.Namespace) -> None:
+def inform_about_telemetry(_: argparse.Namespace) -> None:
+    """Inform user about telemetry tracking."""
     print_success("TODO: some information about telemetry")
 
     print("\nYou can enable telemetry reporting using")
@@ -50,12 +53,14 @@ def inform_about_telemetry(args: argparse.Namespace) -> None:
     )
 
 
-def disable_telemetry(args: argparse.Namespace) -> None:
+def disable_telemetry(_: argparse.Namespace) -> None:
+    """Disable telemetry tracking."""
     telemetry.track_telemetry_disabled()
     telemetry.toggle_telemetry_reporting(is_enabled=False)
     print_success("Disabled telemetry reporting.")
 
 
-def enable_telemetry(args: argparse.Namespace) -> None:
+def enable_telemetry(_: argparse.Namespace) -> None:
+    """Enable telemetry tracking."""
     telemetry.toggle_telemetry_reporting(is_enabled=True)
     print_success("Enabled telemetry reporting.")
