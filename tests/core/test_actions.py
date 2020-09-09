@@ -49,7 +49,7 @@ from rasa.shared.core.constants import (
     RULE_SNIPPET_ACTION_NAME,
     ACTIVE_LOOP,
 )
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 

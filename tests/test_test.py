@@ -17,7 +17,7 @@ from rasa.core.test import (
     WronglyClassifiedUserUtterance,
     WronglyPredictedAction,
 )
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )

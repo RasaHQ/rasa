@@ -6,8 +6,7 @@ import os
 from typing import Text, Dict, Any, Union, Optional
 
 from rasa.core import constants
-from rasa.core.trackers import DialogueStateTracker
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.io
 import rasa.shared.utils.common

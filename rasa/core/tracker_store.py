@@ -33,7 +33,11 @@ from rasa.core.constants import (
 from rasa.shared.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.shared.core.events import SessionStarted
-from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import (
+    ActionExecuted,
+    DialogueStateTracker,
+    EventVerbosity,
+)
 import rasa.cli.utils as rasa_cli_utils
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils

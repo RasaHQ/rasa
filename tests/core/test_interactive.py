@@ -18,7 +18,7 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import UserMessage
 from rasa.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.training import interactive
 from rasa.importers.rasa import TrainingDataImporter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX

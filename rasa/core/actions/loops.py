@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from rasa.core.channels import OutputChannel
     from rasa.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
-    from rasa.core.trackers import DialogueStateTracker
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 
 class LoopAction(Action, ABC):  # pytype: disable=base-class-error

@@ -15,7 +15,7 @@ from rasa.shared.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
 from rasa.shared.nlu.constants import ACTION_NAME
 

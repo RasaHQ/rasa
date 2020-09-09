@@ -29,7 +29,7 @@ from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     TrackerStore,
 )
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.utils
 from rasa.exceptions import ModelNotFound
 from rasa.importers.importer import TrainingDataImporter

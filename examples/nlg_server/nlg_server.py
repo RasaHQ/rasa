@@ -6,7 +6,7 @@ from sanic import Sanic, response
 
 from rasa.core.domain import Domain
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.constants import ENV_SANIC_BACKLOG, DEFAULT_SANIC_WORKERS
 
 logger = logging.getLogger(__name__)

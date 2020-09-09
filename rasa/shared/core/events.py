@@ -32,7 +32,7 @@ from rasa.shared.nlu.constants import (
 )
 
 if typing.TYPE_CHECKING:
-    from rasa.core.trackers import DialogueStateTracker
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

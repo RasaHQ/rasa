@@ -14,7 +14,7 @@ import rasa.shared.utils.validation as validation_utils
 import rasa.shared.utils.io as io_utils
 
 if typing.TYPE_CHECKING:
-    from rasa.core.trackers import DialogueStateTracker
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
 SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
@@ -107,9 +107,9 @@ class BaseDomain:
 
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-                self._combine_user_with_default_actions(self.user_actions)
-                + self.form_names
-                + self.action_texts
+            self._combine_user_with_default_actions(self.user_actions)
+            + self.form_names
+            + self.action_texts
         )
 
         self.store_entities_as_slots = store_entities_as_slots
@@ -128,7 +128,9 @@ class BaseDomain:
             raise InvalidDomain(str(e))
 
         data = io_utils.read_yaml(yaml)
-        if not validation_utils.validate_training_data_format_version(data, original_filename):
+        if not validation_utils.validate_training_data_format_version(
+            data, original_filename
+        ):
             return BaseDomain.empty()
 
         return cls.from_dict(data)
@@ -222,7 +224,9 @@ class BaseDomain:
             "slot_warnings": slot_warnings,
         }
 
-    def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[events.SlotSet]:
+    def slots_for_entities(
+        self, entities: List[Dict[Text, Any]]
+    ) -> List[events.SlotSet]:
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
@@ -232,9 +236,13 @@ class BaseDomain:
                     ]
                     if matching_entities:
                         if s.type_name == "list":
-                            slot_events.append(events.SlotSet(s.name, matching_entities))
+                            slot_events.append(
+                                events.SlotSet(s.name, matching_entities)
+                            )
                         else:
-                            slot_events.append(events.SlotSet(s.name, matching_entities[-1]))
+                            slot_events.append(
+                                events.SlotSet(s.name, matching_entities[-1])
+                            )
             return slot_events
         else:
             return []
@@ -279,7 +287,7 @@ class BaseDomain:
         return self._clean_state(state)
 
     def states_for_tracker_history(
-            self, tracker: "DialogueStateTracker"
+        self, tracker: "DialogueStateTracker"
     ) -> List[State]:
         """Array of states for each state of the trackers history."""
         return [
@@ -312,7 +320,9 @@ class BaseDomain:
         Includes user and form actions, but excludes those that are default actions.
         """
         return [
-            a for a in self.user_actions_and_forms if a not in core_constants.DEFAULT_ACTIONS
+            a
+            for a in self.user_actions_and_forms
+            if a not in core_constants.DEFAULT_ACTIONS
         ]
 
     @staticmethod
@@ -336,7 +346,9 @@ class BaseDomain:
 
         # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
         if session_expiration_time_min is None:
-            session_expiration_time_min = constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
+            session_expiration_time_min = (
+                constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
+            )
 
         carry_over_slots = session_config.get(
             CARRY_OVER_SLOTS_KEY, constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
@@ -361,7 +373,7 @@ class BaseDomain:
             ]
 
         def check_mappings(
-                intent_properties: Dict[Text, Dict[Text, Union[bool, List]]]
+            intent_properties: Dict[Text, Dict[Text, Union[bool, List]]]
         ) -> List[Tuple[Text, Text]]:
             """Check whether intent-action mappings use proper action names."""
 
@@ -374,8 +386,8 @@ class BaseDomain:
             return incorrect
 
         def get_exception_message(
-                duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
-                mappings: List[Tuple[Text, Text]] = None,
+            duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
+            mappings: List[Tuple[Text, Text]] = None,
         ):
             """Return a message given a list of error locations."""
 
@@ -402,7 +414,7 @@ class BaseDomain:
             return message
 
         def get_duplicate_exception_message(
-                duplicates: List[Tuple[List[Text], Text]]
+            duplicates: List[Tuple[List[Text], Text]]
         ) -> Text:
             """Return a message given a list of duplicates."""
 
@@ -424,10 +436,10 @@ class BaseDomain:
         incorrect_mappings = check_mappings(self.intent_properties)
 
         if (
-                duplicate_actions
-                or duplicate_slots
-                or duplicate_entities
-                or incorrect_mappings
+            duplicate_actions
+            or duplicate_slots
+            or duplicate_entities
+            or incorrect_mappings
         ):
             raise InvalidDomain(
                 get_exception_message(
@@ -442,7 +454,7 @@ class BaseDomain:
 
     @classmethod
     def collect_intent_properties(
-            cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
+        cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
     ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
         """Get intent properties for a domain from what is provided by a domain file.
         Args:
@@ -476,7 +488,7 @@ class BaseDomain:
 
     @classmethod
     def _intent_properties(
-            cls, intent: Union[Text, Dict[Text, Any]], entities: List[Text]
+        cls, intent: Union[Text, Dict[Text, Any]], entities: List[Text]
     ) -> Tuple[Text, Dict[Text, Any]]:
         if not isinstance(intent, dict):
             intent_name = intent
@@ -491,9 +503,9 @@ class BaseDomain:
 
     @classmethod
     def _add_default_intents(
-            cls,
-            intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
-            entities: List[Text],
+        cls,
+        intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
+        entities: List[Text],
     ) -> None:
         for intent_name in core_constants.DEFAULT_INTENTS:
             if intent_name not in intent_properties:
@@ -554,8 +566,8 @@ class BaseDomain:
 
     @staticmethod
     def _get_symmetric_difference(
-            domain_elements: Union[List[Text], Set[Text]],
-            training_data_elements: Optional[Union[List[Text], Set[Text]]],
+        domain_elements: Union[List[Text], Set[Text]],
+        training_data_elements: Optional[Union[List[Text], Set[Text]]],
     ) -> Dict[Text, Set[Text]]:
         """Get symmetric difference between a set of domain elements and a set of
         training data elements.
@@ -593,7 +605,9 @@ class BaseDomain:
         # implicitly assume that e.g. "action_listen" is always at location
         # 0 in this array. to keep it that way, we remove the duplicate
         # action names from the users list instead of the defaults
-        unique_user_actions = [a for a in user_actions if a not in core_constants.DEFAULT_ACTIONS]
+        unique_user_actions = [
+            a for a in user_actions if a not in core_constants.DEFAULT_ACTIONS
+        ]
         return core_constants.DEFAULT_ACTIONS + unique_user_actions
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
@@ -655,7 +669,7 @@ class BaseDomain:
 
     @staticmethod
     def _get_slots_sub_state(
-            tracker: "DialogueStateTracker",
+        tracker: "DialogueStateTracker",
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
         """Set all set slots with the featurization of the stored value
         Args:
@@ -666,7 +680,10 @@ class BaseDomain:
 
         # proceed with values only if the user of a bot have done something
         # at the previous step i.e., when the state is not empty.
-        if tracker.latest_message == events.UserUttered.empty() or not tracker.latest_action:
+        if (
+            tracker.latest_message == events.UserUttered.empty()
+            or not tracker.latest_action
+        ):
             return {}
 
         slots = {}
@@ -682,7 +699,7 @@ class BaseDomain:
 
     @staticmethod
     def _get_prev_action_sub_state(
-            tracker: "DialogueStateTracker",
+        tracker: "DialogueStateTracker",
     ) -> Dict[Text, Text]:
         """Turn the previous taken action into a state name.
         Args:
@@ -694,7 +711,7 @@ class BaseDomain:
 
     @staticmethod
     def _get_active_loop_sub_state(
-            tracker: "DialogueStateTracker",
+        tracker: "DialogueStateTracker",
     ) -> Dict[Text, Text]:
         """Turn tracker's active loop into a state name.
         Args:

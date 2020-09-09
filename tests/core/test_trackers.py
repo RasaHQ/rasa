@@ -47,7 +47,7 @@ from rasa.core.tracker_store import (
     SQLTrackerStore,
 )
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
     EXAMPLE_DOMAINS,

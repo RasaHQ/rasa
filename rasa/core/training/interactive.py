@@ -53,7 +53,7 @@ from rasa.shared.core.events import (
 )
 import rasa.core.interpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.trackers import EventVerbosity, DialogueStateTracker
+from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,

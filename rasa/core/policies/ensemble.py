@@ -27,7 +27,12 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.domain import InvalidDomain
 from rasa.core.domain import Domain
-from rasa.shared.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
+from rasa.shared.core.events import (
+    SlotSet,
+    ActionExecuted,
+    ActionExecutionRejected,
+    Event,
+)
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -35,7 +40,7 @@ from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils import common as common_utils
 

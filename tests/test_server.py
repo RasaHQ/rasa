@@ -30,7 +30,7 @@ from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, SlackInput
 from rasa.core.channels.slack import SlackBot
 from rasa.shared.core.events import Event, UserUttered, SlotSet, BotUttered
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig

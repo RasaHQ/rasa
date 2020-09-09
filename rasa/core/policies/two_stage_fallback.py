@@ -13,7 +13,7 @@ from rasa.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,

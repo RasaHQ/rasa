@@ -12,7 +12,7 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 
 async def test_whole_loop():

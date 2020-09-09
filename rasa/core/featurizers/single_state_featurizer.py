@@ -11,7 +11,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER, SLOTS
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.core.trackers import is_prev_action_listen_in_state
+from rasa.shared.core.trackers import is_prev_action_listen_in_state
 from rasa.shared.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,

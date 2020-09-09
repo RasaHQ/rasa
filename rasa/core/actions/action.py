@@ -34,7 +34,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
-    RULE_SNIPPET_ACTION_NAME
+    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY, INTENT_NAME_KEY
 from rasa.shared.core.events import (
@@ -51,7 +51,7 @@ from rasa.shared.core.events import (
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 if typing.TYPE_CHECKING:
-    from rasa.core.trackers import DialogueStateTracker
+    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
@@ -456,7 +456,7 @@ class RemoteAction(Action):
         self, tracker: "DialogueStateTracker", domain: "Domain"
     ) -> Dict[Text, Any]:
         """Create the request json send to the action server."""
-        from rasa.core.trackers import EventVerbosity
+        from rasa.shared.core.trackers import EventVerbosity
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 

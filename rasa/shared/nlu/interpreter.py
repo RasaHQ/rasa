@@ -5,7 +5,7 @@ from json.decoder import JSONDecodeError
 from typing import Text, Optional, Dict, Any, Union, List, Tuple
 
 import rasa.shared
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_STORIES
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message

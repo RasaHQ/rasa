@@ -11,7 +11,7 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import BaseDomain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event, SessionStarted
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:
     import networkx as nx

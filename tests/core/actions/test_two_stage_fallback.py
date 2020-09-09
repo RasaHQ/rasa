@@ -3,9 +3,7 @@ from typing import List, Text
 import pytest
 
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.core.actions.two_stage_fallback import (
-    TwoStageFallbackAction,
-)
+from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain
 from rasa.shared.core.events import (
@@ -17,9 +15,13 @@ from rasa.shared.core.events import (
     Event,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.nlu.constants import INTENT_RANKING_KEY
-from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE, ACTION_LISTEN_NAME, ACTION_TWO_STAGE_FALLBACK_NAME
+from rasa.shared.core.constants import (
+    USER_INTENT_OUT_OF_SCOPE,
+    ACTION_LISTEN_NAME,
+    ACTION_TWO_STAGE_FALLBACK_NAME,
+)
 
 
 def _message_requiring_fallback() -> List[Event]:

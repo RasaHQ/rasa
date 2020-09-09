@@ -12,7 +12,7 @@ from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, LOOP_VALIDATE
 from rasa.shared.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)

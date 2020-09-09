@@ -15,7 +15,7 @@ from rasa.core.policies.ensemble import (
 )
 from rasa.core.domain import Domain
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 from rasa.shared.core.events import UserUttered, ActiveLoop, Event

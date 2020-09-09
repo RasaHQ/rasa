@@ -11,7 +11,7 @@ import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.shared.core.events import UserUttered
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.exceptions import PublishingError, NoEventsToMigrateError
 from tests.conftest import (
     MockExporter,

@@ -16,7 +16,7 @@ from rasa.shared.core.events import (
     SlotSet,
     LegacyForm,
 )
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data import loading
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,

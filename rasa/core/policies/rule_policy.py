@@ -8,7 +8,7 @@ from rasa.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
-from rasa.core.trackers import (
+from rasa.shared.core.trackers import (
     DialogueStateTracker,
     get_active_loop_name,
     is_prev_action_listen_in_state,
