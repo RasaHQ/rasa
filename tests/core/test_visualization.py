@@ -5,7 +5,7 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, SlotSet, UserUttered
+from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.training_data import visualization
 import rasa.utils.io
 

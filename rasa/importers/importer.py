@@ -5,7 +5,7 @@ import logging
 
 import rasa.shared.utils.common
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, UserUttered, Event
+from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
@@ -307,7 +307,7 @@ class E2EImporter(TrainingDataImporter):
         return original.merge(e2e_domain)
 
     async def _get_domain_with_e2e_actions(self) -> Domain:
-        from rasa.core.events import ActionExecuted
+        from rasa.shared.core.events import ActionExecuted
 
         stories = await self.get_stories()
 

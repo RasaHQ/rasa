@@ -18,11 +18,11 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.trackers import DialogueStateTracker
 
 from rasa.shared.core.training_data.generator import TrackerWithCachedStates
-from rasa.core.events import UserUttered, ActiveLoop, Event
+from rasa.shared.core.events import UserUttered, ActiveLoop, Event
 
 from tests.core import utilities
 from rasa.core.constants import FORM_POLICY_PRIORITY
-from rasa.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.shared.core.constants import (

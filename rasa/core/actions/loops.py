@@ -1,8 +1,8 @@
 from abc import ABC
-from typing import List, TYPE_CHECKING, Text
+from typing import List, TYPE_CHECKING
 
 from rasa.core.actions import Action
-from rasa.core.events import Event, ActiveLoop
+from rasa.shared.core.events import Event, ActiveLoop
 
 if TYPE_CHECKING:
     from rasa.core.channels import OutputChannel

@@ -6,7 +6,7 @@ from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
-from rasa.core.events import UserUttered, ActionExecuted, Event
+from rasa.shared.core.events import UserUttered, ActionExecuted, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.training_data.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep

@@ -5,7 +5,7 @@ from typing import Text
 import pytest
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,

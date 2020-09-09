@@ -23,7 +23,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
-from rasa.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.utils.io import DEFAULT_ENCODING
@@ -279,7 +279,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
-        from rasa.core.events import md_format_message
+        from rasa.shared.core.events import md_format_message
 
         predicted_message = md_format_message(
             self.text, self.predicted_intent, self.predicted_entities
@@ -287,7 +287,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         return f"predicted: {self.predicted_intent}: {predicted_message}"
 
     def as_story_string(self, e2e: bool = True) -> Text:
-        from rasa.core.events import md_format_message
+        from rasa.shared.core.events import md_format_message
 
         correct_message = md_format_message(
             self.text, self.intent.get("name"), self.entities
@@ -391,7 +391,7 @@ def _collect_user_uttered_predictions(
 
 
 def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
-    from rasa.core.events import ActionExecutionRejected
+    from rasa.shared.core.events import ActionExecutionRejected
 
     rejected_action_name: Text = partial_tracker.active_loop_name
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))

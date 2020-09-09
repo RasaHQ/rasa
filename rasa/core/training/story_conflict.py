@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Text, Tuple, Generator, NamedTuple
 
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain, State
-from rasa.core.events import ActionExecuted, Event
+from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.nlu.constants import INTENT
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.training_data.generator import TrackerWithCachedStates

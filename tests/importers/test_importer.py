@@ -7,7 +7,7 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
-from rasa.core.events import SlotSet, UserUttered, ActionExecuted
+from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.importers.importer import (
     CombinedDataImporter,

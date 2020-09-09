@@ -11,7 +11,7 @@ import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.domain import Domain, State
-from rasa.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER

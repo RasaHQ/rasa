@@ -43,7 +43,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
-from rasa.core.events import Event
+from rasa.shared.core.events import Event
 from rasa.core.lock_store import LockStore
 from rasa.core.test import test
 from rasa.core.tracker_store import TrackerStore

@@ -9,7 +9,7 @@ import pytest
 
 from rasa.core import training
 from rasa.core.domain import Domain
-from rasa.core.events import UserUttered, ActionExecuted, SessionStarted
+from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 

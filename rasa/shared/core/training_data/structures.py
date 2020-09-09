@@ -10,7 +10,7 @@ import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.shared.core.conversation import Dialogue
 from rasa.core.domain import Domain
-from rasa.core.events import UserUttered, ActionExecuted, Event, SessionStarted
+from rasa.shared.core.events import UserUttered, ActionExecuted, Event, SessionStarted
 from rasa.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:

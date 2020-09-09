@@ -7,8 +7,8 @@ from rasa.constants import DOCS_URL_ACTIONS
 from rasa.shared.constants import DOCS_BASE_URL, DOCS_URL_DOMAINS
 from rasa.core.constants import UTTER_PREFIX
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted
-from rasa.core.events import UserUttered
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import UserUttered
 from rasa.shared.core.training_data.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.importers.importer import TrainingDataImporter

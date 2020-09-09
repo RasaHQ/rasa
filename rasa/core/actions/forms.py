@@ -13,11 +13,10 @@ from rasa.core.actions.action import (
     RemoteAction,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.core.events import Event, SlotSet, ActionExecuted
+from rasa.shared.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
-from rasa.shared.nlu.constants import ACTION_NAME
 
 logger = logging.getLogger(__name__)
 

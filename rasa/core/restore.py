@@ -12,7 +12,7 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import console
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:

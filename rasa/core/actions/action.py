@@ -8,7 +8,7 @@ import random
 import aiohttp
 
 import rasa.core
-from rasa.core import events
+from rasa.shared.core import events
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
     REQUESTED_SLOT,
@@ -37,7 +37,7 @@ from rasa.shared.core.constants import (
     RULE_SNIPPET_ACTION_NAME
 )
 from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY, INTENT_NAME_KEY
-from rasa.core.events import (
+from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
     ActionExecuted,

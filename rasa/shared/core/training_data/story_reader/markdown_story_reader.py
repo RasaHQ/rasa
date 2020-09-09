@@ -16,7 +16,7 @@ from rasa.shared.constants import (
     DEFAULT_E2E_TESTS_PATH,
     DOCS_URL_STORIES,
 )
-from rasa.core.events import UserUttered
+from rasa.shared.core.events import UserUttered
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.core.training_data.story_reader.story_reader import (
     StoryReader,

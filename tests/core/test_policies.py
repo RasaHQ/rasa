@@ -21,7 +21,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, State
-from rasa.core.events import ActionExecuted, ConversationPaused
+from rasa.shared.core.events import ActionExecuted, ConversationPaused
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import RegexInterpreter

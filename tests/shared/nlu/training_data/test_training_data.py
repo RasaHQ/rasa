@@ -6,7 +6,7 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.core.domain import Domain
-from rasa.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.events import UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.importers.importer import E2EImporter, TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY

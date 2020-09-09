@@ -7,7 +7,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
 from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     ActionExecutionRejected,

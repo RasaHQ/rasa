@@ -10,7 +10,7 @@ from rasa.core import training
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.shared.core.training_data import loading
-from rasa.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
+from rasa.shared.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )

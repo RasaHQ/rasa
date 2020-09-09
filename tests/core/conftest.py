@@ -5,7 +5,7 @@ from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Iterator, Generator
+from typing import Text, Generator
 
 import pytest
 
@@ -13,7 +13,7 @@ import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.core.domain import Domain
-from rasa.core.events import ReminderScheduled, UserUttered, ActionExecuted
+from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import Policy

@@ -8,7 +8,7 @@ from dateutil import parser
 from typing import Type, Optional, Text
 
 import rasa.shared.utils.common
-from rasa.core.events import (
+from rasa.shared.core.events import (
     Event,
     UserUttered,
     SlotSet,

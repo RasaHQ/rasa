@@ -11,7 +11,7 @@ from _pytest.monkeypatch import MonkeyPatch
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.agent import Agent
-from rasa.core.events import UserUttered
+from rasa.shared.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
     WronglyClassifiedUserUtterance,

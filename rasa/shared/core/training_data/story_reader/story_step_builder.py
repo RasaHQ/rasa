@@ -4,7 +4,7 @@ from typing import Text, Optional, Dict, Any, List
 import rasa.shared.core.training_data.structures
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_STORIES
-from rasa.core.events import UserUttered
+from rasa.shared.core.events import UserUttered
 from rasa.shared.core.training_data.structures import (
     Checkpoint,
     GENERATED_CHECKPOINT_PREFIX,

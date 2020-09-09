@@ -22,7 +22,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
 )
 from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
     BotUttered,

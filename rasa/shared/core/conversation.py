@@ -1,6 +1,6 @@
 from typing import Dict, List, Text, Any
 
-from rasa.core.events import Event
+from rasa.shared.core.events import Event
 
 
 class Dialogue:

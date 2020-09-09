@@ -7,7 +7,7 @@ from typing import List, Text, Optional, Any
 import rasa.shared.utils.io
 import rasa.utils.io
 
-from rasa.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.events import UserUttered, ActionExecuted
 
 from rasa.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter

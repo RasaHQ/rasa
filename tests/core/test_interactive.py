@@ -17,7 +17,7 @@ from rasa.core.actions import action
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import UserMessage
 from rasa.core.domain import Domain
-from rasa.core.events import BotUttered, ActionExecuted
+from rasa.shared.core.events import BotUttered, ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import interactive
 from rasa.importers.rasa import TrainingDataImporter
@@ -109,7 +109,7 @@ def test_bot_output_format():
             ],
         },
     }
-    from rasa.core.events import Event
+    from rasa.shared.core.events import Event
 
     bot_event = Event.from_parameters(message)
 

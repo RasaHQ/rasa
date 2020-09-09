@@ -2,7 +2,7 @@ import json
 import logging
 from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
-from rasa.core.events import FormValidation
+from rasa.shared.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.domain import Domain, State
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter

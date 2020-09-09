@@ -40,8 +40,8 @@ from rasa.core.constants import (
     LOOP_REJECTED,
 )
 from rasa.core.domain import Domain
-import rasa.core.events
-from rasa.core.events import (
+import rasa.shared.core.events
+from rasa.shared.core.events import (
     ActionExecuted,
     ActionReverted,
     BotUttered,
@@ -796,7 +796,7 @@ def _write_stories_to_file(
     ) as f:
         i = 1
         for conversation in sub_conversations:
-            parsed_events = rasa.core.events.deserialise_events(conversation)
+            parsed_events = rasa.shared.core.events.deserialise_events(conversation)
             tracker = DialogueStateTracker.from_events(
                 f"interactive_story_{i}", evts=parsed_events, slots=domain.slots
             )
@@ -1335,7 +1335,7 @@ async def _fetch_events(
             events = tracker.get("events", [])
 
             for conversation in _split_conversation_at_restarts(events):
-                parsed_events = rasa.core.events.deserialise_events(conversation)
+                parsed_events = rasa.shared.core.events.deserialise_events(conversation)
                 event_sequences.append(parsed_events)
         else:
             event_sequences.append(conversation_id)
