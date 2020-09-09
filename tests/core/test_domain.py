@@ -31,7 +31,6 @@ from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     DEFAULT_STORIES_FILE,
 )
-from rasa.utils import io as io_utils
 
 
 async def test_create_train_data_no_history(default_domain):

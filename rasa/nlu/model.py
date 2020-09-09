@@ -234,7 +234,7 @@ class Trainer:
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
 
-        rasa.utils.io.create_directory(dir_name)
+        rasa.shared.utils.io.create_directory(dir_name)
 
         if self.training_data and persist_nlu_training_data:
             metadata.update(self.training_data.persist(dir_name))

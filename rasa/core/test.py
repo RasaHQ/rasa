@@ -699,7 +699,7 @@ async def test(
             )
 
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
-            io_utils.dump_obj_as_json_to_file(report_filename, report)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
@@ -820,7 +820,7 @@ async def compare_models_in_dir(
         for k, v in number_correct_in_run.items():
             number_correct[k].append(v)
 
-    io_utils.dump_obj_as_json_to_file(
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
         os.path.join(output, RESULTS_FILE), number_correct
     )
 
@@ -839,7 +839,7 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
         number_of_correct_stories = await _evaluate_core_model(model, stories_file)
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
 
-    io_utils.dump_obj_as_json_to_file(
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
         os.path.join(output, RESULTS_FILE), number_correct
     )
 

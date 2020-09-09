@@ -7,7 +7,6 @@ import sys
 from asyncio import Future
 from decimal import Decimal
 from hashlib import md5, sha1
-from io import StringIO
 from pathlib import Path
 from typing import (
     Any,
@@ -17,7 +16,6 @@ from typing import (
     List,
     Optional,
     Set,
-    TYPE_CHECKING,
     Text,
     Tuple,
     Union,
@@ -34,7 +32,6 @@ from rasa.constants import (
     ENV_SANIC_WORKERS,
     DEFAULT_ENDPOINTS_PATH,
 )
-from rasa.shared.utils.io import YAML_VERSION
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
@@ -149,17 +146,6 @@ class HashableNDArray:
         return self.__wrapped
 
 
-def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
-    import ruamel.yaml
-
-    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
-    yaml_writer.unicode_supplementary = True
-    yaml_writer.default_flow_style = False
-    yaml_writer.version = YAML_VERSION
-
-    yaml_writer.dump(obj, output)
-
-
 def dump_obj_as_yaml_to_file(
     filename: Union[Text, Path], obj: Any, should_preserve_key_order: bool = False
 ) -> None:
@@ -173,13 +159,6 @@ def dump_obj_as_yaml_to_file(
     rasa.shared.utils.io.write_yaml(
         obj, filename, should_preserve_key_order=should_preserve_key_order
     )
-
-
-def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
-    """Writes data (python dict) to a yaml string."""
-    str_io = StringIO()
-    _dump_yaml(obj, str_io)
-    return str_io.getvalue()
 
 
 def list_routes(app: Sanic):

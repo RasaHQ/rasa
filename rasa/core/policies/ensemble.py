@@ -268,7 +268,7 @@ class PolicyEnsemble:
 
         # make sure the directory we persist exists
         domain_spec_path = os.path.join(path, "metadata.json")
-        rasa.utils.io.create_directory_for_file(domain_spec_path)
+        rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [
             rasa.shared.utils.common.module_path_from_instance(p) for p in self.policies
@@ -285,7 +285,7 @@ class PolicyEnsemble:
 
         self._add_package_version_info(metadata)
 
-        rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
     def persist(self, path: Text) -> None:
         """Persists the policy to storage."""

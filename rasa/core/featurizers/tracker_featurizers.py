@@ -185,7 +185,7 @@ class TrackerFeaturizer:
             path: The path to persist the tracker featurizer to.
         """
         featurizer_file = os.path.join(path, "featurizer.json")
-        io_utils.create_directory_for_file(featurizer_file)
+        rasa.shared.utils.io.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker
         io_utils.write_text_file(str(jsonpickle.encode(self)), featurizer_file)

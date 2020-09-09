@@ -5,6 +5,7 @@ from pathlib import Path
 from collections import defaultdict
 
 import numpy as np
+import rasa.shared.utils.io
 import tensorflow as tf
 import tensorflow_addons as tfa
 import typing
@@ -403,7 +404,7 @@ class TEDPolicy(Policy):
         model_path = Path(path)
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
-        io_utils.create_directory_for_file(tf_model_file)
+        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
         self.featurizer.persist(path)
 

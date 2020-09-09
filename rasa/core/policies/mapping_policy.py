@@ -177,8 +177,8 @@ class MappingPolicy(Policy):
 
         config_file = os.path.join(path, "mapping_policy.json")
         meta = {"priority": self.priority}
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
+        rasa.shared.utils.io.create_directory_for_file(config_file)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "MappingPolicy":

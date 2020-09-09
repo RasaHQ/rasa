@@ -352,7 +352,7 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
     """
 
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
-    rasa.utils.io.dump_obj_as_json_to_file(path, fingerprint)
+    rasa.shared.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 
 def did_section_fingerprint_change(

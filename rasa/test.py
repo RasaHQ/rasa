@@ -122,7 +122,7 @@ def test_core(
         additional_arguments = {}
 
     if output:
-        io_utils.create_directory(output)
+        rasa.shared.utils.io.create_directory(output)
 
     try:
         unpacked_model = rasa.model.get_model(model)
@@ -185,7 +185,7 @@ def test_nlu(
         )
         return
 
-    io_utils.create_directory(output_directory)
+    rasa.shared.utils.io.create_directory(output_directory)
 
     nlu_model = os.path.join(unpacked_model, "nlu")
 

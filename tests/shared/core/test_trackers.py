@@ -15,7 +15,8 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     LOOP_NAME,
-    REQUESTED_SLOT)
+    REQUESTED_SLOT,
+)
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -485,7 +486,7 @@ async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
         out_path = tmp_path / "dumped_tracker.json"
 
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
-        rasa.utils.io.dump_obj_as_json_to_file(str(out_path), dumped)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(str(out_path), dumped)
 
         restored_tracker = restore.load_tracker_from_json(
             str(out_path), default_agent.domain

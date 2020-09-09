@@ -795,11 +795,9 @@ class Domain:
         """Persist the domain specification to storage."""
 
         domain_spec_path = os.path.join(model_path, "domain.json")
-        # TODO
         rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
         metadata = {"states": self.input_states}
-        # TODO
         rasa.shared.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
     @classmethod
@@ -946,7 +944,6 @@ class Domain:
         else:
             domain_data = self.as_dict()
 
-        # TODO
         return rasa.shared.utils.io.dump_obj_as_yaml_to_string(domain_data)
 
     def intent_config(self, intent_name: Text) -> Dict[Text, Any]:

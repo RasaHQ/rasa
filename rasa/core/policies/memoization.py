@@ -250,8 +250,8 @@ class MemoizationPolicy(Policy):
             "max_history": self.max_history,
             "lookup": self.lookup,
         }
-        rasa.utils.io.create_directory_for_file(memorized_file)
-        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
+        rasa.shared.utils.io.create_directory_for_file(memorized_file)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
     def load(cls, path: Text) -> "MemoizationPolicy":

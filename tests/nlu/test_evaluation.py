@@ -454,7 +454,7 @@ def test_intent_evaluation_report(tmp_path: Path):
     report_folder = str(path / "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
 
-    rasa.utils.io.create_directory(report_folder)
+    rasa.shared.utils.io.create_directory(report_folder)
 
     intent_results = [
         IntentEvaluationResult("", "restaurant_search", "I am hungry", 0.12345),
@@ -502,7 +502,7 @@ def test_intent_evaluation_report_large(tmp_path: Path):
     report_folder = path / "reports"
     report_filename = report_folder / "intent_report.json"
 
-    rasa.utils.io.create_directory(str(report_folder))
+    rasa.shared.utils.io.create_directory(str(report_folder))
 
     def correct(label: Text) -> IntentEvaluationResult:
         return IntentEvaluationResult(label, label, "", 1.0)
@@ -558,7 +558,7 @@ def test_response_evaluation_report(tmp_path: Path):
     report_folder = str(path / "reports")
     report_filename = os.path.join(report_folder, "response_selection_report.json")
 
-    rasa.utils.io.create_directory(report_folder)
+    rasa.shared.utils.io.create_directory(report_folder)
 
     response_results = [
         ResponseSelectionEvaluationResult(
@@ -659,7 +659,7 @@ def test_entity_evaluation_report(tmp_path):
     report_filename_a = os.path.join(report_folder, "EntityExtractorA_report.json")
     report_filename_b = os.path.join(report_folder, "EntityExtractorB_report.json")
 
-    rasa.utils.io.create_directory(report_folder)
+    rasa.shared.utils.io.create_directory(report_folder)
     mock_interpreter = Interpreter(
         [
             EntityExtractorA({"provides": ["entities"]}),

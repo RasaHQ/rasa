@@ -1,3 +1,4 @@
+import errno
 import glob
 import json
 import os
@@ -346,3 +347,46 @@ def is_logging_disabled() -> bool:
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     return log_level == "ERROR" or log_level == "WARNING"
+
+
+def create_directory_for_file(file_path: Union[Text, Path]) -> None:
+    """Creates any missing parent directories of this file path."""
+
+    create_directory(os.path.dirname(file_path))
+
+
+def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
+    """Dump an object as a json string to a file."""
+
+    write_text_file(json.dumps(obj, indent=2), filename)
+
+
+def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
+    import ruamel.yaml
+
+    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+    yaml_writer.unicode_supplementary = True
+    yaml_writer.default_flow_style = False
+    yaml_writer.version = YAML_VERSION
+
+    yaml_writer.dump(obj, output)
+
+
+def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
+    """Writes data (python dict) to a yaml string."""
+    str_io = StringIO()
+    _dump_yaml(obj, str_io)
+    return str_io.getvalue()
+
+
+def create_directory(directory_path: Text) -> None:
+    """Creates a directory and its super paths.
+
+    Succeeds even if the path already exists."""
+
+    try:
+        os.makedirs(directory_path)
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise

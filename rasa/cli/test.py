@@ -68,7 +68,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
-    io_utils.create_directory(output)
+    rasa.shared.utils.io.create_directory(output)
 
     if isinstance(args.model, list) and len(args.model) == 1:
         args.model = args.model[0]
@@ -102,7 +102,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
-    io_utils.create_directory(output)
+    rasa.shared.utils.io.create_directory(output)
 
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
