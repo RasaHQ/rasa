@@ -136,12 +136,14 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 
     The name for a retrieval action has an extra `utter_` prefix added to
     the corresponding retrieval intent name.
+
     Args:
         action_name: Name of the action.
         retrieval_intents: List of retrieval intents defined in the NLU training data.
 
-    Returns: True or False depending on whether the resolved intent name
-     is present in the list of retrieval intents.
+    Returns: 
+        `True` if the resolved intent name is present in the list of retrieval 
+        intents, `False` otherwise.
     """
 
     return (
@@ -154,7 +156,7 @@ def action_from_name(
     action_endpoint: Optional[EndpointConfig],
     user_actions: List[Text],
     should_use_form_action: bool = False,
-    retrieval_intents: List[Text] = [],
+    retrieval_intents: Optional[List[Text]] = None,
 ) -> "Action":
     """Return an action instance for the name."""
 
@@ -162,7 +164,7 @@ def action_from_name(
 
     if name in defaults and name not in user_actions:
         return defaults[name]
-    elif name.startswith(UTTER_PREFIX) and is_retrieval_action(name, retrieval_intents):
+    elif name.startswith(UTTER_PREFIX) and is_retrieval_action(name, retrieval_intents or []):
         return ActionRetrieveResponse(name)
     elif name.startswith(UTTER_PREFIX):
         return ActionUtterTemplate(name)
@@ -178,7 +180,7 @@ def actions_from_names(
     action_names: List[Text],
     action_endpoint: Optional[EndpointConfig],
     user_actions: List[Text],
-    retrieval_intents: List[Text] = [],
+    retrieval_intents: Optional[List[Text]] = None,
 ) -> List["Action"]:
     """Converts the names of actions into class instances."""
 
@@ -259,12 +261,12 @@ class ActionRetrieveResponse(Action):
         self.silent_fail = silent_fail
 
     @staticmethod
-    def intent_name_from_action(action_name) -> Text:
+    def intent_name_from_action(action_name: Text) -> Text:
         """Resolve the name of the intent from the action name."""
         return action_name.split(UTTER_PREFIX)[1]
 
     @staticmethod
-    def action_name_from_intent(intent_name) -> Text:
+    def action_name_from_intent(intent_name: Text) -> Text:
         """Resolve the action name from the name of the intent."""
         return f"{UTTER_PREFIX}{intent_name}"
 
