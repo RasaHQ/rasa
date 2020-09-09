@@ -1,9 +1,8 @@
 from pathlib import Path
-from typing import Text
 
 from rasa.cli.utils import print_success
-from rasa.nlu.training_data.formats import NLGMarkdownReader
-from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
+from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.utils.converter import TrainingDataConverter
 
 

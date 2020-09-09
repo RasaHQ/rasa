@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import Dict, Text, Any
 
 from rasa.cli.utils import print_success
-from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.formats import MarkdownReader
-from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.nlu.utils.pattern_utils import read_lookup_table_file
+from rasa.shared.nlu.training_data.formats import MarkdownReader
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.converter import TrainingDataConverter
 
 

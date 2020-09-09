@@ -1,6 +1,5 @@
 import asyncio
 from pathlib import Path
-from typing import Text
 
 from rasa.cli.utils import print_success, print_warning
 from rasa.constants import DOCS_URL_RULES

@@ -4,10 +4,10 @@ from typing import Text
 
 import pytest
 
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
     NLGMarkdownToYamlConverter,
 )
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 @pytest.mark.parametrize(

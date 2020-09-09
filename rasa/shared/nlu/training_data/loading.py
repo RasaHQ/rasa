@@ -1,11 +1,11 @@
 import json
 import logging
 import os
-import re
 import typing
 from typing import Optional, Text
 
 import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.formats import MarkdownReader, NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -123,7 +123,7 @@ def guess_format(filename: Text) -> Text:
     Returns:
         Guessed file format.
     """
-    from rasa.shared.nlu.training_data.formats import RasaYAMLReader, markdown
+    from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 
     guess = UNK
 

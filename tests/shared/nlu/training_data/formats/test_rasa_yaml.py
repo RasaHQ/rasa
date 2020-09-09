@@ -6,6 +6,7 @@ import pytest
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import INTENT
+from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,

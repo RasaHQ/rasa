@@ -7,6 +7,7 @@ import pytest
 from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
     NLUMarkdownToYamlConverter,
 )
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 @pytest.mark.parametrize(
