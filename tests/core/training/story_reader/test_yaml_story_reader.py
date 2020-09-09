@@ -3,10 +3,10 @@ from typing import Text, List
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
-from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
@@ -254,7 +254,7 @@ async def test_warning_if_intent_not_in_domain(default_domain: Domain):
     """
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = rasa.utils.io.read_yaml(stories)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(UserWarning) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -273,7 +273,7 @@ async def test_no_warning_if_intent_in_domain(default_domain: Domain):
     )
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = rasa.utils.io.read_yaml(stories)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -292,7 +292,7 @@ async def test_active_loop_is_parsed(default_domain: Domain):
     )
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = rasa.utils.io.read_yaml(stories)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -302,13 +302,13 @@ async def test_active_loop_is_parsed(default_domain: Domain):
 
 def test_is_test_story_file(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    rasa.utils.io.write_yaml({"stories": []}, path)
+    rasa.shared.utils.io.write_yaml({"stories": []}, path)
     assert YAMLStoryReader.is_yaml_test_stories_file(path)
 
 
 def test_is_not_test_story_file_if_it_doesnt_contain_stories(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    rasa.utils.io.write_yaml({"nlu": []}, path)
+    rasa.shared.utils.io.write_yaml({"nlu": []}, path)
     assert not YAMLStoryReader.is_yaml_test_stories_file(path)
 
 
@@ -319,7 +319,7 @@ def test_is_not_test_story_file_if_empty(tmp_path: Path):
 
 def test_is_not_test_story_file_without_test_prefix(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
-    rasa.utils.io.write_yaml({"stories": []}, path)
+    rasa.shared.utils.io.write_yaml({"stories": []}, path)
     assert not YAMLStoryReader.is_yaml_test_stories_file(path)
 
 
@@ -351,7 +351,7 @@ def test_read_mixed_training_data_file(default_domain: Domain):
     training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
 
     reader = YAMLStoryReader(default_domain)
-    yaml_content = rasa.utils.io.read_yaml_file(training_data_file)
+    yaml_content = rasa.shared.utils.io.read_yaml_file(training_data_file)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)

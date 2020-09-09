@@ -7,6 +7,7 @@ import os
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
+import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES
@@ -164,8 +165,12 @@ class MemoizationPolicy(Policy):
         # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
-            compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
-            return base64.b64encode(compressed).decode(io.DEFAULT_ENCODING)
+            compressed = zlib.compress(
+                bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
+            )
+            return base64.b64encode(compressed).decode(
+                rasa.shared.utils.io.DEFAULT_ENCODING
+            )
         else:
             return feature_str
 
@@ -255,7 +260,7 @@ class MemoizationPolicy(Policy):
         featurizer = TrackerFeaturizer.load(path)
         memorized_file = os.path.join(path, "memorized_turns.json")
         if os.path.isfile(memorized_file):
-            data = json.loads(rasa.utils.io.read_file(memorized_file))
+            data = json.loads(rasa.shared.utils.io.read_file(memorized_file))
             return cls(
                 featurizer=featurizer, priority=data["priority"], lookup=data["lookup"]
             )
