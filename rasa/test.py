@@ -5,6 +5,7 @@ import typing
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.constants import (
     DEFAULT_RESULTS_PATH,
@@ -14,6 +15,7 @@ from rasa.constants import (
 import rasa.cli.utils as cli_utils
 import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
+import rasa.shared.nlu.training_data.loading
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -32,7 +34,7 @@ def test_core_models_in_directory(
     loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
-    number_of_stories = io_utils.read_json_file(story_n_path)
+    number_of_stories = rasa.shared.utils.io.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
 
 
@@ -209,12 +211,12 @@ def compare_nlu_models(
     """Trains multiple models, compares them and saves the results."""
 
     from rasa.nlu.test import drop_intents_below_freq
-    from rasa.nlu.training_data import load_data
     from rasa.nlu.utils import write_json_to_file
     from rasa.utils.io import create_path
     from rasa.nlu.test import compare_nlu
+    import rasa.shared.nlu.training_data.loading
 
-    data = load_data(nlu)
+    data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=5)
 
     create_path(output)
@@ -279,7 +281,7 @@ def perform_nlu_cross_validation(
     additional_arguments = additional_arguments or {}
     folds = int(additional_arguments.get("folds", 3))
     nlu_config = rasa.nlu.config.load(config)
-    data = rasa.nlu.training_data.load_data(nlu)
+    data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = utils.minimal_kwargs(additional_arguments, cross_validate)
     results, entity_results, response_selection_results = cross_validate(

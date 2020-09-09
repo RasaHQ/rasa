@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import InvalidModelError
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,8 @@ if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
     from rasa.nlu.model import Metadata
 
-from rasa.nlu.constants import TEXT, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.shared.nlu.constants import TEXT
 
 
 class SpacyNLP(Component):
@@ -184,7 +186,10 @@ class SpacyNLP(Component):
     ) -> Dict[Text, List[Any]]:
         attribute_docs = {}
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-            texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
+
+            texts = [
+                self.get_text(e, attribute) for e in training_data.training_examples
+            ]
             # Index and freeze indices of the training samples for preserving the order
             # after processing the data.
             indexed_training_samples = [(idx, text) for idx, text in enumerate(texts)]
@@ -225,8 +230,11 @@ class SpacyNLP(Component):
                     example.set(SPACY_DOCS[attribute], example_attribute_doc)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
-        message.set(SPACY_DOCS[TEXT], self.doc_for_text(message.text))
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            if message.get(attribute):
+                message.set(
+                    SPACY_DOCS[attribute], self.doc_for_text(message.get(attribute))
+                )
 
     @classmethod
     def load(

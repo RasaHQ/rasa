@@ -5,25 +5,26 @@ import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
-from rasa.nlu.constants import (
+from rasa.nlu.constants import ENTITY_ATTRIBUTE_TEXT
+from rasa.shared.nlu.constants import (
+    INTENT,
     ENTITIES,
-    EXTRACTOR,
     ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_TEXT,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    EXTRACTOR,
     ENTITY_ATTRIBUTE_TYPE,
-    INTENT,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -390,7 +391,7 @@ def _collect_user_uttered_predictions(
 def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
     from rasa.core.events import ActionExecutionRejected
 
-    rejected_action_name: Text = partial_tracker.active_loop["name"]
+    rejected_action_name: Text = partial_tracker.active_loop_name
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
@@ -405,7 +406,7 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
-    gold = event.action_name
+    gold = event.action_name or event.action_text
 
     if circuit_breaker_tripped:
         predicted = "circuit breaker tripped"
@@ -469,7 +470,7 @@ def _form_might_have_been_rejected(
     domain: Domain, tracker: DialogueStateTracker, predicted_action_name: Text
 ) -> bool:
     return (
-        tracker.active_loop.get("name") == predicted_action_name
+        tracker.active_loop_name == predicted_action_name
         and predicted_action_name in domain.form_names
     )
 
@@ -801,10 +802,10 @@ async def compare_models_in_dir(
     """
     number_correct = defaultdict(list)
 
-    for run in io_utils.list_subdirectories(model_dir):
+    for run in rasa.shared.utils.io.list_subdirectories(model_dir):
         number_correct_in_run = defaultdict(list)
 
-        for model in sorted(io_utils.list_files(run)):
+        for model in sorted(rasa.shared.utils.io.list_files(run)):
             if not model.endswith("tar.gz"):
                 continue
 

@@ -12,10 +12,11 @@ from typing import Text, List, Dict, Any, Union, Optional, Tuple
 from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.io
 import rasa.shared.utils.common
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,9 @@ class NaturalLanguageInterpreter:
             return RegexInterpreter()
         else:
             return _create_from_endpoint_config(obj)
+
+    def featurize_message(self, message: Message) -> Optional[Message]:
+        pass
 
 
 class RegexInterpreter(NaturalLanguageInterpreter):
@@ -274,8 +278,21 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
+
         result = self.interpreter.parse(text)
 
+        return result
+
+    def featurize_message(self, message: Message) -> Optional[Message]:
+        """Featurize message using a trained NLU pipeline.
+        Args:
+            message: storing text to process
+        Returns:
+            message containing tokens and features which are the output of the NLU pipeline
+        """
+        if self.lazy_init and self.interpreter is None:
+            self._load_interpreter()
+        result = self.interpreter.featurize_message(message)
         return result
 
     def _load_interpreter(self) -> None:

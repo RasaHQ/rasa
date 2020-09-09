@@ -22,9 +22,10 @@ from rasa.core.constants import (
 )
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
 import rasa.shared.utils.io
 
@@ -84,7 +85,7 @@ class MappingPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -97,7 +98,7 @@ class MappingPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predicts the assigned action.
@@ -190,6 +191,6 @@ class MappingPolicy(Policy):
         if os.path.exists(path):
             meta_path = os.path.join(path, "mapping_policy.json")
             if os.path.isfile(meta_path):
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
+                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
 
         return cls(**meta)

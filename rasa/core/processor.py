@@ -32,11 +32,8 @@ from rasa.core.events import (
     SlotSet,
     UserUttered,
 )
-from rasa.core.interpreter import (
-    INTENT_MESSAGE_PREFIX,
-    NaturalLanguageInterpreter,
-    RegexInterpreter,
-)
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
@@ -387,7 +384,14 @@ class MessageProcessor:
                 f"Invalid entity specification: {entities}. Assuming no entities."
             )
             entity_list = []
-        tracker.update(UserUttered.create_external(intent_name, entity_list))
+
+        # Set the new event's input channel to the latest input channel, so
+        # that we don't lose this property.
+        input_channel = tracker.get_latest_input_channel()
+
+        tracker.update(
+            UserUttered.create_external(intent_name, entity_list, input_channel)
+        )
         await self._predict_and_execute_next_action(output_channel, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)

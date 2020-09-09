@@ -5,6 +5,7 @@ from typing import Dict
 
 import pytest
 
+import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core.constants import (
     DEFAULT_KNOWLEDGE_BASE_ACTION,
@@ -15,8 +16,8 @@ from rasa.core.constants import (
 )
 from rasa.core.domain import USED_ENTITIES_KEY, USE_ENTITIES_KEY, IGNORE_ENTITIES_KEY
 from rasa.core import training, utils
-from rasa.core.domain import Domain, InvalidDomain, SessionConfig
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.domain import Domain, InvalidDomain, SessionConfig, State
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -45,18 +46,16 @@ async def test_create_train_data_no_history(default_domain):
 
     assert hashed == [
         "[{}]",
-        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
-        '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_default": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_default": 1.0, "prev_utter_default": 1.0, ' '"slot_name_0": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1.0, ' '"slot_name_0": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -77,52 +76,36 @@ async def test_create_train_data_with_history(default_domain):
     hashed = sorted(hashed)
 
     assert hashed == [
-        "[null, null, null, {}]",
-        "[null, null, {}, "
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
-        "[null, null, {}, " '{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        "[null, {}, "
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
-        "[null, {}, "
-        '{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}, '
-        '{"intent_default": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
-        '{"intent_default": 1.0, '
-        '"prev_utter_default": 1.0, "slot_name_0": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1.0}, '
-        '{"intent_goodbye": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1.0}, '
-        '{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
-        '[{}, {"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
-        '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}, '
-        '{"intent_default": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
-        '[{}, {"intent_greet": 1.0, "prev_action_listen": 1.0}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1.0}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        "[{}]",
     ]
 
 
+def check_for_too_many_entities_and_remove_them(state: State) -> State:
+    # we ignore entities where there are > 1 of them:
+    # entities come from dictionary keys; as a result, they are stored
+    # in different order in the tuple which makes the test unstable
+    if (
+        state.get("user")
+        and state.get("user", {}).get("entities")
+        and len(state.get("user").get("entities")) > 1
+    ):
+        state.get("user")["entities"] = ()
+    return state
+
+
 async def test_create_train_data_unfeaturized_entities():
+    import copy
+
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"
     domain = Domain.load(domain_file)
@@ -137,25 +120,29 @@ async def test_create_train_data_unfeaturized_entities():
     # decoded needs to be sorted
     hashed = []
     for states in decoded:
-        hashed.append(json.dumps(states, sort_keys=True))
+        new_states = [
+            check_for_too_many_entities_and_remove_them(state) for state in states
+        ]
+
+        hashed.append(json.dumps(new_states, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
     assert hashed == [
         "[{}]",
-        '[{"intent_why": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_why": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_thank": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_thank": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
-        '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        '[{"entity_name": 1.0, "entity_other": 1.0, "intent_default": 1.0, "prev_utter_default": 1.0}]',
-        '[{"entity_name": 1.0, "entity_other": 1.0, "intent_default": 1.0, "prev_action_listen": 1.0}]',
-        '[{"entity_name": 1.0, "entity_other": 1.0, "entity_unrelated_recognized_entity": 1.0, "intent_ask": 1.0, "prev_utter_default": 1.0}]',
-        '[{"entity_name": 1.0, "entity_other": 1.0, "entity_unrelated_recognized_entity": 1.0, "intent_ask": 1.0, "prev_action_listen": 1.0}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "why"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "thank"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"entities": [], "intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"entities": [], "intent": "ask"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "why"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "thank"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [], "intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [], "intent": "ask"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -192,7 +179,7 @@ def test_utter_templates():
 
 def test_custom_slot_type(tmpdir: Path):
     domain_path = str(tmpdir / "domain.yml")
-    io_utils.write_text_file(
+    rasa.shared.utils.io.write_text_file(
         """
        slots:
          custom:
@@ -229,7 +216,7 @@ def test_custom_slot_type(tmpdir: Path):
 )
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
     domain_path = str(tmpdir / "domain.yml")
-    io_utils.write_text_file(domain_unkown_slot_type, domain_path)
+    rasa.shared.utils.io.write_text_file(domain_unkown_slot_type, domain_path)
     with pytest.raises(ValueError):
         Domain.load(domain_path)
 
@@ -257,8 +244,9 @@ def test_domain_to_dict():
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         "entities": [],
-        "forms": [],
+        "forms": {},
         "intents": [],
+        "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
         "session_config": {
             "carry_over_slots_to_new_session": True,
@@ -276,8 +264,9 @@ actions:
 - action_save_world
 config:
   store_entities_as_slots: true
+e2e_actions: []
 entities: []
-forms: []
+forms: {{}}
 intents: []
 responses:
   utter_greet:
@@ -435,7 +424,7 @@ def test_merge_domain_with_forms():
 
     test_yaml_2 = """
     forms:
-    - my_form3:
+      my_form3:
         slot1:
           type: from_text
     """

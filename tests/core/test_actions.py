@@ -45,7 +45,7 @@ from rasa.core.events import (
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.constants import USER_INTENT_SESSION_START
-from rasa.core.trackers import DialogueStateTracker, ACTIVE_LOOP_KEY
+from rasa.core.trackers import DialogueStateTracker, ACTIVE_LOOP
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -167,7 +167,8 @@ async def test_remote_action_runs(
                     "message_id": None,
                     "metadata": {},
                 },
-                ACTIVE_LOOP_KEY: {},
+                ACTIVE_LOOP: {},
+                "latest_action": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
@@ -221,7 +222,8 @@ async def test_remote_action_logs_events(
                     "message_id": None,
                     "metadata": {},
                 },
-                ACTIVE_LOOP_KEY: {},
+                ACTIVE_LOOP: {},
+                "latest_action": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
@@ -689,7 +691,7 @@ def test_get_form_action():
     actions:
     - my_action
     forms:
-    - {form_action_name}:
+      {form_action_name}:
         my_slot:
         - type: from_text
     """

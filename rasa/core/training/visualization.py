@@ -3,15 +3,25 @@ from collections import defaultdict, deque
 import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
+import rasa.shared.utils.io
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph, StoryStep
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
+    TEXT,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITIES,
+)
 
 if TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData, Message
+    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.message import Message
     import networkx
 
 EDGE_NONE_LABEL = "NONE"
@@ -38,36 +48,37 @@ class UserMessageGenerator:
 
         d = defaultdict(list)
         for example in data.training_examples:
-            if example.get("intent", {}) is not None:
-                d[example.get("intent", {})].append(example)
+            if example.get(INTENT, {}) is not None:
+                d[example.get(INTENT, {})].append(example)
         return d
 
     @staticmethod
     def _contains_same_entity(entities, e) -> bool:
-        return entities.get(e.get("entity")) is None or entities.get(
-            e.get("entity")
-        ) != e.get("value")
+        return entities.get(e.get(ENTITY_ATTRIBUTE_TYPE)) is None or entities.get(
+            e.get(ENTITY_ATTRIBUTE_TYPE)
+        ) != e.get(ENTITY_ATTRIBUTE_VALUE)
 
-    def message_for_data(self, structured_info) -> Any:
+    def message_for_data(self, structured_info: Dict[Text, Any]) -> Any:
         """Find a data sample with the same intent and entities.
 
         Given the parsed data from a message (intent and entities) finds a
         message in the data that has the same intent and entities."""
 
-        if structured_info.get("intent") is not None:
-            intent_name = structured_info.get("intent", {}).get("name")
+        if structured_info.get(INTENT) is not None:
+            intent_name = structured_info.get(INTENT, {}).get(INTENT_NAME_KEY)
             usable_examples = self.mapping.get(intent_name, [])[:]
             random.shuffle(usable_examples)
             for example in usable_examples:
                 entities = {
-                    e.get("entity"): e.get("value") for e in example.get("entities", [])
+                    e.get(ENTITY_ATTRIBUTE_TYPE): e.get(ENTITY_ATTRIBUTE_VALUE)
+                    for e in example.get(ENTITIES, [])
                 }
-                for e in structured_info.get("entities", []):
+                for e in structured_info.get(ENTITIES, []):
                     if self._contains_same_entity(entities, e):
                         break
                 else:
-                    return example.text
-        return structured_info.get("text")
+                    return example.get(TEXT)
+        return structured_info.get(TEXT)
 
 
 def _fingerprint_node(graph, node, max_history) -> Set[Text]:
@@ -291,7 +302,7 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    template = io_utils.read_file(visualization_html_path())
+    template = rasa.shared.utils.io.read_file(visualization_html_path())
 
     # Insert graph into template
     template = template.replace("// { is-client }", "isClient = true", 1)
@@ -300,7 +311,7 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     graph_as_text = graph_as_text.replace("\\", "\\\\")
     template = template.replace("// { graph-content }", f"graph = `{graph_as_text}`", 1)
 
-    io_utils.write_text_file(template, output_file)
+    rasa.shared.utils.io.write_text_file(template, output_file)
 
 
 def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> int:

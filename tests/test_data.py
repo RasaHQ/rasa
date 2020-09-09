@@ -3,11 +3,9 @@ import os
 
 from pathlib import Path
 
-import pytest
-
 from rasa.constants import DEFAULT_E2E_TESTS_PATH
 from rasa import data
-from rasa.utils.io import write_text_file
+from rasa.shared.utils.io import write_text_file
 
 
 def test_story_file_can_not_be_yml(tmpdir: Path):
@@ -84,41 +82,7 @@ def test_domain_files_are_not_conversation_tests(tmpdir: Path):
     assert not data.is_test_stories_file(str(domain_path))
 
 
-@pytest.mark.parametrize(
-    "path,is_yaml",
-    [
-        ("my_file.yaml", True),
-        ("my_file.yml", True),
-        ("/a/b/c/my_file.yml", True),
-        ("/a/b/c/my_file.ml", False),
-        ("my_file.md", False),
-    ],
-)
-def test_is_yaml_file(path, is_yaml):
-    assert data.is_likely_yaml_file(path) == is_yaml
-
-
-@pytest.mark.parametrize(
-    "path,is_md",
-    [
-        ("my_file.md", True),
-        ("/a/b/c/my_file.md", True),
-        ("/a/b/c/my_file.yml", False),
-        ("my_file.yaml", False),
-    ],
-)
-def test_is_md_file(path, is_md):
-    assert data.is_likely_markdown_file(path) == is_md
-
-
-@pytest.mark.parametrize(
-    "path,is_json",
-    [
-        ("my_file.json", True),
-        ("/a/b/c/my_file.json", True),
-        ("/a/b/c/my_file.yml", False),
-        ("my_file.md", False),
-    ],
-)
-def test_is_json_file(path, is_json):
-    assert data.is_likely_json_file(path) == is_json
+async def test_get_files_with_mixed_training_data():
+    default_data_path = "data/test_mixed_yaml_training_data/training_data.yml"
+    assert data.get_data_files(default_data_path, data.is_nlu_file)
+    assert data.get_data_files(default_data_path, data.is_story_file)

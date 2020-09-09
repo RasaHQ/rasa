@@ -118,7 +118,7 @@ class ForgetReminders(Action):
         self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
 
-        dispatcher.utter_message(f"Okay, I'll cancel all your reminders.")
+        dispatcher.utter_message("Okay, I'll cancel all your reminders.")
 
         # Cancel all reminders
         return [ReminderCancelled()]

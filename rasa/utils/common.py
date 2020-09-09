@@ -60,7 +60,6 @@ def set_log_level(log_level: Optional[int] = None):
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
     a default log level will be used."""
-    import logging
 
     if not log_level:
         log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
@@ -287,24 +286,6 @@ def update_existing_keys(
         if k in updated:
             updated[k] = v
     return updated
-
-
-def lazy_property(function: Callable) -> Any:
-    """Allows to avoid recomputing a property over and over.
-
-    The result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
-
-    attr_name = "_lazy_" + function.__name__
-
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, function(self))
-        return getattr(self, attr_name)
-
-    return _lazyprop
 
 
 def raise_deprecation_warning(
