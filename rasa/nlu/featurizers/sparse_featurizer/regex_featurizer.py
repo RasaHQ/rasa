@@ -1,30 +1,31 @@
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Text, Union, Type, Tuple
+from typing import Any, Dict, List, Optional, Text, Type, Tuple
 
 import numpy as np
 import scipy.sparse
 
+import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import (
-    RESPONSE,
+from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
+from rasa.shared.nlu.constants import (
     TEXT,
-    ACTION_TEXT,
-    TOKENS_NAMES,
+    RESPONSE,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
-    FEATURIZER_CLASS_ALIAS,
+    ACTION_TEXT,
 )
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
-from rasa.utils.features import Features
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +164,7 @@ class RegexFeaturizer(SparseFeaturizer):
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
-            known_patterns = rasa.utils.io.read_json_file(regex_file)
+            known_patterns = rasa.shared.utils.io.read_json_file(regex_file)
             return RegexFeaturizer(meta, known_patterns=known_patterns)
         else:
             return RegexFeaturizer(meta)

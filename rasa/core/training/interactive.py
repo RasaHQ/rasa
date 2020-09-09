@@ -12,8 +12,10 @@ import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
 
+import rasa.shared.data
 import rasa.shared.utils.io
-from rasa.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
 from rasa.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
@@ -35,7 +37,6 @@ from rasa.core.constants import (
     LOOP_VALIDATE,
     LOOP_REJECTED,
 )
-from rasa.nlu.constants import TEXT
 from rasa.core.domain import Domain
 import rasa.core.events
 from rasa.core.events import (
@@ -47,7 +48,8 @@ from rasa.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP
 from rasa.core.training import visualization
 from rasa.core.training.visualization import (
@@ -60,8 +62,8 @@ from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 # noinspection PyProtectedMember
-from rasa.nlu.training_data import loading
-from rasa.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data import loading
+from rasa.shared.nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test
@@ -749,7 +751,7 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
 
-    import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
+    import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
     messages = []
 
@@ -787,7 +789,9 @@ def _write_stories_to_file(
     else:
         append_write = "w"  # make a new file if not
 
-    with open(export_story_path, append_write, encoding=io_utils.DEFAULT_ENCODING) as f:
+    with open(
+        export_story_path, append_write, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+    ) as f:
         i = 1
         for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
@@ -814,7 +818,7 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
 
 def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> None:
     """Write the nlu data of the conversation_id to the file paths."""
-    from rasa.nlu.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
     msgs = _collect_messages(events)
     msgs = _filter_messages(msgs)
@@ -841,7 +845,7 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     else:
         stringified_training_data = nlu_data.nlu_as_json()
 
-    io_utils.write_text_file(stringified_training_data, export_nlu_path)
+    rasa.shared.utils.io.write_text_file(stringified_training_data, export_nlu_path)
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
@@ -850,11 +854,11 @@ def _get_nlu_target_format(export_path: Text) -> Text:
     guessed_format = loading.guess_format(export_path)
 
     if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
-        if data.is_likely_json_file(export_path):
+        if rasa.shared.data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif data.is_likely_markdown_file(export_path):
+        elif rasa.shared.data.is_likely_markdown_file(export_path):
             guessed_format = MARKDOWN
-        elif data.is_likely_yaml_file(export_path):
+        elif rasa.shared.data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
     return guessed_format
@@ -1120,7 +1124,7 @@ async def _validate_action(
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data["text"]
@@ -1223,7 +1227,7 @@ async def _correct_entities(
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
-    from rasa.nlu.training_data import entities_parser
+    from rasa.shared.nlu.training_data import entities_parser
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)

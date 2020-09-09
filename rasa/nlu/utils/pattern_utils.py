@@ -1,8 +1,8 @@
 import re
 from typing import Dict, List, Text, Union
 
-import rasa.utils.io as io_utils
-from rasa.nlu.training_data import TrainingData
+import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def _convert_lookup_tables_to_regex(
@@ -64,7 +64,7 @@ def _read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
         Elements listed in the lookup table file.
     """
     try:
-        f = open(lookup_table_file, "r", encoding=io_utils.DEFAULT_ENCODING)
+        f = open(lookup_table_file, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING)
     except OSError:
         raise ValueError(
             f"Could not load lookup table {lookup_table_file}. "

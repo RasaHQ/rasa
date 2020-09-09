@@ -33,7 +33,8 @@ from rasa.core.actions.action import (
     RULE_SNIPPET_ACTION_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
 )
-from rasa.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
+from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import ACTION_NAME
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
