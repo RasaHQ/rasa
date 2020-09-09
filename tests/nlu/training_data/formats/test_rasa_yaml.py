@@ -358,6 +358,16 @@ def test_nlg_multimedia_load_dump_roundtrip():
     assert dumped == RasaYAMLWriter().dumps(dumped_result)
 
 
+def test_read_mixed_training_data_file():
+    training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
+
+    reader = RasaYAMLReader()
+
+    with pytest.warns(None) as record:
+        reader.read(training_data_file)
+        assert not len(record)
+
+
 def test_responses_are_converted_from_markdown():
     responses_md = textwrap.dedent(
         """
@@ -372,8 +382,3 @@ def test_responses_are_converted_from_markdown():
 
     validation_reader = RasaYAMLReader()
     dumped_result = validation_reader.reads(dumped)
-
-    assert dumped_result.responses == result.responses
-
-    # dumping again should also not change the format
-    assert dumped == RasaYAMLWriter().dumps(dumped_result)
