@@ -592,8 +592,6 @@ class DialogueStateTracker:
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
         """Dump the tracker as a story to a file."""
-        import rasa.utils.io
-
         rasa.shared.utils.io.write_text_file(
             self.export_stories() + "\n", export_path, append=True
         )
