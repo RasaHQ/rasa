@@ -4,10 +4,10 @@ from typing import Text
 
 import pytest
 
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.training.converters.story_markdown_to_yaml_converter import (
     StoryMarkdownToYamlConverter,
 )
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 @pytest.mark.parametrize(
