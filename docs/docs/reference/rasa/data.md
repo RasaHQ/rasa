@@ -90,6 +90,23 @@ Recursively collects all training files from a list of paths.
 
   paths of training data files.
 
+#### is\_valid\_filetype
+
+```python
+is_valid_filetype(path: Union[Text, Path]) -> bool
+```
+
+Checks if given file has a supported extension.
+
+**Arguments**:
+
+- `path` - Path to the source file.
+  
+
+**Returns**:
+
+  `True` is given file has supported extension, `False` otherwise.
+
 #### is\_nlu\_file
 
 ```python

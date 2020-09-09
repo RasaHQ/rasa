@@ -19,6 +19,24 @@ Reads markdown training data containing NLG stories and creates a TrainingData o
 
 Read markdown string and create TrainingData object
 
+#### is\_markdown\_nlg\_file
+
+```python
+ | @staticmethod
+ | is_markdown_nlg_file(filename: Union[Text, Path]) -> bool
+```
+
+Checks if given file contains NLG training data.
+
+**Arguments**:
+
+- `filename` - Path to the training data file.
+  
+
+**Returns**:
+
+  `True` if file contains NLG training data, `False` otherwise.
+
 ## NLGMarkdownWriter Objects
 
 ```python

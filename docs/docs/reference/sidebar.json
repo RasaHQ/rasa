@@ -101,6 +101,7 @@
           "items": [
             "reference/rasa/utils/train_utils",
             "reference/rasa/utils/io",
+            "reference/rasa/utils/converter",
             "reference/rasa/utils/plotting",
             "reference/rasa/utils/endpoints",
             "reference/rasa/utils/common",
@@ -204,6 +205,13 @@
                     "reference/rasa/core/training/story_reader/story_reader"
                   ],
                   "label": "rasa.core.training.story_reader",
+                  "type": "category"
+                },
+                {
+                  "items": [
+                    "reference/rasa/core/training/converters/story_markdown_to_yaml_converter"
+                  ],
+                  "label": "rasa.core.training.converters",
                   "type": "category"
                 }
               ],
