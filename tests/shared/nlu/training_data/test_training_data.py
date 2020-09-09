@@ -119,23 +119,15 @@ def test_composite_entities_data():
     assert td.number_of_examples_per_entity["role 'from'"] == 3
 
 
-@pytest.mark.parametrize(
-    "intent_response_key, template_key",
-    [["chitchat/ask_name", "utter_chitchat/ask_name"]],
-)
-def test_intent_response_key_to_template_key(
-    intent_response_key: Text, template_key: Text
-):
+def test_intent_response_key_to_template_key():
+    intent_response_key = "chitchat/ask_name"
+    template_key = "utter_chitchat/ask_name"
     assert intent_response_key_to_template_key(intent_response_key) == template_key
 
 
-@pytest.mark.parametrize(
-    "intent_response_key, template_key",
-    [["chitchat/ask_name", "utter_chitchat/ask_name"]],
-)
-def test_template_key_to_intent_response_key(
-    intent_response_key: Text, template_key: Text
-):
+def test_template_key_to_intent_response_key():
+    intent_response_key = "chitchat/ask_name"
+    template_key = "utter_chitchat/ask_name"
     assert template_key_to_intent_response_key(template_key) == intent_response_key
 
 

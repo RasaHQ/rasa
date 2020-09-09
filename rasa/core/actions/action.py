@@ -164,7 +164,9 @@ def action_from_name(
 
     if name in defaults and name not in user_actions:
         return defaults[name]
-    elif name.startswith(UTTER_PREFIX) and is_retrieval_action(name, retrieval_intents or []):
+    elif name.startswith(UTTER_PREFIX) and is_retrieval_action(
+        name, retrieval_intents or []
+    ):
         return ActionRetrieveResponse(name)
     elif name.startswith(UTTER_PREFIX):
         return ActionUtterTemplate(name)
