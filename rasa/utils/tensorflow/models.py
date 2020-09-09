@@ -223,7 +223,7 @@ class RasaModel(tf.keras.models.Model):
                     self.save(self.best_model_file, overwrite=True)
 
         if best_model_epoch >= 0:
-            logger.info(f'The model of epoch {epoch} (out of {epochs} in total) will be stored!')
+            logger.info(f'The model of epoch {best_model_epoch} (out of {epochs} in total) will be stored!')
         if self.model_summary_file is not None:
             self._write_model_summary()
 
