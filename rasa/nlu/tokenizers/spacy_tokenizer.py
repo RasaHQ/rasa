@@ -4,7 +4,7 @@ from typing import Text, List, Any, Type, Optional
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.utils.spacy_utils import SpacyNLP
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 from rasa.nlu.constants import SPACY_DOCS
 

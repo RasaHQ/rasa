@@ -5,13 +5,13 @@ from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     INTENT_RANKING_KEY,
-    INTENT,
     PREDICTED_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
 )
+from rasa.shared.nlu.constants import INTENT
 
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
@@ -48,7 +48,8 @@ class FallbackClassifier(IntentClassifier):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to
+            process.
 
         """
 

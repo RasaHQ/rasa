@@ -18,7 +18,7 @@ from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 if typing.TYPE_CHECKING:
-    from rasa.utils.features import Features
+    from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
