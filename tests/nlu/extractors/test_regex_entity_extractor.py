@@ -2,9 +2,9 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
-from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import ENTITIES, TEXT
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 
 
@@ -92,7 +92,7 @@ def test_process(
             data={
                 TEXT: "I live in Berlin",
                 "entities": [{"entity": "city", "value": "Berlin"}],
-            },
+            }
         ),
     ]
 
@@ -171,7 +171,7 @@ def test_lowercase(
             data={
                 TEXT: "I live in Berlin",
                 "entities": [{"entity": "city", "value": "Berlin"}],
-            },
+            }
         ),
     ]
 
@@ -196,7 +196,7 @@ def test_do_not_overwrite_any_entities():
             data={
                 TEXT: "I live in Berlin",
                 "entities": [{"entity": "city", "value": "Berlin"}],
-            },
+            }
         ),
     ]
     training_data.lookup_tables = [

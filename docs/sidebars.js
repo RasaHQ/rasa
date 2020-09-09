@@ -1,3 +1,42 @@
+// FIXME: remove this when we have the sidebar dropdown in the theme
+let versions = [];
+try { versions = require('./versions.json'); } catch (ex) {}
+
+const legacyVersion = {
+  type: 'link',
+  label: 'Legacy 1.x',
+  href: 'https://legacy-docs-v1.rasa.com',
+};
+
+const allVersionItems = versions.length > 0
+? [
+    {
+      type: 'link',
+      label: versions[0],
+      href: '/',
+    },
+    ...versions.slice(1).map((version) => ({
+      type: 'link',
+      label: version,
+      href: `/${version}/`,
+    })),
+    {
+      type: 'link',
+      label: 'Master/Unreleased',
+      href: '/next/',
+    },
+    legacyVersion,
+  ]
+: [
+    {
+      type: 'link',
+      label: 'Master/Unreleased',
+      href: '/',
+    },
+    legacyVersion,
+  ];
+// end FIXME
+
 module.exports = {
   default: [
     'index',
@@ -162,6 +201,13 @@ module.exports = {
       label: 'Change Log',
       collapsed: true,
       items: ['changelog', 'migration-guide'],
+    },
+    // FIXME: remove this when we have the sidebar dropdown in the theme
+    {
+      type: 'category',
+      label: 'Docs Versions',
+      collapsed: true,
+      items: allVersionItems,
     },
   ],
 };

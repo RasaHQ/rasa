@@ -1,8 +1,8 @@
 import responses
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import Message
-from rasa.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.message import Message
 
 
 def test_duckling_entity_extractor(component_builder):

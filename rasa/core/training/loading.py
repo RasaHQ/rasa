@@ -3,14 +3,15 @@ import os
 from pathlib import Path
 from typing import Text, Optional, Dict, List, Union
 
+import rasa.shared.data
+import rasa.shared.utils.io
 from rasa import data
-import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.structures import StoryStep
-from rasa.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSIONS
+from rasa.shared.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +23,9 @@ def _get_reader(
     use_e2e: bool = False,
 ) -> StoryReader:
 
-    if data.is_likely_markdown_file(filename):
+    if rasa.shared.data.is_likely_markdown_file(filename):
         return MarkdownStoryReader(domain, template_variables, use_e2e, filename)
-    elif data.is_likely_yaml_file(filename):
+    elif rasa.shared.data.is_likely_yaml_file(filename):
         return YAMLStoryReader(domain, template_variables, use_e2e, filename)
     else:
         # This is a use case for uploading the story over REST API.
@@ -73,7 +74,7 @@ async def load_data_from_resource(
         raise ValueError(f"Resource '{resource}' does not exist.")
 
     return await load_data_from_files(
-        io_utils.list_files(resource),
+        rasa.shared.utils.io.list_files(resource),
         domain,
         template_variables,
         use_e2e,

@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from rasa.nlu.training_data.formats import RasaYAMLReader
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 
 
 DOCS_BASE_DIR = Path("docs/")

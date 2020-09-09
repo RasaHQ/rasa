@@ -21,17 +21,15 @@ from rasa.core.constants import (
     LOOP_VALIDATE,
     LOOP_NAME,
 )
-
-
-from rasa.nlu.constants import (
+from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_TYPE,
     INTENT,
     TEXT,
-    ACTION_NAME,
-    ACTION_TEXT,
     ENTITIES,
-    INTENT_NAME_KEY,
-    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
+    ACTION_TEXT,
+    ACTION_NAME,
 )
 
 if typing.TYPE_CHECKING:
@@ -84,8 +82,8 @@ def md_format_message(
         Message with entities annotated inline, e.g.
         `I am from [Berlin]{"entity": "city"}`.
     """
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
-    from rasa.nlu.training_data import entities_parser
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.shared.nlu.training_data import entities_parser
 
     message_from_md = entities_parser.parse_training_example(text, intent)
     deserialised_entities = deserialise_entities(entities)
@@ -207,7 +205,6 @@ class Event:
         type_name: Text, default: Optional[Type["Event"]] = None
     ) -> Optional[Type["Event"]]:
         """Returns a slots class by its type name."""
-        from rasa.core import utils
 
         for cls in rasa.shared.utils.common.all_subclasses(Event):
             if cls.type_name == type_name:
@@ -402,13 +399,16 @@ class UserUttered(Event):
 
     @staticmethod
     def create_external(
-        intent_name: Text, entity_list: Optional[List[Dict[Text, Any]]] = None
+        intent_name: Text,
+        entity_list: Optional[List[Dict[Text, Any]]] = None,
+        input_channel: Optional[Text] = None,
     ) -> "UserUttered":
         return UserUttered(
             text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
             intent={INTENT_NAME_KEY: intent_name},
             metadata={IS_EXTERNAL: True},
             entities=entity_list or [],
+            input_channel=input_channel,
         )
 
 
