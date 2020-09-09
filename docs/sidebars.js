@@ -205,7 +205,7 @@ module.exports = {
     // FIXME: remove this when we have the sidebar dropdown in the theme
     {
       type: 'category',
-      label: 'Versions',
+      label: 'Docs Versions',
       collapsed: true,
       items: allVersionItems,
     },
