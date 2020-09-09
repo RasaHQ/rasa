@@ -141,8 +141,7 @@ async def test_train_model_checkpointing(component_builder, tmpdir):
     from pathlib import Path
 
     model_name = "rs-checkpointed-model"
-    #best_model_file = Path(tmpdir.strpath,  model_name)
-    best_model_file = Path('/Users/thomas/research/code/carbon-bot/models/response_selector', model_name)
+    best_model_file = Path(tmpdir.strpath,  model_name)
     assert not best_model_file.exists()
 
     _config = RasaNLUModelConfig(
@@ -164,8 +163,7 @@ async def test_train_model_checkpointing(component_builder, tmpdir):
 
     await train(
         _config,
-        #path=Path(tmpdir.strpath),
-        path=Path('/Users/thomas/research/code/carbon-bot/models/response_selector'),
+        path=Path(tmpdir.strpath),
         data="data/examples/rasa/response_selector",
         component_builder=component_builder,
         fixed_model_name=model_name
