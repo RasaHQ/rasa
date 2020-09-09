@@ -13,7 +13,7 @@ from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.constants import USER
+from rasa.shared.core.constants import USER
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 

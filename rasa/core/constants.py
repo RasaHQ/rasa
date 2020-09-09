@@ -54,8 +54,3 @@ POSTGRESQL_SCHEMA = "POSTGRESQL_SCHEMA"
 # Names of the environment variables defining PostgreSQL pool size and max overflow
 POSTGRESQL_POOL_SIZE = "SQL_POOL_SIZE"
 POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
-
-# the keys for State (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
-# represent the origin of a SubState
-USER = "user"
-SLOTS = "slots"

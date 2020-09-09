@@ -4,8 +4,7 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import Domain
 import numpy as np
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, ENTITIES, TEXT, INTENT
-from rasa.core.constants import SLOTS
-from rasa.shared.core.constants import ACTIVE_LOOP
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.nlu.interpreter import RegexInterpreter
 import scipy.sparse
 

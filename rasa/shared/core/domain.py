@@ -8,7 +8,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Unio
 from pathlib import Path
 
 from rasa.core.actions import Action, action
-from rasa.core.constants import USER, SLOTS
+from rasa.shared.core.constants import USER, SLOTS
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
@@ -917,6 +917,7 @@ class Domain:
                 del slot["initial_value"]
             if slot["auto_fill"]:
                 del slot["auto_fill"]
+            # TODO!!!!
             if slot["type"].startswith("rasa.core.slots"):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 

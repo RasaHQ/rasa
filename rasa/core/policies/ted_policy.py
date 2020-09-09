@@ -22,8 +22,8 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, ENTITIES
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, SLOTS
-from rasa.shared.core.constants import ACTIVE_LOOP
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
