@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 
 import rasa.core.lock_store
-import rasa.core.training.structures
 import rasa.utils.io
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
@@ -24,30 +23,13 @@ def test_is_int():
     assert not utils.is_int("test")
 
 
-def test_subsample_array_read_only():
-    t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    r = utils.subsample_array(t, 5, can_modify_incoming_array=False)
-
-    assert len(r) == 5
-    assert set(r).issubset(t)
-
-
-def test_subsample_array():
-    t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    # this will modify the original array and shuffle it
-    r = utils.subsample_array(t, 5)
-
-    assert len(r) == 5
-    assert set(r).issubset(t)
-
-
-def test_on_hot():
+def test_one_hot():
     r = utils.one_hot(4, 6)
     assert (r[[0, 1, 2, 3, 5]] == 0).all()
     assert r[4] == 1
 
 
-def test_on_hot_out_of_range():
+def test_one_hot_out_of_range():
     with pytest.raises(ValueError):
         utils.one_hot(4, 3)
 

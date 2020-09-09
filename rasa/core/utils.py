@@ -46,9 +46,6 @@ import rasa.cli.utils as cli_utils
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    from random import Random
-
 
 def configure_file_logging(
     logger_obj: logging.Logger, log_file: Optional[Text]
@@ -69,24 +66,6 @@ def configure_file_logging(
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
-
-
-def subsample_array(
-    arr: List[Any],
-    max_values: int,
-    can_modify_incoming_array: bool = True,
-    rand: Optional["Random"] = None,
-) -> List[Any]:
-    """Shuffles the array and returns `max_values` number of elements."""
-    import random
-
-    if not can_modify_incoming_array:
-        arr = arr[:]
-    if rand is not None:
-        rand.shuffle(arr)
-    else:
-        random.shuffle(arr)
-    return arr[:max_values]
 
 
 def is_int(value: Any) -> bool:

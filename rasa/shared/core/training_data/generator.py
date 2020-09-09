@@ -3,8 +3,10 @@ from collections import defaultdict, namedtuple, deque
 import copy
 import logging
 import random
+from random import Random
+
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict, Tuple, Deque
+from typing import Optional, List, Text, Set, Dict, Tuple, Deque, Any
 
 from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.core.constants import SHOULD_NOT_BE_SET
@@ -494,7 +496,7 @@ class TrainingDataGenerator:
         # get into trouble by collecting too many trackers
         # hence the sub sampling
         if max_number_of_trackers is not None:
-            return utils.subsample_array(
+            return _subsample_array(
                 incoming_trackers, max_number_of_trackers, rand=self.config.rand
             )
         else:
@@ -555,7 +557,7 @@ class TrainingDataGenerator:
         next_active_trackers = defaultdict(list)
 
         if self.config.use_story_concatenation:
-            ending_trackers = utils.subsample_array(
+            ending_trackers = _subsample_array(
                 story_end_trackers,
                 self.config.augmentation_factor,
                 rand=self.config.rand,
@@ -792,3 +794,21 @@ class TrainingDataGenerator:
                     f"with this checkpoint.",
                     docs=DOCS_URL_STORIES + "#checkpoints",
                 )
+
+
+def _subsample_array(
+    arr: List[Any],
+    max_values: int,
+    can_modify_incoming_array: bool = True,
+    rand: Optional["Random"] = None,
+) -> List[Any]:
+    """Shuffles the array and returns `max_values` number of elements."""
+    import random
+
+    if not can_modify_incoming_array:
+        arr = arr[:]
+    if rand is not None:
+        rand.shuffle(arr)
+    else:
+        random.shuffle(arr)
+    return arr[:max_values]
