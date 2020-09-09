@@ -161,16 +161,21 @@ class BooleanSlot(Slot):
 
 
 def bool_from_any(x: Any) -> bool:
-    """ Converts bool/float/int/str to bool or raises TypeError """
+    """ Converts bool/float/int/str to bool or raises error """
     
     if isinstance(x, bool):
         return x
     elif isinstance(x, (float, int)):
-        return x == 1.
-    elif isinstance(x, str) and x.isnumeric():
-        return float(x) == 1.
+        return x == 1.0
     elif isinstance(x, str):
-        return x.strip().lower() == "true"
+        if x.isnumeric():
+            return float(x) == 1.0
+        elif x.strip().lower() == "true":
+            return True
+        elif x.strip().lower() == "false":
+            return False
+        else:
+            raise ValueError("Cannot convert string to bool")
     else:
         raise TypeError("Cannot convert to bool")
 
