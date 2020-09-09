@@ -62,7 +62,6 @@ class SupportedData(Enum):
 
 
 class Policy:
-
     @staticmethod
     def supported_data() -> SupportedData:
         """The type of data supported by this policy.
