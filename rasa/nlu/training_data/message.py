@@ -13,6 +13,8 @@ from rasa.nlu.constants import (
     RESPONSE,
     INTENT_RESPONSE_KEY,
     TEXT,
+    INTENT_METADATA,
+    METADATA,
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
@@ -96,7 +98,9 @@ class Message:
         cls,
         text: Text,
         intent: Optional[Text] = None,
-        entities: List[Dict[Text, Any]] = None,
+        entities: Optional[List[Dict[Text, Any]]] = None,
+        intent_metadata: Optional[Any] = None,
+        metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
         """
@@ -119,6 +123,10 @@ class Message:
                 data[INTENT_RESPONSE_KEY] = intent
         if entities:
             data[ENTITIES] = entities
+        if intent_metadata is not None:
+            data[INTENT_METADATA] = intent_metadata
+        if metadata is not None:
+            data[METADATA] = metadata
         return cls(data, **kwargs)
 
     @classmethod

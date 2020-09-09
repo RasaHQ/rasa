@@ -2,6 +2,8 @@ TEXT = "text"
 INTENT = "intent"
 RESPONSE = "response"
 ACTION_TEXT = "action_text"
+INTENT_METADATA = "intent_metadata"
+METADATA = "metadata"
 
 INTENT_RESPONSE_KEY = "intent_response_key"
 

@@ -163,7 +163,10 @@ class RasaYAMLReader(TrainingDataReader):
             return
 
         examples = intent_data.get(KEY_INTENT_EXAMPLES, "")
-        for example, entities in self._parse_training_examples(examples, intent):
+        intent_metadata = intent_data.get(KEY_METADATA)
+        for example, entities, metadata in self._parse_training_examples(
+            examples, intent
+        ):
 
             plain_text = entities_parser.replace_entities(example)
 
@@ -171,26 +174,31 @@ class RasaYAMLReader(TrainingDataReader):
                 plain_text, entities, self.entity_synonyms
             )
 
-            message = Message.build(plain_text, intent)
-            if entities:
-                message.set(nlu_constants.ENTITIES, entities)
-            self.training_examples.append(message)
+            self.training_examples.append(
+                Message.build(plain_text, intent, entities, intent_metadata, metadata)
+            )
 
     def _parse_training_examples(
         self, examples: Union[Text, List[Dict[Text, Any]]], intent: Text
-    ) -> List[Tuple[Text, List[Dict[Text, Any]]]]:
+    ) -> List[Tuple[Text, List[Dict[Text, Any]], Optional[Any]]]:
         import rasa.nlu.training_data.entities_parser as entities_parser
 
         if isinstance(examples, list):
-            example_strings = [
-                # pytype: disable=attribute-error
-                example.get(KEY_INTENT_TEXT, "").strip(STRIP_SYMBOLS)
+            example_tuples = [
+                (
+                    # pytype: disable=attribute-error
+                    example.get(KEY_INTENT_TEXT, "").strip(STRIP_SYMBOLS),
+                    example.get(KEY_METADATA),
+                )
                 for example in examples
                 if example
             ]
         # pytype: enable=attribute-error
         elif isinstance(examples, str):
-            example_strings = self._parse_multiline_example(intent, examples)
+            example_tuples = [
+                (example, None)
+                for example in self._parse_multiline_example(intent, examples)
+            ]
         else:
             rasa.shared.utils.io.raise_warning(
                 f"Unexpected block found in '{self.filename}' "
@@ -201,7 +209,7 @@ class RasaYAMLReader(TrainingDataReader):
             )
             return []
 
-        if not example_strings:
+        if not example_tuples:
             rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"Intent '{intent}' has no examples.",
@@ -209,9 +217,9 @@ class RasaYAMLReader(TrainingDataReader):
             )
 
         results = []
-        for example in example_strings:
+        for example, metadata in example_tuples:
             entities = entities_parser.find_entities_in_training_example(example)
-            results.append((example, entities))
+            results.append((example, entities, metadata))
 
         return results
 
