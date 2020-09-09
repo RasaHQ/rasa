@@ -3,7 +3,7 @@ import os
 
 from pathlib import Path
 
-from rasa.constants import DEFAULT_E2E_TESTS_PATH
+from rasa.shared.constants import DEFAULT_E2E_TESTS_PATH
 from rasa import data
 from rasa.shared.utils.io import write_text_file
 

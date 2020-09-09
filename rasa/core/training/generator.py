@@ -6,7 +6,7 @@ import random
 from tqdm import tqdm
 from typing import Optional, List, Text, Set, Dict, Tuple, Deque
 
-from rasa.constants import DOCS_URL_STORIES
+from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.core.constants import SHOULD_NOT_BE_SET
 from rasa.core import utils
 from rasa.core.domain import Domain, State

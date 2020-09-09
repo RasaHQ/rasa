@@ -9,12 +9,13 @@ import rasa.data
 import rasa.shared.data
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
-from rasa.constants import (
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DOCS_URL_DOMAINS,
+    LEGACY_DOCS_BASE_URL,
     DEFAULT_E2E_TESTS_PATH,
     DOCS_URL_STORIES,
-    LEGACY_DOCS_BASE_URL,
 )
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_DOMAINS
 from rasa.core.events import UserUttered
 from rasa.core.interpreter import RegexInterpreter
 from rasa.shared.core.training_data.story_reader.story_reader import (

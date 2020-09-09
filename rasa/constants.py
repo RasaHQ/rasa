@@ -9,7 +9,6 @@ DEFAULT_DOMAIN_PATH = "domain.yml"
 DEFAULT_ACTIONS_PATH = "actions"
 DEFAULT_MODELS_PATH = "models"
 DEFAULT_DATA_PATH = "data"
-DEFAULT_E2E_TESTS_PATH = "tests"
 DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
@@ -32,7 +31,6 @@ DEFAULT_RASA_PORT = 5005
 
 DOCS_URL_POLICIES = DOCS_BASE_URL + "/core/policies/"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
-DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
 DOCS_URL_RULES = DOCS_BASE_URL + "/core/rules/"
 DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
@@ -45,8 +43,6 @@ DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/nlu/components/"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide/"
 
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
-
-LEGACY_DOCS_BASE_URL = "https://legacy-docs-v1.rasa.com"
 
 CONFIG_KEYS_CORE = ["policies"]
 CONFIG_KEYS_NLU = ["language", "pipeline"]

@@ -9,10 +9,9 @@ import re
 import os
 from typing import Text, List, Dict, Any, Union, Optional, Tuple
 
-from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_STORIES
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.io
 import rasa.shared.utils.common

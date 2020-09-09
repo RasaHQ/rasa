@@ -2,7 +2,7 @@ import logging
 from typing import Text, Optional, Dict, Any, List
 
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_STORIES
+from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.core import utils
 from rasa.core.events import UserUttered
 from rasa.core.training.structures import (
