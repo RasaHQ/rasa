@@ -228,8 +228,7 @@ class RasaModel(tf.keras.models.Model):
                         )
 
                     val_results = self._get_metric_results(prefix="val_")
-                    model_improved = self._does_model_improve(val_results)
-                    if model_improved and self.checkpoint_model:
+                    if self.checkpoint_model and self._does_model_improve(val_results):
                         logger.debug(f"Creating model checkpoint at epoch={epoch}...")
                         best_model_epoch = epoch
                         self.save(self.best_model_file, overwrite=True)
