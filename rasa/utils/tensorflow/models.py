@@ -22,7 +22,7 @@ from typing import (
 from tqdm import tqdm
 from rasa.constants import NLU_CHECKPOINT_MODEL_NAME
 from rasa.utils.common import is_logging_disabled
-from rasa.utils import io
+import rasa.utils.io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     SEQUENCE,
