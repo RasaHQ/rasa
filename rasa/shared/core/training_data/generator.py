@@ -10,7 +10,6 @@ from typing import Optional, List, Text, Set, Dict, Tuple, Deque, Any
 
 from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.core.constants import SHOULD_NOT_BE_SET
-from rasa.core import utils
 from rasa.core.domain import Domain, State
 from rasa.shared.core.events import (
     ActionExecuted,
