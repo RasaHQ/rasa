@@ -10,8 +10,6 @@ import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES
 from rasa.core import jobs
 from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
     Action,
     ActionExecutionRejection,
 )
@@ -21,7 +19,7 @@ from rasa.core.channels.channel import (
     UserMessage,
 )
 from rasa.core.constants import UTTER_PREFIX, REQUESTED_SLOT
-from rasa.shared.core.constants import USER_INTENT_RESTART
+from rasa.shared.core.constants import USER_INTENT_RESTART, ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,

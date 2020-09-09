@@ -23,10 +23,10 @@ import rasa.shared.utils.io
 import rasa.cli.utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
-from rasa.shared.core.constants import USER_INTENT_RESTART
+from rasa.shared.core.constants import USER_INTENT_RESTART, ACTION_LISTEN_NAME
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.core import run, train, utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
+from rasa.core.actions.action import default_action_names
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,

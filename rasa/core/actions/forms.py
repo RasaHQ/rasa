@@ -11,8 +11,8 @@ from rasa.core.domain import Domain
 from rasa.core.actions.action import (
     ActionExecutionRejection,
     RemoteAction,
-    ACTION_LISTEN_NAME,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker

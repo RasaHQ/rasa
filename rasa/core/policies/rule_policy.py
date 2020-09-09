@@ -24,14 +24,9 @@ from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
-)
+    ACTION_LISTEN_NAME, ACTION_RESTART_NAME, ACTION_SESSION_START_NAME, ACTION_DEFAULT_FALLBACK_NAME, ACTION_BACK_NAME)
 from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_BACK_NAME,
-    ACTION_SESSION_START_NAME,
     RULE_SNIPPET_ACTION_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
 )
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.core.domain import InvalidDomain

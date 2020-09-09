@@ -596,9 +596,7 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        from rasa.core.actions.action import (  # pytype: disable=pyi-error
-            ACTION_LISTEN_NAME,
-        )
+        from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
         tracker._reset()
         tracker.trigger_followup_action(ACTION_LISTEN_NAME)

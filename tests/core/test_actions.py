@@ -6,15 +6,6 @@ from aioresponses import aioresponses
 import rasa.core
 from rasa.core.actions import action
 from rasa.core.actions.action import (
-    ACTION_BACK_NAME,
-    ACTION_DEACTIVATE_FORM_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_SESSION_START_NAME,
     RULE_SNIPPET_ACTION_NAME,
     ActionBack,
     ActionDefaultAskAffirmation,
@@ -29,7 +20,6 @@ from rasa.core.actions.action import (
     ActionSessionStart,
 )
 from rasa.core.actions.forms import FormAction
-from rasa.core.actions.two_stage_fallback import ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain
 from rasa.shared.core.domain import SessionConfig
@@ -45,7 +35,10 @@ from rasa.core.events import (
     UserUttered,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
-from rasa.shared.core.constants import USER_INTENT_SESSION_START
+from rasa.shared.core.constants import USER_INTENT_SESSION_START, ACTION_LISTEN_NAME, ACTION_RESTART_NAME, \
+    ACTION_SESSION_START_NAME, ACTION_DEFAULT_FALLBACK_NAME, ACTION_DEACTIVATE_FORM_NAME, \
+    ACTION_REVERT_FALLBACK_EVENTS_NAME, ACTION_DEFAULT_ASK_AFFIRMATION_NAME, ACTION_DEFAULT_ASK_REPHRASE_NAME, \
+    ACTION_BACK_NAME, ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.trackers import DialogueStateTracker, ACTIVE_LOOP
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request

@@ -5,12 +5,7 @@ from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 
 from rasa.core import training
 from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
     ActionDefaultFallback,
-    ACTION_RESTART_NAME,
-    ACTION_BACK_NAME,
-    ACTION_SESSION_START_NAME,
     RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.core.channels import CollectingOutputChannel
@@ -19,7 +14,7 @@ from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
-)
+    ACTION_LISTEN_NAME, ACTION_RESTART_NAME, ACTION_SESSION_START_NAME, ACTION_DEFAULT_FALLBACK_NAME, ACTION_BACK_NAME)
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,

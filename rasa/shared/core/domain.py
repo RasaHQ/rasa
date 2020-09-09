@@ -91,11 +91,11 @@ class BaseDomain:
         self._custom_actions = action_names
 
         # only includes custom actions and utterance actions
-        self.user_actions = action.combine_with_templates(action_names, templates)
+        self.user_actions = self._combine_with_templates(action_names, templates)
 
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-                action.combine_user_with_default_actions(self.user_actions)
+                self._combine_user_with_default_actions(self.user_actions)
                 + self.form_names
                 + self.action_texts
         )
@@ -523,6 +523,41 @@ class BaseDomain:
         in_training_data_diff = set(training_data_elements) - set(domain_elements)
 
         return {"in_domain": in_domain_diff, "in_training_data": in_training_data_diff}
+
+    @staticmethod
+    def _combine_with_templates(
+        actions: List[Text], templates: Dict[Text, Any]
+    ) -> List[Text]:
+        """Combines actions with utter actions listed in responses section."""
+        unique_template_names = [
+            a for a in sorted(list(templates.keys())) if a not in actions
+        ]
+        return actions + unique_template_names
+
+    @staticmethod
+    def _combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
+        # remove all user actions that overwrite default actions
+        # this logic is a bit reversed, you'd think that we should remove
+        # the action name from the default action names if the user overwrites
+        # the action, but there are some locations in the code where we
+        # implicitly assume that e.g. "action_listen" is always at location
+        # 0 in this array. to keep it that way, we remove the duplicate
+        # action names from the users list instead of the defaults
+        defaults = [
+            core_constants.ACTION_LISTEN_NAME,
+            core_constants.ACTION_RESTART_NAME,
+            core_constants.ACTION_SESSION_START_NAME,
+            core_constants.ACTION_DEFAULT_FALLBACK_NAME,
+            core_constants.ACTION_DEACTIVATE_FORM_NAME,
+            core_constants.ACTION_REVERT_FALLBACK_EVENTS_NAME,
+            core_constants.ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+            core_constants.ACTION_DEFAULT_ASK_REPHRASE_NAME,
+            core_constants.ACTION_TWO_STAGE_FALLBACK_NAME,
+            core_constants.ACTION_BACK_NAME
+        ]
+
+        unique_user_actions = [a for a in user_actions if a not in defaults]
+        return defaults + unique_user_actions
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.

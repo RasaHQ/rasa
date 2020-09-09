@@ -1,4 +1,4 @@
-from rasa.core.actions.action import ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted, SlotSet, UserUttered, ActionExecuted
 from rasa.core.trackers import DialogueStateTracker

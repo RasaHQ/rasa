@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import pytest
 
 import rasa.shared.utils.io
-from rasa.core.actions.action import ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.core.domain import Domain
 
 import rasa.utils.io as io_utils

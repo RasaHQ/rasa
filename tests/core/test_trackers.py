@@ -11,7 +11,7 @@ import pytest
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training, restore
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.agent import Agent
 from rasa.core.constants import REQUESTED_SLOT, LOOP_NAME
 from rasa.core.domain import Domain

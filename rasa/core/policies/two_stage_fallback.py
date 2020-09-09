@@ -6,13 +6,6 @@ from typing import List, Text, Optional, Any
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.actions.action import (
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_LISTEN_NAME,
-)
 
 from rasa.core.events import UserUttered, ActionExecuted
 
@@ -23,7 +16,8 @@ from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE, ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME, \
+    ACTION_REVERT_FALLBACK_EVENTS_NAME, ACTION_DEFAULT_ASK_AFFIRMATION_NAME, ACTION_DEFAULT_ASK_REPHRASE_NAME
 from rasa.shared.core.domain import InvalidDomain
 from rasa.shared.nlu.constants import ACTION_NAME
 

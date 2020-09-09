@@ -7,7 +7,8 @@ from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
 from rasa.core.actions import action
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
+from rasa.core.actions.action import ActionExecutionRejection
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.actions.forms import FormAction, REQUESTED_SLOT
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain

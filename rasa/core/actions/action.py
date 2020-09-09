@@ -24,7 +24,10 @@ from rasa.nlu.constants import (
     INTENT_NAME_KEY,
 )
 from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE, ACTION_LISTEN_NAME, ACTION_RESTART_NAME, \
+    ACTION_SESSION_START_NAME, ACTION_DEFAULT_FALLBACK_NAME, ACTION_DEACTIVATE_FORM_NAME, \
+    ACTION_REVERT_FALLBACK_EVENTS_NAME, ACTION_DEFAULT_ASK_AFFIRMATION_NAME, ACTION_DEFAULT_ASK_REPHRASE_NAME, \
+    ACTION_BACK_NAME
 from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY
 from rasa.core.events import (
     UserUtteranceReverted,
@@ -46,24 +49,6 @@ if typing.TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
 
 logger = logging.getLogger(__name__)
-
-ACTION_LISTEN_NAME = "action_listen"
-
-ACTION_RESTART_NAME = "action_restart"
-
-ACTION_SESSION_START_NAME = "action_session_start"
-
-ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
-
-ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
-
-ACTION_REVERT_FALLBACK_EVENTS_NAME = "action_revert_fallback_events"
-
-ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
-
-ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
-
-ACTION_BACK_NAME = "action_back"
 
 RULE_SNIPPET_ACTION_NAME = "..."
 

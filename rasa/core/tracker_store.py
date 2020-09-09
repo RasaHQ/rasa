@@ -23,7 +23,7 @@ from boto3.dynamodb.conditions import Key
 import rasa.core.utils as core_utils
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
     POSTGRESQL_SCHEMA,

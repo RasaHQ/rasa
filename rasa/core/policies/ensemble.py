@@ -18,12 +18,8 @@ from rasa.constants import (
     DOCS_URL_MIGRATION_GUIDE,
     DOCS_URL_RULES,
 )
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_BACK_NAME,
-    ACTION_RESTART_NAME,
-)
-from rasa.shared.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
+from rasa.shared.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART, ACTION_LISTEN_NAME, ACTION_RESTART_NAME, \
+    ACTION_BACK_NAME
 from rasa.shared.core.domain import InvalidDomain
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event

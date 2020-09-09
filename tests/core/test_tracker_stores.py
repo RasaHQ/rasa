@@ -18,7 +18,7 @@ from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManage
 from unittest.mock import Mock
 
 import rasa.core.tracker_store
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.core.domain import Domain
