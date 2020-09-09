@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {LiveProvider, LiveEditor, LiveError, LivePreview} from 'react-live';
 import clsx from 'clsx';
-import ThemeContext from '@theme/theme-context';
+import ThemeContext from '@theme/_contexts/ThemeContext';
 
 import styles from './styles.module.css';
 
