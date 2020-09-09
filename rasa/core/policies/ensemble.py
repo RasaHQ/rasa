@@ -295,7 +295,9 @@ class PolicyEnsemble:
     @classmethod
     def load_metadata(cls, path) -> Any:
         metadata_path = os.path.join(path, "metadata.json")
-        metadata = json.loads(rasa.utils.io.read_file(os.path.abspath(metadata_path)))
+        metadata = json.loads(
+            rasa.shared.utils.io.read_file(os.path.abspath(metadata_path))
+        )
         return metadata
 
     @staticmethod

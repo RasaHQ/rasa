@@ -6,56 +6,10 @@ import uuid
 from pathlib import Path
 from typing import Callable, Tuple, List, Text, Set, Union, Optional, Iterable
 
-from rasa.nlu.training_data import loading as nlu_loading
+from rasa.shared.data import TRAINING_DATA_EXTENSIONS
+from rasa.shared.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
-
-MARKDOWN_FILE_EXTENSIONS = {".md"}
-
-YAML_FILE_EXTENSIONS = {".yml", ".yaml"}
-
-JSON_FILE_EXTENSIONS = {".json"}
-
-TRAINING_DATA_EXTENSIONS = JSON_FILE_EXTENSIONS.union(MARKDOWN_FILE_EXTENSIONS).union(
-    YAML_FILE_EXTENSIONS
-)
-
-
-def is_likely_yaml_file(file_path: Text) -> bool:
-    """Check if a file likely contains yaml.
-
-    Arguments:
-        file_path: path to the file
-
-    Returns:
-        `True` if the file likely contains data in yaml format, `False` otherwise.
-    """
-    return Path(file_path).suffix in YAML_FILE_EXTENSIONS
-
-
-def is_likely_json_file(file_path: Text) -> bool:
-    """Check if a file likely contains json.
-
-    Arguments:
-        file_path: path to the file
-
-    Returns:
-        `True` if the file likely contains data in json format, `False` otherwise.
-    """
-    return Path(file_path).suffix in JSON_FILE_EXTENSIONS
-
-
-def is_likely_markdown_file(file_path: Text) -> bool:
-    """Check if a file likely contains markdown.
-
-    Arguments:
-        file_path: path to the file
-
-    Returns:
-        `True` if the file likely contains data in markdown format,
-        `False` otherwise.
-    """
-    return Path(file_path).suffix in MARKDOWN_FILE_EXTENSIONS
 
 
 def get_test_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:

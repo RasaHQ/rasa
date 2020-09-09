@@ -14,7 +14,8 @@ from telegram import (
 from typing import Dict, Text, Any, List, Optional, Callable, Awaitable
 
 from rasa.core.channels.channel import InputChannel, UserMessage, OutputChannel
-from rasa.core.constants import INTENT_MESSAGE_PREFIX, USER_INTENT_RESTART
+from rasa.core.constants import USER_INTENT_RESTART
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
 
