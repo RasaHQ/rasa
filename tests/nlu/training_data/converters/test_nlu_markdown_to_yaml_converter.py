@@ -65,9 +65,9 @@ def test_nlu_lookup_tables_are_converted(tmpdir: Path):
     os.makedirs(training_data_folder, exist_ok=True)
     training_data_file = Path(training_data_folder / "nlu.md")
 
-    simple_nlu_md = """
+    simple_nlu_md = f"""
     ## lookup:products.txt
-      data/nlu/lookups/products.txt
+      {tmpdir / "data/nlu/lookups/products.txt"}
     """
 
     with open(training_data_file, "w") as f:
@@ -82,7 +82,6 @@ def test_nlu_lookup_tables_are_converted(tmpdir: Path):
     with open(lookup_tables_file, "w") as f:
         f.write(simple_lookup_table_txt)
 
-    os.chdir(tmpdir)
     NLUMarkdownToYamlConverter().convert_and_write(
         training_data_file, converted_data_folder
     )

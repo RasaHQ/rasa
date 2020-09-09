@@ -152,7 +152,10 @@ class YAMLStoryWriter:
                 user_utterance.inline_comment(), KEY_USER_INTENT
             )
 
-        if YAMLStoryWriter._text_is_real_message(user_utterance):
+        if (
+            YAMLStoryWriter._text_is_real_message(user_utterance)
+            and user_utterance.text
+        ):
             result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
 
         if len(user_utterance.entities):
