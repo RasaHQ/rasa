@@ -8,16 +8,16 @@ import rasa.utils.io as io_utils
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import (
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import (
     ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
     TEXT,
+    ENTITY_ATTRIBUTE_TYPE,
 )
-from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 
 logger = logging.getLogger(__name__)
@@ -120,7 +120,7 @@ class RegexEntityExtractor(EntityExtractor):
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
-            patterns = io_utils.read_json_file(regex_file)
+            patterns = rasa.shared.utils.io.read_json_file(regex_file)
             return RegexEntityExtractor(meta, patterns=patterns)
 
         return RegexEntityExtractor(meta)
