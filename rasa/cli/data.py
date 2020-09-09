@@ -11,9 +11,12 @@ import rasa.cli.utils
 from rasa.constants import DEFAULT_DATA_PATH, DOCS_URL_RULES
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.core.training.story_reader.yaml_story_reader import KEY_ACTIVE_LOOP
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
+from rasa.nlu.training_data.loading import load_data
+from rasa.nlu.training_data.util import get_file_format
 from rasa.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
 from rasa.cli.utils import (
@@ -144,9 +147,6 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments
     """
-    from rasa.nlu.training_data.loading import load_data
-    from rasa.nlu.training_data.util import get_file_format
-
     data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = data.get_nlu_directory(data_path)
 
@@ -287,8 +287,6 @@ def _write_nlu_yaml(
 def _write_core_yaml(
     training_data_path: Path, output_path: Path, source_path: Path
 ) -> None:
-    from rasa.core.training.story_reader.yaml_story_reader import KEY_ACTIVE_LOOP
-
     reader = MarkdownStoryReader()
     writer = YAMLStoryWriter()
 
