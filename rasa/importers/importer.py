@@ -126,7 +126,6 @@ class TrainingDataImporter:
 
         config = config or {}
         importers = config.get("importers", [])
-        print(f'DOMAIN PATH={domain_path}')
         importers = [
             TrainingDataImporter._importer_from_dict(
                 importer, config_path, domain_path, training_data_paths
@@ -134,7 +133,6 @@ class TrainingDataImporter:
             for importer in importers
         ]
         importers = [importer for importer in importers if importer]
-        print(f'LELN(IMPORTERS={len(importers)}')
         if not importers:
             importers = [
                 RasaFileImporter(config_path, domain_path, training_data_paths)
@@ -167,13 +165,9 @@ class TrainingDataImporter:
         constructor_arguments = common_utils.minimal_kwargs(
             importer_config, importer_class
         )
-        print(f'IMPORTER CLASS={importer_class}')
-        xxx = importer_class(
+        return importer_class(
             config_path, domain_path, training_data_paths, **constructor_arguments
         )
-        print(f'XXX={type(xxx)}, {dir(xxx)}')
-        print(f'get_domain={xxx.get_domain()}, {dir(xxx.get_domain())}')
-        return xxx
 
 
 class NluDataImporter(TrainingDataImporter):
