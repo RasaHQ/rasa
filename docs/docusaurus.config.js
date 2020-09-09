@@ -63,8 +63,6 @@ module.exports = {
   customFields: {
     // NOTE: all non-standard options should go in this object
   },
-  // FIXME: set this to fail in CI after launch
-  onBrokenLinks: 'warn',
   title: 'Rasa Open Source Documentation',
   tagline: 'An open source machine learning framework for automated text and voice-based conversations',
   url: SITE_URL,
