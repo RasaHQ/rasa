@@ -10,7 +10,7 @@ import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FILE_FORMAT = "json"
+DEFAULT_FILE_FORMAT = "yml"
 
 
 def transform_entity_synonyms(
@@ -44,7 +44,7 @@ def get_file_format(resource_name: Text) -> Text:
     - if the resource is a file and has a known format, return this format
     - if the resource is a folder and all the resources have the
       same known format, return it
-    - otherwise, default to DEFAULT_FILE_FORMAT (json).
+    - otherwise, default to DEFAULT_FILE_FORMAT (yml).
     """
     from rasa.nlu.training_data import loading
 
