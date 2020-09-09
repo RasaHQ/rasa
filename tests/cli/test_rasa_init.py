@@ -23,6 +23,9 @@ def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
     ]
     assert all((Path("workspace") / file).exists() for file in required_files)
 
+    # ./__init__.py does not exist anymore
+    assert not (Path("workspace") / "__init__.py").exists()
+
 
 def test_not_found_init_path(run: Callable[..., RunResult]):
     output = run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
