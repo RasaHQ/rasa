@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Dict, Text, List, Any
 
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import BaseDomain
 from rasa.shared.core.events import SlotSet, ActionExecuted, Event
 from rasa.shared.exceptions import RasaCoreException
 from rasa.shared.core.training_data.story_reader.story_step_builder import (
@@ -17,7 +17,7 @@ class StoryReader:
 
     def __init__(
         self,
-        domain: Optional[Domain] = None,
+        domain: Optional[BaseDomain] = None,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
         source_name: Text = None,

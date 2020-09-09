@@ -1,14 +1,20 @@
 import copy
 import collections
+import typing
 import json
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
 
 import rasa.shared.core.constants as core_constants
+import rasa.shared.nlu.constants as nlu_constants
 import rasa.shared.constants as constants
+import rasa.shared.core.events as events
 import rasa.shared.core.slots as slots
 import rasa.shared.utils.common as common_utils
 import rasa.shared.utils.validation as validation_utils
 import rasa.shared.utils.io as io_utils
+
+if typing.TYPE_CHECKING:
+    from rasa.core.trackers import DialogueStateTracker
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
 SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
@@ -24,6 +30,12 @@ KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
 KEY_E2E_ACTIONS = "e2e_actions"
+
+# State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
+# representing the origin of a SubState;
+# the values are SubStates, that contain the information needed for featurization
+SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
+State = Dict[Text, SubState]
 
 
 class SessionConfig(NamedTuple):
@@ -210,6 +222,23 @@ class BaseDomain:
             "slot_warnings": slot_warnings,
         }
 
+    def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[events.SlotSet]:
+        if self.store_entities_as_slots:
+            slot_events = []
+            for s in self.slots:
+                if s.auto_fill:
+                    matching_entities = [
+                        e["value"] for e in entities if e["entity"] == s.name
+                    ]
+                    if matching_entities:
+                        if s.type_name == "list":
+                            slot_events.append(events.SlotSet(s.name, matching_entities))
+                        else:
+                            slot_events.append(events.SlotSet(s.name, matching_entities[-1]))
+            return slot_events
+        else:
+            return []
+
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
 
@@ -230,6 +259,32 @@ class BaseDomain:
             KEY_FORMS: self.forms,
             KEY_E2E_ACTIONS: self.action_texts,
         }
+
+    @staticmethod
+    def _clean_state(state: State) -> State:
+        return {
+            state_type: sub_state
+            for state_type, sub_state in state.items()
+            if sub_state
+        }
+
+    def get_active_states(self, tracker: "DialogueStateTracker") -> State:
+        """Return a bag of active states from the tracker state."""
+        state = {
+            core_constants.USER: self._get_user_sub_state(tracker),
+            core_constants.SLOTS: self._get_slots_sub_state(tracker),
+            core_constants.PREVIOUS_ACTION: self._get_prev_action_sub_state(tracker),
+            core_constants.ACTIVE_LOOP: self._get_active_loop_sub_state(tracker),
+        }
+        return self._clean_state(state)
+
+    def states_for_tracker_history(
+            self, tracker: "DialogueStateTracker"
+    ) -> List[State]:
+        """Array of states for each state of the trackers history."""
+        return [
+            self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()
+        ]
 
     @common_utils.lazy_property
     def intents(self):
@@ -568,6 +623,109 @@ class BaseDomain:
             intents_for_file.append({intent_name: intent_props})
 
         return intents_for_file
+
+    def _get_user_sub_state(
+        self, tracker: "DialogueStateTracker"
+    ) -> Dict[Text, Union[Text, Tuple[Text]]]:
+        """Turn latest UserUttered event into a substate containing intent,
+        text and set entities if present
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary containing intent, text and set entities
+        """
+        latest_message = tracker.latest_message
+        if not latest_message or latest_message.is_empty():
+            return {}
+
+        sub_state = latest_message.as_sub_state()
+
+        # filter entities based on intent config
+        # sub_state will be transformed to frozenset therefore we need to
+        # convert the list to the tuple
+        # sub_state is transformed to frozenset because we will later hash it
+        # for deduplication
+        entities = tuple(self._get_featurized_entities(latest_message))
+        if entities:
+            sub_state[nlu_constants.ENTITIES] = entities
+        else:
+            sub_state.pop(nlu_constants.ENTITIES, None)
+
+        return sub_state
+
+    @staticmethod
+    def _get_slots_sub_state(
+            tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Union[Text, Tuple[float]]]:
+        """Set all set slots with the featurization of the stored value
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping slot names to their featurization
+        """
+
+        # proceed with values only if the user of a bot have done something
+        # at the previous step i.e., when the state is not empty.
+        if tracker.latest_message == events.UserUttered.empty() or not tracker.latest_action:
+            return {}
+
+        slots = {}
+        for slot_name, slot in tracker.slots.items():
+            if slot is not None and slot.as_feature():
+                if slot.value == core_constants.SHOULD_NOT_BE_SET:
+                    slots[slot_name] = core_constants.SHOULD_NOT_BE_SET
+                elif any(slot.as_feature()):
+                    # only add slot if some of the features are not zero
+                    slots[slot_name] = tuple(slot.as_feature())
+
+        return slots
+
+    @staticmethod
+    def _get_prev_action_sub_state(
+            tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Text]:
+        """Turn the previous taken action into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary with the information on latest action
+        """
+        return tracker.latest_action
+
+    @staticmethod
+    def _get_active_loop_sub_state(
+            tracker: "DialogueStateTracker",
+    ) -> Dict[Text, Text]:
+        """Turn tracker's active loop into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping "name" to active loop name if present
+        """
+
+        # we don't use tracker.active_loop_name
+        # because we need to keep should_not_be_set
+        active_loop = tracker.active_loop.get(core_constants.LOOP_NAME)
+        if active_loop:
+            return {core_constants.LOOP_NAME: active_loop}
+        else:
+            return {}
+
+    def _get_featurized_entities(self, latest_message: events.UserUttered) -> Set[Text]:
+        intent_name = latest_message.intent.get(nlu_constants.INTENT_NAME_KEY)
+        intent_config = self.intent_config(intent_name)
+        entities = latest_message.entities
+        entity_names = set(
+            entity["entity"] for entity in entities if "entity" in entity.keys()
+        )
+
+        wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
+
+        return entity_names.intersection(wanted_entities)
+
+    def intent_config(self, intent_name: Text) -> Dict[Text, Any]:
+        """Return the configuration for an intent."""
+        return self.intent_properties.get(intent_name, {})
 
     def _slot_definitions(self) -> Dict[Any, Dict[str, Any]]:
         return {slot.name: slot.persistence_info() for slot in self.slots}

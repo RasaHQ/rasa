@@ -5,7 +5,7 @@ from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import BaseDomain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.training_data.generator import TrainingDataGenerator
@@ -524,7 +524,7 @@ def _remove_auxiliary_nodes(
 
 async def visualize_stories(
     story_steps: List[StoryStep],
-    domain: Domain,
+    domain: BaseDomain,
     output_file: Optional[Text],
     max_history: int,
     interpreter: NaturalLanguageInterpreter = RegexInterpreter(),

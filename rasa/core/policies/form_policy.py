@@ -9,7 +9,8 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     LOOP_REJECTED,
 )
-from rasa.core.domain import Domain, State
+from rasa.core.domain import Domain
+from rasa.shared.core.domain import State
 from rasa.shared.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter

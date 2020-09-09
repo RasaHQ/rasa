@@ -4,7 +4,7 @@ from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
 from rasa.shared.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.domain import Domain, State
+from rasa.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
@@ -29,7 +29,7 @@ from rasa.shared.core.constants import (
     PREVIOUS_ACTION,
     LOOP_REJECTED,
 )
-from rasa.shared.core.domain import InvalidDomain
+from rasa.shared.core.domain import InvalidDomain, State
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 
 if TYPE_CHECKING:
