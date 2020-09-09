@@ -11,7 +11,9 @@ from ruamel.yaml import YAMLError
 
 import rasa.core.constants
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import lazy_property, sort_list_of_dicts_by_first_key
+from rasa.shared.nlu.constants import ENTITIES
+from rasa.utils.common import sort_list_of_dicts_by_first_key
+from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import (
@@ -41,8 +43,11 @@ from rasa.core.constants import (
 from rasa.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
-from rasa.nlu.constants import ENTITIES
+from rasa.shared.utils.validation import (
+    InvalidYamlFileError,
+    validate_yaml_schema,
+    validate_training_data_format_version,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -157,19 +162,18 @@ class Domain:
 
     @classmethod
     def from_file(cls, path: Text) -> "Domain":
-        return cls.from_yaml(rasa.utils.io.read_file(path), path)
+        return cls.from_yaml(rasa.shared.utils.io.read_file(path), path)
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
-        from rasa.validator import Validator
 
         try:
             validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
         except InvalidYamlFileError as e:
             raise InvalidDomain(str(e))
 
-        data = rasa.utils.io.read_yaml(yaml)
-        if not Validator.validate_training_data_format_version(data, original_filename):
+        data = rasa.shared.utils.io.read_yaml(yaml)
+        if not validate_training_data_format_version(data, original_filename):
             return Domain.empty()
 
         return cls.from_dict(data)
@@ -491,7 +495,7 @@ class Domain:
         )
         self_as_dict[KEY_ACTIONS] = self.action_names
         self_as_string = json.dumps(self_as_dict, sort_keys=True)
-        text_hash = utils.get_text_hash(self_as_string)
+        text_hash = rasa.shared.utils.io.get_text_hash(self_as_string)
 
         return int(text_hash, 16)
 
@@ -806,7 +810,7 @@ class Domain:
         """Load a domains specification from a dumped model directory."""
 
         metadata_path = os.path.join(path, "domain.json")
-        specification = json.loads(rasa.utils.io.read_file(metadata_path))
+        specification = json.loads(rasa.shared.utils.io.read_file(metadata_path))
         return specification
 
     def compare_with_specification(self, path: Text) -> bool:
@@ -1163,12 +1167,12 @@ class Domain:
         Returns:
             `True` if it's a domain file, otherwise `False`.
         """
-        from rasa.data import is_likely_yaml_file
+        from rasa.shared.data import is_likely_yaml_file
 
         if not is_likely_yaml_file(filename):
             return False
         try:
-            content = rasa.utils.io.read_yaml_file(filename)
+            content = rasa.shared.utils.io.read_yaml_file(filename)
             if any(key in content for key in ALL_DOMAIN_KEYS):
                 return True
         except YAMLError:

@@ -16,7 +16,7 @@ from rasa.core.constants import (
     LOOP_REJECTED,
     LOOP_NAME,
 )
-from rasa.nlu.constants import ACTION_NAME
+from rasa.shared.nlu.constants import ACTION_NAME
 
 from rasa.utils import common as common_utils
 

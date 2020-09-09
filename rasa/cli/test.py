@@ -3,6 +3,7 @@ import logging
 import os
 from typing import List
 
+import rasa.shared.utils.io
 from rasa.cli.arguments import test as arguments
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
@@ -10,9 +11,9 @@ from rasa.constants import (
     DEFAULT_E2E_TESTS_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
-    CONFIG_SCHEMA_FILE,
 )
-import rasa.utils.validation as validation_utils
+from rasa.shared.constants import CONFIG_SCHEMA_FILE
+import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils as cli_utils
 import rasa.utils.io as io_utils
 
@@ -106,7 +107,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
         if os.path.isdir(args.config):
-            args.config = io_utils.list_files(args.config)
+            args.config = rasa.shared.utils.io.list_files(args.config)
 
     if isinstance(args.config, list):
         logger.info(
@@ -117,7 +118,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
         for file in args.config:
             try:
                 validation_utils.validate_yaml_schema(
-                    io_utils.read_file(file),
+                    rasa.shared.utils.io.read_file(file),
                     CONFIG_SCHEMA_FILE,
                     show_validation_errors=False,
                 )

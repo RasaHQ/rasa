@@ -3,8 +3,8 @@ from typing import Dict, List, Text
 import pytest
 
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.nlu.training_data import Message
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(

@@ -9,6 +9,7 @@ from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.events import UserUttered
@@ -208,7 +209,7 @@ def test_log_failed_stories(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.core.test._log_stories([], path)
 
-    dump = rasa.utils.io.read_file(path)
+    dump = rasa.shared.utils.io.read_file(path)
 
     assert dump.startswith("#")
     assert len(dump.split("\n")) == 1
@@ -334,7 +335,7 @@ def test_log_failed_stories(tmp_path: Path):
     ],
 )
 def test_evaluation_store_serialise(entity_predictions, entity_targets):
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     store = EvaluationStore(
         entity_predictions=entity_predictions, entity_targets=entity_targets
