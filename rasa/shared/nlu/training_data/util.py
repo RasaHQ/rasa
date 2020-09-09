@@ -15,7 +15,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-from rasa.core.constants import UTTER_PREFIX
+from rasa.shared.nlu.constants import UTTER_PREFIX
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
