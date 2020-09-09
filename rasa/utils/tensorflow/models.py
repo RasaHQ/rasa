@@ -108,8 +108,6 @@ class RasaModel(tf.keras.models.Model):
                 model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
             )
 
-        self._set_up_tensorboard_writer()
-
     def _set_up_tensorboard_writer(self) -> None:
         if self.tensorboard_log_dir is not None:
             if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
@@ -334,16 +332,19 @@ class RasaModel(tf.keras.models.Model):
         checkpoint_directory, checkpoint_file = os.path.split(self.best_model_file)
         checkpoint_path = Path(checkpoint_directory)
 
+        # Copy all tf2 model files from the temp location to the final destination
         for f in checkpoint_path.glob(f"{checkpoint_file}*"):
             shutil.move(str(f.absolute()), model_file_name + f.suffix)
 
-        # Generate the tf2 checkpoint file
+        # Generate the tf2 checkpoint file, copy+replace to ensure consistency
         destination_path, destination_file = os.path.split(model_file_name)
         with open(os.path.join(checkpoint_directory, "checkpoint")) as in_file, open(
             os.path.join(destination_path, "checkpoint"), "w"
         ) as out_file:
             for line in in_file:
                 out_file.write(line.replace(checkpoint_file, destination_file))
+
+        # Remove the old file
         checkpoint_path.joinpath("checkpoint").unlink()
 
     @classmethod
