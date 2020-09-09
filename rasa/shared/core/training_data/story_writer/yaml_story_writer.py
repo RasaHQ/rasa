@@ -23,7 +23,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_USER_MESSAGE,
     KEY_ACTIVE_LOOP,
 )
-from rasa.shared.core.training_data.structures import StoryStep, Checkpoint
+from rasa.shared.core.training_data.structures import StoryStep, Checkpoint, STORY_START
 
 
 class YAMLStoryWriter:
@@ -151,7 +151,10 @@ class YAMLStoryWriter:
                 user_utterance.inline_comment(), KEY_USER_INTENT
             )
 
-        if YAMLStoryWriter._text_is_real_message(user_utterance):
+        if (
+            YAMLStoryWriter._text_is_real_message(user_utterance)
+            and user_utterance.text
+        ):
             result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
 
         if len(user_utterance.entities):
@@ -207,6 +210,8 @@ class YAMLStoryWriter:
         """
         result = []
         for checkpoint in checkpoints:
+            if checkpoint.name == STORY_START:
+                continue
             next_checkpoint = OrderedDict([(KEY_CHECKPOINT, checkpoint.name)])
             if checkpoint.conditions:
                 next_checkpoint[KEY_CHECKPOINT_SLOTS] = [

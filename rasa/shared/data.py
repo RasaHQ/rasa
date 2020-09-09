@@ -135,7 +135,7 @@ def get_data_files(
         if not path:
             continue
 
-        if _is_valid_filetype(path):
+        if is_valid_filetype(path):
             if filter_predicate(path):
                 data_files.add(os.path.abspath(path))
         else:
@@ -156,7 +156,7 @@ def _find_data_files_in_directory(
         for f in sorted(files):
             full_path = os.path.join(root, f)
 
-            if not _is_valid_filetype(full_path):
+            if not is_valid_filetype(full_path):
                 continue
 
             if filter_property(full_path):
@@ -165,7 +165,13 @@ def _find_data_files_in_directory(
     return filtered_files
 
 
-def _is_valid_filetype(path: Text) -> bool:
+def is_valid_filetype(path: Text) -> bool:
+    """Checks if given file has a supported extension.
+    Args:
+        path: Path to the source file.
+    Returns:
+        `True` is given file has supported extension, `False` otherwise.
+    """
     return os.path.isfile(path) and Path(path).suffix in TRAINING_DATA_EXTENSIONS
 
 
