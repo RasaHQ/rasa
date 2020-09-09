@@ -152,8 +152,8 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
-    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
-    from rasa.core.training.story_reader.markdown_story_reader import (
+    from rasa.shared.core.training_data.story_reader import YAMLStoryReader
+    from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
         MarkdownStoryReader,
     )
 
@@ -171,8 +171,8 @@ def is_test_stories_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file containing tests, otherwise `False`.
     """
-    from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
-    from rasa.core.training.story_reader.markdown_story_reader import (
+    from rasa.shared.core.training_data.story_reader import YAMLStoryReader
+    from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
         MarkdownStoryReader,
     )
 

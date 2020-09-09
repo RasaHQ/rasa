@@ -9,8 +9,12 @@ from rasa import data
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 from rasa.constants import DEFAULT_DATA_PATH, DOCS_URL_RULES
-from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
+    MarkdownStoryReader,
+)
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 from rasa.nlu.convert import convert_training_data
 from rasa.shared.nlu.training_data.formats.markdown import MarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
@@ -287,7 +291,7 @@ def _write_nlu_yaml(
 def _write_core_yaml(
     training_data_path: Path, output_path: Path, source_path: Path
 ) -> None:
-    from rasa.core.training.story_reader.yaml_story_reader import KEY_ACTIVE_LOOP
+    from rasa.shared.core.training_data.story_reader import KEY_ACTIVE_LOOP
 
     reader = MarkdownStoryReader()
     writer = YAMLStoryWriter()

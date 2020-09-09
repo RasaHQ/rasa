@@ -18,9 +18,10 @@ from rasa.core.events import (
 )
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import loading
-from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
+from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
+    MarkdownStoryReader,
+)
 from rasa.core.training.structures import Story
-from rasa.core.actions.action import ACTION_LISTEN_NAME
 
 
 async def test_persist_and_read_test_story_graph(

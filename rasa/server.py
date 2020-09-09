@@ -22,7 +22,9 @@ import rasa.core.utils
 import rasa.shared.utils.io
 import rasa.utils.endpoints
 import rasa.utils.io
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils import common as common_utils
 from rasa import model

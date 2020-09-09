@@ -7,7 +7,9 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.nlu.constants import ENTITY_ATTRIBUTE_TEXT

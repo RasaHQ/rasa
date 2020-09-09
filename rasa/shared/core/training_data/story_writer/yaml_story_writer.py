@@ -1,16 +1,15 @@
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Text, Union, Optional
+from typing import Any, Dict, List, Text, Union
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.events import UserUttered, ActionExecuted, SlotSet, ActiveLoop
-from rasa.core.training.story_reader.yaml_story_reader import (
+from rasa.shared.core.training_data.story_reader import (
     KEY_STORIES,
     KEY_STORY_NAME,
     KEY_USER_INTENT,
