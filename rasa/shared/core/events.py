@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
 
 import rasa.shared.utils.common
-from rasa.core import utils
 from typing import Union
 
 from rasa.core.constants import (
@@ -427,8 +426,8 @@ class BotUttered(Event):
         super().__init__(timestamp, metadata)
 
     def __members(self):
-        data_no_nones = utils.remove_none_values(self.data)
-        meta_no_nones = utils.remove_none_values(self.metadata)
+        data_no_nones = {k: v for k, v in self.data.items() if v is not None}
+        meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
         return (
             self.text,
             jsonpickle.encode(data_no_nones),

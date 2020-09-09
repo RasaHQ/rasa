@@ -316,11 +316,6 @@ async def download_file_from_url(url: Text) -> Text:
     return filename
 
 
-def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Remove all keys that store a `None` value."""
-    return {k: v for k, v in obj.items() if v is not None}
-
-
 def pad_lists_to_size(
     list_x: List, list_y: List, padding_value: Optional[Any] = None
 ) -> Tuple[List, List]:

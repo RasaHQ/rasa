@@ -17,7 +17,6 @@ from typing import (
 
 from rasa.cli import utils as cli_utils
 from rasa.shared.constants import DOCS_BASE_URL
-from rasa.core import utils
 
 try:
     from urlparse import urljoin  # pytype: disable=import-error
@@ -314,7 +313,7 @@ class CollectingOutputChannel(OutputChannel):
         }
 
         # filter out any values that are `None`
-        return utils.remove_none_values(obj)
+        return {k: v for k, v in obj.items() if v is not None}
 
     def latest_output(self) -> Optional[Dict[Text, Any]]:
         if self.messages:
