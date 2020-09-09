@@ -310,7 +310,7 @@ Checks whether the given file path is a Rasa domain file.
 #### slot\_mapping\_for\_form
 
 ```python
- | slot_mapping_for_form(form_name: Text) -> Dict
+ | slot_mapping_for_form(form_name: Text) -> Dict[Text, Any]
 ```
 
 Retrieve the slot mappings for a form which are defined in the domain.
