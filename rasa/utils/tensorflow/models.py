@@ -20,7 +20,7 @@ from typing import (
 )
 
 from tqdm import tqdm
-from rasa.constants import NLU_CHECKPOINT_MODEL_NAME
+from rasa.constants import CHECKPOINT_MODEL_NAME
 from rasa.utils.common import is_logging_disabled
 from rasa.utils import io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
@@ -104,7 +104,7 @@ class RasaModel(tf.keras.models.Model):
         if checkpoint_model:
             model_checkpoint_dir = io.create_temporary_directory()
             self.best_model_file = os.path.join(
-                model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model"
+                model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
             )
 
         self._set_up_tensorboard_writer()

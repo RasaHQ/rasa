@@ -25,7 +25,7 @@ PERCENTAGE_KEY = "__percentage__"
 
 PACKAGE_NAME = "rasa"
 NLU_MODEL_NAME_PREFIX = "nlu_"
-NLU_CHECKPOINT_MODEL_NAME = NLU_MODEL_NAME_PREFIX + "checkpoint"
+CHECKPOINT_MODEL_NAME = "rasa_model_checkpoint"
 
 CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
 DOMAIN_SCHEMA_FILE = "utils/schemas/domain.yml"
