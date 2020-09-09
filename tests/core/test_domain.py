@@ -243,7 +243,7 @@ def test_domain_to_dict():
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         "entities": [],
-        "forms": [],
+        "forms": {},
         "intents": [],
         "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
@@ -265,7 +265,7 @@ config:
   store_entities_as_slots: true
 e2e_actions: []
 entities: []
-forms: []
+forms: {{}}
 intents: []
 responses:
   utter_greet:
@@ -423,7 +423,7 @@ def test_merge_domain_with_forms():
 
     test_yaml_2 = """
     forms:
-    - my_form3:
+      my_form3:
         slot1:
           type: from_text
     """

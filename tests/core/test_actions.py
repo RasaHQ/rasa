@@ -696,7 +696,7 @@ def test_get_form_action():
     actions:
     - my_action
     forms:
-    - {form_action_name}:
+      {form_action_name}:
         my_slot:
         - type: from_text
     """
