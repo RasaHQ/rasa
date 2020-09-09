@@ -9,17 +9,16 @@ abstract: After each user message, the dialogue manager will predict an action t
 A [response](./responses.mdx) is a message the assistant will send back to the user. This is
 the action you will use most often, when you want the assistant to send text, images, buttons
 or similar to the user.
+
 ## Custom Actions
 A [custom action](./custom-actions.mdx) is an action that can run any code you want. This can be used to make an
 API call, or to query a database for example.
-## Retrieval Actions
-A [retrieval action](./retrieval-actions.mdx) is a special type of response, where the dialogue manager relies
-on a secondary NLU classifier to send a message back to the user. You should use this to
-handle any chitchat or FAQs in your assistant.
+
 ## Forms
 [Forms](./forms.mdx) are a special type of custom action, designed to handle business logic. If you have
 any conversation designs where you expect the assitant to ask for a specific set of
 information, you should use this.
+
 ## Default Actions
 [Default actions](./default-actions.mdx) are actions that are built into the dialogue manager by default. Most of
 these are automatically predicted based on certain conversation situations. You may want to
