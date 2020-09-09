@@ -6,7 +6,7 @@ title: rasa.nlu.classifiers.fallback_classifier
 ## FallbackClassifier Objects
 
 ```python
-class FallbackClassifier(Component)
+class FallbackClassifier(IntentClassifier)
 ```
 
 #### process
