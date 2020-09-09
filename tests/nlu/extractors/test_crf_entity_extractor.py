@@ -86,6 +86,7 @@ async def test_train_persist_load_with_composite_entities(
         ),
     ],
 )
+@pytest.mark.timeout(120)  # these can take a longer time than the default timeout
 async def test_train_persist_with_different_configurations(
     config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmp_path: Path
 ):
