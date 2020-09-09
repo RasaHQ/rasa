@@ -245,7 +245,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         pbar = tqdm(
             trackers,
             desc="Processed trackers",
-            disable=common_utils.is_logging_disabled(),
+            disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
             states = self._create_states(tracker, domain)
@@ -384,7 +384,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         pbar = tqdm(
             trackers,
             desc="Processed trackers",
-            disable=common_utils.is_logging_disabled(),
+            disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
             states = self._create_states(tracker, domain)

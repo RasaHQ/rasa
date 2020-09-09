@@ -9,6 +9,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Text, Optional, Type, Union, List, Dict
 
+from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
 
@@ -338,3 +339,10 @@ def _enable_ordered_dict_yaml_dumping() -> None:
         RoundTripRepresenter.represent_dict,
         representer=RoundTripRepresenter,
     )
+
+
+def is_logging_disabled() -> bool:
+    """Returns true, if log level is set to WARNING or ERROR, false otherwise."""
+    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+
+    return log_level == "ERROR" or log_level == "WARNING"

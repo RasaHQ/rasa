@@ -182,13 +182,6 @@ def obtain_verbosity() -> int:
     return verbosity
 
 
-def is_logging_disabled() -> bool:
-    """Returns true, if log level is set to WARNING or ERROR, false otherwise."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
-    return log_level == "ERROR" or log_level == "WARNING"
-
-
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
     return sorted(dicts, key=lambda d: list(d.keys())[0])
