@@ -5,7 +5,7 @@ import pytest
 import scipy.sparse
 from typing import Text
 
-from nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import (
