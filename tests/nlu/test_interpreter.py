@@ -2,8 +2,8 @@ import rasa.nlu
 
 import pytest
 
+import rasa.core.interpreter
 from rasa.core.interpreter import (
-    NaturalLanguageInterpreter,
     RasaNLUHttpInterpreter,
     RasaNLUInterpreter,
     RegexInterpreter,
@@ -68,6 +68,8 @@ def test_create_interpreter(parameters, trained_nlu_model):
     if obj == "trained_nlu_model":
         _, obj = get_model_subdirectories(get_model(trained_nlu_model))
 
-    interpreter = NaturalLanguageInterpreter.create(parameters["endpoint"] or obj)
+    interpreter = rasa.core.interpreter.create_interpreter(
+        parameters["endpoint"] or obj
+    )
 
     assert isinstance(interpreter, parameters["type"])

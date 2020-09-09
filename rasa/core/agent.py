@@ -16,6 +16,7 @@ from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
+import rasa.core.interpreter
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -81,7 +82,7 @@ def _load_interpreter(
         The NLU interpreter.
     """
     if nlu_path:
-        return NaturalLanguageInterpreter.create(nlu_path)
+        return rasa.core.interpreter.create_interpreter(nlu_path)
 
     return agent.interpreter or RegexInterpreter()
 
@@ -347,7 +348,7 @@ class Agent:
             self.policy_ensemble, self.domain
         )
 
-        self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
@@ -372,7 +373,7 @@ class Agent:
         self.policy_ensemble = policy_ensemble
 
         if interpreter:
-            self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+            self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         self._set_fingerprint(fingerprint)
 
@@ -416,7 +417,7 @@ class Agent:
         core_model, nlu_model = get_model_subdirectories(model_path)
 
         if not interpreter and nlu_model:
-            interpreter = NaturalLanguageInterpreter.create(nlu_model)
+            interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
 
         domain = None
         ensemble = None

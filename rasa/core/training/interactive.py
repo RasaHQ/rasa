@@ -50,7 +50,7 @@ from rasa.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter
+import rasa.core.interpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP
 from rasa.shared.core.training_data import visualization
@@ -1584,7 +1584,9 @@ def start_visualization(image_path: Text, port: int) -> None:
 async def train_agent_on_start(
     args, endpoints, additional_arguments, app, loop
 ) -> None:
-    _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or args.get("nlu"))
+    _interpreter = rasa.core.interpreter.create_interpreter(
+        endpoints.nlu or args.get("nlu")
+    )
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 

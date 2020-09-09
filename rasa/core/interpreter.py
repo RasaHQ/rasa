@@ -32,27 +32,27 @@ class NaturalLanguageInterpreter:
             "Interpreter needs to be able to parse messages into structured output."
         )
 
-    @staticmethod
-    def create(
-        obj: Union["NaturalLanguageInterpreter", EndpointConfig, Text, None]
-    ) -> "NaturalLanguageInterpreter":
-        """Factory to create an natural language interpreter."""
-
-        if isinstance(obj, NaturalLanguageInterpreter):
-            return obj
-        elif isinstance(obj, str) and os.path.exists(obj):
-            return RasaNLUInterpreter(model_directory=obj)
-        elif isinstance(obj, str) and not os.path.exists(obj):
-            # user passed in a string, but file does not exist
-            logger.warning(
-                f"No local NLU model '{obj}' found. Using RegexInterpreter instead."
-            )
-            return RegexInterpreter()
-        else:
-            return _create_from_endpoint_config(obj)
-
     def featurize_message(self, message: Message) -> Optional[Message]:
         pass
+
+
+def create_interpreter(
+    obj: Union["NaturalLanguageInterpreter", EndpointConfig, Text, None]
+) -> "NaturalLanguageInterpreter":
+    """Factory to create an natural language interpreter."""
+
+    if isinstance(obj, NaturalLanguageInterpreter):
+        return obj
+    elif isinstance(obj, str) and os.path.exists(obj):
+        return RasaNLUInterpreter(model_directory=obj)
+    elif isinstance(obj, str) and not os.path.exists(obj):
+        # user passed in a string, but file does not exist
+        logger.warning(
+            f"No local NLU model '{obj}' found. Using RegexInterpreter instead."
+        )
+        return RegexInterpreter()
+    else:
+        return _create_from_endpoint_config(obj)
 
 
 class RegexInterpreter(NaturalLanguageInterpreter):
