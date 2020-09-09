@@ -2145,13 +2145,13 @@ description = "Open source machine learning framework to automate text- and voic
 name = "rasa-sdk"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "2.0.0a4"
+version = "2.0.0a5"
 
 [package.dependencies]
 coloredlogs = ">=10,<15"
 requests = ">=2.0,<3.0"
-sanic = ">=19.12.2,<20.0.0"
-sanic-cors = ">=0.10.0b1,<0.11.0"
+sanic = ">=19.12.2,<21.0.0"
+sanic-cors = ">=0.10.0,<0.11.0"
 
 [[package]]
 category = "main"
@@ -3074,6 +3074,7 @@ transformers = ["transformers"]
 
 [metadata]
 content-hash = "24d096168f11e5ba8d004849e082468504c99ce3c98560e80289185b493c3a59"
+lock-version = "1.0"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -4272,8 +4273,8 @@ questionary = [
     {file = "questionary-1.5.2.tar.gz", hash = "sha256:f6e41e36b6c86fe0c3ff12a30c6c6a4e80129efba5ad0a115d71fd5df119c726"},
 ]
 rasa-sdk = [
-    {file = "rasa-sdk-2.0.0a4.tar.gz", hash = "sha256:fe5e3f1f5a19e7f7f51d0db4be1ec9556cc33bd59cc16abab8970ebed5c4f02d"},
-    {file = "rasa_sdk-2.0.0a4-py3-none-any.whl", hash = "sha256:d8e1a33a965e3b60e9362489b82655f353783f3b6e9151dc71fd1546b53ff9ea"},
+    {file = "rasa-sdk-2.0.0a5.tar.gz", hash = "sha256:05767f26206f58153de784376779d0d512de3ccf183f76aee91e22af7549c1b4"},
+    {file = "rasa_sdk-2.0.0a5-py3-none-any.whl", hash = "sha256:9a8165ec99601d76c087833920fd7ee31f4bf5587146d6d7372a2a2118de3dc0"},
 ]
 redis = [
     {file = "redis-3.5.3-py2.py3-none-any.whl", hash = "sha256:432b788c4530cfe16d8d943a09d40ca6c16149727e4afe8c2c9d5580c59d9f24"},

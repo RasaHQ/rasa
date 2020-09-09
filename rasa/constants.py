@@ -26,8 +26,8 @@ PERCENTAGE_KEY = "__percentage__"
 PACKAGE_NAME = "rasa"
 
 CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
-DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
-SCHEMA_UTILS_FILE = "utils/schemas.yml"
+DOMAIN_SCHEMA_FILE = "utils/schemas/domain.yml"
+RESPONSES_SCHEMA_FILE = "utils/schemas/responses.yml"
 SCHEMA_EXTENSIONS_FILE = "utils/pykwalify_extensions.py"
 YAML_VERSION = (1, 2)
 
@@ -39,6 +39,7 @@ DOCS_URL_POLICIES = DOCS_BASE_URL + "/core/policies/"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
 DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
 DOCS_URL_RULES = DOCS_BASE_URL + "/core/rules/"
+DOCS_URL_FORMS = DOCS_BASE_URL + "/core/forms/"
 DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/user-guide/connectors/"

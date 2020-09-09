@@ -127,3 +127,5 @@ mapping:
         wait_for_user_input:
           type: "bool"
           allowempty: False
+  regex;(.*):
+    type: "any"

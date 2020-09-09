@@ -25,19 +25,15 @@ mapping:
     - type: "str"
       required: True
   responses:
-    # see rasa/utils/schemas.yml
+    # see utils/schemas/responses.yml
     include: responses
 
   slots:
     type: "map"
     allowempty: True
   forms:
-    type: "seq"
-    sequence:
-    - type: "str"
-    - type: "map"
-      allowempty: True
-    allowempty: True
+    type: "any"
+    required: False
   config:
     type: "map"
     allowempty: True
