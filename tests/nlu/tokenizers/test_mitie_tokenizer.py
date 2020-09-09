@@ -1,7 +1,9 @@
 import pytest
 
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
 

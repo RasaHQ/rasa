@@ -2,12 +2,13 @@ import os
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.components import Component
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu.constants import ENTITIES, TEXT
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
 import rasa.shared.utils.io
@@ -78,7 +79,7 @@ class EntitySynonymMapper(EntityExtractor):
 
         entity_synonyms_file = os.path.join(model_dir, file_name)
         if os.path.isfile(entity_synonyms_file):
-            synonyms = rasa.utils.io.read_json_file(entity_synonyms_file)
+            synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
             rasa.shared.utils.io.raise_warning(

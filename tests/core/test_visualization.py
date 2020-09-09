@@ -3,6 +3,7 @@ from typing import Text
 
 import pytest
 
+import rasa.shared.utils.io
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.core.training import visualization
@@ -106,7 +107,7 @@ async def test_graph_persistence(
 
     assert isfile(out_file)
 
-    content = rasa.utils.io.read_file(out_file)
+    content = rasa.shared.utils.io.read_file(out_file)
 
     assert "isClient = true" in content
     assert "graph = `{}`".format(generated_graph.to_string()) in content

@@ -25,14 +25,16 @@ from typing import (
 
 import aiohttp
 import numpy as np
+
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from aiohttp import InvalidURL
 from rasa.constants import (
     DEFAULT_SANIC_WORKERS,
     ENV_SANIC_WORKERS,
     DEFAULT_ENDPOINTS_PATH,
-    YAML_VERSION,
 )
+from rasa.shared.utils.io import YAML_VERSION
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
@@ -61,7 +63,9 @@ def configure_file_logging(
         return
 
     formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(log_file, encoding=io_utils.DEFAULT_ENCODING)
+    file_handler = logging.FileHandler(
+        log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+    )
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
@@ -206,7 +210,7 @@ def dump_obj_as_yaml_to_file(
         obj: Object to dump.
         should_preserve_key_order: Whether to preserve key order in `obj`.
     """
-    io_utils.write_yaml(
+    rasa.shared.utils.io.write_yaml(
         obj, filename, should_preserve_key_order=should_preserve_key_order
     )
 
@@ -310,7 +314,7 @@ def read_lines(
 
     line_filter = re.compile(line_pattern)
 
-    with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
+    with open(filename, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING) as f:
         num_messages = 0
         for line in f:
             m = line_filter.match(line)
@@ -332,7 +336,7 @@ def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
     """Convert `data` to string if it is a bytes-like object."""
 
     if isinstance(data, (bytes, bytearray)):
-        return data.decode(io_utils.DEFAULT_ENCODING)
+        return data.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
 
     return data
 
@@ -342,12 +346,9 @@ def get_file_hash(path: Text) -> Text:
     return md5(file_as_bytes(path)).hexdigest()
 
 
-def get_text_hash(text: Text, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text:
-    """Calculate the md5 hash for a text."""
-    return md5(text.encode(encoding)).hexdigest()
-
-
-def get_dict_hash(data: Dict, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text:
+def get_dict_hash(
+    data: Dict, encoding: Text = rasa.shared.utils.io.DEFAULT_ENCODING
+) -> Text:
     """Calculate the md5 hash of a dictionary."""
     return md5(json.dumps(data, sort_keys=True).encode(encoding)).hexdigest()
 
