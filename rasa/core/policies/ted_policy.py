@@ -325,7 +325,7 @@ class TEDPolicy(Policy):
             self.config[BATCH_SIZES],
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
-            batch_strategy=self.config[BATCH_STRATEGY]
+            batch_strategy=self.config[BATCH_STRATEGY],
         )
 
     def predict_action_probabilities(
@@ -467,7 +467,7 @@ class TED(RasaModel):
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
-            checkpoint_model=config[CHECKPOINT_MODEL]
+            checkpoint_model=config[CHECKPOINT_MODEL],
         )
 
         self.config = config

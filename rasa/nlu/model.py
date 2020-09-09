@@ -202,7 +202,7 @@ class Trainer:
         path: Text,
         persistor: Optional[Persistor] = None,
         fixed_model_name: Text = None,
-        persist_nlu_training_data: bool = False
+        persist_nlu_training_data: bool = False,
     ) -> Text:
         """Persist all components of the pipeline to the passed path.
 

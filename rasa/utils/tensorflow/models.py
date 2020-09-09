@@ -68,8 +68,10 @@ class RasaModel(tf.keras.models.Model):
         self.best_model_file = None
         if checkpoint_model:
             model_checkpoint_dir = io.create_temporary_directory()
-            self.best_model_file = os.path.join(model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model")
-        
+            self.best_model_file = os.path.join(
+                model_checkpoint_dir, f"{NLU_CHECKPOINT_MODEL_NAME}.tf_model"
+            )
+
         self._set_up_tensorboard_writer()
 
     def _set_up_tensorboard_writer(self) -> None:
@@ -194,7 +196,7 @@ class RasaModel(tf.keras.models.Model):
                     val_results = self._get_metric_results(prefix="val_")
                     improved = self._update_best_metrics_so_far(val_results)
                     if improved and self.best_model_file is not None:
-                        logger.debug(f'Creating model checkpoint at epoch={epoch}...')
+                        logger.debug(f"Creating model checkpoint at epoch={epoch}...")
                         best_model_epoch = epoch
                         self.save(self.best_model_file, overwrite=True)
 
@@ -204,26 +206,28 @@ class RasaModel(tf.keras.models.Model):
 
         # Checkpoint the model one last time after training
         if evaluate_on_num_examples > 0 and self.best_model_file is not None:
-                epoch_batch_size = self.linearly_increasing_batch_size(
-                    epochs, batch_size, epochs
-                )
-                self._batch_loop(
-                    evaluation_dataset_function,
-                    tf_evaluation_on_batch_function,
-                    epoch_batch_size,
-                    False,
-                    training_steps,
-                    self.test_summary_writer,
-                )
+            epoch_batch_size = self.linearly_increasing_batch_size(
+                epochs, batch_size, epochs
+            )
+            self._batch_loop(
+                evaluation_dataset_function,
+                tf_evaluation_on_batch_function,
+                epoch_batch_size,
+                False,
+                training_steps,
+                self.test_summary_writer,
+            )
 
-                val_results = self._get_metric_results(prefix="val_")
-                if self._update_best_metrics_so_far(val_results):
-                    logger.debug(f'Creating model checkpoint after training...')
-                    best_model_epoch = epoch
-                    self.save(self.best_model_file, overwrite=True)
+            val_results = self._get_metric_results(prefix="val_")
+            if self._update_best_metrics_so_far(val_results):
+                logger.debug(f"Creating model checkpoint after training...")
+                best_model_epoch = epoch
+                self.save(self.best_model_file, overwrite=True)
 
         if best_model_epoch >= 0:
-            logger.info(f'The model of epoch {best_model_epoch} (out of {epochs} in total) will be stored!')
+            logger.info(
+                f"The model of epoch {best_model_epoch} (out of {epochs} in total) will be stored!"
+            )
         if self.model_summary_file is not None:
             self._write_model_summary()
 
