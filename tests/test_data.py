@@ -122,3 +122,9 @@ def test_is_md_file(path, is_md):
 )
 def test_is_json_file(path, is_json):
     assert data.is_likely_json_file(path) == is_json
+
+
+async def test_get_files_with_mixed_training_data():
+    default_data_path = "data/test_mixed_yaml_training_data/training_data.yml"
+    assert data.get_data_files(default_data_path, data.is_nlu_file)
+    assert data.get_data_files(default_data_path, data.is_story_file)
