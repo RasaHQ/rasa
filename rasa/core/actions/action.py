@@ -34,6 +34,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
+    RULE_SNIPPET_ACTION_NAME
 )
 from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY, INTENT_NAME_KEY
 from rasa.core.events import (
@@ -56,8 +57,6 @@ if typing.TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
 
 logger = logging.getLogger(__name__)
-
-RULE_SNIPPET_ACTION_NAME = "..."
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:

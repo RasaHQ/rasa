@@ -7,7 +7,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
-from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
+from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.core.domain import Domain
 from rasa.core.training import loading
 from rasa.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop

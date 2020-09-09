@@ -29,8 +29,8 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_BACK_NAME,
+    RULE_SNIPPET_ACTION_NAME,
 )
-from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import InvalidDomain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 

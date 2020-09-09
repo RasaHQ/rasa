@@ -25,7 +25,6 @@ KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
 KEY_E2E_ACTIONS = "e2e_actions"
 
-
 class SessionConfig(NamedTuple):
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
@@ -256,13 +255,8 @@ class BaseDomain:
 
         Includes user and form actions, but excludes those that are default actions.
         """
-
-        from rasa.core.actions.action import (  # pytype: disable=pyi-error
-            default_action_names,
-        )
-
         return [
-            a for a in self.user_actions_and_forms if a not in default_action_names()
+            a for a in self.user_actions_and_forms if a not in core_constants.DEFAULT_ACTIONS
         ]
 
     @staticmethod
@@ -543,21 +537,8 @@ class BaseDomain:
         # implicitly assume that e.g. "action_listen" is always at location
         # 0 in this array. to keep it that way, we remove the duplicate
         # action names from the users list instead of the defaults
-        defaults = [
-            core_constants.ACTION_LISTEN_NAME,
-            core_constants.ACTION_RESTART_NAME,
-            core_constants.ACTION_SESSION_START_NAME,
-            core_constants.ACTION_DEFAULT_FALLBACK_NAME,
-            core_constants.ACTION_DEACTIVATE_FORM_NAME,
-            core_constants.ACTION_REVERT_FALLBACK_EVENTS_NAME,
-            core_constants.ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-            core_constants.ACTION_DEFAULT_ASK_REPHRASE_NAME,
-            core_constants.ACTION_TWO_STAGE_FALLBACK_NAME,
-            core_constants.ACTION_BACK_NAME
-        ]
-
-        unique_user_actions = [a for a in user_actions if a not in defaults]
-        return defaults + unique_user_actions
+        unique_user_actions = [a for a in user_actions if a not in core_constants.DEFAULT_ACTIONS]
+        return core_constants.DEFAULT_ACTIONS + unique_user_actions
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
