@@ -109,7 +109,7 @@ def _is_telemetry_enabled_in_configuration() -> bool:
         )
 
         return stored_config[CONFIG_TELEMETRY_ENABLED]
-    except Exception as e:
+    except Exception as e:  # skipcq:PYL-W0703
         logger.debug(f"Could not read telemetry settings from configuration file: {e}")
 
         # seems like there is no config, we'll create on and enable telemetry
@@ -153,7 +153,7 @@ def ensure_telemetry_enabled(f):
             try:
                 if is_telemetry_enabled:
                     return await f(*args, **kwargs)
-            except Exception as e:
+            except Exception as e:  # skipcq:PYL-W0703
                 logger.debug(f"Skipping telemetry reporting: {e}")
             return None
 
@@ -165,7 +165,7 @@ def ensure_telemetry_enabled(f):
             try:
                 if is_telemetry_enabled:
                     return f(*args, **kwargs)
-            except Exception as e:
+            except Exception as e:  # skipcq:PYL-W0703
                 logger.debug(f"Skipping telemetry reporting: {e}")
             return None
 
@@ -192,7 +192,7 @@ def telemetry_write_key() -> Optional[Text]:
     try:
         with open(write_key_path) as f:
             return f.read().strip()
-    except Exception:
+    except Exception:  # skipcq:PYL-W0703
         return None
 
 
@@ -329,9 +329,9 @@ def _project_hash() -> Text:
         project hash
     """
     try:
-        remote = check_output(
+        remote = check_output(  # skipcq:BAN-B607,BAN-B603
             ["git", "remote", "get-url", "origin"], stderr=STDOUT
-        )  # skipcq:BAN-B607
+        )
         return hashlib.sha256(remote).hexdigest()
     except (CalledProcessError, OSError):
         working_dir = Path(os.getcwd()).absolute()
@@ -408,7 +408,7 @@ async def track(
         await _send_event(
             telemetry_id, event_name, properties, with_default_context_fields(context)
         )
-    except Exception as e:
+    except Exception as e:  # skipcq:PYL-W0703
         logger.debug(
             f"An error occurred when trying to report the telemetry event: {e}"
         )
@@ -428,7 +428,7 @@ def get_telemetry_id() -> Optional[Text]:
         )
 
         return telemetry_config.get(CONFIG_TELEMETRY_ID)
-    except Exception as e:
+    except Exception as e:  # skipcq:PYL-W0703
         logger.debug(f"Unable to retrieve telemetry ID: {e}")
         return None
 
