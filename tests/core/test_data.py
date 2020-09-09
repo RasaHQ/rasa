@@ -5,7 +5,6 @@ import tempfile
 import pytest
 from pathlib import Path
 
-import rasa.data as data
 import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.loading import load_data

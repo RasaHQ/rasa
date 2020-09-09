@@ -5,7 +5,6 @@ import re
 from pathlib import Path
 from typing import Dict, Text, List, Any, Union, Tuple
 
-import rasa.data
 import rasa.shared.data
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
