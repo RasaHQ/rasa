@@ -1,6 +1,9 @@
 const path = require('path');
 const { remarkProgramOutput } = require('./plugins/program_output');
-const { rehypePlugins, remarkPlugins } = require('@rasahq/docusaurus-theme-tabula');
+const {
+  rehypePlugins: themeRehypePlugins,
+  remarkPlugins: themeRemarkPlugins,
+} = require('@rasahq/docusaurus-theme-tabula');
 
 
 // FIXME: remove "next/" when releasing + remove the "next/" in
@@ -60,7 +63,7 @@ module.exports = {
   customFields: {
     // NOTE: all non-standard options should go in this object
   },
-  // FIXME: remove this option after launch
+  // FIXME: set this to fail in CI after launch
   onBrokenLinks: 'warn',
   title: 'Rasa Open Source Documentation',
   tagline: 'Cras justo odio, dapibus ac facilisis in, egestas eget quam.',
@@ -127,10 +130,10 @@ module.exports = {
       showLastUpdateTime: true,
       showLastUpdateAuthor: true,
       rehypePlugins: [
-        ...rehypePlugins,
+        ...themeRehypePlugins,
       ],
       remarkPlugins: [
-        ...remarkPlugins,
+        ...themeRemarkPlugins,
         remarkProgramOutput,
       ],
     }],
