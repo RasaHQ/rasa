@@ -309,9 +309,10 @@ async def _send_event(
         ) as resp:
             # handle different failure cases
             if resp.status != 200:
+                response_text = await resp.text()
                 logger.debug(
                     f"Segment telemetry request returned a {resp.status} response."
-                    f"Body: {await resp.text()}"
+                    f"Body: {response_text}"
                 )
             else:
                 data = await resp.json()
