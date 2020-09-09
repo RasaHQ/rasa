@@ -57,8 +57,6 @@ The action will reset the conversation tracker, but not clear any slots that wer
 
 ### Customization
 
-<!-- TODO: check that the below action definition is right -->
-
 The default behavior of the session start action is to take all existing slots and to
 carry them over into the next session. Let's say you do not want to carry over all
 slots, but only a user's name and their phone number. To do that, you'd override the
@@ -91,10 +89,11 @@ class ActionSessionStart(Action):
 
     async def run(
         self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[EventType]:
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
 
         # the session should begin with a `session_started` event
         events = [SessionStarted(metadata=self.metadata)]
