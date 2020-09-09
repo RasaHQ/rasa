@@ -74,26 +74,25 @@
     - ...  <!-- indicator that the story is continued, no action_listen -->
  
 
->> detailed FAQ not helped - continue
+>> detailed FAQ not helped
     - slot{"detailed_faq": true}
     - ...
     - utter_detailed_faq
     - utter_ask_did_help
 * deny
     - utter_ask_stop
-* deny
-    - utter_continue
 
 
->> detailed FAQ not helped - stop
-    - slot{"detailed_faq": true}
-    - ...
-    - utter_detailed_faq
-    - utter_ask_did_help
-* deny
+>> stop - stop
     - utter_ask_stop
 * affirm
     - utter_stop
+
+
+>> stop - continue
+    - utter_ask_stop
+* deny
+    - utter_continue
 
 
 >> Greet
