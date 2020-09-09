@@ -176,7 +176,7 @@ async def test_train_model_checkpointing(component_builder, tmpdir):
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
-        - component_2_DIETClassifier files (more than 1 file)
+        - component_2_ResponseSelector files (more than 1 file)
     '''
-    #all_files = list(best_model_file.rglob("*.*"))
-    #assert len(all_files) > 4
+    all_files = list(best_model_file.rglob("*.*"))
+    assert len(all_files) > 4
