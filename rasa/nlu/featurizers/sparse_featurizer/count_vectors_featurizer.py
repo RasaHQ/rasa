@@ -12,19 +12,22 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
-from rasa.utils.features import Features
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TEXT,
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    FEATURIZER_CLASS_ALIAS,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
     INTENT,
     INTENT_RESPONSE_KEY,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-    FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
-    FEATURIZER_CLASS_ALIAS,
+    FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
 )
 

@@ -8,18 +8,11 @@ from typing import Text
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    TEXT,
-    INTENT,
-    RESPONSE,
-    ACTION_NAME,
-    ACTION_TEXT,
-    SPACY_DOCS,
-)
+from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS
+from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, ACTION_TEXT, ACTION_NAME
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.training_data import Message
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )

@@ -21,27 +21,25 @@ from rasa.core.constants import (
     PREVIOUS_ACTION,
     USER,
 )
-from rasa.nlu.constants import INTENT, ACTION_NAME, ENTITIES
+from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted, ConversationPaused
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    FullDialogueTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import SupportedData, Policy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.core.policies.ted_policy import TEDPolicy, MASK
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     RANKING_LENGTH,
@@ -51,8 +49,6 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SENTENCE,
-    LABEL,
 )
 from rasa.utils import train_utils
 from tests.core.conftest import (

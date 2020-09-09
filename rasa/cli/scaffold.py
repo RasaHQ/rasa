@@ -5,12 +5,8 @@ from typing import List, Text
 import rasa.train
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path, print_success, print_error_and_exit
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATH,
-    DOCS_BASE_URL,
-)
+from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.shared.constants import DOCS_BASE_URL
 
 
 # noinspection PyProtectedMember

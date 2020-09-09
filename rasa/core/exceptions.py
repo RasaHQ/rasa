@@ -1,6 +1,6 @@
 from typing import Optional, Text
 
-from rasa.exceptions import RasaException
+from rasa.shared.exceptions import RasaException
 
 
 class RasaCoreException(RasaException):
