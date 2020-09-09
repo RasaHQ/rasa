@@ -9,7 +9,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Text, Optional, Type, Union, List, Dict
 
-from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
 

@@ -13,7 +13,7 @@ from io import BytesIO as IOReader
 from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
 
-from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file, read_yaml
 
 if TYPE_CHECKING:

@@ -16,9 +16,6 @@ from rasa.shared.core.domain import (
     CARRY_OVER_SLOTS_KEY,
     SESSION_EXPIRATION_TIME_KEY,
     SESSION_CONFIG_KEY,
-    USED_ENTITIES_KEY,
-    USE_ENTITIES_KEY,
-    IGNORE_ENTITIES_KEY,
     KEY_SLOTS,
     KEY_FORMS,
     KEY_ACTIONS,
@@ -28,7 +25,6 @@ from rasa.shared.core.domain import (
     KEY_E2E_ACTIONS
 )
 import rasa.utils.io
-from rasa.utils.common import sort_list_of_dicts_by_first_key
 from rasa.constants import (
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
@@ -43,16 +39,7 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     SLOT_LISTED_ITEMS,
-    USER,
-    SLOTS,
 )
-from rasa.shared.core.constants import (
-    LOOP_NAME,
-    SHOULD_NOT_BE_SET,
-    PREVIOUS_ACTION,
-    ACTIVE_LOOP,
-)
-from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.slots import UnfeaturizedSlot, CategoricalSlot
 from rasa.shared.utils.common import lazy_property
