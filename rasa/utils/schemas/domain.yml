@@ -25,7 +25,7 @@ mapping:
     - type: "str"
       required: True
   responses:
-    # see rasa/utils/schemas.yml
+    # see utils/schemas/responses.yml
     include: responses
 
   slots:

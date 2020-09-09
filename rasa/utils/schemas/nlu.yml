@@ -49,6 +49,5 @@ mapping:
   responses:
     # see rasa/utils/schemas.yml
     include: responses
-  stories:
+  regex;(.*):
     type: "any"
-    required: False
