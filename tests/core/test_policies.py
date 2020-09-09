@@ -311,7 +311,7 @@ class TestTEDPolicy(PolicyTestCollection):
             stories="data/examples/rasa/ted_policy/stories.md",
             output=tmpdir.strpath,
             fixed_model_name=model_name,
-            config="data/test_config/config_ted_policy_model_checkpointing.yml"
+            config="data/test_config/config_ted_policy_model_checkpointing.yml",
         )
 
         assert best_model_file.exists()

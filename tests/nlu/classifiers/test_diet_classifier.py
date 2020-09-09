@@ -373,7 +373,7 @@ async def test_train_model_checkpointing(component_builder, tmpdir):
     from pathlib import Path
 
     model_name = "nlu-checkpointed-model"
-    best_model_file = Path(tmpdir.strpath,  model_name)
+    best_model_file = Path(tmpdir.strpath, model_name)
     assert not best_model_file.exists()
 
     _config = RasaNLUModelConfig(
@@ -386,7 +386,7 @@ async def test_train_model_checkpointing(component_builder, tmpdir):
                     EPOCHS: 5,
                     EVAL_NUM_EXAMPLES: 10,
                     EVAL_NUM_EPOCHS: 1,
-                    CHECKPOINT_MODEL: True
+                    CHECKPOINT_MODEL: True,
                 },
             ],
             "language": "en",
@@ -398,18 +398,18 @@ async def test_train_model_checkpointing(component_builder, tmpdir):
         path=Path(tmpdir.strpath),
         data="data/examples/rasa/demo-rasa.md",
         component_builder=component_builder,
-        fixed_model_name=model_name
+        fixed_model_name=model_name,
     )
 
     assert best_model_file.exists()
 
-    '''
+    """
     Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
         - component_2_DIETClassifier files (more than 1 file)
-    '''
+    """
     all_files = list(best_model_file.rglob("*.*"))
     assert len(all_files) > 4
 

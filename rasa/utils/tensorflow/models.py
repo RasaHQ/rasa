@@ -664,7 +664,7 @@ class TransformerRasaModel(RasaModel):
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
-            checkpoint_model=config[CHECKPOINT_MODEL]
+            checkpoint_model=config[CHECKPOINT_MODEL],
         )
 
         self.config = config
