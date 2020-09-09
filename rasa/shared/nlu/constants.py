@@ -5,8 +5,9 @@ INTENT_RESPONSE_KEY = "intent_response_key"
 ACTION_TEXT = "action_text"
 ACTION_NAME = "action_name"
 INTENT_NAME = "intent_name"
-INTENT_METADATA = "intent_metadata"
 METADATA = "metadata"
+METADATA_INTENT = "intent"
+METADATA_EXAMPLE = "example"
 
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 

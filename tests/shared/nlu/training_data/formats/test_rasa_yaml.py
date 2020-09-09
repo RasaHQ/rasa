@@ -5,7 +5,12 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.nlu.constants import INTENT, METADATA, INTENT_METADATA
+from rasa.shared.nlu.constants import (
+    INTENT,
+    METADATA,
+    METADATA_INTENT,
+    METADATA_EXAMPLE,
+)
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
@@ -40,7 +45,7 @@ INTENT_EXAMPLES_WITH_METADATA = """
 nlu:
 - intent: intent_name
   metadata:
-    author: johnny
+  - johnny
   examples:
   - text: |
       how much CO2 will that use?
@@ -151,10 +156,11 @@ def test_intent_with_metadata_is_parsed():
 
     assert len(training_data.training_examples) == 2
     example_1, example_2 = training_data.training_examples
-    assert example_1.get(INTENT_METADATA) == {"author": "johnny"}
-    assert example_2.get(INTENT_METADATA) == {"author": "johnny"}
-    assert example_1.get(METADATA) == {"sentiment": "positive"}
-    assert example_2.get(METADATA) is None
+    assert example_1.get(METADATA) == {
+        METADATA_INTENT: ["johnny"],
+        METADATA_EXAMPLE: {"sentiment": "positive"},
+    }
+    assert example_2.get(METADATA) == {METADATA_INTENT: ["johnny"]}
 
 
 # This test would work only with examples that have a `version` key specified

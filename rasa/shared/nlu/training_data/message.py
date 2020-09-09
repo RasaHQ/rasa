@@ -10,8 +10,9 @@ from rasa.shared.nlu.constants import (
     INTENT,
     RESPONSE,
     INTENT_RESPONSE_KEY,
-    INTENT_METADATA,
     METADATA,
+    METADATA_INTENT,
+    METADATA_EXAMPLE,
     ENTITIES,
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SENTENCE,
@@ -121,9 +122,9 @@ class Message:
         if entities:
             data[ENTITIES] = entities
         if intent_metadata is not None:
-            data[INTENT_METADATA] = intent_metadata
+            data[METADATA] = {METADATA_INTENT: intent_metadata}
         if metadata is not None:
-            data[METADATA] = metadata
+            data.setdefault(METADATA, {})[METADATA_EXAMPLE] = metadata
         return cls(data, **kwargs)
 
     @classmethod
