@@ -358,3 +358,13 @@ def test_nlg_multimedia_load_dump_roundtrip():
 
     # dumping again should also not change the format
     assert dumped == RasaYAMLWriter().dumps(dumped_result)
+
+
+def test_read_mixed_training_data_file():
+    training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
+
+    reader = RasaYAMLReader()
+
+    with pytest.warns(None) as record:
+        reader.read(training_data_file)
+        assert not len(record)
