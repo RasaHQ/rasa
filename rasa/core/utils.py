@@ -243,20 +243,6 @@ def list_routes(app: Sanic):
     return output
 
 
-def cap_length(s: Text, char_limit: int = 20, append_ellipsis: bool = True) -> Text:
-    """Makes sure the string doesn't exceed the passed char limit.
-
-    Appends an ellipsis if the string is too long."""
-
-    if len(s) > char_limit:
-        if append_ellipsis:
-            return s[: char_limit - 3] + "..."
-        else:
-            return s[:char_limit]
-    else:
-        return s
-
-
 def extract_args(
     kwargs: Dict[Text, Any], keys_to_extract: Set[Text]
 ) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:

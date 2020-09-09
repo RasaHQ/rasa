@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import rasa.core.lock_store
+import rasa.core.training.structures
 import rasa.utils.io
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
@@ -49,18 +50,6 @@ def test_on_hot():
 def test_on_hot_out_of_range():
     with pytest.raises(ValueError):
         utils.one_hot(4, 3)
-
-
-def test_cap_length():
-    assert utils.cap_length("mystring", 6) == "mys..."
-
-
-def test_cap_length_without_ellipsis():
-    assert utils.cap_length("mystring", 3, append_ellipsis=False) == "mys"
-
-
-def test_cap_length_with_short_string():
-    assert utils.cap_length("my", 3) == "my"
 
 
 def test_read_lines():

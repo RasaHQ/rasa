@@ -620,12 +620,12 @@ class StoryGraph:
                     color = ColorHash(cp.name[-GENERATED_HASH_LENGTH:]).hex
                     graph.add_node(
                         next_node_idx[0],
-                        label=utils.cap_length(cp.name),
+                        label=_cap_length(cp.name),
                         style="filled",
                         fillcolor=color,
                     )
                 else:
-                    graph.add_node(next_node_idx[0], label=utils.cap_length(cp.name))
+                    graph.add_node(next_node_idx[0], label=_cap_length(cp.name))
 
         graph.add_node(
             nodes["STORY_START"], label="START", fillcolor="green", style="filled"
@@ -638,7 +638,7 @@ class StoryGraph:
 
             graph.add_node(
                 next_node_idx[0],
-                label=utils.cap_length(step.block_name),
+                label=_cap_length(step.block_name),
                 style="filled",
                 fillcolor="lightblue",
                 shape="rect",
@@ -682,3 +682,17 @@ def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
         gid = gid[:max_chars]
 
     return f"{prefix}{gid}"
+
+
+def _cap_length(s: Text, char_limit: int = 20, append_ellipsis: bool = True) -> Text:
+    """Makes sure the string doesn't exceed the passed char limit.
+
+    Appends an ellipsis if the string is too long."""
+
+    if len(s) > char_limit:
+        if append_ellipsis:
+            return s[: char_limit - 3] + "..."
+        else:
+            return s[:char_limit]
+    else:
+        return s

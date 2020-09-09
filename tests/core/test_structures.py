@@ -1,3 +1,4 @@
+import rasa.core
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import SessionStarted, SlotSet, UserUttered, ActionExecuted
@@ -29,3 +30,18 @@ def test_session_start_is_not_serialised(default_domain: Domain):
 """
 
     assert story.as_story_string(flat=True) == expected
+
+
+def test_cap_length():
+    assert rasa.core.training.structures._cap_length("mystring", 6) == "mys..."
+
+
+def test_cap_length_without_ellipsis():
+    assert (
+        rasa.core.training.structures._cap_length("mystring", 3, append_ellipsis=False)
+        == "mys"
+    )
+
+
+def test_cap_length_with_short_string():
+    assert rasa.core.training.structures._cap_length("my", 3) == "my"
