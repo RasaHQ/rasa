@@ -103,7 +103,7 @@ class RasaModel(tf.keras.models.Model):
         self.checkpoint_model = checkpoint_model
         self.best_model_file = None
         if self.checkpoint_model:
-            model_checkpoint_dir = rasa.util.io.create_temporary_directory()
+            model_checkpoint_dir = rasa.utils.io.create_temporary_directory()
             self.best_model_file = os.path.join(
                 model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
             )
