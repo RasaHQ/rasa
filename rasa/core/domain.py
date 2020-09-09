@@ -360,7 +360,7 @@ class Domain:
 
     @lazy_property
     def retrieval_intents(self) -> List[Text]:
-        """List all retrieval intents present in the domain according to the intent properties."""
+        """List retrieval intents present in the domain."""
         return [
             intent
             for intent in self.intent_properties

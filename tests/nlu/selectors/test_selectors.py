@@ -11,7 +11,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
-from rasa.nlu.training_data import training_data
 
 
 @pytest.mark.parametrize(

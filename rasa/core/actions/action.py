@@ -132,12 +132,14 @@ def combine_with_templates(
 def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
     """Check if an action name is a retrieval action.
 
-    The name for a retrieval action has an extra `utter_` prefix added to the corresponding retrieval intent name.
+    The name for a retrieval action has an extra `utter_` prefix added to
+    the corresponding retrieval intent name.
     Args:
         action_name: Name of the action.
         retrieval_intents: List of retrieval intents defined in the NLU training data.
 
-    Returns: True or False depending on whether the resolved intent name is present in the list of retrieval intents.
+    Returns: True or False depending on whether the resolved intent name
+     is present in the list of retrieval intents.
     """
 
     return (

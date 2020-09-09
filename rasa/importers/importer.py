@@ -13,7 +13,6 @@ from rasa.nlu.training_data import TrainingData, Message
 from rasa.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
-from rasa.core.actions import action
 from rasa.core.domain import IS_RETRIEVAL_INTENT_KEY
 
 logger = logging.getLogger(__name__)
@@ -265,9 +264,9 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
-        # Check if NLU data has any retrieval intents,
-        # if yes add corresponding retrieval actions with `utter_` prefix
-        # automatically to an empty domain and update the properties of existing retrieval intents.
+        # Check if NLU data has any retrieval intents, if yes
+        # add corresponding retrieval actions with `utter_` prefix automatically
+        # to an empty domain and update the properties of existing retrieval intents.
         nlu_data = await self.get_nlu_data()
         if nlu_data.retrieval_intents:
 
@@ -283,14 +282,16 @@ class CombinedDataImporter(TrainingDataImporter):
     def _get_domain_with_retrieval_intents(
         retrieval_intents: Set[Text], existing_domain: Domain
     ) -> Domain:
-        """Construct a domain which has all the information for retrieval intents listed in the NLU training data.
+        """Construct a domain consisting of retrieval intents listed in the NLU training data.
 
         Args:
-            retrieval_intents: Set of retrieval intents defined in the NLU training data.
+            retrieval_intents: Set of retrieval intents defined in NLU training data.
             existing_domain: Domain which is already loaded from the domain file.
 
-        Returns: domain with retrieval actions added to action names and properties for retrieval intents updated.
+        Returns: Domain with retrieval actions added to action names and properties
+        for retrieval intents updated.
         """
+        from rasa.core.actions import action
 
         # Get all the properties already defined
         # for each retrieval intent in other domains

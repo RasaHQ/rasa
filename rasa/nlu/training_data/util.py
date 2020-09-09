@@ -89,8 +89,10 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
 
 
 def intent_response_key_to_template_key(intent_response_key: Text) -> Text:
+    """Resolve the response template key for a given intent response key."""
     return f"{UTTER_PREFIX}{intent_response_key}"
 
 
 def template_key_to_intent_response_key(template_key: Text) -> Text:
+    """Resolve the intent response key for a given response template key."""
     return template_key.split(UTTER_PREFIX)[1]
