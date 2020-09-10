@@ -226,7 +226,8 @@ class Policy:
             "implement the `_metadata()` method."
         )
 
-    def _metadata_filename(self) -> Text:
+    @classmethod
+    def _metadata_filename(cls) -> Text:
         """Returns the filename of the persisted policy metadata.
 
         Returns:
@@ -261,7 +262,7 @@ class Policy:
             An instance of `Policy`.
         """
         featurizer = TrackerFeaturizer.load(path)
-        metadata_file = Path(path) / cls()._metadata_filename()
+        metadata_file = Path(path) / cls._metadata_filename()
 
         if metadata_file.is_file():
             data = json.loads(rasa.shared.utils.io.read_file(metadata_file))

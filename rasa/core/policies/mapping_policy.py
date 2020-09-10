@@ -175,5 +175,6 @@ class MappingPolicy(Policy):
     def _metadata(self) -> Dict[Text, Any]:
         return {"priority": self.priority}
 
-    def _metadata_filename(self) -> Text:
+    @classmethod
+    def _metadata_filename(cls) -> Text:
         return "mapping_policy.json"

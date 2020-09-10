@@ -226,5 +226,6 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
 
-    def _metadata_filename(self) -> Text:
+    @classmethod
+    def _metadata_filename(cls) -> Text:
         return "two_stage_fallback_policy.json"

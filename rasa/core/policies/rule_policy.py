@@ -502,5 +502,6 @@ class RulePolicy(MemoizationPolicy):
             "enable_fallback_prediction": self._enable_fallback_prediction,
         }
 
-    def _metadata_filename(self) -> Text:
+    @classmethod
+    def _metadata_filename(cls) -> Text:
         return "rule_policy.json"

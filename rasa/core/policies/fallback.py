@@ -199,5 +199,6 @@ class FallbackPolicy(Policy):
             "fallback_action_name": self.fallback_action_name,
         }
 
-    def _metadata_filename(self) -> Text:
+    @classmethod
+    def _metadata_filename(cls) -> Text:
         return "fallback_policy.json"

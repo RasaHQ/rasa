@@ -246,7 +246,8 @@ class MemoizationPolicy(Policy):
             "lookup": self.lookup,
         }
 
-    def _metadata_filename(self) -> Text:
+    @classmethod
+    def _metadata_filename(cls) -> Text:
         return "memorized_turns.json"
 
 
