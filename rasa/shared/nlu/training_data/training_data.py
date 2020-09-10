@@ -139,7 +139,7 @@ class TrainingData:
 
     @lazy_property
     def response_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get(RESPONSE)]
+        return [ex for ex in self.training_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
@@ -169,7 +169,9 @@ class TrainingData:
     def number_of_examples_per_response(self) -> Dict[Text, int]:
         """Calculates the number of examples per response."""
         responses = [
-            ex.get(RESPONSE) for ex in self.training_examples if ex.get(RESPONSE)
+            ex.get(INTENT_RESPONSE_KEY)
+            for ex in self.training_examples
+            if ex.get(INTENT_RESPONSE_KEY)
         ]
         return dict(Counter(responses))
 
@@ -382,7 +384,8 @@ class TrainingData:
         """Sorts the intent examples by the name of the intent and then response"""
 
         return sorted(
-            self.intent_examples, key=lambda e: (e.get(INTENT), e.get(RESPONSE))
+            self.intent_examples,
+            key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
         )
 
     def validate(self) -> None:

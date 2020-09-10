@@ -100,9 +100,9 @@ def test_load_from_dict(
     )
 
     assert isinstance(actual, E2EImporter)
-    assert isinstance(actual.importer, CombinedDataImporter)
+    assert isinstance(actual.importer, RetrievalModelsDataImporter)
 
-    actual_importers = [i.__class__ for i in actual.importer._importers]
+    actual_importers = [i.__class__ for i in actual.importer._importer._importers]
     assert actual_importers == expected
 
 
@@ -129,7 +129,7 @@ async def test_nlu_only(project: Text):
     )
 
     assert isinstance(actual, NluDataImporter)
-    assert isinstance(actual._importer, CombinedDataImporter)
+    assert isinstance(actual._importer, RetrievalModelsDataImporter)
 
     stories = await actual.get_stories()
     assert stories.is_empty()
