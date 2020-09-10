@@ -5,6 +5,7 @@ INTENT_RESPONSE_KEY = "intent_response_key"
 ACTION_TEXT = "action_text"
 ACTION_NAME = "action_name"
 INTENT_NAME = "intent_name"
+INTENT_NAME_KEY = "name"
 
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 

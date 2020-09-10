@@ -435,7 +435,7 @@ class TrainingData:
                     f"You either need to add a response phrase or correct the "
                     f"intent for this example in your training data. "
                     f"If you intend to use Response Selector in the pipeline, the "
-                    f"training ."
+                    f"training may fail."
                 )
 
     def train_test_split(

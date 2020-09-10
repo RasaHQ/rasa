@@ -4,11 +4,12 @@ import tempfile
 from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
-from rasa.core.interpreter import NaturalLanguageInterpreter
+import rasa.core.interpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.model import FingerprintComparisonResult
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
@@ -276,7 +277,7 @@ def _load_interpreter(
     interpreter_path: Optional[Text],
 ) -> Optional[NaturalLanguageInterpreter]:
     if interpreter_path:
-        return NaturalLanguageInterpreter.create(interpreter_path)
+        return rasa.core.interpreter.create_interpreter(interpreter_path)
 
     return None
 
@@ -289,7 +290,7 @@ def _interpreter_from_previous_model(
 
     with model.unpack_model(old_model_zip_path) as unpacked:
         _, old_nlu = model.get_model_subdirectories(unpacked)
-        return NaturalLanguageInterpreter.create(old_nlu)
+        return rasa.core.interpreter.create_interpreter(old_nlu)
 
 
 def train_core(

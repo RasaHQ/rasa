@@ -82,9 +82,14 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    RESPONSE,
+    INTENT_RESPONSE_KEY,
     INTENT_NAME_KEY,
 )
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, INTENT_RESPONSE_KEY
 
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
@@ -211,7 +216,7 @@ class ResponseSelector(DIETClassifier):
         RETRIEVAL_INTENT: None,
         # Boolean flag to check if actual text of the response
         # should be used as ground truth label for training the model.
-        USE_TEXT_AS_LABEL: True,
+        USE_TEXT_AS_LABEL: False,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
         TENSORBOARD_LOG_DIR: None,

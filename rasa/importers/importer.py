@@ -4,17 +4,18 @@ from typing import Text, Optional, List, Dict, Set, Any
 import logging
 
 import rasa.shared.utils.common
-from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, UserUttered, Event
-from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa.core.training.structures import StoryGraph
+import rasa.shared.core.constants
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, UserUttered, Event
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import INTENT_NAME, TEXT
 from rasa.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
-from rasa.core.domain import IS_RETRIEVAL_INTENT_KEY
+from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -420,7 +421,7 @@ class E2EImporter(TrainingDataImporter):
         return original.merge(e2e_domain)
 
     async def _get_domain_with_e2e_actions(self) -> Domain:
-        from rasa.core.events import ActionExecuted
+        from rasa.shared.core.events import ActionExecuted
 
         stories = await self.get_stories()
 
@@ -506,11 +507,9 @@ def _messages_from_action(event: ActionExecuted) -> Message:
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:
-    from rasa.core.actions import action
-
     additional_messages_from_default_actions = [
         Message.build_from_action(action_name=action_name)
-        for action_name in action.default_action_names()
+        for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     ]
 
     return TrainingData(additional_messages_from_default_actions)
