@@ -523,14 +523,10 @@ class RulePolicy(MemoizationPolicy):
             An instance of `RulePolicy`.
         """
         featurizer = TrackerFeaturizer.load(path)
-        memorized_file = Path(path) / "rule_policy.json"
-        if memorized_file.is_file():
-            data = json.loads(rasa.utils.io.read_file(memorized_file))
+        meta = Path(path) / "rule_policy.json"
+        if meta.is_file():
+            data = json.loads(rasa.utils.io.read_file(meta))
             return cls(featurizer=featurizer, **data)
 
-        logger.info(
-            f"Couldn't load memoization for policy. "
-            f"File '{memorized_file}' doesn't exist. Falling back to empty "
-            f"turn memory."
-        )
+        logger.info(f"Couldn't load metadata for policy. File '{meta}' doesn't exist.")
         return cls()
