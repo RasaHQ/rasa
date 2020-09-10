@@ -14,18 +14,7 @@ DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
 DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
-# rules allow setting a value of slots or active_loops to None;
-# generator substitutes `None`s with this constant to notify rule policy that
-# a value should not be set during prediction to activate a rule
-
-# slots for knowledge base
-
-# start of special user message section
-
 BEARER_TOKEN_PREFIX = "Bearer "
-
-# Key to access data in the event metadata
-# It specifies if an event was caused by an external entity (e.g. a sensor).
 
 # the lowest priority intended to be used by machine learning policies
 DEFAULT_POLICY_PRIORITY = 1

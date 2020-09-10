@@ -43,24 +43,36 @@ DEFAULT_ACTION_NAMES = [
     RULE_SNIPPET_ACTION_NAME,
 ]
 
+# rules allow setting a value of slots or active_loops to None;
+# generator substitutes `None`s with this constant to notify rule policy that
+# a value should not be set during prediction to activate a rule
 SHOULD_NOT_BE_SET = "should_not_be_set"
+
 PREVIOUS_ACTION = "prev_action"
 ACTIVE_LOOP = "active_loop"
 LOOP_VALIDATE = "validate"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"
 
+# start of special user message section
 EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
-ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
+# Key to access data in the event metadata
+# It specifies if an event was caused by an external entity (e.g. a sensor).
 IS_EXTERNAL = "is_external"
+
+ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
+
 REQUESTED_SLOT = "requested_slot"
+
+# slots for knowledge base
 SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
 SLOT_LAST_OBJECT = "knowledge_base_last_object"
 SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
+
 UTTER_PREFIX = "utter_"
 
-# the keys for State (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
-# represent the origin of a SubState
+# the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
+# represent the origin of a `SubState`
 USER = "user"
 SLOTS = "slots"
