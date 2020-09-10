@@ -102,6 +102,7 @@ class RasaModel(tf.keras.models.Model):
         self.best_metrics_so_far = {}
         self.checkpoint_model = checkpoint_model
         self.best_model_file = None
+        self.best_model_epoch = -1
         if self.checkpoint_model:
             model_checkpoint_dir = rasa.utils.io.create_temporary_directory()
             self.best_model_file = os.path.join(
@@ -228,10 +229,7 @@ class RasaModel(tf.keras.models.Model):
                         )
 
                     val_results = self._get_metric_results(prefix="val_")
-                    if self.checkpoint_model and self._does_model_improve(val_results):
-                        logger.debug(f"Creating model checkpoint at epoch={epoch}...")
-                        best_model_epoch = epoch
-                        self.save(self.best_model_file, overwrite=True)
+                    self._checkpoint_model(current_results=val_results, epoch=epoch)
 
                 postfix_dict.update(val_results)
 
@@ -252,14 +250,11 @@ class RasaModel(tf.keras.models.Model):
             )
 
             val_results = self._get_metric_results(prefix="val_")
-            if self._does_model_improve(val_results):
-                logger.debug(f"Creating model checkpoint after training...")
-                best_model_epoch = epochs
-                self.save(self.best_model_file, overwrite=True)
+            self._checkpoint_model(current_results=val_results, epoch=epochs)
 
-        if best_model_epoch >= 0:
+        if self.best_model_epoch >= 0:
             logger.info(
-                f"The model of epoch {best_model_epoch} (out of {epochs} in total) will be stored!"
+                f"The model of epoch {self.best_model_epoch} (out of {epochs} in total) will be stored!"
             )
         if self.model_summary_file is not None:
             self._write_model_summary()
@@ -509,6 +504,12 @@ class RasaModel(tf.keras.models.Model):
             for key in self.best_metrics_so_far.keys():
                 self.best_metrics_so_far[key] = float(current_results[key])
         return all_improved
+
+    def _checkpoint_model(self, current_results, epoch):
+        if self.checkpoint_model and self._does_model_improve(current_results):
+            logger.debug(f"Creating model checkpoint at epoch={epoch}...")
+            self.best_model_epoch = epoch
+            self.save(self.best_model_file, overwrite=True)
 
     @staticmethod
     def _should_evaluate(
