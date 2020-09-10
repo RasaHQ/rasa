@@ -20,6 +20,8 @@ from multiprocessing import Process, Manager
 
 import rasa
 import rasa.constants
+import rasa.shared.constants
+import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.server
 from rasa.core import events, utils
@@ -31,7 +33,6 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
-from rasa import utils as rasa_utils
 from sanic import Sanic
 from sanic.testing import SanicTestClient
 from tests.nlu.utilities import ResponseTest
@@ -204,11 +205,11 @@ def training_request(
             full_path = project_path / file
             # Read in as dictionaries to avoid that keys, which are specified in
             # multiple files (such as 'version'), clash.
-            content = rasa.utils.io.read_yaml_file(full_path)
+            content = rasa.shared.utils.io.read_yaml_file(full_path)
             payload.update(content)
 
         concatenated_payload_file = tmp_path / "concatenated.yml"
-        rasa.utils.io.write_yaml(payload, concatenated_payload_file)
+        rasa.shared.utils.io.write_yaml(payload, concatenated_payload_file)
 
         payload_as_yaml = concatenated_payload_file.read_text()
 
@@ -420,9 +421,9 @@ def test_train_nlu_success(
     default_domain_path: Text,
     tmp_path: Path,
 ):
-    domain_data = rasa_utils.io.read_yaml_file(default_domain_path)
-    config_data = rasa_utils.io.read_yaml_file(default_stack_config)
-    nlu_data = rasa_utils.io.read_yaml_file(default_nlu_data)
+    domain_data = rasa.shared.utils.io.read_yaml_file(default_domain_path)
+    config_data = rasa.shared.utils.io.read_yaml_file(default_stack_config)
+    nlu_data = rasa.shared.utils.io.read_yaml_file(default_nlu_data)
 
     # combine all data into our payload
     payload = {
@@ -430,7 +431,7 @@ def test_train_nlu_success(
     }
 
     data = StringIO()
-    rasa_utils.io.write_yaml(payload, data)
+    rasa.shared.utils.io.write_yaml(payload, data)
 
     _, response = rasa_app.post(
         "/model/train",
@@ -664,7 +665,7 @@ def test_train_internal_error(rasa_app: SanicTestClient):
 
 
 def test_evaluate_stories(rasa_app: SanicTestClient, default_stories_file: Text):
-    stories = rasa.utils.io.read_file(default_stories_file)
+    stories = rasa.shared.utils.io.read_file(default_stories_file)
 
     _, response = rasa_app.post("/model/test/stories", data=stories)
 
@@ -692,7 +693,7 @@ def test_evaluate_stories(rasa_app: SanicTestClient, default_stories_file: Text)
 def test_evaluate_stories_not_ready_agent(
     rasa_app_nlu: SanicTestClient, default_stories_file: Text
 ):
-    stories = rasa.utils.io.read_file(default_stories_file)
+    stories = rasa.shared.utils.io.read_file(default_stories_file)
 
     _, response = rasa_app_nlu.post("/model/test/stories", data=stories)
 
@@ -702,7 +703,7 @@ def test_evaluate_stories_not_ready_agent(
 def test_evaluate_stories_end_to_end(
     rasa_app: SanicTestClient, end_to_end_story_file: Text
 ):
-    stories = rasa.utils.io.read_file(end_to_end_story_file)
+    stories = rasa.shared.utils.io.read_file(end_to_end_story_file)
 
     _, response = rasa_app.post("/model/test/stories?e2e=true", data=stories)
 
@@ -728,7 +729,7 @@ def test_evaluate_stories_end_to_end(
 
 
 def test_evaluate_intent(rasa_app: SanicTestClient, default_nlu_data: Text):
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app.post(
         "/model/test/intents",
@@ -747,7 +748,7 @@ def test_evaluate_intent(rasa_app: SanicTestClient, default_nlu_data: Text):
 def test_evaluate_intent_on_just_nlu_model(
     rasa_app_nlu: SanicTestClient, default_nlu_data: Text
 ):
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app_nlu.post(
         "/model/test/intents",
@@ -769,7 +770,7 @@ def test_evaluate_intent_with_query_param(
     _, response = rasa_app.get("/status")
     previous_model_file = response.json["model_file"]
 
-    nlu_data = rasa.utils.io.read_file(default_nlu_data)
+    nlu_data = rasa.shared.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app.post(
         f"/model/test/intents?model={trained_nlu_model}",

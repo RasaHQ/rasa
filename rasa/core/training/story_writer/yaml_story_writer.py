@@ -4,13 +4,11 @@ from typing import Any, Dict, List, Text, Union, Optional
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
-from ruamel.yaml.scalarstring import (
-    DoubleQuotedScalarString,
-    LiteralScalarString,
-)
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.events import UserUttered, ActionExecuted, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.yaml_story_reader import (
     KEY_STORIES,
@@ -26,7 +24,7 @@ from rasa.core.training.story_reader.yaml_story_reader import (
     KEY_USER_MESSAGE,
     KEY_ACTIVE_LOOP,
 )
-from rasa.core.training.structures import StoryStep, Checkpoint
+from rasa.core.training.structures import StoryStep, Checkpoint, STORY_START
 
 
 class YAMLStoryWriter:
@@ -45,7 +43,7 @@ class YAMLStoryWriter:
         return stream.getvalue()
 
     def dump(
-        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep],
+        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep]
     ) -> None:
         """Writes Story steps into a target file/stream.
 
@@ -55,7 +53,7 @@ class YAMLStoryWriter:
         """
         result = self.stories_to_yaml(story_steps)
 
-        io_utils.write_yaml(result, target, True)
+        rasa.shared.utils.io.write_yaml(result, target, True)
 
     def stories_to_yaml(self, story_steps: List[StoryStep]) -> Dict[Text, Any]:
         """Converts a sequence of story steps into yaml format.
@@ -63,7 +61,7 @@ class YAMLStoryWriter:
         Args:
             story_steps: Original story steps to be converted to the YAML.
         """
-        from rasa.validator import KEY_TRAINING_DATA_FORMAT_VERSION
+        from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
         stories = []
         for story_step in story_steps:
@@ -154,7 +152,10 @@ class YAMLStoryWriter:
                 user_utterance.inline_comment(), KEY_USER_INTENT
             )
 
-        if YAMLStoryWriter._text_is_real_message(user_utterance):
+        if (
+            YAMLStoryWriter._text_is_real_message(user_utterance)
+            and user_utterance.text
+        ):
             result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
 
         if len(user_utterance.entities):
@@ -210,6 +211,8 @@ class YAMLStoryWriter:
         """
         result = []
         for checkpoint in checkpoints:
+            if checkpoint.name == STORY_START:
+                continue
             next_checkpoint = OrderedDict([(KEY_CHECKPOINT, checkpoint.name)])
             if checkpoint.conditions:
                 next_checkpoint[KEY_CHECKPOINT_SLOTS] = [

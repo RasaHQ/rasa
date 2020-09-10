@@ -1,6 +1,8 @@
 import jsonpickle
 import logging
 import os
+
+from rasa.shared.nlu.constants import TEXT
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text
 import numpy as np
@@ -11,11 +13,10 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.domain import Domain, State
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER
-from rasa.nlu.constants import TEXT
 import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.features import Features
 
 logger = logging.getLogger(__name__)
 
@@ -404,7 +405,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 )
                 if self.remove_duplicates:
                     hashed = self._hash_example(
-                        sliced_states, event.action_name or event.action_text, tracker,
+                        sliced_states, event.action_name or event.action_text, tracker
                     )
 
                     # only continue with tracker_states that created a

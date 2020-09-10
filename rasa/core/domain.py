@@ -11,7 +11,9 @@ from ruamel.yaml import YAMLError
 
 import rasa.core.constants
 from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils.common import lazy_property, sort_list_of_dicts_by_first_key
+from rasa.shared.nlu.constants import ENTITIES
+from rasa.utils.common import sort_list_of_dicts_by_first_key
+from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import (
@@ -19,6 +21,7 @@ from rasa.constants import (
     DOMAIN_SCHEMA_FILE,
     DOCS_URL_DOMAINS,
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+    DOCS_URL_FORMS,
 )
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
@@ -40,8 +43,11 @@ from rasa.core.constants import (
 from rasa.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
-from rasa.nlu.constants import ENTITIES
+from rasa.shared.utils.validation import (
+    InvalidYamlFileError,
+    validate_yaml_schema,
+    validate_training_data_format_version,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -156,19 +162,18 @@ class Domain:
 
     @classmethod
     def from_file(cls, path: Text) -> "Domain":
-        return cls.from_yaml(rasa.utils.io.read_file(path), path)
+        return cls.from_yaml(rasa.shared.utils.io.read_file(path), path)
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
-        from rasa.validator import Validator
 
         try:
             validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
         except InvalidYamlFileError as e:
             raise InvalidDomain(str(e))
 
-        data = rasa.utils.io.read_yaml(yaml)
-        if not Validator.validate_training_data_format_version(data, original_filename):
+        data = rasa.shared.utils.io.read_yaml(yaml)
+        if not validate_training_data_format_version(data, original_filename):
             return Domain.empty()
 
         return cls.from_dict(data)
@@ -273,9 +278,6 @@ class Domain:
         combined[KEY_INTENTS] = merge_lists_of_dicts(
             combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
         )
-        combined[KEY_FORMS] = merge_lists_of_dicts(
-            combined[KEY_FORMS], domain_dict[KEY_FORMS], override
-        )
 
         # remove existing forms from new actions
         for form in combined[KEY_FORMS]:
@@ -285,7 +287,7 @@ class Domain:
         for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
-        for key in [KEY_RESPONSES, KEY_SLOTS]:
+        for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
@@ -426,7 +428,7 @@ class Domain:
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
-        forms: List[Union[Text, Dict]],
+        forms: Union[Dict[Text, Any], List[Text]],
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
@@ -435,14 +437,9 @@ class Domain:
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
 
-        # Forms used to be a list of form names. Now they can also contain
-        # `SlotMapping`s
-        if not forms or (forms and isinstance(forms[0], str)):
-            self.form_names = forms
-            self.forms: List[Dict] = [{form_name: {}} for form_name in forms]
-        elif isinstance(forms[0], dict):
-            self.forms: List[Dict] = forms
-            self.form_names = [list(f.keys())[0] for f in forms]
+        self.forms: Dict[Text, Any] = {}
+        self.form_names: List[Text] = []
+        self._initialize_forms(forms)
 
         self.slots = slots
         self.templates = templates
@@ -464,6 +461,33 @@ class Domain:
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
+    def _initialize_forms(self, forms: Union[Dict[Text, Any], List[Text]]) -> None:
+        """Initialize the domain's `self.form` and `self.form_names` attributes.
+
+        Args:
+            forms: Form names (if forms are a list) or a form dictionary. Forms
+                provided in dictionary format have the form names as keys, and either
+                empty dictionaries as values, or objects containing
+                `SlotMapping`s.
+        """
+        if not forms:
+            # empty dict or empty list
+            return
+        elif isinstance(forms, dict):
+            # dict with slot mappings
+            self.forms = forms
+            self.form_names = list(forms.keys())
+        elif isinstance(forms, list) and isinstance(forms[0], str):
+            # list of form names
+            self.forms = {form_name: {} for form_name in forms}
+            self.form_names = forms
+        else:
+            rasa.shared.utils.io.raise_warning(
+                f"The `forms` section in the domain needs to contain a dictionary. "
+                f"Instead found an object of type '{type(forms)}'.",
+                docs=DOCS_URL_FORMS,
+            )
+
     def __hash__(self) -> int:
         self_as_dict = self.as_dict()
         self_as_dict[KEY_INTENTS] = sort_list_of_dicts_by_first_key(
@@ -471,7 +495,7 @@ class Domain:
         )
         self_as_dict[KEY_ACTIONS] = self.action_names
         self_as_string = json.dumps(self_as_dict, sort_keys=True)
-        text_hash = utils.get_text_hash(self_as_string)
+        text_hash = rasa.shared.utils.io.get_text_hash(self_as_string)
 
         return int(text_hash, 16)
 
@@ -786,7 +810,7 @@ class Domain:
         """Load a domains specification from a dumped model directory."""
 
         metadata_path = os.path.join(path, "domain.json")
-        specification = json.loads(rasa.utils.io.read_file(metadata_path))
+        specification = json.loads(rasa.shared.utils.io.read_file(metadata_path))
         return specification
 
     def compare_with_specification(self, path: Text) -> bool:
@@ -1143,12 +1167,12 @@ class Domain:
         Returns:
             `True` if it's a domain file, otherwise `False`.
         """
-        from rasa.data import is_likely_yaml_file
+        from rasa.shared.data import is_likely_yaml_file
 
         if not is_likely_yaml_file(filename):
             return False
         try:
-            content = rasa.utils.io.read_yaml_file(filename)
+            content = rasa.shared.utils.io.read_yaml_file(filename)
             if any(key in content for key in ALL_DOMAIN_KEYS):
                 return True
         except YAMLError:
@@ -1156,7 +1180,7 @@ class Domain:
 
         return False
 
-    def slot_mapping_for_form(self, form_name: Text) -> Dict:
+    def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
         """Retrieve the slot mappings for a form which are defined in the domain.
 
         Options:
@@ -1172,9 +1196,7 @@ class Domain:
         Returns:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
-        return next(
-            (form[form_name] for form in self.forms if form_name in form.keys()), {}
-        )
+        return self.forms.get(form_name, {})
 
 
 class TemplateDomain(Domain):

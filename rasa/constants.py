@@ -1,11 +1,14 @@
 import os
 
+from rasa.shared.constants import DOCS_BASE_URL
+
 DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
 DEFAULT_CREDENTIALS_PATH = "credentials.yml"
 DEFAULT_CONFIG_PATH = "config.yml"
 DEFAULT_DOMAIN_PATH = "domain.yml"
 DEFAULT_ACTIONS_PATH = "actions"
 DEFAULT_MODELS_PATH = "models"
+DEFAULT_CONVERTED_DATA_PATH = "converted_data"
 DEFAULT_DATA_PATH = "data"
 DEFAULT_E2E_TESTS_PATH = "tests"
 DEFAULT_RESULTS_PATH = "results"
@@ -25,20 +28,16 @@ PERCENTAGE_KEY = "__percentage__"
 
 PACKAGE_NAME = "rasa"
 
-CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
 DOMAIN_SCHEMA_FILE = "utils/schemas/domain.yml"
-RESPONSES_SCHEMA_FILE = "utils/schemas/responses.yml"
-SCHEMA_EXTENSIONS_FILE = "utils/pykwalify_extensions.py"
-YAML_VERSION = (1, 2)
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 
-DOCS_BASE_URL = "https://rasa.com/docs/rasa"
 DOCS_URL_POLICIES = DOCS_BASE_URL + "/core/policies/"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/core/domains/"
 DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
 DOCS_URL_RULES = DOCS_BASE_URL + "/core/rules/"
+DOCS_URL_FORMS = DOCS_BASE_URL + "/core/forms/"
 DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/user-guide/connectors/"
@@ -47,8 +46,6 @@ DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
 DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/api/tracker-stores/"
 DOCS_URL_PIPELINE = DOCS_BASE_URL + "/nlu/choosing-a-pipeline/"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/nlu/components/"
-DOCS_URL_TRAINING_DATA_NLU = DOCS_BASE_URL + "/nlu/training-data-format/"
-DOCS_URL_MIGRATE_GOOGLE = DOCS_BASE_URL + "/migrate-from/google-dialogflow-to-rasa/"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide/"
 
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
@@ -70,8 +67,6 @@ CONFIG_AUTOCONFIGURABLE_KEYS = (
 MINIMUM_COMPATIBLE_VERSION = "2.0.0a3"
 
 NEXT_MAJOR_VERSION_FOR_DEPRECATIONS = "3.0.0"
-
-LATEST_TRAINING_DATA_FORMAT_VERSION = "2.0"
 
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
 

@@ -14,7 +14,8 @@ from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturize
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 
 from rasa.core.interpreter import RegexInterpreter
-from rasa.nlu.constants import INTENT_NAME_KEY, INTENT, ACTION_NAME, ENTITIES
+from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT
 from rasa.utils.tensorflow.model_data_utils import surface_attributes
 
 

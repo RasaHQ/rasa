@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import scipy.sparse
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -10,73 +9,12 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
-from rasa.utils.features import Features
-from rasa.nlu.constants import (
-    TEXT,
-    FEATURIZER_CLASS_ALIAS,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
-)
+from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE, TEXT
 from rasa.utils.tensorflow.constants import FEATURIZERS, SENTENCE, SEQUENCE, LABEL
-
-
-def test_combine_with_existing_dense_features():
-    existing_features = Features(
-        np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"
-    )
-    new_features = Features(
-        np.array([[1, 0], [0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "origin"
-    )
-    expected_features = np.array([[1, 0, 2, 3, 1, 0], [2, 0, 0, 1, 0, 1]])
-
-    existing_features.combine_with_features(new_features)
-
-    assert np.all(expected_features == existing_features.features)
-
-
-def test_combine_with_existing_dense_features_shape_mismatch():
-    existing_features = Features(
-        np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"
-    )
-    new_features = Features(np.array([[0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "origin")
-
-    with pytest.raises(ValueError):
-        existing_features.combine_with_features(new_features)
-
-
-def test_combine_with_existing_sparse_features():
-    existing_features = Features(
-        scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
-        FEATURE_TYPE_SEQUENCE,
-        TEXT,
-        "test",
-    )
-    new_features = Features(
-        scipy.sparse.csr_matrix([[1, 0], [0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "origin"
-    )
-    expected_features = [[1, 0, 2, 3, 1, 0], [2, 0, 0, 1, 0, 1]]
-
-    existing_features.combine_with_features(new_features)
-    actual_features = existing_features.features.toarray()
-
-    assert np.all(expected_features == actual_features)
-
-
-def test_combine_with_existing_sparse_features_shape_mismatch():
-    existing_features = Features(
-        scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
-        FEATURE_TYPE_SEQUENCE,
-        TEXT,
-        "test",
-    )
-    new_features = Features(
-        scipy.sparse.csr_matrix([[0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "origin"
-    )
-
-    with pytest.raises(ValueError):
-        existing_features.combine_with_features(new_features)
 
 
 @pytest.mark.parametrize(
