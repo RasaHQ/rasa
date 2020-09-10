@@ -6,25 +6,24 @@ from typing import List, Text, Optional, Any
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.actions.action import (
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_LISTEN_NAME,
-)
 
-from rasa.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.events import UserUttered, ActionExecuted
 
-from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
-from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.shared.core.constants import (
+    USER_INTENT_OUT_OF_SCOPE,
+    ACTION_LISTEN_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME,
+)
+from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -228,8 +227,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "fallback_nlu_action_name": self.fallback_nlu_action_name,
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
+        rasa.shared.utils.io.create_directory_for_file(config_file)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

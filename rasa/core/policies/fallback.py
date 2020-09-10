@@ -5,16 +5,16 @@ from typing import Any, List, Text, Optional, Dict, Tuple
 
 import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
 
 import rasa.utils.io
 from rasa.utils import common as common_utils
 
-from rasa.core.domain import Domain
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
@@ -201,8 +201,8 @@ class FallbackPolicy(Policy):
             "core_threshold": self.core_threshold,
             "fallback_action_name": self.fallback_action_name,
         }
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
+        rasa.shared.utils.io.create_directory_for_file(config_file)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

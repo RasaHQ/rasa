@@ -1,6 +1,4 @@
 import asyncio
-import errno
-import json
 import logging
 import os
 import pickle
@@ -13,7 +11,7 @@ from io import BytesIO as IOReader
 from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
 
-from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file, read_yaml
 
 if TYPE_CHECKING:
@@ -55,12 +53,6 @@ def enable_async_loop_debugging(
     # Report all mistakes managing asynchronous resources.
     warnings.simplefilter("always", ResourceWarning)
     return event_loop
-
-
-def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
-    """Dump an object as a json string to a file."""
-
-    write_text_file(json.dumps(obj, indent=2), filename)
 
 
 def pickle_dump(filename: Union[Text, Path], obj: Any) -> None:
@@ -162,12 +154,6 @@ def create_path(file_path: Text) -> None:
         os.makedirs(parent_dir)
 
 
-def create_directory_for_file(file_path: Union[Text, Path]) -> None:
-    """Creates any missing parent directories of this file path."""
-
-    create_directory(os.path.dirname(file_path))
-
-
 def file_type_validator(
     valid_file_types: List[Text], error_message: Text
 ) -> Type["Validator"]:
@@ -211,19 +197,6 @@ def create_validator(
                 raise ValidationError(message=error_message)
 
     return FunctionValidator
-
-
-def create_directory(directory_path: Text) -> None:
-    """Creates a directory and its super paths.
-
-    Succeeds even if the path already exists."""
-
-    try:
-        os.makedirs(directory_path)
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
 
 
 def zip_folder(folder: Text) -> Text:

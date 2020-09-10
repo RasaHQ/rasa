@@ -16,10 +16,10 @@ from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=p
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
-from rasa.nlu.constants import PREDICTED_CONFIDENCE_KEY, INTENT_NAME_KEY
+from rasa.nlu.constants import PREDICTED_CONFIDENCE_KEY
 
 from rasa.nlu.persistor import Persistor
-from rasa.shared.nlu.constants import TEXT, ENTITIES, INTENT
+from rasa.shared.nlu.constants import TEXT, ENTITIES, INTENT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
@@ -234,7 +234,7 @@ class Trainer:
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
 
-        rasa.utils.io.create_directory(dir_name)
+        rasa.shared.utils.io.create_directory(dir_name)
 
         if self.training_data and persist_nlu_training_data:
             metadata.update(self.training_data.persist(dir_name))

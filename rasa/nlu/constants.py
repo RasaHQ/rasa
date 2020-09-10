@@ -68,7 +68,6 @@ RESPONSE_SELECTOR_RESPONSES_KEY = "response_templates"
 
 INTENT_RANKING_KEY = "intent_ranking"
 PREDICTED_CONFIDENCE_KEY = "confidence"
-INTENT_NAME_KEY = "name"
 
 FEATURIZER_CLASS_ALIAS = "alias"
 

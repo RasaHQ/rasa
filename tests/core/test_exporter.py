@@ -6,16 +6,15 @@ from unittest.mock import Mock
 import pytest
 
 import rasa.shared.utils.io
-from rasa.core.actions.action import ACTION_SESSION_START_NAME
-from rasa.core.domain import Domain
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.domain import Domain
 
-import rasa.utils.io as io_utils
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
-from rasa.core.events import SessionStarted, ActionExecuted
+from rasa.shared.core.events import SessionStarted, ActionExecuted
 from rasa.core.tracker_store import SQLTrackerStore
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.exceptions import (
     NoConversationsInTrackerStoreError,
     NoEventsToMigrateError,
