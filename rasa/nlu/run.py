@@ -3,7 +3,7 @@ import logging
 import typing
 from typing import Optional, Text
 
-from rasa.cli.utils import print_success
+from rasa.cli.utils import print_success, run_in_loop
 from rasa.core.interpreter import RegexInterpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.model import Interpreter
@@ -26,8 +26,7 @@ def run_cmdline(
         print_success("Next message:")
         message = input().strip()
         if message.startswith(INTENT_MESSAGE_PREFIX):
-            loop = asyncio.get_event_loop()
-            result = loop.run_until_complete(regex_interpreter.parse(message))
+            result = run_in_loop(regex_interpreter.parse(message))
         else:
             result = interpreter.parse(message)
 

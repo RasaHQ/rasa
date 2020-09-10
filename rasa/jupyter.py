@@ -2,7 +2,7 @@ import asyncio
 import pprint as pretty_print
 import typing
 from typing import Any, Dict, Text, Optional
-from rasa.cli.utils import print_success, print_error
+from rasa.cli.utils import print_success, print_error, run_in_loop
 from rasa.core.interpreter import NaturalLanguageInterpreter, RasaNLUInterpreter
 
 if typing.TYPE_CHECKING:
@@ -49,13 +49,12 @@ def chat(
         return
 
     print("Your bot is ready to talk! Type your messages here or send '/stop'.")
-    loop = asyncio.get_event_loop()
     while True:
         message = input()
         if message == "/stop":
             break
 
-        responses = loop.run_until_complete(agent.handle_text(message))
+        responses = run_in_loop(agent.handle_text(message))
         for response in responses:
             _display_bot_response(response)
 

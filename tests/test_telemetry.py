@@ -147,3 +147,8 @@ def test_toggle_telemetry_reporting(monkeypatch: MonkeyPatch):
     # tests that toggling works if config is set to false
     telemetry.toggle_telemetry_reporting(True)
     assert telemetry.initialize_telemetry() is True
+
+
+def test_environment_write_key_overwrites_key_file(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+    assert telemetry.telemetry_write_key() == "foobar"

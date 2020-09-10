@@ -3,7 +3,12 @@ import os
 from typing import List, Optional, Text, Dict
 import rasa.cli.arguments.train as train_arguments
 
-from rasa.cli.utils import get_validated_path, missing_config_keys, print_error
+from rasa.cli.utils import (
+    get_validated_path,
+    missing_config_keys,
+    print_error,
+    run_in_loop,
+)
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -115,9 +120,7 @@ def train_core(
     else:
         from rasa.core.train import do_compare_training
 
-        loop.run_until_complete(
-            do_compare_training(args, story_file, additional_arguments)
-        )
+        run_in_loop(do_compare_training(args, story_file, additional_arguments))
 
 
 def train_nlu(

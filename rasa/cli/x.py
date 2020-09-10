@@ -395,8 +395,7 @@ def _get_credentials_and_endpoints_paths(
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        loop = asyncio.get_event_loop()
-        endpoints_config_path, credentials_path = loop.run_until_complete(
+        endpoints_config_path, credentials_path = cli_utils.run_in_loop(
             _pull_runtime_config_from_server(config_endpoint)
         )
 

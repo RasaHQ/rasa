@@ -12,7 +12,13 @@ from rasa.core.domain import Domain
 from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.cli.utils import print_success, print_warning, print_error, print_color
+from rasa.cli.utils import (
+    print_success,
+    print_warning,
+    print_error,
+    print_color,
+    run_in_loop,
+)
 import rasa.shared.utils.io
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
@@ -33,14 +39,7 @@ def train(
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> Optional[Text]:
-    if loop is None:
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-    return loop.run_until_complete(
+    return run_in_loop(
         train_async(
             domain=domain,
             config=config,
@@ -51,7 +50,8 @@ def train(
             persist_nlu_training_data=persist_nlu_training_data,
             core_additional_arguments=core_additional_arguments,
             nlu_additional_arguments=nlu_additional_arguments,
-        )
+        ),
+        loop,
     )
 
 
@@ -302,8 +302,7 @@ def train_core(
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
+    return run_in_loop(
         train_core_async(
             domain=domain,
             config=config,
@@ -454,8 +453,7 @@ def train_nlu(
 
     """
 
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
+    return run_in_loop(
         _train_nlu_async(
             config,
             nlu_data,

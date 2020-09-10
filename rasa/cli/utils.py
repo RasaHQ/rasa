@@ -1,8 +1,9 @@
+import asyncio
 import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
+from typing import Any, Awaitable, Dict, List, Optional, TYPE_CHECKING, Text, TypeVar
 
 if TYPE_CHECKING:
     from questionary import Question
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
+
+T = TypeVar("T")
 
 
 def get_validated_path(
@@ -228,3 +231,38 @@ def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:
 def signal_handler(sig, frame) -> NoReturn:
     print("Goodbye 👋")
     sys.exit(0)
+
+
+def run_in_loop(f: Awaitable[T], loop: Optional[asyncio.AbstractEventLoop] = None) -> T:
+    """Execute the awaitable in the passed loop.
+
+    If no loop is passed, the currently existing one is used or a new one is created
+    if no loop has been started in the current context.
+
+    After the awaitable is finished, all remaining tasks on the loop will be
+    awaited as well (background tasks).
+
+    WARNING: don't use this if there are never ending background tasks scheduled.
+        in this case, this function will never return.
+
+    Args:
+       f: function to execute
+       loop: loop to use for the execution
+
+    Returns:
+        return value from the function
+    """
+
+    if loop is None:
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(f)
+
+    # Let's also finish all running tasks:
+    pending = asyncio.Task.all_tasks()
+    loop.run_until_complete(asyncio.gather(*pending))
+
+    return result

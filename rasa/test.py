@@ -30,8 +30,7 @@ def test_core_models_in_directory(
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
+    cli_utils.run_in_loop(compare_models_in_dir(model_directory, stories, output))
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
     number_of_stories = rasa.shared.utils.io.read_json_file(story_n_path)
@@ -90,8 +89,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
 def test_core_models(models: List[Text], stories: Text, output: Text):
     from rasa.core.test import compare_models
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(compare_models(models, stories, output))
+    cli_utils.run_in_loop(compare_models(models, stories, output))
 
 
 def test(
@@ -153,18 +151,7 @@ def test_core(
 
     kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
 
-    _test_core(stories, _agent, output, **kwargs)
-
-
-def _test_core(
-    stories: Optional[Text], agent: "Agent", output_directory: Text, **kwargs: Any
-) -> None:
-    from rasa.core.test import test
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        test(stories, agent, out_directory=output_directory, **kwargs)
-    )
+    cli_utils.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
 
 
 def test_nlu(

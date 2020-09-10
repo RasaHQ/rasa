@@ -11,7 +11,13 @@ def add_subparser(
     subparsers: argparse._SubParsersAction,  # skipcq:PYL-W0212
     parents: List[argparse.ArgumentParser],
 ) -> None:
-    """Add all telemetry tracking parsers."""
+    """Add all telemetry tracking parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
+
     telemetry_parser = subparsers.add_parser(
         "telemetry",
         parents=parents,

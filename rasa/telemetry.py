@@ -12,7 +12,7 @@ import platform
 from subprocess import CalledProcessError, STDOUT, check_output  # skipcq:BAN-B404
 import sys
 import textwrap
-from typing import Any, Dict, Optional, Text
+from typing import Any, Callable, Dict, Optional, Text
 import uuid
 
 import aiohttp
@@ -33,8 +33,12 @@ logger = logging.getLogger(__name__)
 
 SEGMENT_ENDPOINT = "https://api.segment.io/v1/track"
 
-TELEMETRY_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_ENABLED"
-TELEMETRY_ENVIRONMENT_DEBUG_VARIABLE = "RASA_TELEMETRY_DEBUG"
+TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_ENABLED"
+TELEMETRY_DEBUG_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_DEBUG"
+
+# the environment variable can be used for local development to set a test key
+# e.g. `RASA_TELEMETRY_WRITE_KEY=12354 rasa train`
+TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_WRITE_KEY"
 
 TELEMETRY_HTTP_TIMEOUT = 2  # Seconds
 TELEMETRY_ID = "metrics_id"
@@ -86,7 +90,9 @@ def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Text]:
     }
 
 
-def _write_default_telemetry_configuration(is_enabled: bool = TELEMETRY_ENABLED_BY_DEFAULT) -> None:
+def _write_default_telemetry_configuration(
+    is_enabled: bool = TELEMETRY_ENABLED_BY_DEFAULT,
+) -> None:
     if is_enabled:
         print_telemetry_reporting_info()
 
@@ -109,7 +115,7 @@ def _is_telemetry_enabled_in_configuration() -> bool:
         )
 
         return stored_config[CONFIG_TELEMETRY_ENABLED]
-    except ValueError as e:  # skipcq:PYL-W0703
+    except ValueError as e:
         logger.debug(f"Could not read telemetry settings from configuration file: {e}")
 
         # seems like there is no config, we'll create on and enable telemetry
@@ -130,7 +136,7 @@ def initialize_telemetry() -> bool:
     # configuration is created and there is a telemetry ID
     is_enabled_in_configuration = _is_telemetry_enabled_in_configuration()
 
-    telemetry_environ = os.environ.get(TELEMETRY_ENVIRONMENT_VARIABLE)
+    telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
 
     if telemetry_environ is None:
         return is_enabled_in_configuration
@@ -184,6 +190,11 @@ def telemetry_write_key() -> Optional[Text]:
     """
     import pkg_resources
     from rasa import __name__ as name
+
+    if os.environ.get(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE):
+        # a write key set using the environment variable will always
+        # overwrite any key provided as part of the package (`segment_key` file)
+        return os.environ.get(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE)
 
     write_key_path = pkg_resources.resource_filename(name, "segment_key")
 
@@ -258,7 +269,7 @@ def in_continuous_integration() -> bool:
 def _is_telemetry_debug_enabled() -> bool:
     """Check if telemetry debug mode is enabled."""
     return (
-        os.environ.get(TELEMETRY_ENVIRONMENT_DEBUG_VARIABLE, "false").lower() == "true"
+        os.environ.get(TELEMETRY_DEBUG_ENVIRONMENT_VARIABLE, "false").lower() == "true"
     )
 
 
@@ -363,7 +374,7 @@ def _default_context_fields() -> Dict[Text, Any]:
     import tensorflow as tf
 
     return {
-        "os": {"name": platform.system(), "version": platform.release(),},
+        "os": {"name": platform.system(), "version": platform.release()},
         "ci": in_continuous_integration(),
         "project": _project_hash(),
         "python": sys.version.split(" ")[0],
@@ -402,14 +413,9 @@ async def track(
 
     properties[TELEMETRY_ID] = telemetry_id
 
-    try:
-        await _send_event(
-            telemetry_id, event_name, properties, with_default_context_fields(context)
-        )
-    except Exception as e:  # skipcq:PYL-W0703
-        logger.debug(
-            f"An error occurred when trying to report the telemetry event: {e}"
-        )
+    await _send_event(
+        telemetry_id, event_name, properties, with_default_context_fields(context)
+    )
 
 
 def get_telemetry_id() -> Optional[Text]:
@@ -466,29 +472,31 @@ async def track_model_training(
     nlu_data = await training_data.get_nlu_data()
     domain = await training_data.get_domain()
 
-    await track(
-        TRAINING_STARTED_EVENT,
-        {
-            "language": config.get("language"),
-            "model_type": model_type,
-            # TODO: figure out how to track these
-            # "pipeline": config.get("pipeline"),
-            # "policies": config.get("policies"),
-            "num_intent_examples": len(nlu_data.intent_examples),
-            "num_entity_examples": len(nlu_data.entity_examples),
-            "num_actions": len(domain.action_names),
-            # Old nomenclature from when 'responses' were still called
-            # 'templates' in the domain
-            "num_templates": len(domain.templates),
-            "num_slots": len(domain.slots),
-            "num_forms": len(domain.forms),
-            "num_intents": len(domain.intents),
-            "num_entities": len(domain.entities),
-            "num_story_steps": len(stories.story_steps),
-            "num_lookup_tables": len(nlu_data.lookup_tables),
-            "num_synonyms": len(nlu_data.entity_synonyms),
-            "num_regexes": len(nlu_data.regex_features),
-        },
+    asyncio.ensure_future(
+        track(
+            TRAINING_STARTED_EVENT,
+            {
+                "language": config.get("language"),
+                "model_type": model_type,
+                # TODO: figure out how to track these
+                # "pipeline": config.get("pipeline"),
+                # "policies": config.get("policies"),
+                "num_intent_examples": len(nlu_data.intent_examples),
+                "num_entity_examples": len(nlu_data.entity_examples),
+                "num_actions": len(domain.action_names),
+                # Old nomenclature from when 'responses' were still called
+                # 'templates' in the domain
+                "num_templates": len(domain.templates),
+                "num_slots": len(domain.slots),
+                "num_forms": len(domain.forms),
+                "num_intents": len(domain.intents),
+                "num_entities": len(domain.entities),
+                "num_story_steps": len(stories.story_steps),
+                "num_lookup_tables": len(nlu_data.lookup_tables),
+                "num_synonyms": len(nlu_data.entity_synonyms),
+                "num_regexes": len(nlu_data.regex_features),
+            },
+        )
     )
 
 

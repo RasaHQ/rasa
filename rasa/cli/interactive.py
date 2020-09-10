@@ -4,7 +4,7 @@ import logging
 import os
 from typing import List, Optional, Text
 
-from rasa.cli import utils
+import rasa.cli.utils
 import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
 from rasa import model
@@ -52,16 +52,15 @@ def interactive(args: argparse.Namespace) -> None:
     )
 
     if args.model is None:
-        loop = asyncio.get_event_loop()
-        story_graph = loop.run_until_complete(file_importer.get_stories())
+        story_graph = rasa.cli.utils.run_in_loop(file_importer.get_stories())
         if not story_graph or story_graph.is_empty():
-            utils.print_error_and_exit(
+            rasa.cli.utils.print_error_and_exit(
                 "Could not run interactive learning without either core data or a model containing core data."
             )
 
         zipped_model = train.train_core(args) if args.core_only else train.train(args)
         if not zipped_model:
-            utils.print_error_and_exit(
+            rasa.cli.utils.print_error_and_exit(
                 "Could not train an initial model. Either pass paths "
                 "to the relevant training files (`--data`, `--config`, `--domain`), "
                 "or use 'rasa train' to train a model."
@@ -69,7 +68,7 @@ def interactive(args: argparse.Namespace) -> None:
     else:
         zipped_model = get_provided_model(args.model)
         if not (zipped_model and os.path.exists(zipped_model)):
-            utils.print_error_and_exit(
+            rasa.cli.utils.print_error_and_exit(
                 f"Interactive learning process cannot be started as no initial model was "
                 f"found at path '{args.model}'.  Use 'rasa train' to train a model."
             )
@@ -94,11 +93,11 @@ def perform_interactive_learning(
     with model.unpack_model(zipped_model) as model_path:
         args.core, args.nlu = model.get_model_subdirectories(model_path)
         if args.core is None:
-            utils.print_error_and_exit(
+            rasa.cli.utils.print_error_and_exit(
                 "Can not run interactive learning on an NLU-only model."
             )
 
-        args.endpoints = utils.get_validated_path(
+        args.endpoints = rasa.cli.utils.get_validated_path(
             args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
 
@@ -106,7 +105,9 @@ def perform_interactive_learning(
 
 
 def get_provided_model(arg_model: Text) -> Optional[Text]:
-    model_path = utils.get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
+    model_path = rasa.cli.utils.get_validated_path(
+        arg_model, "model", DEFAULT_MODELS_PATH
+    )
 
     if os.path.isdir(model_path):
         model_path = model.get_latest_model(model_path)

@@ -12,6 +12,7 @@ from rasa.cli.utils import (
     print_error_and_exit,
     print_info,
     print_warning,
+    run_in_loop,
 )
 from rasa.constants import DEFAULT_DATA_PATH
 from rasa.data import is_valid_filetype
@@ -172,12 +173,11 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         args: Commandline arguments
         stories_only: If `True`, only the story structure is validated.
     """
-    loop = asyncio.get_event_loop()
     file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
     )
 
-    validator = loop.run_until_complete(Validator.from_importer(file_importer))
+    validator = run_in_loop(Validator.from_importer(file_importer))
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
@@ -321,8 +321,7 @@ def _convert_file_to_yaml(
         return False
 
     if converter.filter(source_file):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(converter.convert_and_write(source_file, target_dir))
+        run_in_loop(converter.convert_and_write(source_file, target_dir))
         return True
 
     print_warning(f"Skipped file: '{source_file}'.")
