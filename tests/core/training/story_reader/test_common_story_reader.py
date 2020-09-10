@@ -315,8 +315,9 @@ async def test_action_deactivate_form_is_mapped_to_new_form(
 
     expected_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("greet", intent={"name": "greet", "confidence": 1.0}),
+        UserUttered(None, intent={"name": "greet", "confidence": 1.0}),
         ActionExecuted(ACTION_DEACTIVATE_LOOP_NAME),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
     assert list(training_trackers[0].events) == expected_events
