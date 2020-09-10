@@ -141,8 +141,8 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
         action_name: Name of the action.
         retrieval_intents: List of retrieval intents defined in the NLU training data.
 
-    Returns: 
-        `True` if the resolved intent name is present in the list of retrieval 
+    Returns:
+        `True` if the resolved intent name is present in the list of retrieval
         intents, `False` otherwise.
     """
 
