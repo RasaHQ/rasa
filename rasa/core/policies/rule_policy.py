@@ -4,6 +4,7 @@ from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
 
 import json
 
+import rasa.utils.io
 from rasa.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.domain import Domain, InvalidDomain, State
@@ -498,8 +499,6 @@ class RulePolicy(MemoizationPolicy):
         Args:
             path: Path to persist policy to.
         """
-        import rasa.utils.io
-
         self.featurizer.persist(path)
 
         memorized_file = Path(path) / "memorized_turns.json"
@@ -523,8 +522,6 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             An instance of `RulePolicy`.
         """
-        import rasa.utils.io
-
         featurizer = TrackerFeaturizer.load(path)
         memorized_file = Path(path) / "memorized_turns.json"
         if memorized_file.is_file():
