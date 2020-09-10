@@ -859,10 +859,8 @@ class Domain:
         # remove e2e actions from domain before we display it
         domain_data.pop(KEY_E2E_ACTIONS, None)
 
-        for idx, intent_info in enumerate(
-            domain_data[KEY_INTENTS]
-        ):  # pytype: disable=attribute-error
-            for name, intent in intent_info.items():
+        for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):
+            for name, intent in intent_info.items():  # pytype: disable=attribute-error
                 if intent.get(USE_ENTITIES_KEY) is True:
                     del intent[USE_ENTITIES_KEY]
                 if not intent.get(IGNORE_ENTITIES_KEY):

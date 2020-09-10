@@ -529,7 +529,7 @@ class Agent:
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         **kwargs: Any,
-    ) -> DialogueStateTracker:
+    ) -> Optional[DialogueStateTracker]:
         """Append a message to a dialogue - does not predict actions."""
 
         processor = self.create_processor(message_preprocessor)
@@ -542,7 +542,7 @@ class Agent:
         output_channel: OutputChannel,
         policy: Text,
         confidence: float,
-    ) -> DialogueStateTracker:
+    ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
 
         processor = self.create_processor()

@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import List, TYPE_CHECKING
 
-from rasa.core.actions import Action
+from rasa.core.actions.action import Action
 from rasa.shared.core.events import Event, ActiveLoop
 
 if TYPE_CHECKING:

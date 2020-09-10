@@ -8,10 +8,15 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Unio
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
-from rasa.shared.core.conversation import Dialogue
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted, Event, SessionStarted
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
+from rasa.shared.core.domain import Domain  # pytype: disable=pyi-error
+from rasa.shared.core.events import (  # pytype: disable=pyi-error
+    UserUttered,
+    ActionExecuted,
+    Event,
+    SessionStarted,
+)
+from rasa.shared.core.trackers import DialogueStateTracker  # pytype: disable=pyi-error
 
 if typing.TYPE_CHECKING:
     import networkx as nx
@@ -151,7 +156,7 @@ class StoryStep:
             if isinstance(s, UserUttered):
                 result += self._user_string(s, e2e)
             elif isinstance(s, Event):
-                converted = s.as_story_string()
+                converted = s.as_story_string()  # pytype: disable=attribute-error
                 if converted:
                     result += self._bot_string(s)
             else:
@@ -203,7 +208,11 @@ class StoryStep:
             if isinstance(e, UserUttered):
                 self._add_action_listen(events)
                 events.append(e)
-                events.extend(domain.slots_for_entities(e.entities))
+                events.extend(
+                    domain.slots_for_entities(
+                        e.entities  # pytype: disable=attribute-error
+                    )
+                )
             else:
                 events.append(e)
 

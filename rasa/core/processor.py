@@ -275,7 +275,7 @@ class MessageProcessor:
 
     def predict_next_action(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[rasa.core.actions.action.Action, Text, float]:
+    ) -> Tuple[Optional[rasa.core.actions.action.Action], Text, float]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
