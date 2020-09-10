@@ -1,11 +1,11 @@
 import json
 import logging
 import os
-import re
 import typing
 from typing import Optional, Text
 
 import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.formats import MarkdownReader, NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -43,12 +43,6 @@ _json_format_heuristics = {
     DIALOGFLOW_INTENT_EXAMPLES: lambda js, fn: "_usersays_" in fn,
     DIALOGFLOW_ENTITY_ENTRIES: lambda js, fn: "_entries_" in fn,
 }
-
-# looks for pattern like:
-# ##
-# * intent/response_key
-#   - response_text
-_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*[^:]*\/.*\n\s*\t*\-.*")
 
 
 def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
@@ -120,13 +114,6 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
         return None
 
 
-def _is_nlg_story_format(content: Text) -> bool:
-
-    match = re.search(_nlg_markdown_marker_regex, content)
-    if match:
-        return True
-
-
 def guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file.
 
@@ -136,25 +123,27 @@ def guess_format(filename: Text) -> Text:
     Returns:
         Guessed file format.
     """
-    from rasa.shared.nlu.training_data.formats import RasaYAMLReader, markdown
+    from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 
     guess = UNK
 
-    content = ""
+    if not os.path.isfile(filename):
+        return guess
+
     try:
         content = rasa.shared.utils.io.read_file(filename)
         js = json.loads(content)
     except ValueError:
-        if any(marker in content for marker in markdown.MARKDOWN_SECTION_MARKERS):
+        if MarkdownReader.is_markdown_nlu_file(filename):
             guess = MARKDOWN
-        elif _is_nlg_story_format(content):
+        elif NLGMarkdownReader.is_markdown_nlg_file(filename):
             guess = MARKDOWN_NLG
         elif RasaYAMLReader.is_yaml_nlu_file(filename):
             guess = RASA_YAML
     else:
-        for fformat, format_heuristic in _json_format_heuristics.items():
+        for file_format, format_heuristic in _json_format_heuristics.items():
             if format_heuristic(js, filename):
-                guess = fformat
+                guess = file_format
                 break
 
     logger.debug(f"Training data format of '{filename}' is '{guess}'.")
