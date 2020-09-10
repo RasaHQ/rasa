@@ -66,7 +66,7 @@ CONFIG_AUTOCONFIGURABLE_KEYS = (
 )
 
 # Key in global config file which contains whether the user agreed to telemetry
-# reporting these are reused in Rasa X. Keep this in mind when changing their names.
+# reporting. These are reused in Rasa X. Keep this in mind when changing their names.
 CONFIG_FILE_TELEMETRY_KEY = "metrics"
 CONFIG_TELEMETRY_ID = "rasa_user_id"
 CONFIG_TELEMETRY_ENABLED = "enabled"

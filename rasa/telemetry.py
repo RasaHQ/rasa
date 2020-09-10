@@ -70,8 +70,8 @@ def print_telemetry_reporting_info() -> None:
       Rasa reports anonymous usage telemetry to help improve Rasa Open Source
       for all its users.
 
-      If you'd like to opt-out, you can use `rasa telemetry disable`
-      To learn more, checkout {DOCS_URL_TELEMETRY}"""
+      If you'd like to opt-out, you can use `rasa telemetry disable`.
+      To learn more, check out {DOCS_URL_TELEMETRY}."""
     ).strip()
 
     table = SingleTable([[message]])
@@ -86,7 +86,7 @@ def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Text]:
     }
 
 
-def _write_default_telemetry_configuration(is_enabled: bool) -> None:
+def _write_default_telemetry_configuration(is_enabled: bool = TELEMETRY_ENABLED_BY_DEFAULT) -> None:
     if is_enabled:
         print_telemetry_reporting_info()
 
@@ -109,11 +109,11 @@ def _is_telemetry_enabled_in_configuration() -> bool:
         )
 
         return stored_config[CONFIG_TELEMETRY_ENABLED]
-    except Exception as e:  # skipcq:PYL-W0703
+    except ValueError as e:  # skipcq:PYL-W0703
         logger.debug(f"Could not read telemetry settings from configuration file: {e}")
 
         # seems like there is no config, we'll create on and enable telemetry
-        _write_default_telemetry_configuration(is_enabled=TELEMETRY_ENABLED_BY_DEFAULT)
+        _write_default_telemetry_configuration()
         return TELEMETRY_ENABLED_BY_DEFAULT
 
 
@@ -138,10 +138,9 @@ def initialize_telemetry() -> bool:
         return telemetry_environ.lower() == "true"
 
 
-def ensure_telemetry_enabled(f):
+def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     """Function decorator for telemetry functions that only runs the decorated
-    function if telemetry is enabled - that is, if the telemetry events queue
-    has been initialized."""
+    function if telemetry is enabled."""
 
     is_telemetry_enabled = initialize_telemetry()
 
@@ -200,13 +199,12 @@ def encode_base64(original: Text, encoding: Text = "utf-8") -> Text:
     """Encodes a string as a base64 string.
 
     Args:
-        original: text to be encoded
-        encoding: encoding used to convert text to binary
+        original: Text to be encoded.
+        encoding: Encoding used to convert text to binary.
 
     Returns:
-        encoded text
+        Encoded text.
     """
-
     import base64
 
     return base64.b64encode(original.encode(encoding)).decode(encoding)
@@ -216,11 +214,11 @@ def segment_request_header(write_key: Text) -> Dict[Text, Any]:
     """Use a segment write key to create authentication headers for the segment API.
 
     Args:
-        write_key: authentication key for segment
+        write_key: Authentication key for segment.
+
     Returns:
         Authentication headers for segment.
     """
-
     return {
         "Authorization": "Basic {}".format(encode_base64(write_key + ":")),
         "Content-Type": "application/json",
@@ -242,9 +240,8 @@ def segment_request_payload(
         context: Context information about the event.
 
     Returns:
-        Valid segment payload
+        Valid segment payload.
     """
-
     return {
         "userId": distinct_id,
         "event": event_name,
@@ -386,7 +383,7 @@ async def track(
 
     It is OK to use this function from outside telemetry.py, but note that it
     is recommended to create a new track_xyz() function for complex telemetry
-    events, or events that are generated from many parts of the Rasa X code.
+    events, or events that are generated from many parts of the Rasa Open Source code.
 
     Args:
         event_name: Name of the event.

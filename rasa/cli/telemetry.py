@@ -10,7 +10,7 @@ from rasa.constants import DOCS_URL_TELEMETRY
 def add_subparser(
     subparsers: argparse._SubParsersAction,  # skipcq:PYL-W0212
     parents: List[argparse.ArgumentParser],
-):
+) -> None:
     """Add all telemetry tracking parsers."""
     telemetry_parser = subparsers.add_parser(
         "telemetry",
