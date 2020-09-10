@@ -22,4 +22,3 @@ def test_sort_dicts_by_keys():
     actual = rasa.shared.utils.common.sort_list_of_dicts_by_first_key(test_data)
 
     assert actual == expected
-
