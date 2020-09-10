@@ -493,40 +493,14 @@ class RulePolicy(MemoizationPolicy):
             ] = self._core_fallback_threshold
         return result
 
-    def persist(self, path: Union[Text, Path]) -> None:
-        """Persists `RulePolicy` to storage.
-
-        Args:
-            path: Path to persist policy to.
-        """
-        self.featurizer.persist(path)
-
-        memorized_file = Path(path) / "rule_policy.json"
-        data = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "lookup": self.lookup,
             "core_fallback_threshold": self._core_fallback_threshold,
             "core_fallback_action_name": self._fallback_action_name,
             "enable_fallback_prediction": self._enable_fallback_prediction,
         }
-        rasa.utils.io.create_directory_for_file(memorized_file)
-        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
-    @classmethod
-    def load(cls, path: Union[Text, Path]) -> "RulePolicy":
-        """Loads `RulePolicy` from path.
-
-        Args:
-            path: Path to load policy from.
-
-        Returns:
-            An instance of `RulePolicy`.
-        """
-        featurizer = TrackerFeaturizer.load(path)
-        meta = Path(path) / "rule_policy.json"
-        if meta.is_file():
-            data = json.loads(rasa.utils.io.read_file(meta))
-            return cls(featurizer=featurizer, **data)
-
-        logger.info(f"Couldn't load metadata for policy. File '{meta}' doesn't exist.")
-        return cls()
+    def _metadata_filename(self) -> Text:
+        return "rule_policy.json"

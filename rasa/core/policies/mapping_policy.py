@@ -1,8 +1,5 @@
 import logging
-import json
-import typing
-from pathlib import Path
-from typing import Any, List, Text, Optional, Union
+from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING
 
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
@@ -29,7 +26,7 @@ from rasa.core.training.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
 import rasa.shared.utils.io
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
 
@@ -175,21 +172,8 @@ class MappingPolicy(Policy):
             )
         return result
 
-    def persist(self, path: Union[Text, Path]) -> None:
-        """Only persists the priority."""
+    def _metadata(self) -> Dict[Text, Any]:
+        return {"priority": self.priority}
 
-        config_file = Path(path) / "mapping_policy.json"
-        meta = {"priority": self.priority}
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
-
-    @classmethod
-    def load(cls, path: Union[Text, Path]) -> "MappingPolicy":
-        """Returns the class with the configured priority."""
-
-        meta = {}
-        path = Path(path) / "fallback_policy.json"
-        if path.is_file():
-            meta = json.loads(rasa.shared.utils.io.read_file(path))
-
-        return cls(**meta)
+    def _metadata_filename(self) -> Text:
+        return "mapping_policy.json"

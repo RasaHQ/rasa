@@ -1,4 +1,5 @@
 import copy
+import json
 import logging
 from enum import Enum
 from pathlib import Path
@@ -17,6 +18,8 @@ from typing import (
 import numpy as np
 
 import rasa.utils.common
+import rasa.utils.io
+import rasa.shared.utils.io
 from rasa.core.domain import Domain
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -212,26 +215,63 @@ class Policy:
 
         raise NotImplementedError("Policy must have the capacity to predict.")
 
+    def _metadata(self) -> Dict[Text, Any]:
+        """Returns this policy's attributes that should be persisted.
+
+        Returns:
+            The policy metadata.
+        """
+        raise NotImplementedError(
+            "Policies following the default `persist()` and `load()` templates must "
+            "implement the `_metadata()` method."
+        )
+
+    def _metadata_filename(self) -> Text:
+        """Returns the filename of the persisted policy metadata.
+
+        Returns:
+            The filename of the persisted policy metadata.
+        """
+        raise NotImplementedError(
+            "Policies following the default `persist()` and `load()` templates must "
+            "implement the `_metadata_filename()` method."
+        )
+
     def persist(self, path: Union[Text, Path]) -> None:
-        """Persists the policy to a storage.
+        """Persists the policy to storage.
 
         Args:
-            path: the path where to save the policy to
+            path: Path to persist policy to.
         """
+        self.featurizer.persist(path)
+        data = self._metadata()
+        file = Path(path) / self._metadata_filename()
 
-        raise NotImplementedError("Policy must have the capacity to persist itself.")
+        rasa.utils.io.create_directory_for_file(file)
+        rasa.utils.io.dump_obj_as_json_to_file(file, data)
 
     @classmethod
     def load(cls, path: Union[Text, Path]) -> "Policy":
-        """Loads a policy from the storage.
-
-        Needs to load its featurizer.
+        """Loads a policy from path.
 
         Args:
-            path: the path from where to load the policy
-        """
+            path: Path to load policy from.
 
-        raise NotImplementedError("Policy must have the capacity to load itself.")
+        Returns:
+            An instance of `Policy`.
+        """
+        featurizer = TrackerFeaturizer.load(path)
+        metadata_file = Path(path) / cls()._metadata_filename()
+
+        if metadata_file.is_file():
+            data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
+            return cls(featurizer=featurizer, **data)
+
+        logger.info(
+            f"Couldn't load metadata for policy '{cls.__name__}'. "
+            f"File '{metadata_file}' doesn't exist."
+        )
+        return cls()
 
     @staticmethod
     def _default_predictions(domain: Domain) -> List[float]:

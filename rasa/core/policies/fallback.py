@@ -190,25 +190,14 @@ class FallbackPolicy(Policy):
 
         return result
 
-    def persist(self, path: Union[Text, Path]) -> None:
-        """Persists the policy to storage."""
-
-        config_file = Path(path) / "fallback_policy.json"
-        meta = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
             "ambiguity_threshold": self.ambiguity_threshold,
             "core_threshold": self.core_threshold,
             "fallback_action_name": self.fallback_action_name,
         }
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
-    @classmethod
-    def load(cls, path: Union[Text, Path]) -> "FallbackPolicy":
-        meta = {}
-        path = Path(path) / "fallback_policy.json"
-        if path.isfile():
-            meta = json.loads(rasa.shared.utils.io.read_file(path))
-
-        return cls(**meta)
+    def _metadata_filename(self) -> Text:
+        return "fallback_policy.json"

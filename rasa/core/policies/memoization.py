@@ -239,35 +239,15 @@ class MemoizationPolicy(Policy):
 
         return result
 
-    def persist(self, path: Union[Text, Path]) -> None:
-
-        self.featurizer.persist(path)
-
-        memorized_file = Path(path) / "memorized_turns.json"
-        data = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "max_history": self.max_history,
             "lookup": self.lookup,
         }
-        rasa.utils.io.create_directory_for_file(memorized_file)
-        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
-    @classmethod
-    def load(cls, path: Union[Text, Path]) -> "MemoizationPolicy":
-        featurizer = TrackerFeaturizer.load(path)
-        memorized_file = Path(path) / "memorized_turns.json"
-        if memorized_file.is_file():
-            data = json.loads(rasa.shared.utils.io.read_file(memorized_file))
-            return cls(
-                featurizer=featurizer, priority=data["priority"], lookup=data["lookup"]
-            )
-
-        logger.info(
-            f"Couldn't load memoization for policy. "
-            f"File '{memorized_file}' doesn't exist. Falling back to empty "
-            f"turn memory."
-        )
-        return cls()
+    def _metadata_filename(self) -> Text:
+        return "memorized_turns.json"
 
 
 class AugmentedMemoizationPolicy(MemoizationPolicy):
