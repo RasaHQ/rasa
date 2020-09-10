@@ -5,9 +5,9 @@ title: Rasa Telemetry
 ---
 
 Rasa uses telemetry to report anonymous usage information. This information is
-essential help improve Rasa Open Source for all users.
+essential to help improve Rasa Open Source for all users.
 For the team working on Rasa Open Source it is important to understand how
-the product is used, it allows us to properly prioritize our research efforts
+the product is used. It allows us to properly prioritize our research efforts
 and feature development.
 
 You will be notified about the telemetry reporting when running Rasa Open Source
@@ -15,7 +15,7 @@ for the first time.
 
 ## How to opt-out
 
-You can always opt-out from telemetry reporting using
+You can opt out of telemetry reporting at any time using
 ```bash
 rasa telemetry disable
 ```
@@ -46,6 +46,23 @@ what we use the data for:
   into while building an assistant (e.g. initialization, training, etc.).
   This will let us improve the quality of our framework and better focus our
   time on solving more common, frustrating issues.
+
+## What about sensitive data?
+
+Your sensitive data never leaves your machine. We
+- don't report any personal identifiable information
+- don't report your training data
+- don't report any messages your assistant receives or sends
+
+:::note Inspect what is reported
+You can view all the telemetry information that is reported
+by setting the environment variable `RASA_TELEMETRY_DEBUG=true`, e.g.
+```bash
+RASA_TELEMETRY_DEBUG=true rasa train
+```
+When you set `RASA_TELEMETRY_DEBUG` no information will be send to any server,
+instead it will be logged to the commandline as a json dump for you to inspect.
+
 
 ## What do we report?
 
@@ -104,19 +121,3 @@ Here is an example report that shows the data reported to Rasa after running
 
 We **cannot identify individual users** from the dataset. It is anonymized and
 untraceable back to the user.
-
-## What about sensitive data?
-
-Your sensitive data never leaves your machine. We
-- don't report any personal identifiable information
-- don't report your training data
-- don't report any messages your assistant receives or sends
-
-:::note Inspect what is reported
-You can view all the telemetry information that is reported
-by setting the environment variable `RASA_TELEMETRY_DEBUG=true`, e.g.
-```bash
-RASA_TELEMETRY_DEBUG=true rasa train
-```
-When you set `RASA_TELEMETRY_DEBUG` no information will be send to any server,
-instead it will be logged to the commandline as a json dump for you to inspect.
