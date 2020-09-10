@@ -9,10 +9,7 @@ import aiohttp
 
 import rasa.core
 from rasa.shared.core import events
-from rasa.core.constants import (
-    DEFAULT_REQUEST_TIMEOUT,
-    RESPOND_PREFIX,
-)
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT, RESPOND_PREFIX
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -49,10 +46,10 @@ from rasa.shared.core.events import (
     SessionStarted,
 )
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
-    from rasa.shared.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
 
@@ -131,7 +128,7 @@ def action_for_name(
         domain.raise_action_not_found_exception(action_name)
 
     should_use_form_action = (
-            action_name in domain.form_names and domain.slot_mapping_for_form(action_name)
+        action_name in domain.form_names and domain.slot_mapping_for_form(action_name)
     )
 
     return action_from_name(
@@ -142,7 +139,9 @@ def action_for_name(
     )
 
 
-def actions(domain: Domain, action_endpoint: Optional[EndpointConfig]) -> List[Optional["Action"]]:
+def actions(
+    domain: Domain, action_endpoint: Optional[EndpointConfig]
+) -> List[Optional["Action"]]:
     return [
         action_for_name(name, domain, action_endpoint) for name in domain.action_names
     ]
