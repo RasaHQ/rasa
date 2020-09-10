@@ -68,8 +68,6 @@ intents:
 - estimate_emissions
 - insult
 - vulgar
-- restart:
-    triggers: action_restart
 slots:
   context_scenario:
     type: categorical
