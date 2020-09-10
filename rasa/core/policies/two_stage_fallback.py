@@ -233,10 +233,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     @classmethod
     def load(cls, path: Union[Text, Path]) -> "FallbackPolicy":
         meta = {}
-        path = Path(path)
-        if path.exists():
-            meta_path = path / "two_stage_fallback_policy.json"
-            if path.is_file():
-                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
+        path = Path(path) / "two_stage_fallback_policy.json"
+        if path.is_file():
+            meta = json.loads(rasa.shared.utils.io.read_file(path))
 
         return cls(**meta)

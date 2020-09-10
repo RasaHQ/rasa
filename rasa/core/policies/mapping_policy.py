@@ -188,10 +188,8 @@ class MappingPolicy(Policy):
         """Returns the class with the configured priority."""
 
         meta = {}
-        path = Path(path)
-        if path.exists():
-            meta_path = path / "mapping_policy.json"
-            if meta_path.is_file():
-                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
+        path = Path(path) / "fallback_policy.json"
+        if path.is_file():
+            meta = json.loads(rasa.shared.utils.io.read_file(path))
 
         return cls(**meta)

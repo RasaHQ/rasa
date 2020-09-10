@@ -501,7 +501,7 @@ class RulePolicy(MemoizationPolicy):
         """
         self.featurizer.persist(path)
 
-        memorized_file = Path(path) / "memorized_turns.json"
+        memorized_file = Path(path) / "rule_policy.json"
         data = {
             "priority": self.priority,
             "lookup": self.lookup,
@@ -523,7 +523,7 @@ class RulePolicy(MemoizationPolicy):
             An instance of `RulePolicy`.
         """
         featurizer = TrackerFeaturizer.load(path)
-        memorized_file = Path(path) / "memorized_turns.json"
+        memorized_file = Path(path) / "rule_policy.json"
         if memorized_file.is_file():
             data = json.loads(rasa.utils.io.read_file(memorized_file))
             return cls(featurizer=featurizer, **data)

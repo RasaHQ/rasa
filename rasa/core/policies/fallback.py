@@ -209,6 +209,6 @@ class FallbackPolicy(Policy):
         meta = {}
         path = Path(path) / "fallback_policy.json"
         if path.isfile():
-            meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
+            meta = json.loads(rasa.shared.utils.io.read_file(path))
 
         return cls(**meta)
