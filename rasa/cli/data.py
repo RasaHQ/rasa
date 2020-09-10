@@ -1,30 +1,26 @@
-import logging
 import argparse
 import asyncio
+import logging
 import os
 from pathlib import Path
 from typing import List
 
+import rasa.cli.utils
 from rasa import data
 from rasa.cli.arguments import data as arguments
-import rasa.cli.utils
-from rasa.constants import DEFAULT_DATA_PATH, DOCS_URL_RULES
-from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
-from rasa.nlu.convert import convert_training_data
-from rasa.shared.nlu.training_data.formats.markdown import MarkdownReader
-from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.validator import Validator
-from rasa.importers.rasa import RasaFileImporter
 from rasa.cli.utils import (
-    print_success,
     print_error_and_exit,
     print_info,
     print_warning,
 )
+from rasa.constants import DEFAULT_DATA_PATH
+from rasa.data import is_valid_filetype
+from rasa.importers.rasa import RasaFileImporter
+from rasa.nlu.convert import convert_training_data
+from rasa.utils.converter import TrainingDataConverter
+from rasa.validator import Validator
 
 logger = logging.getLogger(__name__)
-CONVERTED_FILE_SUFFIX = "_converted.yml"
 
 
 # noinspection PyProtectedMember
@@ -68,6 +64,16 @@ def _add_data_convert_parsers(
     convert_nlu_parser.set_defaults(func=_convert_nlu_data)
 
     arguments.set_convert_arguments(convert_nlu_parser, data_type="Rasa NLU")
+
+    convert_nlg_parser = convert_subparsers.add_parser(
+        "nlg",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Converts NLG data between formats.",
+    )
+    convert_nlg_parser.set_defaults(func=_convert_nlg_data)
+
+    arguments.set_convert_arguments(convert_nlg_parser, data_type="Rasa NLG")
 
     convert_core_parser = convert_subparsers.add_parser(
         "core",
@@ -216,10 +222,14 @@ def _validate_story_structure(validator: Validator, args: argparse.Namespace) ->
 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
+    from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
+        NLUMarkdownToYamlConverter,
+    )
+
     if args.format in ["json", "md"]:
         convert_training_data(args.data, args.out, args.format, args.language)
     elif args.format == "yaml":
-        _convert_to_yaml(args, True)
+        _convert_to_yaml(args, NLUMarkdownToYamlConverter())
     else:
         print_error_and_exit(
             "Could not recognize output format. Supported output formats: 'json', "
@@ -228,8 +238,12 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
 
 
 def _convert_core_data(args: argparse.Namespace) -> None:
+    from rasa.core.training.converters.story_markdown_to_yaml_converter import (
+        StoryMarkdownToYamlConverter,
+    )
+
     if args.format == "yaml":
-        _convert_to_yaml(args, False)
+        _convert_to_yaml(args, StoryMarkdownToYamlConverter())
     else:
         print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
@@ -237,7 +251,23 @@ def _convert_core_data(args: argparse.Namespace) -> None:
         )
 
 
-def _convert_to_yaml(args: argparse.Namespace, is_nlu: bool) -> None:
+def _convert_nlg_data(args: argparse.Namespace) -> None:
+    from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
+        NLGMarkdownToYamlConverter,
+    )
+
+    if args.format == "yaml":
+        _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+    else:
+        print_error_and_exit(
+            "Could not recognize output format. Supported output formats: "
+            "'yaml'. Specify the desired output format with '--format'."
+        )
+
+
+def _convert_to_yaml(
+    args: argparse.Namespace, converter: TrainingDataConverter
+) -> None:
 
     output = Path(args.out)
     if not os.path.exists(output):
@@ -254,57 +284,46 @@ def _convert_to_yaml(args: argparse.Namespace, is_nlu: bool) -> None:
         )
 
     num_of_files_converted = 0
-    for file in os.listdir(training_data):
-        source_path = training_data / file
-        output_path = output / f"{source_path.stem}{CONVERTED_FILE_SUFFIX}"
 
-        if MarkdownReader.is_markdown_nlu_file(source_path):
-            if not is_nlu:
-                continue
-            _write_nlu_yaml(source_path, output_path, source_path)
+    if os.path.isfile(training_data):
+        if _convert_file_to_yaml(training_data, output, converter):
             num_of_files_converted += 1
-        elif not is_nlu and MarkdownStoryReader.is_markdown_story_file(source_path):
-            _write_core_yaml(source_path, output_path, source_path)
-            num_of_files_converted += 1
-        else:
-            print_warning(f"Skipped file: '{source_path}'.")
+    elif os.path.isdir(training_data):
+        for root, _, files in os.walk(training_data, followlinks=True):
+            for f in sorted(files):
+                source_path = Path(os.path.join(root, f))
+                if _convert_file_to_yaml(source_path, output, converter):
+                    num_of_files_converted += 1
 
-    print_info(f"Converted {num_of_files_converted} file(s), saved in '{output}'.")
-
-
-def _write_nlu_yaml(
-    training_data_path: Path, output_path: Path, source_path: Path
-) -> None:
-    reader = MarkdownReader()
-    writer = RasaYAMLWriter()
-
-    training_data = reader.read(training_data_path)
-    writer.dump(output_path, training_data)
-
-    print_success(f"Converted NLU file: '{source_path}' >> '{output_path}'.")
-
-
-def _write_core_yaml(
-    training_data_path: Path, output_path: Path, source_path: Path
-) -> None:
-    from rasa.core.training.story_reader.yaml_story_reader import KEY_ACTIVE_LOOP
-
-    reader = MarkdownStoryReader()
-    writer = YAMLStoryWriter()
-
-    loop = asyncio.get_event_loop()
-    steps = loop.run_until_complete(reader.read_from_file(training_data_path))
-
-    if YAMLStoryWriter.stories_contain_loops(steps):
+    if num_of_files_converted:
+        print_info(f"Converted {num_of_files_converted} file(s), saved in '{output}'.")
+    else:
         print_warning(
-            f"Training data file '{source_path}' contains forms. "
-            f"Any 'form' events will be converted to '{KEY_ACTIVE_LOOP}' events. "
-            f"Please note that in order for these stories to work you still "
-            f"need the 'FormPolicy' to be active. However the 'FormPolicy' is "
-            f"deprecated, please consider switching to the new 'RulePolicy', "
-            f"for which you can find the documentation here: {DOCS_URL_RULES}."
+            f"Didn't convert any files under '{training_data}' path. "
+            "Did you specify the correct file/directory?"
         )
 
-    writer.dump(output_path, steps)
 
-    print_success(f"Converted Core file: '{source_path}' >> '{output_path}'.")
+def _convert_file_to_yaml(
+    source_file: Path, target_dir: Path, converter: TrainingDataConverter
+) -> bool:
+    """Converts a single training data file to `YAML` format.
+
+    Args:
+        source_file: Training data file to be converted.
+        target_dir: Target directory for the converted file.
+        converter: Converter to be used.
+
+    Returns:
+        `True` if file was converted, `False` otherwise.
+    """
+    if not is_valid_filetype(source_file):
+        return False
+
+    if converter.filter(source_file):
+        converter.convert_and_write(source_file, target_dir)
+        return True
+
+    print_warning(f"Skipped file: '{source_file}'.")
+
+    return False
