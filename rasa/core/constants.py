@@ -1,5 +1,3 @@
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-
 DEFAULT_SERVER_PORT = 5005
 
 DEFAULT_SERVER_FORMAT = "{}://localhost:{}"
@@ -16,44 +14,7 @@ DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
 DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
-REQUESTED_SLOT = "requested_slot"
-# rules allow setting a value of slots or active_loops to None;
-# generator substitutes `None`s with this constant to notify rule policy that
-# a value should not be set during prediction to activate a rule
-SHOULD_NOT_BE_SET = "should_not_be_set"
-
-# slots for knowledge base
-SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
-SLOT_LAST_OBJECT = "knowledge_base_last_object"
-SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
-DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
-
-# start of special user message section
-EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
-
-USER_INTENT_RESTART = "restart"
-
-USER_INTENT_SESSION_START = "session_start"
-
-USER_INTENT_BACK = "back"
-
-USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
-
-DEFAULT_INTENTS = [
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
-    USER_INTENT_OUT_OF_SCOPE,
-    USER_INTENT_SESSION_START,
-    DEFAULT_NLU_FALLBACK_INTENT_NAME,
-]
-
-ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
-
 BEARER_TOKEN_PREFIX = "Bearer "
-
-# Key to access data in the event metadata
-# It specifies if an event was caused by an external entity (e.g. a sensor).
-IS_EXTERNAL = "is_external"
 
 # the lowest priority intended to be used by machine learning policies
 DEFAULT_POLICY_PRIORITY = 1
@@ -68,7 +29,6 @@ FALLBACK_POLICY_PRIORITY = 4
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
 FORM_POLICY_PRIORITY = 5
-UTTER_PREFIX = "utter_"
 RESPOND_PREFIX = "respond_"
 
 DIALOGUE = "dialogue"
@@ -83,15 +43,3 @@ POSTGRESQL_SCHEMA = "POSTGRESQL_SCHEMA"
 # Names of the environment variables defining PostgreSQL pool size and max overflow
 POSTGRESQL_POOL_SIZE = "SQL_POOL_SIZE"
 POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
-
-# the keys for State (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
-# represent the origin of a SubState
-USER = "user"
-PREVIOUS_ACTION = "prev_action"
-ACTIVE_LOOP = "active_loop"
-SLOTS = "slots"
-
-LOOP_NAME = "name"
-LOOP_VALIDATE = "validate"
-LOOP_REJECTED = "rejected"
-TRIGGER_MESSAGE = "trigger_message"

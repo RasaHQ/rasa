@@ -3,7 +3,7 @@ from typing import Dict
 
 import pytest
 
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.fallback_classifier import (
     FallbackClassifier,
@@ -11,12 +11,8 @@ from rasa.nlu.classifiers.fallback_classifier import (
     AMBIGUITY_THRESHOLD_KEY,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import (
-    INTENT_RANKING_KEY,
-    PREDICTED_CONFIDENCE_KEY,
-    INTENT_NAME_KEY,
-)
-from rasa.shared.nlu.constants import INTENT, TEXT
+from rasa.nlu.constants import INTENT_RANKING_KEY, PREDICTED_CONFIDENCE_KEY
+from rasa.shared.nlu.constants import INTENT, TEXT, INTENT_NAME_KEY
 
 
 @pytest.mark.parametrize(
