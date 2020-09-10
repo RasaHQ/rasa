@@ -140,7 +140,7 @@ jobs:
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
-        path: ${{ steps.poetry-venv.outputs.dir }}
+        path: ~/.cache/pypoetry/virtualenvs
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
