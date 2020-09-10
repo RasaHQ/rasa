@@ -207,10 +207,8 @@ class FallbackPolicy(Policy):
     @classmethod
     def load(cls, path: Union[Text, Path]) -> "FallbackPolicy":
         meta = {}
-        path = Path(path)
-        if path.exists():
-            meta_path = path / "fallback_policy.json"
-            if meta_path.is_file():
-                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
+        path = Path(path) / "fallback_policy.json"
+        if path.isfile():
+            meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
 
         return cls(**meta)
