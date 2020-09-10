@@ -852,7 +852,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     @staticmethod
     async def _get_tracker_after_reverts(events, channel, nlg, domain):
         tracker = get_tracker(events)
-        action = actions.ActionRevertFallbackEvents()
+        action = rasa.core.actions.action.ActionRevertFallbackEvents()
         events += await action.run(channel, nlg, tracker, domain)
 
         return get_tracker(events)
