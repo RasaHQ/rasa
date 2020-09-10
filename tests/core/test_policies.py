@@ -21,7 +21,6 @@ from rasa.shared.core.constants import (
     PREVIOUS_ACTION,
     USER,
 )
-from rasa.core.channels.channel import UserMessage
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted, ConversationPaused
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer

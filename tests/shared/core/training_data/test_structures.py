@@ -33,15 +33,19 @@ def test_session_start_is_not_serialised(default_domain: Domain):
 
 
 def test_cap_length():
-    assert rasa.core.training.structures._cap_length("mystring", 6) == "mys..."
+    assert (
+        rasa.shared.core.training_data.structures._cap_length("mystring", 6) == "mys..."
+    )
 
 
 def test_cap_length_without_ellipsis():
     assert (
-        rasa.core.training.structures._cap_length("mystring", 3, append_ellipsis=False)
+        rasa.shared.core.training_data.structures._cap_length(
+            "mystring", 3, append_ellipsis=False
+        )
         == "mys"
     )
 
 
 def test_cap_length_with_short_string():
-    assert rasa.core.training.structures._cap_length("my", 3) == "my"
+    assert rasa.shared.core.training_data.structures._cap_length("my", 3) == "my"
