@@ -30,14 +30,11 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     LOOP_VALIDATE,
     LOOP_REJECTED,
-    REQUESTED_SLOT, UTTER_PREFIX)
-from rasa.core import run, train, utils
-from rasa.core.actions.action import default_action_names
-from rasa.core.channels.channel import UserMessage
-from rasa.core.constants import (
-    DEFAULT_SERVER_FORMAT,
-    DEFAULT_SERVER_PORT,
+    REQUESTED_SLOT,
+    UTTER_PREFIX,
 )
+from rasa.core import run, train, utils
+from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
 from rasa.shared.core.domain import Domain
 import rasa.shared.core.events
 from rasa.shared.core.events import (
@@ -893,7 +890,7 @@ def _write_domain_to_file(
         {
             e["name"]
             for e in actions
-            if e["name"] not in default_action_names()
+            if e["name"] not in rasa.shared.core.constants.DEFAULT_ACTIONS
             and e["name"] not in old_domain.form_names
         }
     )

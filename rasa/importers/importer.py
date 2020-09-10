@@ -4,6 +4,7 @@ from typing import Text, Optional, List, Dict
 import logging
 
 import rasa.shared.utils.common
+import rasa.shared.core.constants
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -393,11 +394,9 @@ def _messages_from_action(event: ActionExecuted) -> Message:
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:
-    from rasa.core.actions import action
-
     additional_messages_from_default_actions = [
         Message.build_from_action(action_name=action_name)
-        for action_name in action.default_action_names()
+        for action_name in rasa.shared.core.constants.DEFAULT_ACTIONS
     ]
 
     return TrainingData(additional_messages_from_default_actions)

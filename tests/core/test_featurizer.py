@@ -113,8 +113,6 @@ def test_single_state_featurizer_correctly_encodes_non_existing_value():
 
 
 def test_single_state_featurizer_creates_encoded_all_actions():
-    from rasa.core.actions.action import default_action_names
-
     domain = Domain(
         intents=[],
         entities=[],

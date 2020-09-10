@@ -74,34 +74,6 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     ]
 
 
-def default_action_names() -> List[Text]:
-    """List default action names."""
-    return [a.name() for a in default_actions()] + [RULE_SNIPPET_ACTION_NAME]
-
-
-def combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
-    # remove all user actions that overwrite default actions
-    # this logic is a bit reversed, you'd think that we should remove
-    # the action name from the default action names if the user overwrites
-    # the action, but there are some locations in the code where we
-    # implicitly assume that e.g. "action_listen" is always at location
-    # 0 in this array. to keep it that way, we remove the duplicate
-    # action names from the users list instead of the defaults
-    defaults = default_action_names()
-    unique_user_actions = [a for a in user_actions if a not in defaults]
-    return defaults + unique_user_actions
-
-
-def combine_with_templates(
-    actions: List[Text], templates: Dict[Text, Any]
-) -> List[Text]:
-    """Combines actions with utter actions listed in responses section."""
-    unique_template_names = [
-        a for a in sorted(list(templates.keys())) if a not in actions
-    ]
-    return actions + unique_template_names
-
-
 def action_for_index(
     index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> Optional["Action"]:
