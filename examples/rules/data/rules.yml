@@ -105,7 +105,7 @@ rules:
   - intent: affirm
   - action: utter_stop
 
-- rule: Stop - continue
+- rule: User decides to continue
   steps:
   - action: utter_ask_stop
   - intent: deny
