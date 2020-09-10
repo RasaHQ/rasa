@@ -155,7 +155,7 @@ jobs:
     - name: Install Dependencies (Windows) 📦
       if: matrix.os == 'windows-latest'
       run: |
-        make install-full-windows
+        make install-full
         make prepare-tests-windows
 
     - name: Test Code 🔍
