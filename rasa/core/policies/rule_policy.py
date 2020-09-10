@@ -35,7 +35,7 @@ from rasa.core.actions.action import (
 )
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.constants import ACTION_NAME
-import rasa.utils.io
+
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
@@ -498,6 +498,9 @@ class RulePolicy(MemoizationPolicy):
         Args:
             path: Path to persist policy to.
         """
+        # a module-level import leads to cyclic imports
+        import rasa.utils.io
+
         self.featurizer.persist(path)
 
         memorized_file = Path(path) / "memorized_turns.json"
