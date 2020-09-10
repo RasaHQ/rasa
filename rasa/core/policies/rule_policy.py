@@ -1,4 +1,3 @@
-import json
 import logging
 from pathlib import Path
 from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
@@ -36,6 +35,7 @@ from rasa.core.actions.action import (
 )
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.constants import ACTION_NAME
+import rasa.utils.io
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error

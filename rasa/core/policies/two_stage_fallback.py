@@ -1,9 +1,7 @@
 import json
 import logging
-import os
-import typing
 from pathlib import Path
-from typing import List, Text, Optional, Any, Union
+from typing import List, Text, Optional, Any, Union, TYPE_CHECKING
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -27,7 +25,7 @@ from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.constants import ACTION_NAME
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
 
@@ -39,21 +37,21 @@ def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
 
 
 class TwoStageFallbackPolicy(FallbackPolicy):
-    """ This policy handles low NLU confidence in multiple stages.
+    """This policy handles low NLU confidence in multiple stages.
 
-        If a NLU prediction has a low confidence score,
-        the user is asked to affirm whether they really had this intent.
-        If they affirm, the story continues as if the intent was classified
-        with high confidence from the beginning.
-        If they deny, the user is asked to rephrase his intent.
-        If the classification for the rephrased intent was confident, the story
-        continues as if the user had this intent from the beginning.
-        If the rephrased intent was not classified with high confidence,
-        the user is asked to affirm the classified intent.
-        If the user affirm the intent, the story continues as if the user had
-        this intent from the beginning.
-        If the user denies, an ultimate fallback action is triggered
-        (e.g. a hand-off to a human).
+    If a NLU prediction has a low confidence score,
+    the user is asked to affirm whether they really had this intent.
+    If they affirm, the story continues as if the intent was classified
+    with high confidence from the beginning.
+    If they deny, the user is asked to rephrase his intent.
+    If the classification for the rephrased intent was confident, the story
+    continues as if the user had this intent from the beginning.
+    If the rephrased intent was not classified with high confidence,
+    the user is asked to affirm the classified intent.
+    If the user affirm the intent, the story continues as if the user had
+    this intent from the beginning.
+    If the user denies, an ultimate fallback action is triggered
+    (e.g. a hand-off to a human).
     """
 
     def __init__(
