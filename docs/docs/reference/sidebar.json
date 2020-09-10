@@ -358,6 +358,20 @@
               ],
               "label": "rasa.nlu.classifiers",
               "type": "category"
+            },
+            {
+              "items": [
+                {
+                  "items": [
+                    "reference/rasa/nlu/training_data/converters/nlg_markdown_to_yaml_converter",
+                    "reference/rasa/nlu/training_data/converters/nlu_markdown_to_yaml_converter"
+                  ],
+                  "label": "rasa.nlu.training_data.converters",
+                  "type": "category"
+                }
+              ],
+              "label": "rasa.nlu.training_data",
+              "type": "category"
             }
           ],
           "label": "rasa.nlu",
