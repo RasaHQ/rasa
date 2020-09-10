@@ -191,7 +191,6 @@ class RasaModel(tf.keras.models.Model):
         progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         training_steps = 0
-        best_model_epoch = -1
 
         for epoch in progress_bar:
             epoch_batch_size = self.linearly_increasing_batch_size(
