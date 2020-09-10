@@ -99,7 +99,7 @@ rules:
   - intent: deny
   - action: utter_ask_stop
 
-- rule: Stop - stop
+- rule: User decides to stop
   steps:
   - action: utter_ask_stop
   - intent: affirm
