@@ -2,6 +2,8 @@ import re
 import logging
 from typing import Text, Dict, Union, Any
 
+from rasa.core.constants import INTENT_MESSAGE_PREFIX
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,14 +38,18 @@ def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
 
         return text
     except KeyError as e:
-        logger.exception(
-            f"Failed to fill utterance template '{template}'. "
-            f"Tried to replace '{e.args[0]}' but could not find "
-            f"a value for it. There is no slot with this "
-            f"name nor did you pass the value explicitly "
-            f"when calling the template. Return template "
-            f"without filling the template. "
-        )
+        # we assume that if the value of the {key: value} pair starts with `/`,
+        # the user is probably supplying a payload in `/intent{entities}` format,
+        # not trying to fill a variable
+        if not template.startswith(INTENT_MESSAGE_PREFIX):
+            logger.exception(
+                f"Failed to fill utterance template '{template}'. "
+                f"Tried to replace '{e.args[0]}' but could not find "
+                f"a value for it. There is no slot with this "
+                f"name nor did you pass the value explicitly "
+                f"when calling the template. Return template "
+                f"without filling the template. "
+            )
         return template
 
 
