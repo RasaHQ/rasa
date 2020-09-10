@@ -50,7 +50,7 @@ def is_likely_markdown_file(file_path: Text) -> bool:
     return Path(file_path).suffix in MARKDOWN_FILE_EXTENSIONS
 
 
-def get_test_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
+def get_test_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     """Recursively collects all Core training files from a list of paths.
 
     Args:
@@ -63,7 +63,7 @@ def get_test_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
     return _copy_files_to_new_dir(test_files)
 
 
-def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
+def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     """Recursively collects all Core training files from a list of paths.
 
     Args:
@@ -90,7 +90,7 @@ def get_nlu_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
 
 
 def get_core_nlu_directories(
-    paths: Optional[Union[Text, List[Text]]],
+    paths: Optional[Union[Text, List[Text]]]
 ) -> Tuple[Text, Text]:
     """Recursively collects all training files from a list of paths.
 
@@ -121,7 +121,7 @@ def get_data_files(
         filter_predicate: property to use when filtering the paths, e.g. `is_nlu_file`.
 
     Returns:
-        paths of training data files.
+        Paths of training data files.
     """
 
     data_files = set()
@@ -167,8 +167,10 @@ def _find_data_files_in_directory(
 
 def is_valid_filetype(path: Union[Path, Text]) -> bool:
     """Checks if given file has a supported extension.
+    
     Args:
         path: Path to the source file.
+        
     Returns:
         `True` is given file has supported extension, `False` otherwise.
     """
@@ -234,12 +236,12 @@ def is_test_stories_file(file_path: Text) -> bool:
 def is_config_file(file_path: Text) -> bool:
     """Checks whether the given file path is a Rasa config file.
 
-       Args:
-           file_path: Path of the file which should be checked.
+    Args:
+        file_path: Path of the file which should be checked.
 
-       Returns:
-           `True` if it's a Rasa config file, otherwise `False`.
-       """
+    Returns:
+        `True` if it's a Rasa config file, otherwise `False`.
+    """
 
     file_name = os.path.basename(file_path)
 

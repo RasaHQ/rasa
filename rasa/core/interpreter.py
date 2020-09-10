@@ -19,19 +19,19 @@ logger = logging.getLogger(__name__)
 
 def create_interpreter(
     obj: Union[
-        "rasa.shared.nlu.interpreter.NaturalLanguageInterpreter",
+        rasa.shared.nlu.interpreter.NaturalLanguageInterpreter,
         EndpointConfig,
         Text,
         None,
     ]
 ) -> "rasa.shared.nlu.interpreter.NaturalLanguageInterpreter":
-    """Factory to create an natural language interpreter."""
+    """Factory to create a natural language interpreter."""
 
     if isinstance(obj, rasa.shared.nlu.interpreter.NaturalLanguageInterpreter):
         return obj
     elif isinstance(obj, str) and os.path.exists(obj):
         return RasaNLUInterpreter(model_directory=obj)
-    elif isinstance(obj, str) and not os.path.exists(obj):
+    elif isinstance(obj, str):
         # user passed in a string, but file does not exist
         logger.warning(
             f"No local NLU model '{obj}' found. Using RegexInterpreter instead."
@@ -164,7 +164,7 @@ class RasaNLUInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter)
 
 def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig],
-) -> "rasa.shared.nlu.interpreter.NaturalLanguageInterpreter":
+) -> rasa.shared.nlu.interpreter.NaturalLanguageInterpreter:
     """Instantiate a natural language interpreter based on its configuration."""
 
     if endpoint_config is None:
@@ -177,7 +177,7 @@ def _create_from_endpoint_config(
 
 def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
-) -> "rasa.shared.nlu.interpreter.NaturalLanguageInterpreter":
+) -> rasa.shared.nlu.interpreter.NaturalLanguageInterpreter:
     """Instantiate an event channel based on its class name."""
 
     try:

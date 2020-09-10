@@ -41,7 +41,7 @@ class SingleStateFeaturizer:
         """Gets necessary information for featurization from domain.
 
         Args:
-            domain: a :class:`rasa.shared.core.domain.Domain`
+            domain: An instance of :class:`rasa.shared.core.domain.Domain`.
         """
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:

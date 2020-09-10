@@ -343,7 +343,7 @@ def _enable_ordered_dict_yaml_dumping() -> None:
 
 
 def is_logging_disabled() -> bool:
-    """Returns true, if log level is set to WARNING or ERROR, false otherwise."""
+    """Returns `True` if log level is set to WARNING or ERROR, `False` otherwise."""
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     return log_level in ("ERROR", "WARNING")

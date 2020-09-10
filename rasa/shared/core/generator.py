@@ -3,7 +3,6 @@ from collections import defaultdict, namedtuple, deque
 import copy
 import logging
 import random
-from random import Random
 
 from tqdm import tqdm
 from typing import Optional, List, Text, Set, Dict, Tuple, Deque, Any
@@ -799,11 +798,9 @@ def _subsample_array(
     arr: List[Any],
     max_values: int,
     can_modify_incoming_array: bool = True,
-    rand: Optional["Random"] = None,
+    rand: Optional[random.Random] = None,
 ) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
-    import random
-
     if not can_modify_incoming_array:
         arr = arr[:]
     if rand is not None:
