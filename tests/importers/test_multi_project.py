@@ -2,20 +2,16 @@ from pathlib import Path
 from typing import Dict, Text
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
 import os
 
 import rasa.shared.utils.io
-from rasa.constants import (
-    DEFAULT_CORE_SUBDIRECTORY_NAME,
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_E2E_TESTS_PATH,
-)
+from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
+from rasa.shared.constants import DEFAULT_E2E_TESTS_PATH
 from rasa.shared.nlu.training_data.formats import RasaReader
 import rasa.utils.io
 from rasa import model
 from rasa.core import utils
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.importers.multi_project import MultiProjectImporter
 
 
@@ -241,8 +237,8 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
 async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
     tmp_path: Path, test_stories_filename: Text, test_story: Text
 ):
-    from rasa.core.training.structures import StoryGraph
-    import rasa.core.training.loading as core_loading
+    from rasa.shared.core.training_data.structures import StoryGraph
+    import rasa.shared.core.training_data.loading as core_loading
 
     config = {"imports": ["bots/Bot A"]}
     config_path = str(tmp_path / "config.yml")

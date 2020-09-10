@@ -158,3 +158,45 @@ Convert object to an `OrderedDict`.
   An `OrderedDict` with all nested dictionaries converted if `obj` is a
   dictionary, otherwise the object itself.
 
+#### is\_logging\_disabled
+
+```python
+is_logging_disabled() -> bool
+```
+
+Returns `True` if log level is set to WARNING or ERROR, `False` otherwise.
+
+#### create\_directory\_for\_file
+
+```python
+create_directory_for_file(file_path: Union[Text, Path]) -> None
+```
+
+Creates any missing parent directories of this file path.
+
+#### dump\_obj\_as\_json\_to\_file
+
+```python
+dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None
+```
+
+Dump an object as a json string to a file.
+
+#### dump\_obj\_as\_yaml\_to\_string
+
+```python
+dump_obj_as_yaml_to_string(obj: Dict) -> Text
+```
+
+Writes data (python dict) to a yaml string.
+
+#### create\_directory
+
+```python
+create_directory(directory_path: Text) -> None
+```
+
+Creates a directory and its super paths.
+
+Succeeds even if the path already exists.
+

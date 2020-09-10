@@ -52,7 +52,7 @@ class SimplePolicyEnsemble(PolicyEnsemble)
 #### probabilities\_using\_best\_policy
 
 ```python
- | probabilities_using_best_policy(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[Optional[List[float]], Optional[Text]]
+ | probabilities_using_best_policy(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[List[float], Optional[Text]]
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -63,7 +63,7 @@ Triggers fallback if `action_listen` is predicted after a user utterance.
 **Arguments**:
 
 - `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.core.domain.Domain`
+- `domain` - the :class:`rasa.shared.core.domain.Domain`
 - `interpreter` - Interpreter which may be used by the policies to create
   additional features.
   

@@ -132,7 +132,7 @@ Check if the conversation is in need for a user message.
 #### record\_messages
 
 ```python
-async record_messages(endpoint: EndpointConfig, file_importer: TrainingDataImporter, conversation_id: Text = UserMessage.DEFAULT_SENDER_ID, max_message_limit: Optional[int] = None, skip_visualization: bool = False) -> None
+async record_messages(endpoint: EndpointConfig, file_importer: TrainingDataImporter, conversation_id: Text = DEFAULT_SENDER_ID, max_message_limit: Optional[int] = None, skip_visualization: bool = False) -> None
 ```
 
 Read messages from the command line and print bot responses.

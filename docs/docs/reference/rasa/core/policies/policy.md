@@ -67,7 +67,7 @@ into a float vector which can be used by a ML model.
 
   training_trackers:
   the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.core.domain.Domain`
+- `domain` - the :class:`rasa.shared.core.domain.Domain`
 - `interpreter` - the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
   
 
@@ -91,7 +91,7 @@ Trains the policy on given training trackers.
 
   training_trackers:
   the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.core.domain.Domain`
+- `domain` - the :class:`rasa.shared.core.domain.Domain`
 - `interpreter` - Interpreter which can be used by the polices for featurization.
 
 #### predict\_action\_probabilities
@@ -105,7 +105,7 @@ Predicts the next action the bot should take after seeing the tracker.
 **Arguments**:
 
 - `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.core.domain.Domain`
+- `domain` - the :class:`rasa.shared.core.domain.Domain`
 - `interpreter` - Interpreter which may be used by the policies to create
   additional features.
   
@@ -153,7 +153,7 @@ Returns confidence scores if a single action is predicted.
 
 - `action_name` - the name of the action for which the score should be set
 - `value` - the confidence for `action_name`
-- `domain` - the :class:`rasa.core.domain.Domain`
+- `domain` - the :class:`rasa.shared.core.domain.Domain`
   
 
 **Returns**:

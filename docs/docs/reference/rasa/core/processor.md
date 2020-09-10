@@ -76,7 +76,7 @@ processing and saved at a later stage.
 #### predict\_next\_action
 
 ```python
- | predict_next_action(tracker: DialogueStateTracker) -> Tuple[Action, Text, float]
+ | predict_next_action(tracker: DialogueStateTracker) -> Tuple[rasa.core.actions.action.Action, Optional[Text], float]
 ```
 
 Predicts the next action the bot should take after seeing x.

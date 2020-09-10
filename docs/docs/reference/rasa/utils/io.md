@@ -3,14 +3,6 @@ sidebar_label: rasa.utils.io
 title: rasa.utils.io
 ---
 
-#### dump\_obj\_as\_json\_to\_file
-
-```python
-dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None
-```
-
-Dump an object as a json string to a file.
-
 #### pickle\_dump
 
 ```python
@@ -86,14 +78,6 @@ create_path(file_path: Text) -> None
 
 Makes sure all directories in the &#x27;file_path&#x27; exists.
 
-#### create\_directory\_for\_file
-
-```python
-create_directory_for_file(file_path: Union[Text, Path]) -> None
-```
-
-Creates any missing parent directories of this file path.
-
 #### file\_type\_validator
 
 ```python
@@ -120,16 +104,6 @@ create_validator(function: Callable[[Text], bool], error_message: Text) -> Type[
 
 Helper method to create `Validator` classes from callable functions. Should be
 removed when questionary supports `Validator` objects.
-
-#### create\_directory
-
-```python
-create_directory(directory_path: Text) -> None
-```
-
-Creates a directory and its super paths.
-
-Succeeds even if the path already exists.
 
 #### zip\_folder
 

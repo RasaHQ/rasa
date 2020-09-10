@@ -7,7 +7,6 @@ import sys
 from asyncio import Future
 from decimal import Decimal
 from hashlib import md5, sha1
-from io import StringIO
 from pathlib import Path
 from typing import (
     Any,
@@ -17,7 +16,6 @@ from typing import (
     List,
     Optional,
     Set,
-    TYPE_CHECKING,
     Text,
     Tuple,
     Union,
@@ -34,7 +32,6 @@ from rasa.constants import (
     ENV_SANIC_WORKERS,
     DEFAULT_ENDPOINTS_PATH,
 )
-from rasa.shared.utils.io import YAML_VERSION
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
@@ -45,9 +42,6 @@ from sanic.views import CompositionView
 import rasa.cli.utils as cli_utils
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from random import Random
 
 
 def configure_file_logging(
@@ -69,24 +63,6 @@ def configure_file_logging(
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
-
-
-def subsample_array(
-    arr: List[Any],
-    max_values: int,
-    can_modify_incoming_array: bool = True,
-    rand: Optional["Random"] = None,
-) -> List[Any]:
-    """Shuffles the array and returns `max_values` number of elements."""
-    import random
-
-    if not can_modify_incoming_array:
-        arr = arr[:]
-    if rand is not None:
-        rand.shuffle(arr)
-    else:
-        random.shuffle(arr)
-    return arr[:max_values]
 
 
 def is_int(value: Any) -> bool:
@@ -120,25 +96,6 @@ def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarr
     r = np.zeros(length, dtype)
     r[hot_idx] = 1
     return r
-
-
-def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
-    """Generate a random UUID.
-
-    Args:
-        prefix: String to prefix the ID with.
-        max_chars: Maximum number of characters.
-
-    Returns:
-        Generated random UUID.
-    """
-    import uuid
-
-    gid = uuid.uuid4().hex
-    if max_chars:
-        gid = gid[:max_chars]
-
-    return f"{prefix}{gid}"
 
 
 # noinspection PyPep8Naming
@@ -189,17 +146,6 @@ class HashableNDArray:
         return self.__wrapped
 
 
-def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
-    import ruamel.yaml
-
-    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
-    yaml_writer.unicode_supplementary = True
-    yaml_writer.default_flow_style = False
-    yaml_writer.version = YAML_VERSION
-
-    yaml_writer.dump(obj, output)
-
-
 def dump_obj_as_yaml_to_file(
     filename: Union[Text, Path], obj: Any, should_preserve_key_order: bool = False
 ) -> None:
@@ -213,13 +159,6 @@ def dump_obj_as_yaml_to_file(
     rasa.shared.utils.io.write_yaml(
         obj, filename, should_preserve_key_order=should_preserve_key_order
     )
-
-
-def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
-    """Writes data (python dict) to a yaml string."""
-    str_io = StringIO()
-    _dump_yaml(obj, str_io)
-    return str_io.getvalue()
 
 
 def list_routes(app: Sanic):
@@ -260,20 +199,6 @@ def list_routes(app: Sanic):
     logger.debug(f"Available web server routes: \n{url_table}")
 
     return output
-
-
-def cap_length(s: Text, char_limit: int = 20, append_ellipsis: bool = True) -> Text:
-    """Makes sure the string doesn't exceed the passed char limit.
-
-    Appends an ellipsis if the string is too long."""
-
-    if len(s) > char_limit:
-        if append_ellipsis:
-            return s[: char_limit - 3] + "..."
-        else:
-            return s[:char_limit]
-    else:
-        return s
 
 
 def extract_args(
@@ -368,11 +293,6 @@ async def download_file_from_url(url: Text) -> Text:
             filename = io_utils.create_temporary_file(await resp.read(), mode="w+b")
 
     return filename
-
-
-def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Remove all keys that store a `None` value."""
-    return {k: v for k, v in obj.items() if v is not None}
 
 
 def pad_lists_to_size(

@@ -7,22 +7,23 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import numpy as np
 
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
+import rasa.core.actions.action
+from rasa.constants import DOCS_URL_POLICIES
 from rasa.core import jobs
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-    Action,
-    ActionExecutionRejection,
-)
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
     UserMessage,
 )
-from rasa.core.constants import USER_INTENT_RESTART, UTTER_PREFIX, REQUESTED_SLOT
-from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    REQUESTED_SLOT,
+    UTTER_PREFIX,
+)
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
     BotUttered,
@@ -32,13 +33,17 @@ from rasa.core.events import (
     SlotSet,
     UserUttered,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DOCS_URL_DOMAINS,
+    DEFAULT_SENDER_ID,
+)
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -206,7 +211,7 @@ class MessageProcessor:
             Tracker for the conversation. Creates an empty tracker in case it's a new
             conversation.
         """
-        conversation_id = conversation_id or UserMessage.DEFAULT_SENDER_ID
+        conversation_id = conversation_id or DEFAULT_SENDER_ID
         return self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
@@ -270,7 +275,7 @@ class MessageProcessor:
 
     def predict_next_action(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[Action, Text, float]:
+    ) -> Tuple[rasa.core.actions.action.Action, Optional[Text], float]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
@@ -279,8 +284,8 @@ class MessageProcessor:
         action_confidences, policy = self._get_next_action_probabilities(tracker)
 
         max_confidence_index = int(np.argmax(action_confidences))
-        action = self.domain.action_for_index(
-            max_confidence_index, self.action_endpoint
+        action = rasa.core.actions.action.action_for_index(
+            max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
@@ -439,8 +444,10 @@ class MessageProcessor:
                     docs=DOCS_URL_DOMAINS,
                 )
 
-    def _get_action(self, action_name) -> Optional[Action]:
-        return self.domain.action_for_name(action_name, self.action_endpoint)
+    def _get_action(self, action_name) -> Optional[rasa.core.actions.action.Action]:
+        return rasa.core.actions.action.action_for_name(
+            action_name, self.domain, self.action_endpoint
+        )
 
     async def parse_message(
         self, message: UserMessage, tracker: Optional[DialogueStateTracker] = None
@@ -658,7 +665,7 @@ class MessageProcessor:
             if action.name() == ACTION_SESSION_START_NAME:
                 action.metadata = metadata
             events = await action.run(output_channel, nlg, tracker, self.domain)
-        except ActionExecutionRejection:
+        except rasa.core.actions.action.ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
@@ -780,20 +787,18 @@ class MessageProcessor:
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
 
-    def _prob_array_for_action(
-        self, action_name: Text
-    ) -> Tuple[Optional[List[float]], None]:
+    def _prob_array_for_action(self, action_name: Text) -> Tuple[List[float], None]:
         idx = self.domain.index_for_action(action_name)
         if idx is not None:
             result = [0.0] * self.domain.num_actions
             result[idx] = 1.0
             return result, None
         else:
-            return None, None
+            return [], None
 
     def _get_next_action_probabilities(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 
         followup_action = tracker.followup_action

@@ -83,14 +83,6 @@ obtain_verbosity() -> int
 
 Returns a verbosity level according to the set log level.
 
-#### is\_logging\_disabled
-
-```python
-is_logging_disabled() -> bool
-```
-
-Returns true, if log level is set to WARNING or ERROR, false otherwise.
-
 #### sort\_list\_of\_dicts\_by\_first\_key
 
 ```python

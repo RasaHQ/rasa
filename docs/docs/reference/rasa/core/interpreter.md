@@ -3,56 +3,23 @@ sidebar_label: rasa.core.interpreter
 title: rasa.core.interpreter
 ---
 
-## NaturalLanguageInterpreter Objects
+#### create\_interpreter
 
 ```python
-class NaturalLanguageInterpreter()
+create_interpreter(obj: Union[
+        rasa.shared.nlu.interpreter.NaturalLanguageInterpreter,
+        EndpointConfig,
+        Text,
+        None,
+    ]) -> "rasa.shared.nlu.interpreter.NaturalLanguageInterpreter"
 ```
 
-#### create
-
-```python
- | @staticmethod
- | create(obj: Union["NaturalLanguageInterpreter", EndpointConfig, Text, None]) -> "NaturalLanguageInterpreter"
-```
-
-Factory to create an natural language interpreter.
-
-## RegexInterpreter Objects
-
-```python
-class RegexInterpreter(NaturalLanguageInterpreter)
-```
-
-#### extract\_intent\_and\_entities
-
-```python
- | @staticmethod
- | extract_intent_and_entities(user_input: Text) -> Tuple[Optional[Text], float, List[Dict[Text, Any]]]
-```
-
-Parse the user input using regexes to extract intent &amp; entities.
-
-#### parse
-
-```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
-```
-
-Parse a text message.
-
-#### synchronous\_parse
-
-```python
- | synchronous_parse(text: Text) -> Dict[Text, Any]
-```
-
-Parse a text message.
+Factory to create a natural language interpreter.
 
 ## RasaNLUHttpInterpreter Objects
 
 ```python
-class RasaNLUHttpInterpreter(NaturalLanguageInterpreter)
+class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter)
 ```
 
 #### parse
@@ -68,7 +35,7 @@ Return a default value if the parsing of the text failed.
 ## RasaNLUInterpreter Objects
 
 ```python
-class RasaNLUInterpreter(NaturalLanguageInterpreter)
+class RasaNLUInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter)
 ```
 
 #### parse

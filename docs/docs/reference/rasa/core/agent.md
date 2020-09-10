@@ -103,7 +103,7 @@ Handle a single message.
 #### log\_message
 
 ```python
- | async log_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> DialogueStateTracker
+ | async log_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> Optional[DialogueStateTracker]
 ```
 
 Append a message to a dialogue - does not predict actions.
@@ -111,7 +111,7 @@ Append a message to a dialogue - does not predict actions.
 #### execute\_action
 
 ```python
- | async execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Text, confidence: float) -> DialogueStateTracker
+ | async execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Text, confidence: float) -> Optional[DialogueStateTracker]
 ```
 
 Handle a single message.
@@ -127,7 +127,7 @@ Trigger a user intent, e.g. triggered by an external event.
 #### handle\_text
 
 ```python
- | async handle_text(text_message: Union[Text, Dict[Text, Any]], message_preprocessor: Optional[Callable[[Text], Text]] = None, output_channel: Optional[OutputChannel] = None, sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID) -> Optional[List[Dict[Text, Any]]]
+ | async handle_text(text_message: Union[Text, Dict[Text, Any]], message_preprocessor: Optional[Callable[[Text], Text]] = None, output_channel: Optional[OutputChannel] = None, sender_id: Optional[Text] = DEFAULT_SENDER_ID) -> Optional[List[Dict[Text, Any]]]
 ```
 
 Handle a single message.

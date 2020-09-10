@@ -16,14 +16,6 @@ Configure logging to a file.
 - `logger_obj` - Logger object to configure.
 - `log_file` - Path of log file to write to.
 
-#### subsample\_array
-
-```python
-subsample_array(arr: List[Any], max_values: int, can_modify_incoming_array: bool = True, rand: Optional["Random"] = None) -> List[Any]
-```
-
-Shuffles the array and returns `max_values` number of elements.
-
 #### is\_int
 
 ```python
@@ -52,24 +44,6 @@ Create a one-hot array.
 **Returns**:
 
   One-hot array.
-
-#### generate\_id
-
-```python
-generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text
-```
-
-Generate a random UUID.
-
-**Arguments**:
-
-- `prefix` - String to prefix the ID with.
-- `max_chars` - Maximum number of characters.
-  
-
-**Returns**:
-
-  Generated random UUID.
 
 ## HashableNDArray Objects
 
@@ -130,14 +104,6 @@ Writes `obj` to the filename in YAML repr.
 - `obj` - Object to dump.
 - `should_preserve_key_order` - Whether to preserve key order in `obj`.
 
-#### dump\_obj\_as\_yaml\_to\_string
-
-```python
-dump_obj_as_yaml_to_string(obj: Dict) -> Text
-```
-
-Writes data (python dict) to a yaml string.
-
 #### list\_routes
 
 ```python
@@ -147,16 +113,6 @@ list_routes(app: Sanic)
 List all the routes of a sanic application.
 
 Mainly used for debugging.
-
-#### cap\_length
-
-```python
-cap_length(s: Text, char_limit: int = 20, append_ellipsis: bool = True) -> Text
-```
-
-Makes sure the string doesn&#x27;t exceed the passed char limit.
-
-Appends an ellipsis if the string is too long.
 
 #### extract\_args
 
@@ -236,14 +192,6 @@ Download a story file from a url and persists it into a temp file.
 
 Returns the file path of the temp file that contains the
 downloaded content.
-
-#### remove\_none\_values
-
-```python
-remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]
-```
-
-Remove all keys that store a `None` value.
 
 #### pad\_lists\_to\_size
 

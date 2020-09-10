@@ -27,7 +27,7 @@ Gets necessary information for featurization from domain.
 
 **Arguments**:
 
-- `domain` - a :class:`rasa.core.domain.Domain`
+- `domain` - An instance of :class:`rasa.shared.core.domain.Domain`.
 
 #### encode\_state
 

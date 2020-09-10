@@ -2,9 +2,13 @@ import asyncio
 from pathlib import Path
 
 from rasa.cli.utils import print_success, print_warning
-from rasa.constants import DOCS_URL_RULES
-from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.constants import DOCS_URL_RULES
+from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
+    MarkdownStoryReader,
+)
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 from rasa.utils.converter import TrainingDataConverter
 
 
@@ -30,7 +34,9 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
             source_path: Path to the training data file.
             output_path: Path to the output directory.
         """
-        from rasa.core.training.story_reader.yaml_story_reader import KEY_ACTIVE_LOOP
+        from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+            KEY_ACTIVE_LOOP,
+        )
 
         output_core_path = cls.generate_path_for_converted_training_data_file(
             source_path, output_path

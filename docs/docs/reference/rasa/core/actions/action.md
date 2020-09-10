@@ -11,21 +11,50 @@ default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Actio
 
 List default actions.
 
-#### default\_action\_names
+#### action\_for\_index
 
 ```python
-default_action_names() -> List[Text]
+action_for_index(index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
 ```
 
-List default action names.
+Get an action based on its index in the list of available actions.
 
-#### combine\_with\_templates
+**Arguments**:
+
+- `index` - The index of the action. This is usually used by `Policy`s as they
+  predict the action index instead of the name.
+- `domain` - The `Domain` of the current model. The domain contains the actions
+  provided by the user + the default actions.
+- `action_endpoint` - Can be used to run `custom_actions`
+  (e.g. using the `rasa-sdk`).
+  
+
+**Returns**:
+
+  The instantiated `Action` or `None` if no `Action` was found for the given
+  index.
+
+#### action\_for\_name
 
 ```python
-combine_with_templates(actions: List[Text], templates: Dict[Text, Any]) -> List[Text]
+action_for_name(action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
 ```
 
-Combines actions with utter actions listed in responses section.
+Create an `Action` object based on the name of the `Action`.
+
+**Arguments**:
+
+- `action_name` - The name of the `Action`.
+- `domain` - The `Domain` of the current model. The domain contains the actions
+  provided by the user + the default actions.
+- `action_endpoint` - Can be used to run `custom_actions`
+  (e.g. using the `rasa-sdk`).
+  
+
+**Returns**:
+
+  The instantiated `Action` or `None` if no `Action` was found for the given
+  index.
 
 #### action\_from\_name
 
@@ -34,14 +63,6 @@ action_from_name(name: Text, action_endpoint: Optional[EndpointConfig], user_act
 ```
 
 Return an action instance for the name.
-
-#### actions\_from\_names
-
-```python
-actions_from_names(action_names: List[Text], action_endpoint: Optional[EndpointConfig], user_actions: List[Text]) -> List["Action"]
-```
-
-Converts the names of actions into class instances.
 
 #### create\_bot\_utterance
 

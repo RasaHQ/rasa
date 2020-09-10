@@ -3,22 +3,6 @@ sidebar_label: rasa.core.exceptions
 title: rasa.core.exceptions
 ---
 
-## RasaCoreException Objects
-
-```python
-class RasaCoreException(RasaException)
-```
-
-Basic exception for errors raised by Rasa Core.
-
-## StoryParseError Objects
-
-```python
-class StoryParseError(RasaCoreException,  ValueError)
-```
-
-Raised if there is an error while parsing a story file.
-
 ## UnsupportedDialogueModelError Objects
 
 ```python

@@ -29,6 +29,14 @@ module_path_from_instance(inst: Any) -> Text
 
 Return the module path of an instance&#x27;s class.
 
+#### sort\_list\_of\_dicts\_by\_first\_key
+
+```python
+sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]
+```
+
+Sorts a list of dictionaries by their first key.
+
 #### lazy\_property
 
 ```python
