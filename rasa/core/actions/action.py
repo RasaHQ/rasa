@@ -132,14 +132,6 @@ def action_for_name(
     )
 
 
-def actions(
-    domain: Domain, action_endpoint: Optional[EndpointConfig]
-) -> List[Optional["Action"]]:
-    return [
-        action_for_name(name, domain, action_endpoint) for name in domain.action_names
-    ]
-
-
 def action_from_name(
     name: Text,
     action_endpoint: Optional[EndpointConfig],
@@ -162,18 +154,6 @@ def action_from_name(
         return FormAction(name, action_endpoint)
     else:
         return RemoteAction(name, action_endpoint)
-
-
-def actions_from_names(
-    action_names: List[Text],
-    action_endpoint: Optional[EndpointConfig],
-    user_actions: List[Text],
-) -> List["Action"]:
-    """Converts the names of actions into class instances."""
-
-    return [
-        action_from_name(name, action_endpoint, user_actions) for name in action_names
-    ]
 
 
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:

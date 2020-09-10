@@ -90,23 +90,6 @@ def test_text_format():
     )
 
 
-def test_action_instantiation_from_names():
-    instantiated_actions = action.actions_from_names(
-        ["random_name", "utter_test", "respond_test"],
-        None,
-        ["random_name", "utter_test"],
-    )
-    assert len(instantiated_actions) == 3
-    assert isinstance(instantiated_actions[0], RemoteAction)
-    assert instantiated_actions[0].name() == "random_name"
-
-    assert isinstance(instantiated_actions[1], ActionUtterTemplate)
-    assert instantiated_actions[1].name() == "utter_test"
-
-    assert isinstance(instantiated_actions[2], ActionRetrieveResponse)
-    assert instantiated_actions[2].name() == "respond_test"
-
-
 def test_domain_action_instantiation():
     domain = Domain(
         intents={},
@@ -117,7 +100,10 @@ def test_domain_action_instantiation():
         forms=[],
     )
 
-    instantiated_actions = action.actions(domain, None)
+    instantiated_actions = [
+        action.action_for_name(action_name, domain, None)
+        for action_name in domain.action_names
+    ]
 
     assert len(instantiated_actions) == 14
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
