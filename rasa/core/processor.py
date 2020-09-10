@@ -19,7 +19,9 @@ from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
-    REQUESTED_SLOT, UTTER_PREFIX)
+    REQUESTED_SLOT,
+    UTTER_PREFIX,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -443,7 +445,9 @@ class MessageProcessor:
                 )
 
     def _get_action(self, action_name) -> Optional[rasa.core.actions.action.Action]:
-        return rasa.core.actions.action.action_for_name(action_name, self.domain, self.action_endpoint)
+        return rasa.core.actions.action.action_for_name(
+            action_name, self.domain, self.action_endpoint
+        )
 
     async def parse_message(
         self, message: UserMessage, tracker: Optional[DialogueStateTracker] = None

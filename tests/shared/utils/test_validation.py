@@ -10,7 +10,7 @@ import rasa.shared.nlu.training_data.schemas.data_schema as schema
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DOMAIN_SCHEMA_FILE,
-    LATEST_TRAINING_DATA_FORMAT_VERSION
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
