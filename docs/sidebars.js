@@ -39,7 +39,7 @@ const allVersionItems = versions.length > 0
 
 module.exports = {
   default: [
-    'index',
+    'introduction',
     {
       type: 'category',
       label: 'Building Assistants',
@@ -86,12 +86,7 @@ module.exports = {
             'how-to-deploy',
           ],
         },
-        {
-          type: 'category',
-          label: 'Reference',
-          collapsed: true,
-          items: ['glossary', require('./docs/reference/sidebar.json')],
-        },
+        "glossary",
       ],
     },
     {
@@ -195,6 +190,12 @@ module.exports = {
         },
         'jupyter-notebooks',
       ],
+    },
+    {
+      type: 'category',
+      label: 'Reference',
+      collapsed: true,
+      items: [require('./docs/reference/sidebar.json')],
     },
     {
       type: 'category',
