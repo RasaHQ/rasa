@@ -16,7 +16,7 @@ from typing import (
 )
 
 from rasa.cli import utils as cli_utils
-from rasa.shared.constants import DOCS_BASE_URL
+from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 
 try:
     from urlparse import urljoin  # pytype: disable=import-error
@@ -69,7 +69,7 @@ class UserMessage:
         if sender_id is not None:
             self.sender_id = str(sender_id)
         else:
-            self.sender_id = self.DEFAULT_SENDER_ID
+            self.sender_id = DEFAULT_SENDER_ID
 
         self.input_channel = input_channel
 

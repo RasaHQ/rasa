@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 import pytest
 import sys
@@ -220,6 +221,12 @@ async def trained_nlu_model(
     )
 
     return trained_nlu_model_path
+
+
+@pytest.fixture(scope="session")
+def moodbot_domain() -> Domain:
+    domain_path = os.path.join("examples", "moodbot", "domain.yml")
+    return Domain.load(domain_path)
 
 
 @pytest.fixture

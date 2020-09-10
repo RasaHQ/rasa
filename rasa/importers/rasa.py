@@ -2,7 +2,6 @@ import logging
 from typing import Dict, List, Optional, Text, Union
 
 import rasa.shared.data
-from rasa import data
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.importers import utils, autoconfig
 from rasa.importers.importer import TrainingDataImporter

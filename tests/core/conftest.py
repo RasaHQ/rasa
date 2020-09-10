@@ -190,12 +190,6 @@ def tracker_with_six_scheduled_reminders(
 
 
 @pytest.fixture(scope="session")
-def moodbot_domain() -> Domain:
-    domain_path = os.path.join("examples", "moodbot", "domain.yml")
-    return Domain.load(domain_path)
-
-
-@pytest.fixture(scope="session")
 def moodbot_metadata(unpacked_trained_moodbot_path: Text) -> PolicyEnsemble:
     return PolicyEnsemble.load_metadata(
         os.path.join(unpacked_trained_moodbot_path, "core")

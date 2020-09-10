@@ -20,7 +20,6 @@ from unittest.mock import Mock
 
 import rasa.core.tracker_store
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
-from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (

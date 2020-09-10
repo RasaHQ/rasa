@@ -6,7 +6,7 @@ import rasa.shared.nlu.interpreter
 from sanic import Sanic
 from asyncio import AbstractEventLoop
 from pathlib import Path
-from rasa.core import run, interpreter, policies, domain
+from rasa.core import run, interpreter, policies
 from rasa.core.utils import AvailableEndpoints
 
 CREDENTIALS_FILE = "examples/moodbot/credentials.yml"

@@ -606,7 +606,7 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
     assert tracker.applied_events() == list(tracker.events)[6:]
 
 
-async def test_tracker_dump_e2e_story(default_agent):
+async def test_tracker_dump_e2e_story(default_agent: Agent):
     sender_id = "test_tracker_dump_e2e_story"
 
     await default_agent.handle_text("/greet", sender_id=sender_id)

@@ -4,7 +4,6 @@ from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
 import rasa.shared.data
-from rasa import data
 import rasa.utils.io as io_utils
 from rasa.shared.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
