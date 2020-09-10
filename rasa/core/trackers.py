@@ -367,7 +367,10 @@ class DialogueStateTracker:
         from rasa.core.channels.channel import UserMessage
 
         return DialogueStateTracker(
-            UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
+            UserMessage.DEFAULT_SENDER_ID,
+            self.slots.values(),
+            self._max_event_history,
+            is_rule_tracker=self.is_rule_tracker,
         )
 
     def generate_all_prior_trackers(

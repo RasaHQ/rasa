@@ -26,6 +26,11 @@ rules:
       - intent: chitchat
       - action: utter_chitchat
 
+  - rule: bad Chitchat
+    steps:
+      - intent: chitchat
+      - action: utter_greet
+
   - rule: submit form
     condition:
     - active_loop: restaurant_form

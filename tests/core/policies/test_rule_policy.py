@@ -38,7 +38,7 @@ from rasa.core.training.generator import TrackerWithCachedStates
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
 GREET_RULE = DialogueStateTracker.from_events(
-    "bla",
+    "greet rule",
     evts=[
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -120,6 +120,80 @@ actions:
     forbidden_rule.is_rule_tracker = True
     with pytest.raises(InvalidRule):
         policy.train([forbidden_rule], domain, RegexInterpreter())
+
+
+def test_contradicting_rules():
+    utter_anti_greet_action = "utter_anti_greet"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+    """
+    )
+    policy = RulePolicy(restrict_rules=False)
+    anti_greet_rule = DialogueStateTracker.from_events(
+        "anti greet rule",
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    anti_greet_rule.is_rule_tracker = True
+
+    with pytest.raises(InvalidRule) as execinfo:
+        policy.train([GREET_RULE, anti_greet_rule], domain, RegexInterpreter())
+    assert all(
+        name in execinfo.value.message
+        for name in {
+            UTTER_GREET_ACTION,
+            GREET_RULE.sender_id,
+            utter_anti_greet_action,
+            anti_greet_rule.sender_id,
+            policy._fallback_action_name,
+        }
+    )
+
+
+def test_contradicting_rules_and_stories():
+    utter_anti_greet_action = "utter_anti_greet"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+    """
+    )
+    policy = RulePolicy(restrict_rules=False)
+    anti_greet_story = DialogueStateTracker.from_events(
+        "anti greet story",
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    with pytest.raises(InvalidRule) as execinfo:
+        policy.train([GREET_RULE, anti_greet_story], domain, RegexInterpreter())
+
+    assert all(
+        name in execinfo.value.message
+        for name in {
+            utter_anti_greet_action,
+            anti_greet_story.sender_id,
+            UTTER_GREET_ACTION,
+        }
+    )
 
 
 def test_rule_policy_has_max_history_none():
