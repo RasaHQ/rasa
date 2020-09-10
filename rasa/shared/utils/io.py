@@ -346,7 +346,7 @@ def is_logging_disabled() -> bool:
     """Returns true, if log level is set to WARNING or ERROR, false otherwise."""
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
-    return log_level == "ERROR" or log_level == "WARNING"
+    return log_level in ("ERROR", "WARNING")
 
 
 def create_directory_for_file(file_path: Union[Text, Path]) -> None:
