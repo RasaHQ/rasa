@@ -1,8 +1,7 @@
 import copy
 import json
 import logging
-import typing
-from typing import List, Text, Optional, Dict, Any
+from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING
 import random
 
 import aiohttp
@@ -41,7 +40,7 @@ from rasa.core.events import (
 )
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
     from rasa.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
