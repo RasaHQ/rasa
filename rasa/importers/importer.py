@@ -153,7 +153,7 @@ class TrainingDataImporter:
                 )
             ]
 
-        return E2EImporter(CombinedDataImporter(importers))
+        return E2EImporter(RetrievalModelsDataImporter(CombinedDataImporter(importers)))
 
     @staticmethod
     def _importer_from_dict(
@@ -243,7 +243,6 @@ class CoreDataImporter(TrainingDataImporter):
 
 class CombinedDataImporter(TrainingDataImporter):
     """A `TrainingDataImporter` that combines multiple importers.
-
     Uses multiple `TrainingDataImporter` instances
     to load the data as if they were a single instance.
     """
@@ -257,9 +256,7 @@ class CombinedDataImporter(TrainingDataImporter):
 
         return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
-    async def _get_user_defined_domain(self) -> Domain:
-        """Construct domain out of user defined domain files."""
-
+    async def get_domain(self) -> Domain:
         domains = [importer.get_domain() for importer in self._importers]
         domains = await asyncio.gather(*domains)
 
@@ -267,27 +264,66 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
-    async def get_domain(self) -> Domain:
-        """Merge user defined domain with properties of retrieval intents in NLU data."""
+    async def get_stories(
+        self,
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        stories = [
+            importer.get_stories(template_variables, use_e2e, exclusion_percentage)
+            for importer in self._importers
+        ]
+        stories = await asyncio.gather(*stories)
 
-        combined_domain = await self._get_user_defined_domain()
-        user_defined_nlu_data = await self._get_user_defined_nlu_data()
+        return reduce(
+            lambda merged, other: merged.merge(other), stories, StoryGraph([])
+        )
+
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
+        nlu_data = await asyncio.gather(*nlu_data)
+
+        return reduce(
+            lambda merged, other: merged.merge(other), nlu_data, TrainingData()
+        )
+
+
+class RetrievalModelsDataImporter(TrainingDataImporter):
+    """A `TrainingDataImporter` that sets up the data for training retrieval models.
+
+    Synchronizes response templates between Domain and NLU
+    and adds retrieval intent properties from the NLU training data
+    back to the Domain.
+    """
+
+    def __init__(self, importer: TrainingDataImporter):
+        self._importer = importer
+
+    async def get_config(self) -> Dict:
+        return await self._importer.get_config()
+
+    async def get_domain(self) -> Domain:
+        """Merge existing domain with properties of retrieval intents in NLU data."""
+
+        existing_domain = await self._importer.get_domain()
+        existing_nlu_data = await self._importer.get_nlu_data()
 
         # Check if NLU data has any retrieval intents, if yes
         # add corresponding retrieval actions with `utter_` prefix automatically
         # to an empty domain, update the properties of existing retrieval intents
         # and merge response templates
-        if user_defined_nlu_data.retrieval_intents:
+        if existing_nlu_data.retrieval_intents:
 
             domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
-                user_defined_nlu_data.retrieval_intents,
-                user_defined_nlu_data.responses,
-                combined_domain,
+                existing_nlu_data.retrieval_intents,
+                existing_nlu_data.responses,
+                existing_domain,
             )
 
-            combined_domain = combined_domain.merge(domain_with_retrieval_intents)
+            existing_domain = existing_domain.merge(domain_with_retrieval_intents)
 
-        return combined_domain
+        return existing_domain
 
     @staticmethod
     def _get_domain_with_retrieval_intents(
@@ -334,36 +370,19 @@ class CombinedDataImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        stories = [
-            importer.get_stories(template_variables, use_e2e, exclusion_percentage)
-            for importer in self._importers
-        ]
-        stories = await asyncio.gather(*stories)
 
-        return reduce(
-            lambda merged, other: merged.merge(other), stories, StoryGraph([])
-        )
-
-    async def _get_user_defined_nlu_data(
-        self, language: Optional[Text] = "en"
-    ) -> TrainingData:
-        """Fetch all the NLU data defined by the user."""
-
-        nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
-        nlu_data = await asyncio.gather(*nlu_data)
-
-        return reduce(
-            lambda merged, other: merged.merge(other), nlu_data, TrainingData()
+        return await self._importer.get_stories(
+            template_variables, use_e2e, exclusion_percentage
         )
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        """Merge NLU data defined by the user and response templates defined in the domain."""
+        """Update NLU data with response templates defined in the domain"""
 
-        user_defined_nlu_data = await self._get_user_defined_nlu_data(language)
-        user_defined_domain = await self._get_user_defined_domain()
+        existing_nlu_data = await self._importer.get_nlu_data(language)
+        existing_domain = await self._importer.get_domain()
 
-        return user_defined_nlu_data.merge(
-            self._get_nlu_data_with_responses(user_defined_domain.templates)
+        return existing_nlu_data.merge(
+            self._get_nlu_data_with_responses(existing_domain.templates)
         )
 
     @staticmethod

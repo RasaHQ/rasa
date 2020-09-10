@@ -15,6 +15,7 @@ from rasa.importers.importer import (
     NluDataImporter,
     CoreDataImporter,
     E2EImporter,
+    RetrievalModelsDataImporter,
 )
 from rasa.importers.rasa import RasaFileImporter
 
@@ -297,25 +298,6 @@ async def test_adding_e2e_actions_to_domain(project: Text):
     assert all(action_name in domain.action_names for action_name in additional_actions)
 
 
-async def test_nlu_data_domain_sync(project: Text):
-    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    data_paths = [os.path.join(project, DEFAULT_DATA_PATH)]
-    base_data_importer = TrainingDataImporter.load_from_dict(
-        {}, config_path, domain_path, data_paths
-    )
-
-    nlu_importer = NluDataImporter(base_data_importer)
-    core_importer = CoreDataImporter(base_data_importer)
-
-    importer = CombinedDataImporter([nlu_importer, core_importer])
-    domain = await importer.get_domain()
-    nlu_data = await importer.get_nlu_data()
-
-    assert domain.retrieval_intents == []
-    assert domain.templates == nlu_data.responses
-
-
 async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default_retrieval_intents.yml"
@@ -330,7 +312,9 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     nlu_importer = NluDataImporter(base_data_importer)
     core_importer = CoreDataImporter(base_data_importer)
 
-    importer = CombinedDataImporter([nlu_importer, core_importer])
+    importer = RetrievalModelsDataImporter(
+        CombinedDataImporter([nlu_importer, core_importer])
+    )
     domain = await importer.get_domain()
     nlu_data = await importer.get_nlu_data()
 
