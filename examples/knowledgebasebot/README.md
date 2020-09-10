@@ -9,7 +9,7 @@ assistant on your local machine. The `knowledgebasebot` consists of the followin
 
 - **data/nlu.yml** contains training examples for the NLU model  
 - **data/stories.yml** contains training stories for the Core model  
-- **actions.py** contains the custom action for querying the knowledge base
+- **actions/actions.py** contains the custom action for querying the knowledge base
 - **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant  
 - **endpoints.yml** contains the webhook configuration for the custom action  

@@ -11,7 +11,8 @@ def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
     )  # avoid training an initial model
 
     required_files = [
-        "actions.py",
+        "actions/__init__.py",
+        "actions/actions.py",
         "domain.yml",
         "config.yml",
         "credentials.yml",
@@ -21,6 +22,9 @@ def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
         "data/rules.yml",
     ]
     assert all((Path("workspace") / file).exists() for file in required_files)
+
+    # ./__init__.py does not exist anymore
+    assert not (Path("workspace") / "__init__.py").exists()
 
 
 def test_not_found_init_path(run: Callable[..., RunResult]):
