@@ -498,7 +498,6 @@ class RulePolicy(MemoizationPolicy):
         Args:
             path: Path to persist policy to.
         """
-        # a module-level import leads to cyclic imports
         import rasa.utils.io
 
         self.featurizer.persist(path)
@@ -524,6 +523,8 @@ class RulePolicy(MemoizationPolicy):
         Returns:
             An instance of `RulePolicy`.
         """
+        import rasa.utils.io
+
         featurizer = TrackerFeaturizer.load(path)
         memorized_file = Path(path) / "memorized_turns.json"
         if memorized_file.is_file():
