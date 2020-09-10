@@ -6,56 +6,10 @@ import uuid
 from pathlib import Path
 from typing import Callable, Tuple, List, Text, Set, Union, Optional, Iterable
 
-from rasa.nlu.training_data import loading as nlu_loading
+from rasa.shared.data import TRAINING_DATA_EXTENSIONS
+from rasa.shared.nlu.training_data import loading as nlu_loading
 
 logger = logging.getLogger(__name__)
-
-MARKDOWN_FILE_EXTENSIONS = {".md"}
-
-YAML_FILE_EXTENSIONS = {".yml", ".yaml"}
-
-JSON_FILE_EXTENSIONS = {".json"}
-
-TRAINING_DATA_EXTENSIONS = JSON_FILE_EXTENSIONS.union(MARKDOWN_FILE_EXTENSIONS).union(
-    YAML_FILE_EXTENSIONS
-)
-
-
-def is_likely_yaml_file(file_path: Text) -> bool:
-    """Check if a file likely contains yaml.
-
-    Arguments:
-        file_path: path to the file
-
-    Returns:
-        `True` if the file likely contains data in yaml format, `False` otherwise.
-    """
-    return Path(file_path).suffix in YAML_FILE_EXTENSIONS
-
-
-def is_likely_json_file(file_path: Text) -> bool:
-    """Check if a file likely contains json.
-
-    Arguments:
-        file_path: path to the file
-
-    Returns:
-        `True` if the file likely contains data in json format, `False` otherwise.
-    """
-    return Path(file_path).suffix in JSON_FILE_EXTENSIONS
-
-
-def is_likely_markdown_file(file_path: Text) -> bool:
-    """Check if a file likely contains markdown.
-
-    Arguments:
-        file_path: path to the file
-
-    Returns:
-        `True` if the file likely contains data in markdown format,
-        `False` otherwise.
-    """
-    return Path(file_path).suffix in MARKDOWN_FILE_EXTENSIONS
 
 
 def get_test_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
@@ -143,7 +97,7 @@ def get_data_files(
         if not path:
             continue
 
-        if _is_valid_filetype(path):
+        if is_valid_filetype(path):
             if filter_predicate(path):
                 data_files.add(os.path.abspath(path))
         else:
@@ -164,7 +118,7 @@ def _find_data_files_in_directory(
         for f in sorted(files):
             full_path = os.path.join(root, f)
 
-            if not _is_valid_filetype(full_path):
+            if not is_valid_filetype(full_path):
                 continue
 
             if filter_property(full_path):
@@ -173,7 +127,15 @@ def _find_data_files_in_directory(
     return filtered_files
 
 
-def _is_valid_filetype(path: Text) -> bool:
+def is_valid_filetype(path: Union[Text, Path]) -> bool:
+    """Checks if given file has a supported extension.
+
+    Args:
+        path: Path to the source file.
+
+    Returns:
+        `True` is given file has supported extension, `False` otherwise.
+    """
     return os.path.isfile(path) and Path(path).suffix in TRAINING_DATA_EXTENSIONS
 
 

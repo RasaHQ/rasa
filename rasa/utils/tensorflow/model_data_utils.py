@@ -9,7 +9,7 @@ from rasa.utils.tensorflow.model_data import Data
 from rasa.utils.tensorflow.constants import SEQUENCE
 
 if typing.TYPE_CHECKING:
-    from rasa.utils.features import Features
+    from rasa.shared.nlu.training_data.features import Features
 
 MASK = "mask"
 
