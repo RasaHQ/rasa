@@ -873,8 +873,7 @@ class Domain:
                 del slot["initial_value"]
             if slot["auto_fill"]:
                 del slot["auto_fill"]
-            # TODO!!!!
-            if slot["type"].startswith("rasa.core.slots"):
+            if slot["type"].startswith("rasa.shared.core.slots"):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 
         if domain_data["config"]["store_entities_as_slots"]:
