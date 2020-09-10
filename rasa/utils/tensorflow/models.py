@@ -72,7 +72,7 @@ class RasaModel(tf.keras.models.Model):
         random_seed: Optional[int] = None,
         tensorboard_log_dir: Optional[Text] = None,
         tensorboard_log_level: Optional[Text] = "epoch",
-        checkpoint_model: Optional[Text] = None,
+        checkpoint_model: Optional[bool] = False,
         **kwargs,
     ) -> None:
         """Initialize the RasaModel.
