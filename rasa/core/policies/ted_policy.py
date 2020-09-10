@@ -316,6 +316,13 @@ class TEDPolicy(Policy):
     ) -> None:
         """Train the policy on given training trackers."""
 
+        if not training_trackers:
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
+            )
+            return
+
         # dealing with training data
         tracker_state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs

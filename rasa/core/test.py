@@ -388,7 +388,7 @@ def _collect_user_uttered_predictions(
     return user_uttered_eval_store
 
 
-def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
+def emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
     from rasa.core.events import ActionExecutionRejected
 
     rejected_action_name: Text = partial_tracker.active_loop_name
@@ -425,7 +425,7 @@ def _collect_action_executed_predictions(
         ):
             # Wrong action was predicted,
             # but it might be Ok if form action is rejected.
-            _emulate_form_rejection(partial_tracker)
+            emulate_form_rejection(partial_tracker)
             # try again
             action, policy, confidence = processor.predict_next_action(partial_tracker)
 

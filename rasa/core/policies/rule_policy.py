@@ -1,10 +1,11 @@
 import logging
 from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
+import numpy as np
 import json
 
 import rasa.shared.utils.io
-from rasa.core.events import FormValidation, UserUttered
+from rasa.core.events import FormValidation, UserUttered, ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.domain import Domain, InvalidDomain, State
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -35,6 +36,7 @@ from rasa.core.actions.action import (
 )
 from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.constants import ACTION_NAME
+import rasa.core.test
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
@@ -94,6 +96,7 @@ class RulePolicy(MemoizationPolicy):
         core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
+        check_rules_with_stories: bool = True,
     ) -> None:
         """Create a `RulePolicy` object.
 
@@ -116,6 +119,7 @@ class RulePolicy(MemoizationPolicy):
         self._fallback_action_name = core_fallback_action_name
         self._enable_fallback_prediction = enable_fallback_prediction
         self._restrict_rules = restrict_rules
+        self._check_rules_with_stories = check_rules_with_stories
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
@@ -244,7 +248,7 @@ class RulePolicy(MemoizationPolicy):
                 lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
         return lookup
 
-    def _check_rule_trackers(self, rule_trackers):
+    def _check_rule_restriction(self, rule_trackers):
         bad_rules = []
         for tracker in rule_trackers:
             number_of_user_uttered = sum(
@@ -260,6 +264,96 @@ class RulePolicy(MemoizationPolicy):
                 f"Rules are not meant to hardcode a state machine. "
                 f"Please use stories for these cases."
             )
+
+    def _predict_next_action(
+        self,
+        tracker: TrackerWithCachedStates,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+    ) -> Optional[Text]:
+        probabilities = self.predict_action_probabilities(tracker, domain, interpreter)
+        # do not raise an error if RulePolicy didn't predict anything for stories;
+        # however for rules RulePolicy should always predict an action
+        if (
+            probabilities != self._default_predictions(domain)
+            or tracker.is_rule_tracker
+        ):
+            return domain.action_names[np.argmax(probabilities)]
+
+    def _check_prediction(
+        self,
+        tracker: TrackerWithCachedStates,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        gold_action_name: Text,
+    ) -> Optional[Text]:
+
+        predicted_action_name = self._predict_next_action(tracker, domain, interpreter)
+        if not predicted_action_name or predicted_action_name == gold_action_name:
+            return
+
+        # RulePolicy will always predict active_loop first,
+        # but inside loop unhappy path there might be another action
+        if predicted_action_name == tracker.active_loop_name:
+            rasa.core.test.emulate_form_rejection(tracker)
+            predicted_action_name = self._predict_next_action(
+                tracker, domain, interpreter
+            )
+            if not predicted_action_name or predicted_action_name == gold_action_name:
+                return
+
+        tracker_type = "rule" if tracker.is_rule_tracker else "story"
+        return (
+            f"Action '{gold_action_name}' in {tracker_type} "
+            f"'{tracker.sender_id}' was predicted incorrectly by "
+            f"the {self.__class__.__name__} as action "
+            f"'{predicted_action_name}'."
+        )
+
+    def _find_contradicting_rules(
+        self,
+        trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+    ) -> None:
+        error_messages = []
+        for tracker in trackers:
+            running_tracker = tracker.init_copy()
+            running_tracker.sender_id = tracker.sender_id
+            next_action_is_unpredictable = False
+            for event in tracker.applied_events():
+                # do not run prediction on unpredictable actions
+                if not isinstance(event, ActionExecuted):
+                    running_tracker.update(event)
+                    continue
+
+                if next_action_is_unpredictable:
+                    next_action_is_unpredictable = False  # reset unpredictability
+                    running_tracker.update(event)
+                    continue
+
+                if event.action_name == RULE_SNIPPET_ACTION_NAME:
+                    # notify that we shouldn't check that the action after
+                    # RULE_SNIPPET_ACTION_NAME is unpredictable
+                    next_action_is_unpredictable = True
+                    # do not add RULE_SNIPPET_ACTION_NAME event
+                    continue
+
+                gold_action_name = event.action_name or event.action_text
+                error_message = self._check_prediction(
+                    running_tracker, domain, interpreter, gold_action_name
+                )
+                if error_message:
+                    error_messages.append(error_message)
+
+                running_tracker.update(event)
+
+        if error_messages:
+            error_messages.append(
+                "Please update your stories and rules so that "
+                "they don't contradict each other."
+            )
+            raise InvalidRule("\n".join(error_messages))
 
     def train(
         self,
@@ -283,7 +377,7 @@ class RulePolicy(MemoizationPolicy):
         ) = self.featurizer.training_states_and_actions(rule_trackers, domain)
 
         if self._restrict_rules:
-            self._check_rule_trackers(rule_trackers)
+            self._check_rule_restriction(rule_trackers)
 
         rules_lookup = self._create_lookup_from_states(
             rule_trackers_as_states, rule_trackers_as_actions
@@ -307,8 +401,11 @@ class RulePolicy(MemoizationPolicy):
             trackers_as_states, trackers_as_actions
         )
 
-        # TODO use story_trackers and rule_trackers
-        #  to check that stories don't contradict rules
+        # make this configurable because checking might take a lot of time
+        if self._check_rules_with_stories:
+            # using trackers here might not be the most efficient way, however
+            # it allows us to directly test `predict_action_probabilities` method
+            self._find_contradicting_rules(training_trackers, domain, interpreter)
 
         logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
 
@@ -333,6 +430,8 @@ class RulePolicy(MemoizationPolicy):
                     # it should be None or non existent in the state
                     value == SHOULD_NOT_BE_SET
                     and conversation_sub_state.get(key)
+                    # this is needed to test on rule snippets
+                    and conversation_sub_state.get(key) != SHOULD_NOT_BE_SET
                 ):
                     return False
 
