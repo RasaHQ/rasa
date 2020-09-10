@@ -221,7 +221,7 @@ class PolicyEnsemble:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         raise NotImplementedError
 
     def _max_histories(self) -> List[Optional[int]]:
@@ -510,7 +510,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     def _pick_best_policy(
         self, predictions: Dict[Text, Prediction]
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Picks the best policy prediction based on probabilities and policy priority.
 
         Args:
@@ -559,7 +559,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Finds the best policy prediction.
 
         Args:
@@ -675,7 +675,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Picks the best policy prediction based on probabilities and policy priority.

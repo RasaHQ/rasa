@@ -75,7 +75,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
 
 def action_for_index(
     index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
-) -> Optional["Action"]:
+) -> "Action":
     """Get an action based on its index in the list of available actions.
 
     Args:
@@ -101,7 +101,7 @@ def action_for_index(
 
 def action_for_name(
     action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
-) -> Optional["Action"]:
+) -> "Action":
     """Create an `Action` object based on the name of the `Action`.
 
     Args:

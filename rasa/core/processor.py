@@ -275,7 +275,7 @@ class MessageProcessor:
 
     def predict_next_action(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[Optional[rasa.core.actions.action.Action], Text, float]:
+    ) -> Tuple[rasa.core.actions.action.Action, Optional[Text], float]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
@@ -787,20 +787,18 @@ class MessageProcessor:
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
 
-    def _prob_array_for_action(
-        self, action_name: Text
-    ) -> Tuple[Optional[List[float]], None]:
+    def _prob_array_for_action(self, action_name: Text) -> Tuple[List[float], None]:
         idx = self.domain.index_for_action(action_name)
         if idx is not None:
             result = [0.0] * self.domain.num_actions
             result[idx] = 1.0
             return result, None
         else:
-            return None, None
+            return [], None
 
     def _get_next_action_probabilities(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 
         followup_action = tracker.followup_action
