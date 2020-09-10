@@ -1,14 +1,20 @@
 import os
 from pathlib import Path
-from typing import Text
-
+from typing import Iterator, Text
+import asyncio
 import pytest
+from sanic.request import Request
 
 from rasa.core.training.converters.story_markdown_to_yaml_converter import (
     StoryMarkdownToYamlConverter,
 )
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
+@pytest.yield_fixture(scope="session")
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 @pytest.mark.parametrize(
     "training_data_file, should_filter",
