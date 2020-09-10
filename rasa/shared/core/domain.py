@@ -927,12 +927,10 @@ class Domain:
         Includes user and form actions, but excludes those that are default actions.
         """
 
-        from rasa.core.actions.action import (  # pytype: disable=pyi-error
-            default_action_names,
-        )
-
         return [
-            a for a in self.user_actions_and_forms if a not in default_action_names()
+            a
+            for a in self.user_actions_and_forms
+            if a not in rasa.shared.core.constants.DEFAULT_ACTIONS
         ]
 
     @staticmethod
