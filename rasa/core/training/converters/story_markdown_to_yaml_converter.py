@@ -23,7 +23,7 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         return MarkdownStoryReader.is_markdown_story_file(source_path)
 
     @classmethod
-    def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
+    async def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
         """Converts the given training data file and saves it to the output directory.
 
         Args:
@@ -39,8 +39,7 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         reader = MarkdownStoryReader(unfold_or_utterances=False)
         writer = YAMLStoryWriter()
 
-        loop = asyncio.get_event_loop()
-        steps = loop.run_until_complete(reader.read_from_file(source_path))
+        steps = await reader.read_from_file(source_path)
 
         if YAMLStoryWriter.stories_contain_loops(steps):
             print_warning(

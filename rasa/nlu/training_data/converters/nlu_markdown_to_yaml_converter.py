@@ -24,7 +24,7 @@ class NLUMarkdownToYamlConverter(TrainingDataConverter):
         return MarkdownReader.is_markdown_nlu_file(source_path)
 
     @classmethod
-    def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
+    async def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
         """Converts the given training data file and saves it to the output directory.
 
         Args:

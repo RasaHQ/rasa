@@ -321,7 +321,8 @@ def _convert_file_to_yaml(
         return False
 
     if converter.filter(source_file):
-        converter.convert_and_write(source_file, target_dir)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(converter.convert_and_write(source_file, target_dir))
         return True
 
     print_warning(f"Skipped file: '{source_file}'.")
