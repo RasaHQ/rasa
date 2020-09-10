@@ -57,7 +57,7 @@ DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 class InvalidRule(Exception):
     """Exception that can be raised when domain is not valid."""
 
-    def __init__(self, message) -> None:
+    def __init__(self, message: Text) -> None:
         self.message = message
 
     def __str__(self) -> Text:
