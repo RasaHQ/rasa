@@ -228,7 +228,7 @@ class RasaModel(tf.keras.models.Model):
                         )
 
                     val_results = self._get_metric_results(prefix="val_")
-                    self._checkpoint_model(current_results=val_results, epoch=epoch)
+                    self._save_model_checkpoint(current_results=val_results, epoch=epoch)
 
                 postfix_dict.update(val_results)
 
@@ -249,7 +249,7 @@ class RasaModel(tf.keras.models.Model):
             )
 
             val_results = self._get_metric_results(prefix="val_")
-            self._checkpoint_model(current_results=val_results, epoch=epochs)
+            self._save_model_checkpoint(current_results=val_results, epoch=epochs)
 
         if self.best_model_epoch >= 0:
             logger.info(
@@ -504,7 +504,8 @@ class RasaModel(tf.keras.models.Model):
                 self.best_metrics_so_far[key] = float(current_results[key])
         return all_improved
 
-    def _checkpoint_model(self, current_results, epoch):
+    def _save_model_checkpoint(self, current_results: Dict[Text, Text], epoch: int
+    ) -> None:
         if self.checkpoint_model and self._does_model_improve(current_results):
             logger.debug(f"Creating model checkpoint at epoch={epoch}...")
             self.best_model_epoch = epoch
