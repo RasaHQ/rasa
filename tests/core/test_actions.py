@@ -377,6 +377,11 @@ async def test_action_utter_retrieved_response(
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
@@ -410,6 +415,11 @@ async def test_action_utter_default_retrieved_response(
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
@@ -438,11 +448,17 @@ async def test_action_utter_retrieved_empty_response(
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
                         "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
                     }
                 }
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )

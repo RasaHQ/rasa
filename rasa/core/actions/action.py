@@ -255,76 +255,6 @@ class Action:
         return "Action('{}')".format(self.name())
 
 
-class ActionRetrieveResponse(Action):
-    """An action which queries the Response Selector for the appropriate response."""
-
-    def __init__(self, name: Text, silent_fail: Optional[bool] = False):
-        self.action_name = name
-        self.silent_fail = silent_fail
-
-    @staticmethod
-    def intent_name_from_action(action_name: Text) -> Text:
-        """Resolve the name of the intent from the action name."""
-        return action_name.split(UTTER_PREFIX)[1]
-
-    @staticmethod
-    def action_name_from_intent(intent_name: Text) -> Text:
-        """Resolve the action name from the name of the intent."""
-        return f"{UTTER_PREFIX}{intent_name}"
-
-    async def run(
-        self,
-        output_channel: "OutputChannel",
-        nlg: "NaturalLanguageGenerator",
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ):
-        """Query the appropriate response and create a bot utterance with that."""
-
-        response_selector_properties = tracker.latest_message.parse_data[
-            RESPONSE_SELECTOR_PROPERTY_NAME
-        ]
-
-        if (
-            self.intent_name_from_action(self.action_name)
-            in response_selector_properties
-        ):
-            query_key = self.intent_name_from_action(self.action_name)
-        elif RESPONSE_SELECTOR_DEFAULT_INTENT in response_selector_properties:
-            query_key = RESPONSE_SELECTOR_DEFAULT_INTENT
-        else:
-            if not self.silent_fail:
-                logger.error(
-                    "Couldn't create message for response action '{}'."
-                    "".format(self.action_name)
-                )
-            return []
-
-        logger.debug(f"Picking response from selector of type {query_key}")
-        selected = response_selector_properties[query_key]
-        possible_messages = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
-            RESPONSE_SELECTOR_RESPONSES_KEY
-        ]
-
-        # Pick a random message from list of candidate messages.
-        # This should ideally be done by the NLG class but that's not
-        # possible until the domain has all the response templates of the response selector.
-        picked_message_idx = random.randint(0, len(possible_messages) - 1)
-        picked_message = copy.deepcopy(possible_messages[picked_message_idx])
-
-        picked_message[RESPONSE_SELECTOR_TEMPLATE_NAME_KEY] = selected[
-            RESPONSE_SELECTOR_PREDICTION_KEY
-        ][RESPONSE_SELECTOR_TEMPLATE_NAME_KEY]
-
-        return [create_bot_utterance(picked_message)]
-
-    def name(self) -> Text:
-        return self.action_name
-
-    def __str__(self) -> Text:
-        return "ActionRetrieveResponse('{}')".format(self.name())
-
-
 class ActionUtterTemplate(Action):
     """An action which only effect is to utter a template when it is run.
 
@@ -361,6 +291,71 @@ class ActionUtterTemplate(Action):
 
     def __str__(self) -> Text:
         return "ActionUtterTemplate('{}')".format(self.name())
+
+
+class ActionRetrieveResponse(ActionUtterTemplate):
+    """An action which queries the Response Selector for the appropriate response."""
+
+    def __init__(self, name: Text, silent_fail: Optional[bool] = False):
+        super().__init__(name, silent_fail)
+        self.action_name = name
+        self.silent_fail = silent_fail
+
+    @staticmethod
+    def intent_name_from_action(action_name: Text) -> Text:
+        """Resolve the name of the intent from the action name."""
+        return action_name.split(UTTER_PREFIX)[1]
+
+    @staticmethod
+    def action_name_from_intent(intent_name: Text) -> Text:
+        """Resolve the action name from the name of the intent."""
+        return f"{UTTER_PREFIX}{intent_name}"
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        """Query the appropriate response and create a bot utterance with that."""
+
+        response_selector_properties = tracker.latest_message.parse_data[
+            RESPONSE_SELECTOR_PROPERTY_NAME
+        ]
+
+        if (
+            self.intent_name_from_action(self.action_name)
+            in response_selector_properties
+        ):
+            query_key = self.intent_name_from_action(self.action_name)
+        elif RESPONSE_SELECTOR_DEFAULT_INTENT in response_selector_properties:
+            query_key = RESPONSE_SELECTOR_DEFAULT_INTENT
+        else:
+            if not self.silent_fail:
+                logger.error(
+                    "Couldn't create message for response action '{}'."
+                    "".format(self.action_name)
+                )
+            return []
+
+        logger.debug(f"Picking response from selector of type {query_key}")
+        selected = response_selector_properties[query_key]
+
+        # Override template name of ActionUtterTemplate
+        # with the complete template name retrieved from
+        # the output of response selector.
+        self.template_name = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
+            RESPONSE_SELECTOR_TEMPLATE_NAME_KEY
+        ]
+
+        return await super().run(output_channel, nlg, tracker, domain)
+
+    def name(self) -> Text:
+        return self.action_name
+
+    def __str__(self) -> Text:
+        return "ActionRetrieveResponse('{}')".format(self.name())
 
 
 class ActionBack(ActionUtterTemplate):
