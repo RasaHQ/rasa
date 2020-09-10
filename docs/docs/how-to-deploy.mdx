@@ -94,16 +94,8 @@ that are part of your action code but not included in the base `rasa/rasa-sdk` i
 
 To create your image:
 
-1. Move your actions code to a folder `actions` in your project directory.
-   Make sure to also add an empty `actions/__init__.py` file:
-
-   ```bash
-   mkdir actions
-   mv actions.py actions/actions.py
-   touch actions/__init__.py  # the init file indicates actions.py is a python module
-   ```
-
-   The `rasa/rasa-sdk` image will automatically look for the actions in `actions/actions.py`.
+1. Make sure your actions are defined in `actions/actions.py`. The `rasa/rasa-sdk`
+  image will automatically look for the actions in this file.
 
 2. If your actions have any extra dependencies, create a list of them in a file,
    `actions/requirements-actions.txt`.
