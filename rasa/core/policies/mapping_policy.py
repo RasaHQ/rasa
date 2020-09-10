@@ -23,7 +23,7 @@ from rasa.shared.core.events import ActionExecuted
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.training_data.generator import TrackerWithCachedStates
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
 
 if typing.TYPE_CHECKING:

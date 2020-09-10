@@ -77,7 +77,7 @@ async def load_data(
     Returns:
         list of loaded trackers
     """
-    from rasa.shared.core.training_data.generator import TrainingDataGenerator
+    from rasa.shared.core.generator import TrainingDataGenerator
     from rasa.importers.importer import TrainingDataImporter
 
     if resource_name:

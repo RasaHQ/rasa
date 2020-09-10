@@ -16,7 +16,8 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_BACK_NAME,
     RULE_SNIPPET_ACTION_NAME,
-    REQUESTED_SLOT)
+    REQUESTED_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -30,7 +31,7 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.training_data.generator import TrackerWithCachedStates
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
