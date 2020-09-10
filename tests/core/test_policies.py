@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.core.actions.action import ActionRevertFallbackEvents
+import rasa.core.actions.action
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
@@ -240,8 +240,8 @@ class TestSklearnPolicy(PolicyTestCollection):
             new_tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
-                    new_action = default_domain.action_for_index(
-                        np.random.choice(classes), action_endpoint=None
+                    new_action = rasa.core.actions.action.action_for_index(
+                        np.random.choice(classes), default_domain, action_endpoint=None
                     ).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
@@ -852,7 +852,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     @staticmethod
     async def _get_tracker_after_reverts(events, channel, nlg, domain):
         tracker = get_tracker(events)
-        action = ActionRevertFallbackEvents()
+        action = actions.ActionRevertFallbackEvents()
         events += await action.run(channel, nlg, tracker, domain)
 
         return get_tracker(events)

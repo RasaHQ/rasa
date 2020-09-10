@@ -105,6 +105,49 @@ def combine_with_templates(
     return actions + unique_template_names
 
 
+def action_for_index(
+    index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
+) -> Optional["Action"]:
+    """Integer index corresponding to an actions index in the action list.
+
+    This method resolves the index to the actions name."""
+
+    if domain.num_actions <= index or index < 0:
+        raise IndexError(
+            "Cannot access action at index {}. "
+            "Domain has {} actions."
+            "".format(index, domain.num_actions)
+        )
+
+    return action_for_name(domain.action_names[index], domain, action_endpoint)
+
+
+def action_for_name(
+    action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+) -> Optional["Action"]:
+    """Look up which action corresponds to this action name."""
+
+    if action_name not in domain.action_names:
+        domain.raise_action_not_found_exception(action_name)
+
+    should_use_form_action = (
+            action_name in domain.form_names and domain.slot_mapping_for_form(action_name)
+    )
+
+    return action_from_name(
+        action_name,
+        action_endpoint,
+        domain.user_actions_and_forms,
+        should_use_form_action,
+    )
+
+
+def actions(domain: Domain, action_endpoint: Optional[EndpointConfig]) -> List[Optional["Action"]]:
+    return [
+        action_for_name(name, domain, action_endpoint) for name in domain.action_names
+    ]
+
+
 def action_from_name(
     name: Text,
     action_endpoint: Optional[EndpointConfig],

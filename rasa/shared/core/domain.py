@@ -7,20 +7,16 @@ import os
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
 from pathlib import Path
 
-from rasa.core.actions import Action, action
-from rasa.shared.core.constants import USER, SLOTS
-from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
-from rasa.utils.endpoints import EndpointConfig
 from ruamel.yaml import YAMLError
 
-import rasa.shared.utils.validation
-
-import rasa.shared.utils.io
-import rasa.shared.utils.common
 import rasa.shared.constants
 import rasa.shared.core.constants
 import rasa.shared.nlu.constants
+import rasa.shared.utils.validation
+import rasa.shared.utils.io
+import rasa.shared.utils.common
+from rasa.shared.core.events import SlotSet, UserUttered
+from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -550,55 +546,15 @@ class Domain:
                 if s not in slot_names:
                     self.slots.append(UnfeaturizedSlot(s))
 
-    def action_for_name(
-        self, action_name: Text, action_endpoint: Optional[EndpointConfig]
-    ) -> Optional[Action]:
-        """Look up which action corresponds to this action name."""
-
-        if action_name not in self.action_names:
-            self._raise_action_not_found_exception(action_name)
-
-        should_use_form_action = (
-            action_name in self.form_names and self.slot_mapping_for_form(action_name)
-        )
-
-        return action.action_from_name(
-            action_name,
-            action_endpoint,
-            self.user_actions_and_forms,
-            should_use_form_action,
-        )
-
-    def action_for_index(
-        self, index: int, action_endpoint: Optional[EndpointConfig]
-    ) -> Optional[Action]:
-        """Integer index corresponding to an actions index in the action list.
-
-        This method resolves the index to the actions name."""
-
-        if self.num_actions <= index or index < 0:
-            raise IndexError(
-                "Cannot access action at index {}. "
-                "Domain has {} actions."
-                "".format(index, self.num_actions)
-            )
-
-        return self.action_for_name(self.action_names[index], action_endpoint)
-
-    def actions(self, action_endpoint) -> List[Optional[Action]]:
-        return [
-            self.action_for_name(name, action_endpoint) for name in self.action_names
-        ]
-
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Look up which action index corresponds to this action name."""
 
         try:
             return self.action_names.index(action_name)
         except ValueError:
-            self._raise_action_not_found_exception(action_name)
+            self.raise_action_not_found_exception(action_name)
 
-    def _raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
+    def raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
             f"Cannot access action '{action_name}', "
@@ -755,8 +711,8 @@ class Domain:
     def get_active_states(self, tracker: "DialogueStateTracker") -> State:
         """Return a bag of active states from the tracker state."""
         state = {
-            USER: self._get_user_sub_state(tracker),
-            SLOTS: self._get_slots_sub_state(tracker),
+            rasa.shared.core.constants.USER: self._get_user_sub_state(tracker),
+            rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(tracker),
             rasa.shared.core.constants.PREVIOUS_ACTION: self._get_prev_action_sub_state(
                 tracker
             ),

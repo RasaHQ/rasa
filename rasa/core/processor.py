@@ -7,9 +7,9 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import numpy as np
 
 import rasa.shared.utils.io
+import rasa.core.actions.action
 from rasa.constants import DOCS_URL_POLICIES
 from rasa.core import jobs
-from rasa.core.actions.action import Action, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -273,7 +273,7 @@ class MessageProcessor:
 
     def predict_next_action(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[Action, Text, float]:
+    ) -> Tuple[rasa.core.actions.action.Action, Text, float]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
@@ -282,8 +282,8 @@ class MessageProcessor:
         action_confidences, policy = self._get_next_action_probabilities(tracker)
 
         max_confidence_index = int(np.argmax(action_confidences))
-        action = self.domain.action_for_index(
-            max_confidence_index, self.action_endpoint
+        action = rasa.core.actions.action.action_for_index(
+            max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
@@ -442,8 +442,8 @@ class MessageProcessor:
                     docs=DOCS_URL_DOMAINS,
                 )
 
-    def _get_action(self, action_name) -> Optional[Action]:
-        return self.domain.action_for_name(action_name, self.action_endpoint)
+    def _get_action(self, action_name) -> Optional[rasa.core.actions.action.Action]:
+        return rasa.core.actions.action.action_for_name(action_name, self.domain, self.action_endpoint)
 
     async def parse_message(
         self, message: UserMessage, tracker: Optional[DialogueStateTracker] = None
@@ -661,7 +661,7 @@ class MessageProcessor:
             if action.name() == ACTION_SESSION_START_NAME:
                 action.metadata = metadata
             events = await action.run(output_channel, nlg, tracker, self.domain)
-        except ActionExecutionRejection:
+        except rasa.core.actions.action.ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())

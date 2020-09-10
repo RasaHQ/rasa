@@ -117,7 +117,7 @@ def test_domain_action_instantiation():
         forms=[],
     )
 
-    instantiated_actions = domain.actions(None)
+    instantiated_actions = action.actions(domain, None)
 
     assert len(instantiated_actions) == 14
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
@@ -700,7 +700,7 @@ def test_get_form_action():
     """
     )
 
-    actual = domain.action_for_name(form_action_name, None)
+    actual = action.action_for_name(form_action_name, domain, None)
     assert isinstance(actual, FormAction)
 
 
@@ -715,7 +715,7 @@ def test_get_form_action_without_slot_mapping():
     """
     )
 
-    actual = domain.action_for_name(form_action_name, None)
+    actual = action.action_for_name(form_action_name, domain, None)
     assert isinstance(actual, RemoteAction)
 
 
@@ -729,4 +729,4 @@ def test_get_form_action_if_not_in_forms():
     )
 
     with pytest.raises(NameError):
-        assert not domain.action_for_name(form_action_name, None)
+        assert not action.action_for_name(form_action_name, domain, None)

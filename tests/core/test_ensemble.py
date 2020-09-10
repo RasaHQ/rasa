@@ -5,6 +5,11 @@ import pytest
 import copy
 
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.generator import TrackerWithCachedStates
+from rasa.shared.core.events import UserUttered, ActiveLoop, Event
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import Policy
@@ -13,12 +18,8 @@ from rasa.core.policies.ensemble import (
     InvalidPolicyConfig,
     SimplePolicyEnsemble,
 )
-from rasa.shared.core.domain import Domain
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.shared.core.trackers import DialogueStateTracker
-
-from rasa.shared.core.training_data.generator import TrackerWithCachedStates
-from rasa.shared.core.events import UserUttered, ActiveLoop, Event
+import rasa.core.actions.action
 
 from tests.core import utilities
 from rasa.core.constants import FORM_POLICY_PRIORITY
@@ -156,7 +157,7 @@ def test_fallback_mapping_restart():
     )
     max_confidence_index = result.index(max(result))
     index_of_mapping_policy = 1
-    next_action = domain.action_for_index(max_confidence_index, None)
+    next_action = rasa.core.actions.action.action_for_index(max_confidence_index, domain, None)
 
     assert best_policy == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
     assert next_action.name() == ACTION_RESTART_NAME
@@ -197,7 +198,7 @@ def test_mapping_wins_over_form(events: List[Event]):
     )
 
     max_confidence_index = result.index(max(result))
-    next_action = domain.action_for_index(max_confidence_index, None)
+    next_action = rasa.core.actions.action.action_for_index(max_confidence_index, domain, None)
 
     index_of_mapping_policy = 0
     assert best_policy == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
@@ -236,7 +237,7 @@ def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
     )
 
     max_confidence_index = result.index(max(result))
-    next_action = domain.action_for_index(max_confidence_index, None)
+    next_action = rasa.core.actions.action.action_for_index(max_confidence_index, domain, None)
 
     index_of_form_policy = 0
     assert best_policy == f"policy_{index_of_form_policy}_{FormPolicy.__name__}"
@@ -259,7 +260,7 @@ def test_fallback_wins_over_mapping():
     )
     max_confidence_index = result.index(max(result))
     index_of_fallback_policy = 0
-    next_action = domain.action_for_index(max_confidence_index, None)
+    next_action = rasa.core.actions.action.action_for_index(max_confidence_index, domain, None)
 
     assert best_policy == f"policy_{index_of_fallback_policy}_{FallbackPolicy.__name__}"
     assert next_action.name() == ACTION_DEFAULT_FALLBACK_NAME
