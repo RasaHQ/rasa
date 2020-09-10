@@ -36,7 +36,6 @@ from rasa.nlu.constants import (
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
-    RESPONSE,
     INTENT_RESPONSE_KEY,
     ENTITIES,
     EXTRACTOR,

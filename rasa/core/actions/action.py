@@ -20,13 +20,11 @@ from rasa.core.constants import (
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
-    RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
     INTENT_RANKING_KEY,
     INTENT_NAME_KEY,
 )
-from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY
 
 from rasa.core.events import (
     UserUtteranceReverted,

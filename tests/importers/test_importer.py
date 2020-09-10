@@ -117,8 +117,8 @@ def test_load_from_config(tmpdir: Path):
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
-    assert isinstance(importer.importer, CombinedDataImporter)
-    assert isinstance(importer.importer._importers[0], MultiProjectImporter)
+    assert isinstance(importer.importer, RetrievalModelsDataImporter)
+    assert isinstance(importer.importer._importer._importers[0], MultiProjectImporter)
 
 
 async def test_nlu_only(project: Text):

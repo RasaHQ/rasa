@@ -183,7 +183,7 @@ async def test_train_docker_and_docs_configs(
         ),
         (
             "data/test_config/config_spacy_entity_extractor.yml",
-            "data/test/md_converted_to_json.json",
+            "data/test/duplicate_intents_markdown/demo-rasa-intents-2.md",
             [f"add one of {TRAINABLE_EXTRACTORS}"],
         ),
         (

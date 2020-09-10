@@ -521,7 +521,7 @@ class TrainingData:
             examples = [
                 e
                 for e in training_examples
-                if RESPONSE in e.data and e.data[RESPONSE] == response
+                if e.get(INTENT_RESPONSE_KEY) and e.get(INTENT_RESPONSE_KEY) == response
             ]
             _split(examples, count)
             training_examples = training_examples - set(examples)
