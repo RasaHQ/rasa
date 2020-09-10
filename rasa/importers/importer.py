@@ -396,7 +396,7 @@ def _messages_from_action(event: ActionExecuted) -> Message:
 def _additional_training_data_from_default_actions() -> TrainingData:
     additional_messages_from_default_actions = [
         Message.build_from_action(action_name=action_name)
-        for action_name in rasa.shared.core.constants.DEFAULT_ACTIONS
+        for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     ]
 
     return TrainingData(additional_messages_from_default_actions)

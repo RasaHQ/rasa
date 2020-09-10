@@ -930,7 +930,7 @@ class Domain:
         return [
             a
             for a in self.user_actions_and_forms
-            if a not in rasa.shared.core.constants.DEFAULT_ACTIONS
+            if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
 
     @staticmethod
@@ -977,9 +977,9 @@ class Domain:
         unique_user_actions = [
             a
             for a in user_actions
-            if a not in rasa.shared.core.constants.DEFAULT_ACTIONS
+            if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
-        return rasa.shared.core.constants.DEFAULT_ACTIONS + unique_user_actions
+        return rasa.shared.core.constants.DEFAULT_ACTION_NAMES + unique_user_actions
 
     def domain_warnings(
         self,

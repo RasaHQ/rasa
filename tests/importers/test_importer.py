@@ -247,7 +247,7 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
     assert all(
         Message(data={ACTION_NAME: action_name, ACTION_TEXT: ""})
         in extended_training_data.training_examples
-        for action_name in rasa.shared.core.constants.DEFAULT_ACTIONS
+        for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     )
 
 

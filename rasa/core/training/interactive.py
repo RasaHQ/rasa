@@ -890,7 +890,7 @@ def _write_domain_to_file(
         {
             e["name"]
             for e in actions
-            if e["name"] not in rasa.shared.core.constants.DEFAULT_ACTIONS
+            if e["name"] not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
             and e["name"] not in old_domain.form_names
         }
     )
