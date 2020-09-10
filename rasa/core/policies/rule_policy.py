@@ -60,7 +60,7 @@ class InvalidRule(Exception):
     def __init__(self, message) -> None:
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> Text:
         # return message in error colours
         return rasa.shared.utils.io.wrap_with_color(
             self.message, color=rasa.shared.utils.io.bcolors.FAIL
