@@ -8,7 +8,6 @@ from pathlib import Path
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text, Union
 
-import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES
@@ -159,8 +158,6 @@ class MemoizationPolicy(Policy):
         return lookup
 
     def _create_feature_key(self, states: List[State]) -> Text:
-        from rasa.utils import io
-
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
