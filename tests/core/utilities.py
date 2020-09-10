@@ -7,6 +7,7 @@ from typing import Text, List, Optional, Text, Any, Dict
 import jsonpickle
 import os
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, Event
@@ -32,7 +33,7 @@ def tracker_from_dialogue_file(
 
 
 def read_dialogue_file(filename: Text) -> "Dialogue":
-    return jsonpickle.loads(rasa.utils.io.read_file(filename))
+    return jsonpickle.loads(rasa.shared.utils.io.read_file(filename))
 
 
 @contextlib.contextmanager

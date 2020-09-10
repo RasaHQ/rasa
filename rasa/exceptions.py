@@ -1,8 +1,6 @@
 from typing import Text
 
-
-class RasaException(Exception):
-    """Base exception class for all errors raised by Rasa."""
+from rasa.shared.exceptions import RasaException
 
 
 class ModelNotFound(RasaException):

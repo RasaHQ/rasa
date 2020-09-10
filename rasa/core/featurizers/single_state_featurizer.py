@@ -6,19 +6,19 @@ from collections import defaultdict
 
 import rasa.shared.utils.io
 from rasa.core.domain import Domain, State, SubState
-from rasa.utils.features import Features
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.constants import USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.nlu.constants import (
-    INTENT,
-    ACTION_NAME,
-    ACTION_TEXT,
+from rasa.core.trackers import is_prev_action_listen_in_state
+from rasa.shared.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
+    ACTION_TEXT,
+    ACTION_NAME,
+    INTENT,
 )
-from rasa.nlu.training_data.message import Message
-from rasa.core.trackers import is_prev_action_listen_in_state
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
