@@ -5,22 +5,22 @@ from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Iterator, Generator
+from typing import Text, Generator
 
 import pytest
 
 import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
-from rasa.core.domain import Domain
-from rasa.core.events import ReminderScheduled, UserUttered, ActionExecuted
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
@@ -131,11 +131,6 @@ def default_nlu_data():
     return DEFAULT_NLU_DATA
 
 
-@pytest.fixture(scope="session")
-def default_domain() -> Domain:
-    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-
-
 @pytest.fixture
 def default_channel() -> OutputChannel:
     return CollectingOutputChannel()
@@ -192,12 +187,6 @@ def tracker_with_six_scheduled_reminders(
     default_processor.tracker_store.save(tracker)
 
     return tracker
-
-
-@pytest.fixture(scope="session")
-def moodbot_domain() -> Domain:
-    domain_path = os.path.join("examples", "moodbot", "domain.yml")
-    return Domain.load(domain_path)
 
 
 @pytest.fixture(scope="session")

@@ -3,13 +3,13 @@ from functools import reduce
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
-from rasa import data
+import rasa.shared.data
 import rasa.utils.io as io_utils
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.core.training.structures import StoryGraph
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.utils.common import mark_as_experimental_feature
 import rasa.shared.utils.io
 
@@ -38,8 +38,12 @@ class MultiProjectImporter(TrainingDataImporter):
 
         self._init_from_dict(self.config, self._project_directory)
 
-        extra_nlu_files = data.get_data_files(training_data_paths, data.is_nlu_file)
-        extra_story_files = data.get_data_files(training_data_paths, data.is_story_file)
+        extra_nlu_files = rasa.shared.data.get_data_files(
+            training_data_paths, rasa.shared.data.is_nlu_file
+        )
+        extra_story_files = rasa.shared.data.get_data_files(
+            training_data_paths, rasa.shared.data.is_story_file
+        )
         self._story_paths += extra_story_files
         self._nlu_paths += extra_nlu_files
 
@@ -57,7 +61,7 @@ class MultiProjectImporter(TrainingDataImporter):
 
     def _init_from_file(self, path: Text) -> None:
         path = os.path.abspath(path)
-        if os.path.exists(path) and data.is_config_file(path):
+        if os.path.exists(path) and rasa.shared.data.is_config_file(path):
             config = io_utils.read_config_file(path)
 
             parent_directory = os.path.dirname(path)
@@ -96,15 +100,15 @@ class MultiProjectImporter(TrainingDataImporter):
                     # Check next file
                     continue
 
-                if data.is_test_stories_file(full_path):
+                if rasa.shared.data.is_test_stories_file(full_path):
                     self._e2e_story_paths.append(full_path)
                 elif Domain.is_domain_file(full_path):
                     self._domain_paths.append(full_path)
-                elif data.is_nlu_file(full_path):
+                elif rasa.shared.data.is_nlu_file(full_path):
                     self._nlu_paths.append(full_path)
-                elif data.is_story_file(full_path):
+                elif rasa.shared.data.is_story_file(full_path):
                     self._story_paths.append(full_path)
-                elif data.is_config_file(full_path):
+                elif rasa.shared.data.is_config_file(full_path):
                     self._init_from_file(full_path)
 
     def no_skills_selected(self) -> bool:

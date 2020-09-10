@@ -17,7 +17,7 @@ from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
-from rasa.core.events import Event, Restarted, SlotSet, UserUttered
+from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 

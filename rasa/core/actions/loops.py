@@ -1,14 +1,14 @@
 from abc import ABC
-from typing import List, TYPE_CHECKING, Text
+from typing import List, TYPE_CHECKING
 
-from rasa.core.actions import Action
-from rasa.core.events import Event, ActiveLoop
+from rasa.core.actions.action import Action
+from rasa.shared.core.events import Event, ActiveLoop
 
 if TYPE_CHECKING:
     from rasa.core.channels import OutputChannel
-    from rasa.core.domain import Domain
+    from rasa.shared.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
-    from rasa.core.trackers import DialogueStateTracker
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 
 class LoopAction(Action, ABC):  # pytype: disable=base-class-error

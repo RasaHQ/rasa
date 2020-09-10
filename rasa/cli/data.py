@@ -5,16 +5,12 @@ import os
 from pathlib import Path
 from typing import List
 
-import rasa.cli.utils
-from rasa import data
+import rasa.shared.data
 from rasa.cli.arguments import data as arguments
-from rasa.cli.utils import (
-    print_error_and_exit,
-    print_info,
-    print_warning,
-)
+import rasa.cli.utils
+from rasa.cli.utils import print_error_and_exit, print_info, print_warning
 from rasa.constants import DEFAULT_DATA_PATH
-from rasa.data import is_valid_filetype
+from rasa.shared.data import is_valid_filetype
 from rasa.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data
 from rasa.utils.converter import TrainingDataConverter
@@ -154,7 +150,7 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     from rasa.shared.nlu.training_data.util import get_file_format
 
     data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    data_path = data.get_nlu_directory(data_path)
+    data_path = rasa.shared.data.get_nlu_directory(data_path)
 
     nlu_data = load_data(data_path)
     fformat = get_file_format(data_path)
