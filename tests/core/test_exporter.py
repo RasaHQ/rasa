@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
+import rasa.shared.utils.io
 from rasa.core.actions.action import ACTION_SESSION_START_NAME
 from rasa.core.domain import Domain
 
@@ -28,7 +29,7 @@ def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
     endpoints_path = path / "endpoints.yml"
 
     # write endpoints config to file
-    io_utils.write_yaml(data, endpoints_path)
+    rasa.shared.utils.io.write_yaml(data, endpoints_path)
     return endpoints_path
 
 

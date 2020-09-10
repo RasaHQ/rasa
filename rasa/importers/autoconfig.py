@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Text, Dict, Any, List, Set, Optional
 
 import rasa.constants as constants
+import rasa.shared.utils.io
 import rasa.utils.common as common_utils
 import rasa.cli.utils as cli_utils
 import rasa.utils.io as io_utils
@@ -155,7 +156,7 @@ def _dump_config(
     """
 
     config_as_expected = _is_config_file_as_expected(
-        config_file_path, missing_keys, auto_configured_keys, training_type,
+        config_file_path, missing_keys, auto_configured_keys, training_type
     )
     if not config_as_expected:
         cli_utils.print_error(
@@ -171,7 +172,9 @@ def _dump_config(
 
     autoconfig_lines = _get_commented_out_autoconfig_lines(config, auto_configured_keys)
 
-    with open(config_file_path, "r+", encoding=io_utils.DEFAULT_ENCODING) as f:
+    with open(
+        config_file_path, "r+", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+    ) as f:
         lines = f.readlines()
         updated_lines = _get_lines_including_autoconfig(lines, autoconfig_lines)
         f.seek(0)
@@ -211,7 +214,9 @@ def _add_missing_config_keys_to_file(
 ) -> None:
     if not missing_keys:
         return
-    with open(config_file_path, "a", encoding=io_utils.DEFAULT_ENCODING) as f:
+    with open(
+        config_file_path, "a", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+    ) as f:
         for key in missing_keys:
             f.write(f"{key}:\n")
 

@@ -2,11 +2,12 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
-from rasa.nlu.constants import TEXT
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data.formats import MarkdownReader
+from rasa.shared.nlu.training_data.formats import MarkdownReader
 
 
 @pytest.mark.parametrize(

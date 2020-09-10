@@ -5,6 +5,7 @@ import typing
 from pathlib import Path
 from typing import List, Text, Optional, Any, Union
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions.action import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
@@ -23,7 +24,8 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
-from rasa.nlu.constants import INTENT_NAME_KEY, ACTION_NAME
+from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import ACTION_NAME
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -237,6 +239,6 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         if path.exists():
             meta_path = path / "two_stage_fallback_policy.json"
             if path.is_file():
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
+                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
 
         return cls(**meta)

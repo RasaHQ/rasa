@@ -1,11 +1,11 @@
-import pytest
 import scipy.sparse
 import numpy as np
 import copy
 
+from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow import model_data_utils
-from rasa.utils.features import Features
-from rasa.nlu.constants import INTENT, ACTION_NAME
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow.constants import SENTENCE
 
 shape = 100
@@ -66,10 +66,7 @@ def test_surface_attributes():
     state_features = copy.deepcopy(intent_features)
     state_features.update(copy.deepcopy(action_name_features))
     # test on 2 dialogs -- one with dialog length 3 the other one with dialog length 2
-    dialogs = [
-        [state_features, intent_features, {}],
-        [{}, action_name_features],
-    ]
+    dialogs = [[state_features, intent_features, {}], [{}, action_name_features]]
     surfaced_features = model_data_utils.surface_attributes(dialogs)
     assert INTENT in surfaced_features and ACTION_NAME in surfaced_features
     # check that number of lists corresponds to number of dialogs

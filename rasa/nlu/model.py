@@ -5,6 +5,7 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
@@ -15,16 +16,12 @@ from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=p
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
-from rasa.nlu.constants import (
-    INTENT_NAME_KEY,
-    TEXT,
-    INTENT,
-    ENTITIES,
-    PREDICTED_CONFIDENCE_KEY,
-)
+from rasa.nlu.constants import PREDICTED_CONFIDENCE_KEY, INTENT_NAME_KEY
 
 from rasa.nlu.persistor import Persistor
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.constants import TEXT, ENTITIES, INTENT
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 
 MODEL_NAME_PREFIX = "nlu_"
@@ -74,7 +71,7 @@ class Metadata:
         """
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
-            data = rasa.utils.io.read_json_file(metadata_file)
+            data = rasa.shared.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))

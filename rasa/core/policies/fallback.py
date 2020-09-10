@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import Any, List, Text, Optional, Dict, Tuple, Union
 
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
 
@@ -25,7 +26,7 @@ class FallbackPolicy(Policy):
 
     A fallback can be triggered by a low confidence score on a
     NLU prediction or by a low confidence score on an action
-    prediction. """
+    prediction."""
 
     @staticmethod
     def _standard_featurizer() -> None:
@@ -211,6 +212,6 @@ class FallbackPolicy(Policy):
         if path.exists():
             meta_path = path / "fallback_policy.json"
             if meta_path.is_file():
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
+                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
 
         return cls(**meta)

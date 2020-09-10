@@ -8,6 +8,7 @@ import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.shared.utils.io
 from rasa.constants import CONFIG_AUTOCONFIGURABLE_KEYS
 from rasa.importers import autoconfig
 from rasa.utils import io as io_utils
@@ -163,12 +164,14 @@ def test_dump_config(
 
     autoconfig.get_configuration(config_file)
 
-    actual = io_utils.read_file(config_file)
+    actual = rasa.shared.utils.io.read_file(config_file)
 
     if sys.platform == "win32":
-        expected = io_utils.read_file(str(CONFIG_FOLDER / expected_file_windows))
+        expected = rasa.shared.utils.io.read_file(
+            str(CONFIG_FOLDER / expected_file_windows)
+        )
     else:
-        expected = io_utils.read_file(str(CONFIG_FOLDER / expected_file))
+        expected = rasa.shared.utils.io.read_file(str(CONFIG_FOLDER / expected_file))
 
     assert actual == expected
 
@@ -217,11 +220,13 @@ def test_get_configuration_for_different_training_types(
 
     autoconfig.get_configuration(config_file, training_type)
 
-    actual = io_utils.read_file(config_file)
+    actual = rasa.shared.utils.io.read_file(config_file)
 
     if sys.platform == "win32":
-        expected = io_utils.read_file(str(CONFIG_FOLDER / expected_file_windows))
+        expected = rasa.shared.utils.io.read_file(
+            str(CONFIG_FOLDER / expected_file_windows)
+        )
     else:
-        expected = io_utils.read_file(str(CONFIG_FOLDER / expected_file))
+        expected = rasa.shared.utils.io.read_file(str(CONFIG_FOLDER / expected_file))
 
     assert actual == expected

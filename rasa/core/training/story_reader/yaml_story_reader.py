@@ -1,22 +1,24 @@
 import logging
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
+
+import rasa.shared.data
+import rasa.shared.utils.io
+from rasa.core.constants import LOOP_NAME
+from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.constants import ENTITIES
+from rasa.shared.nlu.training_data import entities_parser
+import rasa.shared.utils.validation
 from ruamel.yaml.parser import ParserError
 
-import rasa.shared.utils.io
-import rasa.utils.io as io_utils
-import rasa.data
-
-from rasa.core.interpreter import RegexInterpreter
-from rasa.nlu.training_data import entities_parser
-from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 from rasa.constants import TEST_STORIES_FILE_PREFIX, DOCS_URL_STORIES, DOCS_URL_RULES
-from rasa.core.constants import INTENT_MESSAGE_PREFIX, LOOP_NAME
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+
 from rasa.core.actions.action import RULE_SNIPPET_ACTION_NAME
 from rasa.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.core.training.story_reader.story_reader import StoryReader
 from rasa.core.training.structures import StoryStep
-from rasa.nlu.constants import INTENT_NAME_KEY, ENTITIES
+from rasa.nlu.constants import INTENT_NAME_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -77,15 +79,19 @@ class YAMLStoryReader(StoryReader):
         self.source_name = filename
 
         try:
-            file_content = io_utils.read_file(filename, io_utils.DEFAULT_ENCODING)
-            validate_yaml_schema(file_content, CORE_SCHEMA_FILE)
-            yaml_content = io_utils.read_yaml(file_content)
+            file_content = rasa.shared.utils.io.read_file(
+                filename, rasa.shared.utils.io.DEFAULT_ENCODING
+            )
+            rasa.shared.utils.validation.validate_yaml_schema(
+                file_content, CORE_SCHEMA_FILE
+            )
+            yaml_content = rasa.shared.utils.io.read_yaml(file_content)
         except (ValueError, ParserError) as e:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
             return []
-        except InvalidYamlFileError as e:
+        except rasa.shared.utils.validation.InvalidYamlFileError as e:
             raise ValueError from e
 
         return self.read_from_parsed_yaml(yaml_content)
@@ -101,9 +107,8 @@ class YAMLStoryReader(StoryReader):
         Returns:
             The parsed stories or rules.
         """
-        from rasa.validator import Validator
 
-        if not Validator.validate_training_data_format_version(
+        if not rasa.shared.utils.validation.validate_training_data_format_version(
             parsed_content, self.source_name
         ):
             return []
@@ -130,7 +135,7 @@ class YAMLStoryReader(StoryReader):
             `True` in case the file is a Core YAML training data or rule data file,
             `False` otherwise.
         """
-        return rasa.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
+        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
             file_path, KEY_STORIES, KEY_RULES
         )
 
@@ -145,7 +150,7 @@ class YAMLStoryReader(StoryReader):
               `True` if all the keys are contained in the file, `False` otherwise.
         """
         try:
-            content = io_utils.read_yaml_file(file_path)
+            content = rasa.shared.utils.io.read_yaml_file(file_path)
             return any(key in content for key in keys)
         except Exception as e:
             # Using broad `Exception` because yaml library is not exposing all Errors

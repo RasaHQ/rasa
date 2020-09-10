@@ -18,7 +18,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.nlu.constants import ACTION_NAME, INTENT, ACTION_TEXT, TEXT, ENTITIES
+from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, ENTITIES
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, ACTIVE_LOOP, SLOTS
@@ -72,7 +72,7 @@ from rasa.utils.tensorflow.constants import (
 
 
 if typing.TYPE_CHECKING:
-    from rasa.utils.features import Features
+    from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)

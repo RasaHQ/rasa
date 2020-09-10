@@ -193,6 +193,6 @@ class MappingPolicy(Policy):
         if path.exists():
             meta_path = path / "mapping_policy.json"
             if meta_path.is_file():
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
+                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
 
         return cls(**meta)

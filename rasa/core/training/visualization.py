@@ -3,23 +3,25 @@ from collections import defaultdict, deque
 import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
-from rasa.nlu.constants import (
-    ENTITIES,
-    INTENT,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_VALUE,
-    INTENT_NAME_KEY,
-    TEXT,
-)
+import rasa.shared.utils.io
+from rasa.nlu.constants import INTENT_NAME_KEY
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, ActionExecuted, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph, StoryStep
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
+    TEXT,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITIES,
+)
 
 if TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData, Message
+    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.message import Message
     import networkx
 
 EDGE_NONE_LABEL = "NONE"
@@ -300,7 +302,7 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    template = io_utils.read_file(visualization_html_path())
+    template = rasa.shared.utils.io.read_file(visualization_html_path())
 
     # Insert graph into template
     template = template.replace("// { is-client }", "isClient = true", 1)
@@ -309,7 +311,7 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     graph_as_text = graph_as_text.replace("\\", "\\\\")
     template = template.replace("// { graph-content }", f"graph = `{graph_as_text}`", 1)
 
-    io_utils.write_text_file(template, output_file)
+    rasa.shared.utils.io.write_text_file(template, output_file)
 
 
 def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> int:

@@ -10,7 +10,6 @@ import scipy.sparse
 import numpy as np
 import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
-from rasa.utils.features import Features
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.domain import Domain
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -27,7 +26,8 @@ from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
-from rasa.nlu.constants import TEXT, ACTION_TEXT
+from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
+from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.utils.tensorflow.model_data import Data
 
@@ -314,7 +314,7 @@ class SklearnPolicy(Policy):
         )
 
         meta_file = os.path.join(path, "sklearn_policy.json")
-        meta = json.loads(io_utils.read_file(meta_file))
+        meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
         zero_state_features = io_utils.pickle_load(zero_features_filename)
 
         policy = cls(
