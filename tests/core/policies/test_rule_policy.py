@@ -113,7 +113,7 @@ def test_all_policy_attributes_are_persisted(tmpdir: Path):
         core_fallback_action_name=core_fallback_action_name,
         enable_fallback_prediction=enable_fallback_prediction,
     )
-    policy.persist(str(tmpdir))
+    policy.persist(tmpdir)
 
     persisted_policy = RulePolicy.load(tmpdir)
     assert persisted_policy.priority == priority
