@@ -356,6 +356,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     assert result.get("intent_evaluation")
 
 
+@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
