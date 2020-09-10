@@ -77,15 +77,24 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
 def action_for_index(
     index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> Optional["Action"]:
-    """Integer index corresponding to an actions index in the action list.
+    """Get an action based on its index in the list of available actions.
 
-    This method resolves the index to the actions name."""
+    Args:
+        index: The index of the action. This is usually used by `Policy`s as they
+            predict the action index instead of the name.
+        domain: The `Domain` of the current model. The domain contains the actions
+            provided by the user + the default actions.
+        action_endpoint: Can be used to run `custom_actions`
+            (e.g. using the `rasa-sdk`).
 
+    Returns:
+        The instantiated `Action` or `None` if no `Action` was found for the given
+        index.
+    """
     if domain.num_actions <= index or index < 0:
         raise IndexError(
-            "Cannot access action at index {}. "
-            "Domain has {} actions."
-            "".format(index, domain.num_actions)
+            f"Cannot access action at index {index}. "
+            f"Domain has {domain.num_actions} actions."
         )
 
     return action_for_name(domain.action_names[index], domain, action_endpoint)
@@ -94,7 +103,19 @@ def action_for_index(
 def action_for_name(
     action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> Optional["Action"]:
-    """Look up which action corresponds to this action name."""
+    """Create an `Action` object based on the name of the `Action`.
+
+    Args:
+        action_name: The name of the `Action`.
+        domain: The `Domain` of the current model. The domain contains the actions
+            provided by the user + the default actions.
+        action_endpoint: Can be used to run `custom_actions`
+            (e.g. using the `rasa-sdk`).
+
+    Returns:
+        The instantiated `Action` or `None` if no `Action` was found for the given
+        index.
+    """
 
     if action_name not in domain.action_names:
         domain.raise_action_not_found_exception(action_name)
