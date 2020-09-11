@@ -34,6 +34,20 @@ Get an action based on its index in the list of available actions.
   The instantiated `Action` or `None` if no `Action` was found for the given
   index.
 
+#### construct\_retrieval\_action\_names
+
+```python
+construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]
+```
+
+List names of all retrieval actions corresponding to passed retrieval intents.
+
+**Arguments**:
+
+- `retrieval_intents` - List of retrieval intents defined in the NLU training data.
+  
+- `Returns` - Names of corresponding retrieval actions
+
 #### action\_for\_name
 
 ```python
@@ -56,10 +70,32 @@ Create an `Action` object based on the name of the `Action`.
   The instantiated `Action` or `None` if no `Action` was found for the given
   index.
 
+#### is\_retrieval\_action
+
+```python
+is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool
+```
+
+Check if an action name is a retrieval action.
+
+The name for a retrieval action has an extra `utter_` prefix added to
+the corresponding retrieval intent name.
+
+**Arguments**:
+
+- `action_name` - Name of the action.
+- `retrieval_intents` - List of retrieval intents defined in the NLU training data.
+  
+
+**Returns**:
+
+  `True` if the resolved intent name is present in the list of retrieval
+  intents, `False` otherwise.
+
 #### action\_from\_name
 
 ```python
-action_from_name(name: Text, action_endpoint: Optional[EndpointConfig], user_actions: List[Text], should_use_form_action: bool = False) -> "Action"
+action_from_name(name: Text, action_endpoint: Optional[EndpointConfig], user_actions: List[Text], should_use_form_action: bool = False, retrieval_intents: Optional[List[Text]] = None) -> "Action"
 ```
 
 Return an action instance for the name.
@@ -112,22 +148,6 @@ Execute the side effects of this action.
 
 - `List[Event]` - A list of :class:`rasa.core.events.Event` instances
 
-## ActionRetrieveResponse Objects
-
-```python
-class ActionRetrieveResponse(Action)
-```
-
-An action which queries the Response Selector for the appropriate response.
-
-#### run
-
-```python
- | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain")
-```
-
-Query the appropriate response and create a bot utterance with that.
-
 ## ActionUtterTemplate Objects
 
 ```python
@@ -146,6 +166,40 @@ the `name` method.
 ```
 
 Simple run implementation uttering a (hopefully defined) template.
+
+## ActionRetrieveResponse Objects
+
+```python
+class ActionRetrieveResponse(ActionUtterTemplate)
+```
+
+An action which queries the Response Selector for the appropriate response.
+
+#### intent\_name\_from\_action
+
+```python
+ | @staticmethod
+ | intent_name_from_action(action_name: Text) -> Text
+```
+
+Resolve the name of the intent from the action name.
+
+#### action\_name\_from\_intent
+
+```python
+ | @staticmethod
+ | action_name_from_intent(intent_name: Text) -> Text
+```
+
+Resolve the action name from the name of the intent.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Query the appropriate response and create a bot utterance with that.
 
 ## ActionBack Objects
 

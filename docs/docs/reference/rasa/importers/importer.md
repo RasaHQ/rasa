@@ -135,9 +135,36 @@ class CombinedDataImporter(TrainingDataImporter)
 ```
 
 A `TrainingDataImporter` that combines multiple importers.
-
 Uses multiple `TrainingDataImporter` instances
 to load the data as if they were a single instance.
+
+## RetrievalModelsDataImporter Objects
+
+```python
+class RetrievalModelsDataImporter(TrainingDataImporter)
+```
+
+A `TrainingDataImporter` that sets up the data for training retrieval models.
+
+Synchronizes response templates between Domain and NLU
+and adds retrieval intent properties from the NLU training data
+back to the Domain.
+
+#### get\_domain
+
+```python
+ | async get_domain() -> Domain
+```
+
+Merge existing domain with properties of retrieval intents in NLU data.
+
+#### get\_nlu\_data
+
+```python
+ | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+```
+
+Update NLU data with response templates defined in the domain
 
 ## E2EImporter Objects
 

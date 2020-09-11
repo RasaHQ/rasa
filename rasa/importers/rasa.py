@@ -58,6 +58,10 @@ class RasaFileImporter(TrainingDataImporter):
 
     async def get_domain(self) -> Domain:
         domain = Domain.empty()
+
+        # If domain path is None, return an empty domain
+        if not self._domain_path:
+            return domain
         try:
             domain = Domain.load(self._domain_path)
             domain.check_missing_templates()

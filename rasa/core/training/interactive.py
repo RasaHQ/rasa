@@ -31,7 +31,6 @@ from rasa.shared.core.constants import (
     LOOP_VALIDATE,
     LOOP_REJECTED,
     REQUESTED_SLOT,
-    UTTER_PREFIX,
 )
 from rasa.core import run, train, utils
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
@@ -47,7 +46,7 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
 )
 import rasa.core.interpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID, UTTER_PREFIX
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (

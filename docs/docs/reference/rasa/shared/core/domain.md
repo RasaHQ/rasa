@@ -43,6 +43,15 @@ List attributes like ``intents`` and ``actions`` will be deduped
 and merged. Single attributes will be taken from `self` unless
 override is `True`, in which case they are taken from `domain`.
 
+#### retrieval\_intents
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | retrieval_intents() -> List[Text]
+```
+
+List retrieval intents present in the domain.
+
 #### collect\_intent\_properties
 
 ```python

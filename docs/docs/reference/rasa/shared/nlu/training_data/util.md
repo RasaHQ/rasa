@@ -26,6 +26,34 @@ are defined in `rasa.nlu.constants.PRETRAINED_EXTRACTORS`.
 
 - `example` - Serialised training example to inspect.
 
+#### intent\_response\_key\_to\_template\_key
+
+```python
+intent_response_key_to_template_key(intent_response_key: Text) -> Text
+```
+
+Resolve the response template key for a given intent response key.
+
+**Arguments**:
+
+- `intent_response_key` - retrieval intent with the response key suffix attached.
+  
+- `Returns` - The corresponding response template.
+
+#### template\_key\_to\_intent\_response\_key
+
+```python
+template_key_to_intent_response_key(template_key: Text) -> Text
+```
+
+Resolve the intent response key for the given response template.
+
+**Arguments**:
+
+- `template_key` - Name of the response template.
+  
+- `Returns` - The corresponding intent response key.
+
 #### encode\_string
 
 ```python
