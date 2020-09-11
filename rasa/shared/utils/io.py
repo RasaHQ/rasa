@@ -15,6 +15,7 @@ from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
 
 DEFAULT_ENCODING = "utf-8"
+YAML_VERSION = (1, 2)
 
 
 class bcolors:
@@ -253,9 +254,6 @@ def read_yaml(content: Text) -> Any:
 
 def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
-
-
-YAML_VERSION = (1, 2)
 
 
 def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
