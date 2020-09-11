@@ -53,8 +53,10 @@ import os
 import rasa.shared.nlu.training_data.loading
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
-from rasa.nlu.test import is_response_selector_present
+from rasa.nlu.test import is_response_selector_present, get_eval_data
 from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+from rasa.nlu import train
+from rasa.importers.importer import TrainingDataImporter
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -356,6 +358,49 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     assert result.get("intent_evaluation")
 
 
+async def test_eval_data(component_builder, tmpdir, project):
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", "epochs": 2},
+                {"name": "ResponseSelector", "epochs": 2},
+            ],
+            "language": "en",
+        }
+    )
+
+    config_path = os.path.join(project, "config.yml")
+    data_importer = TrainingDataImporter.load_nlu_importer_from_config(
+        config_path,
+        training_data_paths=[
+            "data/examples/rasa/demo-rasa.md",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+    )
+
+    (_, _, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data=data_importer,
+        component_builder=component_builder,
+        persist_nlu_training_data=True,
+    )
+
+    interpreter = Interpreter.load(persisted_path, component_builder)
+
+    data = await data_importer.get_nlu_data()
+    intent_results, response_selection_results, entity_results, = get_eval_data(
+        interpreter, data
+    )
+
+    assert len(intent_results) == 46
+    assert len(response_selection_results) == 46
+    assert len(entity_results) == 46
+
+
+@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"

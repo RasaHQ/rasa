@@ -202,6 +202,35 @@ nlu:
 In this case, the content of the `metadata` key is passed on to every intent example.
 
 
+If you want to specify [retrieval intents](glossary.mdx#retrieval-intent), then your NLU examples will look as follows:
+```yaml-rasa
+nlu:
+- intent: chitchat/ask_name
+  examples: |
+    - What is your name?
+    - May I know your name?
+    - What do people call you?
+    - Do you have a name for yourself?
+
+- intent: chitchat/ask_weather
+  examples: |
+    - What's the weather like today?
+    - Does it look sunny outside today?
+    - Oh, do you mind checking the weather for me please?
+    - I like sunny days in Berlin.
+```
+All retrieval intents have a suffix
+added to them which identifies a particular response key for your assistant, in the
+above example `ask_name` and `ask_weather` are the suffixes. The suffix is separated from
+the retrieval intent name by a `/` delimiter.
+
+:::note Special meaning of `/`
+As shown in the above examples, the `/` symbol is reserved as a delimiter to separate
+retrieval intents from their associated response keys. Make sure not to use it in the
+name of your intents.
+:::
+
+
 ### Entities
 
 [Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) based on a character pattern.
