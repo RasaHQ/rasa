@@ -440,7 +440,7 @@ response_selector_output.get("default")
 ### Core Featurization
 
 * `LabelTokenizerSingleStateFeaturizer` is deprecated.
-  Please use `SingleStateFeaturizer` with appropriate nlu pipeline.
+  Please use `SingleStateFeaturizer` with appropriate NLU pipeline.
   To replicate `LabelTokenizerSingleStateFeaturizer` functionality,
   add a `Tokenizer`  with `intent_tokenization_flag: True` and `CountVectorsFeaturizer`
   to the NLU pipeline. Please update your configuration file.
