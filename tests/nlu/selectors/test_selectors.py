@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import pytest
 
 from rasa.nlu import train
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import load_data
 from rasa.nlu.train import Trainer, Interpreter
@@ -137,11 +140,11 @@ def test_resolve_intent_response_key_from_label(
     )
 
 
-async def test_train_model_checkpointing(component_builder, tmpdir):
+async def test_train_model_checkpointing(component_builder: ComponentBuilder, tmpdir: Path):
     from pathlib import Path
 
     model_name = "rs-checkpointed-model"
-    best_model_file = Path(tmpdir.strpath, model_name)
+    best_model_file = Path(str(tmpdir), model_name)
     assert not best_model_file.exists()
 
     _config = RasaNLUModelConfig(
@@ -163,7 +166,7 @@ async def test_train_model_checkpointing(component_builder, tmpdir):
 
     await train(
         _config,
-        path=Path(tmpdir.strpath),
+        path=str(tmpdir),
         data="data/examples/rasa/response_selector",
         component_builder=component_builder,
         fixed_model_name=model_name,

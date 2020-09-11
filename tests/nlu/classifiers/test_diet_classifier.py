@@ -23,6 +23,7 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     BILOU_FLAG,
 )
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
@@ -369,11 +370,9 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
     assert len(all_files) == 3
 
 
-async def test_train_model_checkpointing(component_builder, tmpdir):
-    from pathlib import Path
-
+async def test_train_model_checkpointing(component_builder: ComponentBuilder, tmpdir: Path):
     model_name = "nlu-checkpointed-model"
-    best_model_file = Path(tmpdir.strpath, model_name)
+    best_model_file = Path(str(tmpdir), model_name)
     assert not best_model_file.exists()
 
     _config = RasaNLUModelConfig(
@@ -395,7 +394,7 @@ async def test_train_model_checkpointing(component_builder, tmpdir):
 
     await train(
         _config,
-        path=Path(tmpdir.strpath),
+        path=str(tmpdir),
         data="data/examples/rasa/demo-rasa.md",
         component_builder=component_builder,
         fixed_model_name=model_name,
