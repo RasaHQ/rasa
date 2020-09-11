@@ -4,9 +4,8 @@ sidebar_label: Contextual Conversations
 title: Contextual Conversations
 ---
 
-
-In a contextual conversation, your assistant considers more more just the last
-user message and responds differently based on the conversation history. 
+To create a context-aware conversational assistant, you will need to define
+how your assistant uses the conversation history to affect the next response.
 
 For example, if a user asks Sara, the Rasa bot, how to get started using Rasa,
 Sara gives the user
@@ -30,16 +29,15 @@ User: no
     Sara: Ok, which product would you like to know more about? Rasa Open Source or Rasa X?
 ```
 
-This page is a guide to achieving contextual conversation patterns. 
+This page is a guide on creating contextual conversation patterns using Rasa.
 
-## Concepts
+## Contextual Conversation Patterns
 
-### Stories
+### 1. Creating Stories
 
-While [rules](rules.mdx) are good at defining specific conversation turns, for a truly contextual
-assistant you need to include [stories](writing-stories.mdx). Stories are used to train the [`MemoizationPolicy`](policies.mdx#memoizationpolicy) and machine
+[Stories](./stories.mdx) are used to train the [`MemoizationPolicy`](policies.mdx#memoizationpolicy) and machine
 learning policies like the [`TEDPolicy`](policies.mdx#tedpolicy). For example, in order for Sara to respond differently for new users
-and users with previous experience, you'd need stories like this: 
+and users with previous experience, you'd need stories like this:
 
 
 ```yaml
@@ -69,17 +67,14 @@ stories:
 
 These stories diverge based on the users intent (`affirm` or `deny`). Using
 on the user's intent, an action sets a slot that further directs
-the conversation. See the next section to learn how to use slots for contextual conversations.
+the conversation.
 
-### Slots
+### 2. Defining Slots
 
 [Slots](domain.mdx#slots) are your assistant's memory. Slots store pieces of information that your
-assistant needs to refer to later, especially when you don't know how much later. 
-Slots can be automatically filled by entities of the 
-same name, or they can be filled by a custom action. For example, a custom action could retrieve
-information about a user from a database and store that in slots. Slots direct the flow of the conversation
+assistant needs to refer to later and can direct the flow of the conversation
 based on `slot_was_set` events. There are different [types of slots](domain.mdx#slot-types),
-and each affects the conversation flow in its own way. 
+and each affects the conversation flow in its own way.
 
 In the getting started example, the `onboarding` slot is a boolean slot. If it is true, the
 user is treated as a new user, and if it is false, as a user with previous bot building experience.
@@ -91,46 +86,17 @@ slots:
     type: bool
 ```
 
-
-### `max_history`
-
-Usually, only a certain amount of context is relevant to your assistant. 
-[`max_history`](policies.mdx#max-history) is a hyperparameter for Rasa dialogue management policies
-that controls how much dialogue history the model looks at to decide which
-action to take next. 
-
-You can set the `max_history` by passing it to your policy's `Featurizer`
-in the policy configuration yaml file, for example:
-
-```
-policies:
-  - name: "TEDPolicy"
-    featurizer:
-    - name: MaxHistoryTrackerFeaturizer
-      max_history: 5
-```
-
-You want to make sure `max_history` is set high enough
-to account for the most context your assistant will need to make an accurate 
-prediction about what to do next.
-For more details see the docs on [conversation featurization](policies.mdx#conversationfeaturization).
-
-### `TEDPolicy`
+### 3. Configuring the `TEDPolicy`
 
 In addition to adding stories to account for context,
 machine learning policies can help your model generalize
-to unseen conversation paths. These policies
-come in as an additional layer in your policy configuration,
-and only jump in if the user follows a path that you have not anticipated. **It is important
+to unseen conversation paths. **It is important
 to understand that using machine-learning policies does not mean letting go of control over your
 assistant.** If a rule based policy is able to make a prediction, that prediction will
-always have a higher priority (read more [here](./policies.mdx#action-selection)) and predict the next action. The
-machine-learning based policies give your assistant the chance not to fail, whereas if they are not
-used your assistant will definitely fail, like in state machine based dialogue systems.
+always have a higher priority (read more [here](./policies.mdx#action-selection)) and predict the next action.
 
-Unexpected user behaviors are something the [`TEDPolicy`](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) deals with
-very well. It can learn to bring the user back on track after some
-interjections during the main user goal the user is trying to complete. For example,
+The [`TEDPolicy`](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) is made to handle
+unexpected user behaviors. For example,
 in the conversation below (extracted from a conversation on [Rasa X](https://rasa.com/docs/rasa-x/user-guide/review-conversations/)):
 
 ```rasa-yaml
@@ -166,22 +132,46 @@ asks how they can get started with Rasa X. The `TEDPolicy` correctly predicts th
 Rasa X should be explained to the user, and then also takes them down the getting started
 path, without asking all the qualifying questions first.
 
-Since the machine-learning policy generalized well in this situation, it makes sense to add this story
+Because the machine-learning policy has generalized to this situation, you should add this story
 to your training data to continuously improve your bot and help the model generalize
 better in future. [Rasa X](https://rasa.com/docs/rasa-x/) is a tool that can help
 you improve your bot and make it more contextual.
 
-### Saving Real Conversations as Stories
+
+#### Setting `max_history`
+
+Usually, only a certain amount of context is relevant to your assistant.
+[`max_history`](policies.mdx#max-history) is a hyperparameter for Rasa dialogue management policies
+that controls how much dialogue history the model looks at to decide which
+action to take next.
+
+You can set the `max_history` by passing it to your policy's `Featurizer`
+in the policy configuration yaml file, for example:
+
+```
+policies:
+  - name: "TEDPolicy"
+    featurizer:
+    - name: MaxHistoryTrackerFeaturizer
+      max_history: 5
+```
+
+You want to make sure `max_history` is set high enough
+to account for the most context your assistant will need to make an accurate
+prediction about what to do next.
+For more details see the docs on [conversation featurization](policies.mdx#conversationfeaturization).
+
+### 4. Using Real Conversations as Stories
 
 It's difficult to know ahead of time exactly which conversation
-contexts the bot will encounter since your users will probably take conversation paths you didn't expect. 
-One of the best ways to improve your assistant's contextual skills 
+contexts the bot will encounter since your users will probably take conversation paths you didn't expect.
+One of the best ways to improve your assistant's contextual skills
 is to take real conversations as training data, after correcting where
 the bot went wrong if necessary. When doing so, pay attention
 to slot and entity values and make sure to [test your assistant](testing-your-assistant.mdx)
-thoroughly to make sure your changes don't introduce regressions. 
+thoroughly to make sure your changes don't introduce regressions.
 
-## Putting it all together
+## Summary
 
 Here's a summary of the concepts you can apply to enable your assistant to have contextual conversations:
 

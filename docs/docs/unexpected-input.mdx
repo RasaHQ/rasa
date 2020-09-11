@@ -12,50 +12,42 @@ that you have defined.  For example:
 and says "hi!"
 - A user asks "Why do you need to know that?" when the bot asks for their email address.
 
-This page is a guide on methods for handling unexpected input that is still within your bot's domain. 
+This page is a guide on methods for handling unexpected input that is still within your bot's domain.
 Depending on what kind of unexpected
 input you're trying to handle, some or all of the methods describe may be applicable for you. This guide
-is not about disambiguating user input or handling out-of-scope questions; for these cases see 
+is not about disambiguating user input or handling out-of-scope questions; for these cases see
 the guide on [fallback and human handoff](fallback-handoff.mdx)
 
 
-## Concepts
+## User Interjections
 
 There are two kinds of unexpected input: generic interjections, and contextual interjections.
-Generic interjections are interruptions that should always get the same response regardless of the 
+Generic interjections are interruptions that should always get the same response regardless of the
 conversation context. [FAQs and chitchat](#chitchat-faqs) are common generic interjections.
-A contextual interjection is one whose response depends on the conversation context. 
+A contextual interjection is one whose response depends on the conversation context.
 For example, if a user asks "Why do you need that?", the answer will depend on what the bot just
-asked for. 
+asked for.
 
-### When to Account for Interruptions
-
-The decision to handle unexpected user input should always come from reviewing
-real conversations. You should first build part of your assistant, test it with real users
-(whether that's your end user, or your colleague) and then add what's missing. You shouldn't
-try to implement every possible edge case that you think might happen, because in the end
-your users may never actually behave in that way.
-[Rasa X](https://rasa.com/docs/rasa-x/)
-is a tool that can help you review conversations and make these types of decisions.
-
-### `UserUtteranceReverted`
+### Reverting Utterances
 
 If you have generic interjections that should always have the same response no
-matter the context, you can define 
-short rules for the interjecting intents and the responses that should always be returned. 
+matter the context, you can define
+short rules for the interjecting intents and the responses that should always be returned.
 When combined with a forgetting mechanism, this won't affect your dialogue history either, so
 you won't need to write any stories or rules showing the interruption.
 
-For example, let's say you see users having conversations like the following one with
+Consider the following conversation a user may have with
 your assistant, where they write a greeting in the middle of a conversation -
 maybe because they were gone for a few minutes:
 
 <img alt="Greeting Interjection" src={useBaseUrl("/img/greet_interjection.png")} width="240" />
 
-The greet intent is a good example where we will always give the same response and
-yet we don't want the intent to affect the dialogue history. To do this, the response
-must be an action that returns the `UserUtteranceReverted()` event to remove the
-interaction from the dialogue history.
+
+In this example, we will always give the same response to the greet intent but don't want the
+intent to affect the dialogue history. To do this, the `UserUtteranceReverted()` event must be used
+to remove the interaction from the dialogue history. This can be implemented as follows:
+
+#### 1. Updating the configuration
 
 First, make sure the `RulePolicy` is in the policies section of your configuration file:
 
@@ -65,7 +57,10 @@ policies:
   - name: RulePolicy
 ```
 
-Next, we need to define `action_greet`. Add the following action to your `actions.py` file:
+#### 2. Defining a custom action
+
+Next, we need to define a custom action `action_greet`.
+Add the following action to your `actions.py` file:
 
 ```python
 from rasa_sdk import Action
@@ -84,9 +79,7 @@ def run(self, dispatcher, tracker, domain):
 
 This action will return the `utter_greet` response to the user, before removing the interaction from the dialogue history.
 
-## Data
-
-### Rules for Reverted Utterances
+#### 3. Creating a rule
 
 If you've defined an action that includes `UserUtteranceReverted`, you only
 need to add a single rule for it, since it won't affect the dialogue history:
@@ -103,22 +96,18 @@ You'll also need to add any responses your action runs to your domain:
 
 ```rasa-yaml
 responses:
-  utter_greet: Hi there! 
+  utter_greet: Hi there!
 ```
 
-### Stories for Interjections
 
-You can't revert every kind of interjection. In these cases,
-you need stories with interruptions in them. 
-
-#### Generic Interjections
+### Generic Interjections
 
 Generic interjections that aren't reverted should be added to stories wherever you see them occurring.
 
 If you're using the [`ResponseSelector`](components/selectors.mdx#responseselector)
 for any generic interjection intents, you'll only need to include one kind of interruption for each retrieval
 intent. For example, if you had an `faq` retrieval intent,
-to account for a user asking an FAQ in the middle of a form, you'd write a story like this:
+you can account for a user asking an FAQ in the middle of a form using the following story:
 
 ```
 stories:
@@ -137,13 +126,13 @@ stories:
 You can write similar stories for any other generic interruption intent and response,
 whether or not it's a retrieval intent.
 
-#### Contextual Interjections
+### Contextual Interjections
 
 Handling contextual interjections is similar to handling [contextual conversations](contextual-conversations.mdx)
-in general. 
+in general.
 
 One common case of contextual interjections is during slot filling for [form](forms.mdx), where the user
-asks “Why do you need to know that?” or "Can you explain that?". 
+asks “Why do you need to know that?” or "Can you explain that?".
 The response should differ for each slot. For example:
 
 <img alt="Contextual Interjection" src={useBaseUrl("/img/contextual_interjection.png")} width="240" />
@@ -166,7 +155,7 @@ slots:
 
 This means that the dialogue model will pay attention to the value of the slot when making a prediction
 (read more about other [featurized slots](./domain.mdx#slots), whereas
-unfeaturized slots are only used for storing information. 
+unfeaturized slots are only used for storing information.
 
 You can then write stories for specific responses to interruptions based on the value of `requested_slot`, for example:
 
@@ -175,7 +164,7 @@ stories:
 - story: email interruption
   steps:
   - active_loop: sales_form
-  - slot_was_set: 
+  - slot_was_set:
     - requested_slot: email
   - intent: ask_why_needed
   - action: utter_why_email
@@ -184,7 +173,7 @@ stories:
 - story: company interruption
   steps:
   - active_loop: sales_form
-  - slot_was_set: 
+  - slot_was_set:
     - requested_slot: company
   - intent: ask_why_needed
   - action: utter_why_company
@@ -192,10 +181,15 @@ stories:
 ```
 
 
-## Putting it all together
+## Summary
 
-How you handle unexpected input depends on whether the response should be 
+How you handle unexpected input depends on whether the response should be
 context sensitive or not.
+
+For reverting user utterances:
+  - [ ] Add the `RulePolicy` to your `config.yml`.
+  - [ ] Define a custom action that calls the `UserUtteranceReverted()` method.
+  - [ ] Define a rule for the intent that should be reverted.
 
 For generic interjections:
   - [ ] Define rules for single-turn interactions with actions that return the `UserUtteranceReverted` event
