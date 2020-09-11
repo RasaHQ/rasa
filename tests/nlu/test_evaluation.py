@@ -400,6 +400,7 @@ async def test_eval_data(component_builder, tmpdir, project):
     assert len(entity_results) == 46
 
 
+@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
