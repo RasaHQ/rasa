@@ -236,7 +236,7 @@ class RasaModel(tf.keras.models.Model):
 
             progress_bar.set_postfix(postfix_dict)
 
-        if self. checkpoint_model:
+        if self.checkpoint_model:
             logger.info(
                 f"The model of epoch {self.best_model_epoch} (out of {epochs} in total) will be stored!"
             )
