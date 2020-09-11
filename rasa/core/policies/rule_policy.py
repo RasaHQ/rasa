@@ -250,19 +250,19 @@ class RulePolicy(MemoizationPolicy):
         return lookup
 
     def _check_rule_restriction(self, rule_trackers):
-        bad_rules = []
+        rules_exceeding_max_user_turns = []
         for tracker in rule_trackers:
             number_of_user_uttered = sum(
                 isinstance(event, UserUttered) for event in tracker.events
             )
             if number_of_user_uttered > self.ALLOWED_NUMBER_OF_USER_INPUTS:
-                bad_rules.append(tracker.sender_id)
+                rules_exceeding_max_user_turns.append(tracker.sender_id)
 
-        if bad_rules:
+        if rules_exceeding_max_user_turns:
             raise InvalidRule(
-                f"Found rules '{', '.join(bad_rules)}' that contain more than "
-                f"{self.ALLOWED_NUMBER_OF_USER_INPUTS} user inputs. "
-                f"Rules are not meant to hardcode a state machine. "
+                f"Found rules '{', '.join(rules_exceeding_max_user_turns)}' "
+                f"that contain more than {self.ALLOWED_NUMBER_OF_USER_INPUTS} "
+                f"user inputs. Rules are not meant to hardcode a state machine. "
                 f"Please use stories for these cases."
             )
 
