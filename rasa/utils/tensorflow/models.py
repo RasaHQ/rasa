@@ -507,8 +507,8 @@ class RasaModel(tf.keras.models.Model):
     def _save_model_checkpoint(self, current_results: Dict[Text, Text], epoch: int
     ) -> None:
         if self.checkpoint_model and self._does_model_improve(current_results):
-            logger.debug(f"Creating model checkpoint at epoch={epoch}...")
-            self.best_model_epoch = epoch
+            logger.debug(f"Creating model checkpoint at epoch={epoch + 1}...")
+            self.best_model_epoch = epoch + 1
             self.save(self.best_model_file, overwrite=True)
 
     @staticmethod
