@@ -304,7 +304,7 @@ class RulePolicy(MemoizationPolicy):
 
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
         return (
-            f"Action '{gold_action_name}' in {tracker_type} "
+            f"- Action '{gold_action_name}' in {tracker_type} "
             f"'{tracker.sender_id}' was predicted incorrectly by "
             f"the {self.__class__.__name__} as action "
             f"'{predicted_action_name}'."
@@ -361,6 +361,9 @@ class RulePolicy(MemoizationPolicy):
 
         logger.setLevel(logger_level)  # reset logger level
         if error_messages:
+            # insert empty string, so that a list of errors look nice,
+            # when they are joined with newline
+            error_messages.insert(0, "")
             error_messages.append(
                 "Please update your stories and rules so that "
                 "they don't contradict each other."
