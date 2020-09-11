@@ -333,7 +333,6 @@ class RulePolicy(MemoizationPolicy):
             # the first action is always unpredictable
             next_action_is_unpredictable = True
             for event in tracker.applied_events():
-                # do not run prediction on unpredictable actions
                 if not isinstance(event, ActionExecuted):
                     running_tracker.update(event)
                     continue
@@ -345,6 +344,7 @@ class RulePolicy(MemoizationPolicy):
                     # do not add RULE_SNIPPET_ACTION_NAME event
                     continue
 
+                # do not run prediction on unpredictable actions
                 if next_action_is_unpredictable or event.unpredictable:
                     next_action_is_unpredictable = False  # reset unpredictability
                     running_tracker.update(event)
