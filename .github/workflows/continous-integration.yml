@@ -135,12 +135,12 @@ jobs:
     - name: Get Poetry virtual environment path
       id: poetry-venv
       run: |
-        echo "::set-output name=dir::$(poetry config virtualenvs.path)"
+        echo "::set-output name=dir::$(poetry env info --path)"
 
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
-        path: ~/.cache/pypoetry/virtualenvs
+        path: ${{ steps.poetry-venv.outputs.dir }}
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
