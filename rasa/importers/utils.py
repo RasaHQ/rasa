@@ -1,7 +1,7 @@
 from typing import Iterable, Text, Optional, Dict, List
 
-from rasa.core.domain import Domain
-from rasa.core.training.structures import StoryGraph
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
@@ -20,7 +20,7 @@ async def story_graph_from_paths(
     exclusion_percentage: Optional[int] = None,
 ) -> StoryGraph:
 
-    from rasa.core.training import loading
+    from rasa.shared.core.training_data import loading
 
     story_steps = await loading.load_data_from_files(
         files, domain, template_variables, use_e2e, exclusion_percentage

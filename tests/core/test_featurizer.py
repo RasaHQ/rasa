@@ -1,11 +1,11 @@
 from typing import Text
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 import numpy as np
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, ENTITIES, TEXT, INTENT
-from rasa.core.constants import SLOTS, ACTIVE_LOOP
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
+from rasa.shared.nlu.interpreter import RegexInterpreter
 import scipy.sparse
 
 
@@ -113,8 +113,6 @@ def test_single_state_featurizer_correctly_encodes_non_existing_value():
 
 
 def test_single_state_featurizer_creates_encoded_all_actions():
-    from rasa.core.actions.action import default_action_names
-
     domain = Domain(
         intents=[],
         entities=[],

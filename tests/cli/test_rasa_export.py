@@ -1,18 +1,17 @@
 import argparse
 from pathlib import Path
-from typing import Callable, Optional, Dict, Text, List, Tuple, Any
+from typing import Callable, Optional, Dict, Text, List, Tuple
 from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
-from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
 import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
 from rasa.core.brokers.pika import PikaEventBroker
-from rasa.core.events import UserUttered
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.exceptions import PublishingError, NoEventsToMigrateError
 from tests.conftest import (
     MockExporter,

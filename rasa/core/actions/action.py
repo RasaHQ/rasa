@@ -8,27 +8,32 @@ import random
 import aiohttp
 
 import rasa.core
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.shared.constants import DOCS_BASE_URL
-from rasa.core import events
-from rasa.core.constants import (
-    DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT,
-    USER_INTENT_OUT_OF_SCOPE,
-    UTTER_PREFIX,
-    RESPOND_PREFIX,
-)
+from rasa.shared.core import events
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT, RESPOND_PREFIX
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     INTENT_RANKING_KEY,
-    INTENT_NAME_KEY,
 )
-from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY
-
-from rasa.core.events import (
+from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.core.constants import (
+    USER_INTENT_OUT_OF_SCOPE,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_DEACTIVATE_FORM_NAME,
+    ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_BACK_NAME,
+    REQUESTED_SLOT,
+    UTTER_PREFIX,
+)
+from rasa.shared.nlu.constants import INTENT_RESPONSE_KEY, INTENT_NAME_KEY
+from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
     ActionExecuted,
@@ -40,34 +45,14 @@ from rasa.core.events import (
     SessionStarted,
 )
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from rasa.shared.core.domain import Domain
 
 if typing.TYPE_CHECKING:
-    from rasa.core.trackers import DialogueStateTracker
-    from rasa.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
 
 logger = logging.getLogger(__name__)
-
-ACTION_LISTEN_NAME = "action_listen"
-
-ACTION_RESTART_NAME = "action_restart"
-
-ACTION_SESSION_START_NAME = "action_session_start"
-
-ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
-
-ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
-
-ACTION_REVERT_FALLBACK_EVENTS_NAME = "action_revert_fallback_events"
-
-ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
-
-ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
-
-ACTION_BACK_NAME = "action_back"
-
-RULE_SNIPPET_ACTION_NAME = "..."
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -88,32 +73,62 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     ]
 
 
-def default_action_names() -> List[Text]:
-    """List default action names."""
-    return [a.name() for a in default_actions()] + [RULE_SNIPPET_ACTION_NAME]
+def action_for_index(
+    index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
+) -> "Action":
+    """Get an action based on its index in the list of available actions.
+
+    Args:
+        index: The index of the action. This is usually used by `Policy`s as they
+            predict the action index instead of the name.
+        domain: The `Domain` of the current model. The domain contains the actions
+            provided by the user + the default actions.
+        action_endpoint: Can be used to run `custom_actions`
+            (e.g. using the `rasa-sdk`).
+
+    Returns:
+        The instantiated `Action` or `None` if no `Action` was found for the given
+        index.
+    """
+    if domain.num_actions <= index or index < 0:
+        raise IndexError(
+            f"Cannot access action at index {index}. "
+            f"Domain has {domain.num_actions} actions."
+        )
+
+    return action_for_name(domain.action_names[index], domain, action_endpoint)
 
 
-def combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
-    # remove all user actions that overwrite default actions
-    # this logic is a bit reversed, you'd think that we should remove
-    # the action name from the default action names if the user overwrites
-    # the action, but there are some locations in the code where we
-    # implicitly assume that e.g. "action_listen" is always at location
-    # 0 in this array. to keep it that way, we remove the duplicate
-    # action names from the users list instead of the defaults
-    defaults = default_action_names()
-    unique_user_actions = [a for a in user_actions if a not in defaults]
-    return defaults + unique_user_actions
+def action_for_name(
+    action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+) -> "Action":
+    """Create an `Action` object based on the name of the `Action`.
 
+    Args:
+        action_name: The name of the `Action`.
+        domain: The `Domain` of the current model. The domain contains the actions
+            provided by the user + the default actions.
+        action_endpoint: Can be used to run `custom_actions`
+            (e.g. using the `rasa-sdk`).
 
-def combine_with_templates(
-    actions: List[Text], templates: Dict[Text, Any]
-) -> List[Text]:
-    """Combines actions with utter actions listed in responses section."""
-    unique_template_names = [
-        a for a in sorted(list(templates.keys())) if a not in actions
-    ]
-    return actions + unique_template_names
+    Returns:
+        The instantiated `Action` or `None` if no `Action` was found for the given
+        index.
+    """
+
+    if action_name not in domain.action_names:
+        domain.raise_action_not_found_exception(action_name)
+
+    should_use_form_action = (
+        action_name in domain.form_names and domain.slot_mapping_for_form(action_name)
+    )
+
+    return action_from_name(
+        action_name,
+        action_endpoint,
+        domain.user_actions_and_forms,
+        should_use_form_action,
+    )
 
 
 def action_from_name(
@@ -138,18 +153,6 @@ def action_from_name(
         return FormAction(name, action_endpoint)
     else:
         return RemoteAction(name, action_endpoint)
-
-
-def actions_from_names(
-    action_names: List[Text],
-    action_endpoint: Optional[EndpointConfig],
-    user_actions: List[Text],
-) -> List["Action"]:
-    """Converts the names of actions into class instances."""
-
-    return [
-        action_from_name(name, action_endpoint, user_actions) for name in action_names
-    ]
 
 
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
@@ -467,7 +470,7 @@ class RemoteAction(Action):
         self, tracker: "DialogueStateTracker", domain: "Domain"
     ) -> Dict[Text, Any]:
         """Create the request json send to the action server."""
-        from rasa.core.trackers import EventVerbosity
+        from rasa.shared.core.trackers import EventVerbosity
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 

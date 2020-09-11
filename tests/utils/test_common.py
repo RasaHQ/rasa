@@ -6,19 +6,9 @@ import pytest
 from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.utils.common import (
     raise_deprecation_warning,
-    sort_list_of_dicts_by_first_key,
     transform_collection_to_sentence,
     RepeatedLogFilter,
 )
-
-
-def test_sort_dicts_by_keys():
-    test_data = [{"Z": 1}, {"A": 10}]
-
-    expected = [{"A": 10}, {"Z": 1}]
-    actual = sort_list_of_dicts_by_first_key(test_data)
-
-    assert actual == expected
 
 
 @pytest.mark.parametrize(

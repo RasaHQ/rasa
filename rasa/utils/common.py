@@ -8,12 +8,11 @@ from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
 import rasa.core.utils
 import rasa.utils.io
 from rasa.constants import (
-    DEFAULT_LOG_LEVEL,
     DEFAULT_LOG_LEVEL_LIBRARIES,
-    ENV_LOG_LEVEL,
     ENV_LOG_LEVEL_LIBRARIES,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
+from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -183,13 +182,6 @@ def obtain_verbosity() -> int:
         verbosity = 1
 
     return verbosity
-
-
-def is_logging_disabled() -> bool:
-    """Returns true, if log level is set to WARNING or ERROR, false otherwise."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
-    return log_level == "ERROR" or log_level == "WARNING"
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
