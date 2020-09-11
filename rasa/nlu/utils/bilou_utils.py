@@ -1,5 +1,5 @@
 import logging
-from collections import defaultdict
+from collections import defaultdict, Counter
 from typing import List, Tuple, Text, Optional, Dict, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -286,14 +286,10 @@ def ensure_consistent_bilou_tagging(
             # we need to check what tag we should use depending on the confidence
             # values and update the tags and confidences accordingly
             if not all(relevant_tags[0] == tag for tag in relevant_tags):
-                avg_confidence_per_tag = _avg_confidence_per_tag(
-                    relevant_tags, relevant_confidences
-                )
+                # decide which tag this entity should use
+                tag, avg_confidence = _tag_to_use(relevant_tags, relevant_confidences)
 
-                # the entity should have the tag with the highest average confidence
-                tag = max(avg_confidence_per_tag, key=avg_confidence_per_tag.get)
-                avg_confidence = avg_confidence_per_tag[tag]
-
+                # all tags that change get the avg confidence of that tag assigned
                 predicted_confidences = _update_confidences(
                     predicted_confidences,
                     predicted_tags,
@@ -316,6 +312,49 @@ def ensure_consistent_bilou_tagging(
                     predicted_tags[i] = f"{INSIDE}{tag}"
 
     return predicted_tags, predicted_confidences
+
+
+def _tag_to_use(
+    relevant_tags: List[Text], relevant_confidences: List[float]
+) -> Tuple[Text, float]:
+    """Decide what tag to use according to the following metric:
+
+    Calculate the average confidence per tag.
+    Calculate the percentage of tokens assigned to a tag within the entity per tag.
+    The harmonic mean of those two metrics is the score for the tag.
+    The tag with the highest score is taken as the tag for the entity.
+
+    Args:
+        relevant_tags: The tags of the entity.
+        relevant_confidences: The confidence values.
+
+    Returns:
+        The tag to use. The average confidence value of that tag.
+    """
+    # Calculate the average confidence per tag.
+    avg_confidence_per_tag = _avg_confidence_per_tag(
+        relevant_tags, relevant_confidences
+    )
+    # Calculate the percentage of tokens assigned to a tag per tag.
+    token_percentage_per_tag = Counter(relevant_tags)
+    for tag, count in token_percentage_per_tag.items():
+        token_percentage_per_tag[tag] = round(count / len(relevant_tags), 2)
+
+    # Calculate the harmonic mean between the two metrics per tag.
+    score_per_tag = {}
+    for tag, token_percentage in token_percentage_per_tag.items():
+        avg_confidence = avg_confidence_per_tag[tag]
+        score_per_tag[tag] = (
+            2
+            * (avg_confidence * token_percentage)
+            / (avg_confidence + token_percentage)
+        )
+
+    # Take the tag with the highest score as the tag for the entity
+    tag = max(score_per_tag, key=score_per_tag.get)
+    avg_confidence = avg_confidence_per_tag[tag]
+
+    return tag, avg_confidence
 
 
 def _update_confidences(

@@ -176,6 +176,13 @@ def test_apply_bilou_schema():
             "B- tag, L- tag pair encloses multiple entity classes",
         ),
         (
+            ["O", "B-person", "I-location", "L-location"],
+            [0.99, 0.99, 0.77, 0.77],
+            ["O", "B-location", "I-location", "L-location"],
+            [0.99, 0.77, 0.77, 0.77],
+            "B- tag, L- tag pair encloses multiple entity classes",
+        ),
+        (
             ["O", "B-person", "I-location", "L-location", "B-person", "L-person"],
             [0.99, 0.78, 0.93, 0.96, 0.93, 0.96],
             ["O", "B-location", "I-location", "L-location", "B-person", "L-person"],
