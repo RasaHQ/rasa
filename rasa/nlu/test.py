@@ -35,7 +35,6 @@ from rasa.nlu.constants import (
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
-    RESPONSE,
     INTENT_RESPONSE_KEY,
     ENTITIES,
     EXTRACTOR,
@@ -1288,9 +1287,9 @@ def get_eval_data(
     intent_results, entity_results, response_selection_results = [], [], []
 
     response_labels = [
-        e.get(RESPONSE)
+        e.get(INTENT_RESPONSE_KEY)
         for e in test_data.intent_examples
-        if e.get(RESPONSE) is not None
+        if e.get(INTENT_RESPONSE_KEY) is not None
     ]
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
     should_eval_intents = (
