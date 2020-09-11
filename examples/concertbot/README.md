@@ -8,7 +8,7 @@ This example contains some training data and the main files needed to build an
 assistant on your local machine. The `concertbot` consists of the following files:
 
 - **data/stories.md** contains training stories for the Core model  
-- **actions.py** contains some custom actions
+- **actions/actions.py** contains some custom actions
 - **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant  
 - **endpoints.yml** contains the webhook configuration for the custom actions 

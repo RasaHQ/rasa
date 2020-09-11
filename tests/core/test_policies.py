@@ -6,42 +6,37 @@ import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.core.actions.action import (
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_LISTEN_NAME,
-    ActionRevertFallbackEvents,
-    ACTION_RESTART_NAME,
-    ACTION_BACK_NAME,
-)
-from rasa.core.constants import (
+import rasa.core.actions.action
+from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
+from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_BACK_NAME,
     PREVIOUS_ACTION,
     USER,
 )
-from rasa.nlu.constants import INTENT, ACTION_NAME, ENTITIES
-from rasa.core.channels.channel import UserMessage
-from rasa.core.domain import Domain, State
-from rasa.core.events import ActionExecuted, ConversationPaused
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.events import ActionExecuted, ConversationPaused
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    FullDialogueTrackerFeaturizer,
-)
-from rasa.core.interpreter import RegexInterpreter
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import SupportedData, Policy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.core.policies.ted_policy import TEDPolicy, MASK
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     RANKING_LENGTH,
@@ -51,11 +46,6 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SENTENCE,
-    LABEL,
-    EVAL_NUM_EPOCHS,
-    EPOCHS,
-    CHECKPOINT_MODEL,
 )
 from rasa.train import train_core
 from rasa.utils import train_utils
@@ -106,8 +96,8 @@ class PolicyTestCollection:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     @pytest.fixture(scope="module")
-    def tracker(self, default_domain):
-        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID, default_domain.slots)
+    def tracker(self, default_domain: Domain) -> DialogueStateTracker:
+        return DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
 
     @pytest.fixture(scope="module")
     async def trained_policy(self, featurizer, priority):
@@ -146,9 +136,7 @@ class PolicyTestCollection:
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
-        tracker = DialogueStateTracker(
-            UserMessage.DEFAULT_SENDER_ID, default_domain.slots
-        )
+        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
         )
@@ -250,13 +238,11 @@ class TestSklearnPolicy(PolicyTestCollection):
         classes = [1, 3]
         new_trackers = []
         for tr in trackers:
-            new_tracker = DialogueStateTracker(
-                UserMessage.DEFAULT_SENDER_ID, default_domain.slots
-            )
+            new_tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
-                    new_action = default_domain.action_for_index(
-                        np.random.choice(classes), action_endpoint=None
+                    new_action = rasa.core.actions.action.action_for_index(
+                        np.random.choice(classes), default_domain, action_endpoint=None
                     ).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
@@ -750,14 +736,12 @@ class TestMappingPolicy(PolicyTestCollection):
         assert loaded.featurizer is None
 
     @pytest.fixture(scope="module")
-    def domain_with_mapping(self):
+    def domain_with_mapping(self) -> Domain:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_MAPPING)
 
     @pytest.fixture
-    def tracker(self, domain_with_mapping):
-        return DialogueStateTracker(
-            UserMessage.DEFAULT_SENDER_ID, domain_with_mapping.slots
-        )
+    def tracker(self, domain_with_mapping: Domain) -> DialogueStateTracker:
+        return DialogueStateTracker(DEFAULT_SENDER_ID, domain_with_mapping.slots)
 
     @pytest.fixture(
         params=[
@@ -887,7 +871,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     @staticmethod
     async def _get_tracker_after_reverts(events, channel, nlg, domain):
         tracker = get_tracker(events)
-        action = ActionRevertFallbackEvents()
+        action = rasa.core.actions.action.ActionRevertFallbackEvents()
         events += await action.run(channel, nlg, tracker, domain)
 
         return get_tracker(events)

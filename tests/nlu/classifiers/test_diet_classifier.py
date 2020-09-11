@@ -4,12 +4,16 @@ import numpy as np
 import pytest
 from unittest.mock import Mock
 
-from rasa.nlu.constants import FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
-from rasa.utils.features import Features
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     RANDOM_SEED,
@@ -26,7 +30,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils import train_utils
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.nlu.conftest import DEFAULT_DATA_PATH
@@ -234,10 +238,7 @@ async def test_softmax_normalization(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
-        _config,
-        path=str(tmp_path),
-        data=data_path,
-        component_builder=component_builder,
+        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 

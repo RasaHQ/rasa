@@ -25,21 +25,21 @@ from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
-from rasa.nlu.constants import (
-    INTENT,
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import (
     TEXT,
-    ENTITIES,
+    INTENT,
     INTENT_RESPONSE_KEY,
-    NO_ENTITY_TAG,
-    TOKENS_NAMES,
+    ENTITIES,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -909,7 +909,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir = Path(model_dir)
         tf_model_file = model_dir / f"{file_name}.tf_model"
 
-        io_utils.create_directory_for_file(tf_model_file)
+        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
         if self.model.checkpoint_model:
             self.model.copy_best(str(tf_model_file))
@@ -932,7 +932,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if self._entity_tag_specs
             else []
         )
-        io_utils.dump_obj_as_json_to_file(
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
             model_dir / f"{file_name}.entity_tag_specs.json", entity_tag_specs
         )
 
@@ -990,7 +990,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         index_label_id_mapping = io_utils.json_unpickle(
             model_dir / f"{file_name}.index_label_id_mapping.json"
         )
-        entity_tag_specs = io_utils.read_json_file(
+        entity_tag_specs = rasa.shared.utils.io.read_json_file(
             model_dir / f"{file_name}.entity_tag_specs.json"
         )
         entity_tag_specs = [

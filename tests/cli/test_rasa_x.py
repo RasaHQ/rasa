@@ -7,6 +7,7 @@ from _pytest.pytester import RunResult
 
 from aioresponses import aioresponses
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
@@ -37,7 +38,7 @@ def test_x_help(run: Callable[..., RunResult]):
 def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):
     credentials_path = str(tmpdir / "credentials.yml")
 
-    io_utils.write_yaml({}, credentials_path)
+    rasa.shared.utils.io.write_yaml({}, credentials_path)
 
     tmp_credentials = x._prepare_credentials_for_rasa_x(
         credentials_path, "http://localhost:5002"
@@ -55,7 +56,7 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path):
         "rasa": {"url": "my-custom-url"},
         "another-channel": {"url": "some-url"},
     }
-    io_utils.write_yaml(credentials, credentials_path)
+    rasa.shared.utils.io.write_yaml(credentials, credentials_path)
 
     x._prepare_credentials_for_rasa_x(credentials_path)
 
@@ -149,5 +150,5 @@ async def test_pull_runtime_config_from_server():
             config_url, 1, 0
         )
 
-        assert io_utils.read_file(endpoints_path) == endpoint_config
-        assert io_utils.read_file(credentials_path) == credentials
+        assert rasa.shared.utils.io.read_file(endpoints_path) == endpoint_config
+        assert rasa.shared.utils.io.read_file(credentials_path) == credentials

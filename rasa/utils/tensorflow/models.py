@@ -21,7 +21,7 @@ from typing import (
 
 from tqdm import tqdm
 from rasa.constants import CHECKPOINT_MODEL_NAME
-from rasa.utils.common import is_logging_disabled
+from rasa.shared.utils.io import is_logging_disabled
 import rasa.utils.io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
