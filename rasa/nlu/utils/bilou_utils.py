@@ -370,7 +370,7 @@ def _find_bilou_end(start_idx: int, predicted_tags: List[Text]) -> int:
     """Find the last index of the entity.
 
     The start index is pointing to a B- tag. The entity is closed as soon as we find
-    a new L- tag or a O tag.
+    a L- tag or a O tag.
 
     Args:
         start_idx: The start index of the entity
