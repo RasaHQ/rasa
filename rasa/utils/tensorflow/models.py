@@ -234,23 +234,6 @@ class RasaModel(tf.keras.models.Model):
 
             progress_bar.set_postfix(postfix_dict)
 
-        # Checkpoint the model one last time after training
-        if evaluate_on_num_examples > 0 and self.checkpoint_model:
-            epoch_batch_size = self.linearly_increasing_batch_size(
-                epochs, batch_size, epochs
-            )
-            self._batch_loop(
-                evaluation_dataset_function,
-                tf_evaluation_on_batch_function,
-                epoch_batch_size,
-                False,
-                training_steps,
-                self.test_summary_writer,
-            )
-
-            val_results = self._get_metric_results(prefix="val_")
-            self._save_model_checkpoint(current_results=val_results, epoch=epochs)
-
         if self.best_model_epoch >= 0:
             logger.info(
                 f"The model of epoch {self.best_model_epoch} (out of {epochs} in total) will be stored!"
