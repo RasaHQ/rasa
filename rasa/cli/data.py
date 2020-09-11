@@ -289,7 +289,9 @@ def _convert_to_yaml(
                     num_of_files_converted += 1
 
     if num_of_files_converted:
-        cli_utils.print_info(f"Converted {num_of_files_converted} file(s), saved in '{output}'.")
+        cli_utils.print_info(
+            f"Converted {num_of_files_converted} file(s), saved in '{output}'."
+        )
     else:
         cli_utils.print_warning(
             f"Didn't convert any files under '{training_data}' path. "
