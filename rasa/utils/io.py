@@ -11,8 +11,8 @@ from io import BytesIO as IOReader
 from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
 
-from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
-from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file, read_yaml
+import rasa.shared.constants
+import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
@@ -21,7 +21,9 @@ if TYPE_CHECKING:
 def configure_colored_logging(loglevel: Text) -> None:
     import coloredlogs
 
-    loglevel = loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+    loglevel = loglevel or os.environ.get(
+        rasa.shared.constants.ENV_LOG_LEVEL, rasa.shared.constants.DEFAULT_LOG_LEVEL
+    )
 
     field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
     field_styles["asctime"] = {}
@@ -84,7 +86,7 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
     Args:
         filename: The path to the file which should be read.
     """
-    content = read_yaml(read_file(filename))
+    content = rasa.shared.utils.io.read_yaml(rasa.shared.utils.io.read_file(filename))
 
     if content is None:
         return {}
@@ -130,7 +132,7 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
 
     mode defines NamedTemporaryFile's  mode parameter in py3."""
 
-    encoding = None if "b" in mode else DEFAULT_ENCODING
+    encoding = None if "b" in mode else rasa.shared.utils.io.DEFAULT_ENCODING
     f = tempfile.NamedTemporaryFile(
         mode=mode, suffix=suffix, delete=False, encoding=encoding
     )
@@ -223,7 +225,7 @@ def json_unpickle(file_name: Union[Text, Path]) -> Any:
 
     jsonpickle_numpy.register_handlers()
 
-    file_content = read_file(file_name)
+    file_content = rasa.shared.utils.io.read_file(file_name)
     return jsonpickle.loads(file_content)
 
 
@@ -239,4 +241,4 @@ def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
 
     jsonpickle_numpy.register_handlers()
 
-    write_text_file(jsonpickle.dumps(obj), file_name)
+    rasa.shared.utils.io.write_text_file(jsonpickle.dumps(obj), file_name)
