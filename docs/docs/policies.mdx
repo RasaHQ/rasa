@@ -382,6 +382,16 @@ for details.
 The `Rule Policy` is a policy that handles conversation parts that follow
 a fixed behavior. Please see [Rules](./rules.mdx) for further information.
 
+You can remove rule restriction and check for contradictions by setting the following
+parameters in your configuration:
+```yaml title="config.yml"
+policies:
+  - name: "RulePolicy"
+    restrict_rules: false
+    check_for_contradictions: false
+```
+
+
 ## Memoization Policy
 
 The `MemoizationPolicy` remembers the stories from your
