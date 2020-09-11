@@ -209,8 +209,8 @@ def test_rasa_data_convert_stories_to_yaml(
     )
 
     assert filecmp.cmp(
-        Path(converted_data_folder) / "stories_converted.yml",
-        Path(converted_single_file_folder) / "stories_converted.yml",
+        Path(converted_data_folder) / "stories.yml",
+        Path(converted_single_file_folder) / "stories.yml",
     )
 
 
