@@ -102,11 +102,3 @@ payload_from_button_question(button_question: "Question") -> Text
 
 Prompt user with a button question and returns the nlu payload.
 
-#### print\_error\_and\_exit
-
-```python
-print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn
-```
-
-Print error message and exit the application.
-

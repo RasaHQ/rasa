@@ -34,20 +34,6 @@ Get an action based on its index in the list of available actions.
   The instantiated `Action` or `None` if no `Action` was found for the given
   index.
 
-#### construct\_retrieval\_action\_names
-
-```python
-construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]
-```
-
-List names of all retrieval actions corresponding to passed retrieval intents.
-
-**Arguments**:
-
-- `retrieval_intents` - List of retrieval intents defined in the NLU training data.
-  
-- `Returns` - Names of corresponding retrieval actions
-
 #### action\_for\_name
 
 ```python

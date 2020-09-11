@@ -39,6 +39,7 @@
                 "reference/rasa/shared/utils/pykwalify_extensions",
                 "reference/rasa/shared/utils/io",
                 "reference/rasa/shared/utils/validation",
+                "reference/rasa/shared/utils/cli",
                 "reference/rasa/shared/utils/common"
               ],
               "label": "rasa.shared.utils",
@@ -122,6 +123,16 @@
                 }
               ],
               "label": "rasa.shared.nlu",
+              "type": "category"
+            },
+            {
+              "items": [
+                "reference/rasa/shared/importers/multi_project",
+                "reference/rasa/shared/importers/importer",
+                "reference/rasa/shared/importers/rasa",
+                "reference/rasa/shared/importers/autoconfig"
+              ],
+              "label": "rasa.shared.importers",
               "type": "category"
             }
           ],
@@ -381,16 +392,6 @@
             }
           ],
           "label": "rasa.nlu",
-          "type": "category"
-        },
-        {
-          "items": [
-            "reference/rasa/importers/multi_project",
-            "reference/rasa/importers/importer",
-            "reference/rasa/importers/rasa",
-            "reference/rasa/importers/autoconfig"
-          ],
-          "label": "rasa.importers",
           "type": "category"
         }
       ],

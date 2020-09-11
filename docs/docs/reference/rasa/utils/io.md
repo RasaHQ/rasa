@@ -30,18 +30,6 @@ Loads an object from a file.
   
 - `Returns` - the loaded object
 
-#### read\_config\_file
-
-```python
-read_config_file(filename: Text) -> Dict[Text, Any]
-```
-
-Parses a yaml configuration file. Content needs to be a dictionary
-
-**Arguments**:
-
-- `filename` - The path to the file which should be read.
-
 #### unarchive
 
 ```python

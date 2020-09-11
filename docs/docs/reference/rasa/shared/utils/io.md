@@ -210,3 +210,15 @@ Thin wrapper around `raise_warning()` to raise a deprecation warning. It require
 a version until which we&#x27;ll warn, and after which the support for the feature will
 be removed.
 
+#### read\_config\_file
+
+```python
+read_config_file(filename: Text) -> Dict[Text, Any]
+```
+
+Parses a yaml configuration file. Content needs to be a dictionary
+
+**Arguments**:
+
+- `filename` - The path to the file which should be read.
+

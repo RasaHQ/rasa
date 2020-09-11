@@ -6,14 +6,14 @@ from typing import Text, Optional, List, Union, Dict
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.model import FingerprintComparisonResult
 from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.cli.utils import print_success, print_warning, print_error, print_color
+from rasa.shared.utils.cli import print_color, print_success, print_warning, print_error
 import rasa.shared.utils.io
 from rasa.constants import (
     DEFAULT_MODELS_PATH,

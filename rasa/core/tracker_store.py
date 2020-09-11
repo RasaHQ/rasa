@@ -21,6 +21,7 @@ from typing import (
 
 from boto3.dynamodb.conditions import Key
 import rasa.core.utils as core_utils
+import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
@@ -833,7 +834,7 @@ class SQLTrackerStore(TrackerStore):
             ensure_schema_exists(session)
             yield session
         except ValueError as e:
-            rasa_cli_utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 f"Requested PostgreSQL schema '{e}' was not found in the database. To "
                 f"continue, please create the schema by running 'CREATE DATABASE {e};' "
                 f"or unset the '{POSTGRESQL_SCHEMA}' environment variable in order to "
@@ -1095,7 +1096,7 @@ def _load_from_module_name_in_endpoint_config(
         tracker_store_class = rasa.shared.utils.common.class_from_module_path(
             store.type
         )
-        init_args = common_utils.arguments_of(tracker_store_class.__init__)
+        init_args = rasa.shared.utils.common.arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
             # DEPRECATION EXCEPTION - remove in 2.1
             raise Exception(

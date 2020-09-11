@@ -10,7 +10,7 @@ from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io

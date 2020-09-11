@@ -56,7 +56,7 @@ from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present, get_eval_data
 from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
 from rasa.nlu import train
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it

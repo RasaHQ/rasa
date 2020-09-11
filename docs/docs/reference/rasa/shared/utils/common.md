@@ -49,3 +49,47 @@ The result gets stored in a local var. Computation of the property
 will happen once, on the first call of the property. All
 succeeding calls will use the value stored in the private property.
 
+#### transform\_collection\_to\_sentence
+
+```python
+transform_collection_to_sentence(collection: Collection[Text]) -> Text
+```
+
+Transforms e.g. a list like [&#x27;A&#x27;, &#x27;B&#x27;, &#x27;C&#x27;] into a sentence &#x27;A, B and C&#x27;.
+
+#### minimal\_kwargs
+
+```python
+minimal_kwargs(kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None) -> Dict[Text, Any]
+```
+
+Returns only the kwargs which are required by a function. Keys, contained in
+the exception list, are not included.
+
+**Arguments**:
+
+- `kwargs` - All available kwargs.
+- `func` - The function which should be called.
+- `excluded_keys` - Keys to exclude from the result.
+  
+
+**Returns**:
+
+  Subset of kwargs which are accepted by `func`.
+
+#### mark\_as\_experimental\_feature
+
+```python
+mark_as_experimental_feature(feature_name: Text) -> None
+```
+
+Warns users that they are using an experimental feature.
+
+#### arguments\_of
+
+```python
+arguments_of(func: Callable) -> List[Text]
+```
+
+Return the parameters of the function `func` as a list of names.
+

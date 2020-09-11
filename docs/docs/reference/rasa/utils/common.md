@@ -12,14 +12,6 @@ class TempDirectoryPath(str)
 Represents a path to an temporary directory. When used as a context
 manager, it erases the contents of the directory on exit.
 
-#### arguments\_of
-
-```python
-arguments_of(func: Callable) -> List[Text]
-```
-
-Return the parameters of the function `func` as a list of names.
-
 #### read\_global\_config
 
 ```python
@@ -91,34 +83,6 @@ sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]
 
 Sorts a list of dictionaries by their first key.
 
-#### transform\_collection\_to\_sentence
-
-```python
-transform_collection_to_sentence(collection: Collection[Text]) -> Text
-```
-
-Transforms e.g. a list like [&#x27;A&#x27;, &#x27;B&#x27;, &#x27;C&#x27;] into a sentence &#x27;A, B and C&#x27;.
-
-#### minimal\_kwargs
-
-```python
-minimal_kwargs(kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None) -> Dict[Text, Any]
-```
-
-Returns only the kwargs which are required by a function. Keys, contained in
-the exception list, are not included.
-
-**Arguments**:
-
-- `kwargs` - All available kwargs.
-- `func` - The function which should be called.
-- `excluded_keys` - Keys to exclude from the result.
-  
-
-**Returns**:
-
-  Subset of kwargs which are accepted by `func`.
-
 #### write\_global\_config\_value
 
 ```python
@@ -134,14 +98,6 @@ read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any
 ```
 
 Read a value from the global Rasa configuration.
-
-#### mark\_as\_experimental\_feature
-
-```python
-mark_as_experimental_feature(feature_name: Text) -> None
-```
-
-Warns users that they are using an experimental feature.
 
 #### update\_existing\_keys
 

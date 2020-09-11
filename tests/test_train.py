@@ -12,15 +12,12 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 import rasa.core
-import rasa.importers.autoconfig as autoconfig
+import rasa.shared.importers.autoconfig as autoconfig
 from rasa.core.interpreter import RasaNLUInterpreter
 
 from rasa.train import train_core, train_nlu, train
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
-from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_STORIES_FILE,
-)
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.core.test_model import _fingerprint
 
 
@@ -144,9 +141,7 @@ def test_train_nlu_temp_files(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(
-        default_stack_config, default_nlu_data, output=str(tmp_path / "models"),
-    )
+    train_nlu(default_stack_config, default_nlu_data, output=str(tmp_path / "models"))
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
@@ -163,9 +158,7 @@ def test_train_nlu_wrong_format_error_message(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(
-        default_stack_config, incorrect_nlu_data, output=str(tmp_path / "models"),
-    )
+    train_nlu(default_stack_config, incorrect_nlu_data, output=str(tmp_path / "models"))
 
     captured = capsys.readouterr()
     assert "Please verify the data format" in captured.out
