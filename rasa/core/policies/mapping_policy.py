@@ -4,6 +4,7 @@ import os
 import typing
 from typing import Any, List, Text, Optional
 
+import rasa.shared.utils.common
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
@@ -50,7 +51,7 @@ class MappingPolicy(Policy):
 
         super().__init__(priority=priority)
 
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{MappingPolicy.__name__}' is deprecated and will be removed in "
             "the future. It is recommended to use the 'RulePolicy' instead.",
             docs=DOCS_URL_MIGRATION_GUIDE,

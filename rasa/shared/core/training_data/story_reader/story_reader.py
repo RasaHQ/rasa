@@ -1,6 +1,8 @@
 import logging
 from typing import Optional, Dict, Text, List, Any
 
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.shared.core.constants import (
     LEGACY_ACTION_DEACTIVATE_LOOP_NAME,
@@ -13,7 +15,6 @@ from rasa.shared.core.training_data.story_reader.story_step_builder import (
     StoryStepBuilder,
 )
 from rasa.shared.core.training_data.structures import StoryStep
-import rasa.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,7 @@ def _map_legacy_event_names(event: Event) -> None:
         isinstance(event, ActionExecuted)
         and event.action_name == LEGACY_ACTION_DEACTIVATE_LOOP_NAME
     ):
-        rasa.utils.common.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"Using action '{event.action_name}' is deprecated. Please use "
             f"'{ACTION_DEACTIVATE_LOOP_NAME}' instead. Support for "
             f"'{event.action_name}' will be removed in Rasa Open Source version "
