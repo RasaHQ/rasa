@@ -481,7 +481,7 @@ class TrainingData:
         responses = {}
         for ex in examples:
             if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
-                key = intent_response_key_to_template_key(ex.get_full_intent())
+                key = util.intent_response_key_to_template_key(ex.get_full_intent())
                 responses[key] = self.responses[key]
         return responses
 
