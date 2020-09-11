@@ -9,8 +9,8 @@ import rasa.cli.utils as cli_utils
 import rasa.shared.data as shared_data
 from rasa.cli.arguments import data as arguments
 from rasa.constants import DEFAULT_DATA_PATH
-from rasa.shared.nlu.training_data.loading import load_data
-from rasa.shared.nlu.training_data.util import get_file_format
+from rasa.shared.nlu.training_data import loading
+from rasa.shared.nlu.training_data import util as training_data_utils
 from rasa.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data
 from rasa.utils.converter import TrainingDataConverter
@@ -149,8 +149,8 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     data_path = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = shared_data.get_nlu_directory(data_path)
 
-    nlu_data = load_data(data_path)
-    fformat = get_file_format(data_path)
+    nlu_data = loading.load_data(data_path)
+    fformat = training_data_utils.get_file_format(data_path)
 
     train, test = nlu_data.train_test_split(args.training_fraction, args.random_seed)
 
