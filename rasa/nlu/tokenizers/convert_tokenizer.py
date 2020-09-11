@@ -5,7 +5,7 @@ from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils import common
 import rasa.utils.train_utils as train_utils
 import tensorflow as tf

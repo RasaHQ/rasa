@@ -3,9 +3,15 @@ from functools import reduce
 from typing import Text, Optional, List, Dict
 import logging
 
-from rasa.core.domain import Domain
-from rasa.core.training.structures import StoryGraph
-from rasa.nlu.training_data import TrainingData
+import rasa.shared.utils.common
+import rasa.shared.core.constants
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, UserUttered, Event
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.constants import INTENT_NAME, TEXT
 from rasa.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
@@ -91,7 +97,7 @@ class TrainingDataImporter:
         """
 
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths, TrainingType.CORE,
+            config_path, domain_path, training_data_paths, TrainingType.CORE
         )
 
         return CoreDataImporter(importer)
@@ -110,6 +116,11 @@ class TrainingDataImporter:
         importer = TrainingDataImporter.load_from_config(
             config_path, domain_path, training_data_paths, TrainingType.NLU
         )
+
+        if isinstance(importer, E2EImporter):
+            # When we only train NLU then there is no need to enrich the data with
+            # E2E data from Core training data.
+            importer = importer.importer
 
         return NluDataImporter(importer)
 
@@ -142,7 +153,7 @@ class TrainingDataImporter:
                 )
             ]
 
-        return CombinedDataImporter(importers)
+        return E2EImporter(CombinedDataImporter(importers))
 
     @staticmethod
     def _importer_from_dict(
@@ -162,7 +173,9 @@ class TrainingDataImporter:
             importer_class = MultiProjectImporter
         else:
             try:
-                importer_class = common_utils.class_from_module_path(module_path)
+                importer_class = rasa.shared.utils.common.class_from_module_path(
+                    module_path
+                )
             except (AttributeError, ImportError):
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None
@@ -275,3 +288,115 @@ class CombinedDataImporter(TrainingDataImporter):
         return reduce(
             lambda merged, other: merged.merge(other), nlu_data, TrainingData()
         )
+
+
+class E2EImporter(TrainingDataImporter):
+    """Importer which
+    - enhances the NLU training data with actions / user messages from the stories.
+    - adds potential end-to-end bot messages from stories as actions to the domain
+    """
+
+    def __init__(self, importer: TrainingDataImporter) -> None:
+
+        self.importer = importer
+        self._cached_stories: Optional[StoryGraph] = None
+
+    async def get_domain(self) -> Domain:
+        original, e2e_domain = await asyncio.gather(
+            self.importer.get_domain(), self._get_domain_with_e2e_actions()
+        )
+        return original.merge(e2e_domain)
+
+    async def _get_domain_with_e2e_actions(self) -> Domain:
+        from rasa.shared.core.events import ActionExecuted
+
+        stories = await self.get_stories()
+
+        additional_e2e_action_names = set()
+        for story_step in stories.story_steps:
+            additional_e2e_action_names.update(
+                {
+                    event.action_text
+                    for event in story_step.events
+                    if isinstance(event, ActionExecuted) and event.action_text
+                }
+            )
+
+        additional_e2e_action_names = list(additional_e2e_action_names)
+
+        return Domain(
+            [], [], [], {}, action_names=additional_e2e_action_names, forms=[]
+        )
+
+    async def get_stories(
+        self,
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        if not self._cached_stories:
+            # Simple cache to avoid loading all of this multiple times
+            self._cached_stories = await self.importer.get_stories(
+                template_variables, use_e2e, exclusion_percentage
+            )
+        return self._cached_stories
+
+    async def get_config(self) -> Dict:
+        return await self.importer.get_config()
+
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        training_datasets = [_additional_training_data_from_default_actions()]
+
+        training_datasets += await asyncio.gather(
+            self.importer.get_nlu_data(language),
+            self._additional_training_data_from_stories(),
+        )
+
+        return reduce(
+            lambda merged, other: merged.merge(other), training_datasets, TrainingData()
+        )
+
+    async def _additional_training_data_from_stories(self) -> TrainingData:
+        stories = await self.get_stories()
+
+        additional_messages_from_stories = []
+        for story_step in stories.story_steps:
+            for event in story_step.events:
+                message = _message_from_conversation_event(event)
+                if message:
+                    additional_messages_from_stories.append(message)
+
+        logger.debug(
+            f"Added {len(additional_messages_from_stories)} training data examples "
+            f"from the story training data."
+        )
+        return TrainingData(additional_messages_from_stories)
+
+
+def _message_from_conversation_event(event: Event) -> Optional[Message]:
+    if isinstance(event, UserUttered):
+        return _messages_from_user_utterance(event)
+    elif isinstance(event, ActionExecuted):
+        return _messages_from_action(event)
+
+    return None
+
+
+def _messages_from_user_utterance(event: UserUttered) -> Message:
+    return Message(data={TEXT: event.text, INTENT_NAME: event.intent_name})
+
+
+def _messages_from_action(event: ActionExecuted) -> Message:
+    return Message.build_from_action(
+        action_name=event.action_name, action_text=event.action_text or ""
+    )
+
+
+def _additional_training_data_from_default_actions() -> TrainingData:
+    additional_messages_from_default_actions = [
+        Message.build_from_action(action_name=action_name)
+        for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+    ]
+
+    return TrainingData(additional_messages_from_default_actions)

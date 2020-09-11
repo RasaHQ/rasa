@@ -4,14 +4,14 @@ import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DOCS_URL_PIPELINE,
     DOCS_URL_MIGRATION_GUIDE,
 )
-from rasa.nlu.utils import json_to_string
-import rasa.utils.common as common_utils
+from rasa.shared.utils.io import json_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def component_config_from_pipeline(
         c = pipeline[index]
         return override_defaults(defaults, c)
     except IndexError:
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"Tried to get configuration value for component "
             f"number {index} which is not part of your pipeline. "
             f"Returning `defaults`.",
@@ -162,7 +162,7 @@ class RasaNLUModelConfig:
         try:
             self.pipeline[index].update(kwargs)
         except IndexError:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Tried to set configuration value for component "
                 f"number {index} which is not part of the pipeline.",
                 docs=DOCS_URL_PIPELINE,

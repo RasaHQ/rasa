@@ -3,20 +3,21 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-import rasa.utils.common as common_utils
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.nlu.model import Metadata
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import (
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import (
     ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    TEXT,
+    ENTITY_ATTRIBUTE_TYPE,
 )
-from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 
 logger = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ class RegexEntityExtractor(EntityExtractor):
         )
 
         if not self.patterns:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "No lookup tables or regexes defined in the training data that have "
                 "a name equal to any entity in the training data. In order for this "
                 "component to work you need to define valid lookup tables or regexes "
@@ -86,7 +87,7 @@ class RegexEntityExtractor(EntityExtractor):
             flags = re.IGNORECASE
 
         for pattern in self.patterns:
-            matches = re.finditer(pattern["pattern"], message.text, flags=flags)
+            matches = re.finditer(pattern["pattern"], message.get(TEXT), flags=flags)
             matches = list(matches)
 
             for match in matches:
@@ -97,7 +98,9 @@ class RegexEntityExtractor(EntityExtractor):
                         ENTITY_ATTRIBUTE_TYPE: pattern["name"],
                         ENTITY_ATTRIBUTE_START: start_index,
                         ENTITY_ATTRIBUTE_END: end_index,
-                        ENTITY_ATTRIBUTE_VALUE: message.text[start_index:end_index],
+                        ENTITY_ATTRIBUTE_VALUE: message.get(TEXT)[
+                            start_index:end_index
+                        ],
                     }
                 )
 
@@ -117,7 +120,7 @@ class RegexEntityExtractor(EntityExtractor):
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
-            patterns = io_utils.read_json_file(regex_file)
+            patterns = rasa.shared.utils.io.read_json_file(regex_file)
             return RegexEntityExtractor(meta, patterns=patterns)
 
         return RegexEntityExtractor(meta)
@@ -127,6 +130,6 @@ class RegexEntityExtractor(EntityExtractor):
         Return the metadata necessary to load the model again."""
         file_name = f"{file_name}.json"
         regex_file = os.path.join(model_dir, file_name)
-        io_utils.dump_obj_as_json_to_file(regex_file, self.patterns)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(regex_file, self.patterns)
 
         return {"file": file_name}

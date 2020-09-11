@@ -11,12 +11,13 @@ from prompt_toolkit.styles import Style
 from typing import Any
 from typing import Text, Optional, Dict, List
 
+import rasa.shared.utils.io
 from rasa.cli import utils as cli_utils
 from rasa.core import utils
 from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_SERVER_URL
-from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 def print_buttons(
     message: Dict[Text, Any],
     is_latest_message: bool = False,
-    color=cli_utils.bcolors.OKBLUE,
+    color=rasa.shared.utils.io.bcolors.OKBLUE,
 ) -> Optional[questionary.Question]:
     if is_latest_message:
         choices = cli_utils.button_choices_from_message_data(
@@ -48,7 +49,7 @@ def print_buttons(
 def print_bot_output(
     message: Dict[Text, Any],
     is_latest_message: bool = False,
-    color=cli_utils.bcolors.OKBLUE,
+    color=rasa.shared.utils.io.bcolors.OKBLUE,
 ) -> Optional[questionary.Question]:
     if "buttons" in message:
         question = print_buttons(message, is_latest_message, color)

@@ -4,6 +4,7 @@ from typing import Any, Text, Dict
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.test import (
     _generate_trackers,
@@ -52,9 +53,12 @@ async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     assert os.path.isfile(confusion_matrix_path)
 
 
-async def test_end_to_end_evaluation_script(default_agent: Agent):
+@pytest.mark.parametrize(
+    "test_file", [END_TO_END_STORY_FILE, "data/test_evaluations/end_to_end_story.yml"]
+)
+async def test_end_to_end_evaluation_script(default_agent: Agent, test_file: Text):
     completed_trackers = await _generate_trackers(
-        END_TO_END_STORY_FILE, default_agent, use_e2e=True
+        test_file, default_agent, use_e2e=True
     )
 
     story_evaluation, num_stories = await _collect_story_predictions(
@@ -126,7 +130,7 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
         e2e=False,
     )
 
-    failed_stories = rasa.utils.io.read_file(stories_path)
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
     assert (
         f"story: simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"

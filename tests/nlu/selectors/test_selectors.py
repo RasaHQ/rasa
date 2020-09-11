@@ -1,7 +1,7 @@
 import pytest
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import load_data
+import rasa.shared.nlu.training_data.loading
 from rasa.nlu.train import Trainer, Interpreter
 from rasa.utils.tensorflow.constants import (
     EPOCHS,
@@ -35,8 +35,12 @@ from rasa.nlu.selectors.response_selector import ResponseSelector
 )
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
-    training_data = load_data("data/examples/rasa/demo-rasa.md")
-    training_data_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
     training_data = training_data.merge(training_data_responses)
 
     nlu_config = RasaNLUModelConfig({"language": "en", "pipeline": pipeline})
@@ -87,8 +91,12 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 def test_ground_truth_for_training(use_text_as_label, label_values):
 
     # use data that include some responses
-    training_data = load_data("data/examples/rasa/demo-rasa.md")
-    training_data_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
     training_data = training_data.merge(training_data_responses)
 
     response_selector = ResponseSelector(
@@ -114,8 +122,12 @@ def test_resolve_intent_response_key_from_label(
 ):
 
     # use data that include some responses
-    training_data = load_data("data/examples/rasa/demo-rasa.md")
-    training_data_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
     training_data = training_data.merge(training_data_responses)
 
     response_selector = ResponseSelector(
