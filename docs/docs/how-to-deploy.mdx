@@ -92,6 +92,8 @@ as part of your deployment, without having to move code between servers.
 In addition, you can add any additional dependencies of systems or Python libraries
 that are part of your action code but not included in the base `rasa/rasa-sdk` image.
 
+#### Manually Building an Action Server
+
 To create your image:
 
 1. Make sure your actions are defined in `actions/actions.py`. The `rasa/rasa-sdk`
@@ -135,6 +137,87 @@ docker build . -t <account_username>/<repository_name>:<custom_image_tag>
 The `<custom_image_tag>` should reference how this image will be different from others. For
 example, you could version or date your tags, as well as create different tags that have different code for production
 and development servers. You should create a new tag any time you update your code and want to re-deploy it.
+
+#### Automating your Action Server Image Builds
+
+In addition to a manual step to create a new Action Server Image. You can use [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) to automate image builds.
+If GitHub Actions are new to you it might be helpful to get familiar with [GitHub Actions Documentation](https://docs.github.com/en/actions).
+
+The following steps assume that you already created a GitHub repository and you have a DockerHub account.
+
+To create a workflow for building and pushing a Docker image into a DockerHub registry:
+
+1. Create GitHub Secrets with login name and password for DockerHub.
+   [Here](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository) you can find details on how to create encrypted secrets for a repository.
+
+   The example uses the following secrets:
+   - `DOCKER_HUB_LOGIN` - a login name for DockerHub
+   - `DOCKER_HUB_PASSWORD` - a password for DockerHub
+
+2. In your GitHub repository create a file [`.github/workflows/action_server.yml`](https://github.com/RasaHQ/action-server-gha/blob/master/examples/action_server.yml).
+
+The GitHub Action workflow below builds a new docker image every time when new changes are pushed into the `master` branch.
+
+```yaml
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    name: Build Action Server image and upgrade Rasa X deployment
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - id: action_server
+      name: Build an action server with a custom actions
+      uses: RasaHQ/action-server-gha@master
+      # Full list of parameters: https://github.com/RasaHQ/action-server-gha/tree/master#input-arguments
+      with:
+        docker_image_name: 'account_username/repository_name'
+        docker_registry_login: ${{ secrets.DOCKER_HUB_LOGIN }}
+        docker_registry_password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        # More details about github context:
+        # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#github-context
+        #
+        # github.sha - The commit SHA that triggered the workflow run
+        docker_image_tag: ${{ github.sha }}
+```
+
+3. Push your changes to the `master` branch. After changes are pushed, the workflow will build and push a new image into the DockerHub registry.
+
+4. Now, you can use your new brand docker image or, for example, extend your workflow.
+The example below shows how to extend your workflow by a new step that updates a Rasa X deployment based on [Helm Chart](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server)
+
+```yaml
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    name: Build Action Server image and upgrade Rasa X deployment
+    steps:
+    [..]
+
+    # This step shows only the example of output parameter usage
+    # and it's not focused on deployment itself.
+    - name: "Upgrade a Rasa X deployment"
+      run: |
+        helm upgrade --install --reuse-values \
+          --set app.name=${{ steps.action_server.outputs.docker_image_name }} \
+          --set app.tag=${{ steps.action_server.outputs.docker_image_tag }} rasa rasa-x/rasa-x
+```
+
+As you can see it's possible to use output variables from the `action_server` step. The `steps.action_server.outputs.docker_image_name` variable returns
+a docker image name and the `steps.action_server.outputs.docker_image_tag` variable returns a docker image tag.
+
+More examples on how to use and customize [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) you can find in the [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) repository.
 
 ### Using your Custom Action Server Image
 
