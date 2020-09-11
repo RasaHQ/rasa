@@ -61,12 +61,12 @@ For example the following two rules are contradicting:
 ```yaml-rasa
 rules:
 - rule: Chitchat
-steps:
+  steps:
   - intent: chitchat
   - action: utter_chitchat
 
 - rule: Greet instead of chitchat
-steps:
+  steps:
   - intent: chitchat
   - action: utter_greet
 ```
