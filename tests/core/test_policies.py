@@ -122,6 +122,7 @@ class PolicyTestCollection:
         self, trained_policy: Policy, default_domain: Domain, tmp_path: Path
     ):
         trained_policy.persist(str(tmp_path))
+        print("have trained policy", type(trained_policy))
         loaded = trained_policy.__class__.load(str(tmp_path))
         trackers = await train_trackers(default_domain, augmentation_factor=20)
 

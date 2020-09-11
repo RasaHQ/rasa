@@ -157,7 +157,7 @@ class Policy:
             - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
               ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
               all training trackers
-            - the label ids (e.g. action ids) for every dialuge turn in all training
+            - the label ids (e.g. action ids) for every dialogue turn in all training
               trackers
         """
 
@@ -273,6 +273,7 @@ class Policy:
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
 
+            print("loading policy for", cls.__name__)
             return cls(**data)
 
         logger.info(
