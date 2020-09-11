@@ -294,8 +294,8 @@ class TestTEDPolicy(PolicyTestCollection):
         assert not best_model_file.exists()
 
         train_core(
-            domain="data/examples/rasa/ted_policy/domain.yml",
-            stories="data/examples/rasa/ted_policy/stories.yml",
+            domain="data/examples/ted_policy/domain.yml",
+            stories="data/examples/ted_policy/stories.yml",
             output=tmpdir.strpath,
             fixed_model_name=model_name,
             config="data/test_config/config_ted_policy_model_checkpointing.yml",

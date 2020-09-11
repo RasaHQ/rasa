@@ -181,7 +181,7 @@ async def test_train_model_checkpointing(
     await train(
         _config,
         path=str(tmpdir),
-        data="data/examples/rasa/response_selector",
+        data="data/examples/response_selector",
         component_builder=component_builder,
         fixed_model_name=model_name,
     )
