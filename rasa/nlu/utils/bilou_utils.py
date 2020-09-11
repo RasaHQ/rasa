@@ -287,16 +287,11 @@ def ensure_consistent_bilou_tagging(
             # values and update the tags and confidences accordingly
             if not all(relevant_tags[0] == tag for tag in relevant_tags):
                 # decide which tag this entity should use
-                tag, avg_confidence = _tag_to_use(relevant_tags, relevant_confidences)
+                tag, tag_score = _tag_to_use(relevant_tags, relevant_confidences)
 
-                # all tags that change get the avg confidence of that tag assigned
+                # all tags that change get the score of that tag assigned
                 predicted_confidences = _update_confidences(
-                    predicted_confidences,
-                    predicted_tags,
-                    tag,
-                    avg_confidence,
-                    idx,
-                    last_idx,
+                    predicted_confidences, predicted_tags, tag, tag_score, idx, last_idx
                 )
 
             # ensure correct BILOU annotations
@@ -329,7 +324,7 @@ def _tag_to_use(
         relevant_confidences: The confidence values.
 
     Returns:
-        The tag to use. The average confidence value of that tag.
+        The tag to use. The score of that tag.
     """
     # Calculate the average confidence per tag.
     avg_confidence_per_tag = _avg_confidence_per_tag(
@@ -352,16 +347,16 @@ def _tag_to_use(
 
     # Take the tag with the highest score as the tag for the entity
     tag = max(score_per_tag, key=score_per_tag.get)
-    avg_confidence = avg_confidence_per_tag[tag]
+    score = score_per_tag[tag]
 
-    return tag, avg_confidence
+    return tag, score
 
 
 def _update_confidences(
     predicted_confidences: List[float],
     predicted_tags: List[Text],
     tag: Text,
-    avg_confidence: float,
+    score: float,
     idx: int,
     last_idx: int,
 ):
@@ -374,7 +369,7 @@ def _update_confidences(
         predicted_confidences: The list of predicted confidences.
         predicted_tags: The list of predicted tags.
         tag: The tag of the entity.
-        avg_confidence: The average confidence value.
+        score: The score value of that tag.
         idx: The start index of the entity.
         last_idx: The end index of the entity.
 
@@ -383,7 +378,7 @@ def _update_confidences(
     """
     for i in range(idx, last_idx + 1):
         predicted_confidences[i] = (
-            avg_confidence
+            score
             if tag_without_prefix(predicted_tags[i]) != tag
             else predicted_confidences[i]
         )
