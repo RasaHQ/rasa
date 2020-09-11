@@ -24,14 +24,15 @@ import rasa.shared.constants
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.server
-from rasa.core import events, utils
+from rasa.core import utils
+from rasa.shared.core import events
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, SlackInput
 from rasa.core.channels.slack import SlackBot
-from rasa.core.events import Event, UserUttered, SlotSet, BotUttered
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import Event, UserUttered, SlotSet, BotUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from sanic import Sanic
 from sanic.testing import SanicTestClient

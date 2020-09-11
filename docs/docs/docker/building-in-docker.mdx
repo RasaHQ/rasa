@@ -166,17 +166,7 @@ To create more sophisticated assistants, you will want to use [Custom Actions](.
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.
 
-Start by creating the custom actions in a directory `actions` in your working directory:
-
-```bash
-mkdir actions
-mv actions.py actions/actions.py
-# Rasa SDK expects a python module.
-# Therefore, make sure that you have this file in the directory.
-touch actions/__init__.py
-```
-
-Then build a custom action using the Rasa SDK by editing `actions/actions.py`, for example:
+Build a custom action using the Rasa SDK by editing `actions/actions.py`, for example:
 
 ```python
 import requests

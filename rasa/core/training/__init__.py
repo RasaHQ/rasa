@@ -1,10 +1,10 @@
 from typing import Text, List, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from rasa.core.domain import Domain
-    from rasa.core.trackers import DialogueStateTracker
-    from rasa.core.training.generator import TrackerWithCachedStates
-    from rasa.core.training.structures import StoryGraph
+    from rasa.shared.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
+    from rasa.shared.core.generator import TrackerWithCachedStates
+    from rasa.shared.core.training_data.structures import StoryGraph
     from rasa.importers.importer import TrainingDataImporter
 
 
@@ -14,8 +14,8 @@ async def extract_rule_data(
     use_e2e: bool = False,
     exclusion_percentage: int = None,
 ) -> "StoryGraph":
-    from rasa.core.training import loading
-    from rasa.core.training.structures import StoryGraph
+    from rasa.shared.core.training_data import loading
+    from rasa.shared.core.training_data.structures import StoryGraph
 
     story_steps = await loading.load_data_from_resource(
         resource_name,
@@ -32,8 +32,8 @@ async def extract_story_graph(
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
-    from rasa.core.training.structures import StoryGraph
-    import rasa.core.training.loading as core_loading
+    from rasa.shared.core.training_data.structures import StoryGraph
+    import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
         resource_name,
@@ -78,7 +78,7 @@ async def load_data(
     Returns:
         list of loaded trackers
     """
-    from rasa.core.training.generator import TrainingDataGenerator
+    from rasa.shared.core.generator import TrainingDataGenerator
     from rasa.importers.importer import TrainingDataImporter
 
     if resource_name:
