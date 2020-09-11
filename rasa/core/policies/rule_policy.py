@@ -118,10 +118,7 @@ class RulePolicy(MemoizationPolicy):
         self._fallback_action_name = core_fallback_action_name
         self._enable_fallback_prediction = enable_fallback_prediction
         self._restrict_rules = restrict_rules
-        self._check_rules_with_stories = check_rules_with_stories
-        # during training we run `predict_action_probabilities` to check for
-        # contradicting rules, silent prediction debug to avoid too many logs
-        self._silent_prediction = False
+        self._check_for_contradictions = check_for_contradictions
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
@@ -318,7 +315,10 @@ class RulePolicy(MemoizationPolicy):
         interpreter: NaturalLanguageInterpreter,
     ) -> None:
         logger.debug("Started checking rules and stories for contradictions.")
-        self._silent_prediction = True
+        # during training we run `predict_action_probabilities` to check for
+        # contradicting rules, silent prediction debug to avoid too many logs
+        logger_level = logger.level
+        logger.setLevel(logging.WARNING)
         error_messages = []
         pbar = tqdm(
             trackers,
@@ -357,7 +357,7 @@ class RulePolicy(MemoizationPolicy):
 
                 running_tracker.update(event)
 
-        self._silent_prediction = False  # turn off silent logging
+        logger.setLevel(logger_level)  # reset logger level
         if error_messages:
             error_messages.append(
                 "Please update your stories and rules so that "
@@ -414,16 +414,12 @@ class RulePolicy(MemoizationPolicy):
         )
 
         # make this configurable because checking might take a lot of time
-        if self._check_rules_with_stories:
+        if self._check_for_contradictions:
             # using trackers here might not be the most efficient way, however
             # it allows us to directly test `predict_action_probabilities` method
             self._find_contradicting_rules(training_trackers, domain, interpreter)
 
         logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
-
-    def _output_debug_logs(self, message: Text) -> None:
-        if not self._silent_prediction:
-            logger.debug(message)
 
     @staticmethod
     def _does_rule_match_state(rule_state: State, conversation_state: State) -> bool:
@@ -507,9 +503,7 @@ class RulePolicy(MemoizationPolicy):
         )
 
         if default_action_name:
-            self._output_debug_logs(
-                f"Predicted default action '{default_action_name}'."
-            )
+            logger.debug(f"Predicted default action '{default_action_name}'.")
 
         return default_action_name
 
@@ -531,12 +525,12 @@ class RulePolicy(MemoizationPolicy):
         )
 
         if should_predict_loop:
-            self._output_debug_logs(f"Predicted loop '{active_loop_name}'.")
+            logger.debug(f"Predicted loop '{active_loop_name}'.")
             return active_loop_name
 
         # predict `action_listen` if loop action was run successfully
         if should_predict_listen:
-            self._output_debug_logs(
+            logger.debug(
                 f"Predicted '{ACTION_LISTEN_NAME}' after loop '{active_loop_name}'."
             )
             return ACTION_LISTEN_NAME
@@ -547,7 +541,7 @@ class RulePolicy(MemoizationPolicy):
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
 
-        self._output_debug_logs(f"Current tracker state: {states}")
+        logger.debug(f"Current tracker state: {states}")
 
         rule_keys = self._get_possible_keys(self.lookup[RULES], states)
         predicted_action_name = None
@@ -583,7 +577,7 @@ class RulePolicy(MemoizationPolicy):
                 if DO_NOT_PREDICT_LOOP_ACTION not in unhappy_path_conditions:
                     # negative rules don't contain a key that corresponds to
                     # the fact that active_loop shouldn't be predicted
-                    self._output_debug_logs(
+                    logger.debug(
                         f"Predicted loop '{active_loop_name}' by overwriting "
                         f"'{ACTION_LISTEN_NAME}' predicted by general rule."
                     )
@@ -593,15 +587,15 @@ class RulePolicy(MemoizationPolicy):
                 predicted_action_name = None
 
             if DO_NOT_VALIDATE_LOOP in unhappy_path_conditions:
-                self._output_debug_logs("Added `FormValidation(False)` event.")
+                logger.debug("Added `FormValidation(False)` event.")
                 tracker.update(FormValidation(False))
 
         if predicted_action_name is not None:
-            self._output_debug_logs(
+            logger.debug(
                 f"There is a rule for the next action '{predicted_action_name}'."
             )
         else:
-            self._output_debug_logs("There is no applicable rule.")
+            logger.debug("There is no applicable rule.")
 
         return predicted_action_name
 
