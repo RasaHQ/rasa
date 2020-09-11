@@ -9,6 +9,7 @@ DOCS_URL_FORMS = DOCS_BASE_URL + "/core/forms/"
 INTENT_MESSAGE_PREFIX = "/"
 
 PACKAGE_NAME = "rasa"
+NEXT_MAJOR_VERSION_FOR_DEPRECATIONS = "3.0.0"
 
 CONFIG_SCHEMA_FILE = "shared/nlu/training_data/schemas/config.yml"
 RESPONSES_SCHEMA_FILE = "shared/nlu/training_data/schemas/responses.yml"
