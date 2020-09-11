@@ -11,16 +11,16 @@ import numpy as np
 import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.shared.utils.io
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
@@ -283,7 +283,7 @@ class SklearnPolicy(Policy):
             path = Path(path)
 
             meta_file = path / "sklearn_policy.json"
-            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             filename = path / "sklearn_model.pkl"
             rasa.utils.io.pickle_dump(filename, self._state)

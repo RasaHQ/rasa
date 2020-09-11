@@ -1,30 +1,27 @@
 import logging
 from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING
 
-from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 import rasa.utils.io
-from rasa.nlu.constants import INTENT_NAME_KEY
+import rasa.shared.utils.io
+from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
-
-from rasa.core.actions.action import (
-    ACTION_BACK_NAME,
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_SESSION_START_NAME,
-)
-from rasa.core.constants import (
+from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
     USER_INTENT_SESSION_START,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_BACK_NAME,
 )
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import ActionExecuted
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
-import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble

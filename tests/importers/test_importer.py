@@ -7,8 +7,9 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
-from rasa.core.events import SlotSet, UserUttered, ActionExecuted
-from rasa.core.training.structures import StoryStep, StoryGraph
+import rasa.shared.core.constants
+from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.importers.importer import (
     CombinedDataImporter,
     TrainingDataImporter,
@@ -106,8 +107,6 @@ def test_load_from_dict(
 
 
 def test_load_from_config(tmpdir: Path):
-    import rasa.utils.io as io_utils
-
     config_path = str(tmpdir / "config.yml")
 
     rasa.shared.utils.io.write_yaml(
@@ -244,13 +243,11 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
         (await importer_without_e2e.get_nlu_data()).training_examples
     )
 
-    from rasa.core.actions import action
-
     extended_training_data = await importer.get_nlu_data()
     assert all(
         Message(data={ACTION_NAME: action_name, ACTION_TEXT: ""})
         in extended_training_data.training_examples
-        for action_name in action.default_action_names()
+        for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     )
 
 
