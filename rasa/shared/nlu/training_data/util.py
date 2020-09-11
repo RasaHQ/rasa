@@ -59,6 +59,11 @@ def get_file_format(resource_name: Text) -> Text:
     - if the resource is a folder and all the resources have the
       same known format, return it
     - otherwise, default to DEFAULT_FILE_FORMAT (yml).
+
+    Args:
+        resource_name: the name of the resource. Can be a file or a folder.
+    Returns:
+        the resource file format
     """
     from rasa.shared.nlu.training_data import loading
 
