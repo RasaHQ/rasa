@@ -19,6 +19,7 @@ from sanic_jwt import Initialize, exceptions
 
 import rasa
 import rasa.core.utils
+import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.endpoints
 import rasa.utils.io
@@ -1170,7 +1171,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
     if "force" in rjs or "save_to_default_model_directory" in rjs:
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "Specifying 'force' and 'save_to_default_model_directory' as part of the "
             "JSON payload is deprecated. Please use the header arguments "
             "'force_training' and 'save_to_default_model_directory'.",

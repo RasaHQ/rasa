@@ -11,7 +11,6 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
     GLOBAL_USER_CONFIG_PATH,
-    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
@@ -278,28 +277,6 @@ def update_existing_keys(
         if k in updated:
             updated[k] = v
     return updated
-
-
-def raise_deprecation_warning(
-    message: Text,
-    warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-    docs: Optional[Text] = None,
-    **kwargs: Any,
-) -> None:
-    """
-    Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
-    a version until which we'll warn, and after which the support for the feature will
-    be removed.
-    """
-    if warn_until_version not in message:
-        message = f"{message} (will be removed in {warn_until_version})"
-
-    # need the correct stacklevel now
-    kwargs.setdefault("stacklevel", 3)
-    # we're raising a `FutureWarning` instead of a `DeprecationWarning` because
-    # we want these warnings to be visible in the terminal of our users
-    # https://docs.python.org/3/library/warnings.html#warning-categories
-    rasa.shared.utils.io.raise_warning(message, FutureWarning, docs, **kwargs)
 
 
 class RepeatedLogFilter(logging.Filter):
