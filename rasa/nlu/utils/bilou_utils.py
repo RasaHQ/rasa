@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from typing import List, Tuple, Text, Optional, Dict, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -248,20 +249,25 @@ def _add_bilou_tags_to_entities(
                 bilou[end_token_idx] = f"{LAST}{label}"
 
 
-def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
+def ensure_consistent_bilou_tagging(
+    predicted_tags: List[Text], predicted_confidences: List[float]
+) -> Tuple[List[Text], List[float]]:
     """
     Ensure predicted tags follow the BILOU tagging schema.
 
     We assume that starting B- tags are correct. Followed tags that belong to start
-    tag but have a different entity type are updated.
+    tag but have a different entity type are updated considering also the confidence
+    values of those tags.
     For example, B-a I-b L-a is updated to B-a I-a L-a and B-a I-a O is changed to
     B-a L-a.
 
     Args:
         predicted_tags: predicted tags
+        predicted_confidences: predicted confidences
 
     Return:
         List of tags.
+        List of confidences.
     """
 
     for idx, predicted_tag in enumerate(predicted_tags):
@@ -270,6 +276,32 @@ def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
 
         if prefix == BEGINNING:
             last_idx = _find_bilou_end(idx, predicted_tags)
+
+            relevant_confidences = predicted_confidences[idx : last_idx + 1]
+            relevant_tags = [
+                tag_without_prefix(tag) for tag in predicted_tags[idx : last_idx + 1]
+            ]
+
+            # if not all tags are the same, for example, B-person I-person L-location
+            # we need to check what tag we should use depending on the confidence
+            # values and update the tags and confidences accordingly
+            if not all(relevant_tags[0] == tag for tag in relevant_tags):
+                avg_confidence_per_tag = _avg_confidence_per_tag(
+                    relevant_tags, relevant_confidences
+                )
+
+                # the entity should have the tag with the highest average confidence
+                tag = max(avg_confidence_per_tag, key=avg_confidence_per_tag.get)
+                avg_confidence = avg_confidence_per_tag[tag]
+
+                predicted_confidences = _update_confidences(
+                    predicted_confidences,
+                    predicted_tags,
+                    tag,
+                    avg_confidence,
+                    idx,
+                    last_idx,
+                )
 
             # ensure correct BILOU annotations
             if last_idx == idx:
@@ -283,10 +315,70 @@ def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
                 for i in range(idx + 1, last_idx):
                     predicted_tags[i] = f"{INSIDE}{tag}"
 
-    return predicted_tags
+    return predicted_tags, predicted_confidences
+
+
+def _update_confidences(
+    predicted_confidences: List[float],
+    predicted_tags: List[Text],
+    tag: Text,
+    avg_confidence: float,
+    idx: int,
+    last_idx: int,
+):
+    """Update the confidence values.
+
+    Set the confidence value of a tag to the average confidence value if the predicated
+    tag changed.
+
+    Args:
+        predicted_confidences: The list of predicted confidences.
+        predicted_tags: The list of predicted tags.
+        tag: The tag of the entity.
+        avg_confidence: The average confidence value.
+        idx: The start index of the entity.
+        last_idx: The end index of the entity.
+
+    Returns:
+        The updated list of confidences.
+    """
+    for i in range(idx, last_idx + 1):
+        predicted_confidences[i] = (
+            avg_confidence
+            if tag_without_prefix(predicted_tags[i]) != tag
+            else predicted_confidences[i]
+        )
+    return predicted_confidences
+
+
+def _avg_confidence_per_tag(
+    relevant_tags: List[Text], relevant_confidences: List[float]
+) -> Dict[Text, float]:
+    confidences_per_tag = defaultdict(list)
+
+    for tag, confidence in zip(relevant_tags, relevant_confidences):
+        confidences_per_tag[tag].append(confidence)
+
+    avg_confidence_per_tag = {}
+    for tag, confidences in confidences_per_tag.items():
+        avg_confidence_per_tag[tag] = round(sum(confidences) / len(confidences), 2)
+
+    return avg_confidence_per_tag
 
 
 def _find_bilou_end(start_idx: int, predicted_tags: List[Text]) -> int:
+    """Find the last index of the entity.
+
+    The start index is pointing to a B- tag. The entity is closed as soon as we find
+    a new L- tag or a O tag.
+
+    Args:
+        start_idx: The start index of the entity
+        predicted_tags: The list of predicted tags
+
+    Returns:
+        The end index of the entity
+    """
     current_idx = start_idx + 1
     finished = False
     start_tag = tag_without_prefix(predicted_tags[start_idx])
