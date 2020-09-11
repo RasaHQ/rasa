@@ -26,7 +26,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.util import check_duplicate_synonym
 
-DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
+DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
 logger = logging.getLogger(__name__)
 
