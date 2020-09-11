@@ -24,10 +24,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.util import (
-    check_duplicate_synonym,
-    intent_response_key_to_template_key,
-)
+from rasa.shared.nlu.training_data import util
 
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
@@ -79,7 +76,7 @@ class TrainingData:
             lookup_tables.extend(copy.deepcopy(o.lookup_tables))
 
             for text, syn in o.entity_synonyms.items():
-                check_duplicate_synonym(
+                util.check_duplicate_synonym(
                     entity_synonyms, text, syn, "merging training data"
                 )
 
@@ -244,7 +241,7 @@ class TrainingData:
                 continue
 
             # look for corresponding bot utterance
-            story_lookup_key = intent_response_key_to_template_key(
+            story_lookup_key = util.intent_response_key_to_template_key(
                 example.get_full_intent()
             )
             assistant_utterances = self.responses.get(story_lookup_key, [])

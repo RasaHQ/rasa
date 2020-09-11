@@ -15,7 +15,6 @@ import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
-from rasa.shared.utils.common import lazy_property
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 
@@ -337,7 +336,7 @@ class Domain:
 
         return intent
 
-    @lazy_property
+    @rasa.shared.utils.common.lazy_property
     def retrieval_intents(self) -> List[Text]:
         """List retrieval intents present in the domain."""
         return [
@@ -1123,7 +1122,7 @@ class Domain:
         utterances = [
             a
             for a in self.action_names
-            if a.startswith(rasa.shared.core.constants.UTTER_PREFIX)
+            if a.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
         missing_templates = [t for t in utterances if t not in self.templates.keys()]

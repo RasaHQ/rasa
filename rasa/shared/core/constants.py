@@ -70,8 +70,6 @@ SLOT_LAST_OBJECT = "knowledge_base_last_object"
 SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
-UTTER_PREFIX = "utter_"
-
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`
 USER = "user"

@@ -19,7 +19,11 @@ from rasa.nlu.constants import (
     INTENT_RANKING_KEY,
 )
 
-from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import (
+    DOCS_BASE_URL,
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
+    UTTER_PREFIX,
+)
 from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
@@ -32,7 +36,6 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
-    UTTER_PREFIX,
 )
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.core.events import (
