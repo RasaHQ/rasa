@@ -1,4 +1,3 @@
-import asyncio
 from typing import Dict, Text, List, Optional, Any
 from unittest.mock import Mock, ANY
 
@@ -7,11 +6,12 @@ from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
 from rasa.core.actions import action
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
-from rasa.core.actions.forms import FormAction, REQUESTED_SLOT
+from rasa.core.actions.action import ActionExecutionRejection
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
+from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,
     UserUttered,
@@ -21,7 +21,7 @@ from rasa.core.events import (
     Event,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 

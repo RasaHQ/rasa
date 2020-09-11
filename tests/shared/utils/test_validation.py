@@ -4,14 +4,13 @@ from jsonschema import ValidationError
 from pep440_version_utils import Version
 
 import rasa.shared.utils.io
-from rasa.constants import DOMAIN_SCHEMA_FILE
-
 import rasa.shared.utils.validation as validation_utils
 import rasa.utils.io as io_utils
 import rasa.shared.nlu.training_data.schemas.data_schema as schema
 from rasa.shared.constants import (
-    LATEST_TRAINING_DATA_FORMAT_VERSION,
     CONFIG_SCHEMA_FILE,
+    DOMAIN_SCHEMA_FILE,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 

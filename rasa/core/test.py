@@ -7,9 +7,10 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
-import rasa.utils.io as io_utils
-from rasa.core.domain import Domain
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+from rasa.shared.core.domain import Domain
 from rasa.nlu.constants import ENTITY_ATTRIBUTE_TEXT
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -21,8 +22,8 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
-from rasa.core.events import ActionExecuted, UserUttered
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.utils.io import DEFAULT_ENCODING
 
@@ -277,7 +278,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
-        from rasa.core.events import md_format_message
+        from rasa.shared.core.events import md_format_message
 
         predicted_message = md_format_message(
             self.text, self.predicted_intent, self.predicted_entities
@@ -285,7 +286,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         return f"predicted: {self.predicted_intent}: {predicted_message}"
 
     def as_story_string(self, e2e: bool = True) -> Text:
-        from rasa.core.events import md_format_message
+        from rasa.shared.core.events import md_format_message
 
         correct_message = md_format_message(
             self.text, self.intent.get("name"), self.entities
@@ -302,7 +303,7 @@ async def _generate_trackers(
     max_stories: Optional[int] = None,
     use_e2e: bool = False,
 ) -> List[Any]:
-    from rasa.core.training.generator import TrainingDataGenerator
+    from rasa.shared.core.generator import TrainingDataGenerator
 
     from rasa.core import training
 
@@ -389,7 +390,7 @@ def _collect_user_uttered_predictions(
 
 
 def _emulate_form_rejection(partial_tracker: DialogueStateTracker) -> None:
-    from rasa.core.events import ActionExecutionRejected
+    from rasa.shared.core.events import ActionExecutionRejected
 
     rejected_action_name: Text = partial_tracker.active_loop_name
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
@@ -697,7 +698,7 @@ async def test(
             )
 
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
-            io_utils.dump_obj_as_json_to_file(report_filename, report)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
@@ -818,7 +819,7 @@ async def compare_models_in_dir(
         for k, v in number_correct_in_run.items():
             number_correct[k].append(v)
 
-    io_utils.dump_obj_as_json_to_file(
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
         os.path.join(output, RESULTS_FILE), number_correct
     )
 
@@ -837,7 +838,7 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
         number_of_correct_stories = await _evaluate_core_model(model, stories_file)
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
 
-    io_utils.dump_obj_as_json_to_file(
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
         os.path.join(output, RESULTS_FILE), number_correct
     )
 

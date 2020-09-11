@@ -11,17 +11,17 @@ import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_POLICIES
-from rasa.core.domain import Domain, State
-from rasa.core.events import ActionExecuted
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
-from rasa.utils.common import is_logging_disabled
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.utils.io import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
@@ -158,7 +158,6 @@ class MemoizationPolicy(Policy):
         return lookup
 
     def _create_feature_key(self, states: List[State]) -> Text:
-        from rasa.utils import io
 
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
@@ -251,8 +250,8 @@ class MemoizationPolicy(Policy):
             "max_history": self.max_history,
             "lookup": self.lookup,
         }
-        rasa.utils.io.create_directory_for_file(memorized_file)
-        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
+        rasa.shared.utils.io.create_directory_for_file(memorized_file)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
     def load(cls, path: Text) -> "MemoizationPolicy":
