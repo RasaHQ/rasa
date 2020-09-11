@@ -140,7 +140,9 @@ def test_resolve_intent_response_key_from_label(
     )
 
 
-async def test_train_model_checkpointing(component_builder: ComponentBuilder, tmpdir: Path):
+async def test_train_model_checkpointing(
+    component_builder: ComponentBuilder, tmpdir: Path
+):
     from pathlib import Path
 
     model_name = "rs-checkpointed-model"

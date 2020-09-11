@@ -370,7 +370,9 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
     assert len(all_files) == 3
 
 
-async def test_train_model_checkpointing(component_builder: ComponentBuilder, tmpdir: Path):
+async def test_train_model_checkpointing(
+    component_builder: ComponentBuilder, tmpdir: Path
+):
     model_name = "nlu-checkpointed-model"
     best_model_file = Path(str(tmpdir), model_name)
     assert not best_model_file.exists()
