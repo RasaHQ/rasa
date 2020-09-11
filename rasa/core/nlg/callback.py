@@ -21,6 +21,7 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
             "elements": {"type": ["array", "null"], "items": {"type": "object"}},
             "attachment": {"type": ["object", "null"]},
             "image": {"type": ["string", "null"]},
+            "custom": {"type": "object"},
         },
     }
 

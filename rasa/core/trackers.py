@@ -21,13 +21,13 @@ from typing import (
 import typing
 
 import rasa.shared.utils.io
-from rasa.nlu.constants import (
+from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
-    ACTION_NAME,
+    ENTITY_ATTRIBUTE_ROLE,
     ACTION_TEXT,
+    ACTION_NAME,
 )
 from rasa.core.constants import (
     SHOULD_NOT_BE_SET,
@@ -594,7 +594,7 @@ class DialogueStateTracker:
         """Dump the tracker as a story to a file."""
         import rasa.utils.io
 
-        rasa.utils.io.write_text_file(
+        rasa.shared.utils.io.write_text_file(
             self.export_stories() + "\n", export_path, append=True
         )
 

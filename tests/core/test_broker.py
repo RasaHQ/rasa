@@ -10,6 +10,7 @@ from _pytest.logging import LogCaptureFixture
 
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
@@ -129,7 +130,7 @@ def test_file_broker_from_config(tmp_path: Path):
           type: "file"
     """
     )
-    rasa.utils.io.write_text_file(endpoint_config, tmp_path / "endpoint.yml")
+    rasa.shared.utils.io.write_text_file(endpoint_config, tmp_path / "endpoint.yml")
 
     cfg = read_endpoint_config(str(tmp_path / "endpoint.yml"), "event_broker")
     actual = EventBroker.create(cfg)

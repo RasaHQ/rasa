@@ -4,7 +4,7 @@ from typing import List, Text
 import logging
 
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(

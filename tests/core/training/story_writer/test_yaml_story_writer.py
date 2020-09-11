@@ -10,6 +10,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
 from rasa.core.training.story_reader.yaml_story_reader import YAMLStoryReader
 from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.core.training.structures import STORY_START
 
 
 @pytest.mark.parametrize(
@@ -27,7 +28,7 @@ async def test_simple_story(
 ):
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_yaml_file, unfold_or_utterances=False,
+        default_domain, None, False, input_md_file, unfold_or_utterances=False,
     )
     original_md_story_steps = await original_md_reader.read_from_file(input_md_file)
 
@@ -52,6 +53,19 @@ async def test_simple_story(
         processed_yaml_story_steps, original_yaml_story_steps
     ):
         assert len(processed_step.events) == len(original_step.events)
+
+
+async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
+    input_md_file = "data/test_stories/stories.md"
+
+    original_md_reader = MarkdownStoryReader(
+        default_domain, None, False, input_md_file, unfold_or_utterances=False,
+    )
+    original_md_story_steps = await original_md_reader.read_from_file(input_md_file)
+
+    yaml_text = YAMLStoryWriter().dumps(original_md_story_steps)
+
+    assert STORY_START not in yaml_text
 
 
 async def test_forms_are_converted(default_domain: Domain):

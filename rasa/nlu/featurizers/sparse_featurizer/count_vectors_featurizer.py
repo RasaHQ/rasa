@@ -12,21 +12,22 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
-from rasa.utils.features import Features
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TEXT,
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    INTENT,
-    ACTION_TEXT,
-    INTENT_RESPONSE_KEY,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    RESPONSE,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
     FEATURIZER_CLASS_ALIAS,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    INTENT_RESPONSE_KEY,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
 )
 
@@ -80,6 +81,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings
+        # indicates whether the featurizer should use the lemma of a word for
+        # counting (if available) or not
+        "use_lemma": True,
     }
 
     @classmethod
@@ -116,6 +120,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
+
+        # use the lemma of the words or not
+        self.use_lemma = self.component_config["use_lemma"]
 
     # noinspection PyPep8Naming
     def _load_OOV_params(self) -> None:
@@ -213,13 +220,15 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
 
-    @staticmethod
     def _get_message_tokens_by_attribute(
-        message: "Message", attribute: Text
+        self, message: "Message", attribute: Text
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
-            return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
+            return [
+                t.lemma if self.use_lemma else t.text
+                for t in message.get(TOKENS_NAMES[attribute])
+            ]
         else:
             return []
 
@@ -498,7 +507,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         spacy_nlp = kwargs.get("spacy_nlp")
         if spacy_nlp is not None:
             # create spacy lemma_ for OOV_words
-            self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
+            self.OOV_words = [
+                t.lemma_ if self.use_lemma else t.text
+                for w in self.OOV_words
+                for t in spacy_nlp(w)
+            ]
 
         # process sentences and collect data for all attributes
         processed_attribute_tokens = self._get_all_attributes_processed_tokens(

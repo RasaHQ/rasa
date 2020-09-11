@@ -29,7 +29,6 @@ SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 # start of special user message section
-INTENT_MESSAGE_PREFIX = "/"
 EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
 
 USER_INTENT_RESTART = "restart"
