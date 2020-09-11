@@ -239,11 +239,10 @@ class RulePolicy(MemoizationPolicy):
             ):
                 lookup[feature_key] = DO_NOT_VALIDATE_LOOP
             elif (
-                # some action other than action_listen and active_loop
-                # is predicted in unhappy path,
+                # some action other than active_loop is predicted in unhappy path,
                 # therefore active_loop shouldn't be predicted by the rule
                 not is_prev_action_listen_in_state(states[-1])
-                and action not in {ACTION_LISTEN_NAME, active_loop}
+                and action != active_loop
             ):
                 lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
         return lookup

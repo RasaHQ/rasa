@@ -18,8 +18,6 @@ stories:
       - intent: request_restaurant
       - action: restaurant_form
       - active_loop: restaurant_form
-      - intent: chitchat
-      - action: utter_greet
       - intent: stop
       - action: utter_ask_continue
       - intent: deny
