@@ -260,7 +260,7 @@ class RulePolicy(MemoizationPolicy):
 
         if bad_rules:
             raise InvalidRule(
-                f"Found rules {bad_rules} that contain more than "
+                f"Found rules '{', '.join(bad_rules)}' that contain more than "
                 f"{self.ALLOWED_NUMBER_OF_USER_INPUTS} user inputs. "
                 f"Rules are not meant to hardcode a state machine. "
                 f"Please use stories for these cases."
