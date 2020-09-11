@@ -9,17 +9,16 @@ from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
-from rasa.utils.features import Features
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
     TOKENS_NAMES,
 )
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 import numpy as np
 import tensorflow as tf
 

@@ -4,9 +4,12 @@ from pathlib import Path
 from typing import Text, Dict, Type, List
 
 import pytest
+
+import rasa.shared.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
-from rasa.core.events import SlotSet, UserUttered, ActionExecuted
-from rasa.core.training.structures import StoryStep, StoryGraph
+import rasa.shared.core.constants
+from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.importers.importer import (
     CombinedDataImporter,
     TrainingDataImporter,
@@ -18,8 +21,8 @@ from rasa.importers.rasa import RasaFileImporter
 
 from rasa.importers.multi_project import MultiProjectImporter
 
-from rasa.nlu.constants import ACTION_NAME, INTENT_NAME, ACTION_TEXT, TEXT
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT_NAME, TEXT
+from rasa.shared.nlu.training_data.message import Message
 
 
 async def test_use_of_interface():
@@ -104,11 +107,11 @@ def test_load_from_dict(
 
 
 def test_load_from_config(tmpdir: Path):
-    import rasa.utils.io as io_utils
-
     config_path = str(tmpdir / "config.yml")
 
-    io_utils.write_yaml({"importers": [{"name": "MultiProjectImporter"}]}, config_path)
+    rasa.shared.utils.io.write_yaml(
+        {"importers": [{"name": "MultiProjectImporter"}]}, config_path
+    )
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
@@ -240,13 +243,11 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
         (await importer_without_e2e.get_nlu_data()).training_examples
     )
 
-    from rasa.core.actions import action
-
     extended_training_data = await importer.get_nlu_data()
     assert all(
         Message(data={ACTION_NAME: action_name, ACTION_TEXT: ""})
         in extended_training_data.training_examples
-        for action_name in action.default_action_names()
+        for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     )
 
 

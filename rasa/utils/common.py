@@ -8,13 +8,12 @@ from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
 import rasa.core.utils
 import rasa.utils.io
 from rasa.constants import (
-    DEFAULT_LOG_LEVEL,
     DEFAULT_LOG_LEVEL_LIBRARIES,
-    ENV_LOG_LEVEL,
     ENV_LOG_LEVEL_LIBRARIES,
     GLOBAL_USER_CONFIG_PATH,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
+from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -182,13 +181,6 @@ def obtain_verbosity() -> int:
     return verbosity
 
 
-def is_logging_disabled() -> bool:
-    """Returns true, if log level is set to WARNING or ERROR, false otherwise."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
-    return log_level == "ERROR" or log_level == "WARNING"
-
-
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
     return sorted(dicts, key=lambda d: list(d.keys())[0])
@@ -286,24 +278,6 @@ def update_existing_keys(
         if k in updated:
             updated[k] = v
     return updated
-
-
-def lazy_property(function: Callable) -> Any:
-    """Allows to avoid recomputing a property over and over.
-
-    The result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
-
-    attr_name = "_lazy_" + function.__name__
-
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, function(self))
-        return getattr(self, attr_name)
-
-    return _lazyprop
 
 
 def raise_deprecation_warning(

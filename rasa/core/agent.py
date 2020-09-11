@@ -14,9 +14,11 @@ from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+import rasa.core.interpreter
+from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
@@ -28,7 +30,7 @@ from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     TrackerStore,
 )
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.utils
 from rasa.exceptions import ModelNotFound
 from rasa.importers.importer import TrainingDataImporter
@@ -40,6 +42,7 @@ from rasa.model import (
 )
 from rasa.nlu.utils import is_url
 import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
 
@@ -80,7 +83,7 @@ def _load_interpreter(
         The NLU interpreter.
     """
     if nlu_path:
-        return NaturalLanguageInterpreter.create(nlu_path)
+        return rasa.core.interpreter.create_interpreter(nlu_path)
 
     return agent.interpreter or RegexInterpreter()
 
@@ -346,7 +349,7 @@ class Agent:
             self.policy_ensemble, self.domain
         )
 
-        self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
@@ -371,7 +374,7 @@ class Agent:
         self.policy_ensemble = policy_ensemble
 
         if interpreter:
-            self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+            self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         self._set_fingerprint(fingerprint)
 
@@ -415,7 +418,7 @@ class Agent:
         core_model, nlu_model = get_model_subdirectories(model_path)
 
         if not interpreter and nlu_model:
-            interpreter = NaturalLanguageInterpreter.create(nlu_model)
+            interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
 
         domain = None
         ensemble = None
@@ -526,7 +529,7 @@ class Agent:
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         **kwargs: Any,
-    ) -> DialogueStateTracker:
+    ) -> Optional[DialogueStateTracker]:
         """Append a message to a dialogue - does not predict actions."""
 
         processor = self.create_processor(message_preprocessor)
@@ -539,7 +542,7 @@ class Agent:
         output_channel: OutputChannel,
         policy: Text,
         confidence: float,
-    ) -> DialogueStateTracker:
+    ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
 
         processor = self.create_processor()
@@ -566,7 +569,7 @@ class Agent:
         text_message: Union[Text, Dict[Text, Any]],
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         output_channel: Optional[OutputChannel] = None,
-        sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID,
+        sender_id: Optional[Text] = DEFAULT_SENDER_ID,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 
@@ -775,12 +778,12 @@ class Agent:
         resource_name: Text,
         output_file: Text,
         max_history: Optional[int] = None,
-        nlu_training_data: Optional[Text] = None,
+        nlu_training_data: Optional[TrainingData] = None,
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
-        from rasa.core.training.visualization import visualize_stories
-        from rasa.core.training import loading
+        from rasa.shared.core.training_data.visualization import visualize_stories
+        from rasa.shared.core.training_data import loading
 
         """Visualize the loaded training data from the resource."""
 

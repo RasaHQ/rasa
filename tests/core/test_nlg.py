@@ -75,6 +75,11 @@ def test_nlg_schema_validation_empty_image():
     assert CallbackNaturalLanguageGenerator.validate_response(content)
 
 
+def test_nlg_schema_validation_empty_custom_dict():
+    content = {"custom": {}}
+    assert CallbackNaturalLanguageGenerator.validate_response(content)
+
+
 @pytest.mark.parametrize(
     "slot_name, slot_value",
     [

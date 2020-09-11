@@ -3,14 +3,16 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
