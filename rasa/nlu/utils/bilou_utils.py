@@ -289,6 +289,13 @@ def ensure_consistent_bilou_tagging(
                 # decide which tag this entity should use
                 tag, tag_score = _tag_to_use(relevant_tags, relevant_confidences)
 
+                logger.debug(
+                    f"Using tag '{tag}' for entity with mixed tag labels "
+                    f"(original tags: {predicted_tags[idx : last_idx + 1]}, "
+                    f"(original confidences: "
+                    f"{predicted_confidences[idx : last_idx + 1]})."
+                )
+
                 # all tags that change get the score of that tag assigned
                 predicted_confidences = _update_confidences(
                     predicted_confidences, predicted_tags, tag, tag_score, idx, last_idx
