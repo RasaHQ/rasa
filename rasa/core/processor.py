@@ -676,7 +676,7 @@ class MessageProcessor:
                 "Please check the logs of your action server for "
                 "more information."
             )
-            logger.debug(e, exc_info=True)
+            logger.error(str(e), exc_info=True)
             events = []
 
         self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
