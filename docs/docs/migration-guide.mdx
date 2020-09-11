@@ -458,8 +458,9 @@ response_selector_output.get("default")
   featurizer for Core featurization.
 
 * `BinarySingleStateFeaturizer` is deprecated and will be removed in the future.
-  Please use `SingleStateFeaturizer` with nlu pipeline where `intent_tokenization_flag`
-  of a Tokenizer is set to `False`.
+  If you train both NLU and Core (using `rasa train`),
+  use `SingleStateFeaturizer` with NLU pipeline
+  where `intent_tokenization_flag` of a Tokenizer is set to `False`.
 
   For example:
   ```yaml
