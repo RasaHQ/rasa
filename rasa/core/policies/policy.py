@@ -218,25 +218,25 @@ class Policy:
     def _metadata(self) -> Dict[Text, Any]:
         """Returns this policy's attributes that should be persisted.
 
+        Policies following the default `persist()` and `load()` templates must
+        implement the `_metadata()` method."
+
         Returns:
             The policy metadata.
         """
-        raise NotImplementedError(
-            "Policies following the default `persist()` and `load()` templates must "
-            "implement the `_metadata()` method."
-        )
+        pass
 
     @classmethod
     def _metadata_filename(cls) -> Text:
         """Returns the filename of the persisted policy metadata.
 
+        Policies following the default `persist()` and `load()` templates must
+        implement the `_metadata_filename()` method.
+
         Returns:
             The filename of the persisted policy metadata.
         """
-        raise NotImplementedError(
-            "Policies following the default `persist()` and `load()` templates must "
-            "implement the `_metadata_filename()` method."
-        )
+        pass
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to storage.
