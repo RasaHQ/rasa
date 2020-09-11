@@ -251,7 +251,7 @@ class Policy:
         file = Path(path) / self._metadata_filename()
 
         rasa.shared.utils.io.create_directory_for_file(file)
-        rasa.shared.utils.io.dump_obj_as_json_to_file(file, data)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
     def load(cls, path: Union[Text, Path]) -> "Policy":
