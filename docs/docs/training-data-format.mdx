@@ -185,6 +185,23 @@ nlu:
 The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the components in the NLU pipeline. In the example above, the sentiment of
 the example could be used by a custom component in the pipeline for sentiment analysis.
 
+You can also specify this metadata at the intent level:
+
+```yaml-rasa
+nlu:
+- intent: greet
+  metadata:
+    sentiment: neutral
+  examples:
+  - text: |
+      hi
+  - text: |
+      hey there!
+```
+
+In this case, the content of the `metadata` key is passed on to every intent example.
+
+
 ### Entities
 
 [Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) based on a character pattern.
