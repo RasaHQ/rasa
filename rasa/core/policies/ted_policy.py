@@ -409,7 +409,7 @@ class TEDPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        if self.model.best_model_file is not None:
+        if self.model.checkpoint_model:
             self.model.copy_best(str(tf_model_file))
         else:
             self.model.save(str(tf_model_file))
