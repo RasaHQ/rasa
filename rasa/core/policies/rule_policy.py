@@ -295,7 +295,7 @@ class RulePolicy(MemoizationPolicy):
         # RulePolicy will always predict active_loop first,
         # but inside loop unhappy path there might be another action
         if predicted_action_name == tracker.active_loop_name:
-            rasa.core.test.emulate_form_rejection(tracker)
+            rasa.core.test.emulate_loop_rejection(tracker)
             predicted_action_name = self._predict_next_action(
                 tracker, domain, interpreter
             )
