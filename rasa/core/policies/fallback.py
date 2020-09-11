@@ -1,10 +1,10 @@
 import logging
 from typing import Any, List, Text, Optional, Dict, Tuple
 
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
-
-from rasa.utils import common as common_utils
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -56,7 +56,7 @@ class FallbackPolicy(Policy):
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
 
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{self.__class__.__name__}' is deprecated and will be removed "
             "in the future. It is recommended to use the 'RulePolicy' instead.",
             docs=DOCS_URL_MIGRATION_GUIDE,

@@ -192,7 +192,7 @@ class TrackerStore:
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
 
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
             f"trackers is deprecated. Rasa will perform any "

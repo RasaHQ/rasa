@@ -29,7 +29,7 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEACTIVATE_FORM_NAME,
+    ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -69,7 +69,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionRestart(),
         ActionSessionStart(),
         ActionDefaultFallback(),
-        ActionDeactivateForm(),
+        ActionDeactivateLoop(),
         ActionRevertFallbackEvents(),
         ActionDefaultAskAffirmation(),
         ActionDefaultAskRephrase(),
@@ -493,11 +493,11 @@ class ActionDefaultFallback(ActionUtterTemplate):
         return evts + [UserUtteranceReverted()]
 
 
-class ActionDeactivateForm(Action):
-    """Deactivates a form"""
+class ActionDeactivateLoop(Action):
+    """Deactivates an active loop."""
 
     def name(self) -> Text:
-        return ACTION_DEACTIVATE_FORM_NAME
+        return ACTION_DEACTIVATE_LOOP_NAME
 
     async def run(
         self,
