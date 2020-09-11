@@ -34,6 +34,7 @@ git clone --depth=1 --branch=$DOCS_BRANCH git@github.com:$GITHUB_REPOSITORY.git 
 if [ ! -z "$EXISTING_VERSION" ]
 then
     echo "Updating docs for existing version $EXISTING_VERSION..."
+    # FIXME: this doesn't support any type of docs update on an existing versioin at the moment
     cp -R docs/docs/ $TMP_DOCS_FOLDER/docs/versioned_docs/version-$EXISTING_VERSION/
 else
     echo "Updating the docs..."
