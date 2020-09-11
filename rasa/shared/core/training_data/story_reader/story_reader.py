@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Dict, Text, List, Any
 
-from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.shared.core.constants import (
     LEGACY_ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,

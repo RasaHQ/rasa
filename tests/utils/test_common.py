@@ -3,7 +3,7 @@ from typing import Collection, List, Text
 
 import pytest
 
-from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.utils.common import (
     raise_deprecation_warning,
     transform_collection_to_sentence,

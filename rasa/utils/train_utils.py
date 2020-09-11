@@ -2,7 +2,7 @@ from typing import Optional, Text, Dict, Any, Union, List, Tuple
 
 import numpy as np
 
-from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils

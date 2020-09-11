@@ -11,9 +11,12 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
     GLOBAL_USER_CONFIG_PATH,
+)
+from rasa.shared.constants import (
+    DEFAULT_LOG_LEVEL,
+    ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
-from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
