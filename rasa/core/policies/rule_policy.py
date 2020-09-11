@@ -320,15 +320,11 @@ class RulePolicy(MemoizationPolicy):
         for tracker in trackers:
             running_tracker = tracker.init_copy()
             running_tracker.sender_id = tracker.sender_id
-            next_action_is_unpredictable = False
+            # the first action is always unpredictable
+            next_action_is_unpredictable = True
             for event in tracker.applied_events():
                 # do not run prediction on unpredictable actions
                 if not isinstance(event, ActionExecuted):
-                    running_tracker.update(event)
-                    continue
-
-                if next_action_is_unpredictable:
-                    next_action_is_unpredictable = False  # reset unpredictability
                     running_tracker.update(event)
                     continue
 
@@ -337,6 +333,11 @@ class RulePolicy(MemoizationPolicy):
                     # RULE_SNIPPET_ACTION_NAME is unpredictable
                     next_action_is_unpredictable = True
                     # do not add RULE_SNIPPET_ACTION_NAME event
+                    continue
+
+                if next_action_is_unpredictable or event.unpredictable:
+                    next_action_is_unpredictable = False  # reset unpredictability
+                    running_tracker.update(event)
                     continue
 
                 gold_action_name = event.action_name or event.action_text

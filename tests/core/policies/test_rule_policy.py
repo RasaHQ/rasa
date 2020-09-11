@@ -53,9 +53,9 @@ GREET_RULE.is_rule_tracker = True
 
 def _form_submit_rule(
     domain: Domain, submit_action_name: Text, form_name: Text
-) -> DialogueStateTracker:
+) -> TrackerWithCachedStates:
     return TrackerWithCachedStates.from_events(
-        "bla",
+        "form submit rule",
         domain=domain,
         slots=domain.slots,
         evts=[
@@ -75,9 +75,9 @@ def _form_submit_rule(
 
 def _form_activation_rule(
     domain: Domain, form_name: Text, activation_intent_name: Text
-) -> DialogueStateTracker:
+) -> TrackerWithCachedStates:
     return TrackerWithCachedStates.from_events(
-        "bla",
+        "form activation rule",
         domain=domain,
         slots=domain.slots,
         evts=[
@@ -628,7 +628,9 @@ async def test_form_unhappy_path_from_story():
             # We are in an active form
             ActionExecuted(form_name),
             ActiveLoop(form_name),
-            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # in training stories there is either intent or text, never both
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
             # After our bot says "hi", we want to run a specific action
             ActionExecuted(handle_rejection_action_name),
@@ -791,6 +793,7 @@ async def test_form_unhappy_path_no_validation_from_story():
             # We are in an active form
             ActionExecuted(form_name),
             ActiveLoop(form_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
             # When a user says "hi", and the form is unhappy,
             # we want to run a specific action
             UserUttered(intent={"name": GREET_INTENT_NAME}),
@@ -1035,9 +1038,7 @@ def test_immediate_submit():
     form_submit_rule = _form_submit_rule(domain, submit_action_name, form_name)
 
     policy = RulePolicy(restrict_rules=False)
-    policy.train(
-        [GREET_RULE, form_activation_rule, form_submit_rule], domain, RegexInterpreter()
-    )
+    policy.train([form_activation_rule, form_submit_rule], domain, RegexInterpreter())
 
     form_conversation = DialogueStateTracker.from_events(
         "in a form",
