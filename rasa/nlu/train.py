@@ -13,7 +13,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 
 if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ async def train(
     **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
 
     if not isinstance(nlu_config, RasaNLUModelConfig):
         nlu_config = config.load(nlu_config)

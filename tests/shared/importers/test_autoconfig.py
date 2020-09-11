@@ -8,16 +8,16 @@ import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
-import rasa.shared.utils.io
 from rasa.constants import CONFIG_AUTOCONFIGURABLE_KEYS
-from rasa.importers import autoconfig
 from rasa.utils import io as io_utils
+import rasa.shared.utils.io
+from rasa.shared.importers import autoconfig
 
 CONFIG_FOLDER = Path("data/test_config")
 
 SOME_CONFIG = CONFIG_FOLDER / "stack_config.yml"
-DEFAULT_CONFIG_EN = Path("rasa/importers/default_config_en.yml")
-DEFAULT_CONFIG_OTHER_LANGUAGE = Path("rasa/importers/default_config_other_language.yml")
+DEFAULT_CONFIG_EN = Path("rasa/shared/importers/default_config_en.yml")
+DEFAULT_CONFIG_OTHER_LANGUAGE = Path("rasa/shared/importers/default_config_other_language.yml")
 
 
 @pytest.mark.parametrize(

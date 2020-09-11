@@ -15,12 +15,11 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions import action
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.core.channels import UserMessage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.training import interactive
-from rasa.importers.rasa import TrainingDataImporter
+from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message

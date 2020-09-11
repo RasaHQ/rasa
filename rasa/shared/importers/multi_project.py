@@ -4,14 +4,14 @@ from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
 import rasa.shared.data
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.shared.core.domain import Domain
-from rasa.importers.importer import TrainingDataImporter
-from rasa.importers import utils
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers import utils
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.utils.common import mark_as_experimental_feature
-import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 

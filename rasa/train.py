@@ -6,7 +6,7 @@ from typing import Text, Optional, List, Union, Dict
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.model import FingerprintComparisonResult
 from rasa.shared.core.domain import Domain

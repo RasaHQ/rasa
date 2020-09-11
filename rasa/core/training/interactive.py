@@ -54,7 +54,7 @@ from rasa.shared.core.training_data.visualization import (
     visualize_neighborhood,
 )
 from rasa.core.utils import AvailableEndpoints
-from rasa.importers.rasa import TrainingDataImporter
+from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 

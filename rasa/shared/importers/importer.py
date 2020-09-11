@@ -12,7 +12,7 @@ from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import INTENT_NAME, TEXT
-from rasa.importers.autoconfig import TrainingType
+from rasa.shared.importers.autoconfig import TrainingType
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
@@ -135,7 +135,7 @@ class TrainingDataImporter:
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
 
-        from rasa.importers.rasa import RasaFileImporter
+        from rasa.shared.importers.rasa import RasaFileImporter
 
         config = config or {}
         importers = config.get("importers", [])
@@ -164,8 +164,8 @@ class TrainingDataImporter:
         training_data_paths: Optional[List[Text]] = None,
         training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> Optional["TrainingDataImporter"]:
-        from rasa.importers.multi_project import MultiProjectImporter
-        from rasa.importers.rasa import RasaFileImporter
+        from rasa.shared.importers.multi_project import MultiProjectImporter
+        from rasa.shared.importers.rasa import RasaFileImporter
 
         module_path = importer_config.pop("name", None)
         if module_path == RasaFileImporter.__name__:

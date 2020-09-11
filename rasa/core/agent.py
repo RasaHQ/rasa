@@ -33,7 +33,7 @@ from rasa.core.tracker_store import (
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.utils
 from rasa.exceptions import ModelNotFound
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.model import (
     get_latest_model,
     get_model,

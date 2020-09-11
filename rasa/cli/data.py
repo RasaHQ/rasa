@@ -11,7 +11,7 @@ import rasa.cli.utils
 from rasa.cli.utils import print_error_and_exit, print_info, print_warning
 from rasa.constants import DEFAULT_DATA_PATH
 from rasa.shared.data import is_valid_filetype
-from rasa.importers.rasa import RasaFileImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator

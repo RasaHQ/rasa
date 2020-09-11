@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 import rasa.core
-import rasa.importers.autoconfig as autoconfig
+import rasa.shared.importers.autoconfig as autoconfig
 from rasa.core.interpreter import RasaNLUInterpreter
 
 from rasa.train import train_core, train_nlu, train

@@ -25,7 +25,7 @@ from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
 
 
 logger = logging.getLogger(__name__)

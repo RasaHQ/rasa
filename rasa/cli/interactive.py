@@ -10,7 +10,7 @@ from rasa.cli.arguments import interactive as arguments
 from rasa import model
 
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
