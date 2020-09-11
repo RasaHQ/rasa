@@ -3,10 +3,9 @@ import zlib
 import base64
 import json
 import logging
-from pathlib import Path
 
 from tqdm import tqdm
-from typing import Optional, Any, Dict, List, Text, Union
+from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
 import rasa.shared.utils.io

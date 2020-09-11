@@ -1,10 +1,8 @@
 import logging
-from pathlib import Path
 from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
 
 import json
 
-import rasa.utils.io
 from rasa.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.domain import Domain, InvalidDomain, State
