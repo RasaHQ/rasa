@@ -20,7 +20,6 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     REQUESTED_SLOT,
-    UTTER_PREFIX,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -38,6 +37,7 @@ from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DOCS_URL_DOMAINS,
     DEFAULT_SENDER_ID,
+    UTTER_PREFIX,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
