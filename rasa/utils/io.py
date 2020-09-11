@@ -117,16 +117,6 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
         return directory
 
 
-def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
-    if path is None or potential_parent_directory is None:
-        return False
-
-    path = os.path.abspath(path)
-    potential_parent_directory = os.path.abspath(potential_parent_directory)
-
-    return potential_parent_directory in path
-
-
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
     """Creates a tempfile.NamedTemporaryFile object for data.
 

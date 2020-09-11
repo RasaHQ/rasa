@@ -4,6 +4,8 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
+from rasa.shared.utils.cli import print_error
+
 if TYPE_CHECKING:
     from questionary import Question
 
@@ -63,7 +65,7 @@ def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
     if not os.path.exists(path):
         return mandatory_keys
 
-    config_data = rasa.utils.io.read_config_file(path)
+    config_data = rasa.shared.utils.io.read_config_file(path)
 
     return [k for k in mandatory_keys if k not in config_data or config_data[k] is None]
 
@@ -196,33 +198,6 @@ def payload_from_button_question(button_question: "Question") -> Text:
         # Extract intent slash command if it's a button
         response = response[response.find("(") + 1 : response.find(")")]
     return response
-
-
-def print_color(*args: Any, color: Text):
-    print(rasa.shared.utils.io.wrap_with_color(*args, color=color))
-
-
-def print_success(*args: Any):
-    print_color(*args, color=rasa.shared.utils.io.bcolors.OKGREEN)
-
-
-def print_info(*args: Any):
-    print_color(*args, color=rasa.shared.utils.io.bcolors.OKBLUE)
-
-
-def print_warning(*args: Any):
-    print_color(*args, color=rasa.shared.utils.io.bcolors.WARNING)
-
-
-def print_error(*args: Any):
-    print_color(*args, color=rasa.shared.utils.io.bcolors.FAIL)
-
-
-def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:
-    """Print error message and exit the application."""
-
-    print_error(message)
-    sys.exit(exit_code)
 
 
 def signal_handler(sig, frame) -> NoReturn:

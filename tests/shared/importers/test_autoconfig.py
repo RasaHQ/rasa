@@ -8,7 +8,7 @@ import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.constants import CONFIG_AUTOCONFIGURABLE_KEYS
+from rasa.shared.constants import CONFIG_AUTOCONFIGURABLE_KEYS
 from rasa.utils import io as io_utils
 import rasa.shared.utils.io
 from rasa.shared.importers import autoconfig
@@ -17,7 +17,9 @@ CONFIG_FOLDER = Path("data/test_config")
 
 SOME_CONFIG = CONFIG_FOLDER / "stack_config.yml"
 DEFAULT_CONFIG_EN = Path("rasa/shared/importers/default_config_en.yml")
-DEFAULT_CONFIG_OTHER_LANGUAGE = Path("rasa/shared/importers/default_config_other_language.yml")
+DEFAULT_CONFIG_OTHER_LANGUAGE = Path(
+    "rasa/shared/importers/default_config_other_language.yml"
+)
 
 
 @pytest.mark.parametrize(
@@ -71,9 +73,11 @@ def test_get_configuration_missing_file(tmp_path: Path, config_file: Text):
 )
 def test_auto_configure(language: Text, keys_to_configure: Set[Text]):
     if sys.platform == "win32" or not language == "en":
-        default_config = io_utils.read_config_file(DEFAULT_CONFIG_OTHER_LANGUAGE)
+        default_config = rasa.shared.utils.io.read_config_file(
+            DEFAULT_CONFIG_OTHER_LANGUAGE
+        )
     else:
-        default_config = io_utils.read_config_file(DEFAULT_CONFIG_EN)
+        default_config = rasa.shared.utils.io.read_config_file(DEFAULT_CONFIG_EN)
 
     config = autoconfig._auto_configure({"language": language}, keys_to_configure)
 
@@ -102,7 +106,7 @@ def test_add_missing_config_keys_to_file(
 
     autoconfig._add_missing_config_keys_to_file(config_file, missing_keys)
 
-    config_after_addition = io_utils.read_config_file(config_file)
+    config_after_addition = rasa.shared.utils.io.read_config_file(config_file)
 
     assert all(key in config_after_addition for key in missing_keys)
 
@@ -111,7 +115,7 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
     config_path = tmp_path / "non_existent_config.yml"
 
-    config = io_utils.read_config_file(str(SOME_CONFIG))
+    config = rasa.shared.utils.io.read_config_file(str(SOME_CONFIG))
 
     autoconfig._dump_config(config, str(config_path), set(), {"policies"})
 

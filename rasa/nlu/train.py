@@ -2,6 +2,7 @@ import logging
 import typing
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
+import rasa.shared.utils.common
 import rasa.utils.common as common_utils
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
@@ -105,7 +106,9 @@ async def train(
 
     training_data.print_stats()
     if training_data.entity_roles_groups_used():
-        common_utils.mark_as_experimental_feature("Entity Roles and Groups feature")
+        rasa.shared.utils.common.mark_as_experimental_feature(
+            "Entity Roles and Groups feature"
+        )
 
     interpreter = trainer.train(training_data, **kwargs)
 

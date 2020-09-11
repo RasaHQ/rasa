@@ -5,6 +5,7 @@ import logging
 
 import rasa.shared.utils.common
 import rasa.shared.core.constants
+import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -13,8 +14,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import INTENT_NAME, TEXT
 from rasa.shared.importers.autoconfig import TrainingType
-import rasa.utils.io as io_utils
-import rasa.utils.common as common_utils
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
 logger = logging.getLogger(__name__)
@@ -81,7 +80,7 @@ class TrainingDataImporter:
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
 
-        config = io_utils.read_config_file(config_path)
+        config = rasa.shared.utils.io.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
             config, config_path, domain_path, training_data_paths, training_type
         )
@@ -183,7 +182,7 @@ class TrainingDataImporter:
 
         importer_config = dict(training_type=training_type, **importer_config)
 
-        constructor_arguments = common_utils.minimal_kwargs(
+        constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
             importer_config, importer_class
         )
 

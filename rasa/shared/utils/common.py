@@ -1,5 +1,7 @@
 import importlib
-from typing import Text, Dict, Optional, Any, List, Callable
+from typing import Text, Dict, Optional, Any, List, Callable, Collection
+
+from rasa.utils.common import arguments_of, logger
 
 
 def class_from_module_path(
@@ -61,3 +63,49 @@ def lazy_property(function: Callable) -> Any:
         return getattr(self, attr_name)
 
     return _lazyprop
+
+
+def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
+    """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
+    x = list(collection)
+    if len(x) >= 2:
+        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
+    return "".join(collection)
+
+
+def minimal_kwargs(
+    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
+) -> Dict[Text, Any]:
+    """Returns only the kwargs which are required by a function. Keys, contained in
+    the exception list, are not included.
+
+    Args:
+        kwargs: All available kwargs.
+        func: The function which should be called.
+        excluded_keys: Keys to exclude from the result.
+
+    Returns:
+        Subset of kwargs which are accepted by `func`.
+
+    """
+
+    excluded_keys = excluded_keys or []
+
+    possible_arguments = arguments_of(func)
+
+    return {
+        k: v
+        for k, v in kwargs.items()
+        if k in possible_arguments and k not in excluded_keys
+    }
+
+
+def mark_as_experimental_feature(feature_name: Text) -> None:
+    """Warns users that they are using an experimental feature."""
+
+    logger.warning(
+        f"The {feature_name} is currently experimental and might change or be "
+        "removed in the future 🔬 Please share your feedback on it in the "
+        "forum (https://forum.rasa.com) to help us make this feature "
+        "ready for production."
+    )

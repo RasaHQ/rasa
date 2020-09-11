@@ -5,6 +5,8 @@ import typing
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
+import rasa.shared.utils.cli
+import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.constants import (
@@ -78,7 +80,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     p = Path(model_directory)
     if p.is_file():
         if model_directory != rasa.model.get_latest_model():
-            cli_utils.print_warning(
+            rasa.shared.utils.cli.print_warning(
                 "You passed a file as '--model'. Will use the directory containing "
                 "this file instead."
             )
@@ -127,7 +129,7 @@ def test_core(
     try:
         unpacked_model = rasa.model.get_model(model)
     except ModelNotFound:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Unable to test: could not find a model. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -136,13 +138,13 @@ def test_core(
     _agent = Agent.load(unpacked_model)
 
     if _agent.policy_ensemble is None:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Unable to test: could not find a Core model. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
 
     if isinstance(_agent.interpreter, RegexInterpreter):
-        cli_utils.print_warning(
+        rasa.shared.utils.cli.print_warning(
             "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
             "evaluation. If you added actual user messages to your test stories "
             "this will likely lead to the tests failing. In that case, you need "
@@ -151,7 +153,9 @@ def test_core(
 
     from rasa.core.test import test
 
-    kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
+    kwargs = rasa.shared.utils.common.minimal_kwargs(
+        additional_arguments, test, ["stories", "agent"]
+    )
 
     _test_core(stories, _agent, output, **kwargs)
 
@@ -179,7 +183,7 @@ def test_nlu(
     try:
         unpacked_model = get_model(model)
     except ModelNotFound:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -190,12 +194,12 @@ def test_nlu(
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
-        kwargs = utils.minimal_kwargs(
+        kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
         run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
     else:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -283,7 +287,9 @@ def perform_nlu_cross_validation(
     nlu_config = rasa.nlu.config.load(config)
     data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
-    kwargs = utils.minimal_kwargs(additional_arguments, cross_validate)
+    kwargs = rasa.shared.utils.common.minimal_kwargs(
+        additional_arguments, cross_validate
+    )
     results, entity_results, response_selection_results = cross_validate(
         data, folds, nlu_config, output, **kwargs
     )

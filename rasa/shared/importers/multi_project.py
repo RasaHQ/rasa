@@ -5,13 +5,12 @@ import os
 
 import rasa.shared.data
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers import utils
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.utils.common import mark_as_experimental_feature
+from rasa.shared.utils.common import mark_as_experimental_feature
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ class MultiProjectImporter(TrainingDataImporter):
         training_data_paths: Optional[Union[List[Text], Text]] = None,
         project_directory: Optional[Text] = None,
     ):
-        self.config = io_utils.read_config_file(config_file)
+        self.config = rasa.shared.utils.io.read_config_file(config_file)
         if domain_path:
             self._domain_paths = [domain_path]
         else:
@@ -62,7 +61,7 @@ class MultiProjectImporter(TrainingDataImporter):
     def _init_from_file(self, path: Text) -> None:
         path = os.path.abspath(path)
         if os.path.exists(path) and rasa.shared.data.is_config_file(path):
-            config = io_utils.read_config_file(path)
+            config = rasa.shared.utils.io.read_config_file(path)
 
             parent_directory = os.path.dirname(path)
             self._init_from_dict(config, parent_directory)
@@ -165,7 +164,9 @@ class MultiProjectImporter(TrainingDataImporter):
         return included
 
     def _is_in_imported_paths(self, path) -> bool:
-        return any([io_utils.is_subdirectory(path, i) for i in self._imports])
+        return any(
+            [rasa.shared.utils.io.is_subdirectory(path, i) for i in self._imports]
+        )
 
     def add_import(self, path: Text) -> None:
         self._imports.append(path)

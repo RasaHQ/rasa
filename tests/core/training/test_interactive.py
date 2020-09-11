@@ -503,7 +503,7 @@ async def test_interactive_domain_persistence(
 
         interactive._write_domain_to_file(domain_path, events, old_domain)
 
-    saved_domain = rasa.utils.io.read_config_file(domain_path)
+    saved_domain = rasa.shared.utils.io.read_config_file(domain_path)
 
     for default_action in action.default_actions():
         assert default_action.name() not in saved_domain["actions"]

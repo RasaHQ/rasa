@@ -19,6 +19,7 @@ import questionary
 from questionary import Choice, Form, Question
 
 import rasa.shared.data
+import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.cli.utils
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
@@ -1382,7 +1383,7 @@ def _print_help(skip_visualization: bool) -> None:
     else:
         visualization_help = ""
 
-    rasa.cli.utils.print_success(
+    rasa.shared.utils.cli.print_success(
         f"Bot loaded. {visualization_help}\n"
         f"Type a message and press enter "
         f"(press 'Ctr-c' to exit)."
@@ -1484,7 +1485,7 @@ async def _get_tracker_events_to_plot(
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
-        rasa.cli.utils.print_warning(
+        rasa.shared.utils.cli.print_warning(
             f"You have {number_of_trackers} different story paths in "
             f"your training data. Visualizing them is very resource "
             f"consuming. Hence, the visualization will only show the stories "

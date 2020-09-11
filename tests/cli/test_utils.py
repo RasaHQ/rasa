@@ -9,6 +9,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 import rasa.cli.utils
+import rasa.shared.utils.cli
 from rasa.cli.utils import (
     parse_last_positional_argument_as_model_path,
     get_validated_path,
@@ -101,4 +102,4 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
 
 def test_print_error_and_exit():
     with pytest.raises(SystemExit):
-        rasa.cli.utils.print_error_and_exit("")
+        rasa.shared.utils.cli.print_error_and_exit("")
