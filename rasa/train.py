@@ -117,8 +117,9 @@ async def handle_domain_if_not_exists(
         file_importer, output=output_path, fixed_model_name=fixed_model_name
     )
     print_warning(
-        "Core training was skipped because no valid domain file was found. Only an nlu-model was created."
-        "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
+        "Core training was skipped because no valid domain file was found. "
+        "Only an nlu-model was created. Please specify a valid domain using "
+        "'--domain' argument or check if the provided domain file exists."
     )
     return nlu_model_only
 
@@ -184,11 +185,13 @@ async def _train_async_internal(
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
-    fingerprint_comparison = FingerprintComparisonResult(force_training=force_training)
+
     if not force_training:
         fingerprint_comparison = model.should_retrain(
             new_fingerprint, old_model, train_path
         )
+    else:
+        fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if fingerprint_comparison.is_training_required():
         await _do_training(
@@ -334,7 +337,6 @@ async def train_core_async(
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
-        uncompress: If `True` the model will not be compressed.
         additional_arguments: Additional training parameters.
 
     Returns:
@@ -350,7 +352,8 @@ async def train_core_async(
     if domain.is_empty():
         print_error(
             "Core training was skipped because no valid domain file was found. "
-            "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
+            "Please specify a valid domain using '--domain' argument or check "
+            "if the provided domain file exists."
         )
         return None
 
@@ -360,8 +363,6 @@ async def train_core_async(
             "train a Rasa Core model using the '--stories' argument."
         )
         return
-
-    await telemetry.track_model_training(file_importer, model_type="core")
 
     return await _train_core_with_validated_data(
         file_importer,
@@ -383,6 +384,8 @@ async def _train_core_with_validated_data(
     """Train Core with validated training and config data."""
 
     import rasa.core.train
+
+    await telemetry.track_model_training(file_importer, model_type="core")
 
     with ExitStack() as stack:
         if train_path:
@@ -496,8 +499,6 @@ async def _train_nlu_async(
         )
         return
 
-    await telemetry.track_model_training(file_importer, model_type="nlu")
-
     return await _train_nlu_with_validated_data(
         file_importer,
         output=output,
@@ -519,6 +520,8 @@ async def _train_nlu_with_validated_data(
     """Train NLU with validated training and config data."""
 
     import rasa.nlu.train
+
+    await telemetry.track_model_training(file_importer, model_type="nlu")
 
     if additional_arguments is None:
         additional_arguments = {}

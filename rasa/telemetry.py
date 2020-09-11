@@ -478,9 +478,8 @@ async def track_model_training(
             {
                 "language": config.get("language"),
                 "model_type": model_type,
-                # TODO: figure out how to track these
-                # "pipeline": config.get("pipeline"),
-                # "policies": config.get("policies"),
+                "pipeline": config.get("pipeline"),
+                "policies": config.get("policies"),
                 "num_intent_examples": len(nlu_data.intent_examples),
                 "num_entity_examples": len(nlu_data.entity_examples),
                 "num_actions": len(domain.action_names),
