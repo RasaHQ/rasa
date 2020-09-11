@@ -8,7 +8,7 @@ import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
-from rasa.importers.importer import E2EImporter, TrainingDataImporter
+from rasa.shared.importers.importer import E2EImporter, TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -145,7 +145,7 @@ def test_template_key_to_intent_response_key():
     ],
 )
 def test_demo_data(files: List[Text]):
-    from rasa.importers.utils import training_data_from_paths
+    from rasa.shared.importers.utils import training_data_from_paths
 
     trainingdata = training_data_from_paths(files, language="en")
     assert trainingdata.intents == {
@@ -194,7 +194,7 @@ def test_demo_data(files: List[Text]):
     ],
 )
 def test_demo_data_filter_out_retrieval_intents(files):
-    from rasa.importers.utils import training_data_from_paths
+    from rasa.shared.importers.utils import training_data_from_paths
 
     training_data = training_data_from_paths(files, language="en")
     assert len(training_data.training_examples) == 46
@@ -218,7 +218,7 @@ def test_demo_data_filter_out_retrieval_intents(files):
     [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
 )
 def test_train_test_split(filepaths: List[Text]):
-    from rasa.importers.utils import training_data_from_paths
+    from rasa.shared.importers.utils import training_data_from_paths
 
     trainingdata = training_data_from_paths(filepaths, language="en")
 
@@ -270,7 +270,7 @@ def test_train_test_split(filepaths: List[Text]):
     [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
 )
 def test_train_test_split_with_random_seed(filepaths):
-    from rasa.importers.utils import training_data_from_paths
+    from rasa.shared.importers.utils import training_data_from_paths
 
     td = training_data_from_paths(filepaths, language="en")
 

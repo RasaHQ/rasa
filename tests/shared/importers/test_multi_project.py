@@ -12,7 +12,7 @@ import rasa.utils.io
 from rasa import model
 from rasa.core import utils
 from rasa.shared.core.domain import Domain
-from rasa.importers.multi_project import MultiProjectImporter
+from rasa.shared.importers.multi_project import MultiProjectImporter
 
 
 def test_load_imports_from_directory_tree(tmp_path: Path):

@@ -5,7 +5,7 @@ import uuid
 from typing import List
 
 from rasa.cli.arguments import shell as arguments
-from rasa.cli.utils import print_error
+from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)

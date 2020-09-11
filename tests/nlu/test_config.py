@@ -5,8 +5,8 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.importers import autoconfig
-from rasa.importers.rasa import RasaFileImporter
+from rasa.shared.importers import autoconfig
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu import config
 import rasa.shared.nlu.training_data.loading
