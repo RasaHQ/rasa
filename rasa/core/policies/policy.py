@@ -215,7 +215,7 @@ class Policy:
 
         raise NotImplementedError("Policy must have the capacity to predict.")
 
-    def _metadata(self) -> Dict[Text, Any]:
+    def _metadata(self) -> Optional[Dict[Text, Any]]:
         """Returns this policy's attributes that should be persisted.
 
         Policies following the default `persist()` and `load()` templates must
@@ -227,7 +227,7 @@ class Policy:
         pass
 
     @classmethod
-    def _metadata_filename(cls) -> Text:
+    def _metadata_filename(cls) -> Optional[Text]:
         """Returns the filename of the persisted policy metadata.
 
         Policies following the default `persist()` and `load()` templates must
@@ -248,7 +248,6 @@ class Policy:
         if self.featurizer is not None:
             self.featurizer.persist(path)
 
-        data = self._metadata()
         file = Path(path) / self._metadata_filename()
 
         rasa.shared.utils.io.create_directory_for_file(file)
@@ -273,7 +272,6 @@ class Policy:
                 featurizer = TrackerFeaturizer.load(path)
                 data["featurizer"] = featurizer
 
-            print("loading policy for", cls.__name__)
             return cls(**data)
 
         logger.info(
