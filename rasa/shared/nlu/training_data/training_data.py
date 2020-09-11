@@ -311,7 +311,7 @@ class TrainingData:
         elif rasa.shared.data.is_likely_markdown_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_markdown(), filename)
         elif rasa.shared.data.is_likely_yaml_file(filename):
-            rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
+            rasa.shared.utils.io.write_text_file(self.nlu_as_yaml(), filename)
         else:
             raise ValueError(
                 "Unsupported file format detected. Supported file formats are 'json', 'yml' "

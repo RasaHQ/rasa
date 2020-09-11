@@ -12,6 +12,7 @@ from _pytest.pytester import RunResult
 from rasa.cli import data
 from rasa.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
+from rasa.shared.utils.io import read_yaml_file
 
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
@@ -19,11 +20,25 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
         "data", "split", "nlu", "-u", "data/nlu.yml", "--training-fraction", "0.75"
     )
 
-    assert os.path.exists("train_test_split")
-    assert os.path.exists(os.path.join("train_test_split", "test_data.yml"))
-    assert os.path.exists(os.path.join("train_test_split", "training_data.yml"))
-    assert os.path.exists(os.path.join("train_test_split", "nlg_test_data.yml"))
-    assert os.path.exists(os.path.join("train_test_split", "nlg_training_data.yml"))
+    folder = Path("train_test_split")
+    assert folder.exists()
+
+    nlu_files = [
+        folder / "test_data.yml",
+        folder / "training_data.yml",
+    ]
+    nlg_files = [
+        folder / "nlg_test_data.yml",
+        folder / "nlg_training_data.yml",
+    ]
+    for yml_file in nlu_files:
+        assert yml_file.exists(), f"{yml_file} file does not exist"
+        nlu_data = read_yaml_file(yml_file)
+        assert "version" in nlu_data
+        assert nlu_data.get("nlu")
+
+    for yml_file in nlg_files:
+        assert yml_file.exists(), f"{yml_file} file does not exist"
 
 
 def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
