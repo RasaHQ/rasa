@@ -10,7 +10,7 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import EventVerbosity
+from rasa.shared.core.trackers import EventVerbosity
 from rasa.exceptions import (
     NoEventsToMigrateError,
     NoConversationsInTrackerStoreError,
