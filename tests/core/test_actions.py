@@ -39,7 +39,7 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEACTIVATE_FORM_NAME,
+    ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -110,7 +110,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
     assert instantiated_actions[3].name() == ACTION_DEFAULT_FALLBACK_NAME
-    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_FORM_NAME
+    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_LOOP_NAME
     assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME

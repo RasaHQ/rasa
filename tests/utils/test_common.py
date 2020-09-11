@@ -3,12 +3,7 @@ from typing import Collection, List, Text
 
 import pytest
 
-from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
-from rasa.utils.common import (
-    raise_deprecation_warning,
-    transform_collection_to_sentence,
-    RepeatedLogFilter,
-)
+from rasa.utils.common import transform_collection_to_sentence, RepeatedLogFilter
 
 
 @pytest.mark.parametrize(
@@ -38,44 +33,6 @@ def test_transform_collection_to_sentence(
 ):
     actual = transform_collection_to_sentence(collection)
     assert actual in possible_outputs
-
-
-def test_raise_deprecation_warning():
-    with pytest.warns(FutureWarning) as record:
-        raise_deprecation_warning(
-            "This feature is deprecated.", warn_until_version="3.0.0"
-        )
-
-    assert len(record) == 1
-    assert (
-        record[0].message.args[0]
-        == "This feature is deprecated. (will be removed in 3.0.0)"
-    )
-
-
-def test_raise_deprecation_warning_version_already_in_message():
-    with pytest.warns(FutureWarning) as record:
-        raise_deprecation_warning(
-            "This feature is deprecated and will be removed in 3.0.0!",
-            warn_until_version="3.0.0",
-        )
-
-    assert len(record) == 1
-    assert (
-        record[0].message.args[0]
-        == "This feature is deprecated and will be removed in 3.0.0!"
-    )
-
-
-def test_raise_deprecation_warning_default():
-    with pytest.warns(FutureWarning) as record:
-        raise_deprecation_warning("This feature is deprecated.")
-
-    assert len(record) == 1
-    assert record[0].message.args[0] == (
-        f"This feature is deprecated. "
-        f"(will be removed in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS})"
-    )
 
 
 def test_repeated_log_filter():

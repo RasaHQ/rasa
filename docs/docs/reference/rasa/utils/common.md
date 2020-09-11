@@ -154,16 +154,6 @@ Iterate through all the updates and update a value in the original dictionary.
 If the updates contain a key that is not present in the original dict, it will
 be ignored.
 
-#### raise\_deprecation\_warning
-
-```python
-raise_deprecation_warning(message: Text, warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS, docs: Optional[Text] = None, **kwargs: Any, ,) -> None
-```
-
-Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
-a version until which we&#x27;ll warn, and after which the support for the feature will
-be removed.
-
 ## RepeatedLogFilter Objects
 
 ```python

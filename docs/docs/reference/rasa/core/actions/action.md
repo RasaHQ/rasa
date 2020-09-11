@@ -250,13 +250,13 @@ class ActionDefaultFallback(ActionUtterTemplate)
 Executes the fallback action and goes back to the previous state
 of the dialogue
 
-## ActionDeactivateForm Objects
+## ActionDeactivateLoop Objects
 
 ```python
-class ActionDeactivateForm(Action)
+class ActionDeactivateLoop(Action)
 ```
 
-Deactivates a form
+Deactivates an active loop.
 
 ## RemoteAction Objects
 
