@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import re
-from collections import defaultdict
 from typing import Any, Dict, Optional, Text, Match
 
 from rasa.shared.nlu.constants import (
@@ -73,13 +72,10 @@ def get_file_format(resource_name: Text) -> Text:
     if not file_formats:
         return DEFAULT_FILE_FORMAT
 
-    knwon_file_formats = defaultdict(
-        lambda: DEFAULT_FILE_FORMAT, {loading.MARKDOWN: "md", loading.RASA_YAML: "yml"}
-    )
-
+    knwon_file_formats = {loading.MARKDOWN: "md", loading.RASA_YAML: "yml"}
     fformat = file_formats[0]
     if all(f == fformat for f in file_formats):
-        return knwon_file_formats[fformat]
+        return knwon_file_formats.get(fformat, DEFAULT_FILE_FORMAT)
 
     return DEFAULT_FILE_FORMAT
 
