@@ -56,6 +56,20 @@ to a send a message with an intent `greet` in the middle of an ongoing conversat
 
 After training, `RulePolicy` will perform a check to make sure that the rules don't
 contradict the stories and each other.
+For example the following two rules are contradicting:
+
+```yaml-rasa
+rules:
+- rule: Chitchat
+steps:
+  - intent: chitchat
+  - action: utter_chitchat
+
+- rule: Greet instead of chitchat
+steps:
+  - intent: chitchat
+  - action: utter_greet
+```
 
 :::caution
 Rules are not meant to hardcode a state machine.
