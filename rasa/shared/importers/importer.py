@@ -3,6 +3,7 @@ from functools import reduce
 from typing import Text, Optional, List, Dict, Set, Any
 import logging
 
+import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
@@ -326,6 +327,21 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         return existing_domain
 
     @staticmethod
+    def _construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]:
+        """List names of all retrieval actions corresponding to passed retrieval intents.
+
+        Args:
+            retrieval_intents: List of retrieval intents defined in the NLU training data.
+
+        Returns: Names of corresponding retrieval actions
+        """
+
+        return [
+            f"{rasa.shared.constants.UTTER_PREFIX}{intent}"
+            for intent in retrieval_intents
+        ]
+
+    @staticmethod
     def _get_domain_with_retrieval_intents(
         retrieval_intents: Set[Text],
         response_templates: Dict[Text, List[Dict[Text, Any]]],
@@ -340,7 +356,6 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         Returns: Domain with retrieval actions added to action names and properties
         for retrieval intents updated.
         """
-        from rasa.core.actions import action
 
         # Get all the properties already defined
         # for each retrieval intent in other domains
@@ -360,7 +375,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             [],
             [],
             response_templates,
-            action.construct_retrieval_action_names(retrieval_intents),
+            RetrievalModelsDataImporter._construct_retrieval_action_names(retrieval_intents),
             [],
         )
 
