@@ -1,10 +1,12 @@
+from pathlib import Path
+
 import jsonpickle
 import logging
 import os
 
 from rasa.shared.nlu.constants import TEXT
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text
+from typing import Tuple, List, Optional, Dict, Text, Union
 import numpy as np
 
 import rasa.utils.io as io_utils
@@ -16,6 +18,8 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
+
+FEATURIZER_FILE = "featurizer.json"
 
 logger = logging.getLogger(__name__)
 
@@ -178,13 +182,13 @@ class TrackerFeaturizer:
         trackers_as_states = self.prediction_states(trackers, domain)
         return self._featurize_states(trackers_as_states, interpreter)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persist the tracker featurizer to the given path.
 
         Args:
             path: The path to persist the tracker featurizer to.
         """
-        featurizer_file = os.path.join(path, "featurizer.json")
+        featurizer_file = Path(path) / FEATURIZER_FILE
         rasa.shared.utils.io.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker
@@ -200,7 +204,7 @@ class TrackerFeaturizer:
         Returns:
             The loaded tracker featurizer.
         """
-        featurizer_file = os.path.join(path, "featurizer.json")
+        featurizer_file = Path(path) / FEATURIZER_FILE
         if os.path.isfile(featurizer_file):
             return jsonpickle.decode(io_utils.read_file(featurizer_file))
 

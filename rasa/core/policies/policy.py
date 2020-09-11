@@ -24,6 +24,7 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
+    FEATURIZER_FILE,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -243,7 +244,10 @@ class Policy:
         Args:
             path: Path to persist policy to.
         """
-        self.featurizer.persist(path)
+        # not all policies have a featurizer
+        if self.featurizer is not None:
+            self.featurizer.persist(path)
+
         data = self._metadata()
         file = Path(path) / self._metadata_filename()
 
@@ -260,12 +264,16 @@ class Policy:
         Returns:
             An instance of `Policy`.
         """
-        featurizer = TrackerFeaturizer.load(path)
         metadata_file = Path(path) / cls._metadata_filename()
 
         if metadata_file.is_file():
             data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
-            return cls(featurizer=featurizer, **data)
+
+            if (Path(path) / FEATURIZER_FILE).is_file():
+                featurizer = TrackerFeaturizer.load(path)
+                data["featurizer"] = featurizer
+
+            return cls(**data)
 
         logger.info(
             f"Couldn't load metadata for policy '{cls.__name__}'. "
