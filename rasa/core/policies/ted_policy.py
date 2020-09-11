@@ -1,6 +1,5 @@
 import copy
 import logging
-import os
 from pathlib import Path
 from collections import defaultdict
 
@@ -438,7 +437,7 @@ class TEDPolicy(Policy):
         if not model_path.exists():
             raise Exception(
                 f"Failed to load TED policy model. Path "
-                f"'{os.path.abspath(path)}' doesn't exist."
+                f"'{model_path.absolute()}' doesn't exist."
             )
 
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"

@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import typing
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
@@ -299,21 +298,21 @@ class SklearnPolicy(Policy):
 
     @classmethod
     def load(cls, path: Union[Text, Path]) -> Policy:
-        filename = os.path.join(path, "sklearn_model.pkl")
-        zero_features_filename = os.path.join(path, "zero_state_features.pkl")
-        if not os.path.exists(path):
+        filename = Path(path) / "sklearn_model.pkl"
+        zero_features_filename = Path(path) / "zero_state_features.pkl"
+        if not Path(path).exists():
             raise OSError(
-                "Failed to load dialogue model. Path {} "
-                "doesn't exist".format(os.path.abspath(filename))
+                f"Failed to load dialogue model. Path {filename.absolute()} "
+                f"doesn't exist."
             )
 
         featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (
-            "Loaded featurizer of type {}, should be "
-            "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__)
+            f"Loaded featurizer of type {type(featurizer).__name__}, should be "
+            f"MaxHistoryTrackerFeaturizer."
         )
 
-        meta_file = os.path.join(path, "sklearn_policy.json")
+        meta_file = Path(path) / "sklearn_policy.json"
         meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
         zero_state_features = io_utils.pickle_load(zero_features_filename)
 

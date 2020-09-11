@@ -2,7 +2,6 @@ from pathlib import Path
 
 import jsonpickle
 import logging
-import os
 
 from rasa.shared.nlu.constants import TEXT
 from tqdm import tqdm
@@ -205,7 +204,7 @@ class TrackerFeaturizer:
             The loaded tracker featurizer.
         """
         featurizer_file = Path(path) / FEATURIZER_FILE
-        if os.path.isfile(featurizer_file):
+        if featurizer_file.is_file():
             return jsonpickle.decode(io_utils.read_file(featurizer_file))
 
         logger.error(
