@@ -31,29 +31,23 @@ fi
 # clone the $DOCS_BRANCH in a temp directory
 git clone --depth=1 --branch=$DOCS_BRANCH git@github.com:$GITHUB_REPOSITORY.git $TMP_DOCS_FOLDER
 
-echo "Updating the docs..."
-cp -R `ls -A | grep -v "^\.git$"` $TMP_DOCS_FOLDER/
-
-
-cd $TMP_DOCS_FOLDER
-
-if [ ! -z "$NEW_VERSION" ]
-then
-    echo "Generating docs for new version $NEW_VERSION..."
-    cd docs
-    yarn run new-version $NEW_VERSION
-    cd ..
-fi
-
 if [ ! -z "$EXISTING_VERSION" ]
 then
     echo "Updating docs for existing version $EXISTING_VERSION..."
-    cd docs
-    cp -R docs/ versioned_docs/version-$EXISTING_VERSION/
-    # remove updates to the "next" version
-    git checkout docs/
-    git clean docs/
+    cp -R docs/docs/ $TMP_DOCS_FOLDER/docs/versioned_docs/version-$EXISTING_VERSION/
+else
+    echo "Updating the docs..."
+    cd $TMP_DOCS_FOLDER/docs/ && find . ! -path . ! -regex '.*version.*' -exec rm -rf {} + && cd -
+    cp -R `ls -A | grep -v "^\.git$"` $TMP_DOCS_FOLDER/
+
+    if [ ! -z "$NEW_VERSION" ]
+    then
+        echo "Generating docs for new version $NEW_VERSION..."
+        cd $TMP_DOCS_FOLDER/docs && yarn run new-version $NEW_VERSION && cd -
+    fi
 fi
+
+cd $TMP_DOCS_FOLDER
 
 if [ -z "$(git status --porcelain)" ]
 then
