@@ -1,39 +1,35 @@
+import json
 import logging
 from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
-import json
-
-from rasa.core.events import FormValidation
+from rasa.shared.core.events import FormValidation
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.domain import Domain, InvalidDomain, State
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
-from rasa.core.trackers import (
+from rasa.shared.core.trackers import (
     DialogueStateTracker,
     get_active_loop_name,
     is_prev_action_listen_in_state,
 )
-from rasa.core.training.generator import TrackerWithCachedStates
-from rasa.core.constants import (
-    FORM_POLICY_PRIORITY,
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.core.constants import FORM_POLICY_PRIORITY
+from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_BACK_NAME,
+    RULE_SNIPPET_ACTION_NAME,
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     LOOP_REJECTED,
 )
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_BACK_NAME,
-    ACTION_SESSION_START_NAME,
-    RULE_SNIPPET_ACTION_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-)
-from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.shared.core.domain import InvalidDomain, State, Domain
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error

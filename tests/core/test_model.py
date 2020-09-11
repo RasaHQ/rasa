@@ -17,7 +17,8 @@ from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.core.domain import Domain, KEY_RESPONSES
+from rasa.shared.core.domain import KEY_RESPONSES
+from rasa.shared.core.domain import Domain
 from rasa import model
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,

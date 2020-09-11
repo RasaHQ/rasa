@@ -16,8 +16,7 @@ from typing import (
 )
 
 from rasa.cli import utils as cli_utils
-from rasa.shared.constants import DOCS_BASE_URL
-from rasa.core import utils
+from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 
 try:
     from urlparse import urljoin  # pytype: disable=import-error
@@ -31,8 +30,6 @@ class UserMessage:
     """Represents an incoming message.
 
      Includes the channel the responses should be sent to."""
-
-    DEFAULT_SENDER_ID = "default"
 
     def __init__(
         self,
@@ -72,7 +69,7 @@ class UserMessage:
         if sender_id is not None:
             self.sender_id = str(sender_id)
         else:
-            self.sender_id = self.DEFAULT_SENDER_ID
+            self.sender_id = DEFAULT_SENDER_ID
 
         self.input_channel = input_channel
 
@@ -314,7 +311,7 @@ class CollectingOutputChannel(OutputChannel):
         }
 
         # filter out any values that are `None`
-        return utils.remove_none_values(obj)
+        return {k: v for k, v in obj.items() if v is not None}
 
     def latest_output(self) -> Optional[Dict[Text, Any]]:
         if self.messages:

@@ -2,12 +2,13 @@ import logging
 from collections import defaultdict
 from typing import List, Optional, Dict, Text, Tuple, Generator, NamedTuple
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, Domain, State
-from rasa.core.events import ActionExecuted, Event
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.domain import PREV_PREFIX
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.nlu.constants import INTENT
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 

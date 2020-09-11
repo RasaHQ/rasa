@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -83,14 +82,6 @@ def test_create_validator_from_callable():
     assert e.value.message == error_message
 
 
-def test_write_json_file(tmp_path: Path):
-    expected = {"abc": "dasds", "list": [1, 2, 3, 4], "nested": {"a": "b"}}
-    file_path = str(tmp_path / "abc.txt")
-
-    io_utils.dump_obj_as_json_to_file(file_path, expected)
-    assert rasa.shared.utils.io.read_json_file(file_path) == expected
-
-
 def test_write_utf_8_yaml_file(tmp_path: Path):
     """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
     but rather directly dumps the unicode character."""
@@ -100,24 +91,3 @@ def test_write_utf_8_yaml_file(tmp_path: Path):
 
     rasa.shared.utils.io.write_yaml(data, file_path)
     assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
-
-
-def test_create_directory_if_new(tmp_path: Path):
-    directory = str(tmp_path / "a" / "b")
-    io_utils.create_directory(directory)
-
-    assert os.path.exists(directory)
-
-
-def test_create_directory_if_already_exists(tmp_path: Path):
-    # This should not throw an exception
-    io_utils.create_directory(str(tmp_path))
-    assert True
-
-
-def test_create_directory_for_file(tmp_path: Path):
-    file = str(tmp_path / "dir" / "test.txt")
-
-    io_utils.create_directory_for_file(str(file))
-    assert not os.path.exists(file)
-    assert os.path.exists(os.path.dirname(file))

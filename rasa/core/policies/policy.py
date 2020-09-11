@@ -6,15 +6,15 @@ from typing import Any, List, Optional, Text, Dict, Callable, Type, Union, Tuple
 import numpy as np
 
 import rasa.utils.common
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 if typing.TYPE_CHECKING:
@@ -136,7 +136,7 @@ class Policy:
         Args:
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
 
         Returns:
@@ -174,7 +174,7 @@ class Policy:
         Args:
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which can be used by the polices for featurization.
         """
 
@@ -191,7 +191,7 @@ class Policy:
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
 
@@ -227,7 +227,7 @@ class Policy:
         """Creates a list of zeros.
 
         Args:
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
         Returns:
             the list of the length of the number of actions
         """
@@ -243,7 +243,7 @@ def confidence_scores_for(
     Args:
         action_name: the name of the action for which the score should be set
         value: the confidence for `action_name`
-        domain: the :class:`rasa.core.domain.Domain`
+        domain: the :class:`rasa.shared.core.domain.Domain`
 
     Returns:
         the list of the length of the number of actions
