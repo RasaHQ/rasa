@@ -95,7 +95,7 @@ class RulePolicy(MemoizationPolicy):
         core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
-        check_rules_with_stories: bool = True,
+        check_for_contradictions: bool = True,
     ) -> None:
         """Create a `RulePolicy` object.
 
