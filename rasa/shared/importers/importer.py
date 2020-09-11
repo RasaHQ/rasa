@@ -375,7 +375,9 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             [],
             [],
             response_templates,
-            RetrievalModelsDataImporter._construct_retrieval_action_names(retrieval_intents),
+            RetrievalModelsDataImporter._construct_retrieval_action_names(
+                retrieval_intents
+            ),
             [],
         )
 

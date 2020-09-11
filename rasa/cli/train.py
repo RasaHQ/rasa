@@ -9,8 +9,10 @@ from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATH,
-    CONFIG_MANDATORY_KEYS_NLU,
+)
+from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
 )
 

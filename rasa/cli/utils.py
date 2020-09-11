@@ -4,7 +4,7 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
-from rasa.shared.utils.cli import print_error
+import rasa.shared.utils.cli
 
 if TYPE_CHECKING:
     from questionary import Question
@@ -85,7 +85,7 @@ def cancel_cause_not_found(
     default_clause = ""
     if default:
         default_clause = f"use the default location ('{default}') or "
-    print_error(
+    rasa.shared.utils.cli.print_error(
         "The path '{}' does not exist. Please make sure to {}specify it"
         " with '--{}'.".format(current, default_clause, parameter)
     )
