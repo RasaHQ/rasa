@@ -246,7 +246,9 @@ class RulePolicy(MemoizationPolicy):
                 lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
         return lookup
 
-    def _check_rule_restriction(self, rule_trackers):
+    def _check_rule_restriction(
+        self, rule_trackers: List[TrackerWithCachedStates]
+    ) -> None:
         rules_exceeding_max_user_turns = []
         for tracker in rule_trackers:
             number_of_user_uttered = sum(
@@ -489,8 +491,9 @@ class RulePolicy(MemoizationPolicy):
             )
         return possible_keys
 
+    @staticmethod
     def _find_action_from_default_actions(
-        self, tracker: DialogueStateTracker,
+        tracker: DialogueStateTracker,
     ) -> Optional[Text]:
         if (
             not tracker.latest_action_name == ACTION_LISTEN_NAME
@@ -507,8 +510,9 @@ class RulePolicy(MemoizationPolicy):
 
         return default_action_name
 
+    @staticmethod
     def _find_action_from_loop_happy_path(
-        self, tracker: DialogueStateTracker,
+        tracker: DialogueStateTracker,
     ) -> Optional[Text]:
 
         active_loop_name = tracker.active_loop_name
