@@ -98,7 +98,7 @@ class Message:
         intent: Optional[Text] = None,
         entities: Optional[List[Dict[Text, Any]]] = None,
         intent_metadata: Optional[Any] = None,
-        metadata: Optional[Any] = None,
+        example_metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
         """
@@ -107,6 +107,8 @@ class Message:
             text: text of a user's utterance
             intent: an intent of the user utterance
             entities: entities in the user's utterance
+            intent_metadata: optional metadata for the intent
+            example_metadata: optional metadata for the intent example
         Returns:
             Message
         """
@@ -123,9 +125,9 @@ class Message:
             data[ENTITIES] = entities
         if intent_metadata is not None:
             data[METADATA] = {METADATA_INTENT: intent_metadata}
-        if metadata is not None:
+        if example_metadata is not None:
             # pytype: disable=unsupported-operands
-            data.setdefault(METADATA, {})[METADATA_EXAMPLE] = metadata
+            data.setdefault(METADATA, {})[METADATA_EXAMPLE] = example_metadata
             # pytype: enable=unsupported-operands
         return cls(data, **kwargs)
 
