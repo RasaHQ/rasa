@@ -7,14 +7,16 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
-from rasa.core.events import SlotSet, UserUttered, ActionExecuted
-from rasa.core.training.structures import StoryStep, StoryGraph
+import rasa.shared.core.constants
+from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.importers.importer import (
     CombinedDataImporter,
     TrainingDataImporter,
     NluDataImporter,
     CoreDataImporter,
     E2EImporter,
+    RetrievalModelsDataImporter,
 )
 from rasa.importers.rasa import RasaFileImporter
 
@@ -99,15 +101,13 @@ def test_load_from_dict(
     )
 
     assert isinstance(actual, E2EImporter)
-    assert isinstance(actual.importer, CombinedDataImporter)
+    assert isinstance(actual.importer, RetrievalModelsDataImporter)
 
-    actual_importers = [i.__class__ for i in actual.importer._importers]
+    actual_importers = [i.__class__ for i in actual.importer._importer._importers]
     assert actual_importers == expected
 
 
 def test_load_from_config(tmpdir: Path):
-    import rasa.utils.io as io_utils
-
     config_path = str(tmpdir / "config.yml")
 
     rasa.shared.utils.io.write_yaml(
@@ -116,8 +116,8 @@ def test_load_from_config(tmpdir: Path):
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
-    assert isinstance(importer.importer, CombinedDataImporter)
-    assert isinstance(importer.importer._importers[0], MultiProjectImporter)
+    assert isinstance(importer.importer, RetrievalModelsDataImporter)
+    assert isinstance(importer.importer._importer._importers[0], MultiProjectImporter)
 
 
 async def test_nlu_only(project: Text):
@@ -128,7 +128,7 @@ async def test_nlu_only(project: Text):
     )
 
     assert isinstance(actual, NluDataImporter)
-    assert isinstance(actual._importer, CombinedDataImporter)
+    assert isinstance(actual._importer, RetrievalModelsDataImporter)
 
     stories = await actual.get_stories()
     assert stories.is_empty()
@@ -244,13 +244,11 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
         (await importer_without_e2e.get_nlu_data()).training_examples
     )
 
-    from rasa.core.actions import action
-
     extended_training_data = await importer.get_nlu_data()
     assert all(
         Message(data={ACTION_NAME: action_name, ACTION_TEXT: ""})
         in extended_training_data.training_examples
-        for action_name in action.default_action_names()
+        for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     )
 
 
@@ -295,3 +293,29 @@ async def test_adding_e2e_actions_to_domain(project: Text):
     domain = await importer.get_domain()
 
     assert all(action_name in domain.action_names for action_name in additional_actions)
+
+
+async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = "data/test_domains/default_retrieval_intents.yml"
+    data_paths = [
+        "data/test_nlu/default_retrieval_intents.md",
+        "data/test_responses/default.md",
+    ]
+    base_data_importer = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, data_paths
+    )
+
+    nlu_importer = NluDataImporter(base_data_importer)
+    core_importer = CoreDataImporter(base_data_importer)
+
+    importer = RetrievalModelsDataImporter(
+        CombinedDataImporter([nlu_importer, core_importer])
+    )
+    domain = await importer.get_domain()
+    nlu_data = await importer.get_nlu_data()
+
+    assert domain.retrieval_intents == ["chitchat"]
+    assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
+    assert domain.templates == nlu_data.responses
+    assert "utter_chitchat" in domain.action_names

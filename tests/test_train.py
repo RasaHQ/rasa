@@ -188,6 +188,7 @@ def test_train_nlu_no_nlu_file_error_message(
     assert "No NLU data given" in captured.out
 
 
+@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_trained_interpreter_passed_to_core_training(
     monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_moodbot_path: Text
 ):
@@ -218,6 +219,7 @@ def test_trained_interpreter_passed_to_core_training(
     assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
 
 
+@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_interpreter_of_old_model_passed_to_core_training(
     monkeypatch: MonkeyPatch, tmp_path: Path, trained_moodbot_path: Text
 ):

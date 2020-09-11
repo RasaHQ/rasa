@@ -13,3 +13,12 @@ def test_all_subclasses():
 
     expected = subclasses + sub_subclasses
     assert rasa.shared.utils.common.all_subclasses(TestClass) == expected
+
+
+def test_sort_dicts_by_keys():
+    test_data = [{"Z": 1}, {"A": 10}]
+
+    expected = [{"A": 10}, {"Z": 1}]
+    actual = rasa.shared.utils.common.sort_list_of_dicts_by_first_key(test_data)
+
+    assert actual == expected

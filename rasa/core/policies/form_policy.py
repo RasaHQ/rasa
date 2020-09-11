@@ -2,20 +2,20 @@ import logging
 from typing import List, Dict, Text, Optional, Any, Union, Tuple
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import Domain, State
-from rasa.core.events import FormValidation
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import (
-    FORM_POLICY_PRIORITY,
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    LOOP_NAME,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
     LOOP_REJECTED,
-    LOOP_NAME,
 )
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.events import FormValidation
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.constants import FORM_POLICY_PRIORITY
 from rasa.shared.nlu.constants import ACTION_NAME
 
 from rasa.utils import common as common_utils

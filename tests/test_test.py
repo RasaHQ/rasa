@@ -7,19 +7,20 @@ from typing import Text
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.agent import Agent
-from rasa.core.events import UserUttered
+from rasa.shared.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
     WronglyClassifiedUserUtterance,
     WronglyPredictedAction,
 )
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 import rasa.model
 import rasa.cli.utils
 from rasa.nlu.test import NO_ENTITY
