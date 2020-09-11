@@ -3,7 +3,7 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Dict, List, Optional, Text, Type
 
 import rasa.core.utils
 import rasa.utils.io
@@ -35,13 +35,6 @@ class TempDirectoryPath(str):
     ) -> bool:
         if os.path.exists(self):
             shutil.rmtree(self)
-
-
-def arguments_of(func: Callable) -> List[Text]:
-    """Return the parameters of the function `func` as a list of names."""
-    import inspect
-
-    return list(inspect.signature(func).parameters.keys())
 
 
 def read_global_config() -> Dict[Text, Any]:

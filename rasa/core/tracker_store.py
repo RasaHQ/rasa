@@ -1096,7 +1096,7 @@ def _load_from_module_name_in_endpoint_config(
         tracker_store_class = rasa.shared.utils.common.class_from_module_path(
             store.type
         )
-        init_args = common_utils.arguments_of(tracker_store_class.__init__)
+        init_args = rasa.shared.utils.common.arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
             # DEPRECATION EXCEPTION - remove in 2.1
             raise Exception(

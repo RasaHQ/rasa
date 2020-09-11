@@ -1,7 +1,8 @@
 import importlib
+import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
-from rasa.utils.common import arguments_of, logger
+logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
@@ -109,3 +110,10 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
         "forum (https://forum.rasa.com) to help us make this feature "
         "ready for production."
     )
+
+
+def arguments_of(func: Callable) -> List[Text]:
+    """Return the parameters of the function `func` as a list of names."""
+    import inspect
+
+    return list(inspect.signature(func).parameters.keys())
