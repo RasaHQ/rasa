@@ -2260,7 +2260,7 @@ description = "Python API wrapper for Rocket.Chat"
 name = "rocketchat-api"
 optional = false
 python-versions = "*"
-version = "1.4"
+version = "1.8.0"
 
 [package.dependencies]
 requests = "*"
@@ -3085,6 +3085,7 @@ transformers = ["transformers"]
 
 [metadata]
 content-hash = "2040a142227e55989b2b715620530fad8c600956ac0bd4e260b97eaa85ab53ec"
+lock-version = "1.0"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -4339,8 +4340,8 @@ rfc3986 = [
     {file = "rfc3986-1.4.0.tar.gz", hash = "sha256:112398da31a3344dc25dbf477d8df6cb34f9278a94fee2625d89e4514be8bb9d"},
 ]
 rocketchat-api = [
-    {file = "rocketchat_API-1.4-py2-none-any.whl", hash = "sha256:91483b2702c0917f8491f69d5b38eba495afae4ce5fee4c46838ea7adb7c2333"},
-    {file = "rocketchat_API-1.4-py3-none-any.whl", hash = "sha256:8a5826a972547a6ffb09db171e1ad9990eebf32ed396a3e1bec1f13c18577311"},
+    {file = "rocketchat_API-1.8.0-py2-none-any.whl", hash = "sha256:79de0253b31efba9d1e2a3ef39b88399c72981f7a19286bb21770e0a4d274efe"},
+    {file = "rocketchat_API-1.8.0-py3-none-any.whl", hash = "sha256:dd0225034d41b3a54195a74527ebef3ff0ab5c30abad1c4d59692b35d2128e63"},
 ]
 rsa = [
     {file = "rsa-4.6-py3-none-any.whl", hash = "sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233"},
