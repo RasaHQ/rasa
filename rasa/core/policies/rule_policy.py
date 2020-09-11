@@ -5,6 +5,7 @@ from tqdm import tqdm
 import numpy as np
 import json
 
+from rasa.shared.constants import DOCS_URL_RULES
 import rasa.shared.utils.io
 from rasa.shared.core.events import FormValidation, UserUttered, ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
@@ -58,7 +59,7 @@ class InvalidRule(Exception):
     """Exception that can be raised when domain is not valid."""
 
     def __init__(self, message: Text) -> None:
-        self.message = message
+        self.message = message + f"\nMore info at {DOCS_URL_RULES}"
 
     def __str__(self) -> Text:
         # return message in error colours
