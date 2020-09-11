@@ -110,7 +110,7 @@ class Message:
         Returns:
             Message
         """
-        data = {TEXT: text}
+        data: Dict[Text, Any] = {TEXT: text}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
             if split_intent:
@@ -124,7 +124,7 @@ class Message:
         if intent_metadata is not None:
             data[METADATA] = {METADATA_INTENT: intent_metadata}
         if metadata is not None:
-            data.setdefault(METADATA, {})[METADATA_EXAMPLE] = metadata
+            data.setdefault(METADATA, {})[METADATA_EXAMPLE] = metadata  # pytype: disable=unsupported-operands
         return cls(data, **kwargs)
 
     @classmethod
