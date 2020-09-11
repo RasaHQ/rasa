@@ -388,13 +388,13 @@ class RulePolicy(MemoizationPolicy):
         ]
         # only use trackers from rule-based training data
         rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
+        if self._restrict_rules:
+            self._check_rule_restriction(rule_trackers)
+
         (
             rule_trackers_as_states,
             rule_trackers_as_actions,
         ) = self.featurizer.training_states_and_actions(rule_trackers, domain)
-
-        if self._restrict_rules:
-            self._check_rule_restriction(rule_trackers)
 
         rules_lookup = self._create_lookup_from_states(
             rule_trackers_as_states, rule_trackers_as_actions
