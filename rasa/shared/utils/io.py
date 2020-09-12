@@ -20,6 +20,7 @@ from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
 
 DEFAULT_ENCODING = "utf-8"
+YAML_VERSION = (1, 2)
 
 
 class bcolors:
@@ -260,9 +261,6 @@ def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
 
 
-YAML_VERSION = (1, 2)
-
-
 def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
@@ -417,3 +415,33 @@ def raise_deprecation_warning(
     # we want these warnings to be visible in the terminal of our users
     # https://docs.python.org/3/library/warnings.html#warning-categories
     raise_warning(message, FutureWarning, docs, **kwargs)
+
+
+def read_config_file(filename: Text) -> Dict[Text, Any]:
+    """Parses a yaml configuration file. Content needs to be a dictionary
+
+    Args:
+        filename: The path to the file which should be read.
+    """
+    content = read_yaml(read_file(filename))
+
+    if content is None:
+        return {}
+    elif isinstance(content, dict):
+        return content
+    else:
+        raise ValueError(
+            "Tried to load invalid config file '{}'. "
+            "Expected a key value mapping but found {}"
+            ".".format(filename, type(content))
+        )
+
+
+def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    if path is None or potential_parent_directory is None:
+        return False
+
+    path = os.path.abspath(path)
+    potential_parent_directory = os.path.abspath(potential_parent_directory)
+
+    return potential_parent_directory in path

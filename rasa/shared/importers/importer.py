@@ -3,8 +3,10 @@ from functools import reduce
 from typing import Text, Optional, List, Dict, Set, Any
 import logging
 
+import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
+import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -12,9 +14,7 @@ from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import INTENT_NAME, TEXT
-from rasa.importers.autoconfig import TrainingType
-import rasa.utils.io as io_utils
-import rasa.utils.common as common_utils
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ class TrainingDataImporter:
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
 
-        config = io_utils.read_config_file(config_path)
+        config = rasa.shared.utils.io.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
             config, config_path, domain_path, training_data_paths, training_type
         )
@@ -135,7 +135,7 @@ class TrainingDataImporter:
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
 
-        from rasa.importers.rasa import RasaFileImporter
+        from rasa.shared.importers.rasa import RasaFileImporter
 
         config = config or {}
         importers = config.get("importers", [])
@@ -164,8 +164,8 @@ class TrainingDataImporter:
         training_data_paths: Optional[List[Text]] = None,
         training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> Optional["TrainingDataImporter"]:
-        from rasa.importers.multi_project import MultiProjectImporter
-        from rasa.importers.rasa import RasaFileImporter
+        from rasa.shared.importers.multi_project import MultiProjectImporter
+        from rasa.shared.importers.rasa import RasaFileImporter
 
         module_path = importer_config.pop("name", None)
         if module_path == RasaFileImporter.__name__:
@@ -183,7 +183,7 @@ class TrainingDataImporter:
 
         importer_config = dict(training_type=training_type, **importer_config)
 
-        constructor_arguments = common_utils.minimal_kwargs(
+        constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
             importer_config, importer_class
         )
 
@@ -327,6 +327,21 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         return existing_domain
 
     @staticmethod
+    def _construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]:
+        """List names of all retrieval actions corresponding to passed retrieval intents.
+
+        Args:
+            retrieval_intents: List of retrieval intents defined in the NLU training data.
+
+        Returns: Names of corresponding retrieval actions
+        """
+
+        return [
+            f"{rasa.shared.constants.UTTER_PREFIX}{intent}"
+            for intent in retrieval_intents
+        ]
+
+    @staticmethod
     def _get_domain_with_retrieval_intents(
         retrieval_intents: Set[Text],
         response_templates: Dict[Text, List[Dict[Text, Any]]],
@@ -341,7 +356,6 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         Returns: Domain with retrieval actions added to action names and properties
         for retrieval intents updated.
         """
-        from rasa.core.actions import action
 
         # Get all the properties already defined
         # for each retrieval intent in other domains
@@ -361,7 +375,9 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             [],
             [],
             response_templates,
-            action.construct_retrieval_action_names(retrieval_intents),
+            RetrievalModelsDataImporter._construct_retrieval_action_names(
+                retrieval_intents
+            ),
             [],
         )
 

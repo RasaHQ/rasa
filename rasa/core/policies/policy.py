@@ -17,6 +17,7 @@ from typing import (
 )
 import numpy as np
 
+import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
@@ -126,7 +127,7 @@ class Policy:
             the dictionary of parameters
         """
 
-        valid_keys = rasa.utils.common.arguments_of(func)
+        valid_keys = rasa.shared.utils.common.arguments_of(func)
 
         params = {key: kwargs.get(key) for key in valid_keys if kwargs.get(key)}
         ignored_params = {

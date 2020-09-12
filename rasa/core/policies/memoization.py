@@ -9,7 +9,7 @@ from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_POLICIES
+from rasa.shared.constants import DOCS_URL_POLICIES
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (

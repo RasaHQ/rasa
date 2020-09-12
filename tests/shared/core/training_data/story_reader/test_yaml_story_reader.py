@@ -4,7 +4,6 @@ from typing import Text, List
 import pytest
 
 import rasa.shared.utils.io
-import rasa.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
@@ -337,7 +336,7 @@ stories:
     intent: {intent}
     """
 
-    story_as_yaml = rasa.utils.io.read_yaml(story)
+    story_as_yaml = rasa.shared.utils.io.read_yaml(story)
 
     steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
     user_uttered = steps[0].events[0]

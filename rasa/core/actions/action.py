@@ -104,21 +104,6 @@ def action_for_index(
     return action_for_name(domain.action_names[index], domain, action_endpoint)
 
 
-def construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]:
-    """List names of all retrieval actions corresponding to passed retrieval intents.
-
-    Args:
-        retrieval_intents: List of retrieval intents defined in the NLU training data.
-
-    Returns: Names of corresponding retrieval actions
-    """
-
-    return [
-        ActionRetrieveResponse.action_name_from_intent(intent)
-        for intent in retrieval_intents
-    ]
-
-
 def action_for_name(
     action_name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> "Action":

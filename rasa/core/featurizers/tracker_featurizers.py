@@ -8,7 +8,6 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union
 import numpy as np
 
-import rasa.utils.io as io_utils
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
@@ -191,7 +190,9 @@ class TrackerFeaturizer:
         rasa.shared.utils.io.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker
-        io_utils.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
+        rasa.shared.utils.io.write_text_file(
+            str(jsonpickle.encode(self)), featurizer_file
+        )
 
     @staticmethod
     def load(path: Text) -> Optional["TrackerFeaturizer"]:
@@ -205,7 +206,7 @@ class TrackerFeaturizer:
         """
         featurizer_file = Path(path) / FEATURIZER_FILE
         if featurizer_file.is_file():
-            return jsonpickle.decode(io_utils.read_file(featurizer_file))
+            return jsonpickle.decode(rasa.shared.utils.io.read_file(featurizer_file))
 
         logger.error(
             f"Couldn't load featurizer for policy. "
