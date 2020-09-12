@@ -30,7 +30,7 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEACTIVATE_FORM_NAME,
+    ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -69,7 +69,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionRestart(),
         ActionSessionStart(),
         ActionDefaultFallback(),
-        ActionDeactivateForm(),
+        ActionDeactivateLoop(),
         ActionRevertFallbackEvents(),
         ActionDefaultAskAffirmation(),
         ActionDefaultAskRephrase(),
@@ -102,21 +102,6 @@ def action_for_index(
         )
 
     return action_for_name(domain.action_names[index], domain, action_endpoint)
-
-
-def construct_retrieval_action_names(retrieval_intents: Set[Text]) -> List[Text]:
-    """List names of all retrieval actions corresponding to passed retrieval intents.
-
-    Args:
-        retrieval_intents: List of retrieval intents defined in the NLU training data.
-
-    Returns: Names of corresponding retrieval actions
-    """
-
-    return [
-        ActionRetrieveResponse.action_name_from_intent(intent)
-        for intent in retrieval_intents
-    ]
 
 
 def action_for_name(
@@ -493,11 +478,11 @@ class ActionDefaultFallback(ActionUtterTemplate):
         return evts + [UserUtteranceReverted()]
 
 
-class ActionDeactivateForm(Action):
-    """Deactivates a form"""
+class ActionDeactivateLoop(Action):
+    """Deactivates an active loop."""
 
     def name(self) -> Text:
-        return ACTION_DEACTIVATE_FORM_NAME
+        return ACTION_DEACTIVATE_LOOP_NAME
 
     async def run(
         self,
