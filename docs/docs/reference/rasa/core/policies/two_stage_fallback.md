@@ -59,11 +59,3 @@ Create a new Two-stage Fallback policy.
 
 Predicts the next action if NLU confidence is low.
 
-#### persist
-
-```python
- | persist(path: Text) -> None
-```
-
-Persists the policy to storage.
-

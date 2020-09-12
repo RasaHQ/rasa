@@ -114,7 +114,7 @@ Create state features for prediction.
 #### persist
 
 ```python
- | persist(path: Text) -> None
+ | persist(path: Union[Text, Path]) -> None
 ```
 
 Persist the tracker featurizer to the given path.

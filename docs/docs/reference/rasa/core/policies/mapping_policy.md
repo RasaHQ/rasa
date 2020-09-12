@@ -43,20 +43,3 @@ If the current intent is assigned to an action that action will be
 predicted with the highest probability of all policies. If it is not
 the policy will predict zero for every action.
 
-#### persist
-
-```python
- | persist(path: Text) -> None
-```
-
-Only persists the priority.
-
-#### load
-
-```python
- | @classmethod
- | load(cls, path: Text) -> "MappingPolicy"
-```
-
-Returns the class with the configured priority.
-

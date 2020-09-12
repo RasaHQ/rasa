@@ -53,7 +53,7 @@ Return the list of probabilities for the next actions.
 #### persist
 
 ```python
- | persist(path: Text) -> None
+ | persist(path: Union[Text, Path]) -> None
 ```
 
 Persists the policy to a storage.
@@ -62,7 +62,7 @@ Persists the policy to a storage.
 
 ```python
  | @classmethod
- | load(cls, path: Text) -> "TEDPolicy"
+ | load(cls, path: Union[Text, Path]) -> "TEDPolicy"
 ```
 
 Loads a policy from the storage.

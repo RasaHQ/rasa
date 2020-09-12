@@ -21,7 +21,7 @@ Check for elements that only work with certain policy/domain combinations.
 #### persist
 
 ```python
- | persist(path: Text) -> None
+ | persist(path: Union[Text, Path]) -> None
 ```
 
 Persists the policy to storage.
@@ -30,7 +30,7 @@ Persists the policy to storage.
 
 ```python
  | @classmethod
- | load(cls, path: Text) -> "PolicyEnsemble"
+ | load(cls, path: Union[Text, Path]) -> "PolicyEnsemble"
 ```
 
 Loads policy and domain specification from storage

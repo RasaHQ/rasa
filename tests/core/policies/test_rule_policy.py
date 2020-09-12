@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Text
 
 import pytest
@@ -94,6 +95,30 @@ def _form_activation_rule(
 def test_rule_policy_has_max_history_none():
     policy = RulePolicy()
     assert policy.featurizer.max_history is None
+
+
+def test_all_policy_attributes_are_persisted(tmpdir: Path):
+    priority = 5
+    lookup = {"a": "b"}
+    core_fallback_threshold = 0.451231
+    core_fallback_action_name = "action_some_fallback"
+    enable_fallback_prediction = False
+
+    policy = RulePolicy(
+        priority=priority,
+        lookup=lookup,
+        core_fallback_threshold=core_fallback_threshold,
+        core_fallback_action_name=core_fallback_action_name,
+        enable_fallback_prediction=enable_fallback_prediction,
+    )
+    policy.persist(tmpdir)
+
+    persisted_policy = RulePolicy.load(tmpdir)
+    assert persisted_policy.priority == priority
+    assert persisted_policy.lookup == lookup
+    assert persisted_policy._core_fallback_threshold == core_fallback_threshold
+    assert persisted_policy._fallback_action_name == core_fallback_action_name
+    assert persisted_policy._enable_fallback_prediction == enable_fallback_prediction
 
 
 def test_faq_rule():

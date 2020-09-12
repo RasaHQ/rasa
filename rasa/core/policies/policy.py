@@ -1,24 +1,38 @@
 import copy
+import json
 import logging
 from enum import Enum
-import typing
-from typing import Any, List, Optional, Text, Dict, Callable, Type, Union, Tuple
+from pathlib import Path
+from typing import (
+    Any,
+    List,
+    Optional,
+    Text,
+    Dict,
+    Callable,
+    Type,
+    Union,
+    Tuple,
+    TYPE_CHECKING,
+)
 import numpy as np
 
 import rasa.shared.utils.common
 import rasa.utils.common
+import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
+    FEATURIZER_FILE,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
 
@@ -144,7 +158,7 @@ class Policy:
             - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
               ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
               all training trackers
-            - the label ids (e.g. action ids) for every dialuge turn in all training
+            - the label ids (e.g. action ids) for every dialogue turn in all training
               trackers
         """
 
@@ -202,26 +216,70 @@ class Policy:
 
         raise NotImplementedError("Policy must have the capacity to predict.")
 
-    def persist(self, path: Text) -> None:
-        """Persists the policy to a storage.
+    def _metadata(self) -> Optional[Dict[Text, Any]]:
+        """Returns this policy's attributes that should be persisted.
 
-        Args:
-            path: the path where to save the policy to
+        Policies following the default `persist()` and `load()` templates must
+        implement the `_metadata()` method."
+
+        Returns:
+            The policy metadata.
         """
-
-        raise NotImplementedError("Policy must have the capacity to persist itself.")
+        pass
 
     @classmethod
-    def load(cls, path: Text) -> "Policy":
-        """Loads a policy from the storage.
+    def _metadata_filename(cls) -> Optional[Text]:
+        """Returns the filename of the persisted policy metadata.
 
-        Needs to load its featurizer.
+        Policies following the default `persist()` and `load()` templates must
+        implement the `_metadata_filename()` method.
+
+        Returns:
+            The filename of the persisted policy metadata.
+        """
+        pass
+
+    def persist(self, path: Union[Text, Path]) -> None:
+        """Persists the policy to storage.
 
         Args:
-            path: the path from where to load the policy
+            path: Path to persist policy to.
         """
+        # not all policies have a featurizer
+        if self.featurizer is not None:
+            self.featurizer.persist(path)
 
-        raise NotImplementedError("Policy must have the capacity to load itself.")
+        file = Path(path) / self._metadata_filename()
+
+        rasa.shared.utils.io.create_directory_for_file(file)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
+
+    @classmethod
+    def load(cls, path: Union[Text, Path]) -> "Policy":
+        """Loads a policy from path.
+
+        Args:
+            path: Path to load policy from.
+
+        Returns:
+            An instance of `Policy`.
+        """
+        metadata_file = Path(path) / cls._metadata_filename()
+
+        if metadata_file.is_file():
+            data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
+
+            if (Path(path) / FEATURIZER_FILE).is_file():
+                featurizer = TrackerFeaturizer.load(path)
+                data["featurizer"] = featurizer
+
+            return cls(**data)
+
+        logger.info(
+            f"Couldn't load metadata for policy '{cls.__name__}'. "
+            f"File '{metadata_file}' doesn't exist."
+        )
+        return cls()
 
     @staticmethod
     def _default_predictions(domain: Domain) -> List[float]:

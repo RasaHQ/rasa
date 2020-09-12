@@ -76,7 +76,7 @@ into a float vector which can be used by a ML model.
   - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
   ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
   all training trackers
-  - the label ids (e.g. action ids) for every dialuge turn in all training
+  - the label ids (e.g. action ids) for every dialogue turn in all training
   trackers
 
 #### train
@@ -117,29 +117,32 @@ Predicts the next action the bot should take after seeing the tracker.
 #### persist
 
 ```python
- | persist(path: Text) -> None
+ | persist(path: Union[Text, Path]) -> None
 ```
 
-Persists the policy to a storage.
+Persists the policy to storage.
 
 **Arguments**:
 
-- `path` - the path where to save the policy to
+- `path` - Path to persist policy to.
 
 #### load
 
 ```python
  | @classmethod
- | load(cls, path: Text) -> "Policy"
+ | load(cls, path: Union[Text, Path]) -> "Policy"
 ```
 
-Loads a policy from the storage.
-
-Needs to load its featurizer.
+Loads a policy from path.
 
 **Arguments**:
 
-- `path` - the path from where to load the policy
+- `path` - Path to load policy from.
+  
+
+**Returns**:
+
+  An instance of `Policy`.
 
 #### confidence\_scores\_for
 
