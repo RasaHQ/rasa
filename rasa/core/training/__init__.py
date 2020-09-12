@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.generator import TrackerWithCachedStates
     from rasa.shared.core.training_data.structures import StoryGraph
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
 
 
 async def extract_rule_data(
@@ -79,7 +79,7 @@ async def load_data(
         list of loaded trackers
     """
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
 
     if resource_name:
         if isinstance(resource_name, TrainingDataImporter):

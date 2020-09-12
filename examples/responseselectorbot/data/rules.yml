@@ -15,4 +15,4 @@ rules:
 - rule: Response with a chitchat utterance whenever user indulges in some chitchat
   steps:
   - intent: chitchat
-  - action: respond_chitchat
+  - action: utter_chitchat

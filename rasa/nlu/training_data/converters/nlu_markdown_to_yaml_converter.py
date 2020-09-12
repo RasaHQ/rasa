@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict, Text, Any
 
-from rasa.cli.utils import print_success
+from rasa.shared.utils.cli import print_success
 from rasa.nlu.utils.pattern_utils import read_lookup_table_file
 from rasa.shared.nlu.training_data.formats import MarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
