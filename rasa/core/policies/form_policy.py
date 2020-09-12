@@ -163,3 +163,9 @@ class FormPolicy(MemoizationPolicy):
             logger.debug("There is no active form")
 
         return result
+
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
+            "priority": self.priority,
+            "lookup": self.lookup,
+        }
