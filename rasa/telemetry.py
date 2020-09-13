@@ -41,6 +41,7 @@ TELEMETRY_DEBUG_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_DEBUG"
 # the environment variable can be used for local development to set a test key
 # e.g. `RASA_TELEMETRY_WRITE_KEY=12354 rasa train`
 TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_WRITE_KEY"
+EXCEPTION_WRITE_KEY_ENVIRONMENT_VARIABLE = "RASA_EXCEPTION_WRITE_KEY"
 
 TELEMETRY_ID = "metrics_id"
 TELEMETRY_ENABLED_BY_DEFAULT = True
@@ -194,15 +195,39 @@ def telemetry_write_key() -> Optional[Text]:
 
     if os.environ.get(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE):
         # a write key set using the environment variable will always
-        # overwrite any key provided as part of the package (`segment_key` file)
+        # overwrite any key provided as part of the package (`keys` file)
         return os.environ.get(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE)
 
-    write_key_path = pkg_resources.resource_filename(name, "segment_key")
+    write_key_path = pkg_resources.resource_filename(name, "keys")
 
     # noinspection PyBroadException
     try:
         with open(write_key_path) as f:
-            return f.read().strip()
+            return json.load(f).get("segment")
+    except Exception:  # skipcq:PYL-W0703
+        return None
+
+
+def sentry_write_key() -> Optional[Text]:
+    """Read the sentry write key from the sentry key text file.
+
+    Returns:
+        Sentry write key, if the key file was present.
+    """
+    import pkg_resources
+    from rasa import __name__ as name
+
+    if os.environ.get(EXCEPTION_WRITE_KEY_ENVIRONMENT_VARIABLE):
+        # a write key set using the environment variable will always
+        # overwrite any key provided as part of the package (`keys` file)
+        return os.environ.get(EXCEPTION_WRITE_KEY_ENVIRONMENT_VARIABLE)
+
+    write_key_path = pkg_resources.resource_filename(name, "keys")
+
+    # noinspection PyBroadException
+    try:
+        with open(write_key_path) as f:
+            return json.load(f).get("sentry")
     except Exception:  # skipcq:PYL-W0703
         return None
 
@@ -311,10 +336,7 @@ async def _send_event(
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            SEGMENT_ENDPOINT,
-            headers=headers,
-            json=payload,
-            timeout=TELEMETRY_HTTP_TIMEOUT,
+            SEGMENT_ENDPOINT, headers=headers, json=payload,
         ) as resp:
             # handle different failure cases
             if resp.status != 200:
@@ -475,6 +497,47 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
         configuration = _default_telemetry_configuration(is_enabled)
 
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
+
+
+@ensure_telemetry_enabled
+def initialize_error_reporting() -> None:
+    import sentry_sdk
+    from sentry_sdk.integrations.atexit import AtexitIntegration
+    from sentry_sdk.integrations.dedupe import DedupeIntegration
+    from sentry_sdk.integrations.excepthook import ExcepthookIntegration
+
+    key = sentry_write_key()
+
+    if not key:
+        return
+
+    def strip_sensitive_data(event, hint):
+        # removes any paths from stack traces (avoids e.g. sending
+        # a users home directory name if package is installed there)
+        for value in event.get("exception", {}).get("values", []):
+            for frame in value.get("stacktrace", {}).get("frames", []):
+                frame["abs_path"] = ""
+        return event
+
+    # this is a very defensive configuration, avoiding as many integrations as
+    # possible. it also submits very little data (exception with error message
+    # and line numbers).
+    sentry_sdk.init(
+        f"https://{key}.ingest.sentry.io/2801673",
+        before_send=strip_sensitive_data,
+        integrations=[
+            ExcepthookIntegration(),
+            DedupeIntegration(),
+            AtexitIntegration(lambda _, __: None),
+        ],
+        send_default_pii=False,  # activate PII filter
+        server_name=get_telemetry_id() or "UNKNOWN",
+        in_app_include=["rasa"],  # only submit errors in this package
+        with_locals=False,  # don't submit local variables
+        release=rasa.__version__,
+        default_integrations=False,
+        environment="development" if in_continuous_integration() else "production",
+    )
 
 
 @asynccontextmanager
