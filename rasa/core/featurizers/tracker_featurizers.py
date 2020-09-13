@@ -1,21 +1,23 @@
+from pathlib import Path
+
 import jsonpickle
 import logging
-import os
+
+from rasa.shared.nlu.constants import TEXT
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text
+from typing import Tuple, List, Optional, Dict, Text, Union
 import numpy as np
 
-import rasa.utils.io as io_utils
-import rasa.utils.common as common_utils
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.domain import Domain, State
-from rasa.core.events import ActionExecuted
-from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.features import Features
-from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.core.constants import USER
-from rasa.nlu.constants import TEXT
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.core.constants import USER
 import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.features import Features
+
+FEATURIZER_FILE = "featurizer.json"
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,7 @@ class TrackerFeaturizer:
 
         Args:
             tracker: a :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: a :class:`rasa.core.domain.Domain`
+            domain: a :class:`rasa.shared.core.domain.Domain`
 
         Returns:
             a list of states
@@ -178,17 +180,19 @@ class TrackerFeaturizer:
         trackers_as_states = self.prediction_states(trackers, domain)
         return self._featurize_states(trackers_as_states, interpreter)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persist the tracker featurizer to the given path.
 
         Args:
             path: The path to persist the tracker featurizer to.
         """
-        featurizer_file = os.path.join(path, "featurizer.json")
-        io_utils.create_directory_for_file(featurizer_file)
+        featurizer_file = Path(path) / FEATURIZER_FILE
+        rasa.shared.utils.io.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker
-        io_utils.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
+        rasa.shared.utils.io.write_text_file(
+            str(jsonpickle.encode(self)), featurizer_file
+        )
 
     @staticmethod
     def load(path: Text) -> Optional["TrackerFeaturizer"]:
@@ -200,9 +204,9 @@ class TrackerFeaturizer:
         Returns:
             The loaded tracker featurizer.
         """
-        featurizer_file = os.path.join(path, "featurizer.json")
-        if os.path.isfile(featurizer_file):
-            return jsonpickle.decode(io_utils.read_file(featurizer_file))
+        featurizer_file = Path(path) / FEATURIZER_FILE
+        if featurizer_file.is_file():
+            return jsonpickle.decode(rasa.shared.utils.io.read_file(featurizer_file))
 
         logger.error(
             f"Couldn't load featurizer for policy. "
@@ -244,7 +248,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         pbar = tqdm(
             trackers,
             desc="Processed trackers",
-            disable=common_utils.is_logging_disabled(),
+            disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
             states = self._create_states(tracker, domain)
@@ -383,7 +387,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         pbar = tqdm(
             trackers,
             desc="Processed trackers",
-            disable=common_utils.is_logging_disabled(),
+            disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
             states = self._create_states(tracker, domain)
@@ -404,7 +408,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 )
                 if self.remove_duplicates:
                     hashed = self._hash_example(
-                        sliced_states, event.action_name or event.action_text, tracker,
+                        sliced_states, event.action_name or event.action_text, tracker
                     )
 
                     # only continue with tracker_states that created a

@@ -5,9 +5,11 @@ from typing import List, Text, Optional
 
 import rasa.cli.utils as cli_utils
 import rasa.core.utils as rasa_core_utils
+import rasa.shared.utils.cli
 from rasa.cli.arguments import export as arguments
 from rasa.constants import DOCS_URL_TRACKER_STORES, DOCS_URL_EVENT_BROKERS
-from rasa.exceptions import PublishingError, RasaException
+from rasa.exceptions import PublishingError
+from rasa.shared.exceptions import RasaException
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -56,7 +58,7 @@ def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
 
     """
     if not endpoints.tracker_store:
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Could not find a `tracker_store` section in the supplied "
             f"endpoints file. Instructions on how to configure a tracker store "
             f"can be found here: {DOCS_URL_TRACKER_STORES}. "
@@ -81,7 +83,7 @@ def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"
 
     """
     if not endpoints.event_broker:
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Could not find an `event_broker` section in the supplied "
             f"endpoints file. Instructions on how to configure an event broker "
             f"can be found here: {DOCS_URL_EVENT_BROKERS}. Exiting."
@@ -132,7 +134,7 @@ def _assert_max_timestamp_is_greater_than_min_timestamp(
         and max_timestamp is not None
         and max_timestamp < min_timestamp
     ):
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Maximum timestamp '{max_timestamp}' is smaller than minimum "
             f"timestamp '{min_timestamp}'. Exiting."
         )
@@ -157,7 +159,7 @@ def _prepare_event_broker(event_broker: "EventBroker") -> None:
         event_broker.raise_on_failure = True
 
     if not event_broker.is_ready():
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Event broker of type '{type(event_broker)}' is not ready. Exiting."
         )
 
@@ -190,20 +192,20 @@ def export_trackers(args: argparse.Namespace) -> None:
 
     try:
         published_events = exporter.publish_events()
-        cli_utils.print_success(
+        rasa.shared.utils.cli.print_success(
             f"Done! Successfully published {published_events} events 🎉"
         )
 
     except PublishingError as e:
         command = _get_continuation_command(exporter, e.timestamp)
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Encountered error while publishing event with timestamp '{e}'. To "
             f"continue where I left off, run the following command:"
             f"\n\n\t{command}\n\nExiting."
         )
 
     except RasaException as e:
-        cli_utils.print_error_and_exit(str(e))
+        rasa.shared.utils.cli.print_error_and_exit(str(e))
 
 
 def _get_continuation_command(exporter: "Exporter", timestamp: float) -> Text:

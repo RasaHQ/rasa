@@ -6,13 +6,13 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.train_utils as train_utils
 import numpy as np
 
 from rasa.nlu.constants import (
-    TEXT,
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKEN_IDS,
@@ -21,8 +21,8 @@ from rasa.nlu.constants import (
     SEQUENCE_FEATURES,
     NUMBER_OF_SUB_TOKENS,
     NO_LENGTH_RESTRICTION,
-    ACTION_TEXT,
 )
+from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,

@@ -13,7 +13,7 @@ assistant on your local machine. The `reminderbot` consists of the following fil
 - **domain.yml** contains the domain of the assistant  
 - **credentials.yml** contains credentials for the different channels
 - **endpoints.yml** contains the different endpoints reminderbot can use
-- **actions.py** contains the custom actions that deal with external events and reminders
+- **actions/actions.py** contains the custom actions that deal with external events and reminders
 
 ## How to use this example?
 

@@ -32,11 +32,12 @@ how you can migrate from one version to another.
 
 ### Training data files
 
-You can convert existing NLU and Stories training data files in the `Markdown` format
-to the new `YAML` format using following commands:
+You can convert existing NLU, Stories, and NLG (i.e. `responses.md`) training data
+files in the `Markdown` format to the new `YAML` format using following commands:
 
 ```bash
 rasa data convert nlu -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
+rasa data convert nlg -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
 rasa data convert core -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
 ```
 
@@ -377,13 +378,21 @@ This means that the output in these files should look like -
 }
 ```
 
+* Retrieval actions with `respond_` prefix are now replaced with usual utterance actions with `utter_` prefix.
+If you were using retrieval actions before, rename all of them to start with `utter_` prefix. For example,
+`respond_chitchat` becomes `utter_chitchat`. Also, in order to keep the response templates more consistent,
+you should now add the `utter_` prefix to all response templates defined for retrieval intents. For example,
+a response template `chitchat/ask_name` becomes `utter_chitchat/ask_name`. Note that the NLU examples for this
+will still be under `chitchat/ask_name` intent. The example `responseselectorbot` should help clarify these changes further.
+
 * The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name`
 have been deprecated in favour of `intent_response_key` and `response_templates` respectively.
-Additionally a key `all_retrieval_intents` is added to the response selector output which will
-hold a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
+Additionally, two keys are added to the output -
+1. `all_retrieval_intents` - Holds a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
+2. `template_name` - Holds the name of the response template which is predicted by the response selector(`utter_faq/is_legit`)
 An example output looks like this -
 
-```json {3-4,10,11}
+```json {3-4,10,11,20}
 {
   "response_selector": {
     "all_retrieval_intents": [
@@ -403,6 +412,7 @@ An example output looks like this -
             "text": "I think so."
           }
         ]
+        "template_name": "utter_faq/is_legit"
       },
       "ranking": [
         {

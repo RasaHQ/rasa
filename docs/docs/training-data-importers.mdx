@@ -141,11 +141,11 @@ If you are writing a custom importer, this importer has to implement the interfa
 from typing import Optional, Text, Dict, List, Union
 
 import rasa
-from rasa.core.domain import Domain
-from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa.core.training.structures import StoryGraph
-from rasa.importers.importer import TrainingDataImporter
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 class MyImporter(TrainingDataImporter):
@@ -183,10 +183,12 @@ class MyImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        from rasa.core.training.dsl import StoryFileReader
+        from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+            YAMLStoryReader,
+        )
 
         path_to_stories = self._custom_get_story_file()
-        return await StoryFileReader.read_from_file(path_to_stories, await self.get_domain())
+        return await YAMLStoryReader.read_from_file(path_to_stories, await self.get_domain())
 
     def _custom_get_story_file(self) -> Text:
         pass
@@ -199,7 +201,7 @@ class MyImporter(TrainingDataImporter):
         pass
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        from rasa.nlu.training_data import loading
+        from rasa.shared.nlu.training_data import loading
 
         path_to_nlu_file = self._custom_get_nlu_file()
         return loading.load_data(path_to_nlu_file)

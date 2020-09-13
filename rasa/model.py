@@ -7,24 +7,24 @@ import typing
 from pathlib import Path
 from typing import Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.cli.utils import print_success, create_output_path
+from rasa.cli.utils import create_output_path
+from rasa.shared.utils.cli import print_success
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
-    CONFIG_KEYS_CORE,
-    CONFIG_KEYS_NLU,
-    CONFIG_KEYS,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
+from rasa.shared.constants import CONFIG_KEYS_CORE, CONFIG_KEYS_NLU, CONFIG_KEYS
 
 from rasa.core.utils import get_dict_hash
 from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
 
 
 logger = logging.getLogger(__name__)
@@ -302,7 +302,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
         FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
-        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
+        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,  # pytype: disable=module-attr
     }
 
 
@@ -336,7 +336,7 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
-        return rasa.utils.io.read_json_file(fingerprint_path)
+        return rasa.shared.utils.io.read_json_file(fingerprint_path)
     else:
         return {}
 
@@ -351,7 +351,7 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
     """
 
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
-    rasa.utils.io.dump_obj_as_json_to_file(path, fingerprint)
+    rasa.shared.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 
 def did_section_fingerprint_change(

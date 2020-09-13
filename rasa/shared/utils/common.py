@@ -1,5 +1,8 @@
 import importlib
-from typing import Text, Optional, Any, List
+import logging
+from typing import Text, Dict, Optional, Any, List, Callable, Collection
+
+logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
@@ -38,3 +41,79 @@ def all_subclasses(cls: Any) -> List[Any]:
 def module_path_from_instance(inst: Any) -> Text:
     """Return the module path of an instance's class."""
     return inst.__module__ + "." + inst.__class__.__name__
+
+
+def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
+    """Sorts a list of dictionaries by their first key."""
+    return sorted(dicts, key=lambda d: list(d.keys())[0])
+
+
+def lazy_property(function: Callable) -> Any:
+    """Allows to avoid recomputing a property over and over.
+
+    The result gets stored in a local var. Computation of the property
+    will happen once, on the first call of the property. All
+    succeeding calls will use the value stored in the private property."""
+
+    attr_name = "_lazy_" + function.__name__
+
+    @property
+    def _lazyprop(self):
+        if not hasattr(self, attr_name):
+            setattr(self, attr_name, function(self))
+        return getattr(self, attr_name)
+
+    return _lazyprop
+
+
+def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
+    """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
+    x = list(collection)
+    if len(x) >= 2:
+        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
+    return "".join(collection)
+
+
+def minimal_kwargs(
+    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
+) -> Dict[Text, Any]:
+    """Returns only the kwargs which are required by a function. Keys, contained in
+    the exception list, are not included.
+
+    Args:
+        kwargs: All available kwargs.
+        func: The function which should be called.
+        excluded_keys: Keys to exclude from the result.
+
+    Returns:
+        Subset of kwargs which are accepted by `func`.
+
+    """
+
+    excluded_keys = excluded_keys or []
+
+    possible_arguments = arguments_of(func)
+
+    return {
+        k: v
+        for k, v in kwargs.items()
+        if k in possible_arguments and k not in excluded_keys
+    }
+
+
+def mark_as_experimental_feature(feature_name: Text) -> None:
+    """Warns users that they are using an experimental feature."""
+
+    logger.warning(
+        f"The {feature_name} is currently experimental and might change or be "
+        "removed in the future 🔬 Please share your feedback on it in the "
+        "forum (https://forum.rasa.com) to help us make this feature "
+        "ready for production."
+    )
+
+
+def arguments_of(func: Callable) -> List[Text]:
+    """Return the parameters of the function `func` as a list of names."""
+    import inspect
+
+    return list(inspect.signature(func).parameters.keys())

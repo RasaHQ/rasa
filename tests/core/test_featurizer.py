@@ -1,37 +1,12 @@
-import logging
 from typing import Text
-from unittest.mock import Mock
-import sys
-import asyncio
-
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.featurizers.single_state_featurizer import (
-    BinarySingleStateFeaturizer,
-    LabelTokenizerSingleStateFeaturizer,
-    SingleStateFeaturizer,
-)
-import rasa.core
-from rasa.train import train_core, train_nlu, train
-from rasa.core.domain import Domain
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.shared.core.domain import Domain
 import numpy as np
-from rasa.nlu.constants import (
-    TEXT,
-    INTENT,
-    ACTION_NAME,
-    ACTION_TEXT,
-    ENTITIES,
-    FEATURE_TYPE_SENTENCE,
-)
-from rasa.core.constants import SLOTS, ACTIVE_LOOP
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, ENTITIES, TEXT, INTENT
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
+from rasa.shared.nlu.interpreter import RegexInterpreter
 import scipy.sparse
-from _pytest.monkeypatch import MonkeyPatch
-from pathlib import Path
-from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
-from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_STORIES_FILE,
-)
 
 
 def test_fail_to_load_non_existent_featurizer():
@@ -138,8 +113,6 @@ def test_single_state_featurizer_correctly_encodes_non_existing_value():
 
 
 def test_single_state_featurizer_creates_encoded_all_actions():
-    from rasa.core.actions.action import default_action_names
-
     domain = Domain(
         intents=[],
         entities=[],

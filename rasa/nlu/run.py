@@ -3,10 +3,11 @@ import logging
 import typing
 from typing import Optional, Text
 
-from rasa.cli.utils import print_success
-from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, RegexInterpreter
+from rasa.shared.utils.cli import print_success
+from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.model import Interpreter
-from rasa.nlu.utils import json_to_string
+from rasa.shared.utils.io import json_to_string
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import ComponentBuilder

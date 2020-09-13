@@ -27,7 +27,7 @@ from rasa.constants import (
 from rasa.core.brokers.broker import EventBroker
 import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from pika.adapters.blocking_connection import BlockingChannel

@@ -6,12 +6,9 @@ from typing import Any, Dict, List, Optional, Text, Union
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
-    DOCS_URL_PIPELINE,
-    DOCS_URL_MIGRATION_GUIDE,
-)
-from rasa.nlu.utils import json_to_string
+from rasa.constants import DEFAULT_CONFIG_PATH, DOCS_URL_MIGRATION_GUIDE
+from rasa.shared.constants import DOCS_URL_PIPELINE
+from rasa.shared.utils.io import json_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +32,7 @@ def load(
 
     if config is not None:
         try:
-            file_config = rasa.utils.io.read_config_file(config)
+            file_config = rasa.shared.utils.io.read_config_file(config)
         except yaml.parser.ParserError as e:
             raise InvalidConfigError(
                 f"Failed to read configuration file '{config}'. Error: {e}"

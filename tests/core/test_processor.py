@@ -9,14 +9,13 @@ from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable
 from unittest.mock import patch, Mock
+from tests.utilities import latest_request
 
 from rasa.core import jobs
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
-
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
-from rasa.core.domain import SessionConfig, Domain
-from rasa.core.events import (
+from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
     ReminderCancelled,
@@ -27,18 +26,23 @@ from rasa.core.events import (
     Event,
     SlotSet,
 )
-from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpreter
+from rasa.core.interpreter import RasaNLUHttpInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
-from tests.utilities import latest_request
-
-from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL, DEFAULT_INTENTS
+from rasa.shared.core.constants import (
+    DEFAULT_INTENTS,
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    EXTERNAL_MESSAGE_PREFIX,
+    IS_EXTERNAL,
+)
 
 import logging
 
@@ -120,7 +124,7 @@ async def test_http_parsing():
         assert r
 
 
-async def mocked_parse(self, text, message_id=None, tracker=None):
+async def mocked_parse(self, text, message_id=None, tracker=None, metadata=None):
     """Mock parsing a text message and augment it with the slot
     value from the tracker's state."""
 
@@ -180,6 +184,25 @@ async def test_reminder_scheduled(
         intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
     assert t.events[-1] == ActionExecuted("action_listen")
+
+
+async def test_trigger_external_latest_input_channel(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    input_channel = "test_input_channel_external"
+
+    tracker.update(UserUttered("test1"))
+    tracker.update(UserUttered("test2", input_channel=input_channel))
+
+    await default_processor.trigger_external_user_uttered(
+        "test3", None, tracker, default_channel
+    )
+
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+
+    assert tracker.get_latest_input_channel() == input_channel
 
 
 async def test_reminder_aborted(
