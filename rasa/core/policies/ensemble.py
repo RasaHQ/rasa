@@ -5,7 +5,8 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
+from pathlib import Path
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Union
 
 import rasa.core
 import rasa.shared.utils.common
@@ -13,11 +14,10 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
-    DOCS_URL_POLICIES,
     DEFAULT_CONFIG_PATH,
     DOCS_URL_MIGRATION_GUIDE,
 )
-from rasa.shared.constants import DOCS_URL_RULES
+from rasa.shared.constants import DOCS_URL_RULES, DOCS_URL_POLICIES
 from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
@@ -287,14 +287,14 @@ class PolicyEnsemble:
 
         rasa.shared.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to storage."""
 
         self._persist_metadata(path)
 
         for i, policy in enumerate(self.policies):
             dir_name = "policy_{}_{}".format(i, type(policy).__name__)
-            policy_path = os.path.join(path, dir_name)
+            policy_path = Path(path) / dir_name
             policy.persist(policy_path)
 
     @classmethod
@@ -337,7 +337,7 @@ class PolicyEnsemble:
             )
 
     @classmethod
-    def load(cls, path: Text) -> "PolicyEnsemble":
+    def load(cls, path: Union[Text, Path]) -> "PolicyEnsemble":
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)
@@ -608,7 +608,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         interpreter: NaturalLanguageInterpreter,
     ) -> Prediction:
         number_of_arguments_in_rasa_1_0 = 2
-        arguments = common_utils.arguments_of(policy.predict_action_probabilities)
+        arguments = rasa.shared.utils.common.arguments_of(
+            policy.predict_action_probabilities
+        )
         if (
             len(arguments) > number_of_arguments_in_rasa_1_0
             and "interpreter" in arguments

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from rasa.cli.utils import print_success
+from rasa.shared.utils.cli import print_success
 from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.utils.converter import TrainingDataConverter

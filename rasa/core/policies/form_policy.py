@@ -1,6 +1,8 @@
 import logging
 from typing import List, Dict, Text, Optional, Any, Union, Tuple
 
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -42,7 +44,7 @@ class FormPolicy(MemoizationPolicy):
             featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
         )
 
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{FormPolicy.__name__}' is deprecated and will be removed in "
             "in the future. It is recommended to use the 'RulePolicy' instead.",
             docs=DOCS_URL_MIGRATION_GUIDE,
@@ -161,3 +163,9 @@ class FormPolicy(MemoizationPolicy):
             logger.debug("There is no active form")
 
         return result
+
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
+            "priority": self.priority,
+            "lookup": self.lookup,
+        }

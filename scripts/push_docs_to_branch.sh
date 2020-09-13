@@ -22,10 +22,10 @@ NEW_VERSION=
 EXISTING_VERSION=
 if [[ "$GITHUB_REF" =~ $PATTERN_FOR_NEW_VERSION ]]
 then
-    NEW_VERSION=${GITHUB_REF/refs\/tags\//}
+    NEW_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.0$/\1.\2.x/")
 elif [[ "$GITHUB_REF" =~ $PATTERN_FOR_PATCH_VERSION ]]
 then
-    EXISTING_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.[0-9]+$/\1.\2.0/")
+    EXISTING_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.[0-9]+$/\1.\2.x/")
 fi
 
 # clone the $DOCS_BRANCH in a temp directory
