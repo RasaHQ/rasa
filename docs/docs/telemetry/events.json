@@ -6,8 +6,7 @@
   "defaultSection": "Miscellaneous",
   "events": {
     "Telemetry Disabled": {
-      "description": "Triggered when telemetry reporting gets disabled. Last event sent before disabling telemetry. This event is not send, if the user never enabled telemetry reporting before deactivating it.",
-      "type": "null"
+      "description": "Triggered when telemetry reporting gets disabled. Last event sent before disabling telemetry. This event is not send, if the user never enabled telemetry reporting before deactivating it."
     },
     "Training Started": {
       "description": "A training of a Rasa machine learning model got started. The event provides information on aggregated training data statistics.",
@@ -29,13 +28,18 @@
           "description": "Type of model trained, either 'nlu', 'core' or 'rasa'."
         },
         "pipeline": {
-          "type": "string",
-          "description": "Json dump of the pipeline configuration used for training."
+            "oneOf": [
+            { "type": "string"},
+            { "type": "array", "items": {"type": "object"}}
+          ],
+          "description": "List of the pipeline configurations used for training."
         },
         "policies": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Json dump of the policies configuration used for training."
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "List of the policy configurations used for training."
         },
         "num_intent_examples": {
           "type": "integer",

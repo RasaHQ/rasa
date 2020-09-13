@@ -1,5 +1,5 @@
 import asyncio
-from contextlib import asynccontextmanager
+import async_generator
 from datetime import datetime
 import functools
 from functools import wraps
@@ -275,6 +275,16 @@ def _is_telemetry_debug_enabled() -> bool:
     )
 
 
+def print_telemetry_event(payload: Dict[Text, Any]) -> None:
+    """Print a telemetry events payload to the commandline.
+
+    Args:
+        payload: payload of the event
+    """
+    print("Telemetry Event:")
+    print(json.dumps(payload, indent=2))
+
+
 async def _send_event(
     distinct_id: Text,
     event_name: Text,
@@ -297,8 +307,7 @@ async def _send_event(
     payload = segment_request_payload(distinct_id, event_name, properties, context)
 
     if _is_telemetry_debug_enabled():
-        print("Telemetry Event:")
-        print(json.dumps(payload, indent=2))
+        print_telemetry_event(payload)
         return
 
     write_key = telemetry_write_key()
@@ -475,7 +484,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
 
 
-@asynccontextmanager
+@async_generator.asynccontextmanager
 @ensure_telemetry_enabled
 async def track_model_training(
     training_data: TrainingDataImporter, model_type: Text
@@ -538,11 +547,7 @@ async def track_model_training(
 
 
 @ensure_telemetry_enabled
-def track_telemetry_disabled() -> None:
+async def track_telemetry_disabled() -> None:
     """Track when a user disables telemetry."""
 
-    loop = asyncio.new_event_loop()
-    try:
-        loop.run_until_complete(track(TELEMETRY_DISABLED))
-    finally:
-        loop.close()
+    asyncio.ensure_future(track(TELEMETRY_DISABLED))

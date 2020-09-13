@@ -81,9 +81,7 @@ def train_core(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
     from rasa.train import train_core
-    import asyncio
 
-    loop = asyncio.get_event_loop()
     output = train_path or args.out
 
     args.domain = get_validated_path(
