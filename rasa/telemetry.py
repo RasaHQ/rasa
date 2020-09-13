@@ -20,6 +20,8 @@ import aiohttp
 from terminaltables import SingleTable
 
 import rasa
+from rasa.shared.importers.importer import TrainingDataImporter
+import rasa.shared.utils.io
 from rasa.constants import (
     CONFIG_FILE_TELEMETRY_KEY,
     CONFIG_TELEMETRY_DATE,
@@ -27,7 +29,6 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
     DOCS_URL_TELEMETRY,
 )
-from rasa.importers.importer import TrainingDataImporter
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
 
@@ -311,10 +312,7 @@ async def _send_event(
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            SEGMENT_ENDPOINT,
-            headers=headers,
-            json=payload,
-            timeout=TELEMETRY_HTTP_TIMEOUT,
+            SEGMENT_ENDPOINT, headers=headers, json=payload,
         ) as resp:
             # handle different failure cases
             if resp.status != 200:
@@ -363,7 +361,7 @@ def _is_docker() -> bool:
 
     # if that didn't work, try to use proc information
     try:
-        return "docker" in rasa.utils.io.read_file("/proc/self/cgroup", "utf8")
+        return "docker" in rasa.shared.utils.io.read_file("/proc/self/cgroup", "utf8")
     except Exception:  # skipcq:PYL-W0703
         return False
 

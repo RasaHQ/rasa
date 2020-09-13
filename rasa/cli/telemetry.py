@@ -2,7 +2,7 @@ import argparse
 from typing import List
 
 from rasa import telemetry
-from rasa.cli.utils import print_info, print_success
+from rasa.shared.utils.cli import print_info, print_success
 from rasa.constants import DOCS_URL_TELEMETRY
 
 

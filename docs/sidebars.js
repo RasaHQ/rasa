@@ -195,7 +195,10 @@ module.exports = {
       type: 'category',
       label: 'Reference',
       collapsed: true,
-      items: ['telemetry', require('./docs/reference/sidebar.json')],
+      items: [
+        'telemetry/telemetry',
+        'telemetry/reference',
+        require('./docs/reference/sidebar.json')],
     },
     {
       type: 'category',

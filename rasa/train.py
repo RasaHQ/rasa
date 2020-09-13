@@ -14,7 +14,7 @@ from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.shared.cli.utils import (
+from rasa.shared.utils.cli import (
     print_success,
     print_warning,
     print_error,
