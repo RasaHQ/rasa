@@ -182,7 +182,6 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
         )
-    await telemetry.track_model_training(file_importer, model_type="rasa")
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
@@ -195,17 +194,18 @@ async def _train_async_internal(
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if fingerprint_comparison.is_training_required():
-        await _do_training(
-            file_importer,
-            output_path=output_path,
-            train_path=train_path,
-            fingerprint_comparison_result=fingerprint_comparison,
-            fixed_model_name=fixed_model_name,
-            persist_nlu_training_data=persist_nlu_training_data,
-            core_additional_arguments=core_additional_arguments,
-            nlu_additional_arguments=nlu_additional_arguments,
-            old_model_zip_path=old_model,
-        )
+        async with telemetry.track_model_training(file_importer, model_type="rasa"):
+            await _do_training(
+                file_importer,
+                output_path=output_path,
+                train_path=train_path,
+                fingerprint_comparison_result=fingerprint_comparison,
+                fixed_model_name=fixed_model_name,
+                persist_nlu_training_data=persist_nlu_training_data,
+                core_additional_arguments=core_additional_arguments,
+                nlu_additional_arguments=nlu_additional_arguments,
+                old_model_zip_path=old_model,
+            )
 
         return model.package_model(
             fingerprint=new_fingerprint,
@@ -386,8 +386,6 @@ async def _train_core_with_validated_data(
 
     import rasa.core.train
 
-    await telemetry.track_model_training(file_importer, model_type="core")
-
     with ExitStack() as stack:
         if train_path:
             # If the train path was provided, do nothing on exit.
@@ -401,14 +399,15 @@ async def _train_core_with_validated_data(
         domain, config = await asyncio.gather(
             file_importer.get_domain(), file_importer.get_config()
         )
-        await rasa.core.train(
-            domain_file=domain,
-            training_resource=file_importer,
-            output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
-            policy_config=config,
-            additional_arguments=additional_arguments,
-            interpreter=interpreter,
-        )
+        async with telemetry.track_model_training(file_importer, model_type="core"):
+            await rasa.core.train(
+                domain_file=domain,
+                training_resource=file_importer,
+                output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
+                policy_config=config,
+                additional_arguments=additional_arguments,
+                interpreter=interpreter,
+            )
         print_color(
             "Core model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
@@ -522,8 +521,6 @@ async def _train_nlu_with_validated_data(
 
     import rasa.nlu.train
 
-    await telemetry.track_model_training(file_importer, model_type="nlu")
-
     if additional_arguments is None:
         additional_arguments = {}
 
@@ -536,14 +533,15 @@ async def _train_nlu_with_validated_data(
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
         config = await file_importer.get_config()
         print_color("Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
-        _, nlu_model, _ = await rasa.nlu.train(
-            config,
-            file_importer,
-            _train_path,
-            fixed_model_name="nlu",
-            persist_nlu_training_data=persist_nlu_training_data,
-            **additional_arguments,
-        )
+        async with telemetry.track_model_training(file_importer, model_type="nlu"):
+            _, nlu_model, _ = await rasa.nlu.train(
+                config,
+                file_importer,
+                _train_path,
+                fixed_model_name="nlu",
+                persist_nlu_training_data=persist_nlu_training_data,
+                **additional_arguments,
+            )
         print_color(
             "NLU model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
         )

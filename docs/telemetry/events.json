@@ -1,0 +1,107 @@
+{
+	"Telemetry Disabled": {
+		"description": "Triggered when a user decides to disable telemetry. Last event sent before disabling telemetry.",
+		"type": "object",
+		"properties": {
+		},
+		"additionalProperties": false,
+		"required": [
+		]
+	},
+	"Training Started": {
+		"description": "A user started a training of a Rasa machine learning model. The event provides information on aggregated training data statistics.",
+		"type": "object",
+		"properties": {
+			"language": {
+				"type": "string",
+				"minLength": 1,
+				"description": "Language model is trained with, e.g. 'en'"
+			},
+			"training_id": {
+				"type": "string",
+				"minLength": 1,
+				"description": "Generated unique identifier for this training"
+			},
+			"model_type": {
+				"type": "string",
+				"description": "Type of model trained, either 'nlu', 'core' or 'rasa'"
+			},
+			"pipeline": {
+				"type": "string",
+				"description": "Json dump of the pipeline configuration used for training"
+			},
+			"policies": {
+				"type": "string",
+				"minLength": 1,
+				"description": "Json dump of the policies configuration used for training"
+			},
+			"num_intent_examples": {
+				"type": "integer",
+				"description": "Number of NLU examples."
+			},
+			"num_entity_examples": {
+				"type": "integer",
+				"description": "Number of entity examples."
+			},
+			"num_actions": {
+				"type": "integer",
+				"description": "Number of actions defined in the domain."
+			},
+			"num_templates": {
+				"type": "integer",
+				"description": "Number of templates defined in the domain."
+			},
+			"num_slots": {
+				"type": "integer",
+				"description": "Number of slots defined in the domain."
+			},
+			"num_forms": {
+				"type": "integer",
+				"description": "Number of forms defined in the domain."
+			},
+			"num_intents": {
+				"type": "integer",
+				"description": "Number of intents defined in the domain."
+			},
+			"num_entities": {
+				"type": "integer",
+				"description": "Number of entities defined in the domain."
+			},
+			"num_story_steps": {
+				"type": "integer",
+				"description": "Number of story steps available."
+			},
+			"num_lookup_tables": {
+				"type": "integer",
+				"description": "Number of different lookup tables."
+			},
+			"num_synonyms": {
+				"type": "integer",
+				"description": "Total number of entity synonyms defined."
+			},
+			"num_regexes": {
+				"type": "integer",
+				"description": "Total number of regexes defined."
+			}
+		},
+		"additionalProperties": false,
+		"required": [
+			"language",
+			"model_type",
+			"pipeline",
+			"policies",
+			"num_intent_examples",
+			"num_entity_examples",
+			"num_actions",
+			"num_templates",
+			"num_slots",
+			"num_forms",
+			"num_intents",
+			"num_entities",
+			"num_story_steps",
+			"num_lookup_tables",
+			"num_synonyms",
+			"num_regexes"
+		]
+	}
+}

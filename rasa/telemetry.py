@@ -1,5 +1,6 @@
 import asyncio
-import datetime
+from contextlib import asynccontextmanager
+from datetime import datetime
 import functools
 from functools import wraps
 import hashlib
@@ -28,6 +29,7 @@ from rasa.constants import (
 )
 from rasa.importers.importer import TrainingDataImporter
 from rasa.utils import common as rasa_utils
+import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,6 @@ TELEMETRY_DEBUG_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_DEBUG"
 # e.g. `RASA_TELEMETRY_WRITE_KEY=12354 rasa train`
 TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_WRITE_KEY"
 
-TELEMETRY_HTTP_TIMEOUT = 2  # Seconds
 TELEMETRY_ID = "metrics_id"
 TELEMETRY_ENABLED_BY_DEFAULT = True
 
@@ -86,7 +87,7 @@ def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Text]:
     return {
         CONFIG_TELEMETRY_ENABLED: is_enabled,
         CONFIG_TELEMETRY_ID: uuid.uuid4().hex,
-        CONFIG_TELEMETRY_DATE: datetime.datetime.now(),
+        CONFIG_TELEMETRY_DATE: datetime.now(),
     }
 
 
@@ -347,6 +348,26 @@ def _project_hash() -> Text:
         return hashlib.sha256(str(working_dir).encode("utf-8")).hexdigest()
 
 
+def _is_docker() -> bool:
+    """Guess if we are running in docker environment.
+
+    Returns:
+        `True` if we are running inside docker, `False` otherwise.
+    """
+    # first we try to use the env
+    try:
+        os.stat("/.dockerenv")
+        return True
+    except Exception:  # skipcq:PYL-W0703
+        pass
+
+    # if that didn't work, try to use proc information
+    try:
+        return "docker" in rasa.utils.io.read_file("/proc/self/cgroup", "utf8")
+    except Exception:  # skipcq:PYL-W0703
+        return False
+
+
 def with_default_context_fields(
     context: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
@@ -381,6 +402,7 @@ def _default_context_fields() -> Dict[Text, Any]:
         "rasa_open_source": rasa.__version__,
         "gpu": len(tf.config.list_physical_devices("GPU")),
         "cpu": multiprocessing.cpu_count(),
+        "docker": _is_docker(),
     }
 
 
@@ -455,11 +477,12 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
 
 
+@asynccontextmanager
 @ensure_telemetry_enabled
 async def track_model_training(
     training_data: TrainingDataImporter, model_type: Text
 ) -> None:
-    """Tracks when a new Git repository was connected to Rasa X server.
+    """Track a model training started.
 
     Args:
         training_data: Training data used for the training.
@@ -472,11 +495,14 @@ async def track_model_training(
     nlu_data = await training_data.get_nlu_data()
     domain = await training_data.get_domain()
 
+    training_id = uuid.uuid4().hex
+
     asyncio.ensure_future(
         track(
             TRAINING_STARTED_EVENT,
             {
                 "language": config.get("language"),
+                "training_id": training_id,
                 "model_type": model_type,
                 "pipeline": config.get("pipeline"),
                 "policies": config.get("policies"),
@@ -494,6 +520,20 @@ async def track_model_training(
                 "num_lookup_tables": len(nlu_data.lookup_tables),
                 "num_synonyms": len(nlu_data.entity_synonyms),
                 "num_regexes": len(nlu_data.regex_features),
+            },
+        )
+    )
+    start = datetime.now()
+    yield
+    runtime = datetime.now() - start
+
+    asyncio.ensure_future(
+        track(
+            TRAINING_COMPLETED_EVENT,
+            {
+                "training_id": training_id,
+                "model_type": model_type,
+                "runtime": int(runtime.total_seconds()),
             },
         )
     )
