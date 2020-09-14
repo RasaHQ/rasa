@@ -5,6 +5,7 @@ import logging
 from multiprocessing import get_context
 import os
 import signal
+import sys
 import traceback
 from typing import Iterable, List, Optional, Text, Tuple
 
@@ -175,7 +176,7 @@ def _get_event_broker_endpoint(
         ).ask()
 
         if not continue_with_default_event_broker:
-            exit(0)
+            sys.exit(0)
 
         return default_event_broker_endpoint
     else:

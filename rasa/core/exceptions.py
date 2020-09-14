@@ -13,6 +13,7 @@ class UnsupportedDialogueModelError(RasaCoreException):
     def __init__(self, message: Text, model_version: Optional[Text] = None) -> None:
         self.message = message
         self.model_version = model_version
+        super(UnsupportedDialogueModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
@@ -27,3 +28,4 @@ class AgentNotReady(RasaCoreException):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(AgentNotReady, self).__init__()

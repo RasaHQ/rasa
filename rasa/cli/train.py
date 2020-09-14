@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from typing import List, Optional, Text, Dict
 
 from rasa.cli import SubParsersAction
@@ -197,7 +198,7 @@ def _get_valid_config(
             "valid config file."
             "".format(config)
         )
-        exit(1)
+        sys.exit(1)
 
     missing_keys = rasa.cli.utils.missing_config_keys(config, mandatory_keys)
     if missing_keys:
@@ -206,6 +207,6 @@ def _get_valid_config(
             "'{}'. Add missing parameters to config file and try again."
             "".format(config, "', '".join(missing_keys))
         )
-        exit(1)
+        sys.exit(1)
 
     return config  # pytype: disable=bad-return-type

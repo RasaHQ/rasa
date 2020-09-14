@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from typing import List, Text
 
 from rasa.cli import SubParsersAction
@@ -140,7 +141,7 @@ def scaffold_path() -> Text:
 
 def print_cancel() -> None:
     print_success("Ok. You can continue setting up by running 'rasa init' 🙋🏽‍♀️")
-    exit(0)
+    sys.exit(0)
 
 
 def _ask_create_path(path: Text) -> None:
@@ -153,7 +154,7 @@ def _ask_create_path(path: Text) -> None:
         os.makedirs(path)
     else:
         print_success("Ok. You can continue setting up by running " "'rasa init' 🙋🏽‍♀️")
-        exit(0)
+        sys.exit(0)
 
 
 def _ask_overwrite(path: Text) -> None:
