@@ -484,8 +484,8 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
 
 
-@async_generator.asynccontextmanager
 @ensure_telemetry_enabled
+@async_generator.asynccontextmanager
 async def track_model_training(
     training_data: TrainingDataImporter, model_type: Text
 ) -> None:
