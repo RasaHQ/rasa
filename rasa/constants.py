@@ -15,8 +15,6 @@ PACKAGE_NAME = "rasa"
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 
-DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
-
 # Key in global config file which contains whether the user agreed to telemetry
 # reporting. These are reused in Rasa X. Keep this in mind when changing their names.
 CONFIG_FILE_TELEMETRY_KEY = "metrics"
