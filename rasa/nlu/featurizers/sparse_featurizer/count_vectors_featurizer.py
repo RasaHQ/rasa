@@ -5,7 +5,7 @@ import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
 
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu.config import RasaNLUModelConfig

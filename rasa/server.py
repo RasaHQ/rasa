@@ -19,6 +19,7 @@ from sanic_jwt import Initialize, exceptions
 
 import rasa
 import rasa.core.utils
+import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.endpoints
 import rasa.utils.io
@@ -28,16 +29,13 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils import common as common_utils
 from rasa import model
-from rasa.constants import (
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_MODELS_PATH,
-    DEFAULT_RESPONSE_TIMEOUT,
-    MINIMUM_COMPATIBLE_VERSION,
-)
+from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
     DOCS_BASE_URL,
     DEFAULT_SENDER_ID,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
 )
 from rasa.shared.core.domain import InvalidDomain
 from rasa.core.agent import Agent
@@ -133,7 +131,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
     def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
-            argnames = common_utils.arguments_of(f)
+            argnames = rasa.shared.utils.common.arguments_of(f)
 
             try:
                 sender_id_arg_idx = argnames.index("conversation_id")
@@ -1170,7 +1168,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
     if "force" in rjs or "save_to_default_model_directory" in rjs:
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "Specifying 'force' and 'save_to_default_model_directory' as part of the "
             "JSON payload is deprecated. Please use the header arguments "
             "'force_training' and 'save_to_default_model_directory'.",

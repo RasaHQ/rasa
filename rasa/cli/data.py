@@ -5,13 +5,14 @@ import os
 from pathlib import Path
 from typing import List
 
-import rasa.cli.utils as cli_utils
-import rasa.shared.data as shared_data
+import rasa.shared.data
+import rasa.shared.utils.cli
 from rasa.cli.arguments import data as arguments
-from rasa.constants import DEFAULT_DATA_PATH
-from rasa.shared.nlu.training_data import loading
-from rasa.shared.nlu.training_data import util as training_data_utils
-from rasa.importers.rasa import RasaFileImporter
+import rasa.cli.utils
+from rasa.shared.utils.cli import print_info, print_warning, print_error_and_exit
+from rasa.shared.constants import DEFAULT_DATA_PATH
+from rasa.shared.data import is_valid_filetype
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
@@ -182,6 +183,9 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         )
 
     if not all_good:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Project validation completed with errors."
+        )
         cli_utils.print_error_and_exit("Project validation completed with errors.")
 
 

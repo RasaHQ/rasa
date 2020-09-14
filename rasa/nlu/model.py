@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Text
 import rasa.nlu
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
 from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
     IntentClassifier,
@@ -16,15 +16,17 @@ from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=p
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
-from rasa.nlu.constants import PREDICTED_CONFIDENCE_KEY
-
 from rasa.nlu.persistor import Persistor
-from rasa.shared.nlu.constants import TEXT, ENTITIES, INTENT, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    TEXT,
+    ENTITIES,
+    INTENT,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+)
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
-
-MODEL_NAME_PREFIX = "nlu_"
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +231,7 @@ class Trainer:
         if fixed_model_name:
             model_name = fixed_model_name
         else:
-            model_name = MODEL_NAME_PREFIX + timestamp
+            model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)

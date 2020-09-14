@@ -2,6 +2,7 @@ import os
 import typing
 from typing import Optional, Text, List, Dict, Union
 
+import rasa.shared.utils.io
 import rasa.utils.io
 
 if typing.TYPE_CHECKING:
@@ -21,7 +22,7 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
 
     config_data = {}
     if isinstance(config_file, str) and os.path.isfile(config_file):
-        config_data = rasa.utils.io.read_config_file(config_file)
+        config_data = rasa.shared.utils.io.read_config_file(config_file)
     elif isinstance(config_file, Dict):
         config_data = config_file
 

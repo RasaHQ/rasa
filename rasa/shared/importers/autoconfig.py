@@ -5,11 +5,10 @@ import sys
 from enum import Enum
 from typing import Text, Dict, Any, List, Set, Optional
 
-import rasa.constants as constants
+import rasa.shared.constants
+import rasa.shared.utils.cli
+import rasa.shared.utils.common
 import rasa.shared.utils.io
-import rasa.utils.common as common_utils
-import rasa.cli.utils as cli_utils
-import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +17,13 @@ COMMENTS_FOR_KEYS = {
         f"# # No configuration for the NLU pipeline was provided. The following "
         f"default pipeline was used to train your model.\n"
         f"# # If you'd like to customize it, uncomment and adjust the pipeline.\n"
-        f"# # See {constants.DOCS_URL_PIPELINE} for more information.\n"
+        f"# # See {rasa.shared.constants.DOCS_URL_PIPELINE} for more information.\n"
     ),
     "policies": (
         f"# # No configuration for policies was provided. The following default "
         f"policies were used to train your model.\n"
         f"# # If you'd like to customize them, uncomment and adjust the policies.\n"
-        f"# # See {constants.DOCS_URL_POLICIES} for more information.\n"
+        f"# # See {rasa.shared.constants.DOCS_URL_POLICIES} for more information.\n"
     ),
 }
 
@@ -51,7 +50,7 @@ def get_configuration(
         logger.debug("No configuration file was provided to the TrainingDataImporter.")
         return {}
 
-    config = io_utils.read_config_file(config_file_path)
+    config = rasa.shared.utils.io.read_config_file(config_file_path)
 
     missing_keys = _get_missing_config_keys(config, training_type)
     keys_to_configure = _get_unspecified_autoconfigurable_keys(config, training_type)
@@ -69,11 +68,11 @@ def _get_unspecified_autoconfigurable_keys(
     config: Dict[Text, Any], training_type: Optional[TrainingType] = TrainingType.BOTH
 ) -> Set[Text]:
     if training_type == TrainingType.NLU:
-        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS_NLU
+        all_keys = rasa.shared.constants.CONFIG_AUTOCONFIGURABLE_KEYS_NLU
     elif training_type == TrainingType.CORE:
-        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS_CORE
+        all_keys = rasa.shared.constants.CONFIG_AUTOCONFIGURABLE_KEYS_CORE
     else:
-        all_keys = constants.CONFIG_AUTOCONFIGURABLE_KEYS
+        all_keys = rasa.shared.constants.CONFIG_AUTOCONFIGURABLE_KEYS
 
     return {k for k in all_keys if not config.get(k)}
 
@@ -82,11 +81,11 @@ def _get_missing_config_keys(
     config: Dict[Text, Any], training_type: Optional[TrainingType] = TrainingType.BOTH
 ) -> Set[Text]:
     if training_type == TrainingType.NLU:
-        all_keys = constants.CONFIG_KEYS_NLU
+        all_keys = rasa.shared.constants.CONFIG_KEYS_NLU
     elif training_type == TrainingType.CORE:
-        all_keys = constants.CONFIG_KEYS_CORE
+        all_keys = rasa.shared.constants.CONFIG_KEYS_CORE
     else:
-        all_keys = constants.CONFIG_KEYS
+        all_keys = rasa.shared.constants.CONFIG_KEYS
 
     return {k for k in all_keys if k not in config.keys()}
 
@@ -109,7 +108,7 @@ def _auto_configure(
     if keys_to_configure:
         logger.debug(
             f"The provided configuration does not contain the key(s) "
-            f"{common_utils.transform_collection_to_sentence(keys_to_configure)}. "
+            f"{rasa.shared.utils.common.transform_collection_to_sentence(keys_to_configure)}. "
             f"Values will be provided from the default configuration."
         )
 
@@ -121,7 +120,7 @@ def _auto_configure(
         filename = "default_config_other_language.yml"
 
     default_config_file = pkg_resources.resource_filename(__name__, filename)
-    default_config = io_utils.read_config_file(default_config_file)
+    default_config = rasa.shared.utils.io.read_config_file(default_config_file)
 
     config = copy.deepcopy(config)
     for key in keys_to_configure:
@@ -159,7 +158,7 @@ def _dump_config(
         config_file_path, missing_keys, auto_configured_keys, training_type
     )
     if not config_as_expected:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             f"The configuration file at '{config_file_path}' has been removed or "
             f"modified while the automatic configuration was running. The current "
             f"configuration will therefore not be dumped to the file. If you want to "
@@ -181,10 +180,10 @@ def _dump_config(
         for line in updated_lines:
             f.write(line)
 
-    auto_configured_keys = common_utils.transform_collection_to_sentence(
+    auto_configured_keys = rasa.shared.utils.common.transform_collection_to_sentence(
         auto_configured_keys
     )
-    cli_utils.print_info(
+    rasa.shared.utils.cli.print_info(
         f"The configuration for {auto_configured_keys} was chosen automatically. It "
         f"was written into the config file at '{config_file_path}'."
     )
@@ -197,7 +196,7 @@ def _is_config_file_as_expected(
     training_type: Optional[TrainingType] = TrainingType.BOTH,
 ) -> bool:
     try:
-        content = io_utils.read_config_file(config_file_path)
+        content = rasa.shared.utils.io.read_config_file(config_file_path)
     except ValueError:
         content = ""
 

@@ -12,17 +12,21 @@ import aiohttp
 import ruamel.yaml as yaml
 
 import rasa.cli.utils as cli_utils
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.cli.arguments import x as arguments
 from rasa.constants import (
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_CONFIG_PATH,
     DEFAULT_LOG_LEVEL_RASA_X,
     DEFAULT_RASA_X_PORT,
     DEFAULT_RASA_PORT,
+)
+from rasa.shared.constants import (
     DOCS_BASE_URL_RASA_X,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
 )
 from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig
@@ -94,7 +98,7 @@ def _prepare_credentials_for_rasa_x(
         credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
     if credentials_path:
-        credentials = io_utils.read_config_file(credentials_path)
+        credentials = rasa.shared.utils.io.read_config_file(credentials_path)
     else:
         credentials = {}
 
@@ -153,7 +157,7 @@ def _get_event_broker_endpoint(
     if not event_broker_endpoint:
         return default_event_broker_endpoint
     elif not _is_correct_event_broker(event_broker_endpoint):
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             f"Rasa X currently only supports a SQLite event broker with path "
             f"'{DEFAULT_EVENTS_DB}' when running locally. You can deploy Rasa X "
             f"with Docker ({DOCS_BASE_URL_RASA_X}/installation-and-setup/"
@@ -268,7 +272,7 @@ def is_rasa_project_setup(args: argparse.Namespace, project_path: Text) -> bool:
 
 def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
     if not is_rasa_x_installed():
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             "Rasa X is not installed. The `rasa x` "
             "command requires an installation of Rasa X. "
             "Instructions on how to install Rasa X can be found here: "
@@ -276,7 +280,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         )
 
     if args.port == args.rasa_x_port:
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             "The port for Rasa X '{}' and the port of the Rasa server '{}' are the "
             "same. We need two different ports, one to run Rasa X (e.g. delivering the "
             "UI) and another one to run a normal Rasa server.\nPlease specify two "
@@ -286,7 +290,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         )
 
     if not is_rasa_project_setup(args, project_path):
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
             "directory (see http://rasa.com/docs/rasa/user-guide/"
@@ -296,7 +300,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
     _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
 
     if args.data and not os.path.exists(args.data):
-        cli_utils.print_warning(
+        rasa.shared.utils.cli.print_warning(
             "The provided data path ('{}') does not exists. Rasa X will start "
             "without any training data.".format(args.data)
         )
@@ -309,7 +313,7 @@ def _validate_domain(domain_path: Text):
     try:
         Domain.load(domain_path)
     except InvalidDomain as e:
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             "The provided domain file could not be loaded. " "Error: {}".format(e)
         )
 
@@ -350,7 +354,7 @@ async def _pull_runtime_config_from_server(
                                 io_utils.create_temporary_file(rjs[k]) for k in keys
                             ]
                         except KeyError as e:
-                            cli_utils.print_error_and_exit(
+                            rasa.shared.utils.cli.print_error_and_exit(
                                 "Failed to find key '{}' in runtime config. "
                                 "Exiting.".format(e)
                             )
@@ -366,14 +370,14 @@ async def _pull_runtime_config_from_server(
         await asyncio.sleep(wait_time_between_pulls)
         attempts -= 1
 
-    cli_utils.print_error_and_exit(
+    rasa.shared.utils.cli.print_error_and_exit(
         "Could not fetch runtime config from server at '{}'. "
         "Exiting.".format(config_endpoint)
     )
 
 
 def run_in_production(args: argparse.Namespace):
-    from rasa.cli.utils import print_success
+    from rasa.shared.utils.cli import print_success
 
     print_success("Starting Rasa X in production mode... 🚀")
 
@@ -433,7 +437,7 @@ def run_locally(args: argparse.Namespace):
         )
     except Exception:
         print(traceback.format_exc())
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Sorry, something went wrong (see error above). Make sure to start "
             "Rasa X with valid data and valid domain and config files. Please, "
             "also check any warnings that popped up.\nIf you need help fixing "

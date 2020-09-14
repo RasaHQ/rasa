@@ -5,7 +5,7 @@ import uuid
 from typing import List
 
 from rasa.cli.arguments import shell as arguments
-from rasa.cli.utils import print_error
+from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def add_subparser(
 
 def shell_nlu(args: argparse.Namespace):
     from rasa.cli.utils import get_validated_path
-    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.shared.constants import DEFAULT_MODELS_PATH
     from rasa.model import get_model, get_model_subdirectories
     import rasa.nlu.run
 
@@ -85,7 +85,7 @@ def shell_nlu(args: argparse.Namespace):
 
 def shell(args: argparse.Namespace):
     from rasa.cli.utils import get_validated_path
-    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.shared.constants import DEFAULT_MODELS_PATH
     from rasa.model import get_model, get_model_subdirectories
 
     args.connector = "cmdline"

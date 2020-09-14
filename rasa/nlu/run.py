@@ -3,7 +3,7 @@ import logging
 import typing
 from typing import Optional, Text
 
-from rasa.cli.utils import print_success
+from rasa.shared.utils.cli import print_success
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.model import Interpreter

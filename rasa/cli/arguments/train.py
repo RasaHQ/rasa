@@ -8,7 +8,7 @@ from rasa.cli.arguments.default_arguments import (
     add_out_param,
     add_domain_param,
 )
-from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_CONFIG_PATH
+from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 
 def set_train_arguments(parser: argparse.ArgumentParser):
