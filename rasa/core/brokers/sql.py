@@ -21,7 +21,7 @@ class SQLEventBroker(EventBroker):
     Base = declarative_base()
 
     class SQLBrokerEvent(Base):
-        from sqlalchemy import Column, Integer, String, Text
+        from sqlalchemy import Column, Integer, String
 
         __tablename__ = "events"
         id = Column(Integer, primary_key=True)

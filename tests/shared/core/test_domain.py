@@ -110,7 +110,6 @@ def check_for_too_many_entities_and_remove_them(state: State) -> State:
 
 
 async def test_create_train_data_unfeaturized_entities():
-    import copy
 
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"

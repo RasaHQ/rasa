@@ -173,7 +173,6 @@ def background_server(
         return fake_model_path
 
     def run_server() -> NoReturn:
-        import rasa
 
         rasa.train = mocked_training_function
 

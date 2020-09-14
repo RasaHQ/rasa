@@ -72,7 +72,6 @@ def test_spacy_training_sample_alignment(spacy_nlp_component):
 
 
 def test_spacy_intent_featurizer(spacy_nlp_component):
-    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
     spacy_nlp_component.train(td, config=None)
@@ -95,7 +94,6 @@ def test_spacy_intent_featurizer(spacy_nlp_component):
     [("hey how are you today", [-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])],
 )
 def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
-    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     doc = spacy_nlp(sentence)
     token_vectors = [t.vector for t in doc]
@@ -123,7 +121,6 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
 
 
 def test_spacy_featurizer_casing(spacy_nlp):
-    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     # if this starts failing for the default model, we should think about
     # removing the lower casing the spacy nlp component does when it
@@ -196,7 +193,6 @@ def test_spacy_featurizer_train(spacy_nlp):
 
 
 def test_spacy_featurizer_using_empty_model():
-    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
     import spacy
 
     sentence = "This test is using an empty spaCy model"

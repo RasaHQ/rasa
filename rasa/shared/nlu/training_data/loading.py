@@ -73,13 +73,10 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     """Generates the appropriate reader class based on the file format."""
     from rasa.shared.nlu.training_data.formats import (
         RasaYAMLReader,
-        MarkdownReader,
         WitReader,
         LuisReader,
         RasaReader,
-        DialogflowReader,
-        NLGMarkdownReader,
-    )
+        DialogflowReader)
 
     reader = None
     if fformat == LUIS:

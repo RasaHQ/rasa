@@ -334,7 +334,6 @@ async def test_set_random_seed(component_builder, tmpdir):
 
 
 async def test_train_tensorboard_logging(component_builder, tmpdir):
-    from pathlib import Path
 
     tensorboard_log_dir = Path(tmpdir.strpath) / "tensorboard"
 

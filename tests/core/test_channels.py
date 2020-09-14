@@ -147,7 +147,6 @@ async def test_send_response(default_channel, default_tracker):
 
 
 async def test_console_input():
-    from rasa.core.channels import console
 
     # Overwrites the input() function and when someone else tries to read
     # something from the command line this function gets called.
@@ -1223,7 +1222,6 @@ async def test_slackbot_send_custom_json_threaded():
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 def test_channel_inheritance():
     from rasa.core.channels import RestInput
-    from rasa.core.channels.rasa_chat import RasaChatInput
 
     rasa_input = RasaChatInput("https://example.com")
 
@@ -1239,7 +1237,6 @@ def test_channel_inheritance():
 
 
 def test_int_sender_id_in_user_message():
-    from rasa.core.channels.channel import UserMessage
 
     # noinspection PyTypeChecker
     message = UserMessage("A text", sender_id=1234567890)
@@ -1248,7 +1245,6 @@ def test_int_sender_id_in_user_message():
 
 
 def test_int_message_id_in_user_message():
-    from rasa.core.channels.channel import UserMessage
 
     # noinspection PyTypeChecker
     message = UserMessage("B text", message_id=987654321)
@@ -1269,7 +1265,6 @@ async def test_send_elements_without_buttons():
 
 
 def test_newsline_strip():
-    from rasa.core.channels.channel import UserMessage
 
     message = UserMessage("\n/restart\n")
 
@@ -1331,7 +1326,6 @@ def test_extract_input_channel(test_input, expected):
 
 
 async def test_rasa_chat_input():
-    from rasa.core.channels import RasaChatInput
 
     rasa_x_api_url = "https://rasa-x.com:5002"
     rasa_chat_input = RasaChatInput(rasa_x_api_url)

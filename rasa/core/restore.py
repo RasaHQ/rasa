@@ -8,7 +8,6 @@ import rasa.cli.utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.cli import utils as cli_utils
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import console

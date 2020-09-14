@@ -129,7 +129,6 @@ async def train_comparison_models(
 
 async def get_no_of_stories(story_file: Text, domain: Text) -> int:
     """Get number of stories in a file."""
-    from rasa.shared.core.domain import Domain
     from rasa.shared.core.training_data import loading
 
     stories = await loading.load_data_from_files([story_file], Domain.load(domain))

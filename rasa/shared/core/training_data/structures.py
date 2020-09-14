@@ -682,7 +682,6 @@ def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
     Returns:
         Generated random UUID.
     """
-    import uuid
 
     gid = uuid.uuid4().hex
     if max_chars:

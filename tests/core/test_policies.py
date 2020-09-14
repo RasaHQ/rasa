@@ -288,8 +288,6 @@ class TestSklearnPolicy(PolicyTestCollection):
 class TestTEDPolicy(PolicyTestCollection):
     def test_train_model_checkpointing(self, tmpdir: Path):
 
-        from pathlib import Path
-
         model_name = "core-checkpointed-model"
         best_model_file = Path(tmpdir.strpath, model_name + ".tar.gz")
         assert not best_model_file.exists()

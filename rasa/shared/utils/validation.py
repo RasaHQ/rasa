@@ -44,7 +44,6 @@ def validate_yaml_schema(
     from pykwalify.errors import SchemaError
     from ruamel.yaml import YAMLError
     import pkg_resources
-    import logging
 
     log = logging.getLogger("pykwalify")
     if show_validation_errors:
