@@ -42,7 +42,7 @@ set during it.
 
 It can be triggered by the user in a conversation by sending a
 "/restart" message, if the [RulePolicy](./rules.mdx) is included in the model configuration.
-If you define a `utter_restart` response in your domain, this will be sent to the user as well.
+If you define an `utter_restart` response in your domain, this will be sent to the user as well.
 
 ## action_session_start
 
@@ -50,10 +50,10 @@ This action starts a new conversation session, and is executed in the following
 situations:
   * at the beginning of each new conversation
   * after a user was inactive for a period defined by the `session_expiration_time` parameter in the domain's
-[Session configuration](./domain.mdx#session-config).
+[session configuration](./domain.mdx#session-config)
   * when a user sends a "/session_start" message during a conversation
 
-The action will reset the conversation tracker, but not clear any slots that were set.
+The action will reset the conversation tracker, but by default will not clear any slots that were set.
 
 ### Customization
 
