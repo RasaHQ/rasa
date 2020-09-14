@@ -1,6 +1,5 @@
 import copy
 import logging
-import os
 from pathlib import Path
 from collections import defaultdict
 
@@ -390,7 +389,7 @@ class TEDPolicy(Policy):
 
         return confidence.tolist()
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
 
         if self.model is None:
@@ -429,18 +428,18 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(cls, path: Text) -> "TEDPolicy":
+    def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
         """Loads a policy from the storage.
         **Needs to load its featurizer**
         """
+        model_path = Path(path)
 
-        if not os.path.exists(path):
+        if not model_path.exists():
             raise Exception(
                 f"Failed to load TED policy model. Path "
-                f"'{os.path.abspath(path)}' doesn't exist."
+                f"'{model_path.absolute()}' doesn't exist."
             )
 
-        model_path = Path(path)
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)
