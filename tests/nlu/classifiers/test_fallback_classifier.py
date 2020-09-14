@@ -11,8 +11,13 @@ from rasa.nlu.classifiers.fallback_classifier import (
     AMBIGUITY_THRESHOLD_KEY,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import INTENT_RANKING_KEY, PREDICTED_CONFIDENCE_KEY
-from rasa.shared.nlu.constants import INTENT, TEXT, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    INTENT,
+    TEXT,
+    INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+)
 
 
 @pytest.mark.parametrize(

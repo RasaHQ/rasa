@@ -3,7 +3,7 @@ from typing import Any, List, Text, Optional, Dict, Tuple
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
 
 from rasa.shared.core.domain import Domain

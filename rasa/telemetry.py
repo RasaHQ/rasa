@@ -20,6 +20,7 @@ import aiohttp
 from terminaltables import SingleTable
 
 import rasa
+from rasa.shared.constants import DOCS_URL_TELEMETRY
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.io
 from rasa.constants import (
@@ -27,7 +28,6 @@ from rasa.constants import (
     CONFIG_TELEMETRY_DATE,
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
-    DOCS_URL_TELEMETRY,
 )
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
@@ -557,7 +557,6 @@ def initialize_error_reporting() -> None:
 
 
 @async_generator.asynccontextmanager
-@async_generator.async_generator
 @ensure_telemetry_enabled
 async def track_model_training(
     training_data: TrainingDataImporter, model_type: Text

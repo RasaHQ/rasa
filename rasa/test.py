@@ -9,11 +9,8 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-from rasa.constants import (
-    DEFAULT_RESULTS_PATH,
-    RESULTS_FILE,
-    NUMBER_OF_TRAINING_STORIES_FILE,
-)
+from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
+from rasa.shared.constants import DEFAULT_RESULTS_PATH
 import rasa.cli.utils as cli_utils
 import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
