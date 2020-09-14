@@ -5,7 +5,11 @@ from typing import Text, Dict, Type, List
 
 import pytest
 
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
+from rasa.shared.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
+)
 import rasa.shared.utils.io
 import rasa.shared.core.constants
 from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted

@@ -6,7 +6,7 @@ import numpy as np
 from typing import Any, Dict, Optional, Text, List, Type, Union
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.tokenizer import Tokenizer

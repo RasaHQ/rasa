@@ -5,8 +5,11 @@ import pytest
 import os
 
 import rasa.shared.utils.io
-from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
-from rasa.shared.constants import DEFAULT_E2E_TESTS_PATH
+from rasa.shared.constants import (
+    DEFAULT_E2E_TESTS_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
 from rasa.shared.nlu.training_data.formats import RasaReader
 import rasa.utils.io
 from rasa import model

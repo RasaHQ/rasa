@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 import rasa.shared.utils.io
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer

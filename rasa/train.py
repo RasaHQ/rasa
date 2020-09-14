@@ -15,7 +15,7 @@ from rasa.utils.common import TempDirectoryPath
 
 from rasa.shared.utils.cli import print_color, print_success, print_warning, print_error
 import rasa.shared.utils.io
-from rasa.constants import (
+from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DEFAULT_NLU_SUBDIRECTORY_NAME,

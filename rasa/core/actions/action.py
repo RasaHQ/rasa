@@ -1,8 +1,7 @@
 import copy
 import json
 import logging
-import typing
-from typing import List, Text, Optional, Dict, Any, Set
+from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
 
 import aiohttp
 
@@ -16,7 +15,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
-    INTENT_RANKING_KEY,
 )
 
 from rasa.shared.constants import (
@@ -37,7 +35,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
 )
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
 from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
@@ -52,7 +50,8 @@ from rasa.shared.core.events import (
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa.shared.core.domain import Domain
 
-if typing.TYPE_CHECKING:
+
+if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
@@ -665,7 +664,7 @@ class RemoteAction(Action):
 
 class ActionExecutionRejection(Exception):
     """Raising this exception will allow other policies
-        to predict a different action"""
+    to predict a different action"""
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
         self.action_name = action_name
@@ -680,10 +679,10 @@ class ActionExecutionRejection(Exception):
 class ActionRevertFallbackEvents(Action):
     """Reverts events which were done during the `TwoStageFallbackPolicy`.
 
-       This reverts user messages and bot utterances done during a fallback
-       of the `TwoStageFallbackPolicy`. By doing so it is not necessary to
-       write custom stories for the different paths, but only of the happy
-       path.
+    This reverts user messages and bot utterances done during a fallback
+    of the `TwoStageFallbackPolicy`. By doing so it is not necessary to
+    write custom stories for the different paths, but only of the happy
+    path.
     """
 
     def name(self) -> Text:
@@ -760,9 +759,9 @@ def _revert_rephrasing_events() -> List[Event]:
 class ActionDefaultAskAffirmation(Action):
     """Default implementation which asks the user to affirm his intent.
 
-       It is suggested to overwrite this default action with a custom action
-       to have more meaningful prompts for the affirmations. E.g. have a
-       description of the intent instead of its identifier name.
+    It is suggested to overwrite this default action with a custom action
+    to have more meaningful prompts for the affirmations. E.g. have a
+    description of the intent instead of its identifier name.
     """
 
     def name(self) -> Text:

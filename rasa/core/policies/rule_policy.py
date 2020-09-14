@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
+from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
 
 from tqdm import tqdm
 import numpy as np
@@ -36,6 +36,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
+
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
@@ -82,7 +83,7 @@ class RulePolicy(MemoizationPolicy):
         """The type of data supported by this policy.
 
         Returns:
-            The data type supported by this policy (rule data).
+            The data type supported by this policy (ML and rule data).
         """
         return SupportedData.ML_AND_RULE_DATA
 
@@ -645,3 +646,16 @@ class RulePolicy(MemoizationPolicy):
                 domain.index_for_action(self._fallback_action_name)
             ] = self._core_fallback_threshold
         return result
+
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
+            "priority": self.priority,
+            "lookup": self.lookup,
+            "core_fallback_threshold": self._core_fallback_threshold,
+            "core_fallback_action_name": self._fallback_action_name,
+            "enable_fallback_prediction": self._enable_fallback_prediction,
+        }
+
+    @classmethod
+    def _metadata_filename(cls) -> Text:
+        return "rule_policy.json"

@@ -443,6 +443,12 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     |                                 |                  | coming from the listed names are used. If list is empty      |
     |                                 |                  | all available features are used.                             |
     +---------------------------------+------------------+--------------------------------------------------------------+
+    | checkpoint_model                | False            | Save the best performing model during training. Models are   |
+    |                                 |                  | stored to the location specified by `--out`. Only the one    |
+    |                                 |                  | best model will be saved.                                    |
+    |                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
+    |                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
+    +---------------------------------+------------------+--------------------------------------------------------------+
     ```
 
     :::note

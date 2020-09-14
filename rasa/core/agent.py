@@ -10,14 +10,17 @@ import aiohttp
 from aiohttp import ClientError
 
 import rasa
-from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 import rasa.core.interpreter
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import (
+    DEFAULT_SENDER_ID,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
