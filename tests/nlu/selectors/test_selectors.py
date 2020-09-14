@@ -1,13 +1,21 @@
+from pathlib import Path
+
 import pytest
 
+from rasa.nlu import train
+from rasa.nlu.components import ComponentBuilder
+from rasa.shared.nlu.training_data import util
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import load_data
+import rasa.shared.nlu.training_data.loading
 from rasa.nlu.train import Trainer, Interpreter
 from rasa.utils.tensorflow.constants import (
     EPOCHS,
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    CHECKPOINT_MODEL,
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
 
@@ -35,8 +43,12 @@ from rasa.nlu.selectors.response_selector import ResponseSelector
 )
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
-    training_data = load_data("data/examples/rasa/demo-rasa.md")
-    training_data_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
     training_data = training_data.merge(training_data_responses)
 
     nlu_config = RasaNLUModelConfig({"language": "en", "pipeline": pipeline})
@@ -66,6 +78,12 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         parsed.get("response_selector")
         .get("default")
         .get("response")
+        .get("template_name")
+    ) is not None
+    assert (
+        parsed.get("response_selector")
+        .get("default")
+        .get("response")
         .get("response_templates")
     ) is not None
 
@@ -87,8 +105,12 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 def test_ground_truth_for_training(use_text_as_label, label_values):
 
     # use data that include some responses
-    training_data = load_data("data/examples/rasa/demo-rasa.md")
-    training_data_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
     training_data = training_data.merge(training_data_responses)
 
     response_selector = ResponseSelector(
@@ -114,8 +136,12 @@ def test_resolve_intent_response_key_from_label(
 ):
 
     # use data that include some responses
-    training_data = load_data("data/examples/rasa/demo-rasa.md")
-    training_data_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
+    training_data = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa.md"
+    )
+    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
     training_data = training_data.merge(training_data_responses)
 
     response_selector = ResponseSelector(
@@ -128,6 +154,57 @@ def test_resolve_intent_response_key_from_label(
     )
     assert resolved_intent_response_key == label_intent_response_key
     assert (
-        response_selector.responses[label_intent_response_key]
-        == training_data.responses[resolved_intent_response_key]
+        response_selector.responses[
+            util.intent_response_key_to_template_key(label_intent_response_key)
+        ]
+        == training_data.responses[
+            util.intent_response_key_to_template_key(resolved_intent_response_key)
+        ]
     )
+
+
+async def test_train_model_checkpointing(
+    component_builder: ComponentBuilder, tmpdir: Path
+):
+    from pathlib import Path
+
+    model_name = "rs-checkpointed-model"
+    best_model_file = Path(str(tmpdir), model_name)
+    assert not best_model_file.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "ResponseSelector",
+                    EPOCHS: 5,
+                    EVAL_NUM_EXAMPLES: 10,
+                    EVAL_NUM_EPOCHS: 1,
+                    CHECKPOINT_MODEL: True,
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    await train(
+        _config,
+        path=str(tmpdir),
+        data="data/test_selectors",
+        component_builder=component_builder,
+        fixed_model_name=model_name,
+    )
+
+    assert best_model_file.exists()
+
+    """
+    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+        - metadata.json
+        - checkpoint
+        - component_1_CountVectorsFeaturizer (as per the pipeline above)
+        - component_2_ResponseSelector files (more than 1 file)
+    """
+    all_files = list(best_model_file.rglob("*.*"))
+    assert len(all_files) > 4

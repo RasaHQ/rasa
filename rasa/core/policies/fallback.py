@@ -1,18 +1,16 @@
-import json
 import logging
-import os
 from typing import Any, List, Text, Optional, Dict, Tuple
 
-from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBACK_NAME
 
-import rasa.utils.io
-from rasa.utils import common as common_utils
-
-from rasa.core.domain import Domain
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
@@ -23,7 +21,7 @@ class FallbackPolicy(Policy):
 
     A fallback can be triggered by a low confidence score on a
     NLU prediction or by a low confidence score on an action
-    prediction. """
+    prediction."""
 
     @staticmethod
     def _standard_featurizer() -> None:
@@ -58,7 +56,7 @@ class FallbackPolicy(Policy):
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
 
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{self.__class__.__name__}' is deprecated and will be removed "
             "in the future. It is recommended to use the 'RulePolicy' instead.",
             docs=DOCS_URL_MIGRATION_GUIDE,
@@ -66,7 +64,7 @@ class FallbackPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -146,7 +144,7 @@ class FallbackPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predicts a fallback action.
@@ -188,26 +186,15 @@ class FallbackPolicy(Policy):
 
         return result
 
-    def persist(self, path: Text) -> None:
-        """Persists the policy to storage."""
-
-        config_file = os.path.join(path, "fallback_policy.json")
-        meta = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
             "ambiguity_threshold": self.ambiguity_threshold,
             "core_threshold": self.core_threshold,
             "fallback_action_name": self.fallback_action_name,
         }
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
-    def load(cls, path: Text) -> "FallbackPolicy":
-        meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "fallback_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
-
-        return cls(**meta)
+    def _metadata_filename(cls) -> Text:
+        return "fallback_policy.json"

@@ -5,17 +5,14 @@ import logging
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import REQUESTED_SLOT, UTTER_PREFIX
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 
-from rasa.core.actions.action import (
-    ActionExecutionRejection,
-    RemoteAction,
-    ACTION_LISTEN_NAME,
-)
-from rasa.core.events import Event, SlotSet, ActionExecuted
+from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, LOOP_VALIDATE, REQUESTED_SLOT
+from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -466,7 +463,9 @@ class FormAction(LoopAction):
         logger.debug(f"Request next slot '{slot_name}'")
 
         action_to_ask_for_next_slot = action.action_from_name(
-            self._name_of_utterance(domain, slot_name), None, domain.user_actions
+            self._name_of_utterance(domain, slot_name),
+            self.action_endpoint,
+            domain.user_actions,
         )
         events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
@@ -516,7 +515,7 @@ class FormAction(LoopAction):
         # no active_loop means that it is called during activation
         need_validation = not tracker.active_loop or (
             tracker.latest_action_name == ACTION_LISTEN_NAME
-            and tracker.active_loop.get("validate", True)
+            and tracker.active_loop.get(LOOP_VALIDATE, True)
         )
         if need_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")

@@ -3,9 +3,9 @@ import asyncio
 import os
 from typing import List
 
-from rasa import data
+import rasa.shared.data
 from rasa.cli.arguments import visualize as arguments
-from rasa.constants import DEFAULT_DATA_PATH
+from rasa.shared.constants import DEFAULT_DATA_PATH
 
 
 # noinspection PyProtectedMember
@@ -29,9 +29,9 @@ def visualize_stories(args: argparse.Namespace):
 
     loop = asyncio.get_event_loop()
 
-    args.stories = data.get_core_directory(args.stories)
+    args.stories = rasa.shared.data.get_core_directory(args.stories)
     if args.nlu is None and os.path.exists(DEFAULT_DATA_PATH):
-        args.nlu = data.get_nlu_directory(DEFAULT_DATA_PATH)
+        args.nlu = rasa.shared.data.get_nlu_directory(DEFAULT_DATA_PATH)
 
     loop.run_until_complete(
         rasa.core.visualize(

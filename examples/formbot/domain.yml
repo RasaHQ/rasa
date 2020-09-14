@@ -78,7 +78,7 @@ responses:
     - text: "restarted"
 
 forms:
-  - restaurant_form:
+  restaurant_form:
       cuisine:
         - type: from_entity
           entity: cuisine

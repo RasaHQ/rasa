@@ -1,17 +1,18 @@
 {
-  "py/object": "rasa.core.conversation.Dialogue",
+  "py/object": "rasa.shared.core.conversation.Dialogue",
   "name": "default",
   "events": [
     {
-      "py/object": "rasa.core.events.ActionExecuted",
+      "py/object": "rasa.shared.core.events.ActionExecuted",
       "action_name": "action_listen",
+      "action_text": null,
       "confidence": null,
       "policy": null,
       "timestamp": 1551952977.4850519,
       "unpredictable": false
     },
     {
-      "py/object": "rasa.core.events.UserUttered",
+      "py/object": "rasa.shared.core.events.UserUttered",
       "entities": [
         {
           "end": 19,
@@ -47,21 +48,22 @@
       "timestamp": 1551953035.076376
     },
     {
-      "py/object": "rasa.core.events.SlotSet",
+      "py/object": "rasa.shared.core.events.SlotSet",
       "key": "name",
       "timestamp": 1551953035.076385,
       "value": "Peter"
     },
     {
-      "py/object": "rasa.core.events.ActionExecuted",
+      "py/object": "rasa.shared.core.events.ActionExecuted",
       "action_name": "utter_greet",
+      "action_text": null,
       "confidence": null,
       "policy": null,
       "timestamp": 1551953040.607782,
       "unpredictable": false
     },
     {
-      "py/object": "rasa.core.events.BotUttered",
+      "py/object": "rasa.shared.core.events.BotUttered",
       "data": {
         "attachment": null,
         "buttons": null,

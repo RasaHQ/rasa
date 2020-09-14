@@ -2,6 +2,7 @@ from typing import Text
 
 from rasa.core import restore
 from rasa.core.agent import Agent
+from rasa.shared.nlu.constants import ACTION_NAME
 
 
 async def test_restoring_tracker(trained_moodbot_path: Text, recwarn):
@@ -20,7 +21,7 @@ async def test_restoring_tracker(trained_moodbot_path: Text, recwarn):
     # assert [e for e in recwarn if e._category_name == "UserWarning"] == []
 
     assert len(tracker.events) == 7
-    assert tracker.latest_action_name == "action_listen"
+    assert tracker.latest_action.get(ACTION_NAME) == "action_listen"
     assert not tracker.is_paused()
     assert tracker.sender_id == "mysender"
     assert tracker.events[-1].timestamp == 1517821726.211042

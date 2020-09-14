@@ -37,11 +37,7 @@ last two lines show how to use a custom policy class and pass arguments to it.
 ```yaml-rasa
 policies:
   - name: "TEDPolicy"
-    featurizer:
-    - name: MaxHistoryTrackerFeaturizer
-      max_history: 5
-      state_featurizer:
-        - name: BinarySingleStateFeaturizer
+    max_history: 5
   - name: "RulePolicy"
   - name: "path.to.your.policy.class"
     arg1: "..."
@@ -53,13 +49,14 @@ One important hyperparameter for Rasa Core policies is the `max_history`.
 This controls how much dialogue history the model looks at to decide which
 action to take next.
 
-You can set the `max_history` by passing it to your policy's `Featurizer`
+You can set the `max_history` by passing it to your policy
 in the policy configuration yaml file.
+The default value is `None`, which means that the complete dialogue history since session
+restart is taken in the account.
 
 :::note
-Only the `MaxHistoryTrackerFeaturizer` uses a max history,
-whereas the `FullDialogueTrackerFeaturizer` always looks at
-the full conversation history. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for details.
+`RulePolicy` doesn't have max history parameter, it always consider the full length
+of provided rules. Please see [Rules](./rules.mdx) for further information.
 
 :::
 
@@ -343,6 +340,12 @@ However, additional parameters exist that can be adapted.</summary>
 | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
 |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
 |                                 |                  | training step ('minibatch').                                 |
++---------------------------------+------------------+--------------------------------------------------------------+
+| checkpoint_model                | False            | Save the best performing model during training. Models are   |
+|                                 |                  | stored to the location specified by `--out`. Only the one    |
+|                                 |                  | best model will be saved.                                    |
+|                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
+|                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
 +---------------------------------+------------------+--------------------------------------------------------------+
 ```
 
@@ -678,44 +681,20 @@ of the tracker has a couple steps:
        * features indicating the results of any API calls stored in
          slots, e.g. `slot_matches`
 
-       * features indicating what the last action was (e.g.
+       * features indicating what the last bot action or bot utterance was (e.g.
          `prev_action_listen`)
+
+       * features indicating if any loop is active and which one
 
 2. **Convert all the features into numeric vectors**:
 
-   We use the `X, y` notation that's common for supervised learning,
-   where `X` is an array of shape
-   `(num_data_points, time_dimension, num_input_features)`,
-   and `y` is an array of shape `(num_data_points, num_bot_features)`
-   or `(num_data_points, time_dimension, num_bot_features)`
-   containing the target class labels encoded as one-hot vectors.
+    `SingleStateFeaturizer` uses the Rasa NLU pipeline to convert the intent and
+    bot action names or bot utterances into numeric vectors.
+    Please see [NLU Model Configuration](./model-configuration.mdx)
+    for the details on how to configure Rasa NLU pipeline.
 
-   The target labels correspond to actions taken by the bot.
-   To convert the features into vector format, there are different
-   featurizers available:
-
-     * `BinarySingleStateFeaturizer` creates a binary one-hot encoding:
-
-         The vectors `X, y` indicate a presence of a certain intent,
-         entity, previous action or slot e.g. `[0 0 1 0 0 1 ...]`.
-
-     * `LabelTokenizerSingleStateFeaturizer` creates a vector
-
-         based on the feature label:
-         All active feature labels (e.g. `prev_action_listen`) are split
-         into tokens and represented as a bag-of-words. For example, actions
-         `utter_explain_details_hotel` and
-         `utter_explain_details_restaurant` will have 3 features in
-         common, and differ by a single feature indicating a domain.
-
-         Labels for user inputs (intents, entities) and bot actions
-         are featurized separately. Each label in the two categories
-         is tokenized on a special character `split_symbol`
-         (e.g. `action_search_restaurant = {action, search, restaurant}`),
-         creating two vocabularies. A bag-of-words representation
-         is then created for each label using the appropriate vocabulary.
-         The slots are featurized as binary vectors, indicating
-         their presence or absence at each step of the dialogue.
+    Entities, slots and active loops are featurized as one-hot encodings
+    to indicate their presence.
 
 :::note
 If the domain defines the possible `actions`,
@@ -732,33 +711,30 @@ default restart, label `2` a greeting and `3` indicates goodbye.
 
 It's often useful to include a bit more history than just the current state
 when predicting an action. The `TrackerFeaturizer` iterates over tracker
-states and calls a `SingleStateFeaturizer` for each state. There are two
-different tracker featurizers:
+states and calls a `SingleStateFeaturizer` for each state to create numeric
+input features for a policy.
+The target labels correspond to bot actions or bot utterances
+represented as index in a list of all possible actions.
+
+There are two different tracker featurizers:
 
 #### 1. Full Dialogue
 
 `FullDialogueTrackerFeaturizer` creates numerical representation of
 stories to feed to a recurrent neural network where the whole dialogue
 is fed to a network and the gradient is backpropagated from all time steps.
-Therefore, `X` is an array of shape
-`(num_stories, max_dialogue_length, num_input_features)` and
-`y` is an array of shape
-`(num_stories, max_dialogue_length, num_bot_features)`.
-The smaller dialogues are padded with `-1` for all features, indicating
-no values for a policy.
+The smaller dialogues are padded with `0` for all features.
 
 #### 2. Max History
 
 `MaxHistoryTrackerFeaturizer` creates an array of previous tracker
-states for each bot action or utterance, with the parameter
-`max_history` defining how many states go into each row in `X`.
+states for each bot action or bot utterance, with the parameter
+`max_history` defining how many states go into each row of input features.
+If `max_history` is not specified, the algorithm takes
+the whole length of a dialogue into account.
+The smaller dialogues are padded with `0` for all features.
 Deduplication is performed to filter out duplicated turns (bot actions
-or bot utterances) in terms of their previous states. Hence `X`
-has shape `(num_unique_turns, max_history, num_input_features)`
-and `y` is an array of shape `(num_unique_turns, num_bot_features)`.
+or bot utterances) in terms of their previous states.
 
-For some algorithms a flat feature vector is needed, so `X`
-should be reshaped to
-`(num_unique_turns, max_history \* num_input_features)`. If numeric
-target class labels are needed instead of one-hot vectors, use
-`y.argmax(axis=-1)`.
+For some algorithms a flat feature vector is needed, so input features
+should be reshaped to `(num_unique_turns, max_history * num_input_features)`.

@@ -71,6 +71,6 @@
 * stop
     - utter_ask_continue
 * deny
-    - action_deactivate_form
+    - action_deactivate_loop
     - form{"name": null}
     - utter_goodbye

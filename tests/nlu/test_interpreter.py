@@ -2,17 +2,12 @@ import rasa.nlu
 
 import pytest
 
-from rasa.core.interpreter import (
-    NaturalLanguageInterpreter,
-    RasaNLUHttpInterpreter,
-    RasaNLUInterpreter,
-    RegexInterpreter,
-)
+import rasa.core.interpreter
+from rasa.core.interpreter import RasaNLUHttpInterpreter, RasaNLUInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.model import get_model_subdirectories, get_model
-from rasa.nlu import registry, training_data
 from rasa.nlu.model import Interpreter
 from rasa.utils.endpoints import EndpointConfig
-from tests.nlu import utilities
 
 
 @pytest.mark.parametrize(
@@ -70,6 +65,8 @@ def test_create_interpreter(parameters, trained_nlu_model):
     if obj == "trained_nlu_model":
         _, obj = get_model_subdirectories(get_model(trained_nlu_model))
 
-    interpreter = NaturalLanguageInterpreter.create(parameters["endpoint"] or obj)
+    interpreter = rasa.core.interpreter.create_interpreter(
+        parameters["endpoint"] or obj
+    )
 
     assert isinstance(interpreter, parameters["type"])

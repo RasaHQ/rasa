@@ -6,22 +6,22 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 
-from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
+import rasa.shared.utils.io
+import rasa.core.actions.action
 from rasa.core import jobs
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-    Action,
-    ActionExecutionRejection,
-)
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
     UserMessage,
 )
-from rasa.core.constants import USER_INTENT_RESTART, UTTER_PREFIX, REQUESTED_SLOT
-from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    REQUESTED_SLOT,
+)
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
     BotUttered,
@@ -31,17 +31,19 @@ from rasa.core.events import (
     SlotSet,
     UserUttered,
 )
-from rasa.core.interpreter import (
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
-    NaturalLanguageInterpreter,
-    RegexInterpreter,
+    DOCS_URL_DOMAINS,
+    DEFAULT_SENDER_ID,
+    DOCS_URL_POLICIES,
+    UTTER_PREFIX,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.utils import common as common_utils
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -85,7 +87,7 @@ class MessageProcessor:
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction "
                 "and execution.",
                 docs=DOCS_URL_POLICIES,
@@ -115,7 +117,7 @@ class MessageProcessor:
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction."
                 "You should set a policy before training a model.",
                 docs=DOCS_URL_POLICIES,
@@ -209,7 +211,7 @@ class MessageProcessor:
             Tracker for the conversation. Creates an empty tracker in case it's a new
             conversation.
         """
-        conversation_id = conversation_id or UserMessage.DEFAULT_SENDER_ID
+        conversation_id = conversation_id or DEFAULT_SENDER_ID
         return self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
@@ -273,7 +275,7 @@ class MessageProcessor:
 
     def predict_next_action(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[Action, Text, float]:
+    ) -> Tuple[rasa.core.actions.action.Action, Optional[Text], float]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
@@ -282,8 +284,8 @@ class MessageProcessor:
         action_confidences, policy = self._get_next_action_probabilities(tracker)
 
         max_confidence_index = int(np.argmax(action_confidences))
-        action = self.domain.action_for_index(
-            max_confidence_index, self.action_endpoint
+        action = rasa.core.actions.action.action_for_index(
+            max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
@@ -383,11 +385,18 @@ class MessageProcessor:
         elif not entities:
             entity_list = []
         else:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Invalid entity specification: {entities}. Assuming no entities."
             )
             entity_list = []
-        tracker.update(UserUttered.create_external(intent_name, entity_list))
+
+        # Set the new event's input channel to the latest input channel, so
+        # that we don't lose this property.
+        input_channel = tracker.get_latest_input_channel()
+
+        tracker.update(
+            UserUttered.create_external(intent_name, entity_list, input_channel)
+        )
         await self._predict_and_execute_next_action(output_channel, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -417,7 +426,7 @@ class MessageProcessor:
 
         intent = parse_data["intent"][INTENT_NAME_KEY]
         if intent and intent not in self.domain.intents:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Interpreter parsed an intent '{intent}' "
                 f"which is not defined in the domain. "
                 f"Please make sure all intents are listed in the domain.",
@@ -428,15 +437,17 @@ class MessageProcessor:
         for element in entities:
             entity = element["entity"]
             if entity and entity not in self.domain.entities:
-                common_utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Interpreter parsed an entity '{entity}' "
                     f"which is not defined in the domain. "
                     f"Please make sure all entities are listed in the domain.",
                     docs=DOCS_URL_DOMAINS,
                 )
 
-    def _get_action(self, action_name) -> Optional[Action]:
-        return self.domain.action_for_name(action_name, self.action_endpoint)
+    def _get_action(self, action_name) -> Optional[rasa.core.actions.action.Action]:
+        return rasa.core.actions.action.action_for_name(
+            action_name, self.domain, self.action_endpoint
+        )
 
     async def parse_message(
         self, message: UserMessage, tracker: Optional[DialogueStateTracker] = None
@@ -654,7 +665,7 @@ class MessageProcessor:
             if action.name() == ACTION_SESSION_START_NAME:
                 action.metadata = metadata
             events = await action.run(output_channel, nlg, tracker, self.domain)
-        except ActionExecutionRejection:
+        except rasa.core.actions.action.ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
@@ -698,7 +709,7 @@ class MessageProcessor:
                     if e.key == REQUESTED_SLOT and tracker.active_loop:
                         pass
                     else:
-                        common_utils.raise_warning(
+                        rasa.shared.utils.io.raise_warning(
                             f"Action '{action_name}' set a slot type '{e.key}' which "
                             f"it never set during the training. This "
                             f"can throw off the prediction. Make sure to "
@@ -776,20 +787,18 @@ class MessageProcessor:
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
 
-    def _prob_array_for_action(
-        self, action_name: Text
-    ) -> Tuple[Optional[List[float]], None]:
+    def _prob_array_for_action(self, action_name: Text) -> Tuple[List[float], None]:
         idx = self.domain.index_for_action(action_name)
         if idx is not None:
             result = [0.0] * self.domain.num_actions
             result[idx] = 1.0
             return result, None
         else:
-            return None, None
+            return [], None
 
     def _get_next_action_probabilities(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 
         followup_action = tracker.followup_action

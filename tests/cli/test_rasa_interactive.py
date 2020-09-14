@@ -137,7 +137,7 @@ def test_no_interactive_without_core_data(
     interactive.add_subparser(sub_parser, [])
 
     args = parser.parse_args(
-        ["interactive", "--config", default_stack_config, "--data", DEFAULT_NLU_DATA,]
+        ["interactive", "--config", default_stack_config, "--data", DEFAULT_NLU_DATA]
     )
     interactive._set_not_required_args(args)
 

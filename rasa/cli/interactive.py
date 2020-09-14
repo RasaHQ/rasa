@@ -4,13 +4,14 @@ import logging
 import os
 from typing import List, Optional, Text
 
+import rasa.shared.utils.cli
 from rasa.cli import utils
 import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
 from rasa import model
 
-from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +56,13 @@ def interactive(args: argparse.Namespace) -> None:
         loop = asyncio.get_event_loop()
         story_graph = loop.run_until_complete(file_importer.get_stories())
         if not story_graph or story_graph.is_empty():
-            utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 "Could not run interactive learning without either core data or a model containing core data."
             )
 
         zipped_model = train.train_core(args) if args.core_only else train.train(args)
         if not zipped_model:
-            utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 "Could not train an initial model. Either pass paths "
                 "to the relevant training files (`--data`, `--config`, `--domain`), "
                 "or use 'rasa train' to train a model."
@@ -69,7 +70,7 @@ def interactive(args: argparse.Namespace) -> None:
     else:
         zipped_model = get_provided_model(args.model)
         if not (zipped_model and os.path.exists(zipped_model)):
-            utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 f"Interactive learning process cannot be started as no initial model was "
                 f"found at path '{args.model}'.  Use 'rasa train' to train a model."
             )
@@ -94,7 +95,7 @@ def perform_interactive_learning(
     with model.unpack_model(zipped_model) as model_path:
         args.core, args.nlu = model.get_model_subdirectories(model_path)
         if args.core is None:
-            utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 "Can not run interactive learning on an NLU-only model."
             )
 

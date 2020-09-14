@@ -32,11 +32,12 @@ how you can migrate from one version to another.
 
 ### Training data files
 
-You can convert existing NLU and Stories training data files in the `Markdown` format
-to the new `YAML` format using following commands:
+You can convert existing NLU, Stories, and NLG (i.e. `responses.md`) training data
+files in the `Markdown` format to the new `YAML` format using following commands:
 
 ```bash
 rasa data convert nlu -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
+rasa data convert nlg -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
 rasa data convert core -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
 ```
 
@@ -303,7 +304,7 @@ class RestaurantFormValidator(Action):
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.get_extracted_slots()
+        extracted_slots: Dict[Text, Any] = tracker.form_slots_to_validate()
 
         cuisine_slot_value = extracted_slots.get("cuisine")
         validated_slot_event = self.validate_cuisine(
@@ -377,18 +378,31 @@ This means that the output in these files should look like -
 }
 ```
 
+* Retrieval actions with `respond_` prefix are now replaced with usual utterance actions with `utter_` prefix.
+If you were using retrieval actions before, rename all of them to start with `utter_` prefix. For example,
+`respond_chitchat` becomes `utter_chitchat`. Also, in order to keep the response templates more consistent,
+you should now add the `utter_` prefix to all response templates defined for retrieval intents. For example,
+a response template `chitchat/ask_name` becomes `utter_chitchat/ask_name`. Note that the NLU examples for this
+will still be under `chitchat/ask_name` intent. The example `responseselectorbot` should help clarify these changes further.
+
 * The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name`
 have been deprecated in favour of `intent_response_key` and `response_templates` respectively.
-Additionally a key `all_retrieval_intents` is added to the response selector output which will
-hold a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
+Additionally, two keys are added to the output -
+1. `all_retrieval_intents` - Holds a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
+2. `template_name` - Holds the name of the response template which is predicted by the response selector(`utter_faq/is_legit`)
 An example output looks like this -
 
-```json
-"response_selector": {
-    "all_retrieval_intents": ["faq"],
+```json {3-4,10,11,20}
+{
+  "response_selector": {
+    "all_retrieval_intents": [
+      "faq"
+    ],
     "default": {
       "response": {
-        "id": 1388783286124361986, "confidence": 1.0, "intent_response_key": "faq/is_legit",
+        "id": 1388783286124362000,
+        "confidence": 1,
+        "intent_response_key": "faq/is_legit",
         "response_templates": [
           {
             "text": "absolutely",
@@ -397,16 +411,66 @@ An example output looks like this -
           {
             "text": "I think so."
           }
-        ],
+        ]
+        "template_name": "utter_faq/is_legit"
       },
       "ranking": [
         {
-          "id": 1388783286124361986,
-          "confidence": 1.0,
+          "id": 1388783286124362000,
+          "confidence": 1,
           "intent_response_key": "faq/is_legit"
-        },
+        }
       ]
+    }
+  }
+}
 ```
+As a result of this, if you were previously querying for the key `full_retrieval_intent` as:
+```python {2}
+response_selector_output.get("default")
+                        .get("full_retrieval_intent")
+```
+you should instead now do this:
+```python {2-3}
+response_selector_output.get("default")
+                        .get("response")
+                        .get("intent_response_key")
+```
+
+### Core Featurization
+
+* `LabelTokenizerSingleStateFeaturizer` is deprecated and will be removed in the future.
+  Please use `SingleStateFeaturizer` with appropriate NLU pipeline.
+  To replicate `LabelTokenizerSingleStateFeaturizer` functionality,
+  add a `Tokenizer` with the option `intent_tokenization_flag: True` and `CountVectorsFeaturizer`
+  to the NLU pipeline. Please update your configuration file.
+
+  For example:
+  ```yaml-rasa {3-5}
+  language: en
+  pipeline:
+    - name: WhitespaceTokenizer
+      intent_tokenization_flag: True
+    - name: CountVectorsFeaturizer
+  ```
+
+  Please train both NLU and Core (using `rasa train`) to use a trained tokenizer and
+  featurizer for Core featurization.
+
+* `BinarySingleStateFeaturizer` is deprecated and will be removed in the future.
+  If you train both NLU and Core (using `rasa train`),
+  use `SingleStateFeaturizer` with NLU pipeline
+  where `intent_tokenization_flag` of a Tokenizer is set to `False`.
+
+  For example:
+  ```yaml-rasa {4}
+  language: en
+  pipeline:
+    - name: WhitespaceTokenizer
+      intent_tokenization_flag: False
+  ```
+
+  Alternatively, you can train a Core model without NLU using `rasa train core`.
 
 ## Rasa 1.7 to Rasa 1.8
 

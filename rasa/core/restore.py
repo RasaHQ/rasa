@@ -5,15 +5,17 @@ from difflib import SequenceMatcher
 from typing import List, Text, Tuple
 
 import rasa.cli.utils
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.cli import utils as cli_utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.channels import console
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
-from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, UserUttered
-from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import raise_warning
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -28,7 +30,7 @@ def _check_prediction_aligns_with_story(
 
     p, a = align_lists(last_prediction, actions_between_utterances)
     if p != a:
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"The model predicted different actions than the "
             f"model used to create the story! Expected: "
             f"{p} but got {a}."
@@ -92,7 +94,7 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
             )
 
             actions_between_utterances = []
-            cli_utils.print_success(event.text)
+            rasa.shared.utils.cli.print_success(event.text)
             out = CollectingOutputChannel()
             await agent.handle_text(
                 event.text, sender_id=tracker.sender_id, output_channel=out
@@ -102,10 +104,10 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
                 console.print_bot_output(m)
 
                 if buttons is not None:
-                    color = rasa.cli.utils.bcolors.OKBLUE
-                    rasa.cli.utils.print_color("Buttons:", color=color)
+                    color = rasa.shared.utils.io.bcolors.OKBLUE
+                    rasa.shared.utils.cli.print_color("Buttons:", color=color)
                     for idx, button in enumerate(buttons):
-                        rasa.cli.utils.print_color(
+                        rasa.shared.utils.cli.print_color(
                             cli_utils.button_to_string(button, idx), color=color
                         )
 
@@ -121,8 +123,8 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
 def load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueStateTracker:
     """Read the json dump from the file and instantiate a tracker it."""
 
-    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
-    sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
+    tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
+    sender_id = tracker_json.get("sender_id", DEFAULT_SENDER_ID)
     return DialogueStateTracker.from_dict(
         sender_id, tracker_json.get("events", []), domain.slots
     )

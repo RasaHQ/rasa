@@ -1,10 +1,10 @@
 import logging
 from typing import Optional, Union, Text, Any, Dict
 
-from rasa.core.domain import Domain
-from rasa.utils import common
+import rasa.shared.utils.common
+from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,9 @@ def _load_from_module_name_in_endpoint_config(
     """
 
     try:
-        nlg_class = common.class_from_module_path(endpoint_config.type)
+        nlg_class = rasa.shared.utils.common.class_from_module_path(
+            endpoint_config.type
+        )
         return nlg_class(endpoint_config=endpoint_config, domain=domain)
     except (AttributeError, ImportError) as e:
         raise Exception(
