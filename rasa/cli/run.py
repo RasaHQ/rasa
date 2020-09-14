@@ -4,14 +4,15 @@ import os
 from typing import List, Text
 
 from rasa.cli.arguments import run as arguments
-from rasa.cli.utils import get_validated_path, print_error
-from rasa.constants import (
-    DEFAULT_ACTIONS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
+from rasa.cli.utils import get_validated_path
+from rasa.shared.utils.cli import print_error
+from rasa.shared.constants import (
+    DOCS_BASE_URL,
     DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_ACTIONS_PATH,
     DEFAULT_MODELS_PATH,
 )
-from rasa.shared.constants import DOCS_BASE_URL
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)

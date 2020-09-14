@@ -71,6 +71,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
+    CHECKPOINT_MODEL,
     DENSE_DIMENSION,
 )
 from rasa.nlu.constants import (
@@ -80,7 +81,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
-    PREDICTED_CONFIDENCE_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
 )
 from rasa.shared.nlu.constants import (
@@ -89,6 +89,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE,
     INTENT_RESPONSE_KEY,
     INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 
 from rasa.utils.tensorflow.model_data import RasaModelData
@@ -227,6 +228,8 @@ class ResponseSelector(DIETClassifier):
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
+        # Perform model checkpointing
+        CHECKPOINT_MODEL: False,
     }
 
     def __init__(

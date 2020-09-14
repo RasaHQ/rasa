@@ -26,7 +26,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
 )
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
 
 logger = logging.getLogger(__name__)

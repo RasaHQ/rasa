@@ -184,7 +184,6 @@ git clone https://github.com/RasaHQ/rasa.git
 cd rasa
 poetry install
 ```
-
 ## Additional Dependencies
 
 For some machine learning algorithms you need to install additional python packages.
@@ -237,3 +236,17 @@ The file you need is `total_word_feature_extractor.dat`. Save this
 anywhere. If you want to use MITIE, you need to
 tell it where to find this file (in this example it was saved in the
 `data` folder of the project directory).
+
+## Upgrading Versions
+
+To upgrade your installed version of Rasa Open Source to the latest version from PyPI:
+
+```bash
+pip install --upgrade rasa
+```
+
+To download a specific version, specify the version number:
+
+```bash
+pip install rasa==1.8.3
+```

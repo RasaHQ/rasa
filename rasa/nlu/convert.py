@@ -2,7 +2,7 @@ import argparse
 import os
 from typing import Text
 
-from rasa.cli.utils import print_error
+from rasa.shared.utils.cli import print_error
 import rasa.shared.nlu.training_data.loading
 from rasa.nlu.utils import write_to_file
 

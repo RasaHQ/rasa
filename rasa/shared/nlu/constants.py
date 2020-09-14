@@ -9,6 +9,8 @@ INTENT_NAME_KEY = "name"
 METADATA = "metadata"
 METADATA_INTENT = "intent"
 METADATA_EXAMPLE = "example"
+INTENT_RANKING_KEY = "intent_ranking"
+PREDICTED_CONFIDENCE_KEY = "confidence"
 
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
