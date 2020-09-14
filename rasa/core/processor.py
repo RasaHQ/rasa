@@ -671,7 +671,7 @@ class MessageProcessor:
             return self.should_predict_another_action(action.name())
         except Exception as e:
             logger.exception(
-                f"Encountered an exception while running action '{action.name()}'. {e}"
+                f"Encountered an exception while running action '{action.name()}'."
                 "Bot will continue, but the actions events are lost. "
                 "Please check the logs of your action server for "
                 "more information."
