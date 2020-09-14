@@ -36,6 +36,8 @@ ${Object.entries(properties)
 `;
     case 'null':
       return '';
+    case undefined:
+      return '';
     default:
       throw new Error(`Unexpected event type: "${type}".`);
   }
