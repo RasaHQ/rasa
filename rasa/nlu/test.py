@@ -26,17 +26,14 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
-    PREDICTED_CONFIDENCE_KEY,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
-    INTENT_NAME_KEY,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
-    RESPONSE,
     INTENT_RESPONSE_KEY,
     ENTITIES,
     EXTRACTOR,
@@ -45,6 +42,8 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
@@ -192,7 +191,7 @@ def write_intent_successes(
     ]
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful intent predictions saved to {successes_filename}.")
         logger.debug(f"\n\nSuccessfully predicted the following intents: \n{successes}")
     else:
@@ -222,7 +221,7 @@ def write_intent_errors(
     ]
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(errors_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect intent predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -256,7 +255,7 @@ def write_response_successes(
     ]
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following responses: \n{successes}"
@@ -288,7 +287,7 @@ def write_response_errors(
     ]
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(errors_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect response predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese response examples could not be classified "
@@ -431,7 +430,7 @@ def evaluate_response_selections(
         report_filename = os.path.join(
             output_directory, "response_selection_report.json"
         )
-        io_utils.dump_obj_as_json_to_file(report_filename, report)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -602,7 +601,7 @@ def evaluate_intents(
         report = _add_confused_labels_to_report(report, confusion_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
-        io_utils.dump_obj_as_json_to_file(report_filename, report)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -739,7 +738,7 @@ def write_incorrect_entity_predictions(
     )
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(error_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(error_filename, errors)
         logger.info(f"Incorrect entity predictions saved to {error_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -799,7 +798,7 @@ def write_successful_entity_predictions(
     )
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following entities: \n{successes}"
@@ -903,7 +902,9 @@ def evaluate_entities(
                 report, confusion_matrix, labels, [NO_ENTITY]
             )
 
-            io_utils.dump_obj_as_json_to_file(extractor_report_filename, report)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                extractor_report_filename, report
+            )
 
             logger.info(
                 "Classification report for '{}' saved to '{}'."
@@ -1286,9 +1287,9 @@ def get_eval_data(
     intent_results, entity_results, response_selection_results = [], [], []
 
     response_labels = [
-        e.get(RESPONSE)
+        e.get(INTENT_RESPONSE_KEY)
         for e in test_data.intent_examples
-        if e.get(RESPONSE) is not None
+        if e.get(INTENT_RESPONSE_KEY) is not None
     ]
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
     should_eval_intents = (
@@ -1480,7 +1481,7 @@ def run_evaluation(
     }
 
     if output_directory:
-        io_utils.create_directory(output_directory)
+        rasa.shared.utils.io.create_directory(output_directory)
 
     intent_results, response_selection_results, entity_results, = get_eval_data(
         interpreter, test_data
@@ -1650,7 +1651,7 @@ def cross_validate(
         nlu_config = rasa.nlu.config.load(nlu_config)
 
     if output:
-        io_utils.create_directory(output)
+        rasa.shared.utils.io.create_directory(output)
 
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)

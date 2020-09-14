@@ -130,6 +130,6 @@ class RegexEntityExtractor(EntityExtractor):
         Return the metadata necessary to load the model again."""
         file_name = f"{file_name}.json"
         regex_file = os.path.join(model_dir, file_name)
-        io_utils.dump_obj_as_json_to_file(regex_file, self.patterns)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(regex_file, self.patterns)
 
         return {"file": file_name}

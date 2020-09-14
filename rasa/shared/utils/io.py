@@ -1,3 +1,4 @@
+import errno
 import glob
 import json
 import os
@@ -9,10 +10,17 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Text, Optional, Type, Union, List, Dict
 
+import rasa.shared
+from rasa.shared.constants import (
+    DEFAULT_LOG_LEVEL,
+    ENV_LOG_LEVEL,
+    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+)
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter
 
 DEFAULT_ENCODING = "utf-8"
+YAML_VERSION = (1, 2)
 
 
 class bcolors:
@@ -253,9 +261,6 @@ def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
 
 
-YAML_VERSION = (1, 2)
-
-
 def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
@@ -338,3 +343,105 @@ def _enable_ordered_dict_yaml_dumping() -> None:
         RoundTripRepresenter.represent_dict,
         representer=RoundTripRepresenter,
     )
+
+
+def is_logging_disabled() -> bool:
+    """Returns `True` if log level is set to WARNING or ERROR, `False` otherwise."""
+    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+
+    return log_level in ("ERROR", "WARNING")
+
+
+def create_directory_for_file(file_path: Union[Text, Path]) -> None:
+    """Creates any missing parent directories of this file path."""
+
+    create_directory(os.path.dirname(file_path))
+
+
+def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
+    """Dump an object as a json string to a file."""
+
+    write_text_file(json.dumps(obj, indent=2), filename)
+
+
+def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
+    import ruamel.yaml
+
+    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+    yaml_writer.unicode_supplementary = True
+    yaml_writer.default_flow_style = False
+    yaml_writer.version = YAML_VERSION
+
+    yaml_writer.dump(obj, output)
+
+
+def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
+    """Writes data (python dict) to a yaml string."""
+    str_io = StringIO()
+    _dump_yaml(obj, str_io)
+    return str_io.getvalue()
+
+
+def create_directory(directory_path: Text) -> None:
+    """Creates a directory and its super paths.
+
+    Succeeds even if the path already exists."""
+
+    try:
+        os.makedirs(directory_path)
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise
+
+
+def raise_deprecation_warning(
+    message: Text,
+    warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    docs: Optional[Text] = None,
+    **kwargs: Any,
+) -> None:
+    """
+    Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
+    a version until which we'll warn, and after which the support for the feature will
+    be removed.
+    """
+    if warn_until_version not in message:
+        message = f"{message} (will be removed in {warn_until_version})"
+
+    # need the correct stacklevel now
+    kwargs.setdefault("stacklevel", 3)
+    # we're raising a `FutureWarning` instead of a `DeprecationWarning` because
+    # we want these warnings to be visible in the terminal of our users
+    # https://docs.python.org/3/library/warnings.html#warning-categories
+    raise_warning(message, FutureWarning, docs, **kwargs)
+
+
+def read_config_file(filename: Text) -> Dict[Text, Any]:
+    """Parses a yaml configuration file. Content needs to be a dictionary
+
+    Args:
+        filename: The path to the file which should be read.
+    """
+    content = read_yaml(read_file(filename))
+
+    if content is None:
+        return {}
+    elif isinstance(content, dict):
+        return content
+    else:
+        raise ValueError(
+            "Tried to load invalid config file '{}'. "
+            "Expected a key value mapping but found {}"
+            ".".format(filename, type(content))
+        )
+
+
+def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    if path is None or potential_parent_directory is None:
+        return False
+
+    path = os.path.abspath(path)
+    potential_parent_directory = os.path.abspath(potential_parent_directory)
+
+    return potential_parent_directory in path

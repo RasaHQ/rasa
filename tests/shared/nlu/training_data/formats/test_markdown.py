@@ -2,7 +2,7 @@ from typing import Optional, Text, Dict, Any
 
 import pytest
 
-from rasa.nlu import load_data
+from rasa.shared.nlu.training_data.loading import load_data
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor

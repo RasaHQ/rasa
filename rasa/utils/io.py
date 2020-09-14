@@ -1,6 +1,4 @@
 import asyncio
-import errno
-import json
 import logging
 import os
 import pickle
@@ -13,8 +11,8 @@ from io import BytesIO as IOReader
 from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
 
-from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
-from rasa.shared.utils.io import write_text_file, DEFAULT_ENCODING, read_file, read_yaml
+import rasa.shared.constants
+import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
@@ -23,7 +21,9 @@ if TYPE_CHECKING:
 def configure_colored_logging(loglevel: Text) -> None:
     import coloredlogs
 
-    loglevel = loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+    loglevel = loglevel or os.environ.get(
+        rasa.shared.constants.ENV_LOG_LEVEL, rasa.shared.constants.DEFAULT_LOG_LEVEL
+    )
 
     field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
     field_styles["asctime"] = {}
@@ -57,12 +57,6 @@ def enable_async_loop_debugging(
     return event_loop
 
 
-def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
-    """Dump an object as a json string to a file."""
-
-    write_text_file(json.dumps(obj, indent=2), filename)
-
-
 def pickle_dump(filename: Union[Text, Path], obj: Any) -> None:
     """Saves object to file.
 
@@ -86,26 +80,6 @@ def pickle_load(filename: Union[Text, Path]) -> Any:
         return pickle.load(f)
 
 
-def read_config_file(filename: Text) -> Dict[Text, Any]:
-    """Parses a yaml configuration file. Content needs to be a dictionary
-
-    Args:
-        filename: The path to the file which should be read.
-    """
-    content = read_yaml(read_file(filename))
-
-    if content is None:
-        return {}
-    elif isinstance(content, dict):
-        return content
-    else:
-        raise ValueError(
-            "Tried to load invalid config file '{}'. "
-            "Expected a key value mapping but found {}"
-            ".".format(filename, type(content))
-        )
-
-
 def unarchive(byte_array: bytes, directory: Text) -> Text:
     """Tries to unpack a byte array interpreting it as an archive.
 
@@ -123,22 +97,12 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
         return directory
 
 
-def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
-    if path is None or potential_parent_directory is None:
-        return False
-
-    path = os.path.abspath(path)
-    potential_parent_directory = os.path.abspath(potential_parent_directory)
-
-    return potential_parent_directory in path
-
-
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
     """Creates a tempfile.NamedTemporaryFile object for data.
 
     mode defines NamedTemporaryFile's  mode parameter in py3."""
 
-    encoding = None if "b" in mode else DEFAULT_ENCODING
+    encoding = None if "b" in mode else rasa.shared.utils.io.DEFAULT_ENCODING
     f = tempfile.NamedTemporaryFile(
         mode=mode, suffix=suffix, delete=False, encoding=encoding
     )
@@ -160,12 +124,6 @@ def create_path(file_path: Text) -> None:
     parent_dir = os.path.dirname(os.path.abspath(file_path))
     if not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
-
-
-def create_directory_for_file(file_path: Union[Text, Path]) -> None:
-    """Creates any missing parent directories of this file path."""
-
-    create_directory(os.path.dirname(file_path))
 
 
 def file_type_validator(
@@ -213,19 +171,6 @@ def create_validator(
     return FunctionValidator
 
 
-def create_directory(directory_path: Text) -> None:
-    """Creates a directory and its super paths.
-
-    Succeeds even if the path already exists."""
-
-    try:
-        os.makedirs(directory_path)
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
-
-
 def zip_folder(folder: Text) -> Text:
     """Create an archive from a folder."""
     import shutil
@@ -250,7 +195,7 @@ def json_unpickle(file_name: Union[Text, Path]) -> Any:
 
     jsonpickle_numpy.register_handlers()
 
-    file_content = read_file(file_name)
+    file_content = rasa.shared.utils.io.read_file(file_name)
     return jsonpickle.loads(file_content)
 
 
@@ -266,4 +211,4 @@ def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
 
     jsonpickle_numpy.register_handlers()
 
-    write_text_file(jsonpickle.dumps(obj), file_name)
+    rasa.shared.utils.io.write_text_file(jsonpickle.dumps(obj), file_name)

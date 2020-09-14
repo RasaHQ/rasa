@@ -29,49 +29,101 @@ Selectors predict a bot response from a set of candidate responses.
 
 
 
-* **Output-Example**
+*   **Output-Example**
 
-  ```json
-  {
-    "response_selector": {
-      "faq": {
-        "response": {
-          "id": 1388783286124362000,
-          "confidence": 0.7,
-          "intent_response_key": "chitchat/ask_weather",
-          "response_templates": [
-            {
-              "text": "It's sunny in Berlin today",
-              "image": "https://i.imgur.com/nGF1K8f.jpg"
-            },
-            {
-              "text": "I think it's about to rain."
-            }
-          ]
-        },
-        "ranking": [
-          {
-            "id": 1388783286124362000,
-            "confidence": 0.7,
-            "intent_response_key": "chitchat/ask_weather"
-          },
-          {
-            "id": 1388783286124362000,
-            "confidence": 0.3,
-            "intent_response_key": "chitchat/ask_name"
+    The parsed output from NLU will have a property named `response_selector`
+    containing the output for each response selector component. Each response selector is
+    identified by `retrieval_intent` parameter of that response selector
+    and stores two properties:
+    
+    * `response`: The predicted response key under the corresponding retrieval intent,
+    prediction's confidence and the associated response templates.
+    
+    * `ranking`: Ranking with confidences of top 10 candidate response keys.
+    
+    Example result:
+
+    ```json
+    {
+        "response_selector": {
+          "faq": {
+            "response": {
+              "id": 1388783286124361986,
+              "confidence": 0.7,
+              "intent_response_key": "chitchat/ask_weather",
+              "response_templates": [
+                {
+                  "text": "It's sunny in Berlin today",
+                  "image": "https://i.imgur.com/nGF1K8f.jpg"
+                },
+                {
+                  "text": "I think it's about to rain."
+                }
+              ],
+              "template_name": "utter_chitchat/ask_weather"
+             },
+            "ranking": [
+              {
+                "id": 1388783286124361986,
+                "confidence": 0.7,
+                "intent_response_key": "chitchat/ask_weather"
+              },
+              {
+                "id": 1388783286124361986,
+                "confidence": 0.3,
+                "intent_response_key": "chitchat/ask_name"
+              }
+            ]
           }
-        ]
-      }
+        }
     }
-  }
-  ```
+    ```
+
+    If the `retrieval_intent` parameter of a particular response selector was left to its default value,
+    the corresponding response selector will be identified as `default` in the returned output.
+
+    ```json {4}
+    {
+        "response_selector": {
+          "default": {
+            "response": {
+              "id": 1388783286124361986,
+              "confidence": 0.7,
+              "intent_response_key": "chitchat/ask_weather",
+              "response_templates": [
+                {
+                  "text": "It's sunny in Berlin today",
+                  "image": "https://i.imgur.com/nGF1K8f.jpg"
+                },
+                {
+                  "text": "I think it's about to rain."
+                }
+              ],
+              "template_name": "utter_chitchat/ask_weather"
+             },
+            "ranking": [
+              {
+                "id": 1388783286124361986,
+                "confidence": 0.7,
+                "intent_response_key": "chitchat/ask_weather"
+              },
+              {
+                "id": 1388783286124361986,
+                "confidence": 0.3,
+                "intent_response_key": "chitchat/ask_name"
+              }
+            ]
+          }
+        }
+    }
+    ```
 
 
 
 * **Description**
 
   Response Selector component can be used to build a response retrieval model to directly predict a bot response from
-  a set of candidate responses. The prediction of this model is used by [Retrieval Actions](../retrieval-actions).
+  a set of candidate responses. The prediction of this model is used by the dialogue manager to utter the predicted responses.
   It embeds user inputs and response labels into the same space and follows the exact same
   neural network architecture and optimization as the [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier).
 
@@ -141,7 +193,12 @@ Selectors predict a bot response from a set of candidate responses.
   by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response
   template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
   combined with the response key as the label.
-  
+
+  See this [example assistant](https://github.com/RasaHQ/rasa/tree/master/examples/responseselectorbot) to understand
+  how you can use the `ResponseSelector` component in your assistant. Additionally, you will find this tutorial on
+  [handling FAQs](./chitchat-faqs.mdx#handling-faqs-using-a-response-selector) using a `ResponseSelector` useful as well.
+
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 

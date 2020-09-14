@@ -30,7 +30,7 @@ our sales team, and for this we need to gather the following pieces of informati
 
 * Their company
 
-We will start by defining the `SalesForm` as a new class in the file called `actions.py`.
+We will start by defining the `SalesForm` as a new class in the file called `actions/actions.py`.
 The first method we need to define is the name, which like in a regular Action
 returns the name that will be used in our stories:
 
@@ -290,7 +290,7 @@ should be handled by writing regular stories, so your model can learn this behav
 :::note
 Here's a minimal checklist of files we modified to handle business logic using a form action:
 
-* `actions.py`: Define the form action, including the `required_slots`, `slot_mappings` and `submit` methods
+* `actions/actions.py`: Define the form action, including the `required_slots`, `slot_mappings` and `submit` methods
 
 * `data/nlu.yml`:
 

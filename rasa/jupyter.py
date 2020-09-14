@@ -2,8 +2,9 @@ import asyncio
 import pprint as pretty_print
 import typing
 from typing import Any, Dict, Text, Optional
-from rasa.cli.utils import print_success, print_error
-from rasa.core.interpreter import NaturalLanguageInterpreter, RasaNLUInterpreter
+from rasa.shared.utils.cli import print_success, print_error
+from rasa.core.interpreter import RasaNLUInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent

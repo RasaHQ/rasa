@@ -11,6 +11,7 @@ from prompt_toolkit.styles import Style
 from typing import Any
 from typing import Text, Optional, Dict, List
 
+import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.cli import utils as cli_utils
 from rasa.core import utils
@@ -41,9 +42,11 @@ def print_buttons(
         )
         return question
     else:
-        cli_utils.print_color("Buttons:", color=color)
+        rasa.shared.utils.cli.print_color("Buttons:", color=color)
         for idx, button in enumerate(message.get("buttons")):
-            cli_utils.print_color(cli_utils.button_to_string(button, idx), color=color)
+            rasa.shared.utils.cli.print_color(
+                cli_utils.button_to_string(button, idx), color=color
+            )
 
 
 def print_bot_output(
@@ -57,29 +60,35 @@ def print_bot_output(
             return question
 
     if "text" in message:
-        cli_utils.print_color(message.get("text"), color=color)
+        rasa.shared.utils.cli.print_color(message.get("text"), color=color)
 
     if "image" in message:
-        cli_utils.print_color("Image: " + message.get("image"), color=color)
+        rasa.shared.utils.cli.print_color("Image: " + message.get("image"), color=color)
 
     if "attachment" in message:
-        cli_utils.print_color("Attachment: " + message.get("attachment"), color=color)
+        rasa.shared.utils.cli.print_color(
+            "Attachment: " + message.get("attachment"), color=color
+        )
 
     if "elements" in message:
-        cli_utils.print_color("Elements:", color=color)
+        rasa.shared.utils.cli.print_color("Elements:", color=color)
         for idx, element in enumerate(message.get("elements")):
-            cli_utils.print_color(
+            rasa.shared.utils.cli.print_color(
                 cli_utils.element_to_string(element, idx), color=color
             )
 
     if "quick_replies" in message:
-        cli_utils.print_color("Quick Replies:", color=color)
+        rasa.shared.utils.cli.print_color("Quick Replies:", color=color)
         for idx, element in enumerate(message.get("quick_replies")):
-            cli_utils.print_color(cli_utils.button_to_string(element, idx), color=color)
+            rasa.shared.utils.cli.print_color(
+                cli_utils.button_to_string(element, idx), color=color
+            )
 
     if "custom" in message:
-        cli_utils.print_color("Custom json:", color=color)
-        cli_utils.print_color(json.dumps(message.get("custom"), indent=2), color=color)
+        rasa.shared.utils.cli.print_color("Custom json:", color=color)
+        rasa.shared.utils.cli.print_color(
+            json.dumps(message.get("custom"), indent=2), color=color
+        )
 
 
 def get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
@@ -151,7 +160,7 @@ async def record_messages(
 
     exit_text = INTENT_MESSAGE_PREFIX + "stop"
 
-    cli_utils.print_success(
+    rasa.shared.utils.cli.print_success(
         "Bot loaded. Type a message and press enter "
         "(use '{}' to exit): ".format(exit_text)
     )

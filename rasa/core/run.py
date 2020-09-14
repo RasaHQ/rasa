@@ -18,7 +18,7 @@ from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
-from rasa.core.interpreter import NaturalLanguageInterpreter
+import rasa.core.interpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
@@ -35,7 +35,7 @@ def create_http_input_channels(
     """Instantiate the chosen input channel."""
 
     if credentials_file:
-        all_credentials = rasa.utils.io.read_config_file(credentials_file)
+        all_credentials = rasa.shared.utils.io.read_config_file(credentials_file)
     else:
         all_credentials = {}
 
@@ -239,7 +239,9 @@ async def load_agent_on_start(
     try:
         with model.get_model(model_path) as unpacked_model:
             _, nlu_model = model.get_model_subdirectories(unpacked_model)
-            _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or nlu_model)
+            _interpreter = rasa.core.interpreter.create_interpreter(
+                endpoints.nlu or nlu_model
+            )
     except Exception:
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None

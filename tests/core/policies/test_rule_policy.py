@@ -1,27 +1,26 @@
+from pathlib import Path
 from typing import List, Text
 
 import pytest
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 
 from rasa.core import training
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ActionDefaultFallback,
-    ACTION_RESTART_NAME,
-    ACTION_BACK_NAME,
-    ACTION_SESSION_START_NAME,
-    RULE_SNIPPET_ACTION_NAME,
-)
+from rasa.core.actions.action import ActionDefaultFallback
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.constants import (
-    REQUESTED_SLOT,
+from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_BACK_NAME,
+    RULE_SNIPPET_ACTION_NAME,
+    REQUESTED_SLOT,
 )
-from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
     ActiveLoop,
@@ -29,11 +28,11 @@ from rasa.core.events import (
     ActionExecutionRejected,
     FormValidation,
 )
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -96,6 +95,30 @@ def _form_activation_rule(
 def test_rule_policy_has_max_history_none():
     policy = RulePolicy()
     assert policy.featurizer.max_history is None
+
+
+def test_all_policy_attributes_are_persisted(tmpdir: Path):
+    priority = 5
+    lookup = {"a": "b"}
+    core_fallback_threshold = 0.451231
+    core_fallback_action_name = "action_some_fallback"
+    enable_fallback_prediction = False
+
+    policy = RulePolicy(
+        priority=priority,
+        lookup=lookup,
+        core_fallback_threshold=core_fallback_threshold,
+        core_fallback_action_name=core_fallback_action_name,
+        enable_fallback_prediction=enable_fallback_prediction,
+    )
+    policy.persist(tmpdir)
+
+    persisted_policy = RulePolicy.load(tmpdir)
+    assert persisted_policy.priority == priority
+    assert persisted_policy.lookup == lookup
+    assert persisted_policy._core_fallback_threshold == core_fallback_threshold
+    assert persisted_policy._fallback_action_name == core_fallback_action_name
+    assert persisted_policy._enable_fallback_prediction == enable_fallback_prediction
 
 
 def test_faq_rule():
