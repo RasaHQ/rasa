@@ -22,7 +22,7 @@ policies:
     epochs: 100
   - name: RulePolicy
 ```
-:::info Starting from scratch?
+:::tip Starting from scratch?
 
 If you don't know which policies to choose, leave out the `policies` key from your `config.yml` completely.
 If you do, the [Suggested Config](.//model-configuration.mdx#suggested-config)
@@ -113,7 +113,7 @@ If you want to adapt your model, start by modifying the following parameters:
   The lower the number of epochs the faster the model is trained.
   
 
-:::info configure epochs
+:::note configure epochs
 Pass an appropriate number, for example 50,  of `epochs` to the `TEDPolicy`, otherwise the policy will
 be trained only for `1` epoch.
 
@@ -148,7 +148,7 @@ be trained only for `1` epoch.
   to learn.
 
 
-:::info speeding up training 
+:::tip speeding up training 
 Default `max_history` for this policy is `None`, which means it'll use the
 `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to a finite value in order to
 use `MaxHistoryTrackerFeaturizer` for **faster training**. 

@@ -180,7 +180,7 @@ Each button in the list of `buttons` should have two keys:
 * `title`: The text displayed on the buttons that the user sees.
 * `payload`: The message sent from the user to the bot when a user clicks a given button.
 
-:::info bypass nlu with buttons
+:::note bypass nlu with buttons
 It's common to use buttons as a shortcut to bypass NLU.
 Rasa Open Source will send messages starting with a `/` to the
 `RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format. 
