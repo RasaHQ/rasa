@@ -1,5 +1,9 @@
+from pathlib import Path
+
 import pytest
 
+from rasa.nlu import train
+from rasa.nlu.components import ComponentBuilder
 from rasa.shared.nlu.training_data import util
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.nlu.training_data.loading
@@ -9,6 +13,9 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    CHECKPOINT_MODEL,
 )
 from rasa.nlu.selectors.response_selector import ResponseSelector
 
@@ -154,3 +161,50 @@ def test_resolve_intent_response_key_from_label(
             util.intent_response_key_to_template_key(resolved_intent_response_key)
         ]
     )
+
+
+async def test_train_model_checkpointing(
+    component_builder: ComponentBuilder, tmpdir: Path
+):
+    from pathlib import Path
+
+    model_name = "rs-checkpointed-model"
+    best_model_file = Path(str(tmpdir), model_name)
+    assert not best_model_file.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "ResponseSelector",
+                    EPOCHS: 5,
+                    EVAL_NUM_EXAMPLES: 10,
+                    EVAL_NUM_EPOCHS: 1,
+                    CHECKPOINT_MODEL: True,
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    await train(
+        _config,
+        path=str(tmpdir),
+        data="data/test_selectors",
+        component_builder=component_builder,
+        fixed_model_name=model_name,
+    )
+
+    assert best_model_file.exists()
+
+    """
+    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+        - metadata.json
+        - checkpoint
+        - component_1_CountVectorsFeaturizer (as per the pipeline above)
+        - component_2_ResponseSelector files (more than 1 file)
+    """
+    all_files = list(best_model_file.rglob("*.*"))
+    assert len(all_files) > 4

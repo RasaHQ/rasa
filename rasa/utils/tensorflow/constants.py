@@ -80,3 +80,4 @@ SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"
 
 FEATURIZERS = "featurizers"
+CHECKPOINT_MODEL = "checkpoint_model"
