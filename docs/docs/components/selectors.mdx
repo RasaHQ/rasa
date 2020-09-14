@@ -35,12 +35,12 @@ Selectors predict a bot response from a set of candidate responses.
     containing the output for each response selector component. Each response selector is
     identified by `retrieval_intent` parameter of that response selector
     and stores two properties:
-    
+
     * `response`: The predicted response key under the corresponding retrieval intent,
     prediction's confidence and the associated response templates.
-    
+
     * `ranking`: Ranking with confidences of top 10 candidate response keys.
-    
+
     Example result:
 
     ```json
@@ -244,11 +244,11 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | embedding_dimension             | 20                | Dimension size of embedding vectors.                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| dense_dimension                 | text: 512         | Dense dimension for sparse features to use if no dense       |
-|                                 | label: 512        | features are present.                                        |
+| dense_dimension                 | text: 128         | Dense dimension for sparse features to use if no dense       |
+|                                 | label: 20         | features are present.                                        |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| concat_dimension                | text: 512         | Concat dimension for sequence and sentence features.         |
-|                                 | label: 512        |                                                              |
+| concat_dimension                | text: 128         | Concat dimension for sequence and sentence features.         |
+|                                 | label: 23         |                                                              |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | number_of_negative_examples     | 20                | The number of incorrect labels. The algorithm will minimize  |
 |                                 |                   | their similarity to the user input during training.          |
@@ -321,6 +321,12 @@ However, additional parameters exist that can be adapted.
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |
 |                                 |                   | all available features are used.                             |
++---------------------------------+-------------------+--------------------------------------------------------------+
+| checkpoint_model                | False             | Save the best performing model during training. Models are   |
+|                                 |                   | stored to the location specified by `--out`. Only the one    |
+|                                 |                   | best model will be saved.                                    |
+|                                 |                   | Requires `evaluate_on_number_of_examples > 0` and            |
+|                                 |                   | `evaluate_every_number_of_epochs > 0`                        |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 ```
 
