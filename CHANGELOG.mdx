@@ -554,7 +554,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   Add a new NLP component [HFTransformersNLP](./components.mdx#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add [LanguageModelTokenizer](./components.mdx#languagemodelfeaturizer) which uses the information from
+  Add [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
   [HFTransformersNLP](./components.mdx#hftransformersnlp) and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
@@ -578,7 +578,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   TF_INTRA_OP_PARALLELISM_THREADS="2"
   ```
 
-* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components.mdx#dietclassifier) and a new policy [TEDPolicy](./components.mdx#ted-policy).
+* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components.mdx#dietclassifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
   recognition. You can read more about this component in our [documentation](./components.mdx#dietclassifier).
