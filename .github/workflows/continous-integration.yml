@@ -290,8 +290,10 @@ jobs:
         SENTRY_ORG: rasahq
         SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       run: |
-        VERSION=${GITHUB_TAG/refs\/tags\//}
-        ./scripts/inform_sentry_about_release.sh
+        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+        sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
+        sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
+        sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
     - name: Notify Slack & Publish Release Notes 🗞
       env:
