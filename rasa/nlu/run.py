@@ -3,7 +3,8 @@ import logging
 import typing
 from typing import Optional, Text
 
-from rasa.shared.utils.cli import print_success, run_in_loop
+from rasa.shared.utils.cli import print_success
+import rasa.cli.utils
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.model import Interpreter
@@ -26,7 +27,7 @@ def run_cmdline(
         print_success("Next message:")
         message = input().strip()
         if message.startswith(INTENT_MESSAGE_PREFIX):
-            result = run_in_loop(regex_interpreter.parse(message))
+            result = rasa.cli.utils.run_in_loop(regex_interpreter.parse(message))
         else:
             result = interpreter.parse(message)
 

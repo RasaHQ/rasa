@@ -485,6 +485,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 
 @async_generator.asynccontextmanager
+@async_generator.async_generator
 @ensure_telemetry_enabled
 async def track_model_training(
     training_data: TrainingDataImporter, model_type: Text
