@@ -8,10 +8,12 @@ from typing import List
 import rasa.shared.data
 import rasa.shared.utils.cli
 from rasa.cli.arguments import data as arguments
-import rasa.cli.utils
-from rasa.shared.utils.cli import print_info, print_warning, print_error_and_exit
+import rasa.cli.utils as cli_utils
+import rasa.shared.utils.cli as shared_cli_utils
 from rasa.shared.constants import DEFAULT_DATA_PATH
-from rasa.shared.data import is_valid_filetype
+import rasa.shared.data as shared_data
+import rasa.shared.nlu.training_data.util as training_data_utils
+import rasa.shared.nlu.training_data.loading as training_data_loading
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data
 from rasa.utils.converter import TrainingDataConverter
@@ -147,19 +149,16 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments
     """
-    from rasa.shared.nlu.training_data.loading import load_data
-    from rasa.shared.nlu.training_data.util import get_file_format
+    data_path = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    data_path = shared_data.get_nlu_directory(data_path)
 
-    data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    data_path = rasa.shared.data.get_nlu_directory(data_path)
-
-    nlu_data = load_data(data_path)
-    fformat = get_file_format(data_path)
+    nlu_data = training_data_loading.load_data(data_path)
+    extension = training_data_utils.get_file_format_extension(data_path)
 
     train, test = nlu_data.train_test_split(args.training_fraction, args.random_seed)
 
-    train.persist(args.out, filename=f"training_data.{fformat}")
-    test.persist(args.out, filename=f"test_data.{fformat}")
+    train.persist(args.out, filename=f"training_data{extension}")
+    test.persist(args.out, filename=f"test_data{extension}")
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
@@ -187,6 +186,9 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
 
     if not all_good:
         rasa.shared.utils.cli.print_error_and_exit(
+            "Project validation completed with errors."
+        )
+        shared_cli_utils.print_error_and_exit(
             "Project validation completed with errors."
         )
 
@@ -230,7 +232,7 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
     elif args.format == "yaml":
         _convert_to_yaml(args, NLUMarkdownToYamlConverter())
     else:
-        print_error_and_exit(
+        shared_cli_utils.print_error_and_exit(
             "Could not recognize output format. Supported output formats: 'json', "
             "'md', 'yaml'. Specify the desired output format with '--format'."
         )
@@ -244,7 +246,7 @@ def _convert_core_data(args: argparse.Namespace) -> None:
     if args.format == "yaml":
         _convert_to_yaml(args, StoryMarkdownToYamlConverter())
     else:
-        print_error_and_exit(
+        shared_cli_utils.print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
             "'yaml'. Specify the desired output format with '--format'."
         )
@@ -258,7 +260,7 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
     if args.format == "yaml":
         _convert_to_yaml(args, NLGMarkdownToYamlConverter())
     else:
-        print_error_and_exit(
+        shared_cli_utils.print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
             "'yaml'. Specify the desired output format with '--format'."
         )
@@ -270,14 +272,14 @@ def _convert_to_yaml(
 
     output = Path(args.out)
     if not os.path.exists(output):
-        print_error_and_exit(
+        shared_cli_utils.print_error_and_exit(
             f"The output path '{output}' doesn't exist. Please make sure to specify "
             f"an existing directory and try again."
         )
 
     training_data = Path(args.data)
     if not os.path.exists(training_data):
-        print_error_and_exit(
+        shared_cli_utils.print_error_and_exit(
             f"The training data path {training_data} doesn't exist "
             f"and will be skipped."
         )
@@ -295,9 +297,11 @@ def _convert_to_yaml(
                     num_of_files_converted += 1
 
     if num_of_files_converted:
-        print_info(f"Converted {num_of_files_converted} file(s), saved in '{output}'.")
+        shared_cli_utils.print_info(
+            f"Converted {num_of_files_converted} file(s), saved in '{output}'."
+        )
     else:
-        print_warning(
+        shared_cli_utils.print_warning(
             f"Didn't convert any files under '{training_data}' path. "
             "Did you specify the correct file/directory?"
         )
@@ -316,13 +320,13 @@ def _convert_file_to_yaml(
     Returns:
         `True` if file was converted, `False` otherwise.
     """
-    if not is_valid_filetype(source_file):
+    if not shared_data.is_valid_filetype(source_file):
         return False
 
     if converter.filter(source_file):
         converter.convert_and_write(source_file, target_dir)
         return True
 
-    print_warning(f"Skipped file: '{source_file}'.")
+    shared_cli_utils.print_warning(f"Skipped file: '{source_file}'.")
 
     return False

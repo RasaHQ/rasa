@@ -185,6 +185,23 @@ nlu:
 The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the components in the NLU pipeline. In the example above, the sentiment of
 the example could be used by a custom component in the pipeline for sentiment analysis.
 
+You can also specify this metadata at the intent level:
+
+```yaml-rasa
+nlu:
+- intent: greet
+  metadata:
+    sentiment: neutral
+  examples:
+  - text: |
+      hi
+  - text: |
+      hey there!
+```
+
+In this case, the content of the `metadata` key is passed on to every intent example.
+
+
 If you want to specify [retrieval intents](glossary.mdx#retrieval-intent), then your NLU examples will look as follows:
 ```yaml-rasa
 nlu:
