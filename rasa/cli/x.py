@@ -14,6 +14,7 @@ import ruamel.yaml as yaml
 import rasa.cli.utils as cli_utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
+import rasa.utils.common
 import rasa.utils.io as io_utils
 from rasa.cli.arguments import x as arguments
 from rasa.constants import (
@@ -400,7 +401,7 @@ def _get_credentials_and_endpoints_paths(
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        endpoints_config_path, credentials_path = cli_utils.run_in_loop(
+        endpoints_config_path, credentials_path = rasa.utils.common.run_in_loop(
             _pull_runtime_config_from_server(config_endpoint)
         )
 

@@ -9,6 +9,9 @@ from rasa.shared.constants import DEFAULT_DATA_PATH
 
 
 # noinspection PyProtectedMember
+import rasa.utils.common
+
+
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
@@ -31,7 +34,7 @@ def visualize_stories(args: argparse.Namespace):
     if args.nlu is None and os.path.exists(DEFAULT_DATA_PATH):
         args.nlu = rasa.shared.data.get_nlu_directory(DEFAULT_DATA_PATH)
 
-    rasa.cli.utils.run_in_loop(
+    rasa.utils.common.run_in_loop(
         rasa.core.visualize(
             args.config, args.domain, args.stories, args.nlu, args.out, args.max_history
         )

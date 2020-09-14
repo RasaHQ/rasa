@@ -1,10 +1,12 @@
 import argparse
+import textwrap
 from typing import List
 
 from rasa import telemetry
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_info, print_success
 from rasa.shared.constants import DOCS_URL_TELEMETRY
+import rasa.shared.utils.cli
+import rasa.utils.common
 
 
 # noinspection PyProtectedMember
@@ -35,26 +37,44 @@ def add_subparser(
     )
     telemetry_disable_parser.set_defaults(func=disable_telemetry)
 
-    telemetry_disable_parser = telemetry_subparsers.add_parser(
+    telemetry_enable_parser = telemetry_subparsers.add_parser(
         "enable",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Enable Rasa Open Source Telemetry reporting.",
     )
-    telemetry_disable_parser.set_defaults(func=enable_telemetry)
+    telemetry_enable_parser.set_defaults(func=enable_telemetry)
     telemetry_parser.set_defaults(func=inform_about_telemetry)
 
 
 def inform_about_telemetry(_: argparse.Namespace) -> None:
     """Inform user about telemetry tracking."""
-    print_success("TODO: some information about telemetry")
+    is_enabled = telemetry.is_telemetry_enabled()
+    if is_enabled:
+        rasa.shared.utils.cli.print_success(
+            "Telemetry reporting is currently enabled for this installation."
+        )
+    else:
+        rasa.shared.utils.cli.print_success(
+            "Telemetry reporting is currently disabled for this installation."
+        )
 
-    print("\nYou can enable telemetry reporting using")
-    print_info("\n\trasa telemetry enable")
-    print("\nand disable telemetry reporting using:")
-    print_info("\n\trasa telemetry disable")
+    print(
+        textwrap.dedent(
+            """
+            Rasa uses telemetry to report anonymous usage information. This information
+            is essential to help improve Rasa Open Source for all users."""
+        )
+    )
 
-    print_success(
+    if not is_enabled:
+        print("\nYou can enable telemetry reporting using")
+        rasa.shared.utils.cli.print_info("\n\trasa telemetry enable")
+    else:
+        print("\nYou can disable telemetry reporting using:")
+        rasa.shared.utils.cli.print_info("\n\trasa telemetry disable")
+
+    rasa.shared.utils.cli.print_success(
         "\nYou can find more information about telemetry reporting at "
         "" + DOCS_URL_TELEMETRY
     )
@@ -62,12 +82,12 @@ def inform_about_telemetry(_: argparse.Namespace) -> None:
 
 def disable_telemetry(_: argparse.Namespace) -> None:
     """Disable telemetry tracking."""
-    rasa.cli.utils.run_in_loop(telemetry.track_telemetry_disabled())
+    rasa.utils.common.run_in_loop(telemetry.track_telemetry_disabled())
     telemetry.toggle_telemetry_reporting(is_enabled=False)
-    print_success("Disabled telemetry reporting.")
+    rasa.shared.utils.cli.print_success("Disabled telemetry reporting.")
 
 
 def enable_telemetry(_: argparse.Namespace) -> None:
     """Enable telemetry tracking."""
     telemetry.toggle_telemetry_reporting(is_enabled=True)
-    print_success("Enabled telemetry reporting.")
+    rasa.shared.utils.cli.print_success("Enabled telemetry reporting.")

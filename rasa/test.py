@@ -8,6 +8,7 @@ from pathlib import Path
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+import rasa.utils.common
 import rasa.utils.io as io_utils
 from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
@@ -29,7 +30,9 @@ def test_core_models_in_directory(
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
-    cli_utils.run_in_loop(compare_models_in_dir(model_directory, stories, output))
+    rasa.utils.common.run_in_loop(
+        compare_models_in_dir(model_directory, stories, output)
+    )
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
     number_of_stories = rasa.shared.utils.io.read_json_file(story_n_path)
@@ -88,7 +91,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
 def test_core_models(models: List[Text], stories: Text, output: Text):
     from rasa.core.test import compare_models
 
-    cli_utils.run_in_loop(compare_models(models, stories, output))
+    rasa.utils.common.run_in_loop(compare_models(models, stories, output))
 
 
 def test(
@@ -152,7 +155,7 @@ def test_core(
         additional_arguments, test, ["stories", "agent"]
     )
 
-    cli_utils.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
+    rasa.utils.common.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
 
 
 def test_nlu(

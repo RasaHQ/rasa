@@ -12,6 +12,7 @@ from rasa import model
 
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 from rasa.shared.importers.importer import TrainingDataImporter
+import rasa.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def interactive(args: argparse.Namespace) -> None:
     )
 
     if args.model is None:
-        story_graph = rasa.cli.utils.run_in_loop(file_importer.get_stories())
+        story_graph = rasa.utils.common.run_in_loop(file_importer.get_stories())
         if not story_graph or story_graph.is_empty():
             rasa.shared.utils.cli.print_error_and_exit(
                 "Could not run interactive learning without either core data or a model containing core data."

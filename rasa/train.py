@@ -4,7 +4,6 @@ import tempfile
 from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
-from rasa.cli.utils import run_in_loop
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -12,6 +11,7 @@ from rasa import model, telemetry
 from rasa.model import FingerprintComparisonResult
 from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
+import rasa.utils.common
 from rasa.utils.common import TempDirectoryPath
 
 from rasa.shared.utils.cli import (
@@ -40,7 +40,7 @@ def train(
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> Optional[Text]:
-    return run_in_loop(
+    return rasa.utils.common.run_in_loop(
         train_async(
             domain=domain,
             config=config,
@@ -119,8 +119,8 @@ async def handle_domain_if_not_exists(
     )
     print_warning(
         "Core training was skipped because no valid domain file was found. "
-        "Only an nlu-model was created. Please specify a valid domain using "
-        "'--domain' argument or check if the provided domain file exists."
+        "Only an NLU-model was created. Please specify a valid domain using "
+        "the '--domain' argument or check if the provided domain file exists."
     )
     return nlu_model_only
 
@@ -306,7 +306,7 @@ def train_core(
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
-    return run_in_loop(
+    return rasa.utils.common.run_in_loop(
         train_core_async(
             domain=domain,
             config=config,
@@ -456,7 +456,7 @@ def train_nlu(
 
     """
 
-    return run_in_loop(
+    return rasa.utils.common.run_in_loop(
         _train_nlu_async(
             config,
             nlu_data,
