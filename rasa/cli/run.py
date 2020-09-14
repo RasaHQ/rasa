@@ -3,6 +3,7 @@ import logging
 import os
 from typing import List, Text
 
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
 import rasa.cli.utils
 import rasa.shared.utils.cli
@@ -18,9 +19,8 @@ from rasa.exceptions import ModelNotFound
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add all run parsers.
 

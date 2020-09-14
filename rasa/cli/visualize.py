@@ -2,15 +2,15 @@ import argparse
 import os
 from typing import List
 
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import visualize as arguments
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.data
 import rasa.utils.common
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add all visualization parsers.
 

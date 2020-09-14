@@ -3,6 +3,7 @@ import logging
 import os
 from typing import List
 
+from rasa.cli import SubParsersAction
 import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.cli.arguments import test as arguments
@@ -20,9 +21,8 @@ import rasa.cli.utils
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add all test parsers.
 

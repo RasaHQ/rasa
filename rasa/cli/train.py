@@ -1,6 +1,8 @@
 import argparse
 import os
 from typing import List, Optional, Text, Dict
+
+from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
 import rasa.cli.utils
@@ -17,9 +19,8 @@ from rasa.shared.constants import (
 import rasa.utils.common
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add all training parsers.
 

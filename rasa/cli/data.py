@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import List
 
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 import rasa.nlu.convert
@@ -20,9 +21,8 @@ from rasa.validator import Validator
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add all data parsers.
 

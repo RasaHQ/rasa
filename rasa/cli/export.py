@@ -3,6 +3,7 @@ import logging
 import typing
 from typing import List, Text, Optional
 
+from rasa.cli import SubParsersAction
 import rasa.core.utils
 import rasa.shared.utils.cli
 from rasa.cli.arguments import export as arguments
@@ -20,9 +21,8 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add subparser for `rasa export`.
 

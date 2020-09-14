@@ -2,6 +2,7 @@ import argparse
 import os
 from typing import List, Text
 
+from rasa.cli import SubParsersAction
 import rasa.train
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path
@@ -14,9 +15,8 @@ from rasa.shared.constants import (
 )
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add all init parsers.
 

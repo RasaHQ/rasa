@@ -534,13 +534,13 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 
 def strip_sensitive_data_from_sentry_event(
-    event: Dict[Text, Any], hint: Dict[Text, Any]
+    event: Dict[Text, Any], _unused_hint: Dict[Text, Any]
 ) -> Dict[Text, Any]:
     """Remove any sensitive data from the event (e.g. path names).
 
     Args:
         event: event to be logged to sentry
-        hint: some hinting information sent alongside of the event
+        _unused_hint: some hinting information sent alongside of the event
 
     Returns:
         the event without any sensitive / PII data.

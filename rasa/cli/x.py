@@ -11,6 +11,7 @@ from typing import Iterable, List, Optional, Text, Tuple
 import aiohttp
 import ruamel.yaml as yaml
 
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import x as arguments
 import rasa.cli.utils
 from rasa.constants import (
@@ -37,9 +38,8 @@ logger = logging.getLogger(__name__)
 DEFAULT_EVENTS_DB = "events.db"
 
 
-# noinspection PyProtectedMember,PyUnresolvedReferences
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add all rasa x parsers.
 

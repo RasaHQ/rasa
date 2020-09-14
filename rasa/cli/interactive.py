@@ -4,6 +4,7 @@ import os
 from typing import List, Optional, Text
 
 from rasa import model
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import interactive as arguments
 import rasa.cli.train as train
 import rasa.cli.utils
@@ -15,9 +16,8 @@ import rasa.utils.common
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add all interactive cli parsers.
 
