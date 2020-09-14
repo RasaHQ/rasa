@@ -669,7 +669,7 @@ class MessageProcessor:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
-        except Exception as e:
+        except Exception:
             logger.exception(
                 f"Encountered an exception while running action '{action.name()}'."
                 "Bot will continue, but the actions events are lost. "
