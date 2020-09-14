@@ -10,7 +10,7 @@ import rasa.shared.utils.cli
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 from rasa.shared.utils.cli import print_info, print_warning, print_error_and_exit
-from rasa.constants import DEFAULT_DATA_PATH
+from rasa.shared.constants import DEFAULT_DATA_PATH
 from rasa.shared.data import is_valid_filetype
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data

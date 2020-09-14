@@ -5,8 +5,7 @@ from typing import List
 import rasa.shared.data
 from rasa.cli.arguments import visualize as arguments
 import rasa.cli.utils
-from rasa.constants import DEFAULT_DATA_PATH
-
+from rasa.shared.constants import DEFAULT_DATA_PATH
 
 # noinspection PyProtectedMember
 def add_subparser(

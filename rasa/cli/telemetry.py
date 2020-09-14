@@ -4,7 +4,7 @@ from typing import List
 from rasa import telemetry
 import rasa.cli.utils
 from rasa.shared.utils.cli import print_info, print_success
-from rasa.constants import DOCS_URL_TELEMETRY
+from rasa.shared.constants import DOCS_URL_TELEMETRY
 
 
 # noinspection PyProtectedMember
