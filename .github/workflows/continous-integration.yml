@@ -214,8 +214,11 @@ jobs:
 
     - name: Copy Segment write key to the package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+      env:
+        RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+        RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
       run: |
-        echo "{\"segment\":\"${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}\",\"sentry\":\"${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}\"," > rasa/keys
+        ./scripts/write_keys_file.sh
 
     - name: Build latest${{ matrix.image.tag_ext }} Docker image
       run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
@@ -261,8 +264,11 @@ jobs:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Copy Segment write key to the package
+      env:
+        RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+        RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
       run: |
-        echo "{\"segment\":\"${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}\",\"sentry\":\"${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}\"," > rasa/keys
+        ./scripts/write_keys_file.sh
 
     - name: Build ⚒️ Distributions
       run: poetry build

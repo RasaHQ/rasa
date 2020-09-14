@@ -511,6 +511,12 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 @ensure_telemetry_enabled
 def initialize_error_reporting() -> None:
+    """Sets up automated error reporting.
+
+    Exceptions are reported to sentry. We avoid sending any metadata (local
+    variables, paths, ...) to make sure we don't compromise any data. Only the
+    exception and its stacktrace is logged and only if the exception origins
+    from the `rasa` package. """
     import sentry_sdk
     from sentry_sdk.integrations.atexit import AtexitIntegration
     from sentry_sdk.integrations.dedupe import DedupeIntegration
