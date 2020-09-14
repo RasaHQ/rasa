@@ -97,7 +97,6 @@ def cancel_cause_not_found(
 
 def parse_last_positional_argument_as_model_path() -> None:
     """Fixes the parsing of a potential positional model path argument."""
-    import sys
 
     if (
         len(sys.argv) >= 2
