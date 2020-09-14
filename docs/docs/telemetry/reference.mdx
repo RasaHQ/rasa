@@ -1,0 +1,56 @@
+---
+id: reference
+sidebar_label: Telemetry Event Reference
+title: Telemetry Event Reference
+abstract: |
+  Event descriptions of telemetry data we report in order to improve our products.
+---
+Telemetry events are only reported if telemetry is enabled. A detailed explanation 
+on the reasoning behind collecting optional telemetry events can be found in our 
+[telemetry documentation](./telemetry.mdx).
+
+
+
+## Model Training
+
+### Training Started
+<span class="badge badge--primary">backend</span> A training of a Rasa machine learning model got started. The event provides information on aggregated training data statistics.
+Event properties:
+
+- `language` *(string)*: Language model is trained with, e.g. 'en'.
+- `training_id` *(string)*: Generated unique identifier for this training.
+- `model_type` *(string)*: Type of model trained, either 'nlu', 'core' or 'rasa'.
+- `pipeline` *(undefined)*: List of the pipeline configurations used for training.
+- `policies` *(array)*: List of the policy configurations used for training.
+- `num_intent_examples` *(integer)*: Number of NLU examples.
+- `num_entity_examples` *(integer)*: Number of entity examples.
+- `num_actions` *(integer)*: Number of actions defined in the domain.
+- `num_templates` *(integer)*: Number of templates defined in the domain.
+- `num_slots` *(integer)*: Number of slots defined in the domain.
+- `num_forms` *(integer)*: Number of forms defined in the domain.
+- `num_intents` *(integer)*: Number of intents defined in the domain.
+- `num_entities` *(integer)*: Number of entities defined in the domain.
+- `num_story_steps` *(integer)*: Number of story steps available.
+- `num_lookup_tables` *(integer)*: Number of different lookup tables.
+- `num_synonyms` *(integer)*: Total number of entity synonyms defined.
+- `num_regexes` *(integer)*: Total number of regexes defined.
+
+
+
+### Training Completed
+<span class="badge badge--primary">backend</span> The training of a Rasa machine learning model finished. The event provides information about the resulting model.
+Event properties:
+
+- `training_id` *(string)*: Generated unique identifier for this training. Can be used to join with 'Training Started'.
+- `model_type` *(string)*: Type of model trained, either 'nlu', 'core' or 'rasa'.
+- `runtime` *(integer)*: The time in seconds it took to train the model.
+
+
+
+
+## Miscellaneous
+
+### Telemetry Disabled
+<span class="badge badge--primary">backend</span> Triggered when telemetry reporting gets disabled. Last event sent before disabling telemetry. This event is not send, if the user never enabled telemetry reporting before deactivating it.
+
+
