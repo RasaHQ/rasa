@@ -12,12 +12,12 @@ import rasa.core
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import (
-    MINIMUM_COMPATIBLE_VERSION,
-    DEFAULT_CONFIG_PATH,
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DEFAULT_CONFIG_PATH
+from rasa.shared.constants import (
+    DOCS_URL_RULES,
+    DOCS_URL_POLICIES,
     DOCS_URL_MIGRATION_GUIDE,
 )
-from rasa.shared.constants import DOCS_URL_RULES, DOCS_URL_POLICIES
 from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
