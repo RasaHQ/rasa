@@ -16,8 +16,27 @@ from rasa.shared.utils.io import read_yaml_file
 
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
+    responses_yml = (
+        "responses:\n"
+        "  chitchat/ask_name:\n"
+        "  - text: my name is Sara, Rasa's documentation bot!\n"
+        "  chitchat/ask_weather:\n"
+        "  - text: the weather is great!\n"
+    )
+
+    with open("data/responses.yml", "w") as f:
+        f.write(responses_yml)
+
     run_in_simple_project(
-        "data", "split", "nlu", "-u", "data/nlu.yml", "--training-fraction", "0.75"
+        "data",
+        "split",
+        "nlu",
+        "-u",
+        "data/nlu.yml",
+        "--training-fraction",
+        "0.75",
+        "--random-seed",
+        "12345",
     )
 
     folder = Path("train_test_split")

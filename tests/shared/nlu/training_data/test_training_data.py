@@ -26,6 +26,7 @@ from rasa.shared.nlu.training_data.util import (
     get_file_format,
     template_key_to_intent_response_key,
     intent_response_key_to_template_key,
+    DEFAULT_FILE_FORMAT,
 )
 
 
@@ -558,8 +559,8 @@ def test_training_data_conversion(
 @pytest.mark.parametrize(
     "data_file,expected_format",
     [
-        ("data/examples/luis/demo-restaurants_v5.json", JSON),
-        ("data/examples", JSON),
+        ("data/examples/luis/demo-restaurants_v5.json", DEFAULT_FILE_FORMAT),
+        ("data/examples", DEFAULT_FILE_FORMAT),
         ("data/examples/rasa/demo-rasa.md", MARKDOWN),
         ("data/rasa_yaml_examples", RASA_YAML),
     ],
