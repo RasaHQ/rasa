@@ -16,7 +16,7 @@ from rasa.shared.core.events import (
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_RANKING_KEY
+from rasa.shared.nlu.constants import INTENT_RANKING_KEY
 from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,

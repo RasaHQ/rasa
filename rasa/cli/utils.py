@@ -9,7 +9,7 @@ import rasa.shared.utils.cli
 if TYPE_CHECKING:
     from questionary import Question
 
-from rasa.constants import DEFAULT_MODELS_PATH
+from rasa.shared.constants import DEFAULT_MODELS_PATH
 import rasa.shared.utils.io
 from typing import NoReturn
 

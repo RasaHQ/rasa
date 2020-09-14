@@ -6,7 +6,7 @@ import requests
 from typing import Any, List, Optional, Text, Dict
 
 import rasa.utils.endpoints as endpoints_utils
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.extractor import EntityExtractor
