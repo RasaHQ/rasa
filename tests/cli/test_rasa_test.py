@@ -2,7 +2,8 @@ import os
 from shutil import copyfile
 
 from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
-from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
+from rasa.constants import RESULTS_FILE
+from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml
 from typing import Callable
 from _pytest.pytester import RunResult

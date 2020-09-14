@@ -2,11 +2,15 @@ from pathlib import Path
 from typing import Text
 import os
 
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
+from rasa.shared.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
+)
 from rasa.shared.core.constants import DEFAULT_INTENTS
 from rasa.shared.core.domain import Domain
-from rasa.importers.importer import TrainingDataImporter
-from rasa.importers.rasa import RasaFileImporter
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 
 
 async def test_rasa_file_importer(project: Text):

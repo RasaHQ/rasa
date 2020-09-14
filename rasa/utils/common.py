@@ -3,7 +3,7 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Text, Type, Collection
+from typing import Any, Dict, List, Optional, Text, Type
 
 import rasa.core.utils
 import rasa.utils.io
@@ -11,7 +11,6 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
     GLOBAL_USER_CONFIG_PATH,
-    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
@@ -38,18 +37,11 @@ class TempDirectoryPath(str):
             shutil.rmtree(self)
 
 
-def arguments_of(func: Callable) -> List[Text]:
-    """Return the parameters of the function `func` as a list of names."""
-    import inspect
-
-    return list(inspect.signature(func).parameters.keys())
-
-
 def read_global_config() -> Dict[Text, Any]:
     """Read global Rasa configuration."""
     # noinspection PyBroadException
     try:
-        return rasa.utils.io.read_config_file(GLOBAL_USER_CONFIG_PATH)
+        return rasa.shared.utils.io.read_config_file(GLOBAL_USER_CONFIG_PATH)
     except Exception:
         # if things go south we pretend there is no config
         return {}
@@ -186,41 +178,6 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     return sorted(dicts, key=lambda d: list(d.keys())[0])
 
 
-def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
-    """Transforms e.g. a list like ['A', 'B', 'C'] into a sentence 'A, B and C'."""
-    x = list(collection)
-    if len(x) >= 2:
-        return ", ".join(map(str, x[:-1])) + " and " + x[-1]
-    return "".join(collection)
-
-
-def minimal_kwargs(
-    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
-) -> Dict[Text, Any]:
-    """Returns only the kwargs which are required by a function. Keys, contained in
-    the exception list, are not included.
-
-    Args:
-        kwargs: All available kwargs.
-        func: The function which should be called.
-        excluded_keys: Keys to exclude from the result.
-
-    Returns:
-        Subset of kwargs which are accepted by `func`.
-
-    """
-
-    excluded_keys = excluded_keys or []
-
-    possible_arguments = arguments_of(func)
-
-    return {
-        k: v
-        for k, v in kwargs.items()
-        if k in possible_arguments and k not in excluded_keys
-    }
-
-
 def write_global_config_value(name: Text, value: Any) -> None:
     """Read global Rasa configuration."""
 
@@ -254,17 +211,6 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         return not_found()
 
 
-def mark_as_experimental_feature(feature_name: Text) -> None:
-    """Warns users that they are using an experimental feature."""
-
-    logger.warning(
-        f"The {feature_name} is currently experimental and might change or be "
-        "removed in the future 🔬 Please share your feedback on it in the "
-        "forum (https://forum.rasa.com) to help us make this feature "
-        "ready for production."
-    )
-
-
 def update_existing_keys(
     original: Dict[Any, Any], updates: Dict[Any, Any]
 ) -> Dict[Any, Any]:
@@ -278,28 +224,6 @@ def update_existing_keys(
         if k in updated:
             updated[k] = v
     return updated
-
-
-def raise_deprecation_warning(
-    message: Text,
-    warn_until_version: Text = NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-    docs: Optional[Text] = None,
-    **kwargs: Any,
-) -> None:
-    """
-    Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
-    a version until which we'll warn, and after which the support for the feature will
-    be removed.
-    """
-    if warn_until_version not in message:
-        message = f"{message} (will be removed in {warn_until_version})"
-
-    # need the correct stacklevel now
-    kwargs.setdefault("stacklevel", 3)
-    # we're raising a `FutureWarning` instead of a `DeprecationWarning` because
-    # we want these warnings to be visible in the terminal of our users
-    # https://docs.python.org/3/library/warnings.html#warning-categories
-    rasa.shared.utils.io.raise_warning(message, FutureWarning, docs, **kwargs)
 
 
 class RepeatedLogFilter(logging.Filter):

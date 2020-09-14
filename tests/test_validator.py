@@ -2,7 +2,7 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.validator import Validator
-from rasa.importers.rasa import RasaFileImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_STORIES_FILE
 
