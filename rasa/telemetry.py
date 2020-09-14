@@ -42,6 +42,7 @@ TELEMETRY_DEBUG_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_DEBUG"
 # the environment variable can be used for local development to set a test key
 # e.g. `RASA_TELEMETRY_WRITE_KEY=12354 rasa train`
 TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_WRITE_KEY"
+EXCEPTION_WRITE_KEY_ENVIRONMENT_VARIABLE = "RASA_EXCEPTION_WRITE_KEY"
 
 TELEMETRY_ID = "metrics_id"
 TELEMETRY_ENABLED_BY_DEFAULT = True
@@ -203,6 +204,33 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
         return decorated
 
 
+def _fetch_write_key(tool: Text, environment_variable: Text) -> Optional[Text]:
+    """Read the write key from a tool from our set of keys.
+
+    Args:
+        tool: name of the tool we want to fetch a key for
+        environment_variable: name of the environment variable to set the key
+    Returns:
+        write key, if a key was present.
+    """
+    import pkg_resources
+    from rasa import __name__ as name
+
+    if os.environ.get(environment_variable):
+        # a write key set using the environment variable will always
+        # overwrite any key provided as part of the package (`keys` file)
+        return os.environ.get(environment_variable)
+
+    write_key_path = pkg_resources.resource_filename(name, "keys")
+
+    # noinspection PyBroadException
+    try:
+        with open(write_key_path) as f:
+            return json.load(f).get(tool)
+    except Exception:  # skipcq:PYL-W0703
+        return None
+
+
 def telemetry_write_key() -> Optional[Text]:
     """Read the Segment write key from the segment key text file.
     The segment key text file should by present only in wheel/sdist packaged
@@ -214,22 +242,18 @@ def telemetry_write_key() -> Optional[Text]:
     Returns:
         Segment write key, if the key file was present.
     """
-    import pkg_resources
-    from rasa import __name__ as name
 
-    if os.environ.get(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE):
-        # a write key set using the environment variable will always
-        # overwrite any key provided as part of the package (`segment_key` file)
-        return os.environ.get(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE)
+    return _fetch_write_key("segment", TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE)
 
-    write_key_path = pkg_resources.resource_filename(name, "segment_key")
 
-    # noinspection PyBroadException
-    try:
-        with open(write_key_path) as f:
-            return f.read().strip()
-    except Exception:  # skipcq:PYL-W0703
-        return None
+def sentry_write_key() -> Optional[Text]:
+    """Read the sentry write key from the sentry key text file.
+
+    Returns:
+        Sentry write key, if the key file was present.
+    """
+
+    return _fetch_write_key("sentry", EXCEPTION_WRITE_KEY_ENVIRONMENT_VARIABLE)
 
 
 def _encode_base64(original: Text, encoding: Text = "utf-8") -> Text:
@@ -507,6 +531,69 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
         configuration = _default_telemetry_configuration(is_enabled)
 
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
+
+
+def strip_sensitive_data_from_sentry_event(
+    event: Dict[Text, Any], hint: Dict[Text, Any]
+) -> Dict[Text, Any]:
+    """Remove any sensitive data from the event (e.g. path names).
+
+    Args:
+        event: event to be logged to sentry
+        hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data.
+    """
+    # removes any paths from stack traces (avoids e.g. sending
+    # a users home directory name if package is installed there)
+    for value in event.get("exception", {}).get("values", []):
+        for frame in value.get("stacktrace", {}).get("frames", []):
+            frame["abs_path"] = ""
+    return event
+
+
+@ensure_telemetry_enabled
+def initialize_error_reporting() -> None:
+    """Sets up automated error reporting.
+
+    Exceptions are reported to sentry. We avoid sending any metadata (local
+    variables, paths, ...) to make sure we don't compromise any data. Only the
+    exception and its stacktrace is logged and only if the exception origins
+    from the `rasa` package. """
+    import sentry_sdk
+    from sentry_sdk.integrations.atexit import AtexitIntegration
+    from sentry_sdk.integrations.dedupe import DedupeIntegration
+    from sentry_sdk.integrations.excepthook import ExcepthookIntegration
+
+    # key for local testing can be found at
+    # https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
+    # for local testing, set the key using `RASA_EXCEPTION_WRITE_KEY=key rasa <command>`
+    key = sentry_write_key()
+
+    if not key:
+        return
+
+    # this is a very defensive configuration, avoiding as many integrations as
+    # possible. it also submits very little data (exception with error message
+    # and line numbers).
+    sentry_sdk.init(
+        f"https://{key}.ingest.sentry.io/2801673",
+        before_send=strip_sensitive_data_from_sentry_event,
+        integrations=[
+            ExcepthookIntegration(),
+            DedupeIntegration(),
+            AtexitIntegration(lambda _, __: None),
+        ],
+        send_default_pii=False,  # activate PII filter
+        server_name=get_telemetry_id() or "UNKNOWN",
+        ignore_errors=[KeyboardInterrupt],
+        in_app_include=["rasa"],  # only submit errors in this package
+        with_locals=False,  # don't submit local variables
+        release=f"rasa-{rasa.__version__}",
+        default_integrations=False,
+        environment="development" if in_continuous_integration() else "production",
+    )
 
 
 @ensure_telemetry_enabled

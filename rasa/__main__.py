@@ -5,6 +5,7 @@ import platform
 
 import rasa.utils.io
 from rasa import version
+import rasa.telemetry
 from rasa.cli import (
     scaffold,
     run,
@@ -108,6 +109,7 @@ def main() -> None:
     if hasattr(cmdline_arguments, "func"):
         rasa.utils.io.configure_colored_logging(log_level)
         set_log_and_warnings_filters()
+        rasa.telemetry.initialize_error_reporting()
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()
