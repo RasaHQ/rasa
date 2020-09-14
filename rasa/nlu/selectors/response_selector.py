@@ -6,6 +6,7 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
 from rasa.nlu.config import InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -79,6 +80,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_RESPONSES_KEY,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_RANKING_KEY,
+    RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
 )
@@ -358,13 +360,14 @@ class ResponseSelector(DIETClassifier):
         for key, responses in self.responses.items():
 
             # First check if the predicted label was the key itself
-            if hash(key) == label.get("id"):
-                return key
+            search_key = util.template_key_to_intent_response_key(key)
+            if hash(search_key) == label.get("id"):
+                return search_key
 
             # Otherwise loop over the responses to check if the text has a direct match
             for response in responses:
                 if hash(response.get(TEXT, "")) == label.get("id"):
-                    return key
+                    return search_key
         return None
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -378,7 +381,9 @@ class ResponseSelector(DIETClassifier):
         label_intent_response_key = (
             self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
         )
-        label_response_templates = self.responses.get(label_intent_response_key)
+        label_response_templates = self.responses.get(
+            util.intent_response_key_to_template_key(label_intent_response_key)
+        )
 
         if label_intent_response_key and not label_response_templates:
             # response templates seem to be unavailable,
@@ -416,6 +421,9 @@ class ResponseSelector(DIETClassifier):
                 RESPONSE_SELECTOR_RESPONSES_KEY: label_response_templates,
                 PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
                 INTENT_RESPONSE_KEY: label_intent_response_key,
+                RESPONSE_SELECTOR_TEMPLATE_NAME_KEY: util.intent_response_key_to_template_key(
+                    label_intent_response_key
+                ),
             },
             RESPONSE_SELECTOR_RANKING_KEY: label_ranking,
         }

@@ -35,7 +35,7 @@ def create_http_input_channels(
     """Instantiate the chosen input channel."""
 
     if credentials_file:
-        all_credentials = rasa.utils.io.read_config_file(credentials_file)
+        all_credentials = rasa.shared.utils.io.read_config_file(credentials_file)
     else:
         all_credentials = {}
 
