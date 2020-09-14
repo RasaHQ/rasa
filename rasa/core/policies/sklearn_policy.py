@@ -118,6 +118,11 @@ class SklearnPolicy(Policy):
         self._train_params = kwargs
         self.zero_state_features = zero_state_features or defaultdict(list)
 
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{SklearnPolicy.__name__}' is deprecated and will be removed in "
+            "the future. It is recommended to use the 'TEDPolicy' instead."
+        )
+
     @staticmethod
     def _default_model() -> Any:
         return LogisticRegression(solver="liblinear", multi_class="auto")
