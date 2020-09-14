@@ -200,8 +200,8 @@ async def test_visualize_training_data_graph(
 @pytest.mark.parametrize(
     "stories_resources",
     [
-        # ["data/test_stories/stories.md", "data/test_multifile_stories"],
-        # ["data/test_yaml_stories/stories.yml", "data/test_multifile_yaml_stories"],
+        ["data/test_stories/stories.md", "data/test_multifile_stories"],
+        ["data/test_yaml_stories/stories.yml", "data/test_multifile_yaml_stories"],
         ["data/test_stories/stories.md", "data/test_multifile_yaml_stories"],
         ["data/test_yaml_stories/stories.yml", "data/test_multifile_stories"],
         ["data/test_stories/stories.md", "data/test_mixed_yaml_md_stories"],
