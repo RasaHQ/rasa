@@ -10,6 +10,27 @@ assistant should do next. The machine learning model is trained on example conve
 using [stories](./stories.mdx), a representation of a conversation where user inputs
 are expressed as intents and bot responses are expressed as [actions](./actions.mdx).
 
+## Designing Stories
+
+When designing stories, there are two groups of conversational interactions that need
+to be accounted for: happy and unhappy paths. Happy paths describe when the user is
+following the conversation flow as you'd expect and always providing the necessary
+information when prompted. As you might expect, users will often deviate from happy
+paths with questions, chit chat, or other asks, making it important for your bot to
+gracefully handle these unhappy paths.
+
+Often, developers will try to account for every possible diverging path when designing
+unhappy paths. In a happy path with N number of possible branching points, this would
+require on the order of 2^N stories! Instead, we recommend taking a
+[conversation-driven development](./conversation-driven-development.mdx) approach when designing
+unhappy paths.
+
+Conversation-Driven Development promotes sharing your bot as early as possible with test users and
+collecting real conversation data that tells you exactly how users diverge from the
+happy paths. From this data, you can create stories to accomplish what the user is
+requesting and start to think about ways to guide them back into a happy path.
+
+
 
 ## When to use Stories vs. Rules
 [Rules](./rules.mdx) are a type of training data used by the dialogue manager for
@@ -51,7 +72,14 @@ For multiple-turn interactions, a story should be defined, for example:
    - action: utter_happy
 ```
 
-## When to use Featurized Slots
+
+
+
+## Managing the Conversation Flow
+
+Here are some tips for writing effective stories:
+
+### When to use Featurized Slots
 
 Slots are your bot’s memory and can be used to influence how the dialogue engine makes
 predictions. These slots must be included in your story files when they are set by a
@@ -86,33 +114,8 @@ In cases where you don't want a slot to affect the conversation flow, an unfeatu
 slot should be used. Note that, unlike featurized slots, unfeaturized slots should not
 be included in your story files.
 
-## Designing Stories
 
-When designing stories, there are two groups of conversational interactions that need
-to be accounted for: happy and unhappy paths. Happy paths describe when the user is
-following the conversation flow as you'd expect and always providing the necessary
-information when prompted. As you might expect, users will often deviate from happy
-paths with questions, chit chat, or other asks, making it important for your bot to
-gracefully handle such scenarios.
-
-Often, developers will try to account for every possible diverging path when designing
-unhappy paths. In a happy path with N number of possible branching points, this would
-require on the order of 2^N stories! Instead, we recommend taking a
-[conversation-driven development](./conversation-driven-development.mdx) approach when designing
-unhappy paths. 
-
-Conversation-Driven Development promotes sharing your bot as early as possible with test users and
-collecting real conversation data that tells you exactly how users diverge from the
-happy paths. From this data, you can create stories to accomplish what the user is
-requesting and start to think about ways to guide them back into a happy path.
-
-
-
-## Tips for Writing Stories
-
-Here are some tips for writing effective stories:
-
-### When to put logic in an Action vs. a Story
+### Where to Implement Branching Logic
 
 When writing stories, it's important to find the right balance between using slots and
 using custom action code to decide the next action your bot should take. In cases where
@@ -168,10 +171,10 @@ def run(self, dispatcher, tracker, domain):
 
 ### Using OR statements and Checkpoints
 
-OR statements and checkpoints (link to docs) can be useful for reducing the number of
-stories you have to write, however, they should be used with caution. Overusing OR
-statements will slow down training, and creating too many checkpoints can make your
-stories hard to understand.
+[OR statements](./stories.mdx#or-statements) and [checkpoints](./stories.mdx#checkpoints)
+can be useful for reducing the number of stories you have to write, however, they should
+be used with caution. Overusing OR statements will slow down training,
+and creating too many checkpoints can make your stories hard to understand.
 
 #### OR statements
 
@@ -312,7 +315,6 @@ We can separate out this long story into several smaller stories as:
   - action: utter_sent_replacement
   - action: utter_anything_else
 
-## Customer has something else they need help with
 - story: Customer has something else they need help with
   steps:
   - action: utter_anything_else
@@ -320,13 +322,7 @@ We can separate out this long story into several smaller stories as:
   - action: utter_help
 ```
 
-### Managing Story Files
-
-You can provide training data to Rasa Open Source in Markdown format as a single file or as a directory containing multiple files. When writing stories, it's usually a good idea to create separate story files based on the types of conversations being represented. For example, you might create a file `chitchat.md` for handling chitchat stories and an `faqs.md` file for FAQ's. Refer to our rasa-demo bot (link here) for examples of story file management in complex assistants.
-
-
-
-## Context Switching
+## Handling Context Switching
 
 Often, users will not respond with the information you ask of them and instead deviate
 from the happy path with unrelated questions. Using [CDD](./conversation-driven-development.mdx) to understand
@@ -341,24 +337,18 @@ handled using [rules](./rules.mdx) instead of through [stories](./stories.mdx).
 
 Consider this conversation scenario:
 
-
-Hi, I want to pay my credit card bill <
-
-> Can do! Which of these credit accounts do you want to make a payment towards?
-	- Credit Account A
-	- Credit Account B
-
-								      Credit account B <
-
-> How much do you want to pay?
-
-						          What's my account balance? <
-
-> Your current account balance is $1532.00
-> How much do you want to pay?
-
-						 I want to pay the minimum balance <
-
+```
+User: "Hi, I want to pay my credit card bill"
+Bot: "Can do! Which of these credit accounts do you want to make a payment towards?
+      - Credit Account A
+      - Credit Account B"
+User: "Credit account B"
+Bot: "How much do you want to pay?"
+User: "What's my account balance?"
+Bot: "Your current account balance is $1532.00"
+Bot: "How much do you want to pay?"
+User: "I want to pay the minimum balance"
+```
 
 In this example, the user is in the middle of paying their credit card bill, asks for
 their account balance, and is then guided back into the credit card payment form.
@@ -376,7 +366,7 @@ you can create a rule that will automatically be triggered inside of an existing
 By default, the form will continue to stay active and re-prompt for the necessary
 information, without having to create an additional training story.
 
-### Writing Stories for Context Switching
+### Using Stories for Context Switching
 
 You'll need to write additional stories for handling context switching when the
 user's interjection requires multiple conversation turns. If you have two distinct
@@ -387,30 +377,22 @@ is maintained.
 For example, if you want to switch context upon a user ask and then return to the
 original flow after that ask is complete:
 
-Hi, I want to pay my credit card bill <
-
-> Can do! Which of these credit accounts do you want to make a payment towards?
-	- Credit Account A
-	- Credit Account B
-
-								      Credit account B <
-
-> How much do you want to pay?
-
-		 				 Actually, I want to make a transfer <
-
-> No problem!
-> Who would you like to transfer money to?
-
-					          I want to send $500 to Katy Parrow <
-
-> Can you confirm that you would like to send $500 to Katy Parrow?
-
-									            Yes <
-
-> Successfully transferred $500 to Katy Parrow.
-> Would you like to pay your credit card bill now?
-
+```
+User: "Hi, I want to pay my credit card bill"
+Bot: "Can do! Which of these credit accounts do you want to make a payment towards?
+      - Credit Account A
+      - Credit Account B"
+User: "Credit account B"
+Bot: "How much do you want to pay?"
+User: "Actually, I want to make a transfer"
+Bot: "No problem!"
+Bot: "Who would you like to transfer money to?"
+User: "I want to send $500 to Katy Parrow"
+Bot: "Can you confirm that you would like to send $500 to Katy Parrow?"
+User: "Yes"
+Bot: "Successfully transferred $500 to Katy Parrow."
+Bot: "Would you like to pay your credit card bill now?"
+```
 
 You will need to create a story that describes this context-switching interaction:
 
@@ -420,13 +402,19 @@ You will need to create a story that describes this context-switching interactio
   - intent: pay_credit_card
   - action: credit_card_payment_form
   - active_loop{"name": "credit_card_payment_form"}
-  - intent: transfer_money
-  - active_loop{"name": null}
-  - action: transfer_money_form
+  - intent: transfer_money                         # user requests a money transfer
+  - active_loop{"name": null}                      # deactivate the credit card form
+  - action: transfer_money_form                    # switch to the money transfer form
   - active_loop{"name": "transfer_money_form"}
   - active_loop{"name": null}
-  - action: utter_continue_credit_card_payment
+  - action: utter_continue_credit_card_payment     # once the money transfer is completed,
+                                                   # ask the user to return to the
+                                                   # credit card payment form
 ```
+
+## Managing Story Files
+
+You can provide training data to Rasa Open Source in Markdown format as a single file or as a directory containing multiple files. When writing stories, it's usually a good idea to create separate story files based on the types of conversations being represented. For example, you might create a file `chitchat.md` for handling chitchat stories and an `faqs.md` file for FAQ's. Refer to our [rasa-demo bot](https://github.com/RasaHQ/rasa-demo) for examples of story file management in complex assistants.
 
 
 ## Using Interactive Learning
