@@ -6,6 +6,8 @@ ACTION_TEXT = "action_text"
 ACTION_NAME = "action_name"
 INTENT_NAME = "intent_name"
 INTENT_NAME_KEY = "name"
+INTENT_RANKING_KEY = "intent_ranking"
+PREDICTED_CONFIDENCE_KEY = "confidence"
 
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
