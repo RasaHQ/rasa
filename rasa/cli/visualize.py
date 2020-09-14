@@ -11,7 +11,13 @@ import rasa.utils.common
 # noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+) -> None:
+    """Add all visualization parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     visualize_parser = subparsers.add_parser(
         "visualize",
         parents=parents,

@@ -194,7 +194,7 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
         def decorated(*args, **kwargs):
             try:
-                if is_telemetry_enabled:
+                if is_telemetry_reporting_enabled:
                     return f(*args, **kwargs)
             except Exception as e:  # skipcq:PYL-W0703
                 logger.debug(f"Skipping telemetry reporting: {e}")
@@ -379,6 +379,7 @@ def _project_hash() -> Text:
         return hashlib.sha256(str(working_dir).encode("utf-8")).hexdigest()
 
 
+# noinspection PyBroadException
 def _is_docker() -> bool:
     """Guess if we are running in docker environment.
 

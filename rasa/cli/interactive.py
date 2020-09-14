@@ -18,7 +18,13 @@ logger = logging.getLogger(__name__)
 # noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+) -> None:
+    """Add all interactive cli parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     interactive_parser = subparsers.add_parser(
         "interactive",
         conflict_handler="resolve",

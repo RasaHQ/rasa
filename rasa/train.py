@@ -534,7 +534,7 @@ async def _train_nlu_with_validated_data(
         config = await file_importer.get_config()
         print_color("Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE)
         async with telemetry.track_model_training(file_importer, model_type="nlu"):
-            _, nlu_model, _ = await rasa.nlu.train(
+            await rasa.nlu.train(
                 config,
                 file_importer,
                 _train_path,

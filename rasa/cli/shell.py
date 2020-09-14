@@ -14,7 +14,13 @@ logger = logging.getLogger(__name__)
 # noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+) -> None:
+    """Add all shell parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     shell_parser = subparsers.add_parser(
         "shell",
         parents=parents,

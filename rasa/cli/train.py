@@ -17,9 +17,16 @@ from rasa.shared.constants import (
 import rasa.utils.common
 
 
+# noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+) -> None:
+    """Add all training parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     train_parser = subparsers.add_parser(
         "train",
         help="Trains a Rasa model using your NLU data and stories.",

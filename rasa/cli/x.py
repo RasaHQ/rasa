@@ -40,7 +40,13 @@ DEFAULT_EVENTS_DB = "events.db"
 # noinspection PyProtectedMember,PyUnresolvedReferences
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+) -> None:
+    """Add all rasa x parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     x_parser_args = {
         "parents": parents,
         "conflict_handler": "resolve",

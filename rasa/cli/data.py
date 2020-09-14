@@ -23,7 +23,13 @@ logger = logging.getLogger(__name__)
 # noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+) -> None:
+    """Add all data parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     data_parser = subparsers.add_parser(
         "data",
         conflict_handler="resolve",
