@@ -136,7 +136,7 @@ The command will always load all stories from any story files, where the file
 name starts with `test_`, e.g. `test_stories.yml`. Your story test
 file names should always start with `test_` for this detection to work.
 
-:::info Custom Actions
+:::caution Testing Custom Actions
 [Custom Actions](./custom-actions.mdx) are **not executed as part of end-to-end tests.** If your custom
 actions append any events to the conversation, this has to be reflected in your end-to-end
 tests (e.g. by adding `slot_was_set` events to your end-to-end story).
