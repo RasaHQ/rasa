@@ -21,7 +21,7 @@ Get dict representation of message as it would appear in training data
 
 ```python
  | @classmethod
- | build(cls, text: Text, intent: Optional[Text] = None, entities: List[Dict[Text, Any]] = None, **kwargs: Any, ,) -> "Message"
+ | build(cls, text: Text, intent: Optional[Text] = None, entities: Optional[List[Dict[Text, Any]]] = None, intent_metadata: Optional[Any] = None, example_metadata: Optional[Any] = None, **kwargs: Any, ,) -> "Message"
 ```
 
 Build a Message from `UserUttered` data.
@@ -31,6 +31,8 @@ Build a Message from `UserUttered` data.
 - `text` - text of a user&#x27;s utterance
 - `intent` - an intent of the user utterance
 - `entities` - entities in the user&#x27;s utterance
+- `intent_metadata` - optional metadata for the intent
+- `example_metadata` - optional metadata for the intent example
 
 **Returns**:
 
