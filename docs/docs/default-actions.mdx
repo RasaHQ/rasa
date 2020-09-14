@@ -2,10 +2,10 @@
 id: default-actions
 sidebar_label: Default Actions
 title: Default Actions
-abstract: Default actions are actions that are built into the dialogue manager by default. Most of these are automatically predicted based on certain conversation situations. You may want to customise these to personalise your assitant.
+abstract: Default actions are actions that are built into the dialogue manager by default. Most of these are automatically predicted based on certain conversation situations. You may want to customize these to personalize your assistant.
 ---
 
-Each of these actions have a default behaviour, described in the sections below.
+Each of these actions have a default behavior, described in the sections below.
 In order to overwrite this default behavior, write a [custom action](./custom-actions.mdx)
 whose `name()` method returns the same name as the default action:
 
@@ -19,7 +19,7 @@ whose `name()` method returns the same name as the default action:
         self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
 
-        # custom behaviour
+        # custom behavior
 
         return [...]
   ```
@@ -123,7 +123,7 @@ This action deactivates the active loop and resets the requested slot. This is u
 :::caution Deprecated!
 The `action_revert_fallback_events` action is deprecated since the 2.0 release.
 The [`action_two_stage_fallback`](./default-actions#action_two_stage_fallback) action
-now handles all [two-stage fallback behaviour](./fallback-handoff.mdx)
+now handles all [two-stage fallback behavior](./fallback-handoff.mdx)
 :::
 
 ## action_two_stage_fallback
@@ -134,7 +134,7 @@ This is a fallback loop that can be used to handle low NLU confidence. Read more
 ## action_default_ask_affirmation
 
 This action is used by the `action_two_stage_fallback` loop. It asks the user to confirm
-the intent of their message. This action can be customised to be more personalised
+the intent of their message. This action can be customized to be more personalized
 to your specific use case.
 
 <!-- TODO: should we show how to personalise this here? -->
