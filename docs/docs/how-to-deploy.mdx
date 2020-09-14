@@ -141,13 +141,13 @@ and development servers. You should create a new tag any time you update your co
 #### Automating your Action Server Image Builds
 
 In addition to a manual step to create a new Action Server Image. You can use [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) to automate image builds.
-If GitHub Actions are new to you it might be helpful to get familiar with [GitHub Actions Documentation](https://docs.github.com/en/actions).
+If GitHub Actions are new to you, it might be helpful to get familiar with [GitHub Actions Documentation](https://docs.github.com/en/actions).
 
 The following steps assume that you already created a GitHub repository and you have a DockerHub account.
 
 To create a workflow for building and pushing a Docker image into a DockerHub registry:
 
-1. Create GitHub Secrets with login name and password for DockerHub.
+1. Add GitHub Secrets with your DockerHub login name and password.
    [Here](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository) you can find details on how to create encrypted secrets for a repository.
 
    The example uses the following secrets:
@@ -156,7 +156,7 @@ To create a workflow for building and pushing a Docker image into a DockerHub re
 
 2. In your GitHub repository create a file [`.github/workflows/action_server.yml`](https://github.com/RasaHQ/action-server-gha/blob/master/examples/action_server.yml).
 
-The GitHub Action workflow below builds a new docker image every time when new changes are pushed into the `master` branch.
+The GitHub Action workflow below builds a new docker image every time new changes are pushed into the `master` branch.
 
 ```yaml
 on:
@@ -217,7 +217,7 @@ jobs:
 As you can see it's possible to use output variables from the `action_server` step. The `steps.action_server.outputs.docker_image_name` variable returns
 a docker image name and the `steps.action_server.outputs.docker_image_tag` variable returns a docker image tag.
 
-More examples on how to use and customize [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) you can find in the [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) repository.
+More examples on how to use and customize [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) you can find in the [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) repository.
 
 ### Using your Custom Action Server Image
 
