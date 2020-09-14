@@ -9,7 +9,7 @@ from typing import Text, Dict, Any, List, Callable, Awaitable, Optional
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_CONNECTORS
+from rasa.shared.constants import DOCS_URL_CONNECTORS
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
 

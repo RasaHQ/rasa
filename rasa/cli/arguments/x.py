@@ -1,7 +1,8 @@
 import argparse
 from rasa.cli.arguments import default_arguments
 from rasa.cli.arguments.run import add_server_arguments
-from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_RASA_X_PORT
+from rasa.constants import DEFAULT_RASA_X_PORT
+from rasa.shared.constants import DEFAULT_DATA_PATH
 
 
 def set_x_arguments(parser: argparse.ArgumentParser):

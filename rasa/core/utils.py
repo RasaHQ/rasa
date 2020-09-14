@@ -27,11 +27,8 @@ import numpy as np
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from aiohttp import InvalidURL
-from rasa.constants import (
-    DEFAULT_SANIC_WORKERS,
-    ENV_SANIC_WORKERS,
-    DEFAULT_ENDPOINTS_PATH,
-)
+from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences

@@ -4,8 +4,7 @@ from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING
 import rasa.shared.utils.common
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.shared.constants import DOCS_URL_POLICIES
+from rasa.shared.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
 from rasa.shared.core.constants import (
