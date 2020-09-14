@@ -445,7 +445,7 @@ def package_model(
     train_path: Text,
     fixed_model_name: Optional[Text] = None,
     model_prefix: Text = "",
-):
+) -> Text:
     """
     Compress a trained model.
 

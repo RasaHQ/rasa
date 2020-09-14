@@ -84,9 +84,10 @@ def test_data_split_help(run: Callable[..., RunResult]):
                            [--random-seed RANDOM_SEED] [--out OUT]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):
@@ -96,9 +97,10 @@ def test_data_convert_help(run: Callable[..., RunResult]):
                              --data DATA --out OUT [-l LANGUAGE]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_data_validate_help(run: Callable[..., RunResult]):
@@ -108,9 +110,10 @@ def test_data_validate_help(run: Callable[..., RunResult]):
                           [--max-history MAX_HISTORY] [--fail-on-warnings]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:

@@ -17,6 +17,13 @@ CHECKPOINT_MODEL_NAME = "rasa_model_checkpoint"
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 
+# Key in global config file which contains whether the user agreed to telemetry
+# reporting. These are reused in Rasa X. Keep this in mind when changing their names.
+CONFIG_FILE_TELEMETRY_KEY = "metrics"
+CONFIG_TELEMETRY_ID = "rasa_user_id"
+CONFIG_TELEMETRY_ENABLED = "enabled"
+CONFIG_TELEMETRY_DATE = "date"
+
 MINIMUM_COMPATIBLE_VERSION = "2.0.0a3"
 
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
