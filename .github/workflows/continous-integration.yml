@@ -21,7 +21,8 @@ on:
 # - RASA_OSS_EXCEPTION_WRITE_KEY: key to write to sentry. used to report exceptions
 #                                 they key will be added to the distributions
 #                                 key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
-
+# - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
+#                      created at https://sentry.io/settings/account/api/auth-tokens/
 
 env:
   # needed to fix issues with boto during testing:
@@ -282,6 +283,15 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
+
+    - name: Notify Sentry about the release
+      env:
+        GITHUB_TAG: ${{ github.ref }}
+        SENTRY_ORG: rasahq
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      run: |
+        VERSION=${GITHUB_TAG/refs\/tags\//}
+        ./scripts/inform_sentry_about_release.sh
 
     - name: Notify Slack & Publish Release Notes 🗞
       env:

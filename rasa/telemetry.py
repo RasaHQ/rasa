@@ -553,7 +553,7 @@ def initialize_error_reporting() -> None:
         server_name=get_telemetry_id() or "UNKNOWN",
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
-        release=rasa.__version__,
+        release=f"rasa-{rasa.__version__}",
         default_integrations=False,
         environment="development" if in_continuous_integration() else "production",
     )
