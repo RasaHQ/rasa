@@ -3,7 +3,7 @@ import os
 from typing import List, Optional, Text, Dict
 import rasa.cli.arguments.train as train_arguments
 
-from rasa.cli.utils import get_validated_path, missing_config_keys, run_in_loop
+import rasa.cli.utils
 from rasa.shared.utils.cli import print_error
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -16,6 +16,9 @@ from rasa.shared.constants import (
 
 
 # noinspection PyProtectedMember
+import rasa.utils.common
+
+
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
@@ -55,14 +58,16 @@ def add_subparser(
 def train(args: argparse.Namespace) -> Optional[Text]:
     import rasa
 
-    domain = get_validated_path(
+    domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
-        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
+        rasa.cli.utils.get_validated_path(
+            f, "data", DEFAULT_DATA_PATH, none_is_valid=True
+        )
         for f in args.data
     ]
 
@@ -86,10 +91,10 @@ def train_core(
 
     output = train_path or args.out
 
-    args.domain = get_validated_path(
+    args.domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    story_file = get_validated_path(
+    story_file = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
     additional_arguments = extract_core_additional_arguments(args)
@@ -114,7 +119,9 @@ def train_core(
     else:
         from rasa.core.train import do_compare_training
 
-        run_in_loop(do_compare_training(args, story_file, additional_arguments))
+        rasa.utils.common.run_in_loop(
+            do_compare_training(args, story_file, additional_arguments)
+        )
 
 
 def train_nlu(
@@ -125,7 +132,7 @@ def train_nlu(
     output = train_path or args.out
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
-    nlu_data = get_validated_path(
+    nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
@@ -176,7 +183,7 @@ def _get_valid_config(
 
     Returns: The path to the config file if the config is valid.
     """
-    config = get_validated_path(config, "config", default_config)
+    config = rasa.cli.utils.get_validated_path(config, "config", default_config)
 
     if not os.path.exists(config):
         print_error(
@@ -186,7 +193,7 @@ def _get_valid_config(
         )
         exit(1)
 
-    missing_keys = missing_config_keys(config, mandatory_keys)
+    missing_keys = rasa.cli.utils.missing_config_keys(config, mandatory_keys)
     if missing_keys:
         print_error(
             "The config file '{}' is missing mandatory parameters: "

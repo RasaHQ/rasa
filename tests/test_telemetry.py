@@ -13,13 +13,13 @@ import rasa.constants
 from rasa.shared.importers.importer import TrainingDataImporter
 from tests.conftest import DEFAULT_CONFIG_PATH
 
-TELEMETRY_TEST_USER = uuid.uuid4().hex
-TELEMETRY_TEST_KEY = uuid.uuid4().hex
+TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
+TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
 TELEMETRY_EVENTS_JSON = "docs/docs/telemetry/events.json"
 
 
 @pytest.fixture(autouse=True)
-def patch_global_config_path(monkeypatch: MonkeyPatch, tmp_path: Path):
+def patch_global_config_path(tmp_path: Path) -> None:
     """Ensure we use a unique config path for each test to avoid tests influencing
     each other."""
     default_location = rasa.constants.GLOBAL_USER_CONFIG_PATH
@@ -77,9 +77,7 @@ def test_config_path_empty(monkeypatch: MonkeyPatch):
 def test_segment_request_header():
     assert telemetry.segment_request_header(TELEMETRY_TEST_KEY) == {
         "Content-Type": "application/json",
-        "Authorization": "Basic {}".format(
-            telemetry.encode_base64(TELEMETRY_TEST_KEY + ":")
-        ),
+        "Authorization": "Basic NTY0MGU4OTNjMTMyNDA5MGJmZjI2ZjY1NTQ1NmNhZjM6",
     }
 
 
@@ -128,11 +126,11 @@ def test_initialize_telemetry_env_overwrites_config(monkeypatch: MonkeyPatch):
 def test_initialize_telemetry_prints_info(monkeypatch: MonkeyPatch):
     # Mock actual training
     mock = Mock()
-    monkeypatch.setattr(telemetry, "print_telemetry_reporting_info", mock.method)
+    monkeypatch.setattr(telemetry, "print_telemetry_reporting_info", mock)
 
     telemetry.initialize_telemetry()
 
-    mock.method.assert_called_once()
+    mock.assert_called_once()
 
 
 def test_not_in_ci_if_not_in_ci(monkeypatch: MonkeyPatch):

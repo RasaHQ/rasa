@@ -3,7 +3,7 @@ import pprint as pretty_print
 import typing
 from typing import Any, Dict, Text, Optional
 
-from rasa.cli.utils import run_in_loop
+import rasa.utils.common
 from rasa.shared.utils.cli import print_success, print_error
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -57,7 +57,7 @@ def chat(
         if message == "/stop":
             break
 
-        responses = run_in_loop(agent.handle_text(message))
+        responses = rasa.utils.common.run_in_loop(agent.handle_text(message))
         for response in responses:
             _display_bot_response(response)
 

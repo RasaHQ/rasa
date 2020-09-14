@@ -14,6 +14,7 @@ from rasa.shared.constants import DEFAULT_DATA_PATH
 from rasa.shared.data import is_valid_filetype
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data
+import rasa.utils.common
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
 
@@ -173,7 +174,7 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         domain_path=args.domain, training_data_paths=args.data
     )
 
-    validator = rasa.cli.utils.run_in_loop(Validator.from_importer(file_importer))
+    validator = rasa.utils.common.run_in_loop(Validator.from_importer(file_importer))
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
@@ -227,7 +228,9 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
     if args.format in ["json", "md"]:
         convert_training_data(args.data, args.out, args.format, args.language)
     elif args.format == "yaml":
-        _convert_to_yaml(args, NLUMarkdownToYamlConverter())
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, NLUMarkdownToYamlConverter())
+        )
     else:
         print_error_and_exit(
             "Could not recognize output format. Supported output formats: 'json', "
@@ -241,7 +244,9 @@ def _convert_core_data(args: argparse.Namespace) -> None:
     )
 
     if args.format == "yaml":
-        _convert_to_yaml(args, StoryMarkdownToYamlConverter())
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, StoryMarkdownToYamlConverter())
+        )
     else:
         print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
@@ -255,7 +260,9 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
     )
 
     if args.format == "yaml":
-        _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+        )
     else:
         print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
@@ -263,7 +270,7 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
         )
 
 
-def _convert_to_yaml(
+async def _convert_to_yaml(
     args: argparse.Namespace, converter: TrainingDataConverter
 ) -> None:
 
@@ -284,13 +291,13 @@ def _convert_to_yaml(
     num_of_files_converted = 0
 
     if os.path.isfile(training_data):
-        if _convert_file_to_yaml(training_data, output, converter):
+        if await _convert_file_to_yaml(training_data, output, converter):
             num_of_files_converted += 1
     elif os.path.isdir(training_data):
         for root, _, files in os.walk(training_data, followlinks=True):
             for f in sorted(files):
                 source_path = Path(os.path.join(root, f))
-                if _convert_file_to_yaml(source_path, output, converter):
+                if await _convert_file_to_yaml(source_path, output, converter):
                     num_of_files_converted += 1
 
     if num_of_files_converted:
@@ -302,7 +309,7 @@ def _convert_to_yaml(
         )
 
 
-def _convert_file_to_yaml(
+async def _convert_file_to_yaml(
     source_file: Path, target_dir: Path, converter: TrainingDataConverter
 ) -> bool:
     """Converts a single training data file to `YAML` format.
@@ -319,7 +326,7 @@ def _convert_file_to_yaml(
         return False
 
     if converter.filter(source_file):
-        rasa.cli.utils.run_in_loop(converter.convert_and_write(source_file, target_dir))
+        await converter.convert_and_write(source_file, target_dir)
         return True
 
     print_warning(f"Skipped file: '{source_file}'.")

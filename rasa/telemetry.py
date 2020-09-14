@@ -10,7 +10,7 @@ import multiprocessing
 import os
 from pathlib import Path
 import platform
-from subprocess import CalledProcessError, STDOUT, check_output  # skipcq:BAN-B404
+from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B404
 import sys
 import textwrap
 from typing import Any, Callable, Dict, Optional, Text
@@ -73,11 +73,11 @@ def print_telemetry_reporting_info() -> None:
     """Print telemetry information to std out."""
     message = textwrap.dedent(
         f"""
-      Rasa reports anonymous usage telemetry to help improve Rasa Open Source
-      for all its users.
+        Rasa Open Source reports anonymous usage telemetry to help improve the product
+        for all its users.
 
-      If you'd like to opt-out, you can use `rasa telemetry disable`.
-      To learn more, check out {DOCS_URL_TELEMETRY}."""
+        If you'd like to opt-out, you can use `rasa telemetry disable`.
+        To learn more, check out {DOCS_URL_TELEMETRY}."""
     ).strip()
 
     table = SingleTable([[message]])
@@ -125,6 +125,25 @@ def _is_telemetry_enabled_in_configuration() -> bool:
         return TELEMETRY_ENABLED_BY_DEFAULT
 
 
+def is_telemetry_enabled() -> bool:
+    """Check if telemetry is enabled either in configuration or environment.
+
+    Returns:
+        `True`, if telemetry is enabled, `False` otherwise.
+    """
+    telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
+
+    if telemetry_environ is None:
+        try:
+            return rasa_utils.read_global_config_value(
+                CONFIG_FILE_TELEMETRY_KEY, unavailable_ok=False
+            )[CONFIG_TELEMETRY_ENABLED]
+        except ValueError:
+            return False
+    else:
+        return telemetry_environ.lower() == "true"
+
+
 def initialize_telemetry() -> bool:
     """Read telemetry configuration from the user's Rasa config file in $HOME.
 
@@ -133,7 +152,6 @@ def initialize_telemetry() -> bool:
     Returns:
         `True`, if telemetry is enabled, `False` otherwise.
     """
-
     # calling this even if the environment variable is set makes sure the
     # configuration is created and there is a telemetry ID
     is_enabled_in_configuration = _is_telemetry_enabled_in_configuration()
@@ -147,10 +165,16 @@ def initialize_telemetry() -> bool:
 
 
 def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
-    """Function decorator for telemetry functions that only runs the decorated
-    function if telemetry is enabled."""
+    """Function decorator for telemetry functions that ensures telemetry is enabled.
 
-    is_telemetry_enabled = initialize_telemetry()
+    Args:
+        f: function to call if telemetry is enabled
+    Returns:
+        Return wrapped function
+    """
+    # checks if telemetry is enabled and creates a default config if this is the first
+    # call to it
+    is_telemetry_reporting_enabled = initialize_telemetry()
 
     # allows us to use the decorator for async and non async functions
     if asyncio.iscoroutinefunction(f):
@@ -158,7 +182,7 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
         async def decorated(*args, **kwargs):
             try:
-                if is_telemetry_enabled:
+                if is_telemetry_reporting_enabled:
                     return await f(*args, **kwargs)
             except Exception as e:  # skipcq:PYL-W0703
                 logger.debug(f"Skipping telemetry reporting: {e}")
@@ -208,7 +232,7 @@ def telemetry_write_key() -> Optional[Text]:
         return None
 
 
-def encode_base64(original: Text, encoding: Text = "utf-8") -> Text:
+def _encode_base64(original: Text, encoding: Text = "utf-8") -> Text:
     """Encodes a string as a base64 string.
 
     Args:
@@ -233,7 +257,7 @@ def segment_request_header(write_key: Text) -> Dict[Text, Any]:
         Authentication headers for segment.
     """
     return {
-        "Authorization": "Basic {}".format(encode_base64(write_key + ":")),
+        "Authorization": "Basic {}".format(_encode_base64(write_key + ":")),
         "Content-Type": "application/json",
     }
 
@@ -327,14 +351,14 @@ async def _send_event(
             if resp.status != 200:
                 response_text = await resp.text()
                 logger.debug(
-                    f"Segment telemetry request returned a {resp.status} response."
+                    f"Segment telemetry request returned a {resp.status} response. "
                     f"Body: {response_text}"
                 )
             else:
                 data = await resp.json()
                 if not data.get("success"):
                     logger.debug(
-                        f"Segment telemetry request returned a failure."
+                        f"Segment telemetry request returned a failure. "
                         f"Response: {data}"
                     )
 
@@ -347,7 +371,7 @@ def _project_hash() -> Text:
     """
     try:
         remote = check_output(  # skipcq:BAN-B607,BAN-B603
-            ["git", "remote", "get-url", "origin"], stderr=STDOUT
+            ["git", "remote", "get-url", "origin"], stderr=DEVNULL
         )
         return hashlib.sha256(remote).hexdigest()
     except (CalledProcessError, OSError):
