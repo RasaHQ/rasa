@@ -16,11 +16,11 @@ on:
 #               RasaHQ/rasa on pypi (account credentials in 1password)
 # - DOCKERHUB_PASSWORD: password for an account with write access to the rasa
 #                       repo on hub.docker.com. used to pull and upload containers
-# - RASA_OSS_TELEMETRY_WRITE_KEY: key to write to segment. used to report telemetry
-#                                 they key will be added to the distributions
-# - RASA_OSS_EXCEPTION_WRITE_KEY: key to write to sentry. used to report exceptions
-#                                 they key will be added to the distributions
-#                                 key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
+# - RASA_OSS_TELEMETRY_WRITE_KEY: key to write to segment. Used to report telemetry.
+#                                 The key will be added to the distributions
+# - RASA_OSS_EXCEPTION_WRITE_KEY: key to write to sentry. Used to report exceptions.
+#                                 The key will be added to the distributions.
+#                                 Key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
 # - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
 #                      created at https://sentry.io/settings/account/api/auth-tokens/
 
