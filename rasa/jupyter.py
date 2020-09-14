@@ -1,12 +1,11 @@
-import asyncio
 import pprint as pretty_print
 import typing
-from typing import Any, Dict, Text, Optional
+from typing import Any, Dict, Optional, Text
 
-import rasa.utils.common
-from rasa.shared.utils.cli import print_success, print_error
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.utils.cli import print_error, print_success
+import rasa.utils.common
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent

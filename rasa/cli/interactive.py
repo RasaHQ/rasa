@@ -3,14 +3,13 @@ import logging
 import os
 from typing import List, Optional, Text
 
-import rasa.cli.utils
-import rasa.shared.utils.cli
-import rasa.cli.train as train
-from rasa.cli.arguments import interactive as arguments
 from rasa import model
-
+from rasa.cli.arguments import interactive as arguments
+import rasa.cli.train as train
+import rasa.cli.utils
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 from rasa.shared.importers.importer import TrainingDataImporter
+import rasa.shared.utils.cli
 import rasa.utils.common
 
 logger = logging.getLogger(__name__)

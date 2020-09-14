@@ -4,15 +4,15 @@ import os
 from pathlib import Path
 from typing import List
 
-import rasa.shared.data
-import rasa.shared.utils.cli
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_info, print_warning, print_error_and_exit
+from rasa.nlu.convert import convert_training_data
 from rasa.shared.constants import DEFAULT_DATA_PATH
+import rasa.shared.data
 from rasa.shared.data import is_valid_filetype
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.nlu.convert import convert_training_data
+import rasa.shared.utils.cli
+from rasa.shared.utils.cli import print_error_and_exit, print_info, print_warning
 import rasa.utils.common
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
