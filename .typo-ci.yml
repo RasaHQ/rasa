@@ -92,6 +92,8 @@ excluded_words:
   - featurizes
   - featurizing
   - forni
+  - gzip
+  - gzipped
   - initializer
   - instaclient
   - jwt
@@ -138,6 +140,7 @@ excluded_words:
   - rasa
   - rasa's
   - readthedocs
+  - regularizer
   - repo
   - rst
   - sanic
@@ -161,6 +164,7 @@ excluded_words:
   - tokenization
   - tokenizer
   - tokenizers
+  - tokenizing
   - typoci
   - unfeaturized
   - unschedule

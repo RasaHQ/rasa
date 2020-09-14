@@ -140,8 +140,8 @@ module.exports = {
                   label: 'Rasa SDK',
                   collapsed: true,
                   items: [
-                    'running-action-server',
-                    'tracker-dispatcher',
+                    // 'running-action-server',
+                    // 'tracker-dispatcher',
                     // 'events',
                     // 'rasa-sdk-changelog'
                   ],
