@@ -64,6 +64,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    CHECKPOINT_MODEL,
     ENCODING_DIMENSION,
     UNIDIRECTIONAL_ENCODER,
     SEQUENCE,
@@ -201,6 +202,8 @@ class TEDPolicy(Policy):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Perform model checkpointing
+        CHECKPOINT_MODEL: False,
     }
 
     @staticmethod
@@ -407,7 +410,10 @@ class TEDPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        self.model.save(str(tf_model_file))
+        if self.model.checkpoint_model:
+            self.model.copy_best(str(tf_model_file))
+        else:
+            self.model.save(str(tf_model_file))
 
         io_utils.json_pickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority

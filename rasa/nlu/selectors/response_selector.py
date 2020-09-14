@@ -71,6 +71,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
+    CHECKPOINT_MODEL,
     DENSE_DIMENSION,
 )
 from rasa.nlu.constants import (
@@ -227,6 +228,8 @@ class ResponseSelector(DIETClassifier):
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
+        # Perform model checkpointing
+        CHECKPOINT_MODEL: False,
     }
 
     def __init__(

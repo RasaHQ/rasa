@@ -16,7 +16,7 @@ Cannot be used as tf.keras.Model
 #### \_\_init\_\_
 
 ```python
- | __init__(random_seed: Optional[int] = None, tensorboard_log_dir: Optional[Text] = None, tensorboard_log_level: Optional[Text] = "epoch", **kwargs, ,) -> None
+ | __init__(random_seed: Optional[int] = None, tensorboard_log_dir: Optional[Text] = None, tensorboard_log_level: Optional[Text] = "epoch", checkpoint_model: Optional[bool] = False, **kwargs, ,) -> None
 ```
 
 Initialize the RasaModel.
