@@ -155,7 +155,7 @@ class InputChannel:
         Returns:
             Metadata which was extracted from the request.
         """
-        pass
+        return None
 
 
 class OutputChannel:
