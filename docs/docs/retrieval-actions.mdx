@@ -38,7 +38,7 @@ stories:
   - action: respond_chitchat
 ```
 
-A retrieval action uses the output of a [ResponseSelector]./components.mdx#responseselector) 
+A retrieval action uses the output of a [ResponseSelector](./components.mdx#responseselector) 
 pipeline component which learns a retrieval model to predict the correct response
 from a list of candidate responses given a user message text.
 
@@ -105,7 +105,7 @@ your responses, and have multiple response variations for a response.
 
 ### Configuration File
 
-You need to include the [ResponseSelector]./components.mdx#responseselector)
+You need to include the [ResponseSelector](./components.mdx#responseselector)
 component in your configuration. The component needs a tokenizer, a featurizer and an
 intent classifier to operate on the user message before it can predict a response.
 Therefore the `ResponseSelector` should be placed after these components in the

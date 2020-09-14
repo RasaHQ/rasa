@@ -63,18 +63,18 @@ custom code.
 
 ### Handling Low NLU Confidence
 
-Although Rasa's [Intent Classifier]./components.mdx) will
+Although Rasa's [Intent Classifier](./components.mdx) will
 generalize to unseen messages, some
 messages might receive a low classification confidence.
 To handle messages with low confidence, we recommend adding the
-[FallbackClassifier]./components.mdx#fallbackclassifier) to your NLU pipeline.
-The [FallbackClassifier]./components.mdx#fallbackclassifier) will
+[FallbackClassifier](./components.mdx#fallbackclassifier) to your NLU pipeline.
+The [FallbackClassifier](./components.mdx#fallbackclassifier) will
 predict an intent `nlu_fallback` when all other intent predictions fall below
 the configured confidence threshold.
 
 #### Writing Stories / Rules for Messages with Low Confidence
 
-When you add the [FallbackClassifier]./components.mdx#fallbackclassifier)  to
+When you add the [FallbackClassifier](./components.mdx#fallbackclassifier)  to
 your NLU pipeline, you can treat
 messages with low classification confidence as any other intent. The following
 [Rule](./rules.mdx) will ask the user to rephrase when they send a message that is
