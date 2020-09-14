@@ -214,7 +214,7 @@ rules:
 In some situations, users may change their mind in the middle of the form action
 and decide not to go forward with their initial request. In cases like this, the
 assistant should stop asking for the requested slots. You can handle such situations
-gracefully using a default action `action_deactivate_form` which will deactivate
+gracefully using a default action `action_deactivate_loop` which will deactivate
 the form and reset the requested slot. An example story of such conversation could
 look as follows:
 
@@ -228,7 +228,7 @@ rules:
   - intent: stop
   - action: utter_ask_continue
   - intent: stop
-  - action: action_deactivate_form
+  - action: action_deactivate_loop
   - active_loop: null
 ```
 

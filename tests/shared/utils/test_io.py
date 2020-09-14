@@ -9,6 +9,8 @@ import pytest
 
 import rasa.shared
 import rasa.shared.utils.io
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils import io as io_utils
 
 os.environ["USER_NAME"] = "user"
@@ -66,7 +68,7 @@ def test_list_directory(
     sub_sub_directory.mkdir()
 
     sub_sub_file = sub_sub_directory / "sub_file.txt"
-    sub_sub_file.write_text("", encoding=io_utils.DEFAULT_ENCODING)
+    sub_sub_file.write_text("", encoding=rasa.shared.utils.io.DEFAULT_ENCODING)
 
     file1 = subdirectory / "file.txt"
     file1.write_text("", encoding="utf-8")
@@ -338,3 +340,41 @@ def test_create_directory_if_already_exists(tmp_path: Path):
     # This should not throw an exception
     rasa.shared.utils.io.create_directory(str(tmp_path))
     assert True
+
+
+def test_raise_deprecation_warning():
+    with pytest.warns(FutureWarning) as record:
+        raise_deprecation_warning(
+            "This feature is deprecated.", warn_until_version="3.0.0"
+        )
+
+    assert len(record) == 1
+    assert (
+        record[0].message.args[0]
+        == "This feature is deprecated. (will be removed in 3.0.0)"
+    )
+
+
+def test_raise_deprecation_warning_version_already_in_message():
+    with pytest.warns(FutureWarning) as record:
+        raise_deprecation_warning(
+            "This feature is deprecated and will be removed in 3.0.0!",
+            warn_until_version="3.0.0",
+        )
+
+    assert len(record) == 1
+    assert (
+        record[0].message.args[0]
+        == "This feature is deprecated and will be removed in 3.0.0!"
+    )
+
+
+def test_raise_deprecation_warning_default():
+    with pytest.warns(FutureWarning) as record:
+        raise_deprecation_warning("This feature is deprecated.")
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == (
+        f"This feature is deprecated. "
+        f"(will be removed in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS})"
+    )

@@ -10,7 +10,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.shared.core.domain import Domain
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:

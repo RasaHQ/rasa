@@ -5,12 +5,12 @@ from typing import Text, Dict, Type, List
 
 import pytest
 
-import rasa.shared.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
+import rasa.shared.utils.io
 import rasa.shared.core.constants
 from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
-from rasa.importers.importer import (
+from rasa.shared.importers.importer import (
     CombinedDataImporter,
     TrainingDataImporter,
     NluDataImporter,
@@ -18,10 +18,8 @@ from rasa.importers.importer import (
     E2EImporter,
     RetrievalModelsDataImporter,
 )
-from rasa.importers.rasa import RasaFileImporter
-
-from rasa.importers.multi_project import MultiProjectImporter
-
+from rasa.shared.importers.multi_project import MultiProjectImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT_NAME, TEXT
 from rasa.shared.nlu.training_data.message import Message
 
@@ -73,7 +71,7 @@ async def test_combined_file_importer_with_single_importer(project: Text):
         (
             {
                 "importers": [
-                    {"name": "rasa.importers.multi_project.MultiProjectImporter"}
+                    {"name": "rasa.shared.importers.multi_project.MultiProjectImporter"}
                 ]
             },
             [MultiProjectImporter],

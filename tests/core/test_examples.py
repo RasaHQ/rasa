@@ -9,7 +9,7 @@ from aioresponses import aioresponses
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 
