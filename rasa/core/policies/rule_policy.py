@@ -319,7 +319,8 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         logger.debug("Started checking rules and stories for contradictions.")
         # during training we run `predict_action_probabilities` to check for
-        # contradicting rules. We silent prediction debug to avoid too many logs during these checks.
+        # contradicting rules.
+        # We silent prediction debug to avoid too many logs during these checks.
         logger_level = logger.level
         logger.setLevel(logging.WARNING)
         error_messages = []
