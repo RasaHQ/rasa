@@ -4,14 +4,12 @@ from typing import List
 
 from rasa import telemetry
 import rasa.cli.utils
-import rasa.shared.utils.cli
 from rasa.shared.constants import DOCS_URL_TELEMETRY
-
-
-# noinspection PyProtectedMember
+import rasa.shared.utils.cli
 import rasa.utils.common
 
 
+# noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction,  # skipcq:PYL-W0212
     parents: List[argparse.ArgumentParser],
@@ -63,9 +61,9 @@ def inform_about_telemetry(_: argparse.Namespace) -> None:
 
     print(
         textwrap.dedent(
-            f"""
-    Rasa uses telemetry to report anonymous usage information. This information
-    is essential to help improve Rasa Open Source for all users."""
+            """
+            Rasa uses telemetry to report anonymous usage information. This information
+            is essential to help improve Rasa Open Source for all users."""
         )
     )
 
