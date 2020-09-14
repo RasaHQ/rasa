@@ -3,8 +3,12 @@ from collections import defaultdict
 from typing import Set, Text, Optional
 
 import rasa.core.training.story_conflict
-from rasa.constants import DOCS_URL_ACTIONS
-from rasa.shared.constants import DOCS_BASE_URL, DOCS_URL_DOMAINS, UTTER_PREFIX
+from rasa.shared.constants import (
+    DOCS_BASE_URL,
+    DOCS_URL_DOMAINS,
+    UTTER_PREFIX,
+    DOCS_URL_ACTIONS,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.events import UserUttered

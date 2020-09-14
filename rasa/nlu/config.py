@@ -6,8 +6,11 @@ from typing import Any, Dict, List, Optional, Text, Union
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import DEFAULT_CONFIG_PATH, DOCS_URL_MIGRATION_GUIDE
-from rasa.shared.constants import DOCS_URL_PIPELINE
+from rasa.shared.constants import (
+    DOCS_URL_PIPELINE,
+    DOCS_URL_MIGRATION_GUIDE,
+    DEFAULT_CONFIG_PATH,
+)
 from rasa.shared.utils.io import json_to_string
 
 logger = logging.getLogger(__name__)

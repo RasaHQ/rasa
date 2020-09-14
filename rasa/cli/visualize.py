@@ -5,7 +5,7 @@ from typing import List
 
 import rasa.shared.data
 from rasa.cli.arguments import visualize as arguments
-from rasa.constants import DEFAULT_DATA_PATH
+from rasa.shared.constants import DEFAULT_DATA_PATH
 
 
 # noinspection PyProtectedMember
