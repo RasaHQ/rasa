@@ -1,10 +1,8 @@
-import asyncio
 import logging
 import typing
 from typing import Optional, Text
 
 from rasa.shared.utils.cli import print_success
-import rasa.cli.utils
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.model import Interpreter

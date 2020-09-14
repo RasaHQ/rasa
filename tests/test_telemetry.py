@@ -1,7 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
-import uuid
+from typing import Generator
 
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
@@ -21,7 +21,7 @@ TELEMETRY_EVENTS_JSON = "docs/docs/telemetry/events.json"
 
 
 @pytest.fixture(autouse=True)
-def patch_global_config_path(tmp_path: Path) -> None:
+def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     """Ensure we use a unique config path for each test to avoid tests influencing
     each other."""
     default_location = rasa.constants.GLOBAL_USER_CONFIG_PATH

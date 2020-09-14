@@ -4,7 +4,7 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Text, Type, TypeVar
+from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar
 
 import rasa.core.utils
 import rasa.utils.io
@@ -263,7 +263,7 @@ class RepeatedLogFilter(logging.Filter):
 
 
 def run_in_loop(
-    f: Callable[[], Awaitable[T]], loop: Optional[asyncio.AbstractEventLoop] = None
+    f: Coroutine[Any, Any, T], loop: Optional[asyncio.AbstractEventLoop] = None
 ) -> T:
     """Execute the awaitable in the passed loop.
 
