@@ -54,7 +54,7 @@ def add_subparser(
 
 def shell_nlu(args: argparse.Namespace):
     from rasa.cli.utils import get_validated_path
-    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.shared.constants import DEFAULT_MODELS_PATH
     from rasa.model import get_model, get_model_subdirectories
     import rasa.nlu.run
 
@@ -85,7 +85,7 @@ def shell_nlu(args: argparse.Namespace):
 
 def shell(args: argparse.Namespace):
     from rasa.cli.utils import get_validated_path
-    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.shared.constants import DEFAULT_MODELS_PATH
     from rasa.model import get_model, get_model_subdirectories
 
     args.connector = "cmdline"

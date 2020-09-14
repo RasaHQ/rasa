@@ -17,15 +17,17 @@ import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.cli.arguments import x as arguments
 from rasa.constants import (
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_CONFIG_PATH,
     DEFAULT_LOG_LEVEL_RASA_X,
     DEFAULT_RASA_X_PORT,
     DEFAULT_RASA_PORT,
 )
-from rasa.shared.constants import DOCS_BASE_URL_RASA_X
+from rasa.shared.constants import (
+    DOCS_BASE_URL_RASA_X,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+)
 from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig
 
