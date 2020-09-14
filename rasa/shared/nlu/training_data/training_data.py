@@ -27,7 +27,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
 
 
-DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
+DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
 logger = logging.getLogger(__name__)
 
@@ -316,10 +316,10 @@ class TrainingData:
         elif rasa.shared.data.is_likely_markdown_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_markdown(), filename)
         elif rasa.shared.data.is_likely_yaml_file(filename):
-            rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
+            rasa.shared.utils.io.write_text_file(self.nlu_as_yaml(), filename)
         else:
-            ValueError(
-                "Unsupported file format detected. Supported file formats are 'json' "
+            raise ValueError(
+                "Unsupported file format detected. Supported file formats are 'json', 'yml' "
                 "and 'md'."
             )
 
@@ -331,7 +331,7 @@ class TrainingData:
             if nlg_serialized_data:
                 rasa.shared.utils.io.write_text_file(nlg_serialized_data, filename)
         else:
-            ValueError(
+            raise ValueError(
                 "Unsupported file format detected. Supported file formats are 'md' "
                 "and 'yml'."
             )
@@ -345,12 +345,12 @@ class TrainingData:
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use
             # md as we do not have a NLG json format
-            extension = "md"
+            extension = rasa.shared.data.markdown_file_extension()
         # Add nlg_ as prefix and change extension to .md
         filename = (
             Path(nlu_filename)
             .with_name("nlg_" + Path(nlu_filename).name)
-            .with_suffix("." + extension)
+            .with_suffix(extension)
         )
         return str(filename)
 

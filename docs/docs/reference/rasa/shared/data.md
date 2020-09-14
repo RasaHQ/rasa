@@ -3,6 +3,22 @@ sidebar_label: rasa.shared.data
 title: rasa.shared.data
 ---
 
+#### markdown\_file\_extension
+
+```python
+markdown_file_extension() -> Text
+```
+
+Return Markdown file extension
+
+#### yaml\_file\_extension
+
+```python
+yaml_file_extension() -> Text
+```
+
+Return Markdown file extension
+
 #### is\_likely\_yaml\_file
 
 ```python

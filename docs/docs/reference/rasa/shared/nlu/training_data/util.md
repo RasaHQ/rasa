@@ -11,6 +11,28 @@ transform_entity_synonyms(synonyms, known_synonyms: Optional[Dict[Text, Any]] = 
 
 Transforms the entity synonyms into a text-&gt;value dictionary
 
+#### get\_file\_format\_extension
+
+```python
+get_file_format_extension(resource_name: Text) -> Text
+```
+
+Get the file extension based on training data format. It supports both a folder and
+a file, and tries to guess the format as follows:
+
+- if the resource is a file and has a known format, return this format&#x27;s extension
+- if the resource is a folder and all the resources have the
+same known format, return it&#x27;s extension
+- otherwise, default to DEFAULT_FILE_FORMAT (yml).
+
+**Arguments**:
+
+- `resource_name` - The name of the resource, can be a file or a folder.
+
+**Returns**:
+
+  The resource file format.
+
 #### remove\_untrainable\_entities\_from
 
 ```python
