@@ -5,14 +5,17 @@ import pytest
 import os
 
 import rasa.shared.utils.io
-from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
-from rasa.shared.constants import DEFAULT_E2E_TESTS_PATH
+from rasa.shared.constants import (
+    DEFAULT_E2E_TESTS_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
 from rasa.shared.nlu.training_data.formats import RasaReader
 import rasa.utils.io
 from rasa import model
 from rasa.core import utils
 from rasa.shared.core.domain import Domain
-from rasa.importers.multi_project import MultiProjectImporter
+from rasa.shared.importers.multi_project import MultiProjectImporter
 
 
 def test_load_imports_from_directory_tree(tmp_path: Path):

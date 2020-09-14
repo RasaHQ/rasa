@@ -24,8 +24,10 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
+    CHECKPOINT_MODEL,
     BILOU_FLAG,
 )
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.shared.nlu.training_data.message import Message
@@ -367,6 +369,51 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
 
     all_files = list(tensorboard_log_dir.rglob("*.*"))
     assert len(all_files) == 3
+
+
+async def test_train_model_checkpointing(
+    component_builder: ComponentBuilder, tmpdir: Path
+):
+    model_name = "nlu-checkpointed-model"
+    best_model_file = Path(str(tmpdir), model_name)
+    assert not best_model_file.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 5,
+                    EVAL_NUM_EXAMPLES: 10,
+                    EVAL_NUM_EPOCHS: 1,
+                    CHECKPOINT_MODEL: True,
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    await train(
+        _config,
+        path=str(tmpdir),
+        data="data/examples/rasa/demo-rasa.md",
+        component_builder=component_builder,
+        fixed_model_name=model_name,
+    )
+
+    assert best_model_file.exists()
+
+    """
+    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+        - metadata.json
+        - checkpoint
+        - component_1_CountVectorsFeaturizer (as per the pipeline above)
+        - component_2_DIETClassifier files (more than 1 file)
+    """
+    all_files = list(best_model_file.rglob("*.*"))
+    assert len(all_files) > 4
 
 
 @pytest.mark.parametrize(

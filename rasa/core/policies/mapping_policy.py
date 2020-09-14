@@ -1,13 +1,10 @@
 import logging
-import json
-import os
-import typing
-from typing import Any, List, Text, Optional
+from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING
 
 import rasa.shared.utils.common
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
+from rasa.shared.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
 from rasa.shared.core.constants import (
@@ -27,7 +24,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
 
@@ -173,22 +170,9 @@ class MappingPolicy(Policy):
             )
         return result
 
-    def persist(self, path: Text) -> None:
-        """Only persists the priority."""
-
-        config_file = os.path.join(path, "mapping_policy.json")
-        meta = {"priority": self.priority}
-        rasa.shared.utils.io.create_directory_for_file(config_file)
-        rasa.shared.utils.io.dump_obj_as_json_to_file(config_file, meta)
+    def _metadata(self) -> Dict[Text, Any]:
+        return {"priority": self.priority}
 
     @classmethod
-    def load(cls, path: Text) -> "MappingPolicy":
-        """Returns the class with the configured priority."""
-
-        meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "mapping_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
-
-        return cls(**meta)
+    def _metadata_filename(cls) -> Text:
+        return "mapping_policy.json"

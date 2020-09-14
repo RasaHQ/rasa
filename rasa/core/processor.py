@@ -8,7 +8,6 @@ import numpy as np
 
 import rasa.shared.utils.io
 import rasa.core.actions.action
-from rasa.constants import DOCS_URL_POLICIES
 from rasa.core import jobs
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
@@ -37,6 +36,7 @@ from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DOCS_URL_DOMAINS,
     DEFAULT_SENDER_ID,
+    DOCS_URL_POLICIES,
     UTTER_PREFIX,
 )
 from rasa.core.nlg import NaturalLanguageGenerator

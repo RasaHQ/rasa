@@ -3,9 +3,10 @@ from typing import Dict, List, Optional, Text, Union
 
 import rasa.shared.data
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.importers import utils, autoconfig
-from rasa.importers.importer import TrainingDataImporter
-from rasa.importers.autoconfig import TrainingType
+from rasa.shared.importers import utils
+from rasa.shared.importers import autoconfig
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.domain import InvalidDomain, Domain
 import rasa.shared.utils.io

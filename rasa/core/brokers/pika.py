@@ -19,11 +19,8 @@ from typing import (
     Generator,
 )
 
-from rasa.constants import (
-    DEFAULT_LOG_LEVEL_LIBRARIES,
-    ENV_LOG_LEVEL_LIBRARIES,
-    DOCS_URL_PIKA_EVENT_BROKER,
-)
+from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
+from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 from rasa.core.brokers.broker import EventBroker
 import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig
