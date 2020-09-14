@@ -14,8 +14,6 @@ from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
 )
 
-
-# noinspection PyProtectedMember
 import rasa.utils.common
 
 

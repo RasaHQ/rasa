@@ -315,8 +315,8 @@ async def _send_event(
     properties: Dict[Text, Any],
     context: Dict[Text, Any],
 ) -> None:
-    """Report the contents of an event to the /track Segment endpoint.
-    Documentation: https://segment.com/docs/sources/server/http/
+    """Report the contents segmentof an event to the /track Segment endpoint.
+    Documentation: https://.com/docs/sources/server/http/
 
     Do not call this function from outside telemetry.py! This function does not
     check if telemetry is enabled or not.

@@ -21,7 +21,8 @@ def add_subparser(
     scaffold_parser = subparsers.add_parser(
         "init",
         parents=parents,
-        help="Creates a new project, with example training data, actions, and config files.",
+        help="Creates a new project, with example training data, "
+        "actions, and config files.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     scaffold_parser.add_argument(
@@ -58,7 +59,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
         args.model = rasa.train(domain, config, training_files, output)
 
-        print_run_or_instructions(args, path)
+        print_run_or_instructions(args)
 
     else:
         print_success(
@@ -67,7 +68,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
         )
 
 
-def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
+def print_run_or_instructions(args: argparse.Namespace) -> None:
     from rasa.core import constants
     import questionary
 

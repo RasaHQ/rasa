@@ -2,19 +2,16 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
+from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Text
 
+from rasa.shared.constants import DEFAULT_MODELS_PATH
 import rasa.shared.utils.cli
+import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from questionary import Question
 
-from rasa.shared.constants import DEFAULT_MODELS_PATH
-import rasa.shared.utils.io
-from typing import NoReturn
-
 logger = logging.getLogger(__name__)
-
 
 FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
 

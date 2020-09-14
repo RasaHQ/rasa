@@ -2,42 +2,42 @@ import argparse
 import asyncio
 import importlib.util
 import logging
+from multiprocessing import get_context
 import os
 import signal
 import traceback
-from multiprocessing import get_context
-from typing import List, Text, Optional, Tuple, Iterable
+from typing import Iterable, List, Optional, Text, Tuple
 
 import aiohttp
 import ruamel.yaml as yaml
 
-import rasa.cli.utils as cli_utils
+from rasa.cli.arguments import x as arguments
+import rasa.cli.utils
+from rasa.constants import (
+    DEFAULT_LOG_LEVEL_RASA_X,
+    DEFAULT_RASA_PORT,
+    DEFAULT_RASA_X_PORT,
+)
+from rasa.core.utils import AvailableEndpoints
+from rasa.shared.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_ENDPOINTS_PATH,
+    DOCS_BASE_URL_RASA_X,
+)
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.common
-import rasa.utils.io as io_utils
-from rasa.cli.arguments import x as arguments
-from rasa.constants import (
-    DEFAULT_LOG_LEVEL_RASA_X,
-    DEFAULT_RASA_X_PORT,
-    DEFAULT_RASA_PORT,
-)
-from rasa.shared.constants import (
-    DOCS_BASE_URL_RASA_X,
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
-)
-from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig
+import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_EVENTS_DB = "events.db"
 
 
-# noinspection PyProtectedMember
+# noinspection PyProtectedMember,PyUnresolvedReferences
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
@@ -65,11 +65,10 @@ def _rasa_service(
 ):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
-    import rasa.utils.common
 
     # needs separate logging configuration as it is started in its own process
     rasa.utils.common.set_log_level(args.loglevel)
-    io_utils.configure_colored_logging(args.loglevel)
+    rasa.utils.io.configure_colored_logging(args.loglevel)
 
     if not credentials_path:
         credentials_path = _prepare_credentials_for_rasa_x(
@@ -95,7 +94,7 @@ def _rasa_service(
 def _prepare_credentials_for_rasa_x(
     credentials_path: Optional[Text], rasa_x_url: Optional[Text] = None
 ) -> Text:
-    credentials_path = cli_utils.get_validated_path(
+    credentials_path = rasa.cli.utils.get_validated_path(
         credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
     if credentials_path:
@@ -107,7 +106,7 @@ def _prepare_credentials_for_rasa_x(
     if rasa_x_url:
         credentials["rasa"] = {"url": rasa_x_url}
     dumped_credentials = yaml.dump(credentials, default_flow_style=False)
-    tmp_credentials = io_utils.create_temporary_file(dumped_credentials, "yml")
+    tmp_credentials = rasa.utils.io.create_temporary_file(dumped_credentials, "yml")
 
     return tmp_credentials
 
@@ -245,7 +244,7 @@ def _configure_logging(args: argparse.Namespace):
         log_level = logging.getLevelName(log_level)
 
     logging.basicConfig(level=log_level)
-    io_utils.configure_colored_logging(args.loglevel)
+    rasa.utils.io.configure_colored_logging(args.loglevel)
 
     set_log_level(log_level)
     configure_file_logging(logging.root, args.log_file)
@@ -309,7 +308,6 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
 
 def _validate_domain(domain_path: Text):
     from rasa.shared.core.domain import Domain, InvalidDomain
-    from rasa.shared.core.domain import Domain
 
     try:
         Domain.load(domain_path)
@@ -352,7 +350,8 @@ async def _pull_runtime_config_from_server(
                         rjs = await resp.json()
                         try:
                             return [
-                                io_utils.create_temporary_file(rjs[k]) for k in keys
+                                rasa.utils.io.create_temporary_file(rjs[k])
+                                for k in keys
                             ]
                         except KeyError as e:
                             rasa.shared.utils.cli.print_error_and_exit(
@@ -389,7 +388,7 @@ def run_in_production(args: argparse.Namespace):
 
 
 def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
-    config_path = cli_utils.get_validated_path(
+    config_path = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH
     )
 
@@ -406,7 +405,7 @@ def _get_credentials_and_endpoints_paths(
         )
 
     else:
-        endpoints_config_path = cli_utils.get_validated_path(
+        endpoints_config_path = rasa.cli.utils.get_validated_path(
             args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
         credentials_path = None

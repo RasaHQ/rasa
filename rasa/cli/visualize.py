@@ -2,16 +2,13 @@ import argparse
 import os
 from typing import List
 
-import rasa.shared.data
 from rasa.cli.arguments import visualize as arguments
-import rasa.cli.utils
 from rasa.shared.constants import DEFAULT_DATA_PATH
-
-
-# noinspection PyProtectedMember
+import rasa.shared.data
 import rasa.utils.common
 
 
+# noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):

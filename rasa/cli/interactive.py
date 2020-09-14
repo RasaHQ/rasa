@@ -1,11 +1,10 @@
 import argparse
-import asyncio
 import logging
 import os
 from typing import List, Optional, Text
 
+import rasa.cli.utils
 import rasa.shared.utils.cli
-from rasa.cli import utils
 import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
 from rasa import model
@@ -57,7 +56,8 @@ def interactive(args: argparse.Namespace) -> None:
         story_graph = rasa.utils.common.run_in_loop(file_importer.get_stories())
         if not story_graph or story_graph.is_empty():
             rasa.shared.utils.cli.print_error_and_exit(
-                "Could not run interactive learning without either core data or a model containing core data."
+                "Could not run interactive learning without either core "
+                "data or a model containing core data."
             )
 
         zipped_model = train.train_core(args) if args.core_only else train.train(args)
@@ -71,8 +71,9 @@ def interactive(args: argparse.Namespace) -> None:
         zipped_model = get_provided_model(args.model)
         if not (zipped_model and os.path.exists(zipped_model)):
             rasa.shared.utils.cli.print_error_and_exit(
-                f"Interactive learning process cannot be started as no initial model was "
-                f"found at path '{args.model}'.  Use 'rasa train' to train a model."
+                f"Interactive learning process cannot be started as no "
+                f"initial model was found at path '{args.model}'.  "
+                f"Use 'rasa train' to train a model."
             )
         if not args.skip_visualization:
             logger.info(f"Loading visualization data from {args.data}.")

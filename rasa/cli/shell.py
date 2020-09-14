@@ -12,8 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 # noinspection PyProtectedMember
-
-
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):

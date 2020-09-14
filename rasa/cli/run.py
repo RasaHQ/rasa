@@ -4,8 +4,8 @@ import os
 from typing import List, Text
 
 from rasa.cli.arguments import run as arguments
-from rasa.cli.utils import get_validated_path
-from rasa.shared.utils.cli import print_error
+import rasa.cli.utils
+import rasa.shared.utils.cli
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_ENDPOINTS_PATH,
@@ -71,10 +71,10 @@ def _validate_model_path(model_path: Text, parameter: Text, default: Text):
 def run(args: argparse.Namespace):
     import rasa.run
 
-    args.endpoints = get_validated_path(
+    args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
-    args.credentials = get_validated_path(
+    args.credentials = rasa.cli.utils.get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
 
@@ -115,7 +115,7 @@ def run(args: argparse.Namespace):
         rasa.run(**vars(args))
         return
 
-    print_error(
+    rasa.shared.utils.cli.print_error(
         "No model found. You have three options to provide a model:\n"
         "1. Configure a model server in the endpoint configuration and provide "
         "the configuration via '--endpoints'.\n"

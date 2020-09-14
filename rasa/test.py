@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import typing
@@ -9,11 +8,8 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
-import rasa.utils.io as io_utils
 from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
-import rasa.cli.utils as cli_utils
-import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
 import rasa.shared.nlu.training_data.loading
 
@@ -205,7 +201,6 @@ def compare_nlu_models(
     from rasa.nlu.utils import write_json_to_file
     from rasa.utils.io import create_path
     from rasa.nlu.test import compare_nlu
-    import rasa.shared.nlu.training_data.loading
 
     data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=5)
