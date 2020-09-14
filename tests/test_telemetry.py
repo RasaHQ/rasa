@@ -4,6 +4,7 @@ from pathlib import Path
 import uuid
 
 from _pytest.monkeypatch import MonkeyPatch
+from aioresponses import aioresponses
 import jsonschema
 from mock import Mock
 import pytest
@@ -11,6 +12,7 @@ import pytest
 from rasa import telemetry
 import rasa.constants
 from rasa.shared.importers.importer import TrainingDataImporter
+from tests import utilities
 from tests.conftest import DEFAULT_CONFIG_PATH
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
@@ -187,6 +189,44 @@ def test_toggle_telemetry_reporting(monkeypatch: MonkeyPatch):
     # tests that toggling works if config is set to false
     telemetry.toggle_telemetry_reporting(True)
     assert telemetry.initialize_telemetry() is True
+
+
+async def test_segment_gets_called(monkeypatch: MonkeyPatch):
+    telemetry.initialize_telemetry()
+    monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://api.segment.io/v1/track", payload={},
+        )
+
+        await telemetry.track("test event", {"foo": "bar"}, {"foobar": "baz"})
+
+        r = utilities.latest_request(mocked, "POST", "https://api.segment.io/v1/track")
+
+        assert r
+
+        b = utilities.json_of_latest_request(r)
+
+        assert "userId" in b
+        assert b["event"] == "test event"
+        assert b["properties"].get("foo") == "bar"
+        assert b["context"].get("foobar") == "baz"
+
+
+async def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
+    telemetry.initialize_telemetry()
+    monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+
+    with aioresponses() as mocked:
+        mocked.post("https://api.segment.io/v1/track", payload={}, status=505)
+
+        # this call should complete without throwing an exception
+        await telemetry.track("test event", {"foo": "bar"}, {"foobar": "baz"})
+
+        r = utilities.latest_request(mocked, "POST", "https://api.segment.io/v1/track")
+
+        assert r
 
 
 def test_environment_write_key_overwrites_key_file(monkeypatch: MonkeyPatch):
