@@ -8,7 +8,6 @@ from _pytest.pytester import RunResult
 from aioresponses import aioresponses
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
