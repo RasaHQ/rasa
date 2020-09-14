@@ -156,7 +156,7 @@ with the custom action code:
 ```python
 def run(self, dispatcher, tracker, domain):
 	is_raining = check_rain()
-	if   is_raining:
+	if is_raining:
 		dispatcher.utter_message(template="utter_is_raining")
 		dispatcher.utter_message(template="utter_bring_umbrella")
 	else:
