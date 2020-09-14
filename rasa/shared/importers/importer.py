@@ -146,7 +146,6 @@ class TrainingDataImporter:
             for importer in importers
         ]
         importers = [importer for importer in importers if importer]
-
         if not importers:
             importers = [
                 RasaFileImporter(
