@@ -55,3 +55,11 @@ If the delay is set to `None`, the slot will keep its value forever.
 
 Returns a slots class by its type name.
 
+#### bool\_from\_any
+
+```python
+bool_from_any(x: Any) -> bool
+```
+
+Converts bool/float/int/str to bool or raises error
+
