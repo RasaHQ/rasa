@@ -64,7 +64,10 @@ def run_core_test(args: argparse.Namespace) -> None:
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
     stories = cli_utils.get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
-    stories = rasa.shared.data.get_test_directory(stories)
+    if args.e2e:
+        stories = rasa.shared.data.get_test_directory(stories)
+    else:
+        stories = rasa.shared.data.get_core_directory(stories)
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
