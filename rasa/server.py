@@ -11,14 +11,23 @@ from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Text, Union, Dict
 
-import rasa.shared.utils.io
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import HTTPResponse
+from sanic_cors import CORS
+from sanic_jwt import Initialize, exceptions
+
 import rasa
 import rasa.core.utils
-from rasa.utils import common as common_utils
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 import rasa.utils.endpoints
 import rasa.utils.io
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa.utils import common as common_utils
 from rasa import model
 from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
@@ -26,7 +35,12 @@ from rasa.constants import (
     DEFAULT_RESPONSE_TIMEOUT,
     MINIMUM_COMPATIBLE_VERSION,
 )
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_BASE_URL
+from rasa.shared.constants import (
+    DOCS_URL_TRAINING_DATA_NLU,
+    DOCS_BASE_URL,
+    DEFAULT_SENDER_ID,
+)
+from rasa.shared.core.domain import InvalidDomain
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
@@ -34,21 +48,15 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
-from rasa.core.domain import InvalidDomain
-from rasa.core.events import Event
+from rasa.shared.core.events import Event
 from rasa.core.lock_store import LockStore
 from rasa.core.test import test
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
-from sanic import Sanic, response
-from sanic.request import Request
-from sanic.response import HTTPResponse
-from sanic_cors import CORS
-from sanic_jwt import Initialize, exceptions
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
@@ -126,7 +134,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
     def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
-            argnames = common_utils.arguments_of(f)
+            argnames = rasa.shared.utils.common.arguments_of(f)
 
             try:
                 sender_id_arg_idx = argnames.index("conversation_id")
@@ -893,12 +901,11 @@ def create_app(
             "predict the next action.",
         )
 
-        sender_id = UserMessage.DEFAULT_SENDER_ID
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json
         try:
             tracker = DialogueStateTracker.from_dict(
-                sender_id, request_params, app.agent.domain.slots
+                DEFAULT_SENDER_ID, request_params, app.agent.domain.slots
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -1164,7 +1171,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
     if "force" in rjs or "save_to_default_model_directory" in rjs:
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "Specifying 'force' and 'save_to_default_model_directory' as part of the "
             "JSON payload is deprecated. Please use the header arguments "
             "'force_training' and 'save_to_default_model_directory'.",

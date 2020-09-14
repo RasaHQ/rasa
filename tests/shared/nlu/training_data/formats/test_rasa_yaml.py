@@ -6,6 +6,7 @@ import pytest
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import INTENT
+from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
@@ -270,7 +271,7 @@ def test_nlg_reads_text():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
     """
     )
@@ -279,7 +280,9 @@ def test_nlg_reads_text():
     result = reader.reads(responses_yml)
 
     assert result.responses == {
-        "chitchat/ask_weather": [{"text": "Where do you want to check the weather?"}]
+        "utter_chitchat/ask_weather": [
+            {"text": "Where do you want to check the weather?"}
+        ]
     }
 
 
@@ -287,7 +290,7 @@ def test_nlg_reads_any_multimedia():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
     """
@@ -297,7 +300,7 @@ def test_nlg_reads_any_multimedia():
     result = reader.reads(responses_yml)
 
     assert result.responses == {
-        "chitchat/ask_weather": [
+        "utter_chitchat/ask_weather": [
             {
                 "text": "Where do you want to check the weather?",
                 "image": "https://example.com/weather.jpg",
@@ -323,7 +326,7 @@ def test_nlg_fails_on_empty_response():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
     """
     )
 
@@ -337,11 +340,11 @@ def test_nlg_multimedia_load_dump_roundtrip():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
 
-        chitchat/ask_name:
+        utter_chitchat/ask_name:
         - text: My name is Sara.
     """
     )
@@ -368,3 +371,24 @@ def test_read_mixed_training_data_file():
     with pytest.warns(None) as record:
         reader.read(training_data_file)
         assert not len(record)
+
+
+def test_responses_are_converted_from_markdown():
+    responses_md = textwrap.dedent(
+        """
+      ## ask name
+      * chitchat/ask_name
+        - my name is Sara, Rasa's documentation bot!
+    """
+    )
+
+    result = NLGMarkdownReader().reads(responses_md)
+    dumped = RasaYAMLWriter().dumps(result)
+
+    validation_reader = RasaYAMLReader()
+    dumped_result = validation_reader.reads(dumped)
+
+    assert dumped_result.responses == result.responses
+
+    # dumping again should also not change the format
+    assert dumped == RasaYAMLWriter().dumps(dumped_result)

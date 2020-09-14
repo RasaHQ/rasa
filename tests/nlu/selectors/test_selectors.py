@@ -1,5 +1,6 @@
 import pytest
 
+from rasa.shared.nlu.training_data import util
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.nlu.training_data.loading
 from rasa.nlu.train import Trainer, Interpreter
@@ -65,6 +66,12 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         .get("default")
         .get("response")
         .get("intent_response_key")
+    ) is not None
+    assert (
+        parsed.get("response_selector")
+        .get("default")
+        .get("response")
+        .get("template_name")
     ) is not None
     assert (
         parsed.get("response_selector")
@@ -140,6 +147,10 @@ def test_resolve_intent_response_key_from_label(
     )
     assert resolved_intent_response_key == label_intent_response_key
     assert (
-        response_selector.responses[label_intent_response_key]
-        == training_data.responses[resolved_intent_response_key]
+        response_selector.responses[
+            util.intent_response_key_to_template_key(label_intent_response_key)
+        ]
+        == training_data.responses[
+            util.intent_response_key_to_template_key(resolved_intent_response_key)
+        ]
     )

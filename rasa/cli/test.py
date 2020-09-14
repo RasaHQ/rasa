@@ -3,16 +3,16 @@ import logging
 import os
 from typing import List
 
+import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.cli.arguments import test as arguments
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
-    DEFAULT_E2E_TESTS_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
 )
-from rasa.shared.constants import CONFIG_SCHEMA_FILE
+from rasa.shared.constants import CONFIG_SCHEMA_FILE, DEFAULT_E2E_TESTS_PATH
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils as cli_utils
 import rasa.utils.io as io_utils
@@ -60,15 +60,14 @@ def add_subparser(
 
 def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
-    from rasa import data
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
     stories = cli_utils.get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
-    stories = data.get_test_directory(stories)
+    stories = rasa.shared.data.get_test_directory(stories)
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
-    io_utils.create_directory(output)
+    rasa.shared.utils.io.create_directory(output)
 
     if isinstance(args.model, list) and len(args.model) == 1:
         args.model = args.model[0]
@@ -94,15 +93,14 @@ def run_core_test(args: argparse.Namespace) -> None:
 
 def run_nlu_test(args: argparse.Namespace) -> None:
     """Run NLU tests."""
-    from rasa import data
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
     nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    nlu_data = data.get_nlu_directory(nlu_data)
+    nlu_data = rasa.shared.data.get_nlu_directory(nlu_data)
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
-    io_utils.create_directory(output)
+    rasa.shared.utils.io.create_directory(output)
 
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])

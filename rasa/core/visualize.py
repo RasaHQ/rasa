@@ -2,9 +2,9 @@ import logging
 import os
 from typing import Text
 
-from rasa.cli.utils import print_error
+from rasa.shared.utils.cli import print_error
 
-from rasa.core.domain import InvalidDomain
+from rasa.shared.core.domain import InvalidDomain
 
 logger = logging.getLogger(__name__)
 

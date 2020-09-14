@@ -1,17 +1,17 @@
 import copy
 import logging
-import os
 from pathlib import Path
 from collections import defaultdict
 
 import numpy as np
+import rasa.shared.utils.io
 import tensorflow as tf
 import tensorflow_addons as tfa
 import typing
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
 import rasa.utils.io as io_utils
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
@@ -19,11 +19,12 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, ENTITIES
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE, ACTIVE_LOOP, SLOTS
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
@@ -388,7 +389,7 @@ class TEDPolicy(Policy):
 
         return confidence.tolist()
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
 
         if self.model is None:
@@ -402,7 +403,7 @@ class TEDPolicy(Policy):
         model_path = Path(path)
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
-        io_utils.create_directory_for_file(tf_model_file)
+        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
         self.featurizer.persist(path)
 
@@ -427,18 +428,18 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(cls, path: Text) -> "TEDPolicy":
+    def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
         """Loads a policy from the storage.
         **Needs to load its featurizer**
         """
+        model_path = Path(path)
 
-        if not os.path.exists(path):
+        if not model_path.exists():
             raise Exception(
                 f"Failed to load TED policy model. Path "
-                f"'{os.path.abspath(path)}' doesn't exist."
+                f"'{model_path.absolute()}' doesn't exist."
             )
 
-        model_path = Path(path)
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)

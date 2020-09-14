@@ -20,7 +20,7 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa visualize`        |Generates a visual representation of your stories.                                                                                                                       |
 |`rasa test`             |Tests a trained Rasa model on any files starting with `test_`.                                                                          |
 |`rasa data split nlu`   |Performs a 80/20 split of your NLU training data.                                                                 |
-|`rasa data convert nlu` |Converts NLU training data between different formats.                                                                                     |
+|`rasa data convert`     |Converts training data between different formats.                                                                                     |
 |`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                             |
 |`rasa x`                |Launches Rasa X locally.                                                                                                                    |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
@@ -37,8 +37,9 @@ It creates the following files:
 
 ```bash
 .
-├── __init__.py
-├── actions.py
+├── actions
+│   ├── __init__.py
+│   └── actions.py
 ├── config.yml
 ├── credentials.yml
 ├── data
@@ -256,7 +257,7 @@ ls train_test_split
       nlg_training_data.yml training_data.json
 ```
 
-## rasa data convert
+## rasa data convert nlu
 
 You can convert NLU data from
 - LUIS data format,
@@ -276,9 +277,29 @@ You can start the converter by running:
 rasa data convert nlu
 ```
 
-You can specify the input file, output file, and the output format with the following arguments:
+You can specify the input file or directory, output file or directory, and the output format with the following arguments:
 
 ```text [rasa data convert nlu --help]
+```
+
+## rasa data convert core
+
+You can convert Core data from Markdown to YAML.
+
+You can specify the input file or directory, output directory with the following arguments:
+
+```bash
+rasa data convert core --help
+```
+
+## rasa data convert nlg
+
+You can convert NLG data from Markdown to YAML.
+
+You can specify the input file or directory, output directory with the following arguments:
+
+```bash
+rasa data convert nlg --help
 ```
 
 ## rasa export
