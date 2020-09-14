@@ -4,7 +4,7 @@ import regex
 import re
 
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
 

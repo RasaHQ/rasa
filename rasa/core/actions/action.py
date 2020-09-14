@@ -15,7 +15,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
-    INTENT_RANKING_KEY,
 )
 
 from rasa.shared.constants import (
@@ -36,7 +35,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
 )
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
 from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,

@@ -627,9 +627,12 @@ def test_training_payload_from_yaml_force_training(headers: Dict, expected: bool
 @pytest.mark.parametrize(
     "headers, expected",
     [
-        ({}, rasa.constants.DEFAULT_MODELS_PATH),
+        ({}, rasa.shared.constants.DEFAULT_MODELS_PATH),
         ({"save_to_default_model_directory": False}, ANY),
-        ({"save_to_default_model_directory": True}, rasa.constants.DEFAULT_MODELS_PATH),
+        (
+            {"save_to_default_model_directory": True},
+            rasa.shared.constants.DEFAULT_MODELS_PATH,
+        ),
     ],
 )
 def test_training_payload_from_yaml_save_to_default_model_directory(
