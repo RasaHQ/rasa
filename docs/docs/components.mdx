@@ -56,7 +56,7 @@ word vectors in your pipeline.
   ```
 
   For more information where to get that file from, head over to
-  [installing MITIE](../installation.mdx#install-mitie).
+  [installing MITIE](./installation.mdx#install-mitie).
 
 
   You can also pre-train your own word vectors from a language corpus using MITIE. To do so:
@@ -127,7 +127,7 @@ word vectors in your pipeline.
   ```
 
   For more information on how to download the spaCy models, head over to
-  [installing SpaCy](../installation.mdx#install-spacy).
+  [installing SpaCy](./installation.mdx#install-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
   load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
@@ -162,7 +162,7 @@ word vectors in your pipeline.
 
   Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
   featurization to compute sequence and sentence level representations for each example in the training data.
-  Include [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](../components/featurizers.mdx#languagemodelfeaturizer) to utilize the output of this
+  Include [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) to utilize the output of this
   component for downstream NLU models.
 
   :::note
@@ -339,7 +339,7 @@ word vectors in your pipeline.
 
   * **Requires**
 
-    [MitieNLP](../components/language-models.mdx#mitienlp)
+    [MitieNLP](./components.mdx#mitienlp)
 
 
 
@@ -380,7 +380,7 @@ word vectors in your pipeline.
 
   * **Requires**
 
-    [SpacyNLP](../components/language-models.mdx#spacynlp)
+    [SpacyNLP](./components.mdx#spacynlp)
 
 
 
@@ -427,7 +427,7 @@ word vectors in your pipeline.
 
   * **Description**
 
-    Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](../components/featurizers.mdx#convertfeaturizer) is used.
+    Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is used.
 
     :::note
     Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
@@ -473,14 +473,14 @@ word vectors in your pipeline.
 
   * **Requires**
 
-    [HFTransformersNLP](../components/language-models.mdx#hftransformersnlp)
+    [HFTransformersNLP](./components.mdx#hftransformersnlp)
 
 
 
   * **Description**
 
-    Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#hftransformersnlp) component.
-    Must be used whenever the [LanguageModelFeaturizer](../components/featurizers.mdx#languagemodelfeaturizer) is used.
+    Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
+    Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
 
 
 
@@ -531,7 +531,7 @@ word vectors in your pipeline.
 
     * **Requires**
 
-      [MitieNLP](../components/language-models.mdx#mitienlp)
+      [MitieNLP](./components.mdx#mitienlp)
 
 
 
@@ -586,7 +586,7 @@ word vectors in your pipeline.
 
     * **Requires**
 
-      [SpacyNLP](../components/language-models.mdx#spacynlp)
+      [SpacyNLP](./components.mdx#spacynlp)
 
 
 
@@ -636,7 +636,7 @@ word vectors in your pipeline.
 
     * **Requires**
 
-      [ConveRTTokenizer](../components/tokenizers.mdx#converttokenizer)
+      [ConveRTTokenizer](./components.mdx#converttokenizer)
 
 
 
@@ -690,7 +690,7 @@ word vectors in your pipeline.
 
     * **Requires**
 
-      [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer)
+      [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
 
 
 
@@ -703,7 +703,7 @@ word vectors in your pipeline.
     * **Description**
 
       Creates features for entity extraction, intent classification, and response selection.
-      Uses the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) component to compute vector
+      Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#lhftransformersnlp) component to compute vector
       representations of input text.
 
       :::note
@@ -716,8 +716,8 @@ word vectors in your pipeline.
 
     * **Configuration**
 
-      Include [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) components before this component. Use
-      [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+      Include [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
+      [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
 
       ```yaml-rasa
       pipeline:
@@ -760,8 +760,8 @@ word vectors in your pipeline.
       For each regex, a feature will be set marking whether this expression was found in the user message or not.
       All features will later be fed into an intent classifier / entity extractor to simplify classification (assuming
       the classifier has learned during the training phase, that this set feature indicates a certain intent / entity).
-      Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](../components/entity-extractors.mdx#crfentityextractor) and the
-      [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) components!
+      Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](./components.mdx#crfentityextractor) and the
+      [DIETClassifier](./components.mdx#dietclassifier) components!
 
 
 
@@ -825,7 +825,7 @@ word vectors in your pipeline.
       The lower and upper boundaries of the n-grams can be configured via the parameters `min_ngram` and `max_ngram`.
       By default both of them are set to `1`.
       By default the featurizer takes the lemma of a word instead of the word directly if it is available. The lemma
-      of a word is currently only set by the [SpacyTokenizer](../components/tokenizers.mdx#spacytokenizer). You can
+      of a word is currently only set by the [SpacyTokenizer](./components.mdx#spacytokenizer). You can
       disable this behavior by setting `use_lemma` to `False`.
 
       :::note
@@ -1079,7 +1079,7 @@ word vectors in your pipeline.
 
       * **Requires**
 
-        [MitieNLP](../components/language-models.mdx#mitienlp)
+        [MitieNLP](./components.mdx#mitienlp)
 
 
 
@@ -1134,7 +1134,7 @@ word vectors in your pipeline.
 
       * **Requires**
 
-        [SpacyNLP](../components/language-models.mdx#spacynlp)
+        [SpacyNLP](./components.mdx#spacynlp)
 
 
 
@@ -1184,7 +1184,7 @@ word vectors in your pipeline.
 
       * **Requires**
 
-        [ConveRTTokenizer](../components/tokenizers.mdx#converttokenizer)
+        [ConveRTTokenizer](./components.mdx#converttokenizer)
 
 
 
@@ -1238,7 +1238,7 @@ word vectors in your pipeline.
 
       * **Requires**
 
-        [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer)
+        [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
 
 
 
@@ -1251,7 +1251,7 @@ word vectors in your pipeline.
       * **Description**
 
         Creates features for entity extraction, intent classification, and response selection.
-        Uses the pre-trained language model specified in upstream [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) component to compute vector
+        Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#lhftransformersnlp) component to compute vector
         representations of input text.
 
         :::note
@@ -1264,8 +1264,8 @@ word vectors in your pipeline.
 
       * **Configuration**
 
-        Include [HFTransformersNLP](../components/language-models.mdx#lhftransformersnlp) and [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) components before this component. Use
-        [LanguageModelTokenizer](../components/tokenizers.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+        Include [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
+        [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
 
         ```yaml-rasa
         pipeline:
@@ -1308,8 +1308,8 @@ word vectors in your pipeline.
         For each regex, a feature will be set marking whether this expression was found in the user message or not.
         All features will later be fed into an intent classifier / entity extractor to simplify classification (assuming
         the classifier has learned during the training phase, that this set feature indicates a certain intent / entity).
-        Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](../components/entity-extractors.mdx#crfentityextractor) and the
-        [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) components!
+        Regex features for entity extraction are currently only supported by the [CRFEntityExtractor](./components.mdx#crfentityextractor) and the
+        [DIETClassifier](./components.mdx#dietclassifier) components!
 
 
 
@@ -1373,7 +1373,7 @@ word vectors in your pipeline.
         The lower and upper boundaries of the n-grams can be configured via the parameters `min_ngram` and `max_ngram`.
         By default both of them are set to `1`.
         By default the featurizer takes the lemma of a word instead of the word directly if it is available. The lemma
-        of a word is currently only set by the [SpacyTokenizer](../components/tokenizers.mdx#spacytokenizer). You can
+        of a word is currently only set by the [SpacyTokenizer](./components.mdx#spacytokenizer). You can
         disable this behavior by setting `use_lemma` to `False`.
 
         :::note
@@ -1607,7 +1607,7 @@ word vectors in your pipeline.
 
   * **Description**
 
-    You can find the detailed description of the [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) under the section
+    You can find the detailed description of the [DIETClassifier](./components.mdx#dietclassifier) under the section
     Intent Classifiers.
 
   ### MitieIntentClassifier
@@ -1628,7 +1628,7 @@ word vectors in your pipeline.
 
   * **Requires**
 
-    `tokens` for user message and [MitieNLP](../components/language-models.mdx#mitienlp)
+    `tokens` for user message and [MitieNLP](./components.mdx#mitienlp)
 
 
 
@@ -1901,7 +1901,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Requires**
 
-  [MitieNLP](../components/language-models.mdx#mitienlp) and `tokens`
+  [MitieNLP](./components.mdx#mitienlp) and `tokens`
 
 
 
@@ -1960,7 +1960,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 * **Requires**
 
-  [SpacyNLP](../components/language-models.mdx#spacynlp)
+  [SpacyNLP](./components.mdx#spacynlp)
 
 
 
@@ -2251,7 +2251,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 * **Description**
 
-  You can find the detailed description of the [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) under the section
+  You can find the detailed description of the [DIETClassifier](./components.mdx#dietclassifier) under the section
   Intent Classifiers.
 
 
@@ -2273,7 +2273,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 * **Requires**
 
-  An extractor from [Entity Extractors](../components/entity-extractors.mdx)
+  An extractor from [Entity Extractors](./components.mdx)
 
 
 
@@ -2395,7 +2395,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     :::note
     If during prediction time a message contains **only** words unseen during training
     and no Out-Of-Vocabulary preprocessor was used, an empty intent `None` is predicted with confidence
-    `0.0`. This might happen if you only use the [CountVectorsFeaturizer](../components/featurizers.mdx#countvectorsfeaturizer) with a `word` analyzer
+    `0.0`. This might happen if you only use the [CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer) with a `word` analyzer
     as featurizer. If you use the `char_wb` analyzer, you should always get an intent with a confidence
     value `> 0.0`.
 
@@ -2718,12 +2718,12 @@ Selectors predict a bot response from a set of candidate responses.
   Response Selector component can be used to build a response retrieval model to directly predict a bot response from
   a set of candidate responses. The prediction of this model is used by the dialogue manager to utter the predicted responses.
   It embeds user inputs and response labels into the same space and follows the exact same
-  neural network architecture and optimization as the [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier).
+  neural network architecture and optimization as the [DIETClassifier](./components.mdx#dietclassifier).
 
   :::note
   If during prediction time a message contains **only** words unseen during training
   and no Out-Of-Vocabulary preprocessor was used, an empty response `None` is predicted with confidence
-  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](../components/featurizers.mdx#countvectorsfeaturizer) with a `word` analyzer
+  `0.0`. This might happen if you only use the [CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer) with a `word` analyzer
   as featurizer. If you use the `char_wb` analyzer, you should always get a response with a confidence
   value `> 0.0`.
 
@@ -2733,7 +2733,7 @@ Selectors predict a bot response from a set of candidate responses.
 
 * **Configuration**
 
-  The algorithm includes almost all the hyperparameters that [DIETClassifier](../components/intent-classifiers.mdx#dietclassifier) uses.
+  The algorithm includes almost all the hyperparameters that [DIETClassifier](./components.mdx#dietclassifier) uses.
   If you want to adapt your model, start by modifying the following parameters:
 
   * `epochs`:

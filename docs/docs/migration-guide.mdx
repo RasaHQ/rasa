@@ -537,7 +537,7 @@ model before trying to use it with this improved version.
   Old configuration options will be mapped to the new names, and a warning will be thrown.
   However, these will be deprecated in a future release.
 
-* The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier)
+* The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier]./components.mdx#dietclassifier)
   in the future.
   `DIETClassfier` performs intent classification as well as entity recognition.
   If you want to get the same model behavior as the current `EmbeddingIntentClassifier`, you can use
@@ -558,7 +558,7 @@ model before trying to use it with this improved version.
     # ... any other parameters
   ```
 
-  See [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) for more information about the new component.
+  See [DIETClassifier]./components.mdx#dietclassifier) for more information about the new component.
   Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, the
   behavior is unchanged from previous versions.
 
@@ -595,14 +595,14 @@ model before trying to use it with this improved version.
   ```
 
   `CRFEntityExtractor` featurizes user messages on its own, it does not depend on any featurizer.
-  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer). Thus,
+  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer]./components.mdx#lexicalsyntacticfeaturizer). Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
-  [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier).
+  [DIETClassifier]./components.mdx#dietclassifier).
   Specifying `CRFEntityExtractor` in the configuration maps to the above component definition, the behavior
   is unchanged from previous versions.
 
 * If your pipeline contains `CRFEntityExtractor` and `EmbeddingIntentClassifier` you can substitute both
-  components with [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier). You can use the following pipeline for that:
+  components with [DIETClassifier]./components.mdx#dietclassifier). You can use the following pipeline for that:
 
   ```yaml-rasa
   pipeline:
@@ -655,7 +655,7 @@ model before trying to use it with this improved version.
 ### General
 
 * Default parameters of `EmbeddingIntentClassifier` are changed. See
-  [Components](./components/intent-classifiers.mdx#embedding-intent-classifier) for details.
+  [Components]./components.mdx#embedding-intent-classifier) for details.
   Architecture implementation is changed as well, so **old trained models cannot be loaded**.
   Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./policies.mdx) for details.
   It uses transformer instead of lstm. **Old trained models cannot be loaded**.

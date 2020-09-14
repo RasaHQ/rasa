@@ -216,7 +216,7 @@ name of your intents.
 
 ### Entities
 
-[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) based on a character pattern.
+[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
 
 Entities are annotated in training examples with minimally the entity's name.
 In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
@@ -272,7 +272,7 @@ nlu:
 
 To use the synonyms defined in your training data, you need to make sure the
 pipeline in your configuration file contains the
-[`EntitySynonymMapper`](components/entity-extractors.mdx#entitysynonymmapper) component. You
+[`EntitySynonymMapper`](components.mdx#entitysynonymmapper) component. You
 should define synonyms when there are multiple ways users refer to the same
 thing.
 
@@ -298,7 +298,7 @@ recognize these as entities and replace them with `credit`.
 ### Regular Expressions
 
 You can use regular expressions to improve intent classification and
-entity extraction in combination with the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) components in the pipeline.
+entity extraction in combination with the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components in the pipeline.
 
 #### Regular Expressions for Intent Classification
 
@@ -326,7 +326,7 @@ matches a single word.
 
 If your entity has a deterministic structure (like an account number), you can use regular expressions in one of two ways:
 
-1. As features for the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) component in the pipeline.
+1. As features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in the pipeline.
 
   When used as as features for the `RegexFeaturizer` the
   name of the regular expression does not matter.
@@ -338,7 +338,7 @@ If your entity has a deterministic structure (like an account number), you can u
   features and their presence will not improve entity recognition for
   these extractors.
 
-2. For rule-based entity extraction using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) component in the pipeline.
+2. For rule-based entity extraction using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) component in the pipeline.
 
   When using the `RegexEntityExtractor`, the name of the regular expression should
   match the name of the entity you want to extract.
@@ -386,8 +386,8 @@ lookup table.
 
 Lookup table regexes are processed identically to the regular
 regex patterns directly specified in the training data and can be used
-either with the [RegexFeaturizer](components/featurizers.mdx#regexfeaturizer)
-or with the [RegexEntityExtractor](components/featurizers.mdx#regexentityextractor).
+either with the [RegexFeaturizer](components.mdx#regexfeaturizer)
+or with the [RegexEntityExtractor](components.mdx#regexentityextractor).
 
 :::note Combining with Regexes
 
