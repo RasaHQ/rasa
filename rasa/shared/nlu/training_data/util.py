@@ -17,10 +17,10 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.constants import UTTER_PREFIX
 import rasa.shared.utils.io
+import rasa.shared.data
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FILE_FORMAT = "yml"
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 ESCAPE = re.compile(f'[{"".join(ESCAPE_DCT.values())}]')
 UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
@@ -51,20 +51,20 @@ def check_duplicate_synonym(
         )
 
 
-def get_file_format(resource_name: Text) -> Text:
+def get_file_format_extension(resource_name: Text) -> Text:
     """
-    Get the file format of a resource. It supports both a folder and
+    Get the file extension based on training data format. It supports both a folder and
     a file, and tries to guess the format as follows:
 
-    - if the resource is a file and has a known format, return this format
+    - if the resource is a file and has a known format, return this format's extension
     - if the resource is a folder and all the resources have the
-      same known format, return it
+      same known format, return it's extension
     - otherwise, default to DEFAULT_FILE_FORMAT (yml).
 
     Args:
-        resource_name: the name of the resource. Can be a file or a folder.
+        resource_name: The name of the resource, can be a file or a folder.
     Returns:
-        the resource file format
+        The resource file format.
     """
     from rasa.shared.nlu.training_data import loading
 
@@ -76,14 +76,17 @@ def get_file_format(resource_name: Text) -> Text:
     file_formats = list(map(lambda f: loading.guess_format(f), files))
 
     if not file_formats:
-        return DEFAULT_FILE_FORMAT
+        return rasa.shared.data.yaml_file_extension()
 
-    knwon_file_formats = {loading.MARKDOWN: "md", loading.RASA_YAML: "yml"}
+    known_file_formats = {
+        loading.MARKDOWN: rasa.shared.data.markdown_file_extension(),
+        loading.RASA_YAML: rasa.shared.data.yaml_file_extension(),
+    }
     fformat = file_formats[0]
     if all(f == fformat for f in file_formats):
-        return knwon_file_formats.get(fformat, DEFAULT_FILE_FORMAT)
+        return known_file_formats.get(fformat, rasa.shared.data.yaml_file_extension())
 
-    return DEFAULT_FILE_FORMAT
+    return rasa.shared.data.yaml_file_extension()
 
 
 def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:

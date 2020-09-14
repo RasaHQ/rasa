@@ -153,12 +153,12 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     data_path = shared_data.get_nlu_directory(data_path)
 
     nlu_data = training_data_loading.load_data(data_path)
-    fformat = training_data_utils.get_file_format(data_path)
+    extension = training_data_utils.get_file_format_extension(data_path)
 
     train, test = nlu_data.train_test_split(args.training_fraction, args.random_seed)
 
-    train.persist(args.out, filename=f"training_data.{fformat}")
-    test.persist(args.out, filename=f"test_data.{fformat}")
+    train.persist(args.out, filename=f"training_data{extension}")
+    test.persist(args.out, filename=f"test_data{extension}")
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:

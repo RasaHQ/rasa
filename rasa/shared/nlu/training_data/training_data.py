@@ -345,7 +345,7 @@ class TrainingData:
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use
             # md as we do not have a NLG json format
-            extension = ".md"
+            extension = rasa.shared.data.markdown_file_extension()
         # Add nlg_ as prefix and change extension to .md
         filename = (
             Path(nlu_filename)
