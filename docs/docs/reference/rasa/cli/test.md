@@ -6,10 +6,15 @@ title: rasa.cli.test
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser])
+add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
-Adds a test subparser.
+Add all test parsers.
+
+**Arguments**:
+
+- `subparsers` - subparser we are going to attach to
+- `parents` - Parent parsers, needed to ensure tree structure in argparse
 
 #### run\_core\_test
 

@@ -255,7 +255,7 @@ Check which components of a model should be retrained.
 #### package\_model
 
 ```python
-package_model(fingerprint: Fingerprint, output_directory: Text, train_path: Text, fixed_model_name: Optional[Text] = None, model_prefix: Text = "")
+package_model(fingerprint: Fingerprint, output_directory: Text, train_path: Text, fixed_model_name: Optional[Text] = None, model_prefix: Text = "") -> Text
 ```
 
 Compress a trained model.

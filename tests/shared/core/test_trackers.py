@@ -66,6 +66,8 @@ domain = Domain.load("examples/moodbot/domain.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
+    # skipcq:PYL-W0231
+    # can't call call super init since it would init a redis connection
     def __init__(self, _domain: Domain) -> None:
         self.red = fakeredis.FakeStrictRedis()
         self.record_exp = None

@@ -47,7 +47,6 @@ Trains a Core model.
 - `train_path` - If `None` the model will be trained in a temporary
   directory, otherwise in the provided directory.
 - `fixed_model_name` - Name of model to be stored.
-- `uncompress` - If `True` the model will not be compressed.
 - `additional_arguments` - Additional training parameters.
   
 

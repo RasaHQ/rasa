@@ -34,7 +34,7 @@ training data file.
 
 ```python
  | @classmethod
- | convert_and_write(cls, source_path: Path, output_path: Path) -> None
+ | async convert_and_write(cls, source_path: Path, output_path: Path) -> None
 ```
 
 Converts the given training data file and saves it to the output directory.

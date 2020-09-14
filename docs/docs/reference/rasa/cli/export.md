@@ -6,7 +6,7 @@ title: rasa.cli.export
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add subparser for `rasa export`.

@@ -3,6 +3,19 @@ sidebar_label: rasa.cli.data
 title: rasa.cli.data
 ---
 
+#### add\_subparser
+
+```python
+add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+```
+
+Add all data parsers.
+
+**Arguments**:
+
+- `subparsers` - subparser we are going to attach to
+- `parents` - Parent parsers, needed to ensure tree structure in argparse
+
 #### split\_nlu\_data
 
 ```python

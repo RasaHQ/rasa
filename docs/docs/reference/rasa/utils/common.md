@@ -15,10 +15,18 @@ manager, it erases the contents of the directory on exit.
 #### read\_global\_config
 
 ```python
-read_global_config() -> Dict[Text, Any]
+read_global_config(path: Text) -> Dict[Text, Any]
 ```
 
 Read global Rasa configuration.
+
+**Arguments**:
+
+- `path` - Path to the configuration
+
+**Returns**:
+
+  The global configuration
 
 #### set\_log\_level
 
@@ -117,4 +125,31 @@ class RepeatedLogFilter(logging.Filter)
 ```
 
 Filter repeated log records.
+
+#### run\_in\_loop
+
+```python
+run_in_loop(f: Coroutine[Any, Any, T], loop: Optional[asyncio.AbstractEventLoop] = None) -> T
+```
+
+Execute the awaitable in the passed loop.
+
+If no loop is passed, the currently existing one is used or a new one is created
+if no loop has been started in the current context.
+
+After the awaitable is finished, all remaining tasks on the loop will be
+awaited as well (background tasks).
+
+WARNING: don&#x27;t use this if there are never ending background tasks scheduled.
+in this case, this function will never return.
+
+**Arguments**:
+
+- `f` - function to execute
+- `loop` - loop to use for the execution
+  
+
+**Returns**:
+
+  return value from the function
 

@@ -14,12 +14,6 @@ Represents a conflict between two or more stories.
 Here, a conflict means that different actions are supposed to follow from
 the same dialogue state, which most policies cannot learn.
 
-**Attributes**:
-
-- `conflicting_actions` - A list of actions that all follow from the same state.
-- `conflict_has_prior_events` - If `False`, then the conflict occurs without any
-  prior events (i.e. at the beginning of a dialogue).
-
 #### \_\_init\_\_
 
 ```python

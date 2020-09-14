@@ -94,8 +94,6 @@ class YAMLStoryReader(StoryReader):
                 f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
             )
             return []
-        except rasa.shared.utils.validation.InvalidYamlFileError as e:
-            raise ValueError from e
 
         return self.read_from_parsed_yaml(yaml_content)
 

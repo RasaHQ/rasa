@@ -5,6 +5,7 @@
         "reference/rasa/server",
         "reference/rasa/run",
         "reference/rasa/test",
+        "reference/rasa/telemetry",
         "reference/rasa/train",
         "reference/rasa/exceptions",
         "reference/rasa/model",
@@ -147,11 +148,18 @@
         },
         {
           "items": [
+            "reference/rasa/cli/run",
             "reference/rasa/cli/utils",
             "reference/rasa/cli/test",
             "reference/rasa/cli/export",
+            "reference/rasa/cli/interactive",
+            "reference/rasa/cli/telemetry",
+            "reference/rasa/cli/scaffold",
+            "reference/rasa/cli/visualize",
+            "reference/rasa/cli/train",
             "reference/rasa/cli/x",
             "reference/rasa/cli/data",
+            "reference/rasa/cli/shell",
             {
               "items": [
                 "reference/rasa/cli/arguments/run",

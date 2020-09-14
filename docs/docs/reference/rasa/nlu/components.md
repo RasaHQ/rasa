@@ -183,7 +183,7 @@ the pipeline to do intent classification.
 
 ```python
  | @property
- | name()
+ | name() -> Text
 ```
 
 Access the class&#x27;s property name from an instance.
