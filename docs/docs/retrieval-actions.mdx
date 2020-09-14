@@ -94,8 +94,9 @@ responses:
     - text: "It's a beautiful day where I am!"
 ```
 
-Unlike regular responses, response names for retrieval action responses don't need to start with
-`utter_`. Instead, they should correspond to the names of the intents from the training data.
+All such responses (e.g. `utter_chitchat/ask_name`) should start with the
+`utter_` prefix followed by the retrieval intent name (`chitchat`)
+and the associated response key (`ask_name`).
 
 The response variations do however use the same format as the [responses in the domain](responses.mdx).
 This means you can also use buttons, images and any other multimedia elements in

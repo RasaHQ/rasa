@@ -244,11 +244,11 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | embedding_dimension             | 20                | Dimension size of embedding vectors.                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| dense_dimension                 | text: 128         | Dense dimension for sparse features to use if no dense       |
-|                                 | label: 20         | features are present.                                        |
+| dense_dimension                 | text: 512         | Dense dimension for sparse features to use if no dense       |
+|                                 | label: 512        | features are present.                                        |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| concat_dimension                | text: 128         | Concat dimension for sequence and sentence features.         |
-|                                 | label: 23         |                                                              |
+| concat_dimension                | text: 512         | Concat dimension for sequence and sentence features.         |
+|                                 | label: 512        |                                                              |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | number_of_negative_examples     | 20                | The number of incorrect labels. The algorithm will minimize  |
 |                                 |                   | their similarity to the user input during training.          |
