@@ -1,8 +1,8 @@
 import json
 import logging
-import os
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 from collections import defaultdict, OrderedDict
 import scipy.sparse
 
@@ -273,20 +273,23 @@ class SklearnPolicy(Policy):
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
 
         if self.model:
             self.featurizer.persist(path)
 
             meta = {"priority": self.priority}
+            path = Path(path)
 
-            meta_file = os.path.join(path, "sklearn_policy.json")
+            meta_file = path / "sklearn_policy.json"
             rasa.shared.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
-            filename = os.path.join(path, "sklearn_model.pkl")
-            io_utils.pickle_dump(filename, self._state)
-            zero_features_filename = os.path.join(path, "zero_state_features.pkl")
+            filename = path / "sklearn_model.pkl"
+            rasa.utils.io.pickle_dump(filename, self._state)
+
+            zero_features_filename = path / "zero_state_features.pkl"
             io_utils.pickle_dump(zero_features_filename, self.zero_state_features)
+
         else:
             rasa.shared.utils.io.raise_warning(
                 "Persist called without a trained model present. "
@@ -294,22 +297,22 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Text) -> Policy:
-        filename = os.path.join(path, "sklearn_model.pkl")
-        zero_features_filename = os.path.join(path, "zero_state_features.pkl")
-        if not os.path.exists(path):
+    def load(cls, path: Union[Text, Path]) -> Policy:
+        filename = Path(path) / "sklearn_model.pkl"
+        zero_features_filename = Path(path) / "zero_state_features.pkl"
+        if not Path(path).exists():
             raise OSError(
-                "Failed to load dialogue model. Path {} "
-                "doesn't exist".format(os.path.abspath(filename))
+                f"Failed to load dialogue model. Path {filename.absolute()} "
+                f"doesn't exist."
             )
 
         featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (
-            "Loaded featurizer of type {}, should be "
-            "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__)
+            f"Loaded featurizer of type {type(featurizer).__name__}, should be "
+            f"MaxHistoryTrackerFeaturizer."
         )
 
-        meta_file = os.path.join(path, "sklearn_policy.json")
+        meta_file = Path(path) / "sklearn_policy.json"
         meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
         zero_state_features = io_utils.pickle_load(zero_features_filename)
 

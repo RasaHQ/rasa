@@ -26,7 +26,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
-    PREDICTED_CONFIDENCE_KEY,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
@@ -35,7 +34,6 @@ from rasa.nlu.constants import (
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
-    RESPONSE,
     INTENT_RESPONSE_KEY,
     ENTITIES,
     EXTRACTOR,
@@ -45,6 +43,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
@@ -1288,9 +1287,9 @@ def get_eval_data(
     intent_results, entity_results, response_selection_results = [], [], []
 
     response_labels = [
-        e.get(RESPONSE)
+        e.get(INTENT_RESPONSE_KEY)
         for e in test_data.intent_examples
-        if e.get(RESPONSE) is not None
+        if e.get(INTENT_RESPONSE_KEY) is not None
     ]
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
     should_eval_intents = (

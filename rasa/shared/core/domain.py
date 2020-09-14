@@ -27,6 +27,7 @@ SESSION_CONFIG_KEY = "session_config"
 USED_ENTITIES_KEY = "used_entities"
 USE_ENTITIES_KEY = "use_entities"
 IGNORE_ENTITIES_KEY = "ignore_entities"
+IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -334,6 +335,15 @@ class Domain:
         del properties[IGNORE_ENTITIES_KEY]
 
         return intent
+
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intents(self) -> List[Text]:
+        """List retrieval intents present in the domain."""
+        return [
+            intent
+            for intent in self.intent_properties
+            if self.intent_properties[intent].get(IS_RETRIEVAL_INTENT_KEY)
+        ]
 
     @classmethod
     def collect_intent_properties(
@@ -1112,7 +1122,7 @@ class Domain:
         utterances = [
             a
             for a in self.action_names
-            if a.startswith(rasa.shared.core.constants.UTTER_PREFIX)
+            if a.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
         missing_templates = [t for t in utterances if t not in self.templates.keys()]
@@ -1129,7 +1139,6 @@ class Domain:
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
-
         return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod

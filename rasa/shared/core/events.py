@@ -106,7 +106,7 @@ def first_key(d: Dict[Text, Any], default_key: Any) -> Any:
 # noinspection PyProtectedMember
 class Event:
     """Events describe everything that occurs in
-    a conversation and tell the :class:`rasa.core.trackers.DialogueStateTracker`
+    a conversation and tell the :class:`rasa.shared.core.trackers.DialogueStateTracker`
     how to update its state."""
 
     type_name = "event"
