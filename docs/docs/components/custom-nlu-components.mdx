@@ -30,6 +30,18 @@ methods that you should implement:
 ```python (docs/sources/tests/nlu/example_component.py)
 ```
 
+When you [define metadata for your intent examples in your training data](./training-data-format.mdx#training-examples),
+your component can access both the intent metadata and the intent example metadata during processing:
+
+```python
+# in your component class
+
+    def process(self, message: Message, **kwargs: Any) -> None:
+        metadata = message.get("metadata")
+        print(metadata.get("intent"))
+        print(metadata.get("example"))
+```
+
 :::note
 If you create a custom tokenizer you should implement the methods of `rasa.nlu.tokenizers.tokenizer.Tokenizer`.
 The `train` and `process` methods are already implemented and you simply need to overwrite the `tokenize`

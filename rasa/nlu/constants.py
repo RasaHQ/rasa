@@ -1,5 +1,6 @@
 import rasa.shared.nlu.constants
 
+
 BILOU_ENTITIES = "bilou_entities"
 BILOU_ENTITIES_ROLE = "bilou_entities_role"
 BILOU_ENTITIES_GROUP = "bilou_entities_group"
