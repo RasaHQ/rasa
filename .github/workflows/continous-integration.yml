@@ -215,7 +215,7 @@ jobs:
     - name: Copy Segment write key to the package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
       run: |
-        echo "${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}" > rasa/segment_key
+        echo "{\"segment\":\"${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}\",\"sentry\":\"${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}\"," > rasa/keys
 
     - name: Build latest${{ matrix.image.tag_ext }} Docker image
       run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
@@ -262,7 +262,7 @@ jobs:
 
     - name: Copy Segment write key to the package
       run: |
-        echo "${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}" > rasa/segment_key
+        echo "{\"segment\":\"${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}\",\"sentry\":\"${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}\"," > rasa/keys
 
     - name: Build ⚒️ Distributions
       run: poetry build
