@@ -329,7 +329,7 @@ def test_sentry_event_pii_removal():
         },
         "platform": "python",
     }
-    stripped = telemetry.strip_sensitive_data_from_sentry_event(event, hint={})
+    stripped = telemetry.strip_sensitive_data_from_sentry_event(event)
 
     for value in stripped.get("exception", {}).get("values", []):
         for frame in value.get("stacktrace", {}).get("frames", []):
