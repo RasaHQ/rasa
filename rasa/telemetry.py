@@ -522,6 +522,9 @@ def initialize_error_reporting() -> None:
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
 
+    # key for local testing can be found at
+    # https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
+    # for local testing, set the key using `RASA_EXCEPTION_WRITE_KEY=key rasa <command>`
     key = sentry_write_key()
 
     if not key:

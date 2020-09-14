@@ -20,6 +20,8 @@ on:
 #                                 they key will be added to the distributions
 # - RASA_OSS_EXCEPTION_WRITE_KEY: key to write to sentry. used to report exceptions
 #                                 they key will be added to the distributions
+#                                 key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
+
 
 env:
   # needed to fix issues with boto during testing:
