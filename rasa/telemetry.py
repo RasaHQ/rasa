@@ -556,8 +556,8 @@ def initialize_error_reporting() -> None:
     )
 
 
-@async_generator.asynccontextmanager
 @ensure_telemetry_enabled
+@async_generator.asynccontextmanager
 async def track_model_training(
     training_data: TrainingDataImporter, model_type: Text
 ) -> None:
