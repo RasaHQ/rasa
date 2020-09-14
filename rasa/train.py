@@ -4,21 +4,21 @@ import tempfile
 from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
+from rasa.cli.utils import run_in_loop
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import model, telemetry
 from rasa.model import FingerprintComparisonResult
 from rasa.shared.core.domain import Domain
 from rasa.nlu.model import Interpreter
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.cli.utils import (
+from rasa.shared.utils.cli import (
     print_success,
     print_warning,
     print_error,
     print_color,
-    run_in_loop,
 )
 import rasa.shared.utils.io
 from rasa.constants import (

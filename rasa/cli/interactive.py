@@ -4,13 +4,14 @@ import logging
 import os
 from typing import List, Optional, Text
 
-import rasa.cli.utils
+import rasa.shared.utils.cli
+from rasa.cli import utils
 import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
 from rasa import model
 
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +55,13 @@ def interactive(args: argparse.Namespace) -> None:
     if args.model is None:
         story_graph = rasa.cli.utils.run_in_loop(file_importer.get_stories())
         if not story_graph or story_graph.is_empty():
-            rasa.cli.utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 "Could not run interactive learning without either core data or a model containing core data."
             )
 
         zipped_model = train.train_core(args) if args.core_only else train.train(args)
         if not zipped_model:
-            rasa.cli.utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 "Could not train an initial model. Either pass paths "
                 "to the relevant training files (`--data`, `--config`, `--domain`), "
                 "or use 'rasa train' to train a model."
@@ -68,7 +69,7 @@ def interactive(args: argparse.Namespace) -> None:
     else:
         zipped_model = get_provided_model(args.model)
         if not (zipped_model and os.path.exists(zipped_model)):
-            rasa.cli.utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 f"Interactive learning process cannot be started as no initial model was "
                 f"found at path '{args.model}'.  Use 'rasa train' to train a model."
             )
@@ -93,7 +94,7 @@ def perform_interactive_learning(
     with model.unpack_model(zipped_model) as model_path:
         args.core, args.nlu = model.get_model_subdirectories(model_path)
         if args.core is None:
-            rasa.cli.utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 "Can not run interactive learning on an NLU-only model."
             )
 

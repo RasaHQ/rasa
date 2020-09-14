@@ -1,15 +1,21 @@
+import asyncio
+import json
 from pathlib import Path
 import uuid
 
 from _pytest.monkeypatch import MonkeyPatch
+import jsonschema
 from mock import Mock
 import pytest
 
 from rasa import telemetry
 import rasa.constants
+from rasa.shared.importers.importer import TrainingDataImporter
+from tests.conftest import DEFAULT_CONFIG_PATH
 
 TELEMETRY_TEST_USER = uuid.uuid4().hex
 TELEMETRY_TEST_KEY = uuid.uuid4().hex
+TELEMETRY_EVENTS_JSON = "docs/docs/telemetry/events.json"
 
 
 @pytest.fixture(autouse=True)
@@ -20,6 +26,42 @@ def patch_global_config_path(monkeypatch: MonkeyPatch, tmp_path: Path):
     rasa.constants.GLOBAL_USER_CONFIG_PATH = str(tmp_path / "global.yml")
     yield
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
+
+
+async def test_events_schema(monkeypatch: MonkeyPatch):
+    # this allows us to patch the printing part used in debug mode to collect the
+    # reported events
+    monkeypatch.setenv("RASA_TELEMETRY_DEBUG", "true")
+    telemetry.initialize_telemetry()
+
+    mock = Mock()
+    monkeypatch.setattr(telemetry, "print_telemetry_event", mock)
+
+    with open(TELEMETRY_EVENTS_JSON) as f:
+        schemas = json.load(f)["events"]
+
+    initial = asyncio.Task.all_tasks()
+    # Generate all known backend telemetry events, and then use events.json to
+    # validate their schema.
+    training_data = TrainingDataImporter.load_from_config(DEFAULT_CONFIG_PATH)
+    async with telemetry.track_model_training(training_data, "rasa"):
+        await asyncio.sleep(1)
+
+    await telemetry.track_telemetry_disabled()
+
+    pending = asyncio.Task.all_tasks() - initial
+    await asyncio.gather(*pending)
+
+    assert mock.call_count == 3
+
+    for call in mock.call_args_list:
+        event = call.args[0]
+        # `metrics_id` automatically gets added to all event but is
+        # not part of the schema so we need to remove it before validation
+        del event["properties"]["metrics_id"]
+        jsonschema.validate(
+            instance=event["properties"], schema=schemas[event["event"]]
+        )
 
 
 async def _mock_track_internal_exception(*args, **kwargs) -> None:

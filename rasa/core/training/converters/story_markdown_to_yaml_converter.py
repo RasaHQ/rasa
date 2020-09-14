@@ -1,7 +1,7 @@
 import asyncio
 from pathlib import Path
 
-from rasa.cli.utils import print_success, print_warning
+from rasa.shared.utils.cli import print_success, print_warning
 from rasa.shared.constants import DOCS_URL_RULES
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,

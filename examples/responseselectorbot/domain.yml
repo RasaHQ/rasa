@@ -10,9 +10,6 @@ intents:
   - bot_challenge
   - chitchat
 
-actions:
-  - respond_chitchat
-
 responses:
   utter_greet:
   - text: "Hey! How are you?"

@@ -2,7 +2,8 @@ import argparse
 from typing import List
 
 from rasa import telemetry
-from rasa.cli.utils import print_info, print_success
+import rasa.cli.utils
+from rasa.shared.utils.cli import print_info, print_success
 from rasa.constants import DOCS_URL_TELEMETRY
 
 
@@ -61,7 +62,7 @@ def inform_about_telemetry(_: argparse.Namespace) -> None:
 
 def disable_telemetry(_: argparse.Namespace) -> None:
     """Disable telemetry tracking."""
-    telemetry.track_telemetry_disabled()
+    rasa.cli.utils.run_in_loop(telemetry.track_telemetry_disabled())
     telemetry.toggle_telemetry_reporting(is_enabled=False)
     print_success("Disabled telemetry reporting.")
 

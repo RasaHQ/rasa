@@ -9,8 +9,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from rasa.importers.importer import TrainingDataImporter
-from rasa.importers.rasa import RasaFileImporter
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,

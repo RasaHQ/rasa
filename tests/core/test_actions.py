@@ -39,7 +39,7 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEACTIVATE_FORM_NAME,
+    ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -85,18 +85,18 @@ def test_text_format():
         == "ActionUtterTemplate('my_action_name')"
     )
     assert (
-        "{}".format(ActionRetrieveResponse("respond_test"))
-        == "ActionRetrieveResponse('respond_test')"
+        "{}".format(ActionRetrieveResponse("utter_test"))
+        == "ActionRetrieveResponse('utter_test')"
     )
 
 
 def test_domain_action_instantiation():
     domain = Domain(
-        intents={},
+        intents=[{"chitchat": {"is_retrieval_intent": True}}],
         entities=[],
         slots=[],
         templates={},
-        action_names=["my_module.ActionTest", "utter_test", "respond_test"],
+        action_names=["my_module.ActionTest", "utter_test", "utter_chitchat"],
         forms=[],
     )
 
@@ -110,7 +110,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
     assert instantiated_actions[3].name() == ACTION_DEFAULT_FALLBACK_NAME
-    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_FORM_NAME
+    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_LOOP_NAME
     assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
@@ -119,7 +119,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
     assert instantiated_actions[11].name() == "my_module.ActionTest"
     assert instantiated_actions[12].name() == "utter_test"
-    assert instantiated_actions[13].name() == "respond_test"
+    assert instantiated_actions[13].name() == "utter_chitchat"
 
 
 async def test_remote_action_runs(
@@ -350,7 +350,7 @@ async def test_action_utter_retrieved_response(
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
@@ -359,11 +359,17 @@ async def test_action_utter_retrieved_response(
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
                         "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
                     }
                 }
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
@@ -372,7 +378,8 @@ async def test_action_utter_retrieved_response(
         "text"
     )
     assert (
-        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
+        events[0].as_dict().get("metadata").get("template_name")
+        == "utter_chitchat/ask_name"
     )
 
 
@@ -381,7 +388,7 @@ async def test_action_utter_default_retrieved_response(
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
@@ -390,11 +397,17 @@ async def test_action_utter_default_retrieved_response(
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
                         "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
                     }
                 }
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
@@ -404,7 +417,8 @@ async def test_action_utter_default_retrieved_response(
     )
 
     assert (
-        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
+        events[0].as_dict().get("metadata").get("template_name")
+        == "utter_chitchat/ask_name"
     )
 
 
@@ -413,7 +427,7 @@ async def test_action_utter_retrieved_empty_response(
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
@@ -422,11 +436,17 @@ async def test_action_utter_retrieved_empty_response(
                     "response": {
                         "intent_response_key": "chitchat/ask_name",
                         "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
                     }
                 }
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )

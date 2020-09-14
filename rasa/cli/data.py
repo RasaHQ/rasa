@@ -6,12 +6,13 @@ from pathlib import Path
 from typing import List
 
 import rasa.shared.data
+import rasa.shared.utils.cli
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
-from rasa.cli.utils import print_error_and_exit, print_info, print_warning, run_in_loop
+from rasa.shared.utils.cli import print_info, print_warning, print_error_and_exit
 from rasa.constants import DEFAULT_DATA_PATH
 from rasa.shared.data import is_valid_filetype
-from rasa.importers.rasa import RasaFileImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.convert import convert_training_data
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
@@ -172,7 +173,7 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         domain_path=args.domain, training_data_paths=args.data
     )
 
-    validator = run_in_loop(Validator.from_importer(file_importer))
+    validator = rasa.cli.utils.run_in_loop(Validator.from_importer(file_importer))
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
@@ -184,7 +185,9 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         )
 
     if not all_good:
-        rasa.cli.utils.print_error_and_exit("Project validation completed with errors.")
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Project validation completed with errors."
+        )
 
 
 def validate_stories(args: argparse.Namespace) -> None:
@@ -316,7 +319,7 @@ def _convert_file_to_yaml(
         return False
 
     if converter.filter(source_file):
-        run_in_loop(converter.convert_and_write(source_file, target_dir))
+        rasa.cli.utils.run_in_loop(converter.convert_and_write(source_file, target_dir))
         return True
 
     print_warning(f"Skipped file: '{source_file}'.")

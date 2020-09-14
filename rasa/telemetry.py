@@ -1,5 +1,5 @@
 import asyncio
-from contextlib import asynccontextmanager
+import async_generator
 from datetime import datetime
 import functools
 from functools import wraps
@@ -20,6 +20,8 @@ import aiohttp
 from terminaltables import SingleTable
 
 import rasa
+from rasa.shared.importers.importer import TrainingDataImporter
+import rasa.shared.utils.io
 from rasa.constants import (
     CONFIG_FILE_TELEMETRY_KEY,
     CONFIG_TELEMETRY_DATE,
@@ -27,7 +29,6 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
     DOCS_URL_TELEMETRY,
 )
-from rasa.importers.importer import TrainingDataImporter
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
 
@@ -299,6 +300,16 @@ def _is_telemetry_debug_enabled() -> bool:
     )
 
 
+def print_telemetry_event(payload: Dict[Text, Any]) -> None:
+    """Print a telemetry events payload to the commandline.
+
+    Args:
+        payload: payload of the event
+    """
+    print("Telemetry Event:")
+    print(json.dumps(payload, indent=2))
+
+
 async def _send_event(
     distinct_id: Text,
     event_name: Text,
@@ -321,8 +332,7 @@ async def _send_event(
     payload = segment_request_payload(distinct_id, event_name, properties, context)
 
     if _is_telemetry_debug_enabled():
-        print("Telemetry Event:")
-        print(json.dumps(payload, indent=2))
+        print_telemetry_event(payload)
         return
 
     write_key = telemetry_write_key()
@@ -385,7 +395,7 @@ def _is_docker() -> bool:
 
     # if that didn't work, try to use proc information
     try:
-        return "docker" in rasa.utils.io.read_file("/proc/self/cgroup", "utf8")
+        return "docker" in rasa.shared.utils.io.read_file("/proc/self/cgroup", "utf8")
     except Exception:  # skipcq:PYL-W0703
         return False
 
@@ -540,7 +550,8 @@ def initialize_error_reporting() -> None:
     )
 
 
-@asynccontextmanager
+@async_generator.asynccontextmanager
+@async_generator.async_generator
 @ensure_telemetry_enabled
 async def track_model_training(
     training_data: TrainingDataImporter, model_type: Text
@@ -603,11 +614,7 @@ async def track_model_training(
 
 
 @ensure_telemetry_enabled
-def track_telemetry_disabled() -> None:
+async def track_telemetry_disabled() -> None:
     """Track when a user disables telemetry."""
 
-    loop = asyncio.new_event_loop()
-    try:
-        loop.run_until_complete(track(TELEMETRY_DISABLED))
-    finally:
-        loop.close()
+    asyncio.ensure_future(track(TELEMETRY_DISABLED))

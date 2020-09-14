@@ -3,18 +3,12 @@ import os
 from typing import List, Optional, Text, Dict
 import rasa.cli.arguments.train as train_arguments
 
-from rasa.cli.utils import (
-    get_validated_path,
-    missing_config_keys,
-    print_error,
-    run_in_loop,
-)
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATH,
-    CONFIG_MANDATORY_KEYS_NLU,
+from rasa.cli.utils import get_validated_path, missing_config_keys, run_in_loop
+from rasa.shared.utils.cli import print_error
+from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
 )
 
@@ -87,9 +81,7 @@ def train_core(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
     from rasa.train import train_core
-    import asyncio
 
-    loop = asyncio.get_event_loop()
     output = train_path or args.out
 
     args.domain = get_validated_path(
