@@ -325,7 +325,7 @@ a fixed behavior. It makes predictions based on any `rules` you have in your
 training data. See the [Rules documentation](./rules.mdx) for further information
 on how to define rules.
 
-The `RulePolicy` has the following configuration options:
+The RulePolicy has the following configuration options:
 
 ```yaml title="config.yml"
 policies:
@@ -346,9 +346,9 @@ policies:
 * `enable_fallback_prediction` (default: `true`): Please see the
    [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
    further information.
-* `check_for_contradictions` (default: `true`): After training, the `RulePolicy` will
-   perform a check to make sure that the rules don't contradict the stories and each
-   other. The following snippet is an example for two contradicting rules:
+* `check_for_contradictions` (default: `true`): After training, the RulePolicy will
+   perform a check to make sure that there are no rules that contradict with each other, or with any stories.
+   The following snippet is an example for two contradicting rules:
 
     ```yaml-rasa
     rules:
@@ -364,8 +364,8 @@ policies:
     ```
  * `restrict_rules` (default: `true`): Rules are restricted to one user turn, but
     there can be multiple bot events, including e.g. a form being filled and its
-    subsequent submission. It is **not recommended** to change this parameter to
-    `false`. Overusing rules for purposes out of the [recommended use cases](rules.mdx)
+    Change this parameter to `false` at your own risk.
+    Overusing rules for purposes outside of the [recommended use cases](rules.mdx)
     will make it very hard to maintain your assistant as the complexity grows.
 
 ## Configuring Policies
