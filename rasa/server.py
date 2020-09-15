@@ -791,13 +791,18 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            info = dict(
+            training_args = dict(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
                 output=model_output_directory,
                 force_training=rjs.get("force", False),
+                fixed_model_name=rjs.get("fixed_model_name"),
+                persist_nlu_training_data=rjs.get("persist_nlu_training_data", False),
+                additional_arguments=rjs.get("additional_arguments"),
             )
+            # filter out any values that are `None`
+            training_args = {k: v for k, v in training_args.items() if v is not None}
 
             loop = asyncio.get_event_loop()
 
@@ -807,7 +812,7 @@ def create_app(
             model_path: Optional[Text] = None
             # pass `None` to run in default executor
             model_path = await loop.run_in_executor(
-                None, functools.partial(train_model, **info)
+                None, functools.partial(train_model, **training_args)
             )
 
             filename = os.path.basename(model_path) if model_path else None
