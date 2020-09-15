@@ -10,6 +10,9 @@ from rasa.shared.nlu.constants import (
     INTENT,
     RESPONSE,
     INTENT_RESPONSE_KEY,
+    METADATA,
+    METADATA_INTENT,
+    METADATA_EXAMPLE,
     ENTITIES,
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SENTENCE,
@@ -93,7 +96,9 @@ class Message:
         cls,
         text: Text,
         intent: Optional[Text] = None,
-        entities: List[Dict[Text, Any]] = None,
+        entities: Optional[List[Dict[Text, Any]]] = None,
+        intent_metadata: Optional[Any] = None,
+        example_metadata: Optional[Any] = None,
         **kwargs: Any,
     ) -> "Message":
         """
@@ -102,10 +107,12 @@ class Message:
             text: text of a user's utterance
             intent: an intent of the user utterance
             entities: entities in the user's utterance
+            intent_metadata: optional metadata for the intent
+            example_metadata: optional metadata for the intent example
         Returns:
             Message
         """
-        data = {TEXT: text}
+        data: Dict[Text, Any] = {TEXT: text}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
             if split_intent:
@@ -116,6 +123,12 @@ class Message:
                 data[INTENT_RESPONSE_KEY] = intent
         if entities:
             data[ENTITIES] = entities
+        if intent_metadata is not None:
+            data[METADATA] = {METADATA_INTENT: intent_metadata}
+        if example_metadata is not None:
+            # pytype: disable=unsupported-operands
+            data.setdefault(METADATA, {})[METADATA_EXAMPLE] = example_metadata
+            # pytype: enable=unsupported-operands
         return cls(data, **kwargs)
 
     @classmethod

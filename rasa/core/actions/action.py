@@ -670,6 +670,7 @@ class ActionExecutionRejection(Exception):
         self.message = message or "Custom action '{}' rejected to run".format(
             action_name
         )
+        super(ActionExecutionRejection, self).__init__()
 
     def __str__(self) -> Text:
         return self.message

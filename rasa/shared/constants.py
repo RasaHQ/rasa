@@ -17,6 +17,7 @@ DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/tracker-stores"
 DOCS_URL_PIPELINE = DOCS_BASE_URL + "/tuning-your-model"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/components"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
+DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 
 INTENT_MESSAGE_PREFIX = "/"

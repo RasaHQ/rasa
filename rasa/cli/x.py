@@ -2,44 +2,53 @@ import argparse
 import asyncio
 import importlib.util
 import logging
+from multiprocessing import get_context
 import os
 import signal
+import sys
 import traceback
-from multiprocessing import get_context
-from typing import List, Text, Optional, Tuple, Iterable
+from typing import Iterable, List, Optional, Text, Tuple
 
 import aiohttp
 import ruamel.yaml as yaml
 
-import rasa.cli.utils as cli_utils
-import rasa.shared.utils.cli
-import rasa.shared.utils.io
-import rasa.utils.io as io_utils
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import x as arguments
+import rasa.cli.utils
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_RASA_X,
-    DEFAULT_RASA_X_PORT,
     DEFAULT_RASA_PORT,
+    DEFAULT_RASA_X_PORT,
 )
 from rasa.shared.constants import (
-    DOCS_BASE_URL_RASA_X,
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
     DEFAULT_CONFIG_PATH,
+    DEFAULT_CREDENTIALS_PATH,
     DEFAULT_DOMAIN_PATH,
+    DEFAULT_ENDPOINTS_PATH,
+    DOCS_BASE_URL_RASA_X,
 )
 from rasa.core.utils import AvailableEndpoints
+from rasa.shared.exceptions import RasaXTermsError
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
+import rasa.utils.common
 from rasa.utils.endpoints import EndpointConfig
+import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_EVENTS_DB = "events.db"
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all rasa x parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     x_parser_args = {
         "parents": parents,
         "conflict_handler": "resolve",
@@ -64,11 +73,10 @@ def _rasa_service(
 ):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
-    import rasa.utils.common
 
     # needs separate logging configuration as it is started in its own process
     rasa.utils.common.set_log_level(args.loglevel)
-    io_utils.configure_colored_logging(args.loglevel)
+    rasa.utils.io.configure_colored_logging(args.loglevel)
 
     if not credentials_path:
         credentials_path = _prepare_credentials_for_rasa_x(
@@ -94,7 +102,7 @@ def _rasa_service(
 def _prepare_credentials_for_rasa_x(
     credentials_path: Optional[Text], rasa_x_url: Optional[Text] = None
 ) -> Text:
-    credentials_path = cli_utils.get_validated_path(
+    credentials_path = rasa.cli.utils.get_validated_path(
         credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
     if credentials_path:
@@ -106,7 +114,7 @@ def _prepare_credentials_for_rasa_x(
     if rasa_x_url:
         credentials["rasa"] = {"url": rasa_x_url}
     dumped_credentials = yaml.dump(credentials, default_flow_style=False)
-    tmp_credentials = io_utils.create_temporary_file(dumped_credentials, "yml")
+    tmp_credentials = rasa.utils.io.create_temporary_file(dumped_credentials, "yml")
 
     return tmp_credentials
 
@@ -169,7 +177,7 @@ def _get_event_broker_endpoint(
         ).ask()
 
         if not continue_with_default_event_broker:
-            exit(0)
+            sys.exit(0)
 
         return default_event_broker_endpoint
     else:
@@ -244,7 +252,7 @@ def _configure_logging(args: argparse.Namespace):
         log_level = logging.getLevelName(log_level)
 
     logging.basicConfig(level=log_level)
-    io_utils.configure_colored_logging(args.loglevel)
+    rasa.utils.io.configure_colored_logging(args.loglevel)
 
     set_log_level(log_level)
     configure_file_logging(logging.root, args.log_file)
@@ -307,7 +315,6 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
 
 def _validate_domain(domain_path: Text):
     from rasa.shared.core.domain import Domain, InvalidDomain
-    from rasa.shared.core.domain import Domain
 
     try:
         Domain.load(domain_path)
@@ -350,7 +357,8 @@ async def _pull_runtime_config_from_server(
                         rjs = await resp.json()
                         try:
                             return [
-                                io_utils.create_temporary_file(rjs[k]) for k in keys
+                                rasa.utils.io.create_temporary_file(rjs[k])
+                                for k in keys
                             ]
                         except KeyError as e:
                             rasa.shared.utils.cli.print_error_and_exit(
@@ -387,7 +395,7 @@ def run_in_production(args: argparse.Namespace):
 
 
 def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
-    config_path = cli_utils.get_validated_path(
+    config_path = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH
     )
 
@@ -399,13 +407,12 @@ def _get_credentials_and_endpoints_paths(
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        loop = asyncio.get_event_loop()
-        endpoints_config_path, credentials_path = loop.run_until_complete(
+        endpoints_config_path, credentials_path = rasa.utils.common.run_in_loop(
             _pull_runtime_config_from_server(config_endpoint)
         )
 
     else:
-        endpoints_config_path = cli_utils.get_validated_path(
+        endpoints_config_path = rasa.cli.utils.get_validated_path(
             args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
         credentials_path = None
@@ -424,16 +431,19 @@ def run_locally(args: argparse.Namespace):
 
     _validate_rasa_x_start(args, project_path)
 
-    local.check_license_and_metrics(args)
     rasa_x_token = generate_rasa_x_token()
     process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
 
     config_path = _get_config_path(args)
 
+    # noinspection PyBroadException
     try:
         local.main(
             args, project_path, args.data, token=rasa_x_token, config_path=config_path
         )
+    except RasaXTermsError:
+        # User didn't accept the Rasa X terms.
+        pass
     except Exception:
         print(traceback.format_exc())
         rasa.shared.utils.cli.print_error(

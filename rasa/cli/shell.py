@@ -4,6 +4,7 @@ import uuid
 
 from typing import List
 
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
@@ -11,12 +12,15 @@ from rasa.exceptions import ModelNotFound
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
-
-
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all shell parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     shell_parser = subparsers.add_parser(
         "shell",
         parents=parents,

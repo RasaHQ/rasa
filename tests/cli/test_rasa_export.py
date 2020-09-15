@@ -29,9 +29,10 @@ def test_export_help(run: Callable[..., RunResult]):
                    [--conversation-ids CONVERSATION_IDS]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 @pytest.mark.parametrize(

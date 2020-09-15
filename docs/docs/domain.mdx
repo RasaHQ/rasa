@@ -64,7 +64,7 @@ suggest you make the slots with the same name of type `unfeaturized`.
 ## Entities
 
 The `entities` section lists all entities
-extracted by any [entity extractor](./components/entity-extractors.mdx) in your
+extracted by any [entity extractor](./components.mdx) in your
 NLU pipeline.
 
 For example:
@@ -162,7 +162,9 @@ Make this a nice table instead.
 
 * **Description**
 
-  Checks if slot is set and if True
+  Sets two boolean features. The first feature is `1` if the slot is set 
+  and `0` otherwise. The second feature is `1` if the slot value is
+  `"true"`, `"1"`, or a variation of these, and `0` otherwise.
 
 
 #### Categorical Slot

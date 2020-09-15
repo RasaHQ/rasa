@@ -105,19 +105,7 @@ module.exports = {
           label: 'Config',
           items: [
             'model-configuration',
-            {
-              type: 'category',
-              label: 'Pipeline Components',
-              items: [
-                'components/language-models',
-                'components/tokenizers',
-                'components/featurizers',
-                'components/intent-classifiers',
-                'components/entity-extractors',
-                'components/selectors',
-                'components/custom-nlu-components',
-              ],
-            },
+            'components',
             'policies',
             'training-data-importers',
           ],
@@ -126,7 +114,7 @@ module.exports = {
           type: 'category',
           label: 'Actions',
           items: [
-            // 'actions',
+            'actions',
             'responses',
             {
               type: 'category',
@@ -195,7 +183,10 @@ module.exports = {
       type: 'category',
       label: 'Reference',
       collapsed: true,
-      items: [require('./docs/reference/sidebar.json')],
+      items: [
+        'telemetry/telemetry',
+        'telemetry/reference',
+        require('./docs/reference/sidebar.json')],
     },
     {
       type: 'category',
