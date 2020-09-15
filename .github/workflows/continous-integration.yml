@@ -132,7 +132,14 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Load Poetry Cached Libraries ⬇ (Ubuntu)
+    - name: Set up virtual environment (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        python -m venv $HOME\rasa-venv
+        . $HOME\rasa-venv\Scripts\activate
+        poetry config virtualenvs.in-project true
+
+    - name: Load Poetry Cached Libraries ⬇ (Linux)
       if: matrix.os == 'ubuntu-latest'
       uses: actions/cache@v1
       with:
@@ -144,7 +151,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       uses: actions/cache@v1
       with:
-        path: $HOME\AppData\Local\pypoetry\Cache\virtualenvs
+        path: $HOME\rasa-venv
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
@@ -158,26 +165,27 @@ jobs:
 
     - name: Install Dependencies (Windows) 📦
       if: matrix.os == 'windows-latest'
-      run: |
+        . $HOME\rasa-venv\Scripts\activate
         make install-full
         make prepare-tests-windows
 
-    - name: Test Code 🔍
-      # We don't test Windows code with Python 3.8 because there is an issue
-      # with python-crc32c library — CFFI is not supported by Github Runners (the corresponding
-      # C++ Build Tools are not installed on their machines). In this case, python-crc32c
-      # should use a pure Python implementation of CFFI but Google made a mistake with
-      # the order of arguments in their code, and their solution doesn't work.
-      # This PR fixes the issue but it's not merged yet:
-      # https://github.com/googleapis/python-crc32c/pull/27
-      if: matrix.os != 'windows-latest' || matrix.python-version != '3.8'
+    - name: Test Code (Linux) 🔍
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
-      run: make test
+      run: |
+        make test
+
+    - name: Test Code (Windows) 🔍
+      env:
+        JOBS: 2
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        . $HOME\rasa-venv\Scripts\activate
+        make test
 
     - name: Send Coverage Report 📊
-      if: matrix.python-version == 3.6
+      if: matrix.python-version == 3.6 && matrix.os != 'windows-latest'
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
