@@ -44,6 +44,11 @@ module.exports = {
   organizationName: 'RasaHQ',
   projectName: 'rasa',
   themeConfig: {
+    algolia: {
+      apiKey: '09ef5d111ebd9002df72575d516693af',
+      indexName: 'BH4D9OD16A',
+      // searchParameters: {}, // Optional (if provided by Algolia)
+    },
     colorMode: {
       defaultMode: 'light',
       disableSwitch: true,
@@ -95,6 +100,7 @@ module.exports = {
     },
   },
   themes: [
+    '@docusaurus/theme-search-algolia',
     '@rasahq/docusaurus-theme-tabula',
     path.resolve(__dirname, './themes/theme-custom')
   ],
