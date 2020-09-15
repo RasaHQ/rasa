@@ -179,7 +179,7 @@ async def test_core_only(project: Text):
 
 
 async def test_import_nlu_training_data_from_e2e_stories(
-    default_importer: TrainingDataImporter
+    default_importer: TrainingDataImporter,
 ):
     # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
     assert isinstance(default_importer, E2EImporter)
@@ -239,7 +239,7 @@ async def test_import_nlu_training_data_from_e2e_stories(
 
 
 async def test_different_story_order_doesnt_change_nlu_training_data(
-    default_importer: E2EImporter
+    default_importer: E2EImporter,
 ):
     stories = [
         StoryStep(
@@ -280,7 +280,7 @@ async def test_different_story_order_doesnt_change_nlu_training_data(
 
 
 async def test_import_nlu_training_data_with_default_actions(
-    default_importer: TrainingDataImporter
+    default_importer: TrainingDataImporter,
 ):
     assert isinstance(default_importer, E2EImporter)
     importer_without_e2e = default_importer.importer
