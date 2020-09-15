@@ -153,20 +153,29 @@ def initialize_telemetry() -> bool:
     Returns:
         `True`, if telemetry is enabled, `False` otherwise.
     """
-    # calling this even if the environment variable is set makes sure the
-    # configuration is created and there is a telemetry ID
-    is_enabled_in_configuration = _is_telemetry_enabled_in_configuration()
+    try:
+        # calling this even if the environment variable is set makes sure the
+        # configuration is created and there is a telemetry ID
+        is_enabled_in_configuration = _is_telemetry_enabled_in_configuration()
 
-    telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
+        telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
 
-    if telemetry_environ is None:
-        return is_enabled_in_configuration
-    else:
-        return telemetry_environ.lower() == "true"
+        if telemetry_environ is None:
+            return is_enabled_in_configuration
+        else:
+            return telemetry_environ.lower() == "true"
+    except Exception as e:  # skipcq:PYL-W0703
+        logger.exception(
+            f"Failed to initialize telemetry reporting: {e}."
+            f"Telemetry reporting will be disabled."
+        )
+        return False
 
 
 def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     """Function decorator for telemetry functions that ensures telemetry is enabled.
+
+    WARNING: does not work as a decorator for async generators.
 
     Args:
         f: function to call if telemetry is enabled
@@ -175,18 +184,15 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     """
     # checks if telemetry is enabled and creates a default config if this is the first
     # call to it
-    is_telemetry_reporting_enabled = initialize_telemetry()
+    initialize_telemetry()
 
     # allows us to use the decorator for async and non async functions
     if asyncio.iscoroutinefunction(f):
 
         @wraps(f)
         async def decorated(*args, **kwargs):
-            try:
-                if is_telemetry_reporting_enabled:
-                    return await f(*args, **kwargs)
-            except Exception as e:  # skipcq:PYL-W0703
-                logger.debug(f"Skipping telemetry reporting: {e}")
+            if is_telemetry_enabled():
+                return await f(*args, **kwargs)
             return None
 
         return decorated
@@ -194,11 +200,8 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
 
         @wraps(f)
         def decorated(*args, **kwargs):
-            try:
-                if is_telemetry_reporting_enabled:
-                    return f(*args, **kwargs)
-            except Exception as e:  # skipcq:PYL-W0703
-                logger.debug(f"Skipping telemetry reporting: {e}")
+            if is_telemetry_enabled():
+                return f(*args, **kwargs)
             return None
 
         return decorated
@@ -479,21 +482,23 @@ async def track(
         properties: Dictionary containing the event's properties.
         context: Dictionary containing some context for this event.
     """
+    try:
+        telemetry_id = get_telemetry_id()
 
-    telemetry_id = get_telemetry_id()
+        if not telemetry_id:
+            logger.debug("Will not report telemetry events as no ID was found.")
+            return
 
-    if not telemetry_id:
-        logger.debug("Will not report telemetry events as no ID was found.")
-        return
+        if not properties:
+            properties = {}
 
-    if not properties:
-        properties = {}
+        properties[TELEMETRY_ID] = telemetry_id
 
-    properties[TELEMETRY_ID] = telemetry_id
-
-    await _send_event(
-        telemetry_id, event_name, properties, with_default_context_fields(context)
-    )
+        await _send_event(
+            telemetry_id, event_name, properties, with_default_context_fields(context)
+        )
+    except Exception as e:  # skipcq:PYL-W0703
+        logger.exception(f"Skipping telemetry reporting: {e}")
 
 
 def get_telemetry_id() -> Optional[Text]:
@@ -596,18 +601,25 @@ def initialize_error_reporting() -> None:
     )
 
 
-@ensure_telemetry_enabled
 @async_generator.asynccontextmanager
 async def track_model_training(
     training_data: TrainingDataImporter, model_type: Text
 ) -> None:
     """Track a model training started.
 
+    WARNING: since this is a generator, it can't use the ensure telemetry
+        decorator. We need to manually add these checks here. This can be
+        fixed as soon as we drop python 3.6 support.
+
     Args:
         training_data: Training data used for the training.
         model_type: Specifies the type of training, should be either "rasa", "core"
             or "nlu".
     """
+    if not initialize_telemetry():
+        # telemetry reporting is disabled. we won't do any reporting
+        yield  # runs the training
+        return  # closes the async context
 
     config = await training_data.get_config()
     stories = await training_data.get_stories()
