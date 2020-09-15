@@ -156,9 +156,12 @@ jobs:
     - name: Install Dependencies (Windows) 📦
       if: matrix.os == 'windows-latest'
       run: |
-        Get-ChildItem -Force -ErrorAction Stop .venv\lib\site-packages\spacy\data | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-        Remove-Item -Force -Recurse .venv\lib\site-packages\spacy\data
-        New-Item -Path .venv\lib\site-packages\spacy\data -Type Directory
+        $dir = ".venv\lib\site-packages\spacy\data"
+        if (Test-Path $dir) {
+          Get-ChildItem -Force -ErrorAction Stop $dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+          Remove-Item -Force -Recurse $dir
+          New-Item -Path $dir -Type Directory
+        }
         make install-full
         make prepare-tests-windows
 
