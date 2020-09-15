@@ -2,7 +2,7 @@
 id: business-logic
 sidebar_label: Handling Business Logic
 title: Handling Business Logic
-abstract: Conversational assistants often need to ask users for information in order to help them. You can use 
+abstract: Conversational assistants often need to ask users for information in order to help them. You can use
 ---
 
 Conversational assistants often support user goals that involve collecting required information
@@ -26,7 +26,7 @@ User: Yes
 
 This type of behavior can and should be handled in a rule based way, as it
 is clear how this information should be collected.
-This page is a guide on handling business logic. 
+This page is a guide on handling business logic.
 In the example above, business logic includes needing to know the user's preferred cuisine, party size, and seating preference.
 It uses abbreviated examples from the [formbot example bot](https://github.com/RasaHQ/rasa/tree/master/examples/formbot).
 Adapt the example
@@ -276,8 +276,7 @@ Be sure to update your domain file to include these added intents.
 
 ### 5. Defining the responses
 
-You should include a response for asking for each required slot and
-for responding after the form has been submitted:
+You should include responses for after the form has been submitted:
 
 ```rasa-yaml
 responses:
@@ -287,6 +286,7 @@ responses:
     - text: "How many people?"
   utter_ask_outdoor_seating:
     - text: "Do you want to seat outside?"
+  # responses after form is submitted
   utter_submit:
     - text: "All done!"
   utter_slots_values:
@@ -298,11 +298,11 @@ responses:
 
 ## Summary
 
-Forms can greatly simplify the logic of collecting user
+Forms can simplify the logic of collecting user
 information. To define a minimal form like the restaurant search
 example above, this is a summary of what you'll need to do:
 
-- [ ] Add `RulePolicy` to your policies in `config.yml`
+- [ ] Update `config.yml`
 - [ ] Define the form with slot mappings
 - [ ] Add all required slots to the domain
 - [ ] Add rules for activating and submitting the form
@@ -311,8 +311,7 @@ example above, this is a summary of what you'll need to do:
 - [ ] Define an action or response for the bot to take when the form is completed
 - [ ] Update your domain with new intents and actions you've defined
 
-To try out your newly defined form, retrain the bot and start `rasa shell`.
-If your final action is a custom action, you'll need to start the action server
-in a separate terminal when running `rasa shell`. If you're using `DucklingEntityExtractor` to extract
+To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
+In using `DucklingEntityExtractor` to extract
 entities, you'll need to start Duckling in the background as well
 (see the [instructions for running Duckling](entity-extractors.mdx#ducklingentityextractor)).
