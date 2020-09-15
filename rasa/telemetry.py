@@ -1,5 +1,4 @@
 import asyncio
-import async_generator
 from datetime import datetime
 import functools
 from functools import wraps
@@ -10,27 +9,40 @@ import multiprocessing
 import os
 from pathlib import Path
 import platform
-from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B404
 import sys
 import textwrap
-from typing import Any, Callable, Dict, Optional, Text
+import typing
+from typing import Any, Callable, Dict, List, Optional, Text
 import uuid
 
 import aiohttp
+import async_generator
+from sanic import Sanic
 from terminaltables import SingleTable
 
 import rasa
-from rasa.shared.constants import DOCS_URL_TELEMETRY
-from rasa.shared.importers.importer import TrainingDataImporter
-import rasa.shared.utils.io
+from rasa import model
 from rasa.constants import (
     CONFIG_FILE_TELEMETRY_KEY,
     CONFIG_TELEMETRY_DATE,
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
+from rasa.model import project_fingerprint
+from rasa.shared.constants import DOCS_URL_TELEMETRY
+import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
+
+if typing.TYPE_CHECKING:
+    from rasa.core.brokers.broker import EventBroker
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.channels.channel import InputChannel
+    from rasa.core.agent import Agent
+    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.importers.importer import TrainingDataImporter
+    from rasa.core.utils import AvailableEndpoints
+
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +79,19 @@ CI_ENVIRONMENT_TELL = [
 # https://rasa.com/docs/rasa/telemetry
 TRAINING_STARTED_EVENT = "Training Started"
 TRAINING_COMPLETED_EVENT = "Training Completed"
-TELEMETRY_DISABLED = "Telemetry Disabled"
+TELEMETRY_DISABLED_EVENT = "Telemetry Disabled"
+TELEMETRY_DATA_SPLIT_EVENT = "Training Data Split"
+TELEMETRY_DATA_VALIDATED_EVENT = "Training Data Validated"
+TELEMETRY_DATA_CONVERTED_EVENT = "Training Data Converted"
+TELEMETRY_TRACKER_EXPORTED_EVENT = "Tracker Exported"
+TELEMETRY_INTERACTIVE_LEARNING_STARTED_EVENT = "Interactive Learning Started"
+TELEMETRY_SERVER_STARTED_EVENT = "Server Started"
+TELEMETRY_PROJECT_CREATED_EVENT = "Project Created"
+TELEMETRY_SHELL_STARTED_EVENT = "Shell Started"
+TELEMETRY_RASA_X_LOCAL_STARTED_EVENT = "Rasa X Local Started"
+TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
+TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
+TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
 
 
 def print_telemetry_reporting_info() -> None:
@@ -390,20 +414,14 @@ async def _send_event(
                     )
 
 
-def _project_hash() -> Text:
-    """Create a hash for the project in the current working directory.
+def _hash_directory_path(path: Text) -> Optional[Text]:
+    """Create a hash for the directory.
 
     Returns:
-        project hash
+        hash of the directories path
     """
-    try:
-        remote = check_output(  # skipcq:BAN-B607,BAN-B603
-            ["git", "remote", "get-url", "origin"], stderr=DEVNULL
-        )
-        return hashlib.sha256(remote).hexdigest()
-    except (CalledProcessError, OSError):
-        working_dir = Path(os.getcwd()).absolute()
-        return hashlib.sha256(str(working_dir).encode("utf-8")).hexdigest()
+    working_dir = Path(path).absolute()
+    return hashlib.sha256(str(working_dir).encode("utf-8")).hexdigest()
 
 
 # noinspection PyBroadException
@@ -456,7 +474,8 @@ def _default_context_fields() -> Dict[Text, Any]:
     return {
         "os": {"name": platform.system(), "version": platform.release()},
         "ci": in_continuous_integration(),
-        "project": _project_hash(),
+        "project": project_fingerprint(),
+        "directory": _hash_directory_path(os.getcwd()),
         "python": sys.version.split(" ")[0],
         "rasa_open_source": rasa.__version__,
         "gpu": len(tf.config.list_physical_devices("GPU")),
@@ -498,7 +517,7 @@ async def track(
             telemetry_id, event_name, properties, with_default_context_fields(context)
         )
     except Exception as e:  # skipcq:PYL-W0703
-        logger.exception(f"Skipping telemetry reporting: {e}")
+        logger.debug(f"Skipping telemetry reporting: {e}")
 
 
 def get_telemetry_id() -> Optional[Text]:
@@ -603,7 +622,7 @@ def initialize_error_reporting() -> None:
 
 @async_generator.asynccontextmanager
 async def track_model_training(
-    training_data: TrainingDataImporter, model_type: Text
+    training_data: "TrainingDataImporter", model_type: Text
 ) -> None:
     """Track a model training started.
 
@@ -634,7 +653,7 @@ async def track_model_training(
             {
                 "language": config.get("language"),
                 "training_id": training_id,
-                "model_type": model_type,
+                "type": model_type,
                 "pipeline": config.get("pipeline"),
                 "policies": config.get("policies"),
                 "num_intent_examples": len(nlu_data.intent_examples),
@@ -663,7 +682,7 @@ async def track_model_training(
             TRAINING_COMPLETED_EVENT,
             {
                 "training_id": training_id,
-                "model_type": model_type,
+                "type": model_type,
                 "runtime": int(runtime.total_seconds()),
             },
         )
@@ -673,5 +692,218 @@ async def track_model_training(
 @ensure_telemetry_enabled
 async def track_telemetry_disabled() -> None:
     """Track when a user disables telemetry."""
+    asyncio.ensure_future(track(TELEMETRY_DISABLED_EVENT))
 
-    asyncio.ensure_future(track(TELEMETRY_DISABLED))
+
+@ensure_telemetry_enabled
+async def track_data_split(fraction: float, data_type: Text) -> None:
+    """Track when a user splits data.
+
+    Args:
+        fraction: How much data goes into train and how much goes into test
+        data_type: Is this core, nlu or nlg data
+    """
+    asyncio.ensure_future(
+        track(TELEMETRY_DATA_SPLIT_EVENT, {"fraction": fraction, "type": data_type})
+    )
+
+
+@ensure_telemetry_enabled
+async def track_validate_files(validation_success: bool) -> None:
+    """Track when a user validates data files.
+
+    Args:
+        validation_success: Whether the validation was successful
+    """
+    asyncio.ensure_future(
+        track(
+            TELEMETRY_DATA_VALIDATED_EVENT, {"validation_success": validation_success}
+        )
+    )
+
+
+@ensure_telemetry_enabled
+async def track_data_convert(output_format: Text, data_type: Text) -> None:
+    """Track when a user converts data.
+
+    Args:
+        output_format: Target format for the converter
+        data_type: Is this core, nlu or nlg data
+    """
+    asyncio.ensure_future(
+        track(
+            TELEMETRY_DATA_CONVERTED_EVENT,
+            {"output_format": output_format, "type": data_type},
+        )
+    )
+
+
+@ensure_telemetry_enabled
+async def track_tracker_export(
+    number_of_exported_events: int,
+    tracker_store: "TrackerStore",
+    event_broker: "EventBroker",
+) -> None:
+    """Track when a user exports trackers.
+
+    Args:
+        number_of_exported_events: Number of events that got exported
+        tracker_store: Store used to retrieve the events from
+        event_broker: Broker the events are getting published towards
+    """
+    asyncio.ensure_future(
+        track(
+            TELEMETRY_TRACKER_EXPORTED_EVENT,
+            {
+                "number_of_exported_events": number_of_exported_events,
+                "tracker_store": type(tracker_store).__name__
+                if tracker_store
+                else None,
+                "event_broker": type(event_broker).__name__ if event_broker else None,
+            },
+        )
+    )
+
+
+@ensure_telemetry_enabled
+async def track_interactive_learning_start(
+    skip_visualization: bool, save_in_e2e: bool
+) -> None:
+    """Track when a user starts an interactive learning session.
+
+    Args:
+        skip_visualization: Is visualization skipped in this session
+        save_in_e2e: Is e2e used in this session
+    """
+    asyncio.ensure_future(
+        track(
+            TELEMETRY_INTERACTIVE_LEARNING_STARTED_EVENT,
+            {"skip_visualization": skip_visualization, "save_in_e2e": save_in_e2e},
+        )
+    )
+
+
+@ensure_telemetry_enabled
+async def track_server_start(
+    input_channels: List["InputChannel"],
+    endpoints: Optional["AvailableEndpoints"],
+    agent: Optional["Agent"],
+) -> None:
+    """Track when a user starts a rasa server.
+
+    Args:
+        endpoints: Endpoint configuration for the server
+        input_channels: Used input channels
+        agent: Agent of the running model
+    """
+    from rasa.core.utils import AvailableEndpoints
+
+    def project_fingerprint_from_app(_agent: "agent") -> Optional[Text]:
+        """Get project fingerprint from an app's loaded agent."""
+        if _agent:
+            # if this property does not exist, the agent has not been loaded
+            model_directory = _agent.model_directory
+            fingerprint = model.fingerprint_from_path(model_directory or "")
+            return fingerprint.get(model.FINGERPRINT_PROJECT)
+        return None
+
+    if not endpoints:
+        endpoints = AvailableEndpoints()
+
+    await track(
+        TELEMETRY_SERVER_STARTED_EVENT,
+        {
+            "input_channels": [i.name() for i in input_channels],
+            "endpoints_nlg": endpoints.nlg.type if endpoints.nlg else None,
+            "endpoints_nlu": endpoints.nlu.type if endpoints.nlu else None,
+            "endpoints_action_server": endpoints.action.type
+            if endpoints.action
+            else None,
+            "endpoints_model_server": endpoints.model.type if endpoints.model else None,
+            "endpoints_tracker_store": endpoints.tracker_store.type
+            if endpoints.tracker_store
+            else None,
+            "endpoints_lock_store": endpoints.lock_store.type
+            if endpoints.lock_store
+            else None,
+            "endpoints_event_broker": endpoints.event_broker.type
+            if endpoints.event_broker
+            else None,
+            "project": project_fingerprint_from_app(agent),
+        },
+    )
+
+
+@ensure_telemetry_enabled
+async def track_project_init(path: Text) -> None:
+    """Track when a user creates a project using rasa init.
+
+    Args:
+        path: Location of the project
+    """
+    asyncio.ensure_future(
+        track(
+            TELEMETRY_PROJECT_CREATED_EVENT,
+            {"init_directory": _hash_directory_path(path)},
+        )
+    )
+
+
+@ensure_telemetry_enabled
+async def track_shell_started(model_type: Text) -> None:
+    """Track when a user starts a bot using rasa shell.
+
+    Args:
+        model_type: Type of the model, core / nlu or rasa."""
+    asyncio.ensure_future(track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type}))
+
+
+@ensure_telemetry_enabled
+async def track_rasa_x_local() -> None:
+    """Track when a user runs Rasa X in local mode."""
+    asyncio.ensure_future(track(TELEMETRY_RASA_X_LOCAL_STARTED_EVENT))
+
+
+@ensure_telemetry_enabled
+async def track_visualization() -> None:
+    """Track when a user runs the visualization."""
+    asyncio.ensure_future(track(TELEMETRY_VISUALIZATION_STARTED_EVENT))
+
+
+@ensure_telemetry_enabled
+async def track_core_model_test(num_story_steps: int, agent: "Agent") -> None:
+    """Track when a user tests a core model.
+
+    Args:
+        num_story_steps: Number of test stories used for the comparison
+        agent: Agent of the model getting tested
+    """
+    fingerprint = model.fingerprint_from_path(agent.model_directory or "")
+    project = fingerprint.get(model.FINGERPRINT_PROJECT)
+    asyncio.ensure_future(
+        track(
+            TELEMETRY_TEST_CORE_EVENT,
+            {"project": project, "num_story_steps": num_story_steps},
+        )
+    )
+
+
+@ensure_telemetry_enabled
+async def track_nlu_model_test(test_data: "TrainingData") -> None:
+    """Track when a user tests an nlu model.
+
+    Args:
+        test_data: Data used for testing
+    """
+    asyncio.ensure_future(
+        track(
+            TELEMETRY_TEST_NLU_EVENT,
+            {
+                "num_intent_examples": len(test_data.intent_examples),
+                "num_entity_examples": len(test_data.entity_examples),
+                "num_lookup_tables": len(test_data.lookup_tables),
+                "num_synonyms": len(test_data.entity_synonyms),
+                "num_regexes": len(test_data.regex_features),
+            },
+        )
+    )

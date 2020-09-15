@@ -11,7 +11,7 @@ import rasa.shared.utils.common
 import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
-from rasa import model, server
+from rasa import model, server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
@@ -207,10 +207,13 @@ def serve_application(
         if app.agent.model_directory:
             shutil.rmtree(_app.agent.model_directory)
 
+    async def run_telemetry(_app: Sanic, _loop: AbstractEventLoop) -> None:
+        await telemetry.track_server_start(input_channels, endpoints, app.agent)
+
     app.register_listener(clear_model_files, "after_server_stop")
+    app.register_listener(run_telemetry, "after_server_start")
 
     rasa.utils.common.update_sanic_log_level(log_file)
-
     app.run(
         host="0.0.0.0",
         port=port,

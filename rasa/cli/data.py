@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import List
 
+from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
@@ -164,6 +165,10 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     train.persist(args.out, filename=f"training_data{extension}")
     test.persist(args.out, filename=f"test_data{extension}")
 
+    rasa.utils.common.run_in_loop(
+        telemetry.track_data_split(args.training_fraction, "nlu")
+    )
+
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
     """Validates either the story structure or the entire project.
@@ -187,10 +192,8 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
             and _validate_story_structure(validator, args)
         )
 
+    rasa.utils.common.run_in_loop(telemetry.track_validate_files(all_good))
     if not all_good:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Project validation completed with errors."
-        )
         rasa.shared.utils.cli.print_error_and_exit(
             "Project validation completed with errors."
         )
@@ -230,6 +233,8 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
         NLUMarkdownToYamlConverter,
     )
 
+    rasa.utils.common.run_in_loop(telemetry.track_data_convert(args.format, "nlu"))
+
     if args.format in ["json", "md"]:
         rasa.nlu.convert.convert_training_data(
             args.data, args.out, args.format, args.language
@@ -250,6 +255,8 @@ def _convert_core_data(args: argparse.Namespace) -> None:
         StoryMarkdownToYamlConverter,
     )
 
+    rasa.utils.common.run_in_loop(telemetry.track_data_convert(args.format, "core"))
+
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(
             _convert_to_yaml(args, StoryMarkdownToYamlConverter())
@@ -265,6 +272,8 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
     from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
         NLGMarkdownToYamlConverter,
     )
+
+    rasa.utils.common.run_in_loop(telemetry.track_data_convert(args.format, "nlg"))
 
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(

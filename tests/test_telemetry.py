@@ -11,7 +11,12 @@ import pytest
 
 from rasa import telemetry
 import rasa.constants
+from rasa.core.agent import Agent
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.channels import CmdlineInput
+from rasa.core.tracker_store import TrackerStore
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from tests import utilities
 from tests.conftest import DEFAULT_CONFIG_PATH
 
@@ -30,7 +35,7 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
-async def test_events_schema(monkeypatch: MonkeyPatch):
+async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
     # this allows us to patch the printing part used in debug mode to collect the
     # reported events
     monkeypatch.setenv("RASA_TELEMETRY_DEBUG", "true")
@@ -51,10 +56,34 @@ async def test_events_schema(monkeypatch: MonkeyPatch):
 
     await telemetry.track_telemetry_disabled()
 
+    await telemetry.track_data_split(0.5, "nlu")
+
+    await telemetry.track_validate_files(True)
+
+    await telemetry.track_data_convert("yaml", "nlu")
+
+    await telemetry.track_tracker_export(5, TrackerStore(domain=None), EventBroker())
+
+    await telemetry.track_interactive_learning_start(True, False)
+
+    await telemetry.track_server_start([CmdlineInput()], None, None)
+
+    await telemetry.track_project_init("tests/")
+
+    await telemetry.track_shell_started("nlu")
+
+    await telemetry.track_rasa_x_local()
+
+    await telemetry.track_visualization()
+
+    await telemetry.track_core_model_test(5, default_agent)
+
+    await telemetry.track_nlu_model_test(TrainingData())
+
     pending = asyncio.Task.all_tasks() - initial
     await asyncio.gather(*pending)
 
-    assert mock.call_count == 3
+    assert mock.call_count == 15
 
     for call in mock.call_args_list:
         event = call.args[0]
