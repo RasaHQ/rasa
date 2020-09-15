@@ -60,6 +60,7 @@ class InvalidRule(Exception):
     """Exception that can be raised when rules are not valid."""
 
     def __init__(self, message: Text) -> None:
+        super().__init__()
         self.message = message + (
             f"\nYou can find more information about the usage of "
             f"rules at {DOCS_URL_RULES}. "
@@ -278,11 +279,14 @@ class RulePolicy(MemoizationPolicy):
         probabilities = self.predict_action_probabilities(tracker, domain, interpreter)
         # do not raise an error if RulePolicy didn't predict anything for stories;
         # however for rules RulePolicy should always predict an action
+        predicted_action_name = None
         if (
             probabilities != self._default_predictions(domain)
             or tracker.is_rule_tracker
         ):
-            return domain.action_names[np.argmax(probabilities)]
+            predicted_action_name = domain.action_names[np.argmax(probabilities)]
+
+        return predicted_action_name
 
     def _check_prediction(
         self,
@@ -294,7 +298,7 @@ class RulePolicy(MemoizationPolicy):
 
         predicted_action_name = self._predict_next_action(tracker, domain, interpreter)
         if not predicted_action_name or predicted_action_name == gold_action_name:
-            return
+            return None
 
         # RulePolicy will always predict active_loop first,
         # but inside loop unhappy path there might be another action
@@ -304,7 +308,7 @@ class RulePolicy(MemoizationPolicy):
                 tracker, domain, interpreter
             )
             if not predicted_action_name or predicted_action_name == gold_action_name:
-                return
+                return None
 
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
         return (
