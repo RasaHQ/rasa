@@ -1,9 +1,9 @@
 {
-  "py/object":"rasa.core.conversation.Dialogue",
+  "py/object":"rasa.shared.core.conversation.Dialogue",
   "name":"moodbot",
   "events":[
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
       "action_text": null,
       "confidence":null,
@@ -12,7 +12,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.UserUttered",
+      "py/object":"rasa.shared.core.events.UserUttered",
       "entities":[
 
       ],
@@ -62,7 +62,7 @@
       "timestamp":1551883971.410778
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"utter_greet",
       "action_text": null,
       "confidence":1.0,
@@ -71,7 +71,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.BotUttered",
+      "py/object":"rasa.shared.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":[
@@ -90,7 +90,7 @@
       "timestamp":1551883975.645656
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
       "action_text": null,
       "confidence":1.0,
@@ -99,7 +99,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.UserUttered",
+      "py/object":"rasa.shared.core.events.UserUttered",
       "entities":[
 
       ],
@@ -149,7 +149,7 @@
       "timestamp":1551883982.540276
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"utter_cheer_up",
       "action_text": null,
       "confidence":1.0,
@@ -158,7 +158,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.BotUttered",
+      "py/object":"rasa.shared.core.events.BotUttered",
       "data":{
         "attachment":"https://i.imgur.com/nGF1K8f.jpg",
         "buttons":null,
@@ -168,7 +168,7 @@
       "timestamp":1551883985.0316749
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"utter_did_that_help",
       "action_text": null,
       "confidence":1.0,
@@ -177,7 +177,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.BotUttered",
+      "py/object":"rasa.shared.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -187,7 +187,7 @@
       "timestamp":1551883985.940421
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
       "action_text": null,
       "confidence":1.0,
@@ -196,7 +196,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.UserUttered",
+      "py/object":"rasa.shared.core.events.UserUttered",
       "entities":[
 
       ],
@@ -246,7 +246,7 @@
       "timestamp":1551883989.0720608
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"utter_goodbye",
       "action_text": null,
       "confidence":1.0,
@@ -255,7 +255,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.BotUttered",
+      "py/object":"rasa.shared.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,

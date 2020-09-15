@@ -1977,6 +1977,17 @@ pytest = ">=5.2,<6.0"
 
 [[package]]
 category = "dev"
+description = "py.test plugin to abort hanging tests"
+name = "pytest-timeout"
+optional = false
+python-versions = "*"
+version = "1.4.2"
+
+[package.dependencies]
+pytest = ">=3.6.0"
+
+[[package]]
+category = "dev"
 description = "pytest xdist plugin for distributed testing and loop-on-failing modes"
 name = "pytest-xdist"
 optional = false
@@ -3069,8 +3080,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "24d096168f11e5ba8d004849e082468504c99ce3c98560e80289185b493c3a59"
-lock-version = "1.0"
+content-hash = "2040a142227e55989b2b715620530fad8c600956ac0bd4e260b97eaa85ab53ec"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -4168,6 +4178,10 @@ pytest-localserver = [
 pytest-sanic = [
     {file = "pytest-sanic-1.6.1.tar.gz", hash = "sha256:99e02c28cfa18a0a9af0cd151dddf0eca373279b9bac808733746f7ed7030ecc"},
     {file = "pytest_sanic-1.6.1-py3-none-any.whl", hash = "sha256:f258c7e34818d316ff75882f865a8b08714c732461fad2d54fbe7bc7c266e6c7"},
+]
+pytest-timeout = [
+    {file = "pytest-timeout-1.4.2.tar.gz", hash = "sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76"},
+    {file = "pytest_timeout-1.4.2-py2.py3-none-any.whl", hash = "sha256:541d7aa19b9a6b4e475c759fd6073ef43d7cdc9a92d95644c260076eb257a063"},
 ]
 pytest-xdist = [
     {file = "pytest-xdist-1.34.0.tar.gz", hash = "sha256:340e8e83e2a4c0d861bdd8d05c5d7b7143f6eea0aba902997db15c2a86be04ee"},

@@ -59,7 +59,7 @@ actions:
 
 Remove any stories using the “greet” intent if you have them.
 
-Next, we need to define `action_greet`. Add the following action to your `actions.py` file:
+Next, we need to define `action_greet`. Add the following action to your `actions/actions.py` file:
 
 ```python
 from rasa_sdk import Action
@@ -218,7 +218,7 @@ Don't forget to add a few end to end stories to your `test_stories.md` for testi
 :::note
 Here's a minimal checklist of  of files we modified to handle unexpected user input:
 
-* `actions.py`: Define `action_greet`
+* `actions/actions.py`: Define `action_greet`
 
 * `data/nlu.yml`: Add training data for an `explain` intent
 

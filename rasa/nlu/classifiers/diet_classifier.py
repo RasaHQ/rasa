@@ -906,7 +906,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir = Path(model_dir)
         tf_model_file = model_dir / f"{file_name}.tf_model"
 
-        io_utils.create_directory_for_file(tf_model_file)
+        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
         self.model.save(str(tf_model_file))
 
@@ -926,7 +926,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if self._entity_tag_specs
             else []
         )
-        io_utils.dump_obj_as_json_to_file(
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
             model_dir / f"{file_name}.entity_tag_specs.json", entity_tag_specs
         )
 

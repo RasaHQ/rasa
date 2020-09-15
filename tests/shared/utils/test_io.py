@@ -9,6 +9,8 @@ import pytest
 
 import rasa.shared
 import rasa.shared.utils.io
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils import io as io_utils
 
 os.environ["USER_NAME"] = "user"
@@ -309,3 +311,70 @@ def test_convert_to_ordered_dict(source: Any, target: Any):
 
     # ensure nested dicts are converted correctly
     _recursively_check_dict_is_ordered_dict(target)
+
+
+def test_create_directory_for_file(tmp_path: Path):
+    file = str(tmp_path / "dir" / "test.txt")
+
+    rasa.shared.utils.io.create_directory_for_file(str(file))
+    assert not os.path.exists(file)
+    assert os.path.exists(os.path.dirname(file))
+
+
+def test_write_json_file(tmp_path: Path):
+    expected = {"abc": "dasds", "list": [1, 2, 3, 4], "nested": {"a": "b"}}
+    file_path = str(tmp_path / "abc.txt")
+
+    rasa.shared.utils.io.dump_obj_as_json_to_file(file_path, expected)
+    assert rasa.shared.utils.io.read_json_file(file_path) == expected
+
+
+def test_create_directory_if_new(tmp_path: Path):
+    directory = str(tmp_path / "a" / "b")
+    rasa.shared.utils.io.create_directory(directory)
+
+    assert os.path.exists(directory)
+
+
+def test_create_directory_if_already_exists(tmp_path: Path):
+    # This should not throw an exception
+    rasa.shared.utils.io.create_directory(str(tmp_path))
+    assert True
+
+
+def test_raise_deprecation_warning():
+    with pytest.warns(FutureWarning) as record:
+        raise_deprecation_warning(
+            "This feature is deprecated.", warn_until_version="3.0.0"
+        )
+
+    assert len(record) == 1
+    assert (
+        record[0].message.args[0]
+        == "This feature is deprecated. (will be removed in 3.0.0)"
+    )
+
+
+def test_raise_deprecation_warning_version_already_in_message():
+    with pytest.warns(FutureWarning) as record:
+        raise_deprecation_warning(
+            "This feature is deprecated and will be removed in 3.0.0!",
+            warn_until_version="3.0.0",
+        )
+
+    assert len(record) == 1
+    assert (
+        record[0].message.args[0]
+        == "This feature is deprecated and will be removed in 3.0.0!"
+    )
+
+
+def test_raise_deprecation_warning_default():
+    with pytest.warns(FutureWarning) as record:
+        raise_deprecation_warning("This feature is deprecated.")
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == (
+        f"This feature is deprecated. "
+        f"(will be removed in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS})"
+    )

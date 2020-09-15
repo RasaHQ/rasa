@@ -1,7 +1,7 @@
 import copy
 import logging
 
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
 
 from rasa.core.nlg import interpolator  # pytype: disable=pyi-error

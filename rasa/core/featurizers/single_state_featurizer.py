@@ -5,11 +5,11 @@ from typing import List, Optional, Dict, Text, Set
 from collections import defaultdict
 
 import rasa.shared.utils.io
-from rasa.core.domain import Domain, State, SubState
-from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.core.constants import USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP
+from rasa.shared.core.domain import SubState, State, Domain
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.core.trackers import is_prev_action_listen_in_state
+from rasa.shared.core.trackers import is_prev_action_listen_in_state
 from rasa.shared.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
@@ -41,7 +41,7 @@ class SingleStateFeaturizer:
         """Gets necessary information for featurization from domain.
 
         Args:
-            domain: a :class:`rasa.core.domain.Domain`
+            domain: An instance of :class:`rasa.shared.core.domain.Domain`.
         """
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:

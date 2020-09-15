@@ -150,6 +150,7 @@ towncrier = "^19.2.0"
 toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
 pydoc-markdown = "^3.5.0"
+pytest-timeout = "^1.4.2"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
