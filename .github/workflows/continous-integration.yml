@@ -158,6 +158,7 @@ jobs:
       run: |
         Get-ChildItem -Force -ErrorAction Stop .venv\lib\site-packages\spacy\data | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
         Remove-Item -Force -Recurse .venv\lib\site-packages\spacy\data
+        New-Item -Path .venv\lib\site-packages\spacy\data -Type Directory
         make install-full
         make prepare-tests-windows
 
