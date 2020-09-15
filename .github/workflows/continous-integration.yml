@@ -152,8 +152,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: $HOME\rasa-venv
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-2
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}-2
 
     - name: Install Dependencies (Linux) 📦
       if: matrix.os == 'ubuntu-latest'
