@@ -1094,9 +1094,9 @@ class DIET(RasaModel):
             self.config[ENTITY_RECOGNITION]
             and f"{ENTITY_ATTRIBUTE_TYPE}_{TAG_IDS}" not in self.data_signature
         ):
-            common_utils.raise_warning(
+            logger.debug(
                 f"You specified '{self.__class__.__name__}' to train entities, but "
-                f"no entities are present in the training data. Skip training of "
+                f"no entities are present in the training data. Skipping training of "
                 f"entities."
             )
             self.config[ENTITY_RECOGNITION] = False
