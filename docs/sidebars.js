@@ -106,19 +106,7 @@ module.exports = {
           label: 'Config',
           items: [
             'model-configuration',
-            {
-              type: 'category',
-              label: 'Pipeline Components',
-              items: [
-                'components/language-models',
-                'components/tokenizers',
-                'components/featurizers',
-                'components/intent-classifiers',
-                'components/entity-extractors',
-                'components/selectors',
-                'components/custom-nlu-components',
-              ],
-            },
+            'components',
             'policies',
             'training-data-importers',
           ],
