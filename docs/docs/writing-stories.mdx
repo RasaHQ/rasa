@@ -1,14 +1,14 @@
 ---
 id: writing-stories
-sidebar_label: Writing Stories
-title: Writing Stories
+sidebar_label: Writing Conversation Data
+title: Writing Conversation Data
+abstract: Conversation data includes the stories and rules that make up
+  the training data for your Rasa assistant's dialogue management
+  model. Well-written conversation data allows your assistant to reliably
+  follow conversation paths you've laid out and generalize to
+  unexpected paths.
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
-
-Rasa Open Source uses machine learning for dialogue management to figure out what your
-assistant should do next. The machine learning model is trained on example conversations
-using [stories](./stories.mdx), a representation of a conversation where user inputs
-are expressed as intents and bot responses are expressed as [actions](./actions.mdx).
 
 ## Designing Stories
 
@@ -31,8 +31,8 @@ happy paths. From this data, you can create stories to accomplish what the user 
 requesting and start to think about ways to guide them back into a happy path.
 
 
+## When to Use Stories vs. Rules
 
-## When to use Stories vs. Rules
 [Rules](./rules.mdx) are a type of training data used by the dialogue manager for
 handling parts of conversations that should always follow the same path.
 
@@ -79,7 +79,7 @@ For multiple-turn interactions, a story should be defined, for example:
 
 Here are some tips for managing the conversation flow in your stories:
 
-### When to use Featurized Slots
+### When to Use Featurized Slots
 
 Slots are your bot’s memory and can be used to influence how the dialogue engine makes
 predictions. These slots must be included in your story files when they are set by a
