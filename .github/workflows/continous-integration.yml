@@ -159,19 +159,11 @@ jobs:
         make install-full
         make prepare-tests-windows
 
-    - name: Test Code (Linux) 🔍
+    - name: Test Code 🔍
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
-        make test
-
-    - name: Test Code (Windows) 🔍
-      env:
-        JOBS: 2
-        PYTHONIOENCODING: "utf-8"
-      run: |
-        . $HOME\rasa-venv\Scripts\activate
         make test
 
     - name: Send Coverage Report 📊
