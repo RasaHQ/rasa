@@ -56,28 +56,6 @@ rules:
 This example rule applies at the start of conversation as well as when the user decides
 to a send a message with an intent `greet` in the middle of an ongoing conversation.
 
-After training, `RulePolicy` will perform a check to make sure that the rules don't
-contradict the stories and each other.
-For example the following two rules are contradicting:
-
-```yaml-rasa
-rules:
-- rule: Chitchat
-  steps:
-  - intent: chitchat
-  - action: utter_chitchat
-
-- rule: Greet instead of chitchat
-  steps:
-  - intent: chitchat
-  - action: utter_greet  # `utter_greet` contradicts `utter_chitchat` from the rule above
-```
-
-:::caution
-Rules are not meant to hardcode a state machine.
-Rules are restricted to have only one user turn, but there can still be multiple
-bot events, including e.g. a form being filled and its subsequent submission.
-:::
 ### Rules for the Conversation Start
 
 To write a rule which only applies at the beginning of a conversation, add a

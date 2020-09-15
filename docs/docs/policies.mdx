@@ -325,15 +325,48 @@ a fixed behavior. It makes predictions based on any `rules` you have in your
 training data. See the [Rules documentation](./rules.mdx) for further information
 on how to define rules.
 
-You can remove rule restriction and check for contradictions by setting the following
-parameters in your configuration:
+The `RulePolicy` has the following configuration options:
+
 ```yaml title="config.yml"
 policies:
   - name: "RulePolicy"
-    restrict_rules: false
-    check_for_contradictions: false
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: action_default_fallback
+    enable_fallback_prediction: true
+    restrict_rules: true
+    check_for_contradictions: true
 ```
 
+* `core_fallback_threshold` (default: `0.3`): Please see the
+   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   further information.
+* `core_fallback_action_name` (default: `action_default_fallback`): Please see the
+   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   further information.
+* `enable_fallback_prediction` (default: `true`): Please see the
+   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   further information.
+* `check_for_contradictions` (default: `true`): After training, the `RulePolicy` will
+   perform a check to make sure that the rules don't contradict the stories and each
+   other. The following snippet is an example for two contradicting rules:
+
+    ```yaml-rasa
+    rules:
+    - rule: Chitchat
+      steps:
+      - intent: chitchat
+      - action: utter_chitchat
+
+    - rule: Greet instead of chitchat
+      steps:
+      - intent: chitchat
+      - action: utter_greet  # `utter_greet` contradicts `utter_chitchat` from the rule above
+    ```
+ * `restrict_rules` (default: `true`): Rules are restricted to one user turn, but
+    there can be multiple bot events, including e.g. a form being filled and its
+    subsequent submission. It is **not recommended** to change this parameter to
+    `false`. Overusing rules for purposes out of the [recommended use cases](rules.mdx)
+    will make it very hard to maintain your assistant as the complexity grows.
 
 ## Configuring Policies
 
