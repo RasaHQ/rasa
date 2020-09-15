@@ -460,7 +460,7 @@ def _lock_store_is_redis_lock_store(
         return False
 
     # `lock_store` is `None` or `EndpointConfig`
-    return lock_store is not None and lock_store.type == "redis"
+    return lock_store is not None and lock_store.type != "in_memory"
 
 
 def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> int:
