@@ -27,6 +27,7 @@ class InvalidStory(Exception):
 
     def __init__(self, message) -> None:
         self.message = message
+        super(InvalidStory, self).__init__()
 
     def __str__(self) -> Text:
         # return message in error colours

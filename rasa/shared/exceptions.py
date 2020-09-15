@@ -4,3 +4,7 @@ class RasaException(Exception):
 
 class RasaCoreException(RasaException):
     """Basic exception for errors raised by Rasa Core."""
+
+
+class RasaXTermsError(RasaException):
+    """Error in case the user didn't accept the Rasa X terms."""
