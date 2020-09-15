@@ -1,21 +1,23 @@
+import asyncio
 import logging
 import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Text, Type
+from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar
 
 import rasa.core.utils
 import rasa.utils.io
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
-    GLOBAL_USER_CONFIG_PATH,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 class TempDirectoryPath(str):
@@ -37,11 +39,17 @@ class TempDirectoryPath(str):
             shutil.rmtree(self)
 
 
-def read_global_config() -> Dict[Text, Any]:
-    """Read global Rasa configuration."""
+def read_global_config(path: Text) -> Dict[Text, Any]:
+    """Read global Rasa configuration.
+
+    Args:
+        path: Path to the configuration
+    Returns:
+        The global configuration
+    """
     # noinspection PyBroadException
     try:
-        return rasa.shared.utils.io.read_config_file(GLOBAL_USER_CONFIG_PATH)
+        return rasa.shared.utils.io.read_config_file(path)
     except Exception:
         # if things go south we pretend there is no config
         return {}
@@ -181,12 +189,17 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
 def write_global_config_value(name: Text, value: Any) -> None:
     """Read global Rasa configuration."""
 
+    # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
+    # in tests
+    config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
     try:
-        os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
-        c = read_global_config()
+        c = read_global_config(config_path)
         c[name] = value
-        rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
+        rasa.core.utils.dump_obj_as_yaml_to_file(
+            rasa.constants.GLOBAL_USER_CONFIG_PATH, c
+        )
     except Exception as e:
         logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
 
@@ -200,10 +213,14 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         else:
             raise ValueError(f"Configuration '{name}' key not found.")
 
-    if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
+    # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
+    # in tests
+    config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
+
+    if not os.path.exists(config_path):
         return not_found()
 
-    c = read_global_config()
+    c = read_global_config(config_path)
 
     if name in c:
         return c[name]
@@ -243,3 +260,40 @@ class RepeatedLogFilter(logging.Filter):
             self.last_log = current_log
             return True
         return False
+
+
+def run_in_loop(
+    f: Coroutine[Any, Any, T], loop: Optional[asyncio.AbstractEventLoop] = None
+) -> T:
+    """Execute the awaitable in the passed loop.
+
+    If no loop is passed, the currently existing one is used or a new one is created
+    if no loop has been started in the current context.
+
+    After the awaitable is finished, all remaining tasks on the loop will be
+    awaited as well (background tasks).
+
+    WARNING: don't use this if there are never ending background tasks scheduled.
+        in this case, this function will never return.
+
+    Args:
+       f: function to execute
+       loop: loop to use for the execution
+
+    Returns:
+        return value from the function
+    """
+
+    if loop is None:
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(f)
+
+    # Let's also finish all running tasks:
+    pending = asyncio.Task.all_tasks()
+    loop.run_until_complete(asyncio.gather(*pending))
+
+    return result

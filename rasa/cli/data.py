@@ -1,29 +1,35 @@
 import argparse
-import asyncio
 import logging
 import os
 from pathlib import Path
 from typing import List
 
-import rasa.shared.data
-import rasa.shared.utils.cli
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_info, print_warning, print_error_and_exit
+import rasa.nlu.convert
 from rasa.shared.constants import DEFAULT_DATA_PATH
-from rasa.shared.data import is_valid_filetype
+import rasa.shared.data
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.nlu.convert import convert_training_data
+import rasa.shared.nlu.training_data.loading
+import rasa.shared.nlu.training_data.util
+import rasa.shared.utils.cli
+import rasa.utils.common
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all data parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     data_parser = subparsers.add_parser(
         "data",
         conflict_handler="resolve",
@@ -147,19 +153,16 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments
     """
-    from rasa.shared.nlu.training_data.loading import load_data
-    from rasa.shared.nlu.training_data.util import get_file_format
-
     data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = rasa.shared.data.get_nlu_directory(data_path)
 
-    nlu_data = load_data(data_path)
-    fformat = get_file_format(data_path)
+    nlu_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
+    extension = rasa.shared.nlu.training_data.util.get_file_format_extension(data_path)
 
     train, test = nlu_data.train_test_split(args.training_fraction, args.random_seed)
 
-    train.persist(args.out, filename=f"training_data.{fformat}")
-    test.persist(args.out, filename=f"test_data.{fformat}")
+    train.persist(args.out, filename=f"training_data{extension}")
+    test.persist(args.out, filename=f"test_data{extension}")
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
@@ -169,12 +172,11 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         args: Commandline arguments
         stories_only: If `True`, only the story structure is validated.
     """
-    loop = asyncio.get_event_loop()
     file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
     )
 
-    validator = loop.run_until_complete(Validator.from_importer(file_importer))
+    validator = rasa.utils.common.run_in_loop(Validator.from_importer(file_importer))
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
@@ -186,6 +188,9 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         )
 
     if not all_good:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Project validation completed with errors."
+        )
         rasa.shared.utils.cli.print_error_and_exit(
             "Project validation completed with errors."
         )
@@ -226,11 +231,15 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
     )
 
     if args.format in ["json", "md"]:
-        convert_training_data(args.data, args.out, args.format, args.language)
+        rasa.nlu.convert.convert_training_data(
+            args.data, args.out, args.format, args.language
+        )
     elif args.format == "yaml":
-        _convert_to_yaml(args, NLUMarkdownToYamlConverter())
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, NLUMarkdownToYamlConverter())
+        )
     else:
-        print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             "Could not recognize output format. Supported output formats: 'json', "
             "'md', 'yaml'. Specify the desired output format with '--format'."
         )
@@ -242,9 +251,11 @@ def _convert_core_data(args: argparse.Namespace) -> None:
     )
 
     if args.format == "yaml":
-        _convert_to_yaml(args, StoryMarkdownToYamlConverter())
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, StoryMarkdownToYamlConverter())
+        )
     else:
-        print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
             "'yaml'. Specify the desired output format with '--format'."
         )
@@ -256,28 +267,30 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
     )
 
     if args.format == "yaml":
-        _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+        )
     else:
-        print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
             "'yaml'. Specify the desired output format with '--format'."
         )
 
 
-def _convert_to_yaml(
+async def _convert_to_yaml(
     args: argparse.Namespace, converter: TrainingDataConverter
 ) -> None:
 
     output = Path(args.out)
     if not os.path.exists(output):
-        print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"The output path '{output}' doesn't exist. Please make sure to specify "
             f"an existing directory and try again."
         )
 
     training_data = Path(args.data)
     if not os.path.exists(training_data):
-        print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"The training data path {training_data} doesn't exist "
             f"and will be skipped."
         )
@@ -285,25 +298,27 @@ def _convert_to_yaml(
     num_of_files_converted = 0
 
     if os.path.isfile(training_data):
-        if _convert_file_to_yaml(training_data, output, converter):
+        if await _convert_file_to_yaml(training_data, output, converter):
             num_of_files_converted += 1
     elif os.path.isdir(training_data):
         for root, _, files in os.walk(training_data, followlinks=True):
             for f in sorted(files):
                 source_path = Path(os.path.join(root, f))
-                if _convert_file_to_yaml(source_path, output, converter):
+                if await _convert_file_to_yaml(source_path, output, converter):
                     num_of_files_converted += 1
 
     if num_of_files_converted:
-        print_info(f"Converted {num_of_files_converted} file(s), saved in '{output}'.")
+        rasa.shared.utils.cli.print_info(
+            f"Converted {num_of_files_converted} file(s), saved in '{output}'."
+        )
     else:
-        print_warning(
+        rasa.shared.utils.cli.print_warning(
             f"Didn't convert any files under '{training_data}' path. "
             "Did you specify the correct file/directory?"
         )
 
 
-def _convert_file_to_yaml(
+async def _convert_file_to_yaml(
     source_file: Path, target_dir: Path, converter: TrainingDataConverter
 ) -> bool:
     """Converts a single training data file to `YAML` format.
@@ -316,13 +331,13 @@ def _convert_file_to_yaml(
     Returns:
         `True` if file was converted, `False` otherwise.
     """
-    if not is_valid_filetype(source_file):
+    if not rasa.shared.data.is_valid_filetype(source_file):
         return False
 
     if converter.filter(source_file):
-        converter.convert_and_write(source_file, target_dir)
+        await converter.convert_and_write(source_file, target_dir)
         return True
 
-    print_warning(f"Skipped file: '{source_file}'.")
+    rasa.shared.utils.cli.print_warning(f"Skipped file: '{source_file}'.")
 
     return False
