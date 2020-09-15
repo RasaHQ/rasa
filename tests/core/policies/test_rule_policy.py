@@ -133,8 +133,10 @@ actions:
     """
     )
     policy = RulePolicy()
-    anti_greet_rule = DialogueStateTracker.from_events(
+    anti_greet_rule = TrackerWithCachedStates.from_events(
         "anti greet rule",
+        domain=domain,
+        slots=domain.slots,
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -154,7 +156,6 @@ actions:
             GREET_RULE.sender_id,
             utter_anti_greet_action,
             anti_greet_rule.sender_id,
-            policy._fallback_action_name,
         }
     )
 
@@ -171,8 +172,10 @@ actions:
     """
     )
     policy = RulePolicy()
-    anti_greet_story = DialogueStateTracker.from_events(
+    anti_greet_story = TrackerWithCachedStates.from_events(
         "anti greet story",
+        domain=domain,
+        slots=domain.slots,
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -187,11 +190,7 @@ actions:
 
     assert all(
         name in execinfo.value.message
-        for name in {
-            utter_anti_greet_action,
-            anti_greet_story.sender_id,
-            UTTER_GREET_ACTION,
-        }
+        for name in {utter_anti_greet_action, anti_greet_story.sender_id}
     )
 
 
