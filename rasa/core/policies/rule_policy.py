@@ -370,12 +370,12 @@ class RulePolicy(MemoizationPolicy):
         if error_messages:
             error_messages = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nContradicting rules found🚨\n\n{error_messages}\n"
+                f"\nContradicting rules or stories found🚨\n\n{error_messages}\n"
                 f"Please update your stories and rules so that they don't contradict "
                 f"each other."
             )
 
-        logger.debug("Found no contradictions between rules and stories")
+        logger.debug("Found no contradicting rules.")
 
     def train(
         self,
