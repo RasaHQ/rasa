@@ -162,7 +162,9 @@ Make this a nice table instead.
 
 * **Description**
 
-  Checks if slot is set and if True
+  Sets two boolean features. The first feature is `1` if the slot is set 
+  and `0` otherwise. The second feature is `1` if the slot value is
+  `"true"`, `"1"`, or a variation of these, and `0` otherwise.
 
 
 #### Categorical Slot
@@ -323,7 +325,7 @@ a vector of length `2`.
 |`(0,1)` |more than 6     |
 
 ```python
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 
 class NumberOfPeopleSlot(Slot):
 

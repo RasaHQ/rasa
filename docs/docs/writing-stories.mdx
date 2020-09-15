@@ -252,7 +252,11 @@ interaction at the end of each story:
 
 ### Creating Logical Breaks in Stories
 
-When designing conversation flows, it can be tempting to create long story examples that capture a complete conversational interaction from start to finish. In many cases, this will increase the number of training stories required to account for branching paths. Instead, consider separating your longer stories into smaller conversational blocks that handle sub-tasks.
+When designing conversation flows, it can be tempting to create long story
+examples that capture a complete conversational interaction from start to finish.
+In many cases, this will increase the number of training stories required
+to account for branching paths. Instead, consider separating your
+longer stories into smaller conversational blocks that handle sub-tasks.
 
 A happy path story for handling a lost credit card might look like:
 
@@ -283,7 +287,17 @@ A happy path story for handling a lost credit card might look like:
   - action: utter_help
 ```
 
-Handling a lost credit card involves a series of sub-tasks, namely checking spending history for fraudulent transactions, confirming a mailing address for a replacement card, and then following up with the user with any additional requests. In this conversation arc, there are several places where the bot prompts for user input, creating branching paths that need to be accounted for. For example, when prompted with "utter_ask_fraudulent_transactions", the user might respond with a "deny" intent if none are applicable. The user might also choose to respond with a "deny" intent when asked if there's anything else the bot can help them with.
+Handling a lost credit card involves a series of sub-tasks, namely
+checking spending history for fraudulent transactions, confirming a mailing
+address for a replacement card, and then following up with the user
+with any additional requests. In this conversation arc, there are
+several places where the bot prompts for user input, creating
+branching paths that need to be accounted for.
+
+For example, when prompted with "utter_ask_fraudulent_transactions",
+the user might respond with a "deny" intent if none are applicable.
+The user might also choose to respond with a "deny" intent when asked
+if there's anything else the bot can help them with.
 
 We can separate out this long story into several smaller stories as:
 
@@ -325,7 +339,8 @@ We can separate out this long story into several smaller stories as:
 ## Handling Context Switching
 
 Often, users will not respond with the information you ask of them and instead deviate
-from the happy path with unrelated questions. Using [CDD](./conversation-driven-development.mdx) to understand
+from the happy path with unrelated questions. Using
+[CDD](./conversation-driven-development.mdx) to understand
 what unhappy paths your users are taking, you can create stories for handling context
 switching.
 
@@ -414,7 +429,15 @@ You will need to create a story that describes this context-switching interactio
 
 ## Managing Story Files
 
-You can provide training data to Rasa Open Source in Markdown format as a single file or as a directory containing multiple files. When writing stories, it's usually a good idea to create separate story files based on the types of conversations being represented. For example, you might create a file `chitchat.md` for handling chitchat stories and an `faqs.md` file for FAQ's. Refer to our [rasa-demo bot](https://github.com/RasaHQ/rasa-demo) for examples of story file management in complex assistants.
+You can provide training data to Rasa Open Source in Markdown format as
+a single file or as a directory containing multiple files.
+When writing stories, it's usually a good idea to create separate
+story files based on the types of conversations being represented.
+
+For example, you might create a file `chitchat.md` for handling chitchat
+stories and an `faqs.md` file for FAQ's.
+Refer to our [rasa-demo bot](https://github.com/RasaHQ/rasa-demo)
+for examples of story file management in complex assistants.
 
 
 ## Using Interactive Learning
@@ -426,8 +449,9 @@ your bot doesn't know how to do something yet, you can just teach it!
 
 In Rasa Open Source, you can run interactive learning in the command line with
 [`rasa interactive`](./command-line-interface.mdx#interactive-learning).
-[Rasa X](http://rasa.com/docs/rasa-x) provides a UI for interactive learning, and you can use any user conversation
-as a starting point. See [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot)
+[Rasa X](http://rasa.com/docs/rasa-x) provides a UI for interactive learning,
+and you can use any user conversation as a starting point.
+See [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot)
 in the Rasa X docs.
 
 <!-- TODO info about using interactive learning locally, can come from old docs -->

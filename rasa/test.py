@@ -1,19 +1,17 @@
-import asyncio
 import logging
 import os
 import typing
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
-import rasa.utils.io as io_utils
-from rasa.constants import (
-    DEFAULT_RESULTS_PATH,
-    RESULTS_FILE,
-    NUMBER_OF_TRAINING_STORIES_FILE,
-)
-import rasa.cli.utils as cli_utils
-import rasa.utils.common as utils
+import rasa.shared.utils.cli
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+import rasa.utils.common
+from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
+from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.exceptions import ModelNotFound
+import rasa.shared.nlu.training_data.loading
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -28,11 +26,12 @@ def test_core_models_in_directory(
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
+    rasa.utils.common.run_in_loop(
+        compare_models_in_dir(model_directory, stories, output)
+    )
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
-    number_of_stories = io_utils.read_json_file(story_n_path)
+    number_of_stories = rasa.shared.utils.io.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
 
 
@@ -76,7 +75,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     p = Path(model_directory)
     if p.is_file():
         if model_directory != rasa.model.get_latest_model():
-            cli_utils.print_warning(
+            rasa.shared.utils.cli.print_warning(
                 "You passed a file as '--model'. Will use the directory containing "
                 "this file instead."
             )
@@ -88,8 +87,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
 def test_core_models(models: List[Text], stories: Text, output: Text):
     from rasa.core.test import compare_models
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(compare_models(models, stories, output))
+    rasa.utils.common.run_in_loop(compare_models(models, stories, output))
 
 
 def test(
@@ -113,19 +111,19 @@ def test_core(
     additional_arguments: Optional[Dict] = None,
 ) -> None:
     import rasa.model
-    from rasa.core.interpreter import RegexInterpreter
+    from rasa.shared.nlu.interpreter import RegexInterpreter
     from rasa.core.agent import Agent
 
     if additional_arguments is None:
         additional_arguments = {}
 
     if output:
-        io_utils.create_directory(output)
+        rasa.shared.utils.io.create_directory(output)
 
     try:
         unpacked_model = rasa.model.get_model(model)
     except ModelNotFound:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Unable to test: could not find a model. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -134,13 +132,13 @@ def test_core(
     _agent = Agent.load(unpacked_model)
 
     if _agent.policy_ensemble is None:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Unable to test: could not find a Core model. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
 
     if isinstance(_agent.interpreter, RegexInterpreter):
-        cli_utils.print_warning(
+        rasa.shared.utils.cli.print_warning(
             "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
             "evaluation. If you added actual user messages to your test stories "
             "this will likely lead to the tests failing. In that case, you need "
@@ -149,20 +147,11 @@ def test_core(
 
     from rasa.core.test import test
 
-    kwargs = utils.minimal_kwargs(additional_arguments, test, ["stories", "agent"])
-
-    _test_core(stories, _agent, output, **kwargs)
-
-
-def _test_core(
-    stories: Optional[Text], agent: "Agent", output_directory: Text, **kwargs: Any
-) -> None:
-    from rasa.core.test import test
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        test(stories, agent, out_directory=output_directory, **kwargs)
+    kwargs = rasa.shared.utils.common.minimal_kwargs(
+        additional_arguments, test, ["stories", "agent"]
     )
+
+    rasa.utils.common.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
 
 
 def test_nlu(
@@ -177,23 +166,23 @@ def test_nlu(
     try:
         unpacked_model = get_model(model)
     except ModelNotFound:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
         return
 
-    io_utils.create_directory(output_directory)
+    rasa.shared.utils.io.create_directory(output_directory)
 
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
-        kwargs = utils.minimal_kwargs(
+        kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
         run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
     else:
-        cli_utils.print_error(
+        rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
@@ -209,12 +198,11 @@ def compare_nlu_models(
     """Trains multiple models, compares them and saves the results."""
 
     from rasa.nlu.test import drop_intents_below_freq
-    from rasa.nlu.training_data import load_data
     from rasa.nlu.utils import write_json_to_file
     from rasa.utils.io import create_path
     from rasa.nlu.test import compare_nlu
 
-    data = load_data(nlu)
+    data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=5)
 
     create_path(output)
@@ -279,9 +267,11 @@ def perform_nlu_cross_validation(
     additional_arguments = additional_arguments or {}
     folds = int(additional_arguments.get("folds", 3))
     nlu_config = rasa.nlu.config.load(config)
-    data = rasa.nlu.training_data.load_data(nlu)
+    data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
-    kwargs = utils.minimal_kwargs(additional_arguments, cross_validate)
+    kwargs = rasa.shared.utils.common.minimal_kwargs(
+        additional_arguments, cross_validate
+    )
     results, entity_results, response_selection_results = cross_validate(
         data, folds, nlu_config, output, **kwargs
     )

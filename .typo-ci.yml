@@ -18,12 +18,16 @@ dictionaries:
 excluded_files:
   - "*.py"
   - "*.css"
+  - "*.scss"
   - "*.yml"
   - "*.yaml"
   - "*.html"
   - "*.json"
   - "*.lock"
   - "*.js"
+  - "*.jsx"
+  - "*.ts"
+  - "*.tsx"
   - "*.md"
   - "CHANGELOG.mdx"
   - "CODE_OF_CONDUCT.md"
@@ -88,6 +92,8 @@ excluded_words:
   - featurizes
   - featurizing
   - forni
+  - gzip
+  - gzipped
   - initializer
   - instaclient
   - jwt
@@ -134,6 +140,7 @@ excluded_words:
   - rasa
   - rasa's
   - readthedocs
+  - regularizer
   - repo
   - rst
   - sanic
@@ -157,6 +164,7 @@ excluded_words:
   - tokenization
   - tokenizer
   - tokenizers
+  - tokenizing
   - typoci
   - unfeaturized
   - unschedule
@@ -172,5 +180,7 @@ excluded_words:
   - crfentityextractor
   - Comerica
   - entitysynonymmapper
+  - NLG
+  - nlg
 
 spellcheck_filenames: false

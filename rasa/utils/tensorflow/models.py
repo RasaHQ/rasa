@@ -3,7 +3,10 @@ import datetime
 import tensorflow as tf
 import numpy as np
 import logging
+import os
+import shutil
 from collections import defaultdict
+from pathlib import Path
 from typing import (
     List,
     Text,
@@ -17,13 +20,16 @@ from typing import (
 )
 
 from tqdm import tqdm
-from rasa.utils.common import is_logging_disabled
+from rasa.constants import CHECKPOINT_MODEL_NAME
+from rasa.shared.utils.io import is_logging_disabled
+import rasa.utils.io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     SEQUENCE,
     TENSORBOARD_LOG_LEVEL,
     RANDOM_SEED,
     TENSORBOARD_LOG_DIR,
+    CHECKPOINT_MODEL,
     EMBEDDING_DIMENSION,
     REGULARIZATION_CONSTANT,
     SIMILARITY_TYPE,
@@ -66,6 +72,7 @@ class RasaModel(tf.keras.models.Model):
         random_seed: Optional[int] = None,
         tensorboard_log_dir: Optional[Text] = None,
         tensorboard_log_level: Optional[Text] = "epoch",
+        checkpoint_model: Optional[bool] = False,
         **kwargs,
     ) -> None:
         """Initialize the RasaModel.
@@ -91,6 +98,16 @@ class RasaModel(tf.keras.models.Model):
         self.test_summary_writer = None
         self.model_summary_file = None
         self.tensorboard_log_on_epochs = True
+
+        self.best_metrics_so_far = {}
+        self.checkpoint_model = checkpoint_model
+        self.best_model_file = None
+        self.best_model_epoch = -1
+        if self.checkpoint_model:
+            model_checkpoint_dir = rasa.utils.io.create_temporary_directory()
+            self.best_model_file = os.path.join(
+                model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
+            )
 
     def _set_up_tensorboard_writer(self) -> None:
         if self.tensorboard_log_dir is not None:
@@ -211,11 +228,18 @@ class RasaModel(tf.keras.models.Model):
                         )
 
                     val_results = self._get_metric_results(prefix="val_")
+                    self._save_model_checkpoint(
+                        current_results=val_results, epoch=epoch
+                    )
 
                 postfix_dict.update(val_results)
 
             progress_bar.set_postfix(postfix_dict)
 
+        if self.checkpoint_model:
+            logger.info(
+                f"The model of epoch {self.best_model_epoch} (out of {epochs} in total) will be stored!"
+            )
         if self.model_summary_file is not None:
             self._write_model_summary()
 
@@ -279,8 +303,27 @@ class RasaModel(tf.keras.models.Model):
         self._training = False  # needed for eager mode
         return self._predict_function(batch_in)
 
-    def save(self, model_file_name: Text) -> None:
-        self.save_weights(model_file_name, save_format="tf")
+    def save(self, model_file_name: Text, overwrite: bool = True) -> None:
+        self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
+
+    def copy_best(self, model_file_name: Text) -> None:
+        checkpoint_directory, checkpoint_file = os.path.split(self.best_model_file)
+        checkpoint_path = Path(checkpoint_directory)
+
+        # Copy all tf2 model files from the temp location to the final destination
+        for f in checkpoint_path.glob(f"{checkpoint_file}*"):
+            shutil.move(str(f.absolute()), model_file_name + f.suffix)
+
+        # Generate the tf2 checkpoint file, copy+replace to ensure consistency
+        destination_path, destination_file = os.path.split(model_file_name)
+        with open(os.path.join(checkpoint_directory, "checkpoint")) as in_file, open(
+            os.path.join(destination_path, "checkpoint"), "w"
+        ) as out_file:
+            for line in in_file:
+                out_file.write(line.replace(checkpoint_file, destination_file))
+
+        # Remove the old file
+        checkpoint_path.joinpath("checkpoint").unlink()
 
     @classmethod
     def load(
@@ -423,6 +466,36 @@ class RasaModel(tf.keras.models.Model):
                 for metric in self.metrics:
                     if metric.name in self.metrics_to_log:
                         tf.summary.scalar(metric.name, metric.result(), step=step)
+
+    def _does_model_improve(self, current_results: Dict[Text, Text]) -> bool:
+        # Initialize best_metrics_so_far with the first results
+        if not self.best_metrics_so_far:
+            keys = filter(
+                lambda k: True if (k.endswith("_acc") or k.endswith("_f1")) else False,
+                current_results.keys(),
+            )
+            for key in keys:
+                self.best_metrics_so_far[key] = float(current_results[key])
+            return True
+
+        all_improved = all(
+            [
+                float(current_results[key]) > self.best_metrics_so_far[key]
+                for key in self.best_metrics_so_far.keys()
+            ]
+        )
+        if all_improved:
+            for key in self.best_metrics_so_far.keys():
+                self.best_metrics_so_far[key] = float(current_results[key])
+        return all_improved
+
+    def _save_model_checkpoint(
+        self, current_results: Dict[Text, Text], epoch: int
+    ) -> None:
+        if self.checkpoint_model and self._does_model_improve(current_results):
+            logger.debug(f"Creating model checkpoint at epoch={epoch + 1}...")
+            self.best_model_epoch = epoch + 1
+            self.save(self.best_model_file, overwrite=True)
 
     @staticmethod
     def _should_evaluate(
@@ -578,6 +651,7 @@ class TransformerRasaModel(RasaModel):
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
             tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
+            checkpoint_model=config[CHECKPOINT_MODEL],
         )
 
         self.config = config

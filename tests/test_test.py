@@ -7,18 +7,20 @@ from typing import Text
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import Mock
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.agent import Agent
-from rasa.core.events import UserUttered
+from rasa.shared.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
     WronglyClassifiedUserUtterance,
     WronglyPredictedAction,
 )
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 import rasa.model
 import rasa.cli.utils
 from rasa.nlu.test import NO_ENTITY
@@ -153,7 +155,7 @@ async def test_interpreter_passed_to_agent(
     assert isinstance(agent.interpreter, RasaNLUInterpreter)
 
 
-async def test_e2e_warning_if_no_nlu_model(
+def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
     from rasa.test import test_core
@@ -161,7 +163,7 @@ async def test_e2e_warning_if_no_nlu_model(
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
     monkeypatch.setattr(
-        sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
+        sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
     test_core(trained_core_model, additional_arguments={"e2e": True})
@@ -208,7 +210,7 @@ def test_log_failed_stories(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.core.test._log_stories([], path)
 
-    dump = rasa.utils.io.read_file(path)
+    dump = rasa.shared.utils.io.read_file(path)
 
     assert dump.startswith("#")
     assert len(dump.split("\n")) == 1
@@ -334,7 +336,7 @@ def test_log_failed_stories(tmp_path: Path):
     ],
 )
 def test_evaluation_store_serialise(entity_predictions, entity_targets):
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     store = EvaluationStore(
         entity_predictions=entity_predictions, entity_targets=entity_targets

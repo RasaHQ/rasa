@@ -12,7 +12,8 @@ from unittest.mock import patch, Mock
 
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
-from rasa.core.constants import INTENT_MESSAGE_PREFIX, DEFAULT_LOCK_LIFETIME
+from rasa.core.constants import DEFAULT_LOCK_LIFETIME
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisLockStore
 
@@ -20,6 +21,7 @@ from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisL
 class FakeRedisLockStore(RedisLockStore):
     """Fake `RedisLockStore` using `fakeredis` library."""
 
+    # skipcq: PYL-W0231
     # noinspection PyMissingConstructor
     def __init__(self):
         import fakeredis

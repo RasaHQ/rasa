@@ -2,7 +2,7 @@ from typing import Text
 
 from rasa.core import restore
 from rasa.core.agent import Agent
-from rasa.nlu.constants import ACTION_NAME
+from rasa.shared.nlu.constants import ACTION_NAME
 
 
 async def test_restoring_tracker(trained_moodbot_path: Text, recwarn):

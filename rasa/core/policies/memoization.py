@@ -3,24 +3,24 @@ import zlib
 import base64
 import json
 import logging
-import os
+
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.constants import DOCS_URL_POLICIES
-from rasa.core.domain import Domain, State
-from rasa.core.events import ActionExecuted
+from rasa.shared.constants import DOCS_URL_POLICIES
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
-from rasa.utils.common import is_logging_disabled
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.utils.io import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
@@ -32,23 +32,23 @@ OLD_DEFAULT_MAX_HISTORY = 5
 
 class MemoizationPolicy(Policy):
     """The policy that remembers exact examples of
-        `max_history` turns from training stories.
+    `max_history` turns from training stories.
 
-        Since `slots` that are set some time in the past are
-        preserved in all future feature vectors until they are set
-        to None, this policy implicitly remembers and most importantly
-        recalls examples in the context of the current dialogue
-        longer than `max_history`.
+    Since `slots` that are set some time in the past are
+    preserved in all future feature vectors until they are set
+    to None, this policy implicitly remembers and most importantly
+    recalls examples in the context of the current dialogue
+    longer than `max_history`.
 
-        This policy is not supposed to be the only policy in an ensemble,
-        it is optimized for precision and not recall.
-        It should get a 100% precision because it emits probabilities of 1.1
-        along it's predictions, which makes every mistake fatal as
-        no other policy can overrule it.
+    This policy is not supposed to be the only policy in an ensemble,
+    it is optimized for precision and not recall.
+    It should get a 100% precision because it emits probabilities of 1.1
+    along it's predictions, which makes every mistake fatal as
+    no other policy can overrule it.
 
-        If it is needed to recall turns from training dialogues where
-        some slots might not be set during prediction time, and there are
-        training stories for this, use AugmentedMemoizationPolicy.
+    If it is needed to recall turns from training dialogues where
+    some slots might not be set during prediction time, and there are
+    training stories for this, use AugmentedMemoizationPolicy.
     """
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
@@ -157,15 +157,17 @@ class MemoizationPolicy(Policy):
         return lookup
 
     def _create_feature_key(self, states: List[State]) -> Text:
-        from rasa.utils import io
-
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
-            compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
-            return base64.b64encode(compressed).decode(io.DEFAULT_ENCODING)
+            compressed = zlib.compress(
+                bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
+            )
+            return base64.b64encode(compressed).decode(
+                rasa.shared.utils.io.DEFAULT_ENCODING
+            )
         else:
             return feature_str
 
@@ -236,59 +238,39 @@ class MemoizationPolicy(Policy):
 
         return result
 
-    def persist(self, path: Text) -> None:
-
-        self.featurizer.persist(path)
-
-        memorized_file = os.path.join(path, "memorized_turns.json")
-        data = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "max_history": self.max_history,
             "lookup": self.lookup,
         }
-        rasa.utils.io.create_directory_for_file(memorized_file)
-        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
-    def load(cls, path: Text) -> "MemoizationPolicy":
-
-        featurizer = TrackerFeaturizer.load(path)
-        memorized_file = os.path.join(path, "memorized_turns.json")
-        if os.path.isfile(memorized_file):
-            data = json.loads(rasa.utils.io.read_file(memorized_file))
-            return cls(
-                featurizer=featurizer, priority=data["priority"], lookup=data["lookup"]
-            )
-        else:
-            logger.info(
-                "Couldn't load memoization for policy. "
-                "File '{}' doesn't exist. Falling back to empty "
-                "turn memory.".format(memorized_file)
-            )
-            return cls()
+    def _metadata_filename(cls) -> Text:
+        return "memorized_turns.json"
 
 
 class AugmentedMemoizationPolicy(MemoizationPolicy):
     """The policy that remembers examples from training stories
-        for `max_history` turns.
+    for `max_history` turns.
 
-        If it is needed to recall turns from training dialogues
-        where some slots might not be set during prediction time,
-        add relevant stories without such slots to training data.
-        E.g. reminder stories.
+    If it is needed to recall turns from training dialogues
+    where some slots might not be set during prediction time,
+    add relevant stories without such slots to training data.
+    E.g. reminder stories.
 
-        Since `slots` that are set some time in the past are
-        preserved in all future feature vectors until they are set
-        to None, this policy has a capability to recall the turns
-        up to `max_history` from training stories during prediction
-        even if additional slots were filled in the past
-        for current dialogue.
+    Since `slots` that are set some time in the past are
+    preserved in all future feature vectors until they are set
+    to None, this policy has a capability to recall the turns
+    up to `max_history` from training stories during prediction
+    even if additional slots were filled in the past
+    for current dialogue.
     """
 
     @staticmethod
     def _back_to_the_future_again(tracker) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
-            the new featurization for the future"""
+        the new featurization for the future"""
 
         idx_of_first_action = None
         idx_of_second_action = None
@@ -318,7 +300,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
     def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[Text]:
         """Recursively go to the past to correctly forget slots,
-            and then back to the future to recall."""
+        and then back to the future to recall."""
 
         logger.debug("Launch DeLorean...")
         mcfly_tracker = self._back_to_the_future_again(tracker)

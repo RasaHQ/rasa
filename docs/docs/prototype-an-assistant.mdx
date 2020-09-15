@@ -2,11 +2,10 @@
 id: prototype-an-assistant
 sidebar_label: 'Prototype an Assistant'
 title: 'Prototype an Assistant'
+abstract: Get started with Rasa Open Source and learn how to create an assistant from scratch!
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
-import Prototyper, { Chat, DownloadButton, TrainButton } from '@site/src/components/prototyper';
-
-Get started with Rasa Open Source and learn how to create an assistant from scratch!
+import Prototyper, { DownloadButton, TrainButton } from '@theme/Prototyper';
 
 This page explains the basics of building an assistant with Rasa Open Source and shows the structure of a Rasa project.
 You can test it out right here without installing anything. You can also install
@@ -74,7 +73,7 @@ to collect for your user goal. Leave the `type` field the same for any items you
 
 ```yaml-rasa live noResult name=forms
 forms:
-- newsletter_form:
+  newsletter_form:
     email:
     - type: from_text
 ```
@@ -116,7 +115,7 @@ stories:
    - active_loop: newsletter_form
 ```
 
-[Read about best practices for writing stories](./stories.mdx)
+[Read about best practices for writing stories](./writing-stories.mdx)
 
 
 ## 6. Edit responses

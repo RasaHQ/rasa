@@ -1,0 +1,141 @@
+{
+  "sections": [
+    "Model Training",
+    "Miscellaneous"
+  ],
+  "defaultSection": "Miscellaneous",
+  "events": {
+    "Telemetry Disabled": {
+      "description": "Triggered when telemetry reporting gets disabled. Last event sent before disabling telemetry. This event is not send, if the user never enabled telemetry reporting before deactivating it."
+    },
+    "Training Started": {
+      "description": "A training of a Rasa machine learning model got started. The event provides information on aggregated training data statistics.",
+      "type": "object",
+      "section": "Model Training",
+      "properties": {
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Language model is trained with, e.g. 'en'."
+        },
+        "training_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Generated unique identifier for this training."
+        },
+        "model_type": {
+          "type": "string",
+          "description": "Type of model trained, either 'nlu', 'core' or 'rasa'."
+        },
+        "pipeline": {
+            "oneOf": [
+            { "type": "string"},
+            { "type": "array", "items": {"type": "object"}}
+          ],
+          "description": "List of the pipeline configurations used for training."
+        },
+        "policies": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "List of the policy configurations used for training."
+        },
+        "num_intent_examples": {
+          "type": "integer",
+          "description": "Number of NLU examples."
+        },
+        "num_entity_examples": {
+          "type": "integer",
+          "description": "Number of entity examples."
+        },
+        "num_actions": {
+          "type": "integer",
+          "description": "Number of actions defined in the domain."
+        },
+        "num_templates": {
+          "type": "integer",
+          "description": "Number of templates defined in the domain."
+        },
+        "num_slots": {
+          "type": "integer",
+          "description": "Number of slots defined in the domain."
+        },
+        "num_forms": {
+          "type": "integer",
+          "description": "Number of forms defined in the domain."
+        },
+        "num_intents": {
+          "type": "integer",
+          "description": "Number of intents defined in the domain."
+        },
+        "num_entities": {
+          "type": "integer",
+          "description": "Number of entities defined in the domain."
+        },
+        "num_story_steps": {
+          "type": "integer",
+          "description": "Number of story steps available."
+        },
+        "num_lookup_tables": {
+          "type": "integer",
+          "description": "Number of different lookup tables."
+        },
+        "num_synonyms": {
+          "type": "integer",
+          "description": "Total number of entity synonyms defined."
+        },
+        "num_regexes": {
+          "type": "integer",
+          "description": "Total number of regexes defined."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "training_id",
+        "model_type",
+        "pipeline",
+        "policies",
+        "num_intent_examples",
+        "num_entity_examples",
+        "num_actions",
+        "num_templates",
+        "num_slots",
+        "num_forms",
+        "num_intents",
+        "num_entities",
+        "num_story_steps",
+        "num_lookup_tables",
+        "num_synonyms",
+        "num_regexes"
+      ]
+    },
+    "Training Completed": {
+      "description": "The training of a Rasa machine learning model finished. The event provides information about the resulting model.",
+      "type": "object",
+      "section": "Model Training",
+      "properties": {
+        "training_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Generated unique identifier for this training. Can be used to join with 'Training Started'."
+        },
+        "model_type": {
+          "type": "string",
+          "description": "Type of model trained, either 'nlu', 'core' or 'rasa'."
+        },
+        "runtime": {
+          "type": "integer",
+          "description": "The time in seconds it took to train the model."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "training_id",
+        "model_type",
+        "runtime"
+      ]
+    }
+  }
+}

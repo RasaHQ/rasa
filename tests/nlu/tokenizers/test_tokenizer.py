@@ -1,20 +1,19 @@
-from typing import Any, Optional, Tuple, Text, Dict, Set, List, Union
+from typing import Tuple, Text, List
 
 import pytest
 
 from rasa.nlu.tokenizers.tokenizer import Token
-
-from rasa.nlu.constants import (
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
     RESPONSE,
-    TOKENS_NAMES,
-    ACTION_NAME,
-    ACTION_TEXT,
     INTENT_RESPONSE_KEY,
+    ACTION_TEXT,
+    ACTION_NAME,
 )
-
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
@@ -132,7 +131,7 @@ def test_process_tokenizer(
 
 
 @pytest.mark.parametrize(
-    "text, expected_tokens", [("action_listen", ["action", "listen"])],
+    "text, expected_tokens", [("action_listen", ["action", "listen"])]
 )
 def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
@@ -148,7 +147,7 @@ def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
 
 
 @pytest.mark.parametrize(
-    "text, expected_tokens", [("I am hungry", ["I", "am", "hungry"])],
+    "text, expected_tokens", [("I am hungry", ["I", "am", "hungry"])]
 )
 def test_process_tokenizer_action_test(text: Text, expected_tokens: List[Text]):
     tk = WhitespaceTokenizer({"intent_tokenization_flag": True})

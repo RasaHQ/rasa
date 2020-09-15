@@ -1,6 +1,7 @@
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 
 def test_entity_synonyms():
@@ -36,7 +37,7 @@ def test_unintentional_synonyms_capitalized(
                 "entities": [
                     {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}
                 ],
-            },
+            }
         ),
         Message(
             data={
@@ -45,7 +46,7 @@ def test_unintentional_synonyms_capitalized(
                 "entities": [
                     {"start": 7, "end": 12, "value": "Mexican", "entity": "cuisine"}
                 ],
-            },
+            }
         ),
     ]
 

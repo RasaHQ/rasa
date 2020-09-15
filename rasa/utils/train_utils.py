@@ -2,7 +2,9 @@ from typing import Optional, Text, Dict, Any, Union, List, Tuple
 
 import numpy as np
 
-from rasa.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
@@ -152,14 +154,14 @@ def _replace_deprecated_option(
 ) -> Dict[Text, Any]:
     if old_option in config:
         if isinstance(new_option, str):
-            common_utils.raise_deprecation_warning(
+            rasa.shared.utils.io.raise_deprecation_warning(
                 f"Option '{old_option}' got renamed to '{new_option}'. "
                 f"Please update your configuration file.",
                 warn_until_version=warn_until_version,
             )
             config[new_option] = config[old_option]
         else:
-            common_utils.raise_deprecation_warning(
+            rasa.shared.utils.io.raise_deprecation_warning(
                 f"Option '{old_option}' got renamed to "
                 f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
                 f"Please update your configuration file.",
