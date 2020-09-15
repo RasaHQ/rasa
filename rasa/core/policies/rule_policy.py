@@ -60,7 +60,10 @@ class InvalidRule(Exception):
     """Exception that can be raised when rules are not valid."""
 
     def __init__(self, message: Text) -> None:
-        self.message = message + f"\nMore info at {DOCS_URL_RULES}"
+        self.message = message + (
+            f"\nYou can find more information about the usage of "
+            f"rules at {DOCS_URL_RULES}. "
+        )
 
     def __str__(self) -> Text:
         # return message in error colours
@@ -305,10 +308,8 @@ class RulePolicy(MemoizationPolicy):
 
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
         return (
-            f"- Action '{gold_action_name}' in {tracker_type} "
-            f"'{tracker.sender_id}' was predicted incorrectly by "
-            f"the {self.__class__.__name__} as action "
-            f"'{predicted_action_name}'."
+            f"- the prediction of the action '{gold_action_name}' in {tracker_type} "
+            f"'{tracker.sender_id}' is contradicting with another rule or story."
         )
 
     def _find_contradicting_rules(
@@ -363,14 +364,12 @@ class RulePolicy(MemoizationPolicy):
 
         logger.setLevel(logger_level)  # reset logger level
         if error_messages:
-            # insert empty string, so that a list of errors look nice,
-            # when they are joined with newline
-            error_messages.insert(0, "")
-            error_messages.append(
-                "Please update your stories and rules so that "
-                "they don't contradict each other."
+            error_messages = "\n".join(error_messages)
+            raise InvalidRule(
+                f"\nContradicting rules 🚨\n\n{error_messages}\n"
+                f"Please update your stories and rules so that they don't contradict "
+                f"each other."
             )
-            raise InvalidRule("\n".join(error_messages))
 
         logger.debug("Found no contradictions between rules and stories")
 
@@ -449,7 +448,8 @@ class RulePolicy(MemoizationPolicy):
                     # it should be None or non existent in the state
                     value == SHOULD_NOT_BE_SET
                     and conversation_sub_state.get(key)
-                    # this is needed to test on rule snippets
+                    # during training `SHOULD_NOT_BE_SET` is provided. Hence, we also
+                    # have to check for the value of the slot state
                     and conversation_sub_state.get(key) != SHOULD_NOT_BE_SET
                 ):
                     return False
