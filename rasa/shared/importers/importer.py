@@ -494,9 +494,9 @@ class E2EImporter(TrainingDataImporter):
         # model has to be retrained due to changes in the event order within
         # the stories.
         sorted_utterances = sorted(
-            list(utterances), key=lambda user: user.intent_name or user.text
+            utterances, key=lambda user: user.intent_name or user.text
         )
-        sorted_actions = sorted(list(actions), key=lambda action: action.action_name)
+        sorted_actions = sorted(actions, key=lambda action: action.action_name)
 
         additional_messages_from_stories = [
             _messages_from_action(action) for action in sorted_actions

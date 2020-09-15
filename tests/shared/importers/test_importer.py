@@ -271,7 +271,7 @@ async def test_different_story_order_doesnt_change_nlu_training_data(
     # effect on the NLU training data
     stories = list(reversed(stories))
 
-    # Make sure importer doesnt cache stories
+    # Make sure importer doesn't cache stories
     default_importer._cached_stories = None
 
     training_data2 = await default_importer.get_nlu_data()
