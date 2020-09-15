@@ -37,6 +37,7 @@
       "timestamp": 1517821726.211031,
       "event": "action",
       "name": "action_listen",
+      "action_text": null,
       "policy": null,
       "confidence": null
     },
@@ -75,6 +76,7 @@
       "timestamp": 1517821726.200373,
       "event": "action",
       "name": "utter_greet",
+      "action_text": null,
       "policy": null,
       "confidence": null
     },
@@ -82,6 +84,7 @@
       "timestamp": 1517821726.211038,
       "event": "action",
       "name": "action_listen",
+      "action_text": null,
       "policy": null,
       "confidence": null
     },
@@ -120,6 +123,7 @@
       "timestamp": 1517821726.209908,
       "event": "action",
       "name": "utter_happy",
+      "action_text": null,
       "policy": "policy_1_TEDPolicy",
       "confidence": 0.8
     },
@@ -127,6 +131,7 @@
       "timestamp": 1517821726.211042,
       "event": "action",
       "name": "action_listen",
+      "action_text": null,
       "policy": "policy_2_MemoizationPolicy",
       "confidence": 1.0
     }
