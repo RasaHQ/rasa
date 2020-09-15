@@ -74,7 +74,7 @@ def run_core_test(args: argparse.Namespace) -> None:
         stories = rasa.shared.data.get_test_directory(stories)
     else:
         stories = rasa.shared.data.get_core_directory(stories)
-    
+
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
