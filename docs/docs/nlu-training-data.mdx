@@ -50,37 +50,37 @@ associate that with a location entity.
 
 Regular expressions can be used in two different ways:
 
-1. They can be used to support the intent classification and entity extraction when using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) component in the pipeline.
+1. They can be used to support the intent classification and entity extraction when using the [RegexFeaturizer](./components.mdx#regexfeaturizer) component in the pipeline.
    Each of the regexes then provide the intent classifier or entity extractor with an extra binary feature, which says if the regex was found or not.
 
-2. They can be used to directly extract entities from a user messages when using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor) component in the pipeline.
+2. They can be used to directly extract entities from a user messages when using the [RegexEntityExtractor](./components.mdx#regexentityextractor) component in the pipeline.
 
 For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular
-expression to ease detection of that entity (using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer)) or to directly extract the entities from
-the user message (using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor)). 
+expression to ease detection of that entity (using the [RegexFeaturizer](./components.mdx#regexfeaturizer)) or to directly extract the entities from
+the user message (using the [RegexEntityExtractor](./components.mdx#regexentityextractor)). 
 
 
-In case you are using the regular expressions for the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) the name of the regular expression does
+In case you are using the regular expressions for the [RegexFeaturizer](./components.mdx#regexfeaturizer) the name of the regular expression does
 not matter. If does not define the entity nor the intent, it is just a human readable description for you to remember
 what this regex is used for and is the title of the corresponding pattern feature.
-If you want to use the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) you can also use the regex features to improve the intent
+If you want to use the [RegexFeaturizer](./components.mdx#regexfeaturizer) you can also use the regex features to improve the intent
 classification performance, for example, by defining a greet clause:
 
 
-If you are using the regular expressions to directly extract entities using the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor),
+If you are using the regular expressions to directly extract entities using the [RegexEntityExtractor](./components.mdx#regexentityextractor),
 the name of the regular expression should match the name of the entity you want to extract.
 
 Try to create your regular expressions in a way that they match as few words as possible. E.g. using `hey[^\\s]*`
 instead of `hey.\*`, as the later one might match the whole message whereas the first one only matches a single word.
 
-When using the [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer), the regex features for entity extraction are currently only supported by the
+When using the [RegexFeaturizer](./components.mdx#regexfeaturizer), the regex features for entity extraction are currently only supported by the
 `CRFEntityExtractor` and the `DIETClassifier` component! Hence, other entity extractors, like
 `MitieEntityExtractor` or `SpacyEntityExtractor` won't use the generated features and their
 presence will not improve entity recognition for these extractors. Currently, all intent classifiers make use of
 available regex features.
 
 :::note
-Regex features only define entities when used in combination with the [RegexEntityExtractor](./components/entity-extractors.mdx#regexentityextractor).
+Regex features only define entities when used in combination with the [RegexEntityExtractor](./components.mdx#regexentityextractor).
 Otherwise they don't define entities nor intents! They simply provide patterns to help the classifier
 recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
 training data!
@@ -156,7 +156,7 @@ The entity object returned by the extractor will include the detected role/group
 ```
 
 :::note
-Composite entities are currently only supported by the [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) and [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor).
+Composite entities are currently only supported by the [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor).
 
 :::
 

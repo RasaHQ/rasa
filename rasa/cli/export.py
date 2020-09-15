@@ -3,8 +3,8 @@ import logging
 import typing
 from typing import List, Text, Optional
 
-import rasa.cli.utils as cli_utils
-import rasa.core.utils as rasa_core_utils
+from rasa.cli import SubParsersAction
+import rasa.core.utils
 import rasa.shared.utils.cli
 from rasa.cli.arguments import export as arguments
 from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORES
@@ -21,9 +21,8 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add subparser for `rasa export`.
 
@@ -173,7 +172,7 @@ def export_trackers(args: argparse.Namespace) -> None:
     """
     _assert_max_timestamp_is_greater_than_min_timestamp(args)
 
-    endpoints = rasa_core_utils.read_endpoints_from_path(args.endpoints)
+    endpoints = rasa.core.utils.read_endpoints_from_path(args.endpoints)
     tracker_store = _get_tracker_store(endpoints)
     event_broker = _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)

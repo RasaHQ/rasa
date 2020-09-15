@@ -24,7 +24,7 @@ def test_converter_filters_correct_files(training_data_file: Text, should_filter
     )
 
 
-def test_stories_are_converted(tmpdir: Path):
+async def test_stories_are_converted(tmpdir: Path):
     converted_data_folder = tmpdir / "converted_data"
     os.mkdir(converted_data_folder)
 
@@ -42,7 +42,7 @@ def test_stories_are_converted(tmpdir: Path):
     with open(training_data_file, "w") as f:
         f.write(simple_story_md)
 
-    StoryMarkdownToYamlConverter().convert_and_write(
+    await StoryMarkdownToYamlConverter().convert_and_write(
         training_data_file, converted_data_folder
     )
 
