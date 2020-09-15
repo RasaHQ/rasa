@@ -165,6 +165,7 @@ jobs:
 
     - name: Install Dependencies (Windows) 📦
       if: matrix.os == 'windows-latest'
+      run: |
         . $HOME\rasa-venv\Scripts\activate
         make install-full
         make prepare-tests-windows
