@@ -45,7 +45,7 @@ Example use cases for rules include:
 
 * [Fallback actions](./fallback-handoff.mdx) for handling messages with low confidence scores
 
-Because rules do not generalize to unseen conversations, they should be reserved for
+Because rules do not generalize to unseen conversations, you should reserve them for
 forms and single turn conversation parts while stories are used for training on
 complete conversations.
 
@@ -60,7 +60,7 @@ rules:
   - action: utter_greet
 ```
 
-For multiple-turn interactions, a story should be defined, for example:
+For multiple-turn interactions, you should define a story, for example:
 
 ```yaml-rasa
  - story: Greeting and ask user how they're doing
@@ -81,14 +81,14 @@ Here are some tips for managing the conversation flow in your stories:
 
 ### When to Use Featurized Slots
 
-Slots are your bot’s memory and can be used to influence how the dialogue engine makes
+Slots are your bot’s memory that you can use to influence how the dialogue engine makes
 predictions. These slots must be included in your story files when they are set by a
 [custom action](./actions.mdx). Most slot types are passed into the dialogue engine as
 featurized representations that only take into account whether or not the slot is set.
 If the value of the slot itself is important, consider using a categorical or bool
 slot type.
 
-For example, a boolean slot set by a custom action can be used to affect the dialogue
+For example, you can use a boolean slot set by a custom action to control the dialogue
 flow based on its value using the following stories:
 
 ```yaml-rasa
@@ -110,8 +110,8 @@ flow based on its value using the following stories:
    - action: utter_ask_upgrade
 ```
 
-In cases where you don't want a slot to affect the conversation flow, an unfeaturized
-slot should be used. Note that, unlike featurized slots, unfeaturized slots should not
+In cases where you don't want a slot to affect the conversation flow, you should use
+an unfeaturized slot. Note that, unlike featurized slots, unfeaturized slots should not
 be included in your story files.
 
 
@@ -123,7 +123,7 @@ a slot value is used only to determine the bot's response, consider embedding th
 decision logic inside a custom action as opposed to using a featurized slot in your
 stories. This can help reduce overall complexity and make your stories easier to manage.
 
-For example these stories:
+For example, you can convert these stories:
 
 ```yaml-rasa
 - story: It's raining now
@@ -145,7 +145,7 @@ For example these stories:
   - action: utter_no_umbrella_needed
 ```
 
-can be converted into a single story:
+into a single story:
 
 ```yaml-rasa
 - story: check for rain
@@ -172,16 +172,16 @@ def run(self, dispatcher, tracker, domain):
 ### Using OR statements and Checkpoints
 
 [OR statements](./stories.mdx#or-statements) and [checkpoints](./stories.mdx#checkpoints)
-can be useful for reducing the number of stories you have to write, however, they should
+are useful for reducing the number of stories you have to write, however, they should
 be used with caution. Overusing OR statements will slow down training,
 and creating too many checkpoints can make your stories hard to understand.
 
 #### OR statements
 
-In stories where different intents should be handled by your bot in the same way,
-OR statements can be used as an alternative to creating a new story.
+In stories where different intents are handled by your bot in the same way,
+you can use OR statements as an alternative to creating a new story.
 
-For example these two stories:
+For example, you can merge these two stories:
 
 ```yaml-rasa
 - story: tell a joke, user thinks it's funny
@@ -201,7 +201,7 @@ For example these two stories:
   - action: utter_happy
 ```
 
-can be merged into a single story with an OR statement:
+into a single story with an OR statement:
 
 ```yaml-rasa
 - story: tell a joke, user thinks it's funny
@@ -252,7 +252,7 @@ interaction at the end of each story:
 
 ### Creating Logical Breaks in Stories
 
-When designing conversation flows, it can be tempting to create long story
+When designing conversation flows, it is often tempting to create long story
 examples that capture a complete conversational interaction from start to finish.
 In many cases, this will increase the number of training stories required
 to account for branching paths. Instead, consider separating your
@@ -347,8 +347,8 @@ switching.
 
 ### Using Rules for Context Switching
 
-In some cases, such as handling single-turn interjections, context-switching can be
-handled using [rules](./rules.mdx) instead of through [stories](./stories.mdx).
+In some cases, such as single-turn interjections, you can handle context-switching
+using [rules](./rules.mdx) instead of through [stories](./stories.mdx).
 
 Consider this conversation scenario:
 
