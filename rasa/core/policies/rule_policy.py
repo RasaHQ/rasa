@@ -266,7 +266,7 @@ class RulePolicy(MemoizationPolicy):
             raise InvalidRule(
                 f"Found rules '{', '.join(rules_exceeding_max_user_turns)}' "
                 f"that contain more than {self.ALLOWED_NUMBER_OF_USER_INPUTS} "
-                f"user inputs. Rules are not meant to hardcode a state machine. "
+                f"user message. Rules are not meant to hardcode a state machine. "
                 f"Please use stories for these cases."
             )
 
@@ -370,7 +370,7 @@ class RulePolicy(MemoizationPolicy):
         if error_messages:
             error_messages = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nContradicting rules 🚨\n\n{error_messages}\n"
+                f"\nContradicting rules found🚨\n\n{error_messages}\n"
                 f"Please update your stories and rules so that they don't contradict "
                 f"each other."
             )
