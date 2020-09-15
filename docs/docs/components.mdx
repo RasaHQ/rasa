@@ -2933,12 +2933,12 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
   </details>
 
 
-## Custom NLU Components
+## Custom Components
 
 You can create a custom component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
-Below is the specification of the [`rasa.nlu.components.Component`](./components/custom-nlu-components.mdx#rasa.nlu.components.Component) class with the methods you'll need to implement.
+Below is the specification of the `rasa.nlu.components.Component`] class with the methods you'll need to implement.
 
-:::note
+:::tip follow the tutorial
 There is a detailed tutorial on building custom components [here](https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/).
 
 :::
@@ -2952,7 +2952,7 @@ pipeline:
 - name: "sentiment.SentimentAnalyzer"
 ```
 
-Also be sure to read the section on the [Component Lifecycle](../tuning-your-model.mdx#component-lifecycle).
+Also be sure to read the section on the [Component Lifecycle](./tuning-your-model.mdx#component-lifecycle).
 
 To get started, you can use this skeleton that contains the most important
 methods that you should implement:
@@ -2972,14 +2972,14 @@ your component can access both the intent metadata and the intent example metada
         print(metadata.get("example"))
 ```
 
-:::note
+:::note custom tokenizers
 If you create a custom tokenizer you should implement the methods of `rasa.nlu.tokenizers.tokenizer.Tokenizer`.
 The `train` and `process` methods are already implemented and you simply need to overwrite the `tokenize`
 method.
 
 :::
 
-:::note
+:::note custom featurizers
 If you create a custom featurizer you can return two different kind of features: sequence features and sentence
 features. The sequence features are a matrix of size `(number-of-tokens x feature-dimension)`, e.g.
 the matrix contains a feature vector for every token in the sequence.
