@@ -5,18 +5,11 @@ title: Chitchat and FAQs
 abstract: FAQ assistants are the simplest assistants to build and typically the first kind of assistant anyone builds. This page is a guide to the concepts and training data you need to handle non-contextual questions like FAQs and chitchat.
 ---
 
-<<<<<<< HEAD
-Frequently Asked Question (FAQ) assistants are the simplest assistants to build and a good place to get started.
-FAQs and chitchat (e.g. "What's your name?") are two cases where the conversational assistant's answer is a single message,
-=======
-[FAQs](./glossary.mdx#faqs) and [chitchat](./glossary.mdx#chitchat) are two cases where the conversational assistant's answer is a single message,
->>>>>>> 33dbe38fad441c1a14698b0bb2dd941c87fbcc56
-and the assistant should always answer the same way,
+
+[FAQs](./glossary.mdx#faqs) and [chitchat](./glossary.mdx#chitchat) are two cases where the conversational assistant responds with a fixed set of messages, and the assistant should always answer the same way,
 no matter what has happened previously in the conversation.
-For example, in the
-following conversation, every question's answer is independent of context and
-could
-just as easily be answered on its own:
+For example, in the following conversation, every question can be asked at any point in the conversation,
+with the answer being independent of anything the user has said previously.
 
 ```yaml
 User: What's your name
@@ -28,16 +21,15 @@ User: What’s Rasa X?
 ```
 
 
-
-## Using Retrieval Actions for FAQs and Chitchat
+## Step-by-step Guide on Using Retrieval Actions for FAQs and Chitchat
 
 To handle FAQs and chitchat you'll need a rule-based dialogue management policy ([the `RulePolicy`](#rulepolicy)) and an easy way
 to return the appropriate response for a question ([the `ResponseSelector`](#retrieval-actions-and-responseselector)).
 
 ### 1. Updating the configuration
 
-For FAQs and chitchat, you always want the same response (or action) for the same question.
-[Rules](rules.mdx) allow you to do exactly that.
+For FAQs and chitchat, you always want the assistant to respond the same way every time
+the same type of question is asked. [Rules](rules.mdx) allow you to do exactly that.
 To use rules, the you need to add the [`RulePolicy`](#rule-policy) to your policies in your configuration file:
 
 ```rasa-yaml
@@ -47,19 +39,6 @@ policies:
 ```
 
 The `RulePolicy` works alongside other policies in your configuration (like the `TEDPolicy`). Its job is to enforce rule-based logic for conversation paths where you already know how the assistant should respond to a given input.
-
-
-### 2. Defining Retrieval Actions and the `ResponseSelector`
-
-Consider an example where you have 20 different FAQs. Although each question is represented as an individual intent, all FAQ intents are handled the same way in the dialogue. For each FAQ intent, the assistant **retrieves** the proper response depending on which question has been asked.
-
-Instead of writing 20 rules, you can use [retrieval
-actions](retrieval-actions.mdx) to handle all FAQs with a single rule by grouping them together under a single [retrieval intent](glossary.mdx#retrieval-intent)
-called e.g. `faq`.
-
-The retrieval action uses the output of the
-[`ResponseSelector`](./components/selectors.mdx#response-selector) to return
-the correct response for the specific FAQ that the user asked.
 
 To use retrieval actions, include the `ResponseSelector` in your NLU pipeline in your configuration file.
 The `ResponseSelector` requires a featurizer and intent classifier to work, so
@@ -100,12 +79,25 @@ pipeline:
 It's recommended to start with separate models for each `retrieval_intent`. You can merge them later if you find it works better for your use case.
 
 
+### 2. Defining Retrieval Actions and the `ResponseSelector`
+
+Consider an example where you have 20 different FAQs. Although each question is represented as an individual intent, all FAQ intents are handled the same way in the dialogue. For each FAQ intent, the assistant **retrieves** the proper response depending on which question has been asked.
+
+Instead of writing 20 rules, you can use [retrieval
+actions](retrieval-actions.mdx) to handle all FAQs with a single rule by grouping them together under a single [retrieval intent](glossary.mdx#retrieval-intent)
+called e.g. `faq`.
+
+The retrieval action uses the output of the
+[`ResponseSelector`](./components/selectors.mdx#response-selector) to return
+the correct response for the specific FAQ that the user asked.
+
+
 ### 3. Creating rules
 
 When using retrieval actions, you need to write only one rule for each retrieval intent. All intents
 grouped under that retrieval intent will then be handled the same way.
 The retrieval action starts with `respond_` and ends with the retrieval intent's name.
-For example, rules for responding to FAQs and chitchat would look like this:
+Write rules for responding to FAQs and chitchat:
 
 ```rasa-yaml
 rules:
@@ -125,35 +117,31 @@ The actions `respond_faq` and `respond_chitchat` will use the `ResponseSelector`
 
 NLU training examples for the `ResponseSelector` look the same as
 regular training examples, except that their names must refer to the retrieval
-intent they are grouped under. For example:
+intent they are grouped under:
 
 ```rasa-yaml
 nlu:
-  - intent: faq/ask_channels
+  - intent: chitchat/ask_name
     examples: |
-      - What channels of communication does rasa support?
-      - what channels do you support?
-      - what chat channels does rasa uses
-      - channels supported by Rasa
-      - which messaging channels does rasa support?
-  - intent: faq/ask_languages
+      - What is your name?
+      - May I know your name?
+      - What do people call you?
+      - Do you have a name for yourself?
+  - intent: chitchat/ask_weather
     examples: |
-      - what language does rasa support?
-      - which language do you support?
-      - which languages supports rasa
-      - can I use rasa also for another language?
-      - languages supported
-  - intent: faq/ask_rasax
-    examples: |
-      - I want information about rasa x
-      - i want to learn more about Rasa X
-      - what is rasa x?
-      - Can you tell me about rasa x?
-      - Tell me about rasa x
-      - tell me what is rasa x
+      - What's the weather like today?
+      - Does it look sunny outside today?
+      - Oh, do you mind checking the weather for me please?
+      - I like sunny days in Berlin.
 ```
 
-Be sure to update your domain file to include the added `faq` intent.
+Be sure to update your domain file to include the added `chitchat` intent:
+
+```rasa-yaml
+intents:
+# other intents
+- chitchat
+```
 
 
 ### 5. Defining the responses
@@ -165,26 +153,21 @@ listed above, our responses could look like:
 
 ```rasa-yaml
 responses:
-  faq/ask_channels:
-  - text: |
-    We have a comprehensive list of [supported connectors](https://rasa.com/docs/core/connectors/), but if
-    you don't see the one you're looking for, you can always create a custom connector by following
-    [this guide](https://rasa.com/docs/rasa/user-guide/connectors/custom-connectors/).
-  faq/ask_languages:
-  - text: |
-    You can use Rasa to build assistants in any language you want!
-  faq/ask_rasax:
-  - text: |
-    Rasa X is a tool to learn from real conversations and improve your assistant.
-    Read more [here](https://rasa.com/docs/rasa-x/)
+  utter_chitchat/ask_name:
+  - image: "https://i.imgur.com/zTvA58i.jpeg"
+    text: hello, my name is retrieval bot.
+  - text: Oh yeah, I am called the retrieval bot.
+  utter_chitchat/ask_weather:
+  - text: Oh, it does look sunny right now in Berlin.
+    image: "https://i.imgur.com/vwv7aHN.png"
+  - text: I am not sure of the whole week but I can see the sun is out today.
 ```
 
 ## Summary
 
 Once you've done the following, you can train your bot and try it out!
 
-- [ ] Add `RulePolicy` to your policies in `config.yml`
-- [ ] Add `ResponseSelector` to your pipeline in `config.yml`
+- [ ] Add `RulePolicy` to your policies and `ResponseSelector` to your pipeline in `config.yml`
 - [ ] Add at least one rule for responding to FAQs/chitchat
 - [ ] Add examples for your FAQs/chitchat intents
 - [ ] Add responses for your FAQs/chitchat intents

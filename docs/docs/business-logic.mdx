@@ -2,7 +2,7 @@
 id: business-logic
 sidebar_label: Handling Business Logic
 title: Handling Business Logic
-abstract: Conversational assistants often need to ask users for information in order to help them. You can use
+abstract: Conversational assistants often need to ask users for information in order to help them. You can use Forms to collect the required user information and fulfill a request.
 ---
 
 Conversational assistants often support user goals that involve collecting required information
@@ -26,14 +26,14 @@ User: Yes
 
 This type of behavior can and should be handled in a rule based way, as it
 is clear how this information should be collected.
-This page is a guide on handling business logic.
+This page is a guide on creating a conversational assistant that collects user information to fulfill a request.
 In the example above, business logic includes needing to know the user's preferred cuisine, party size, and seating preference.
 It uses abbreviated examples from the [formbot example bot](https://github.com/RasaHQ/rasa/tree/master/examples/formbot).
 Adapt the example
 described in this guide to build an assistant that can handle a conversation
 like the one above, or apply the guidelines to your own use case.
 
-## Using Forms to Handle Business Logic
+## Step-by-step Guide on Using Forms to Handle Business Logic
 
 [Forms](forms.mdx) work by prompting the user for information until it has gathered all required information.
 The information is stored in [slots](domain.mdx#slots). Once all the required slots are filled,
@@ -312,6 +312,6 @@ example above, this is a summary of what you'll need to do:
 - [ ] Update your domain with new intents and actions you've defined
 
 To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
-In using `DucklingEntityExtractor` to extract
+Because the `DucklingEntityExtractor` is being used to extract
 entities, you'll need to start Duckling in the background as well
 (see the [instructions for running Duckling](entity-extractors.mdx#ducklingentityextractor)).
