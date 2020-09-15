@@ -142,8 +142,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-3
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}-3
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-4
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}-4
 
     - name: Install Dependencies (Linux) 📦
       if: matrix.os == 'ubuntu-latest'
