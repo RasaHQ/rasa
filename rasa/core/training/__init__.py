@@ -3,6 +3,7 @@ from typing import Text, List, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.trackers import DialogueStateTracker
+    from rasa.shared.core.generator import TrackerWithCachedStates
     from rasa.shared.core.training_data.structures import StoryGraph
     from rasa.shared.importers.importer import TrainingDataImporter
 
@@ -53,7 +54,7 @@ async def load_data(
     use_story_concatenation: bool = True,
     debug_plots: bool = False,
     exclusion_percentage: Optional[int] = None,
-) -> List["DialogueStateTracker"]:
+) -> List["TrackerWithCachedStates"]:
     """
     Load training data from a resource.
 

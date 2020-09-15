@@ -3,6 +3,14 @@ sidebar_label: rasa.core.policies.rule_policy
 title: rasa.core.policies.rule_policy
 ---
 
+## InvalidRule Objects
+
+```python
+class InvalidRule(Exception)
+```
+
+Exception that can be raised when rules are not valid.
+
 ## RulePolicy Objects
 
 ```python
@@ -27,7 +35,7 @@ The type of data supported by this policy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = FORM_POLICY_PRIORITY, lookup: Optional[Dict] = None, core_fallback_threshold: float = 0.3, core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, enable_fallback_prediction: bool = True) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = FORM_POLICY_PRIORITY, lookup: Optional[Dict] = None, core_fallback_threshold: float = 0.3, core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, enable_fallback_prediction: bool = True, restrict_rules: bool = True, check_for_contradictions: bool = True) -> None
 ```
 
 Create a `RulePolicy` object.

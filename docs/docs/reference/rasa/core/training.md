@@ -6,7 +6,7 @@ title: rasa.core.training
 #### load\_data
 
 ```python
-async load_data(resource_name: Union[Text, "TrainingDataImporter"], domain: "Domain", remove_duplicates: bool = True, unique_last_num_states: Optional[int] = None, augmentation_factor: int = 50, tracker_limit: Optional[int] = None, use_story_concatenation: bool = True, debug_plots: bool = False, exclusion_percentage: Optional[int] = None) -> List["DialogueStateTracker"]
+async load_data(resource_name: Union[Text, "TrainingDataImporter"], domain: "Domain", remove_duplicates: bool = True, unique_last_num_states: Optional[int] = None, augmentation_factor: int = 50, tracker_limit: Optional[int] = None, use_story_concatenation: bool = True, debug_plots: bool = False, exclusion_percentage: Optional[int] = None) -> List["TrackerWithCachedStates"]
 ```
 
 Load training data from a resource.

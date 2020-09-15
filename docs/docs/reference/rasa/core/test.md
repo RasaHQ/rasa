@@ -84,6 +84,21 @@ dump them as stories.
 
 A comment attached to this event. Used during dumping.
 
+#### emulate\_loop\_rejection
+
+```python
+emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None
+```
+
+Add `ActionExecutionRejected` event to the tracker.
+
+During evaluation, we don&#x27;t run action server, therefore in order to correctly
+test unhappy paths of the loops, we need to emulate loop rejection.
+
+**Arguments**:
+
+- `partial_tracker` - a :class:`rasa.core.trackers.DialogueStateTracker`
+
 #### test
 
 ```python
