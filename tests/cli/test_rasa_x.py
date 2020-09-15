@@ -29,9 +29,10 @@ def test_x_help(run: Callable[..., RunResult]):
               [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):

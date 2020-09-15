@@ -88,6 +88,7 @@ class ErrorResponse(Exception):
         }
         self.status = status
         logger.error(message)
+        super(ErrorResponse, self).__init__()
 
 
 def _docs(sub_url: Text) -> Text:

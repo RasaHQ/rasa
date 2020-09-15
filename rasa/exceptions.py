@@ -28,6 +28,7 @@ class PublishingError(RasaException):
 
     def __init__(self, timestamp: float) -> None:
         self.timestamp = timestamp
+        super(PublishingError, self).__init__()
 
     def __str__(self) -> Text:
         return str(self.timestamp)
