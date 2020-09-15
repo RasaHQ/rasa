@@ -140,6 +140,14 @@ jobs:
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
+    - name: Load Poetry Cached Libraries ⬇ (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: actions/cache@v1
+      with:
+        path: $HOME\AppData\Local\pypoetry\Cache\virtualenvs
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+
     - name: Install Dependencies (Linux) 📦
       if: matrix.os == 'ubuntu-latest'
       run: |
