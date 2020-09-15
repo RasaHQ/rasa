@@ -53,8 +53,6 @@ class MemoizationPolicy(Policy):
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
 
-    SUPPORTS_ONLINE_TRAINING = True
-
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
     @staticmethod
