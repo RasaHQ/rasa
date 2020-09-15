@@ -1,6 +1,6 @@
 import asyncio
 from functools import reduce
-from typing import Text, Optional, List, Dict, Set, Any
+from typing import Text, Optional, List, Dict, Set, Any, Tuple
 import logging
 
 import rasa.shared.constants
@@ -8,7 +8,7 @@ import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered, Event
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
@@ -488,12 +488,19 @@ class E2EImporter(TrainingDataImporter):
     async def _additional_training_data_from_stories(self) -> TrainingData:
         stories = await self.get_stories()
 
-        additional_messages_from_stories = []
-        for story_step in stories.story_steps:
-            for event in story_step.events:
-                message = _message_from_conversation_event(event)
-                if message:
-                    additional_messages_from_stories.append(message)
+        utterances, actions = _unique_events_from_stories(stories)
+
+        # Sort events to guarantee deterministic behavior and to avoid that the NLU
+        # model has to be retrained due to changes in the event order within
+        # the stories.
+        sorted_utterances = sorted(
+            list(utterances), key=lambda user: user.intent_name or user.text
+        )
+        sorted_actions = sorted(list(actions), key=lambda action: action.action_name)
+
+        additional_messages_from_stories = [
+            _messages_from_action(action) for action in sorted_actions
+        ] + [_messages_from_user_utterance(user) for user in sorted_utterances]
 
         logger.debug(
             f"Added {len(additional_messages_from_stories)} training data examples "
@@ -502,13 +509,20 @@ class E2EImporter(TrainingDataImporter):
         return TrainingData(additional_messages_from_stories)
 
 
-def _message_from_conversation_event(event: Event) -> Optional[Message]:
-    if isinstance(event, UserUttered):
-        return _messages_from_user_utterance(event)
-    elif isinstance(event, ActionExecuted):
-        return _messages_from_action(event)
+def _unique_events_from_stories(
+    stories: StoryGraph,
+) -> Tuple[Set[UserUttered], Set[ActionExecuted]]:
+    action_events = set()
+    user_events = set()
 
-    return None
+    for story_step in stories.story_steps:
+        for event in story_step.events:
+            if isinstance(event, ActionExecuted):
+                action_events.add(event)
+            elif isinstance(event, UserUttered):
+                user_events.add(event)
+
+    return user_events, action_events
 
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:

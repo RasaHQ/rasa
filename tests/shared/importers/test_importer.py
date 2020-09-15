@@ -1,7 +1,6 @@
-import asyncio
 import os
 from pathlib import Path
-from typing import Text, Dict, Type, List
+from typing import Text, Dict, Type, List, Any
 
 import pytest
 
@@ -26,6 +25,17 @@ from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT_NAME, TEXT
 from rasa.shared.nlu.training_data.message import Message
+
+
+@pytest.fixture()
+def default_importer(project: Text) -> TrainingDataImporter:
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
+    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
+
+    return TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, [default_data_path]
+    )
 
 
 async def test_use_of_interface():
@@ -168,17 +178,12 @@ async def test_core_only(project: Text):
     assert nlu_data.is_empty()
 
 
-async def test_import_nlu_training_data_from_e2e_stories(project: Text):
-    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    importer = TrainingDataImporter.load_from_dict(
-        {}, config_path, domain_path, [default_data_path]
-    )
-
+async def test_import_nlu_training_data_from_e2e_stories(
+    default_importer: TrainingDataImporter
+):
     # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
-    assert isinstance(importer, E2EImporter)
-    importer_without_e2e = importer.importer
+    assert isinstance(default_importer, E2EImporter)
+    importer_without_e2e = default_importer.importer
 
     stories = StoryGraph(
         [
@@ -198,17 +203,22 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
         ]
     )
 
+    async def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
+        return stories
+
     # Patch to return our test stories
-    importer_without_e2e.get_stories = asyncio.coroutine(lambda *args: stories)
+    importer_without_e2e.get_stories = mocked_stories
 
     # The wrapping `E2EImporter` simply forwards these method calls
     assert (await importer_without_e2e.get_stories()).as_story_string() == (
-        await importer.get_stories()
+        await default_importer.get_stories()
     ).as_story_string()
-    assert (await importer_without_e2e.get_config()) == (await importer.get_config())
+    assert (await importer_without_e2e.get_config()) == (
+        await default_importer.get_config()
+    )
 
     # Check additional NLU training data from stories was added
-    nlu_data = await importer.get_nlu_data()
+    nlu_data = await default_importer.get_nlu_data()
 
     # The `E2EImporter` adds NLU training data based on our training stories
     assert len(nlu_data.training_examples) > len(
@@ -228,25 +238,61 @@ async def test_import_nlu_training_data_from_e2e_stories(project: Text):
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
 
 
-async def test_import_nlu_training_data_with_default_actions(project: Text):
-    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    importer = TrainingDataImporter.load_from_dict(
-        {}, config_path, domain_path, [default_data_path]
-    )
+async def test_different_story_order_doesnt_change_nlu_training_data(
+    default_importer: E2EImporter
+):
+    stories = [
+        StoryStep(
+            events=[
+                UserUttered(intent={"name": "greet"}),
+                ActionExecuted("utter_greet_from_stories"),
+                ActionExecuted("hi", action_text="hi"),
+            ]
+        ),
+        StoryStep(
+            events=[
+                UserUttered("bye", {"name": "bye"}),
+                ActionExecuted("utter_greet"),
+                ActionExecuted("hi", action_text="hi"),
+                ActionExecuted("bye", action_text="bye"),
+            ]
+        ),
+    ]
 
-    assert isinstance(importer, E2EImporter)
-    importer_without_e2e = importer.importer
+    async def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
+        return StoryGraph(stories)
+
+    # Patch to return our test stories
+    default_importer.importer.get_stories = mocked_stories
+
+    training_data = await default_importer.get_nlu_data()
+
+    # Pretend the order of  the stories changed. This should have no
+    # effect on the NLU training data
+    stories = list(reversed(stories))
+
+    # Make sure importer doesnt cache stories
+    default_importer._cached_stories = None
+
+    training_data2 = await default_importer.get_nlu_data()
+
+    assert hash(training_data) == hash(training_data2)
+
+
+async def test_import_nlu_training_data_with_default_actions(
+    default_importer: TrainingDataImporter
+):
+    assert isinstance(default_importer, E2EImporter)
+    importer_without_e2e = default_importer.importer
 
     # Check additional NLU training data from domain was added
-    nlu_data = await importer.get_nlu_data()
+    nlu_data = await default_importer.get_nlu_data()
 
     assert len(nlu_data.training_examples) > len(
         (await importer_without_e2e.get_nlu_data()).training_examples
     )
 
-    extended_training_data = await importer.get_nlu_data()
+    extended_training_data = await default_importer.get_nlu_data()
     assert all(
         Message(data={ACTION_NAME: action_name, ACTION_TEXT: ""})
         in extended_training_data.training_examples
@@ -254,14 +300,7 @@ async def test_import_nlu_training_data_with_default_actions(project: Text):
     )
 
 
-async def test_adding_e2e_actions_to_domain(project: Text):
-    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    existing = TrainingDataImporter.load_from_dict(
-        {}, config_path, domain_path, [default_data_path]
-    )
-
+async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
     additional_actions = ["Hi Joey.", "it's sunny outside."]
     stories = StoryGraph(
         [
@@ -288,11 +327,13 @@ async def test_adding_e2e_actions_to_domain(project: Text):
         ]
     )
 
-    # Patch to return our test stories
-    existing.get_stories = asyncio.coroutine(lambda *args: stories)
+    async def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
+        return stories
 
-    importer = E2EImporter(existing)
-    domain = await importer.get_domain()
+    # Patch to return our test stories
+    default_importer.importer.get_stories = mocked_stories
+
+    domain = await default_importer.get_domain()
 
     assert all(action_name in domain.action_names for action_name in additional_actions)
 
