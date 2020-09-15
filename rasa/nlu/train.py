@@ -38,6 +38,7 @@ class TrainingException(Exception):
             self.message = exception.args[0]
         else:
             self.message = ""
+        super(TrainingException, self).__init__()
 
     def __str__(self) -> Text:
         return self.message

@@ -57,6 +57,8 @@ class TrainingDataWriter:
 
         # Sort by intent while keeping basic intent order
         for example in [e.as_dict_nlu() for e in training_data.training_examples]:
+            if not example.get(INTENT):
+                continue
             rasa_nlu_training_data_utils.remove_untrainable_entities_from(example)
             intent = example[INTENT]
             training_examples.setdefault(intent, [])

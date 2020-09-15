@@ -86,6 +86,8 @@ docs/docs/variables.json
 docs/docs/sources/
 docs/docs/reference/
 docs/docs/changelog.mdx
+rasa/segment_key
+rasa/keys
 
 # Local Netlify folder
 .netlify
