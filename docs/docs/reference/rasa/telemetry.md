@@ -45,6 +45,8 @@ ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]
 
 Function decorator for telemetry functions that ensures telemetry is enabled.
 
+WARNING: does not work as a decorator for async generators.
+
 **Arguments**:
 
 - `f` - function to call if telemetry is enabled
@@ -237,12 +239,15 @@ from the `rasa` package.
 #### track\_model\_training
 
 ```python
-@ensure_telemetry_enabled
 @async_generator.asynccontextmanager
 async track_model_training(training_data: TrainingDataImporter, model_type: Text) -> None
 ```
 
 Track a model training started.
+
+WARNING: since this is a generator, it can&#x27;t use the ensure telemetry
+decorator. We need to manually add these checks here. This can be
+fixed as soon as we drop python 3.6 support.
 
 **Arguments**:
 

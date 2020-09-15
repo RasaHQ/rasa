@@ -34,7 +34,7 @@ async def test_events_schema(monkeypatch: MonkeyPatch):
     # this allows us to patch the printing part used in debug mode to collect the
     # reported events
     monkeypatch.setenv("RASA_TELEMETRY_DEBUG", "true")
-    telemetry.initialize_telemetry()
+    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
 
     mock = Mock()
     monkeypatch.setattr(telemetry, "print_telemetry_event", mock)
@@ -103,6 +103,7 @@ async def test_track_ignore_exception(monkeypatch: MonkeyPatch):
 
 def test_initialize_telemetry():
     telemetry.initialize_telemetry()
+    assert True
 
 
 def test_initialize_telemetry_with_env_false(monkeypatch: MonkeyPatch):
@@ -112,7 +113,6 @@ def test_initialize_telemetry_with_env_false(monkeypatch: MonkeyPatch):
 
 def test_initialize_telemetry_with_env_true(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
-    telemetry.initialize_telemetry()
     assert telemetry.initialize_telemetry() is True
 
 
@@ -121,7 +121,6 @@ def test_initialize_telemetry_env_overwrites_config(monkeypatch: MonkeyPatch):
     assert telemetry.initialize_telemetry() is True
 
     monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "false")
-    telemetry.initialize_telemetry()
     assert telemetry.initialize_telemetry() is False
 
 
@@ -160,6 +159,7 @@ def test_default_context_fields_overwrite_by_context():
 
 
 async def test_track_sends_telemetry_id(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     telemetry.initialize_telemetry()
 
     mock = Mock()
@@ -192,8 +192,9 @@ def test_toggle_telemetry_reporting(monkeypatch: MonkeyPatch):
 
 
 async def test_segment_gets_called(monkeypatch: MonkeyPatch):
-    telemetry.initialize_telemetry()
     monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
+    telemetry.initialize_telemetry()
 
     with aioresponses() as mocked:
         mocked.post(
@@ -215,8 +216,9 @@ async def test_segment_gets_called(monkeypatch: MonkeyPatch):
 
 
 async def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
-    telemetry.initialize_telemetry()
+    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+    telemetry.initialize_telemetry()
 
     with aioresponses() as mocked:
         mocked.post("https://api.segment.io/v1/track", payload={}, status=505)
