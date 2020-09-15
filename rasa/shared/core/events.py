@@ -278,13 +278,7 @@ class UserUttered(Event):
         )
 
     def __hash__(self) -> int:
-        return hash(
-            (
-                self.text,
-                self.intent.get(INTENT_NAME_KEY),
-                jsonpickle.encode(self.entities),
-            )
-        )
+        return hash((self.text, self.intent_name, jsonpickle.encode(self.entities)))
 
     @property
     def intent_name(self) -> Optional[Text]:
