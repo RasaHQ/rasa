@@ -40,6 +40,7 @@ class InvalidModelError(Exception):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(InvalidModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
@@ -54,6 +55,7 @@ class UnsupportedModelError(Exception):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(UnsupportedModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message

@@ -340,7 +340,7 @@ class Component(metaclass=ComponentMetaclass):
     # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
     @property
-    def name(self):
+    def name(self) -> Text:
         """Access the class's property name from an instance."""
 
         return type(self).name

@@ -11,6 +11,7 @@ VARIABLES_JSON=docs/docs/variables.json
 SOURCES_FILES=docs/docs/sources/
 REFERENCE_FILES=docs/docs/reference/
 CHANGELOG=docs/docs/changelog.mdx
+TELEMETRY_REFERENCE=docs/docs/telemetry/reference.mdx
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
 && [[ ! $GITHUB_REF =~ $PATTERN_FOR_PATCH_VERSION ]] \
@@ -61,7 +62,7 @@ then
 else
     echo "Pushing changes to git..."
     git add .
-    git add --force $VARIABLES_JSON $SOURCES_FILES $CHANGELOG $REFERENCE_FILES
+    git add --force $VARIABLES_JSON $SOURCES_FILES $CHANGELOG $REFERENCE_FILES $TELEMETRY_REFERENCE
     git commit -am "AUTO docusaurus $TODAY"
     git fetch --unshallow
     git push origin $DOCS_BRANCH

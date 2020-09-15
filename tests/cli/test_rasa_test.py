@@ -170,9 +170,10 @@ def test_test_help(run: Callable[..., RunResult]):
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_test_nlu_help(run: Callable[..., RunResult]):
@@ -184,9 +185,10 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
                      [--successes] [--no-errors]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_test_core_help(run: Callable[..., RunResult]):
@@ -200,6 +202,7 @@ def test_test_core_help(run: Callable[..., RunResult]):
                       [--no-errors]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
