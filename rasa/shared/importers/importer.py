@@ -496,7 +496,9 @@ class E2EImporter(TrainingDataImporter):
         sorted_utterances = sorted(
             utterances, key=lambda user: user.intent_name or user.text
         )
-        sorted_actions = sorted(actions, key=lambda action: action.action_name)
+        sorted_actions = sorted(
+            actions, key=lambda action: action.action_name or action.action_text
+        )
 
         additional_messages_from_stories = [
             _messages_from_action(action) for action in sorted_actions
