@@ -2,12 +2,12 @@
 id: business-logic
 sidebar_label: Handling Business Logic
 title: Handling Business Logic
+abstract: Conversational assistants often need to ask users for information in order to help them. You can use 
 ---
 
 Conversational assistants often support user goals that involve collecting required information
 from the user before doing something for them. For example, a restaurant search bot would need to gather a few pieces of information
-about the user's preferences to find them
-a suitable restaurant:
+about the user's preferences to find them a suitable restaurant:
 
 ```yaml
 User: Help me find a restaurant
@@ -26,30 +26,21 @@ User: Yes
 
 This type of behavior can and should be handled in a rule based way, as it
 is clear how this information should be collected.
-This page is a guide on handling business logic.
-It uses abbreviated examples from the `formbot` example bot. See the github repo for the [full source code](https://github.com/RasaHQ/rasa/tree/master/examples/formbot).
+This page is a guide on handling business logic. 
+In the example above, business logic includes needing to know the user's preferred cuisine, party size, and seating preference.
+It uses abbreviated examples from the [formbot example bot](https://github.com/RasaHQ/rasa/tree/master/examples/formbot).
 Adapt the example
 described in this guide to build an assistant that can handle a conversation
 like the one above, or apply the guidelines to your own use case.
 
 ## Using Forms to Handle Business Logic
 
-Forms work by looping over a set of required information until all information is gathered from the user.
-The information is stored in [`slots`](domain.mdx#slots). Once all the required slots are filled,
-the bot addresses the user's original request.
+[Forms](forms.mdx) work by prompting the user for information until it has gathered all required information.
+The information is stored in [slots](domain.mdx#slots). Once all the required slots are filled,
+the bot fulfills the user's original request.
 
 
-### 1. Updating the configuration
-
-A form's happy path should be defined as a [rule](#rules), which means you'll need to add the [`RulePolicy`](policies.mdx#rulepolicy)
-to your policies in your configuration file:
-
-```rasa-yaml
-policies:
-  - name: RulePolicy
-```
-
-### 2. Defining the form
+### 1. Defining the form
 
 #### Required Slots
 
@@ -61,7 +52,7 @@ from the user:
 - whether they want to sit outside or not
 
 
-You define a form in the domain file by specifying [slot mappings](forms.mdx#slot-mappings) for each
+You define a form in the domain file (domain.yml) by specifying [slot mappings](forms.mdx#slot-mappings) for each
 piece of required information:
 
 ```rasa-yaml
@@ -164,6 +155,17 @@ For the restaurant search example, in real life the assistant would look up
 a restaurant based on the user's preferences.
 In this case, the bot will just utter a response with the details
 that would be used for a search.
+
+
+### 2. Updating the configuration
+
+A form's [happy path](glossary.mdx#happy-path) should be defined as a [rule](rules.mdx) which means you'll need to add the [`RulePolicy`](policies.mdx#rulepolicy)
+to your policies in your configuration file:
+
+```rasa-yaml
+policies:
+  - name: RulePolicy
+```
 
 ### 3. Creating rules
 
