@@ -13,6 +13,12 @@ description: Glossary for all Rasa-related terms
 
   Adding labels to messages and conversations so that they can be used to train a model.
 
+## Chitchat
+
+  Chitchat is a conversation pattern where the user says something that isn't directly related to their goal.
+  This can include things like greetings, asking how you are etc.
+  Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa Open Source.
+
 ## CMS
 
   A Content Management System (CMS) can be used to store bot responses externally instead of directly including it as part of the domain.  This provides more flexibility in changing them as they are not tightly-coupled with the training data.
@@ -40,6 +46,12 @@ description: Glossary for all Rasa-related terms
 ## [Event](./events.mdx)
 
   All conversations in Rasa are represented as a sequence of events. For instance, a `UserUttered` represents a user entering a message, and an `ActionExecuted` represents the assistant executing an action. You can learn more about them [here](./events.mdx).
+
+## FAQs
+
+  Frequently asked questions (FAQs) are common questions that your users ask. In the context of building an assistant,
+  this typically means the user sends a message and the assistant send a response without needing to consider the context of the conversation.
+  Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa Open Source.
 
 ## [Form](./forms.mdx)
 
