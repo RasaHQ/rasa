@@ -76,20 +76,17 @@ piece of required information:
 See the following section for an explanation of what the slot mappings mean.
 
 Since the form relies on certain slots being available,  you need to add these slots to the domain. Slots filled by
-forms are usually `unfeaturized`, since their value doesn't change
+forms are usually unfeaturized, since their value doesn't change
 the flow of the conversation.
 
 ```rasa-yaml
 slots:
   cuisine:
     type: unfeaturized
-    auto_fill: false
   num_people:
     type: unfeaturized
-    auto_fill: false
   outdoor_seating:
     type: unfeaturized
-    auto_fill: false
 ```
 
 #### Filling Slots
@@ -131,7 +128,7 @@ about validation actions.
 #### Requesting Slots
 
 To specify how the bot should ask for the required information,
-you define [`responses`](domain.mdx#responses) called `utter_ask_{slotname}` in your domain.
+you define [responses](domain.mdx#responses) called `utter_ask_{slotname}` in your domain.
 For the restaurant search example, the responses look like this:
 
 ```rasa-yaml
@@ -221,7 +218,7 @@ nlu:
     - can i find a restaurant that serves [chinese](cuisine)
 ```
 
-Slots filled `from_entity` can by default be filled by any user utterance, regardless of the intent, as
+Slots filled with `from_entity` can by default be filled by any user utterance, regardless of the intent, as
 long as the correct entity is extracted. That means that if the user provides the `cuisine` entity as part of
 their first message, the slot will be filled at the beginning of the form and the bot will not
 ask them for the cuisine again.

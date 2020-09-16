@@ -23,14 +23,14 @@ User: What’s Rasa X?
 
 ## Step-by-step Guide on Using Retrieval Actions for FAQs and Chitchat
 
-To handle FAQs and chitchat you'll need a rule-based dialogue management policy ([the `RulePolicy`](#rulepolicy)) and an easy way
-to return the appropriate response for a question ([the `ResponseSelector`](#retrieval-actions-and-responseselector)).
+To handle FAQs and chitchat you'll need a rule-based dialogue management policy (the [RulePolicy](#rulepolicy)) and an easy way
+to return the appropriate response for a question (the [ResponseSelector](#retrieval-actions-and-responseselector)).
 
 ### 1. Updating the configuration
 
 For FAQs and chitchat, you always want the assistant to respond the same way every time
 the same type of question is asked. [Rules](rules.mdx) allow you to do exactly that.
-To use rules, the you need to add the [`RulePolicy`](#rule-policy) to your policies in your configuration file:
+To use rules, the you need to add the [RulePolicy](#rule-policy) to your policies in your configuration file:
 
 ```rasa-yaml
 policies:
@@ -41,7 +41,7 @@ policies:
 The `RulePolicy` works alongside other policies in your configuration (like the `TEDPolicy`). Its job is to enforce rule-based logic for conversation paths where you already know how the assistant should respond to a given input.
 
 To use retrieval actions, include the `ResponseSelector` in your NLU pipeline in your configuration file.
-The `ResponseSelector` requires a featurizer and intent classifier to work, so
+The ResponseSelector requires a featurizer and intent classifier to work, so
 it should come after these components in your pipeline, for example:
 
 ```rasa-yaml
@@ -76,7 +76,6 @@ pipeline:
   retrieval_intent: chitchat
 ```
 
-It's recommended to start with separate models for each `retrieval_intent`. You can merge them later if you find it works better for your use case.
 
 
 ### 2. Defining Retrieval Actions and the `ResponseSelector`
@@ -94,7 +93,7 @@ the correct response for the specific FAQ that the user asked.
 
 ### 3. Creating rules
 
-When using retrieval actions, you need to write only one rule for each retrieval intent. All intents
+You need to write only one rule for each retrieval intent. All intents
 grouped under that retrieval intent will then be handled the same way.
 The retrieval action starts with `respond_` and ends with the retrieval intent's name.
 Write rules for responding to FAQs and chitchat:
