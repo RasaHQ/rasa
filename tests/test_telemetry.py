@@ -67,7 +67,7 @@ async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
 
     telemetry.track_interactive_learning_start(True, False)
 
-    telemetry.track_server_start([CmdlineInput()], None, None, True)
+    telemetry.track_server_start([CmdlineInput()], None, None, 42, True)
 
     telemetry.track_project_init("tests/")
 
