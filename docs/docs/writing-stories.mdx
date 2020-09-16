@@ -267,6 +267,7 @@ each conversation flow, you can use a checkpoint to avoid having to include the 
 interaction at the end of each story:
 
 ```yaml-rasa
+stories:
 - story: beginning of conversation
   steps:
   - intent: greet
@@ -308,21 +309,18 @@ longer stories into smaller conversational blocks that handle sub-tasks.
 
 A happy path story for handling a lost credit card might look like:
 
-```yaml-rasa
+<!-- TODO replace with yaml-rasa once list slots are allowed -->
+```yaml
+stories:
 - story: Customer loses a credit card, reviews transactions, and gets a new card
   steps:
   - intent: card_lost
-  - action: utter_card_locked
-  - action: spending_history_form
-  - active_loop: spending_history_form
-  - active_loop: null
+  - action: check_transactions
   - slot_was_set:
-  	- reviewed_transactions: ["starbucks"]
+  	 - reviewed_transactions: ["starbucks"]
   - action: utter_ask_fraudulent_transactions
   - intent: inform
   - action: action_update_transactions
-  - slot_was_set:
-  	- reviewed_transactions: ["target", "starbucks"]
   - intent: affirm
   - action: utter_confirm_transaction_dispute
   - action: utter_replace_card
@@ -349,7 +347,9 @@ if there's anything else the bot can help them with.
 
 We can separate out this long story into several smaller stories as:
 
-```yaml-rasa
+<!-- TODO replace with yaml-rasa once list slots are allowed -->
+```yaml
+stories:
 - story: Customer loses a credit card
   steps:
   - intent: card_lost
@@ -358,7 +358,7 @@ We can separate out this long story into several smaller stories as:
   - active_loop: spending_history_form
   - active_loop: null
   - slot_was_set:
-  	- reviewed_transactions: ["starbucks"]
+   	- reviewed_transactions: ["starbucks"]
   - action: utter_ask_fraudulent_transactions
 
 - story: Customer reviews transactions and gets a new card
@@ -466,12 +466,12 @@ stories:
   steps:
   - intent: pay_credit_card
   - action: credit_card_payment_form
-  - active_loop{"name": "credit_card_payment_form"}
+  - active_loop: credit_card_payment_form
   - intent: transfer_money                         # - user requests a money transfer
-  - active_loop{"name": null}                      # - deactivate the credit card form
+  - active_loop: null                              # - deactivate the credit card form
   - action: transfer_money_form                    # - switch to the money transfer form
-  - active_loop{"name": "transfer_money_form"}
-  - active_loop{"name": null}
+  - active_loop: transfer_money_form
+  - active_loop: null
   - action: utter_continue_credit_card_payment     # - once the money transfer is completed,
                                                    #   ask the user to return to the
                                                    #   credit card payment form
