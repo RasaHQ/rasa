@@ -250,6 +250,10 @@
           "items": {"type": "string"},
           "description": "Names of the used input channels"
         },
+        "api_enabled": {
+          "type": "boolean",
+          "description": "Indicator if the API is enabled or if only the input channel is running"
+        },
         "endpoints_nlg": {
           "type": ["string", "null"],
           "description": "Type of the used NLG endpoint"
@@ -286,6 +290,7 @@
       "additionalProperties": false,
       "required": [
         "input_channels",
+        "api_enabled",
         "endpoints_nlg",
         "endpoints_nlu",
         "endpoints_action_server",
@@ -345,12 +350,17 @@
         "num_story_steps": {
           "type": "integer",
           "description": "Number of story steps used for testing"
+        },
+        "end_to_end": {
+          "type": "boolean",
+          "description": "Indicates if tests are running in end-to-end mode, testing message handling and dialogue handling at the same time"
         }
       },
       "additionalProperties": false,
       "required": [
         "project",
-        "num_story_steps"
+        "num_story_steps",
+        "end_to_end"
       ]
     },
     "Model NLU Tested": {

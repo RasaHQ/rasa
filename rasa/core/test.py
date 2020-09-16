@@ -299,7 +299,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         )
 
 
-async def _generate_trackers(
+async def _create_data_generator(
     resource_name: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,
@@ -678,7 +678,7 @@ async def test(
     """
     from rasa.test import get_evaluation_metrics
 
-    generator = await _generate_trackers(stories, agent, max_stories, e2e)
+    generator = await _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, _ = await _collect_story_predictions(
@@ -707,7 +707,7 @@ async def test(
                 targets, predictions, output_dict=True
             )
 
-    telemetry.track_core_model_test(len(generator.story_graph.story_steps), agent)
+    telemetry.track_core_model_test(len(generator.story_graph.story_steps), e2e, agent)
 
     _log_evaluation_table(
         evaluation_store.action_targets,
@@ -853,7 +853,7 @@ async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
     logger.info(f"Evaluating model '{model}'")
 
     agent = Agent.load(model)
-    generator = await _generate_trackers(stories_file, agent)
+    generator = await _create_data_generator(stories_file, agent)
     completed_trackers = generator.generate_story_trackers()
     story_eval_store, number_of_stories = await _collect_story_predictions(
         completed_trackers, agent

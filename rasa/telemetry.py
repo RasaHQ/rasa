@@ -29,7 +29,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
-from rasa.model import project_fingerprint
+from rasa import model
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
@@ -48,6 +48,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SEGMENT_ENDPOINT = "https://api.segment.io/v1/track"
+SEGMENT_REQUEST_TIMEOUT = 5  # seconds
 
 TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_ENABLED"
 TELEMETRY_DEBUG_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_DEBUG"
@@ -395,7 +396,9 @@ def _send_event(
 
     headers = segment_request_header(write_key)
 
-    resp = requests.post(SEGMENT_ENDPOINT, headers=headers, json=payload)
+    resp = requests.post(
+        SEGMENT_ENDPOINT, headers=headers, json=payload, timeout=SEGMENT_REQUEST_TIMEOUT
+    )
     # handle different failure cases
     if resp.status_code != 200:
         logger.debug(
@@ -416,8 +419,8 @@ def _hash_directory_path(path: Text) -> Optional[Text]:
     Returns:
         hash of the directories path
     """
-    working_dir = Path(path).absolute()
-    return hashlib.sha256(str(working_dir).encode("utf-8")).hexdigest()
+    full_path = Path(path).absolute()
+    return hashlib.sha256(str(full_path).encode("utf-8")).hexdigest()
 
 
 # noinspection PyBroadException
@@ -470,7 +473,7 @@ def _default_context_fields() -> Dict[Text, Any]:
     return {
         "os": {"name": platform.system(), "version": platform.release()},
         "ci": in_continuous_integration(),
-        "project": project_fingerprint(),
+        "project": model.project_fingerprint(),
         "directory": _hash_directory_path(os.getcwd()),
         "python": sys.version.split(" ")[0],
         "rasa_open_source": rasa.__version__,
@@ -480,8 +483,7 @@ def _default_context_fields() -> Dict[Text, Any]:
     }
 
 
-@ensure_telemetry_enabled
-def track(
+def _track(
     event_name: Text,
     properties: Optional[Dict[Text, Any]] = None,
     context: Optional[Dict[Text, Any]] = None,
@@ -643,7 +645,7 @@ async def track_model_training(
 
     training_id = uuid.uuid4().hex
 
-    track(
+    _track(
         TRAINING_STARTED_EVENT,
         {
             "language": config.get("language"),
@@ -671,7 +673,7 @@ async def track_model_training(
     yield
     runtime = datetime.now() - start
 
-    track(
+    _track(
         TRAINING_COMPLETED_EVENT,
         {
             "training_id": training_id,
@@ -684,7 +686,7 @@ async def track_model_training(
 @ensure_telemetry_enabled
 def track_telemetry_disabled() -> None:
     """Track when a user disables telemetry."""
-    track(TELEMETRY_DISABLED_EVENT)
+    _track(TELEMETRY_DISABLED_EVENT)
 
 
 @ensure_telemetry_enabled
@@ -695,7 +697,7 @@ def track_data_split(fraction: float, data_type: Text) -> None:
         fraction: How much data goes into train and how much goes into test
         data_type: Is this core, nlu or nlg data
     """
-    track(TELEMETRY_DATA_SPLIT_EVENT, {"fraction": fraction, "type": data_type})
+    _track(TELEMETRY_DATA_SPLIT_EVENT, {"fraction": fraction, "type": data_type})
 
 
 @ensure_telemetry_enabled
@@ -705,7 +707,7 @@ def track_validate_files(validation_success: bool) -> None:
     Args:
         validation_success: Whether the validation was successful
     """
-    track(TELEMETRY_DATA_VALIDATED_EVENT, {"validation_success": validation_success})
+    _track(TELEMETRY_DATA_VALIDATED_EVENT, {"validation_success": validation_success})
 
 
 @ensure_telemetry_enabled
@@ -716,7 +718,7 @@ def track_data_convert(output_format: Text, data_type: Text) -> None:
         output_format: Target format for the converter
         data_type: Is this core, nlu or nlg data
     """
-    track(
+    _track(
         TELEMETRY_DATA_CONVERTED_EVENT,
         {"output_format": output_format, "type": data_type},
     )
@@ -726,7 +728,7 @@ def track_data_convert(output_format: Text, data_type: Text) -> None:
 def track_tracker_export(
     number_of_exported_events: int,
     tracker_store: "TrackerStore",
-    event_broker: "EventBroker",
+    event_broker: Optional["EventBroker"],
 ) -> None:
     """Track when a user exports trackers.
 
@@ -735,11 +737,11 @@ def track_tracker_export(
         tracker_store: Store used to retrieve the events from
         event_broker: Broker the events are getting published towards
     """
-    track(
+    _track(
         TELEMETRY_TRACKER_EXPORTED_EVENT,
         {
             "number_of_exported_events": number_of_exported_events,
-            "tracker_store": type(tracker_store).__name__ if tracker_store else None,
+            "tracker_store": type(tracker_store).__name__,
             "event_broker": type(event_broker).__name__ if event_broker else None,
         },
     )
@@ -755,7 +757,7 @@ def track_interactive_learning_start(
         skip_visualization: Is visualization skipped in this session
         save_in_e2e: Is e2e used in this session
     """
-    track(
+    _track(
         TELEMETRY_INTERACTIVE_LEARNING_STARTED_EVENT,
         {"skip_visualization": skip_visualization, "save_in_e2e": save_in_e2e},
     )
@@ -766,10 +768,12 @@ def track_server_start(
     input_channels: List["InputChannel"],
     endpoints: Optional["AvailableEndpoints"],
     agent: Optional["Agent"],
+    is_api_enabled: bool,
 ) -> None:
     """Track when a user starts a rasa server.
 
     Args:
+        is_api_enabled: whether the rasa API server is enabled
         endpoints: Endpoint configuration for the server
         input_channels: Used input channels
         agent: Agent of the running model
@@ -788,10 +792,11 @@ def track_server_start(
     if not endpoints:
         endpoints = AvailableEndpoints()
 
-    track(
+    _track(
         TELEMETRY_SERVER_STARTED_EVENT,
         {
             "input_channels": [i.name() for i in input_channels],
+            "api_enabled": is_api_enabled,
             "endpoints_nlg": endpoints.nlg.type if endpoints.nlg else None,
             "endpoints_nlu": endpoints.nlu.type if endpoints.nlu else None,
             "endpoints_action_server": endpoints.action.type
@@ -819,7 +824,7 @@ def track_project_init(path: Text) -> None:
     Args:
         path: Location of the project
     """
-    track(
+    _track(
         TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)},
     )
 
@@ -830,34 +835,35 @@ def track_shell_started(model_type: Text) -> None:
 
     Args:
         model_type: Type of the model, core / nlu or rasa."""
-    track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type})
+    _track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type})
 
 
 @ensure_telemetry_enabled
 def track_rasa_x_local() -> None:
     """Track when a user runs Rasa X in local mode."""
-    track(TELEMETRY_RASA_X_LOCAL_STARTED_EVENT)
+    _track(TELEMETRY_RASA_X_LOCAL_STARTED_EVENT)
 
 
 @ensure_telemetry_enabled
 def track_visualization() -> None:
     """Track when a user runs the visualization."""
-    track(TELEMETRY_VISUALIZATION_STARTED_EVENT)
+    _track(TELEMETRY_VISUALIZATION_STARTED_EVENT)
 
 
 @ensure_telemetry_enabled
-def track_core_model_test(num_story_steps: int, agent: "Agent") -> None:
+def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> None:
     """Track when a user tests a core model.
 
     Args:
         num_story_steps: Number of test stories used for the comparison
+        e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
     fingerprint = model.fingerprint_from_path(agent.model_directory or "")
     project = fingerprint.get(model.FINGERPRINT_PROJECT)
-    track(
+    _track(
         TELEMETRY_TEST_CORE_EVENT,
-        {"project": project, "num_story_steps": num_story_steps},
+        {"project": project, "end_to_end": e2e, "num_story_steps": num_story_steps},
     )
 
 
@@ -868,7 +874,7 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
     Args:
         test_data: Data used for testing
     """
-    track(
+    _track(
         TELEMETRY_TEST_NLU_EVENT,
         {
             "num_intent_examples": len(test_data.intent_examples),

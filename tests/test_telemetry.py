@@ -67,7 +67,7 @@ async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
 
     telemetry.track_interactive_learning_start(True, False)
 
-    telemetry.track_server_start([CmdlineInput()], None, None)
+    telemetry.track_server_start([CmdlineInput()], None, None, True)
 
     telemetry.track_project_init("tests/")
 
@@ -128,7 +128,7 @@ def test_track_ignore_exception(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(telemetry, "_send_event", _mock_track_internal_exception)
 
     # If the test finishes without raising any exceptions, then it's successful
-    assert telemetry.track("Test") is None
+    assert telemetry._track("Test") is None
 
 
 def test_initialize_telemetry():
@@ -194,7 +194,7 @@ def test_track_sends_telemetry_id(monkeypatch: MonkeyPatch):
 
     mock = Mock()
     monkeypatch.setattr(telemetry, "_send_event", mock)
-    telemetry.track("foobar", {"foo": "bar"}, {"baz": "foo"})
+    telemetry._track("foobar", {"foo": "bar"}, {"baz": "foo"})
 
     assert telemetry.get_telemetry_id() is not None
 
@@ -229,7 +229,7 @@ def test_segment_gets_called(monkeypatch: MonkeyPatch):
     with responses.RequestsMock() as rsps:
         rsps.add(responses.POST, "https://api.segment.io/v1/track", json={})
 
-        telemetry.track("test event", {"foo": "bar"}, {"foobar": "baz"})
+        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
 
         assert len(rsps.calls) == 1
         r = rsps.calls[0]
@@ -252,7 +252,7 @@ def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
         rsps.add(responses.POST, "https://api.segment.io/v1/track", body="", status=505)
 
         # this call should complete without throwing an exception
-        telemetry.track("test event", {"foo": "bar"}, {"foobar": "baz"})
+        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
 
         assert rsps.assert_call_count("https://api.segment.io/v1/track", 1)
 
