@@ -73,19 +73,13 @@ prepare-tests-files:
 	poetry run python -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
-prepare-wget-macos:
-	brew install wget || true
-
-prepare-wget-windows:
-	choco install wget
-
-prepare-tests-macos: prepare-wget-macos prepare-tests-files
+prepare-tests-macos: prepare-tests-files
 	brew install graphviz || true
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
-prepare-tests-windows: prepare-wget-windows prepare-tests-files
+prepare-tests-windows: prepare-tests-files
 	choco install graphviz
 
 test: clean

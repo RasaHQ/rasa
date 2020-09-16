@@ -141,6 +141,13 @@ jobs:
 
     - name: Set up virtual environment (Windows)
       if: matrix.os == 'windows-latest'
+      # Poetry on Windows cannot pick up the virtual environments directory properly,
+      # and it creates a new one every time the pipeline runs.
+      # We want to  allow Poetry to create a venv directory if it doesn't
+      # exist, but also pick it up if it's already there.
+      # This step solves this problem — it tells poetry to always use `.venv` directory inside
+      # the project itself, which also makes it easier for us to determine the correct directory
+      # that needs to be cached.
       run: |
         poetry config virtualenvs.in-project true
 
@@ -149,8 +156,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-4
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}-4
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
     - name: Install Dependencies (Linux) 📦
       if: matrix.os == 'ubuntu-latest'
@@ -163,7 +170,8 @@ jobs:
     - name: Install Dependencies (Windows) 📦
       if: matrix.os == 'windows-latest'
       # Restoring cache doesn't work properly on Windows due to symlinks.
-      # That's why we're manually removing symlinks here and everything that is inside `$spacy_data_dir` directory.
+      # We create symlinks for spacy models, that's why we need to clean them up
+      # before caching the dependencies directory.
       # More information: https://github.com/actions/cache/issues/120
       run: |
         $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
