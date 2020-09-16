@@ -2,7 +2,11 @@
 id: fallback-handoff
 sidebar_label: Fallback and Human Handoff
 title: Fallback and Human Handoff
+abstract: When conversational assistants fail, it's important that they do so gracefully.
 ---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 
 Even if you design your bot perfectly, users will inevitably say things to your
 assistant that you did not anticipate. In these cases, your assistant will fail,
@@ -74,7 +78,7 @@ training examples, define the response message, and create a rule.
 
 ## Fallbacks
 
-Although Rasa's [Intent Classifier](./components/intent-classifiers.mdx) will
+Although Rasa's [Intent Classifier](./components.mdx#intent-classifiers) will
 generalize to unseen messages, some
 messages might receive a low classification confidence. Using Fallbacks will
 help ensure that these low confidence messages are handled gracefully, giving your
@@ -85,7 +89,7 @@ the user input.
 ### NLU Fallback
 
 To handle incoming messages with low NLU confidence, we recommend adding the
-[FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier) to your NLU pipeline.
+[FallbackClassifier](./components.mdx#fallbackclassifier) to your NLU pipeline.
 Using this configuration, the intent `nlu_fallback` will be predicted when all other intent
 predictions fall below the configured confidence threshold. You can then write a rule
 for what the bot should do when `nlu_fallback` is predicted.
