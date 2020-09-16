@@ -86,7 +86,7 @@ user is treated as a new user and the bot sends onboarding messaages. If it is f
 aimed at returning users.
 You define a slot and its type in the domain:
 
-```rasa-yaml
+```yaml-rasa
 slots:
   onboarding:
     type: bool
@@ -105,7 +105,7 @@ The [TEDPolicy](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-sour
 unexpected user behaviors. For example,
 in the conversation below (extracted from a conversation on [Rasa X](https://rasa.com/docs/rasa-x/user-guide/review-conversations/)):
 
-```rasa-yaml
+```yaml-rasa
 stories:
 - story: Story from conversation with a2baab6c83054bfaa8d598459c659d2a on November 28th 2019
   steps:
@@ -154,7 +154,7 @@ action to take next.
 In the story below, the user asks for help three times in a row. The first two times,
 the bot sends the same message, but the third time, it hands them off to a human
 
-```rasa-yaml
+```yaml-rasa
 stories:
   - story: user persists in asking for help
     steps:

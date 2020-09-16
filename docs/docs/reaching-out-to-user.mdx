@@ -25,31 +25,32 @@ welcome rule.
 Since you are using a rule for this behavior, you need to add the [RulePolicy](./policies.mdx#rule-policy)
 to your `config.yml`:
 
-  ```yaml-rasa
-  policies:
-    # other policies
-    - name: RulePolicy
-  ```
-### 2. Adding a rule
+```yaml-rasa
+policies:
+  # other policies
+  - name: RulePolicy
+```
+
+### 2. Add a rule
 
 To have the assistant respond to the intent `greet` with a welcome message
 only at the beginning of a conversation, add the following rule to your
 `rules.yml` file:
 
-  ```yaml-rasa
-  rules:
-    - rule: welcome user
-      conversation_start: true  # this rule only applies at the beginning of a conversation
-      steps:
-        - intent: greet
-        - action: utter_welcome
-  ```
+```yaml-rasa
+rules:
+  - rule: welcome user
+    conversation_start: true  # this rule only applies at the beginning of a conversation
+    steps:
+      - intent: greet
+      - action: utter_welcome
+```
 
-### 3. Adding a response template
+### 3. Add a response template
 
 Finally, add a template for the `utter_welcome` response to your `domain.yml`:
 
-```rasa-yaml
+```yaml-rasa
 responses:
   utter_welcome:
   - text: Hi there! What can I help you with today?
@@ -77,7 +78,7 @@ The assistant will then predict and execute the next action as usual.
 For example, the following post request would inject the intent `EXTERNAL_dry_plant` and the `plant` entity
 into the conversation with id `user123`:
 
-```shell
+```
 curl -H "Content-Type: application/json" -X POST \
   -d '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' \
   "http://localhost:5005/conversations/user123/trigger_intent?output_channel=latest"
@@ -99,7 +100,7 @@ In the dry plant example, your Raspberry Pi needs to send a message with the int
 `EXTERNAL_dry_plant` to the `trigger_intent` endpoint. This intent will be reserved for use by the Raspberry Pi, so
 there won't be any NLU training examples for it.
 
-```rasa-yaml
+```yaml-rasa
 intents:
   - EXTERNAL_dry_plant
 ```
@@ -112,7 +113,7 @@ easier to see which intents are expected to come from external devices when work
 To tell the assistant which plant needs watering, you can define an entity that you'll post along with the intent.
 To be able to use the entity value directly in a response, define a slot by the same name:
 
-```rasa-yaml
+```yaml-rasa
 entities:
   - plant
 
@@ -125,7 +126,7 @@ slots:
 
 You'll need a rule that tells your assistant how to respond when it receives a message from the Raspberry Pi.
 
-```rasa-yaml
+```yaml-rasa
 rules:
   - rule: warn about dry plant
     steps:
@@ -136,7 +137,7 @@ rules:
 #### Responses
 You'll need to define the response text for `utter_warn_dry`:
 
-```rasa-yaml
+```yaml-rasa
 responses:
   utter_warn_dry: Your {plant} needs some water!
 ```
@@ -159,7 +160,7 @@ for instructions on how to test your reminders locally.
 
 Run this POST request to simulate the external event, using your conversation ID: 
 
-```shell
+```bash
 curl -H "Content-Type: application/json" -X POST -d \
 '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' \
 "http://localhost:5005/conversations/user1234/trigger_intent?output_channel=latest"
@@ -168,7 +169,7 @@ curl -H "Content-Type: application/json" -X POST -d \
 You should see the bot respond in your channel:
 
 ```yaml
-  Bot: Your Orchid needs some water!
+Bot: Your Orchid needs some water!
 ```
 
 
@@ -237,7 +238,7 @@ entity, the action reacting to the reminder can use it to say "Remember to call 
 
 To schedule a reminder, add a rule:
 
-```
+```yaml-rasa
 rules:
 - rule: Schedule a reminder
   steps:
@@ -336,7 +337,7 @@ To tell your bot what action to run when a reminder is triggered, add a rule.
 You'll need to define the intent that triggers reacting to the reminder. You don't need to add any training examples,
 since the intent is reserved for the reminder.
 
-```
+```yaml-rasa
 intents:
 - intent: EXTERNAL_reminder
 ```
@@ -413,7 +414,7 @@ nlu:
 ```
 
 You should also add it to domain.yml:
-```
+```yaml-rasa
 intents:
 - intent: ask_forget_reminders
 ```

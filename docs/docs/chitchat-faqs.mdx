@@ -32,7 +32,7 @@ For FAQs and chitchat, you always want the assistant to respond the same way eve
 the same type of question is asked. [Rules](rules.mdx) allow you to do exactly that.
 To use rules, the you need to add the [RulePolicy](#rule-policy) to your policies in your configuration file:
 
-```rasa-yaml
+```yaml-rasa
 policies:
 # other policies
 - name: RulePolicy
@@ -42,7 +42,7 @@ To use retrieval actions, include the ResponseSelector in your NLU pipeline in y
 The ResponseSelector requires a featurizer and intent classifier to work, so
 it should come after these components in your pipeline, for example:
 
-```rasa-yaml
+```yaml-rasa
 pipeline:
   - name: WhitespaceTokenizer
   - name: RegexFeaturizer
@@ -63,7 +63,7 @@ By default, the ResponseSelector will build a single retrieval model for all ret
 To retrieve responses for FAQs and chitchat separately, use multiple ResponseSelector components
 and specify the `retrieval_intent` key:
 
-```rasa-yaml
+```yaml-rasa
 pipeline:
 # Other components
 - name: ResponseSelector
@@ -96,7 +96,7 @@ grouped under that retrieval intent will then be handled the same way.
 The retrieval action starts with `respond_` and ends with the retrieval intent's name.
 Write rules for responding to FAQs and chitchat:
 
-```rasa-yaml
+```yaml-rasa
 rules:
   - rule: respond to FAQs
     steps:
@@ -116,7 +116,7 @@ NLU training examples for the ResponseSelector look the same as
 regular training examples, except that their names must refer to the retrieval
 intent they are grouped under:
 
-```rasa-yaml
+```yaml-rasa
 nlu:
   - intent: chitchat/ask_name
     examples: |
@@ -134,7 +134,7 @@ nlu:
 
 Be sure to update your domain file to include the added `chitchat` intent:
 
-```rasa-yaml
+```yaml-rasa
 intents:
 # other intents
 - chitchat
@@ -148,7 +148,7 @@ retrieval intents. Besides this, they can have all the characteristics of
 normal bot [response](domain.mdx#responses). For the FAQs and chitchat intents
 listed above, our responses could look like:
 
-```rasa-yaml
+```yaml-rasa
 responses:
   utter_chitchat/ask_name:
   - image: "https://i.imgur.com/zTvA58i.jpeg"

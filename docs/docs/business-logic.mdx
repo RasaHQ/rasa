@@ -59,7 +59,7 @@ You define a form in the domain file (domain.yml) by specifying [slot mappings](
 piece of required information. Slot mappings define both which 
 slots are required, and how each slot can be filled:
 
-```rasa-yaml
+```yaml-rasa
   - restaurant_form:
       cuisine:
         - type: from_entity
@@ -89,7 +89,7 @@ Entities like numbers
 can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
 to your NLU pipeline in `config.yml`.
 
-```rasa-yaml
+```yaml-rasa
 language: en
 pipeline:
 # other components
@@ -107,7 +107,7 @@ Since the form relies on certain [slots](domain.mdx#slots) being available,  you
 forms are usually `unfeaturized`, since their value doesn't change
 the flow of the conversation.
 
-```rasa-yaml
+```yaml-rasa
 slots:
   cuisine:
     type: unfeaturized
@@ -133,7 +133,7 @@ about validation actions.
 To specify how the bot should ask for the required information,
 you define [`responses`](domain.mdx#responses) called `utter_ask_{slotname}` in your domain:
 
-```rasa-yaml
+```yaml-rasa
 responses:
   utter_ask_cuisine:
     - text: "What cuisine?"
@@ -149,7 +149,7 @@ responses:
 A form's [happy path](glossary.mdx#happy-path) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](policies.mdx#rulepolicy)
 to your policies in your configuration file:
 
-```rasa-yaml
+```yaml-rasa
 policies:
   - name: RulePolicy
 ```
@@ -166,7 +166,7 @@ In this case, the bot will utter a response with the details
 that would be used for a search. 
 
 
-```rasa-yaml
+```yaml-rasa
   - rule: activate restaurant form
     steps:
       - intent: request_restaurant   # intent that triggers form activation
@@ -200,7 +200,7 @@ You need to provide training examples for the
 intent(s) that should activate the form.
 Add the intent `request_restaurant` to nlu.yml:
 
-```rasa-yaml
+```yaml-rasa
 nlu:
 - intent: request_restaurant
   examples: |
@@ -232,7 +232,7 @@ that isn't trained on your training data. Only a few examples are shown for each
 for your bot to work well, you should add more training data than is shown here:
 
 
-```rasa-yaml
+```yaml-rasa
 nlu:
 - intent: affirm
   examples: |
@@ -265,7 +265,7 @@ nlu:
 
 Update domain.yml to include these intents:
 
-```rasa-yaml
+```yaml-rasa
 intents:
   - request_restaurant
   - affirm
@@ -277,7 +277,7 @@ intents:
 
 Add the responses that are sent after the form has been submitted:
 
-```rasa-yaml
+```yaml-rasa
 responses:
   utter_submit:
     - text: "All done!"
