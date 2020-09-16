@@ -92,52 +92,6 @@ as part of your deployment, without having to move code between servers.
 In addition, you can add any additional dependencies of systems or Python libraries
 that are part of your action code but not included in the base `rasa/rasa-sdk` image.
 
-#### Manually Building an Action Server
-
-To create your image:
-
-1. Make sure your actions are defined in `actions/actions.py`. The `rasa/rasa-sdk`
-  image will automatically look for the actions in this file.
-
-2. If your actions have any extra dependencies, create a list of them in a file,
-   `actions/requirements-actions.txt`.
-
-3. Create a file named `Dockerfile` in your project directory,
-   in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
-   For example:
-
-   <pre><code parentName="pre" className="language-python">
-   {`# Extend the official Rasa SDK image
-   FROM rasa/rasa-sdk:${variables.rasa_sdk_version}
-
-   # Use subdirectory as working directory
-   WORKDIR /app
-
-   # Copy any additional custom requirements, if necessary (uncomment next line)
-   # COPY actions/requirements-actions.txt ./
-
-   # Change back to root user to install dependencies
-   USER root
-
-   # Install extra requirements for actions code, if necessary (uncomment next line)
-   # RUN pip install -r requirements-actions.txt
-
-   # Copy actions folder to working directory
-   COPY ./actions /app/actions
-
-   # By best practices, don't run the code with root user
-   USER 1001`}</code></pre>
-
-You can then build the image via the following command:
-
-```bash
-docker build . -t <account_username>/<repository_name>:<custom_image_tag>
-```
-
-The `<custom_image_tag>` should reference how this image will be different from others. For
-example, you could version or date your tags, as well as create different tags that have different code for production
-and development servers. You should create a new tag any time you update your code and want to re-deploy it.
-
 #### Automating your Action Server Image Builds
 
 In addition to a manual step to create a new Action Server Image. You can use [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) to automate image builds.
@@ -218,6 +172,52 @@ As you can see it's possible to use output variables from the `action_server` st
 a docker image name and the `steps.action_server.outputs.docker_image_tag` variable returns a docker image tag.
 
 More examples on how to use and customize [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) you can find in the [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) repository.
+
+#### Manually Building an Action Server
+
+To create your image:
+
+1. Make sure your actions are defined in `actions/actions.py`. The `rasa/rasa-sdk`
+  image will automatically look for the actions in this file.
+
+2. If your actions have any extra dependencies, create a list of them in a file,
+   `actions/requirements-actions.txt`.
+
+3. Create a file named `Dockerfile` in your project directory,
+   in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
+   For example:
+
+   <pre><code parentName="pre" className="language-python">
+   {`# Extend the official Rasa SDK image
+   FROM rasa/rasa-sdk:${variables.rasa_sdk_version}
+
+   # Use subdirectory as working directory
+   WORKDIR /app
+
+   # Copy any additional custom requirements, if necessary (uncomment next line)
+   # COPY actions/requirements-actions.txt ./
+
+   # Change back to root user to install dependencies
+   USER root
+
+   # Install extra requirements for actions code, if necessary (uncomment next line)
+   # RUN pip install -r requirements-actions.txt
+
+   # Copy actions folder to working directory
+   COPY ./actions /app/actions
+
+   # By best practices, don't run the code with root user
+   USER 1001`}</code></pre>
+
+You can then build the image via the following command:
+
+```bash
+docker build . -t <account_username>/<repository_name>:<custom_image_tag>
+```
+
+The `<custom_image_tag>` should reference how this image will be different from others. For
+example, you could version or date your tags, as well as create different tags that have different code for production
+and development servers. You should create a new tag any time you update your code and want to re-deploy it.
 
 ### Using your Custom Action Server Image
 
