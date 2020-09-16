@@ -1,0 +1,20 @@
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+    intent_tokenization_flag: True
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 100
+policies:
+- name: TEDPolicy
+  max_history: 10
+  epochs: 20
+  batch_size:
+  - 32
+  - 64
