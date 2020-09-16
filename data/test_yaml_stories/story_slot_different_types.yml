@@ -1,0 +1,9 @@
+stories:
+- story: Customer loses a credit card, reviews transactions, and gets a new card
+  steps:
+  - intent: card_lost
+  - action: check_transactions
+  - slot_was_set:
+    - list_slot: ["value1", "value2"]
+    - bool_slot: true
+    - text_slot: "some_text"
