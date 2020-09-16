@@ -15,6 +15,9 @@ intents:
 entities:
 - PERSON
 - plant
+slots:
+  PERSON:
+    type: unfeaturized
 responses:
   utter_what_can_do:
   - text: What can I do for you?

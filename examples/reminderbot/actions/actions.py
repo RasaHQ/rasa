@@ -58,7 +58,7 @@ class ActionReactToReminder(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        name = next(tracker.get_latest_entity_values("PERSON"), "someone")
+        name = next(tracker.get_slot("PERSON"), "someone")
         dispatcher.utter_message(f"Remember to call {name}!")
 
         return []
