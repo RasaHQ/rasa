@@ -26,10 +26,19 @@ const existingVersionRE = new RegExp(
 );
 const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
+const versionLabels = {
+  current:
+    isDev || isPreview
+      ? `Next (${isPreview ? 'deploy preview' : 'dev'})`
+      : existingVersions.length < 1
+      ? 'Current'
+      : 'Next',
+};
 
 module.exports = {
   onBrokenLinks: 'warn',
   customFields: {
+    versionLabels,
     legacyVersions: [{
       label: 'Legacy 1.x',
       href: 'https://legacy-docs-v1.rasa.com',
@@ -92,9 +101,9 @@ module.exports = {
         },
       ],
     },
-    footer: {
-      copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
-    },
+    // footer: {
+    //   copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
+    // },
     gtm: {
       containerID: 'GTM-PK448GB',
     },
@@ -122,7 +131,7 @@ module.exports = {
       // includeCurrentVersion: true, // default is true
       versions: {
         current: {
-          label: isDev || isPreview ? `Next (${isPreview ? 'deploy preview' : 'dev'})` : existingVersions.length < 1 ? 'Current' : 'Next',
+          label: versionLabels['current'],
           path: isDev || isPreview || existingVersions.length < 1 ? '' : 'next',
         },
       },
