@@ -441,21 +441,21 @@ is maintained.
 For example, if you want to switch context upon a user ask and then return to the
 original flow after that ask is complete:
 
-```
+```yaml
 User: "Hi, I want to pay my credit card bill"
-Bot: "Can do! Which of these credit accounts do you want to make a payment towards?
-      - Credit Account A
-      - Credit Account B"
+  Bot: "Can do! Which of these credit accounts do you want to make a payment towards?"
+        - "Credit Account A"
+        - "Credit Account B"
 User: "Credit account B"
-Bot: "How much do you want to pay?"
+  Bot: "How much do you want to pay?"
 User: "Actually, I want to make a transfer"
-Bot: "No problem!"
-Bot: "Who would you like to transfer money to?"
+  Bot: "No problem!"
+  Bot: "Who would you like to transfer money to?"
 User: "I want to send $500 to Katy Parrow"
-Bot: "Can you confirm that you would like to send $500 to Katy Parrow?"
+  Bot: "Can you confirm that you would like to send $500 to Katy Parrow?"
 User: "Yes"
-Bot: "Successfully transferred $500 to Katy Parrow."
-Bot: "Would you like to pay your credit card bill now?"
+  Bot: "Successfully transferred $500 to Katy Parrow."
+  Bot: "Would you like to pay your credit card bill now?"
 ```
 
 You will need to create a story that describes this context-switching interaction:
