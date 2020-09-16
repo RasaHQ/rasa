@@ -302,8 +302,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         rasa.shared.utils.cli.print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
-            "directory (see http://rasa.com/docs/rasa/user-guide/"
-            "rasa-tutorial/#create-a-new-project)."
+            "directory (see https://rasa.com/docs/rasa/command-line-interface#rasa-init)."
         )
 
     _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))

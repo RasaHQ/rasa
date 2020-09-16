@@ -105,19 +105,7 @@ module.exports = {
           label: 'Config',
           items: [
             'model-configuration',
-            {
-              type: 'category',
-              label: 'Pipeline Components',
-              items: [
-                'components/language-models',
-                'components/tokenizers',
-                'components/featurizers',
-                'components/intent-classifiers',
-                'components/entity-extractors',
-                'components/selectors',
-                'components/custom-nlu-components',
-              ],
-            },
+            'components',
             'policies',
             'training-data-importers',
           ],
@@ -128,25 +116,7 @@ module.exports = {
           items: [
             'actions',
             'responses',
-            {
-              type: 'category',
-              label: 'Custom Actions',
-              items: [
-                'custom-actions',
-                'knowledge-bases',
-                {
-                  type: 'category',
-                  label: 'Rasa SDK',
-                  collapsed: true,
-                  items: [
-                    // 'running-action-server',
-                    // 'tracker-dispatcher',
-                    // 'events',
-                    // 'rasa-sdk-changelog'
-                  ],
-                },
-              ],
-            },
+            'custom-actions',
             'retrieval-actions',
             'forms',
             'reminders-and-external-events',
