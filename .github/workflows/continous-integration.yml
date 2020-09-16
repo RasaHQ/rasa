@@ -155,11 +155,14 @@ jobs:
 
     - name: Install Dependencies (Windows) 📦
       if: matrix.os == 'windows-latest'
+      # Restoring cache doesn't work properly on Windows due to symlinks.
+      # That's why we're manually removing symlinks here and everything that is inside `$spacy_data_dir` directory.
+      # More information: https://github.com/actions/cache/issues/120
       run: |
-        $dir = ".venv\lib\site-packages\spacy\data"
-        if (Test-Path $dir) {
-          Get-ChildItem -Force -ErrorAction Stop $dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-          Remove-Item -Force -Recurse $dir
+        $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
+        if (Test-Path $spacy_data_dir) {
+          Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+          Remove-Item -Force -Recurse $spacy_data_dir
           New-Item -Path $dir -Type Directory
         }
         make install-full
