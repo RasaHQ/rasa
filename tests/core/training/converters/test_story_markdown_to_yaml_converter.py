@@ -1,9 +1,7 @@
 import os
 from pathlib import Path
-from typing import Iterator, Text
-import asyncio
+from typing import Text
 import pytest
-from sanic.request import Request
 
 from rasa.core.training.converters.story_markdown_to_yaml_converter import (
     StoryMarkdownToYamlConverter,
