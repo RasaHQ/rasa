@@ -406,7 +406,7 @@ def _send_event(
         data = resp.json()
         if not data.get("success"):
             logger.debug(
-                f"Segment telemetry request returned a failure. " f"Response: {data}"
+                f"Segment telemetry request returned a failure. Response: {data}"
             )
 
 

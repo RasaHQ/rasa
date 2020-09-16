@@ -138,7 +138,7 @@
       ]
     },
     "Telemetry Disabled": {
-      "description": "Triggered when telemetry reporting gets disabled. Last event sent before disabling telemetry. This event is not send, if the user never enabled telemetry reporting before deactivating it."
+      "description": "Triggered when telemetry reporting gets disabled. Last event sent before disabling telemetry. This event is not sent, if the user never enabled telemetry reporting before deactivating it."
     },
     "Training Data Split": {
       "description": "Triggered when training data gets split.",
@@ -147,7 +147,7 @@
       "properties": {
         "fraction": {
           "type": "number",
-          "description": "how much data goes into train and how much goes into test"
+          "description": "Percentage of the data which goes into training data (the rest goes into the test set)."
         },
         "type": {
           "type": "string",
@@ -186,7 +186,7 @@
         },
         "type": {
           "type": "string",
-          "description": "Type of data, either 'nlu', 'core' or 'rasa'."
+          "description": "Type of data, either 'nlu', 'core' or 'nlg'."
         }
       },
       "additionalProperties": false,
@@ -196,7 +196,7 @@
       ]
     },
     "Tracker Exported": {
-      "description": "Triggered when training conversations get exported from a tracker store through an event broker.",
+      "description": "Triggered when conversations get exported from a tracker store through an event broker.",
       "type": "object",
       "section": "Data Handling",
       "properties": {
@@ -302,7 +302,7 @@
       "properties": {
         "init_directory": {
           "type": "string",
-          "description": "Hash of the directory the project is created in"
+          "description": "Hash of the directory path the project is created in"
         }
       },
       "additionalProperties": false,
@@ -334,7 +334,7 @@
       "description": "Triggered when stories are getting visualized."
     },
     "Model Core Tested": {
-      "description": "Triggered when a core model is getting tested.",
+      "description": "Triggered when a Core model is getting tested.",
       "type": "object",
       "section": "Model Testing",
       "properties": {
