@@ -13,11 +13,8 @@ intents:
 - EXTERNAL_reminder
 - EXT_reminder
 entities:
-- PERSON
+- name
 - plant
-slots:
-  PERSON:
-    type: unfeaturized
 responses:
   utter_what_can_do:
   - text: What can I do for you?

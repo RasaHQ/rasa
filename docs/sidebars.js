@@ -72,7 +72,6 @@ module.exports = {
             'fallback-handoff',
             'unexpected-input',
             'contextual-conversations',
-            'reaching-out-to-user',
           ],
         },
         {
@@ -120,6 +119,7 @@ module.exports = {
             'custom-actions',
             'retrieval-actions',
             'forms',
+            'reminders-and-external-events',
             'default-actions',
           ],
         },

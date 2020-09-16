@@ -38,15 +38,15 @@ slots:
 
 responses:
   utter_ask_cuisine:
-    - text: "What cuisine?"
+    - text: "what cuisine?"
   utter_ask_num_people:
-    - text: "How many people?"
+    - text: "how many people?"
   utter_ask_outdoor_seating:
-    - text: "Do you want to sit outside?"
+    - text: "do you want to seat outside?"
   utter_ask_preferences:
-    - text: "Please provide additional preferences"
+    - text: "please provide additional preferences"
   utter_ask_feedback:
-    - text: "Please give your feedback on your experience so far"
+    - text: "please give your feedback on your experience so far"
   utter_submit:
   - text: "All done!"
   utter_slots_values:
@@ -57,19 +57,19 @@ responses:
              - preferences: {preferences}\n
              - feedback: {feedback}"
   utter_noworries:
-    - text: "You are welcome :)"
+    - text: "you are welcome :)"
   utter_chitchat:
     - text: "chitchat"
   utter_ask_continue:
-    - text: "Do you want to continue?"
+    - text: "do you want to continue?"
   utter_wrong_cuisine:
-    - text: "Cuisine type is not in the database, please try again"
+    - text: "cuisine type is not in the database, please try again"
   utter_wrong_num_people:
-    - text: "Number of people should be a positive integer, please try again"
+    - text: "number of people should be a positive integer, please try again"
   utter_wrong_outdoor_seating:
-    - text: "Could not convert input to boolean value, please try again"
+    - text: "could not convert input to boolean value, please try again"
   utter_default:
-    - text: "Sorry, I didn't understand you, please try input something else"
+    - text: "sorry, I didn't understand you, please try input something else"
   utter_greet:
     - text: "Hello! I am restaurant search assistant! How can I help?"
   utter_iamabot:
