@@ -60,6 +60,7 @@ piece of required information. Slot mappings define both which
 slots are required, and how each slot can be filled:
 
 ```yaml-rasa
+forms:
   - restaurant_form:
       cuisine:
         - type: from_entity
@@ -167,6 +168,7 @@ that would be used for a search.
 
 
 ```yaml-rasa
+rules:
   - rule: activate restaurant form
     steps:
       - intent: request_restaurant   # intent that triggers form activation
@@ -280,12 +282,12 @@ Add the responses that are sent after the form has been submitted:
 ```yaml-rasa
 responses:
   utter_submit:
-    - text: "All done!"
+  - text: "All done!"
   utter_slots_values:
-    - text: "I am going to run a restaurant search using the following parameters:\n
-             - cuisine: {cuisine}\n
-             - num_people: {num_people}\n
-             - outdoor_seating: {outdoor_seating}
+  - text: "I am going to run a restaurant search using the following parameters:\n
+            - cuisine: {cuisine}\n
+            - num_people: {num_people}\n
+            - outdoor_seating: {outdoor_seating}"
 ```
 
 ## Summary

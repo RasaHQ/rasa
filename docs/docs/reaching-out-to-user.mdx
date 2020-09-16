@@ -141,7 +141,8 @@ You'll need to define the response text for `utter_warn_dry`:
 
 ```yaml-rasa
 responses:
-  utter_warn_dry: Your {plant} needs some water!
+  utter_warn_dry: 
+  - text: "Your {plant} needs some water!"
 ```
 
 The response will use the value from the slot `plant` to warn about the specific plant that needs watering.
@@ -281,9 +282,9 @@ names in your training data, since Spacy has a `PERSON` dimension:
 ```yaml-rasa
 pipeline:
 # other components
-- SpacyNLP
-- SpacyEntityExtractor
-    dimensions: ["PERSON"]
+- name: SpacyNLP
+- name: SpacyEntityExtractor
+  dimensions: ["PERSON"]
 ```
 
 
@@ -328,6 +329,7 @@ class ActionReactToReminder(Action):
 To tell your bot what action to run when a reminder is triggered, add a rule.
 
 ```yaml-rasa
+rules:
 - rule: Trigger `action_react_to_reminder` for `EXTERNAL_reminder`
   steps:
   - intent: EXTERNAL_reminder
@@ -393,6 +395,7 @@ All reminders are cancelled whenever you shutdown your Rasa server.
 You'll need to add a rule for cancelling a reminder.
 
 ```yaml-rasa
+rules:
 - rule: Cancel a reminder
   steps:
   - intent: ask_forget_reminders

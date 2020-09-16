@@ -214,11 +214,11 @@ class ActionDefaultFallback(Action):
 
 ### Two-Stage Fallback
 
-To give the bot a chance to figure out what the user wants, you will usuallly want it to attempt to disambiguate the user's message by asking
+To give the bot a chance to figure out what the user wants, you will usually want it to attempt to disambiguate the user's message by asking
 clarifying questions. The Two-Stage Fallback is made to handle low NLU confidence in multiple stages
 using the following sequence:
 
-- A user messsage is classified with low confidence
+- A user message is classified with low confidence
 
     - The user is asked to confirm the intent
 
@@ -274,7 +274,7 @@ responses:
 ```
 
 Rasa provides default implementations for asking which intent the user
-meant and for asking the user to rephrase. To customise the behaviour of these actions,
+meant and for asking the user to rephrase. To customize the behavior of these actions,
 see the [documentation default actions](default-actions.mdx).
 
 #### 3. Defining a Two-Stage Fallback rule
@@ -320,7 +320,7 @@ starterpacks.
 ## Summary
 
 To let your assistant gracefully handle failures, you should handle known
-out-of-scope messages and add a form of fallback behaviour. If you want to add human 
+out-of-scope messages and add a form of fallback behavior. If you want to add human 
 handoff, you can add it in addition or as a final step in your fallback
 set up.
 Here's a summary of changes you need to make for each method:
