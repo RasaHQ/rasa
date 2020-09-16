@@ -2,32 +2,26 @@
 id: fallback-handoff
 sidebar_label: Fallback and Human Handoff
 title: Fallback and Human Handoff
-abstract: When conversational assistants fail, it's important that they do so gracefully.
+abstract: This is a guide on how to handle various failures of your assistant.
 ---
-
 import useBaseUrl from '@docusaurus/useBaseUrl';
-
 
 Even if you design your bot perfectly, users will inevitably say things to your
 assistant that you did not anticipate. In these cases, your assistant will fail,
 and it's important you ensure it does so gracefully.
 
-## Handling Out-of-Scope Messages
+## Handling Out-of-scope Messages
 
-It is good practice to handle questions you know your users may ask,
+To avoid user frustration, you can handle questions you know your users may ask,
 but for which you haven't implemented a user goal yet.
 
-You can define an `out_of_scope` intent to handle generic out of scope requests, like “I'm hungry” and have
-the bot respond with a default message like “Sorry, I can't handle that request” by writing a rule with the
-`out_of_scope` intent in it.
 
+### 1. Creating an Out-of-scope Intent
 
-### 1. Creating an Out-of-Scope intent
-
-You will first need to define an `out_of_scope` intent in your NLU training data and add any known
+You will need to define an `out_of_scope` intent in your NLU training data and add any known
 out-of-scope requests as training examples, for example:
 
-```yaml
+```yaml-rasa
 nlu:
 - intent: out_of_scope
   examples: |
@@ -37,8 +31,7 @@ nlu:
 ```
 
 As with every intent, you should source the majority of your examples
-from real conversations. This is especially important for out-of-scope intents
-since false positives for these intents can lead to a bad user experience.
+[from real conversations](conversation-driven-development.mdx). 
 
 
 ### 2. Defining the response message
@@ -46,7 +39,7 @@ since false positives for these intents can lead to a bad user experience.
 You'll need to define an out-of-scope response in the domain file.
 Using the utterance `utter_out_of_scope` as the default response, that would look like:
 
-```yaml
+```yaml-rasa
 responses:
   utter_out_of_scope:
   - text: Sorry, I can't handle that request.
@@ -56,15 +49,15 @@ responses:
 
 Finally, you will need to write a rule for what should happen for in out-of-scope request:
 
-```yaml
+```yaml-rasa
 rules:
-- rule: out of scope
+- rule: out-of-scope
   steps:
   - intent: out_of_scope
   - action: utter_out_of_scope
 ```
 
-### Handling Specific Out-Of-Scope Messages
+### Handling Specific Out-of-scope Messages
 
 If you observe your users asking for certain things that you'll
 want to turn into a user goal in future, you can handle these as separate intents, to let
@@ -78,8 +71,7 @@ training examples, define the response message, and create a rule.
 
 ## Fallbacks
 
-Although Rasa's [Intent Classifier](./components.mdx#intent-classifiers) will
-generalize to unseen messages, some
+Although Rasa will generalize to unseen messages, some
 messages might receive a low classification confidence. Using Fallbacks will
 help ensure that these low confidence messages are handled gracefully, giving your
 assistant the option to either respond with a default message or attempt to disambiguate
@@ -88,15 +80,17 @@ the user input.
 
 ### NLU Fallback
 
-To handle incoming messages with low NLU confidence, we recommend adding the
-[FallbackClassifier](./components.mdx#fallbackclassifier) to your NLU pipeline.
+To handle incoming messages with low NLU confidence, use the
+[FallbackClassifier](./components.mdx#fallbackclassifier).
 Using this configuration, the intent `nlu_fallback` will be predicted when all other intent
 predictions fall below the configured confidence threshold. You can then write a rule
 for what the bot should do when `nlu_fallback` is predicted.
 
 #### 1. Updating the configuration
 
-```yaml
+To use the FallbackClassifier, add it to your NLU pipeline in config.yml.
+
+```yaml-rasa
 pipeline:
 # other components
 - name: FallbackClassifier
@@ -105,7 +99,10 @@ pipeline:
 
 #### 2. Defining the response message
 
-```yaml
+Define the message the bot should send when a message is classified with low confidence
+by adding a response.
+
+```yaml-rasa
 responses:
   utter_please_rephrase:
   - text: I'm sorry, I didn't quite understand that. Could you rephrase?
@@ -117,7 +114,7 @@ The following
 [Rule](./rules.mdx) will ask the user to rephrase when they send a message that is
 classified with low confidence:
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
   steps:
@@ -126,7 +123,7 @@ rules:
 ```
 
 
-### Handling Low Core Confidence
+### Handling Low Action Confidence
 
 As users might send unexpected messages,
 it is possible that their behavior will lead them down unknown conversation paths.
@@ -139,13 +136,13 @@ next action with high confidence, you can configure the
 default action if no [Policy](./policies.mdx) has a next action prediction with
 confidence above a configurable threshold.
 
-You can configure the action that is run in case low confidence as well as
+You can configure the action that is run in case low of action confidence as well as
 the corresponding confidence threshold using the following steps:
 
 
 #### 1. Updating the configuration
 
-```yaml
+```yaml-rasa
 policies:
 - name: RulePolicy
   # Confidence threshold for the `core_fallback_action_name` to apply.
@@ -157,7 +154,7 @@ policies:
 ```
 
 :::note
-If you do not want the `Rule Policy` to predict a default action in case of low Core
+If you do not want the `Rule Policy` to predict a default action in case of low action
 confidence, specify `enable_fallback_prediction: False` in the configuration of the
 policy.
 :::
@@ -173,7 +170,7 @@ fallback, so it will not influence the prediction of future actions.
 
 `utter_default` can be defined in your domain file as:
 
-```yaml
+```yaml-rasa
 responses:
   utter_default:
   - text: Sorry I didn't get that. Can you rephrase?
@@ -279,7 +276,7 @@ The default implementation of `action_default_ask_rephrase` utters
 the response `utter_ask_rephrase`, so make sure to specify this
 response in your domain file:
 
-```yaml
+```yaml-rasa
 responses:
   utter_ask_rephrase:
   - text: I'm sorry, I didn't quite understand that. Could you rephrase?
@@ -296,7 +293,7 @@ Add the following [Rule](./rules.mdx) to your training data. This rule will make
 that the Two-Stage-Fallback will be activated whenever a message is received with
 low classification confidence.
 
-```yaml
+```yaml-rasa
 rules:
 - rule: Implementation of the Two-Stage-Fallback
   steps:

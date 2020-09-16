@@ -45,7 +45,7 @@ In the example above, Sara responds differently for new users
 and users with previous experience because of stories like this:
 
 
-```yaml
+```yaml-rasa
 stories:
   - story: New user
     steps:
@@ -148,7 +148,7 @@ you improve your bot and make it more contextual.
 
 Usually, only a certain amount of context is relevant to your assistant.
 [`max_history`](policies.mdx#max-history) is a hyperparameter for Rasa dialogue management policies
-that controls how many steps in a dialgoue the model looks at to decide which
+that controls how many steps in a dialogue the model looks at to decide which
 action to take next. 
 
 In the story below, the user asks for help three times in a row. The first two times,
