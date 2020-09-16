@@ -7,7 +7,6 @@ from rasa.cli import SubParsersAction
 import rasa.cli.utils
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 import rasa.shared.utils.cli
-import rasa.utils.common
 
 
 def add_subparser(

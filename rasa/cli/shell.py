@@ -9,7 +9,6 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
-import rasa.utils.common
 
 logger = logging.getLogger(__name__)
 

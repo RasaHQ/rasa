@@ -15,10 +15,8 @@ import typing
 from typing import Any, Callable, Dict, List, Optional, Text
 import uuid
 
-import aiohttp
 import async_generator
 import requests
-from sanic import Sanic
 from terminaltables import SingleTable
 
 import rasa
@@ -29,7 +27,6 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
-from rasa import model
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
@@ -728,7 +725,7 @@ def track_data_convert(output_format: Text, data_type: Text) -> None:
 def track_tracker_export(
     number_of_exported_events: int,
     tracker_store: "TrackerStore",
-    event_broker: Optional["EventBroker"],
+    event_broker: "EventBroker",
 ) -> None:
     """Track when a user exports trackers.
 
@@ -742,7 +739,7 @@ def track_tracker_export(
         {
             "number_of_exported_events": number_of_exported_events,
             "tracker_store": type(tracker_store).__name__,
-            "event_broker": type(event_broker).__name__ if event_broker else None,
+            "event_broker": type(event_broker).__name__,
         },
     )
 
@@ -774,11 +771,11 @@ def track_server_start(
     """Track when a user starts a rasa server.
 
     Args:
+        input_channels: Used input channels
+        endpoints: Endpoint configuration for the server
+        model_directory: directory of the running model
         number_of_workers: number of used Sanic workers
         is_api_enabled: whether the rasa API server is enabled
-        endpoints: Endpoint configuration for the server
-        input_channels: Used input channels
-        model_directory: directory of the running model
     """
     from rasa.core.utils import AvailableEndpoints
 

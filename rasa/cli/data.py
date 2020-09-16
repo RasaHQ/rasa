@@ -231,16 +231,16 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
         NLUMarkdownToYamlConverter,
     )
 
-    telemetry.track_data_convert(args.format, "nlu")
-
     if args.format in ["json", "md"]:
         rasa.nlu.convert.convert_training_data(
             args.data, args.out, args.format, args.language
         )
+        telemetry.track_data_convert(args.format, "nlu")
     elif args.format == "yaml":
         rasa.utils.common.run_in_loop(
             _convert_to_yaml(args, NLUMarkdownToYamlConverter())
         )
+        telemetry.track_data_convert(args.format, "nlu")
     else:
         rasa.shared.utils.cli.print_error_and_exit(
             "Could not recognize output format. Supported output formats: 'json', "
@@ -253,12 +253,11 @@ def _convert_core_data(args: argparse.Namespace) -> None:
         StoryMarkdownToYamlConverter,
     )
 
-    telemetry.track_data_convert(args.format, "core")
-
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(
             _convert_to_yaml(args, StoryMarkdownToYamlConverter())
         )
+        telemetry.track_data_convert(args.format, "core")
     else:
         rasa.shared.utils.cli.print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
@@ -271,12 +270,11 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
         NLGMarkdownToYamlConverter,
     )
 
-    telemetry.track_data_convert(args.format, "nlg")
-
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(
             _convert_to_yaml(args, NLGMarkdownToYamlConverter())
         )
+        telemetry.track_data_convert(args.format, "nlg")
     else:
         rasa.shared.utils.cli.print_error_and_exit(
             "Could not recognize output format. Supported output formats: "
