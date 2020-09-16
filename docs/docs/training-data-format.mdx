@@ -9,17 +9,17 @@ description: Description of the YAML format for training data
 
 Rasa Open Source uses [YAML](https://yaml.org/spec/1.2/spec.html) as
 a unified and extendable way to manage all training data,
-including NLU data, stories and rules. 
+including NLU data, stories and rules.
 
 With the YAML format, training data can be split over any number of YAML files,
-and every file can contain any kind of data. 
+and every file can contain any kind of data.
 The training data parser will read the top level keys in each file to decide
 what kind of data is in a section at training time.
 
 The [domain](glossary.mdx#domain) uses
 the same YAML format as the training data and can also be split across
 multiple files or combined in one file. The domain includes
-the definitions for [responses](domain.mdx#responses) and [forms](forms.mdx).
+the definitions for [responses](responses.mdx) and [forms](forms.mdx).
 See the [documentation for the domain](domain.mdx) for information on how to format your domain file.
 
 :::note Legacy Formats
@@ -45,7 +45,7 @@ All YAML training data files should specify the `version` key to be parsed
 correctly. If you don't specify a version key in your training data file, Rasa
 will assume you are using the latest training data format specification supported
 by the version of Rasa Open Source you have installed.
-Training data files with a version greater than is currently available in 
+Training data files with a version greater than is currently available in
 the version of Rasa Open Source you have installed will be
 skipped.
 Currently, the latest training data format specification for Rasa 2.x is 2.0.
@@ -233,7 +233,7 @@ name of your intents.
 
 ### Entities
 
-[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) based on a character pattern.
+[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
 
 Entities are annotated in training examples with minimally the entity's name.
 In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
@@ -289,7 +289,7 @@ nlu:
 
 To use the synonyms defined in your training data, you need to make sure the
 pipeline in your configuration file contains the
-[`EntitySynonymMapper`](components/entity-extractors.mdx#entitysynonymmapper) component. You
+[`EntitySynonymMapper`](components.mdx#entitysynonymmapper) component. You
 should define synonyms when there are multiple ways users refer to the same
 thing.
 
@@ -315,7 +315,7 @@ recognize these as entities and replace them with `credit`.
 ### Regular Expressions
 
 You can use regular expressions to improve intent classification and
-entity extraction in combination with the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) components in the pipeline.
+entity extraction in combination with the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components in the pipeline.
 
 #### Regular Expressions for Intent Classification
 
@@ -343,7 +343,7 @@ matches a single word.
 
 If your entity has a deterministic structure (like an account number), you can use regular expressions in one of two ways:
 
-1. As features for the [`RegexFeaturizer`](components/featurizers.mdx#regexfeaturizer) component in the pipeline.
+1. As features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in the pipeline.
 
   When used as as features for the `RegexFeaturizer` the
   name of the regular expression does not matter.
@@ -355,7 +355,7 @@ If your entity has a deterministic structure (like an account number), you can u
   features and their presence will not improve entity recognition for
   these extractors.
 
-2. For rule-based entity extraction using the [`RegexEntityExtractor`](components/entity-extractors.mdx#regexentityextractor) component in the pipeline.
+2. For rule-based entity extraction using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) component in the pipeline.
 
   When using the `RegexEntityExtractor`, the name of the regular expression should
   match the name of the entity you want to extract.
@@ -403,8 +403,8 @@ lookup table.
 
 Lookup table regexes are processed identically to the regular
 regex patterns directly specified in the training data and can be used
-either with the [RegexFeaturizer](components/featurizers.mdx#regexfeaturizer)
-or with the [RegexEntityExtractor](components/featurizers.mdx#regexentityextractor).
+either with the [RegexFeaturizer](components.mdx#regexfeaturizer)
+or with the [RegexEntityExtractor](components.mdx#regexentityextractor).
 
 :::note Combining with Regexes
 

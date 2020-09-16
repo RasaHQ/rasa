@@ -12,6 +12,7 @@ from typing import Iterable, List, Optional, Text, Tuple
 import aiohttp
 import ruamel.yaml as yaml
 
+from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import x as arguments
 import rasa.cli.utils
@@ -20,7 +21,6 @@ from rasa.constants import (
     DEFAULT_RASA_PORT,
     DEFAULT_RASA_X_PORT,
 )
-from rasa.core.utils import AvailableEndpoints
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_CREDENTIALS_PATH,
@@ -28,6 +28,8 @@ from rasa.shared.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DOCS_BASE_URL_RASA_X,
 )
+from rasa.core.utils import AvailableEndpoints
+from rasa.shared.exceptions import RasaXTermsError
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.common
@@ -300,8 +302,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         rasa.shared.utils.cli.print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
-            "directory (see http://rasa.com/docs/rasa/user-guide/"
-            "rasa-tutorial/#create-a-new-project)."
+            "directory (see https://rasa.com/docs/rasa/command-line-interface#rasa-init)."
         )
 
     _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
@@ -431,16 +432,21 @@ def run_locally(args: argparse.Namespace):
 
     _validate_rasa_x_start(args, project_path)
 
-    local.check_license_and_metrics(args)
     rasa_x_token = generate_rasa_x_token()
     process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
 
     config_path = _get_config_path(args)
 
+    telemetry.track_rasa_x_local()
+
+    # noinspection PyBroadException
     try:
         local.main(
             args, project_path, args.data, token=rasa_x_token, config_path=config_path
         )
+    except RasaXTermsError:
+        # User didn't accept the Rasa X terms.
+        pass
     except Exception:
         print(traceback.format_exc())
         rasa.shared.utils.cli.print_error(

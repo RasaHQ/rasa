@@ -4,6 +4,7 @@ import uuid
 
 from typing import List
 
+from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.shared.utils.cli import print_error
@@ -84,6 +85,7 @@ def shell_nlu(args: argparse.Namespace):
         )
         return
 
+    telemetry.track_shell_started("nlu")
     rasa.nlu.run.run_cmdline(nlu_model)
 
 
@@ -110,8 +112,12 @@ def shell(args: argparse.Namespace):
     if not core_model:
         import rasa.nlu.run
 
+        telemetry.track_shell_started("nlu")
+
         rasa.nlu.run.run_cmdline(nlu_model)
     else:
         import rasa.cli.run
+
+        telemetry.track_shell_started("rasa")
 
         rasa.cli.run.run(args)
