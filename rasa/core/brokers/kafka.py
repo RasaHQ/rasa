@@ -56,7 +56,7 @@ class KafkaEventBroker(EventBroker):
             if connected:
                 logger.debug("Connection to kafka successful")
             else:
-                logger.debug("Failed to connect kafka")
+                logger.debug("Failed to connect kafka.")
                 return
         try:
             self._publish(event)
