@@ -54,7 +54,7 @@ responses:
 
 ### 3. Creating an Out-of-Scope Rule
 
-Finally, you will need to write rules for what should happen for in out-of-scope request:
+Finally, you will need to write a rule for what should happen for in out-of-scope request:
 
 ```yaml
 rules:
@@ -139,7 +139,7 @@ next action with high confidence, you can configure the
 default action if no [Policy](./policies.mdx) has a next action prediction with
 confidence above a configurable threshold.
 
-You can configure the action that is run in case low of Core confidence as well as
+You can configure the action that is run in case low confidence as well as
 the corresponding confidence threshold using the following steps:
 
 
@@ -166,7 +166,7 @@ policy.
 #### 2. Defining the default response message
 
 By default, Rasa Open Source will send the `utter_default` response to the user when
-Core confidence falls below the configured threshold. Make sure to specify
+the action confidence falls below the configured threshold. Make sure to specify
 the `utter_default` in your domain file. It will also revert back to the
 state of the conversation before the user message that caused the
 fallback, so it will not influence the prediction of future actions.
@@ -222,7 +222,7 @@ class ActionDefaultFallback(Action):
 ### Two-Stage Fallback
 
 In some cases, you will want to attempt to disambiguate the user's message by asking
-clarifying questions. The Two-Stage-Fallback is made to handle low NLU confidence in multiple stages
+clarifying questions. The Two-Stage Fallback is made to handle low NLU confidence in multiple stages
 using the following sequence:
 
 - If an NLU prediction has a low confidence score, the user is asked to affirm
