@@ -172,15 +172,13 @@ enough context to see that the user had already sent two help requests, and woul
 predict the human handoff action.
 
 
-You can set the `max_history` by passing it to your policy's Featurizer
+You can set the `max_history` by passing it to your policy's settings
 in the policy configuration yaml file, for example:
 
 ```
 policies:
   - name: "TEDPolicy"
-    featurizer:
-    - name: MaxHistoryTrackerFeaturizer
-      max_history: 5
+    max_history: 5
 ```
 
 You want to make sure `max_history` is set high enough
