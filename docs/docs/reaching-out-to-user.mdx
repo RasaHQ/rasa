@@ -16,13 +16,13 @@ options to send a payload to the assistant when the user first starts the conver
 but you can also add this option to your [own custom channel](./connectors/your-own-website.mdx).
 
 Once you've configured your channel to send a payload, you will need to specify how the
-assistant should react and greet the user. You can either re-use an existing intent's behaviour
+assistant should react and greet the user. You can either re-use an existing intent's behavior
 for this, or specify a new intent and rule for this. Below is a guide on how to specify a
 welcome rule.
 
 ### 1. Updating the configuration
 
-Since you are using a rule for this behaviour, you need to add the [RulePolicy](./policies.mdx#rule-policy)
+Since you are using a rule for this behavior, you need to add the [RulePolicy](./policies.mdx#rule-policy)
 to your `config.yml`:
 
   ```yaml-rasa
@@ -39,7 +39,7 @@ only at the beginning of a conversation, add the following rule to your
   ```yaml-rasa
   rules:
     - rule: welcome user
-      conversation_start: True  # this rule only applies at the beginning of a conversation
+      conversation_start: true  # this rule only applies at the beginning of a conversation
       steps:
         - intent: greet
         - action: utter_welcome
