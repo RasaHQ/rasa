@@ -54,7 +54,7 @@ class KafkaEventBroker(EventBroker):
             self._create_producer()
             connected = self.producer.bootstrap_connected()
             if connected:
-                logger.debug("Connection to kafka successful")
+                logger.debug("Connection to kafka successful.")
             else:
                 logger.debug("Failed to connect kafka.")
                 return
@@ -62,7 +62,7 @@ class KafkaEventBroker(EventBroker):
             self._publish(event)
         except Exception as e:
             logger.error(
-                f"Could not publish message to kafka host '{self.host}'."
+                f"Could not publish message to kafka host '{self.host}'. "
                 f"Failed with error: {e}"
             )
             connected = self.producer.bootstrap_connected()
@@ -103,7 +103,7 @@ class KafkaEventBroker(EventBroker):
             )
 
     def _publish(self, event) -> None:
-        logger.debug(f"Calling kafka send({self.topic}, {event}")
+        logger.debug(f"Calling kafka send({self.topic}, {event})")
         self.producer.send(self.topic, event)
 
     def _close(self) -> None:
