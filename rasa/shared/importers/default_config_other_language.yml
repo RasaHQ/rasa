@@ -1,5 +1,5 @@
 # Configuration for the Rasa NLU components.
-# https://rasa.com/docs/rasa/nlu/components/
+# https://rasa.com/docs/rasa/components
 language: en
 
 pipeline:
@@ -18,7 +18,7 @@ pipeline:
     epochs: 100
 
 # Configuration for the Rasa Core policies.
-# https://rasa.com/docs/rasa/core/policies/
+# https://rasa.com/docs/rasa/policies
 policies:
   - name: MemoizationPolicy
   - name: TEDPolicy

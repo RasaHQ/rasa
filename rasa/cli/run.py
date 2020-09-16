@@ -129,7 +129,5 @@ def run(args: argparse.Namespace):
         "from.\n"
         "3. Train a model before running the server using `rasa train` and "
         "use '--model' to provide the model path.\n"
-        "For more information check {}.".format(
-            DOCS_BASE_URL + "/user-guide/configuring-http-api/"
-        )
+        "For more information check {}.".format(DOCS_BASE_URL + "/model-storage")
     )
