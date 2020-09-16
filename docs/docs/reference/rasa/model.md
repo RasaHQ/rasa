@@ -159,6 +159,18 @@ Create a zipped Rasa model from trained model files.
 
   Path to zipped model.
 
+#### project\_fingerprint
+
+```python
+project_fingerprint() -> Optional[Text]
+```
+
+Create a hash for the project in the current working directory.
+
+**Returns**:
+
+  project hash
+
 #### model\_fingerprint
 
 ```python
