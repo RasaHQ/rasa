@@ -832,6 +832,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
             "policy": None,
             "confidence": None,
             "timestamp": 1514764800,
+            "action_text": None,
         },
         {"event": "session_started", "timestamp": 1514764800},
         {
@@ -840,6 +841,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
             "policy": None,
             "confidence": None,
             "timestamp": 1514764800,
+            "action_text": None,
         },
     ]
     assert content["latest_message"] == {
