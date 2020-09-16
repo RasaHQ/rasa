@@ -27,12 +27,12 @@ const existingVersionRE = new RegExp(
 const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
 const versionLabels = {
-  current:
-    isDev || isPreview
-      ? `Next (${isPreview ? 'deploy preview' : 'dev'})`
-      : existingVersions.length < 1
-      ? 'Current'
-      : 'Next',
+  current: 'Master/Unreleased'
+    // isDev || isPreview
+    //   ? `Next (${isPreview ? 'deploy preview' : 'dev'})`
+    //   : existingVersions.length < 1
+    //   ? 'Current'
+    //   : 'Next',
 };
 
 module.exports = {
@@ -43,7 +43,19 @@ module.exports = {
       label: 'Legacy 1.x',
       href: 'https://legacy-docs-v1.rasa.com',
       target: '_self',
-    }]
+    }],
+    redocPages: [
+      {
+        title: 'Rasa HTTP API',
+        specUrl: '/spec/rasa.yml',
+        slug: '/pages/http-api',
+      },
+      {
+        title: 'Rasa Action Server API',
+        specUrl: '/spec/action-server.yml',
+        slug: '/pages/action-server-api',
+      }
+    ]
   },
   title: 'Rasa Open Source Documentation',
   tagline: 'An open source machine learning framework for automated text and voice-based conversations',
@@ -94,10 +106,30 @@ module.exports = {
           position: 'right',
         },
         {
-          target: '_self',
-          href: `${SITE_URL}/community/join/`,
           label: 'Community',
           position: 'right',
+          items: [
+            {
+              target: '_self',
+              href: 'https://rasa.com/community/join/',
+              label: 'Community Hub',
+            },
+            {
+              target: '_self',
+              href: 'https://forum.rasa.com',
+              label: 'Forum',
+            },
+            {
+              target: '_self',
+              href: 'https://rasa.com/community/contribute/',
+              label: 'How to Contribute',
+            },
+            {
+              target: '_self',
+              href: 'https://rasa.com/showcase/',
+              label: 'Community Showcase',
+            },
+          ],
         },
       ],
     },
