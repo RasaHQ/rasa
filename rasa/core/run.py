@@ -208,7 +208,7 @@ def serve_application(
             shutil.rmtree(_app.agent.model_directory)
 
     async def run_telemetry(_app: Sanic, _loop: AbstractEventLoop) -> None:
-        await telemetry.track_server_start(input_channels, endpoints, app.agent)
+        telemetry.track_server_start(input_channels, endpoints, app.agent)
 
     app.register_listener(clear_model_files, "after_server_stop")
     app.register_listener(run_telemetry, "after_server_start")

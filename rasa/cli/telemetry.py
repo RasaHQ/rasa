@@ -81,7 +81,7 @@ def inform_about_telemetry(_: argparse.Namespace) -> None:
 
 def disable_telemetry(_: argparse.Namespace) -> None:
     """Disable telemetry tracking."""
-    rasa.utils.common.run_in_loop(telemetry.track_telemetry_disabled())
+    telemetry.track_telemetry_disabled()
     telemetry.toggle_telemetry_reporting(is_enabled=False)
     rasa.shared.utils.cli.print_success("Disabled telemetry reporting.")
 

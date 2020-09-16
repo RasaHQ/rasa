@@ -165,9 +165,7 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     train.persist(args.out, filename=f"training_data{extension}")
     test.persist(args.out, filename=f"test_data{extension}")
 
-    rasa.utils.common.run_in_loop(
-        telemetry.track_data_split(args.training_fraction, "nlu")
-    )
+    telemetry.track_data_split(args.training_fraction, "nlu")
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
@@ -192,7 +190,7 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
             and _validate_story_structure(validator, args)
         )
 
-    rasa.utils.common.run_in_loop(telemetry.track_validate_files(all_good))
+    telemetry.track_validate_files(all_good)
     if not all_good:
         rasa.shared.utils.cli.print_error_and_exit(
             "Project validation completed with errors."
@@ -233,7 +231,7 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
         NLUMarkdownToYamlConverter,
     )
 
-    rasa.utils.common.run_in_loop(telemetry.track_data_convert(args.format, "nlu"))
+    telemetry.track_data_convert(args.format, "nlu")
 
     if args.format in ["json", "md"]:
         rasa.nlu.convert.convert_training_data(
@@ -255,7 +253,7 @@ def _convert_core_data(args: argparse.Namespace) -> None:
         StoryMarkdownToYamlConverter,
     )
 
-    rasa.utils.common.run_in_loop(telemetry.track_data_convert(args.format, "core"))
+    telemetry.track_data_convert(args.format, "core")
 
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(
@@ -273,7 +271,7 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
         NLGMarkdownToYamlConverter,
     )
 
-    rasa.utils.common.run_in_loop(telemetry.track_data_convert(args.format, "nlg"))
+    telemetry.track_data_convert(args.format, "nlg")
 
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(

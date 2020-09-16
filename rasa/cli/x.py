@@ -438,7 +438,7 @@ def run_locally(args: argparse.Namespace):
 
     config_path = _get_config_path(args)
 
-    rasa.utils.common.run_in_loop(telemetry.track_rasa_x_local())
+    telemetry.track_rasa_x_local()
 
     # noinspection PyBroadException
     try:

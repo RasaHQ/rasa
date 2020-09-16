@@ -1517,7 +1517,7 @@ def run_evaluation(
             disable_plotting,
         )
 
-    rasa.utils.common.run_in_loop(telemetry.track_nlu_model_test(test_data))
+    telemetry.track_nlu_model_test(test_data)
 
     return result
 

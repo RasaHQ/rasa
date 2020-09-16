@@ -86,7 +86,7 @@ def shell_nlu(args: argparse.Namespace):
         )
         return
 
-    rasa.utils.common.run_in_loop(telemetry.track_shell_started("nlu"))
+    telemetry.track_shell_started("nlu")
     rasa.nlu.run.run_cmdline(nlu_model)
 
 
@@ -113,12 +113,12 @@ def shell(args: argparse.Namespace):
     if not core_model:
         import rasa.nlu.run
 
-        rasa.utils.common.run_in_loop(telemetry.track_shell_started("nlu"))
+        telemetry.track_shell_started("nlu")
 
         rasa.nlu.run.run_cmdline(nlu_model)
     else:
         import rasa.cli.run
 
-        rasa.utils.common.run_in_loop(telemetry.track_shell_started("rasa"))
+        telemetry.track_shell_started("rasa")
 
         rasa.cli.run.run(args)

@@ -707,7 +707,7 @@ async def test(
                 targets, predictions, output_dict=True
             )
 
-    await telemetry.track_core_model_test(len(generator.story_graph.story_steps), agent)
+    telemetry.track_core_model_test(len(generator.story_graph.story_steps), agent)
 
     _log_evaluation_table(
         evaluation_store.action_targets,

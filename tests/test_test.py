@@ -385,6 +385,7 @@ rules:
 
     test_file.write_text(tests)
 
-    test_trackers = await _generate_trackers(str(test_file), default_agent)
+    generator = await _generate_trackers(str(test_file), default_agent)
+    test_trackers = generator.generate_story_trackers()
     assert len(test_trackers) == 1
     assert test_trackers[0].sender_id == test_name

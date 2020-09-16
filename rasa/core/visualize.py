@@ -52,7 +52,7 @@ async def visualize(
         nlu_training_data = None
 
     logger.info("Starting to visualize stories...")
-    await telemetry.track_visualization()
+    telemetry.track_visualization()
     await agent.visualize(
         stories_path, output_path, max_history, nlu_training_data=nlu_training_data
     )

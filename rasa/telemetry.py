@@ -17,6 +17,7 @@ import uuid
 
 import aiohttp
 import async_generator
+import requests
 from sanic import Sanic
 from terminaltables import SingleTable
 
@@ -109,7 +110,7 @@ def print_telemetry_reporting_info() -> None:
     print(table.table)
 
 
-def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Text]:
+def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Any]:
     return {
         CONFIG_TELEMETRY_ENABLED: is_enabled,
         CONFIG_TELEMETRY_ID: uuid.uuid4().hex,
@@ -360,7 +361,7 @@ def print_telemetry_event(payload: Dict[Text, Any]) -> None:
     print(json.dumps(payload, indent=2))
 
 
-async def _send_event(
+def _send_event(
     distinct_id: Text,
     event_name: Text,
     properties: Dict[Text, Any],
@@ -394,24 +395,19 @@ async def _send_event(
 
     headers = segment_request_header(write_key)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            SEGMENT_ENDPOINT, headers=headers, json=payload,
-        ) as resp:
-            # handle different failure cases
-            if resp.status != 200:
-                response_text = await resp.text()
-                logger.debug(
-                    f"Segment telemetry request returned a {resp.status} response. "
-                    f"Body: {response_text}"
-                )
-            else:
-                data = await resp.json()
-                if not data.get("success"):
-                    logger.debug(
-                        f"Segment telemetry request returned a failure. "
-                        f"Response: {data}"
-                    )
+    resp = requests.post(SEGMENT_ENDPOINT, headers=headers, json=payload)
+    # handle different failure cases
+    if resp.status_code != 200:
+        logger.debug(
+            f"Segment telemetry request returned a {resp.status_code} response. "
+            f"Body: {resp.text}"
+        )
+    else:
+        data = resp.json()
+        if not data.get("success"):
+            logger.debug(
+                f"Segment telemetry request returned a failure. " f"Response: {data}"
+            )
 
 
 def _hash_directory_path(path: Text) -> Optional[Text]:
@@ -485,7 +481,7 @@ def _default_context_fields() -> Dict[Text, Any]:
 
 
 @ensure_telemetry_enabled
-async def track(
+def track(
     event_name: Text,
     properties: Optional[Dict[Text, Any]] = None,
     context: Optional[Dict[Text, Any]] = None,
@@ -513,7 +509,7 @@ async def track(
 
         properties[TELEMETRY_ID] = telemetry_id
 
-        await _send_event(
+        _send_event(
             telemetry_id, event_name, properties, with_default_context_fields(context)
         )
     except Exception as e:  # skipcq:PYL-W0703
@@ -647,99 +643,87 @@ async def track_model_training(
 
     training_id = uuid.uuid4().hex
 
-    asyncio.ensure_future(
-        track(
-            TRAINING_STARTED_EVENT,
-            {
-                "language": config.get("language"),
-                "training_id": training_id,
-                "type": model_type,
-                "pipeline": config.get("pipeline"),
-                "policies": config.get("policies"),
-                "num_intent_examples": len(nlu_data.intent_examples),
-                "num_entity_examples": len(nlu_data.entity_examples),
-                "num_actions": len(domain.action_names),
-                # Old nomenclature from when 'responses' were still called
-                # 'templates' in the domain
-                "num_templates": len(domain.templates),
-                "num_slots": len(domain.slots),
-                "num_forms": len(domain.forms),
-                "num_intents": len(domain.intents),
-                "num_entities": len(domain.entities),
-                "num_story_steps": len(stories.story_steps),
-                "num_lookup_tables": len(nlu_data.lookup_tables),
-                "num_synonyms": len(nlu_data.entity_synonyms),
-                "num_regexes": len(nlu_data.regex_features),
-            },
-        )
+    track(
+        TRAINING_STARTED_EVENT,
+        {
+            "language": config.get("language"),
+            "training_id": training_id,
+            "type": model_type,
+            "pipeline": config.get("pipeline"),
+            "policies": config.get("policies"),
+            "num_intent_examples": len(nlu_data.intent_examples),
+            "num_entity_examples": len(nlu_data.entity_examples),
+            "num_actions": len(domain.action_names),
+            # Old nomenclature from when 'responses' were still called
+            # 'templates' in the domain
+            "num_templates": len(domain.templates),
+            "num_slots": len(domain.slots),
+            "num_forms": len(domain.forms),
+            "num_intents": len(domain.intents),
+            "num_entities": len(domain.entities),
+            "num_story_steps": len(stories.story_steps),
+            "num_lookup_tables": len(nlu_data.lookup_tables),
+            "num_synonyms": len(nlu_data.entity_synonyms),
+            "num_regexes": len(nlu_data.regex_features),
+        },
     )
     start = datetime.now()
     yield
     runtime = datetime.now() - start
 
-    asyncio.ensure_future(
-        track(
-            TRAINING_COMPLETED_EVENT,
-            {
-                "training_id": training_id,
-                "type": model_type,
-                "runtime": int(runtime.total_seconds()),
-            },
-        )
+    track(
+        TRAINING_COMPLETED_EVENT,
+        {
+            "training_id": training_id,
+            "type": model_type,
+            "runtime": int(runtime.total_seconds()),
+        },
     )
 
 
 @ensure_telemetry_enabled
-async def track_telemetry_disabled() -> None:
+def track_telemetry_disabled() -> None:
     """Track when a user disables telemetry."""
-    asyncio.ensure_future(track(TELEMETRY_DISABLED_EVENT))
+    track(TELEMETRY_DISABLED_EVENT)
 
 
 @ensure_telemetry_enabled
-async def track_data_split(fraction: float, data_type: Text) -> None:
+def track_data_split(fraction: float, data_type: Text) -> None:
     """Track when a user splits data.
 
     Args:
         fraction: How much data goes into train and how much goes into test
         data_type: Is this core, nlu or nlg data
     """
-    asyncio.ensure_future(
-        track(TELEMETRY_DATA_SPLIT_EVENT, {"fraction": fraction, "type": data_type})
-    )
+    track(TELEMETRY_DATA_SPLIT_EVENT, {"fraction": fraction, "type": data_type})
 
 
 @ensure_telemetry_enabled
-async def track_validate_files(validation_success: bool) -> None:
+def track_validate_files(validation_success: bool) -> None:
     """Track when a user validates data files.
 
     Args:
         validation_success: Whether the validation was successful
     """
-    asyncio.ensure_future(
-        track(
-            TELEMETRY_DATA_VALIDATED_EVENT, {"validation_success": validation_success}
-        )
-    )
+    track(TELEMETRY_DATA_VALIDATED_EVENT, {"validation_success": validation_success})
 
 
 @ensure_telemetry_enabled
-async def track_data_convert(output_format: Text, data_type: Text) -> None:
+def track_data_convert(output_format: Text, data_type: Text) -> None:
     """Track when a user converts data.
 
     Args:
         output_format: Target format for the converter
         data_type: Is this core, nlu or nlg data
     """
-    asyncio.ensure_future(
-        track(
-            TELEMETRY_DATA_CONVERTED_EVENT,
-            {"output_format": output_format, "type": data_type},
-        )
+    track(
+        TELEMETRY_DATA_CONVERTED_EVENT,
+        {"output_format": output_format, "type": data_type},
     )
 
 
 @ensure_telemetry_enabled
-async def track_tracker_export(
+def track_tracker_export(
     number_of_exported_events: int,
     tracker_store: "TrackerStore",
     event_broker: "EventBroker",
@@ -751,22 +735,18 @@ async def track_tracker_export(
         tracker_store: Store used to retrieve the events from
         event_broker: Broker the events are getting published towards
     """
-    asyncio.ensure_future(
-        track(
-            TELEMETRY_TRACKER_EXPORTED_EVENT,
-            {
-                "number_of_exported_events": number_of_exported_events,
-                "tracker_store": type(tracker_store).__name__
-                if tracker_store
-                else None,
-                "event_broker": type(event_broker).__name__ if event_broker else None,
-            },
-        )
+    track(
+        TELEMETRY_TRACKER_EXPORTED_EVENT,
+        {
+            "number_of_exported_events": number_of_exported_events,
+            "tracker_store": type(tracker_store).__name__ if tracker_store else None,
+            "event_broker": type(event_broker).__name__ if event_broker else None,
+        },
     )
 
 
 @ensure_telemetry_enabled
-async def track_interactive_learning_start(
+def track_interactive_learning_start(
     skip_visualization: bool, save_in_e2e: bool
 ) -> None:
     """Track when a user starts an interactive learning session.
@@ -775,16 +755,14 @@ async def track_interactive_learning_start(
         skip_visualization: Is visualization skipped in this session
         save_in_e2e: Is e2e used in this session
     """
-    asyncio.ensure_future(
-        track(
-            TELEMETRY_INTERACTIVE_LEARNING_STARTED_EVENT,
-            {"skip_visualization": skip_visualization, "save_in_e2e": save_in_e2e},
-        )
+    track(
+        TELEMETRY_INTERACTIVE_LEARNING_STARTED_EVENT,
+        {"skip_visualization": skip_visualization, "save_in_e2e": save_in_e2e},
     )
 
 
 @ensure_telemetry_enabled
-async def track_server_start(
+def track_server_start(
     input_channels: List["InputChannel"],
     endpoints: Optional["AvailableEndpoints"],
     agent: Optional["Agent"],
@@ -810,7 +788,7 @@ async def track_server_start(
     if not endpoints:
         endpoints = AvailableEndpoints()
 
-    await track(
+    track(
         TELEMETRY_SERVER_STARTED_EVENT,
         {
             "input_channels": [i.name() for i in input_channels],
@@ -835,43 +813,40 @@ async def track_server_start(
 
 
 @ensure_telemetry_enabled
-async def track_project_init(path: Text) -> None:
+def track_project_init(path: Text) -> None:
     """Track when a user creates a project using rasa init.
 
     Args:
         path: Location of the project
     """
-    asyncio.ensure_future(
-        track(
-            TELEMETRY_PROJECT_CREATED_EVENT,
-            {"init_directory": _hash_directory_path(path)},
-        )
+    track(
+        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)},
     )
 
 
 @ensure_telemetry_enabled
-async def track_shell_started(model_type: Text) -> None:
+def track_shell_started(model_type: Text) -> None:
     """Track when a user starts a bot using rasa shell.
 
     Args:
         model_type: Type of the model, core / nlu or rasa."""
-    asyncio.ensure_future(track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type}))
+    track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type})
 
 
 @ensure_telemetry_enabled
-async def track_rasa_x_local() -> None:
+def track_rasa_x_local() -> None:
     """Track when a user runs Rasa X in local mode."""
-    asyncio.ensure_future(track(TELEMETRY_RASA_X_LOCAL_STARTED_EVENT))
+    track(TELEMETRY_RASA_X_LOCAL_STARTED_EVENT)
 
 
 @ensure_telemetry_enabled
-async def track_visualization() -> None:
+def track_visualization() -> None:
     """Track when a user runs the visualization."""
-    asyncio.ensure_future(track(TELEMETRY_VISUALIZATION_STARTED_EVENT))
+    track(TELEMETRY_VISUALIZATION_STARTED_EVENT)
 
 
 @ensure_telemetry_enabled
-async def track_core_model_test(num_story_steps: int, agent: "Agent") -> None:
+def track_core_model_test(num_story_steps: int, agent: "Agent") -> None:
     """Track when a user tests a core model.
 
     Args:
@@ -880,30 +855,26 @@ async def track_core_model_test(num_story_steps: int, agent: "Agent") -> None:
     """
     fingerprint = model.fingerprint_from_path(agent.model_directory or "")
     project = fingerprint.get(model.FINGERPRINT_PROJECT)
-    asyncio.ensure_future(
-        track(
-            TELEMETRY_TEST_CORE_EVENT,
-            {"project": project, "num_story_steps": num_story_steps},
-        )
+    track(
+        TELEMETRY_TEST_CORE_EVENT,
+        {"project": project, "num_story_steps": num_story_steps},
     )
 
 
 @ensure_telemetry_enabled
-async def track_nlu_model_test(test_data: "TrainingData") -> None:
+def track_nlu_model_test(test_data: "TrainingData") -> None:
     """Track when a user tests an nlu model.
 
     Args:
         test_data: Data used for testing
     """
-    asyncio.ensure_future(
-        track(
-            TELEMETRY_TEST_NLU_EVENT,
-            {
-                "num_intent_examples": len(test_data.intent_examples),
-                "num_entity_examples": len(test_data.entity_examples),
-                "num_lookup_tables": len(test_data.lookup_tables),
-                "num_synonyms": len(test_data.entity_synonyms),
-                "num_regexes": len(test_data.regex_features),
-            },
-        )
+    track(
+        TELEMETRY_TEST_NLU_EVENT,
+        {
+            "num_intent_examples": len(test_data.intent_examples),
+            "num_entity_examples": len(test_data.entity_examples),
+            "num_lookup_tables": len(test_data.lookup_tables),
+            "num_synonyms": len(test_data.entity_synonyms),
+            "num_regexes": len(test_data.regex_features),
+        },
     )

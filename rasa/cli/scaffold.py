@@ -214,6 +214,6 @@ def run(args: argparse.Namespace) -> None:
     if not args.no_prompt and len(os.listdir(path)) > 0:
         _ask_overwrite(path)
 
-    rasa.utils.common.run_in_loop(telemetry.track_project_init(path))
+    telemetry.track_project_init(path)
 
     init_project(args, path)

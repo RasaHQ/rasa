@@ -1670,9 +1670,7 @@ def run_interactive_learning(
         "before_server_start",
     )
 
-    rasa.utils.common.run_in_loop(
-        telemetry.track_interactive_learning_start(skip_visualization, SAVE_IN_E2E)
-    )
+    telemetry.track_interactive_learning_start(skip_visualization, SAVE_IN_E2E)
 
     _serve_application(app, file_importer, skip_visualization, conversation_id, port)
 

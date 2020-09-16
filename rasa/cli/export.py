@@ -193,11 +193,7 @@ def export_trackers(args: argparse.Namespace) -> None:
 
     try:
         published_events = exporter.publish_events()
-        rasa.utils.common.run_in_loop(
-            telemetry.track_tracker_export(
-                published_events, tracker_store, event_broker
-            )
-        )
+        telemetry.track_tracker_export(published_events, tracker_store, event_broker)
         rasa.shared.utils.cli.print_success(
             f"Done! Successfully published {published_events} events 🎉"
         )
