@@ -12,6 +12,7 @@ from typing import Iterable, List, Optional, Text, Tuple
 import aiohttp
 import ruamel.yaml as yaml
 
+from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import x as arguments
 import rasa.cli.utils
@@ -435,6 +436,8 @@ def run_locally(args: argparse.Namespace):
     process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
 
     config_path = _get_config_path(args)
+
+    telemetry.track_rasa_x_local()
 
     # noinspection PyBroadException
     try:

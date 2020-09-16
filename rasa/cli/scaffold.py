@@ -3,6 +3,7 @@ import os
 import sys
 from typing import List, Text
 
+from rasa import telemetry
 from rasa.cli import SubParsersAction
 import rasa.train
 from rasa.cli.shell import shell
@@ -211,5 +212,7 @@ def run(args: argparse.Namespace) -> None:
 
     if not args.no_prompt and len(os.listdir(path)) > 0:
         _ask_overwrite(path)
+
+    telemetry.track_project_init(path)
 
     init_project(args, path)
