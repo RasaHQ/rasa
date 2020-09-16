@@ -544,10 +544,10 @@ class RemoteAction(Action):
             return True
         except ValidationError as e:
             e.message += (
-                ". Failed to validate Action server response from API, "
-                "make sure your response from the Action endpoint is valid. "
-                "For more information about the format visit "
-                "{}/core/actions/".format(DOCS_BASE_URL)
+                f". Failed to validate Action server response from API, "
+                f"make sure your response from the Action endpoint is valid. "
+                f"For more information about the format visit "
+                f"{DOCS_BASE_URL}/custom-actions"
             )
             raise e
 
@@ -595,13 +595,12 @@ class RemoteAction(Action):
         json_body = self._action_call_format(tracker, domain)
         if not self.action_endpoint:
             logger.error(
-                "The model predicted the custom action '{}', "
-                "but you didn't configure an endpoint to "
-                "run this custom action. Please take a look at "
-                "the docs and set an endpoint configuration via the "
-                "--endpoints flag. "
-                "{}/core/actions"
-                "".format(self.name(), DOCS_BASE_URL)
+                f"The model predicted the custom action '{self.name()}', "
+                f"but you didn't configure an endpoint to "
+                f"run this custom action. Please take a look at "
+                f"the docs and set an endpoint configuration via the "
+                f"--endpoints flag. "
+                f"{DOCS_BASE_URL}/custom-actions"
             )
             raise Exception("Failed to execute custom action.")
 

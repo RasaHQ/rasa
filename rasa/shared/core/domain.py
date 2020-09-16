@@ -328,7 +328,7 @@ class Domain:
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
                 f"Please resolve that ambiguity.",
-                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}#ignoring-entities-for-certain-intents",
+                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}",
             )
 
         properties[USED_ENTITIES_KEY] = used_entities
@@ -1135,7 +1135,7 @@ class Domain:
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "
                     f"check your domain.",
-                    docs=rasa.shared.constants.DOCS_URL_DOMAINS + "#responses",
+                    docs=rasa.shared.constants.DOCS_URL_RESPONSES,
                 )
 
     def is_empty(self) -> bool:
