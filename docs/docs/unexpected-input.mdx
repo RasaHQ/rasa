@@ -2,10 +2,11 @@
 id: unexpected-input
 sidebar_label: Handling Unexpected Input
 title: Handling Unexpected Input
+abstract: One thing you can count on when building a conversational assistant is that users
+will say unexpected things. This page is a guide on handling unexpected input.
 ---
 
-One thing you can count on when building a conversational assistant is that users
-will say unexpected things. Unexpected input is a deviation from the [happy path](glossary.mdx#happy_unhappy_paths)
+Unexpected input is a deviation from the [happy path](glossary.mdx#happy_unhappy_paths)
 that you have defined.  For example:
 
 - A user walks away in the middle of a conversation about their subscription, then comes back
@@ -23,108 +24,11 @@ the guide on [fallback and human handoff](fallback-handoff.mdx)
 
 There are two kinds of unexpected input: generic interjections, and contextual interjections.
 Generic interjections are interruptions that should always get the same response regardless of the
-conversation context. [FAQs and chitchat](#chitchat-faqs) are common generic interjections.
+conversation context. If you already have a rule defining the response to an intent, you don't
+need to do anything else to handle it as an interruption.  [FAQs and chitchat](#chitchat-faqs) are common generic interjections.
 A contextual interjection is one whose response depends on the conversation context.
 For example, if a user asks "Why do you need that?", the answer will depend on what the bot just
 asked for.
-
-### Reverting Utterances
-
-If you have generic interjections that should always have the same response no
-matter the context, you can define
-short rules for the interjecting intents and the responses that should always be returned.
-When combined with a forgetting mechanism, this won't affect your dialogue history either, so
-you won't need to write any stories or rules showing the interruption.
-
-Consider the following conversation a user may have with
-your assistant, where they write a greeting in the middle of a conversation -
-maybe because they were gone for a few minutes:
-
-<img alt="Greeting Interjection" src={useBaseUrl("/img/greet_interjection.png")} width="240" />
-
-
-In this example, we will always give the same response to the greet intent but don't want the
-intent to affect the dialogue history. To do this, the `UserUtteranceReverted` event must be used
-to remove the interaction from the dialogue history. This can be implemented as follows:
-
-#### 1. Updating the configuration
-
-First, make sure the RulePolicy is in the policies section of your configuration file:
-
-```rasa-yaml
-policies:
-  # Other policies
-  - name: RulePolicy
-```
-
-#### 2. Defining a custom action
-
-Next, we need to define a custom action `action_greet`.
-Add the following action to your `actions/actions.py` file:
-
-```python
-from rasa_sdk import Action
-from rasa_sdk.events import UserUtteranceReverted
-
-class ActionGreetUser(Action):
-"""Revertible mapped action for utter_greet"""
-
-def name(self):
-    return "action_greet"
-
-def run(self, dispatcher, tracker, domain):
-    dispatcher.utter_message(template="utter_greet")
-    return [UserUtteranceReverted()]
-```
-
-This action will return the `utter_greet` response to the user, before removing the interaction from the dialogue history.
-
-#### 3. Creating a rule
-
-If you've defined an action that includes `UserUtteranceReverted`, you only
-need to add a single rule for it, since it won't affect the dialogue history:
-
-```rasa-yaml
-rules:
-- rule: greet user
-  steps:
-  - intent: greet
-  - action: action_greet_user
-```
-
-You'll also need to add any responses your action runs to your domain:
-
-```rasa-yaml
-responses:
-  utter_greet: Hi there!
-```
-
-
-### Generic Interjections
-
-Generic interjections that aren't reverted should be added to stories wherever you see them occurring.
-
-If you're using the [ResponseSelector](components.mdx#responseselector)
-for any generic interjection intents, you'll only need to include one kind of interruption for each retrieval
-intent. For example, if you had an `faq` retrieval intent,
-you can account for a user asking an FAQ in the middle of a form using the following story:
-
-```
-stories:
-- story: form with faq interruption
-  steps:
-  - intent: contact_sales
-  - action: sales_form
-  - intent: faq           <!--generic interruption-->
-  - action: respond_faq   <!--retrieval action response-->
-  - action: sales_form
-  - active_loop: sales_form
-  - active_loop: null
-  - action: action_submit_salesform
-```
-
-You can write similar stories for any other generic interruption intent and response,
-whether or not it's a retrieval intent.
 
 ### Contextual Interjections
 
@@ -135,7 +39,14 @@ One common case of contextual interjections is during slot filling for [form](fo
 asks “Why do you need to know that?” or "Can you explain that?".
 The response should differ for each slot. For example:
 
-<img alt="Contextual Interjection" src={useBaseUrl("/img/contextual_interjection.png")} width="240" />
+```yaml
+User: I want to talk to sales
+    Bot: Sure, we can book a sales call! Let's get to know each other first.
+    Bot: What's your job?
+User: Why do you need to know that?
+    Bot: Your job function helps us in understanding how we can talk to you best.
+    Bot: Do you still want to talk to sales?
+```
 
 Since we want the `requested_slot` to influence the conversation,
 we need to make the `requested_slot` featurized, and assign it the categorical type:
