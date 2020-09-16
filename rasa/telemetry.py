@@ -767,26 +767,32 @@ def track_interactive_learning_start(
 def track_server_start(
     input_channels: List["InputChannel"],
     endpoints: Optional["AvailableEndpoints"],
-    agent: Optional["Agent"],
+    model_directory: Optional[Text],
+    number_of_workers: int,
     is_api_enabled: bool,
 ) -> None:
     """Track when a user starts a rasa server.
 
     Args:
+        number_of_workers: number of used Sanic workers
         is_api_enabled: whether the rasa API server is enabled
         endpoints: Endpoint configuration for the server
         input_channels: Used input channels
-        agent: Agent of the running model
+        model_directory: directory of the running model
     """
     from rasa.core.utils import AvailableEndpoints
 
-    def project_fingerprint_from_app(_agent: "Agent") -> Optional[Text]:
-        """Get project fingerprint from an app's loaded agent."""
-        if _agent:
-            # if this property does not exist, the agent has not been loaded
-            model_directory = _agent.model_directory
-            fingerprint = model.fingerprint_from_path(model_directory or "")
-            return fingerprint.get(model.FINGERPRINT_PROJECT)
+    def project_fingerprint_from_model(
+        _model_directory: Optional[Text],
+    ) -> Optional[Text]:
+        """Get project fingerprint from an app's loaded model."""
+        if _model_directory:
+            try:
+                with model.get_model(_model_directory) as unpacked_model:
+                    fingerprint = model.fingerprint_from_path(unpacked_model)
+                    return fingerprint.get(model.FINGERPRINT_PROJECT)
+            except Exception:
+                return None
         return None
 
     if not endpoints:
@@ -797,6 +803,7 @@ def track_server_start(
         {
             "input_channels": [i.name() for i in input_channels],
             "api_enabled": is_api_enabled,
+            "number_of_workers": number_of_workers,
             "endpoints_nlg": endpoints.nlg.type if endpoints.nlg else None,
             "endpoints_nlu": endpoints.nlu.type if endpoints.nlu else None,
             "endpoints_action_server": endpoints.action.type
@@ -812,7 +819,7 @@ def track_server_start(
             "endpoints_event_broker": endpoints.event_broker.type
             if endpoints.event_broker
             else None,
-            "project": project_fingerprint_from_app(agent),
+            "project": project_fingerprint_from_model(model_directory),
         },
     )
 

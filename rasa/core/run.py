@@ -207,11 +207,15 @@ def serve_application(
         if app.agent.model_directory:
             shutil.rmtree(_app.agent.model_directory)
 
-    async def run_telemetry(_app: Sanic, _loop: AbstractEventLoop) -> None:
-        telemetry.track_server_start(input_channels, endpoints, app.agent, enable_api)
+    number_of_workers = rasa.core.utils.number_of_sanic_workers(
+        endpoints.lock_store if endpoints else None
+    )
+
+    telemetry.track_server_start(
+        input_channels, endpoints, model_path, number_of_workers, enable_api
+    )
 
     app.register_listener(clear_model_files, "after_server_stop")
-    app.register_listener(run_telemetry, "after_server_start")
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
@@ -219,9 +223,7 @@ def serve_application(
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
-        workers=rasa.core.utils.number_of_sanic_workers(
-            endpoints.lock_store if endpoints else None
-        ),
+        workers=number_of_workers,
     )
 
 

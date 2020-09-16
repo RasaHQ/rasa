@@ -254,6 +254,10 @@
           "type": "boolean",
           "description": "Indicator if the API is enabled or if only the input channel is running"
         },
+        "number_of_workers": {
+          "type": "integer",
+          "description": "Amount of Sanic workers started as part of the server"
+        },
         "endpoints_nlg": {
           "type": ["string", "null"],
           "description": "Type of the used NLG endpoint"
@@ -291,6 +295,7 @@
       "required": [
         "input_channels",
         "api_enabled",
+        "number_of_workers",
         "endpoints_nlg",
         "endpoints_nlu",
         "endpoints_action_server",
