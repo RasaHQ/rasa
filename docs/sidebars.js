@@ -117,25 +117,7 @@ module.exports = {
           items: [
             'actions',
             'responses',
-            {
-              type: 'category',
-              label: 'Custom Actions',
-              items: [
-                'custom-actions',
-                'knowledge-bases',
-                {
-                  type: 'category',
-                  label: 'Rasa SDK',
-                  collapsed: true,
-                  items: [
-                    // 'running-action-server',
-                    // 'tracker-dispatcher',
-                    // 'events',
-                    // 'rasa-sdk-changelog'
-                  ],
-                },
-              ],
-            },
+            'custom-actions',
             'retrieval-actions',
             'forms',
             'default-actions',
