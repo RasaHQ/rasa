@@ -619,7 +619,7 @@ def initialize_error_reporting() -> None:
 @async_generator.asynccontextmanager
 async def track_model_training(
     training_data: "TrainingDataImporter", model_type: Text
-) -> None:
+) -> typing.AsyncGenerator[None, None]:
     """Track a model training started.
 
     WARNING: since this is a generator, it can't use the ensure telemetry
