@@ -13,7 +13,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import INTENT_NAME, TEXT
+from rasa.shared.nlu.constants import INTENT, TEXT
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
@@ -528,7 +528,7 @@ def _unique_events_from_stories(
 
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
-    return Message(data={TEXT: event.text, INTENT_NAME: event.intent_name})
+    return Message(data={TEXT: event.text, INTENT: event.intent_name})
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
