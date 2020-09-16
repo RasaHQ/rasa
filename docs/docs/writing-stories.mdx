@@ -15,39 +15,43 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 When designing stories, there are two groups of conversational interactions that need
 to be accounted for: happy and unhappy paths. Happy paths describe when the user is
 following the conversation flow as you'd expect and always providing the necessary
-information when prompted. As you might expect, users will often deviate from happy
-paths with questions, chit chat, or other asks, making it important for your bot to
-gracefully handle these unhappy paths.
+information when prompted. However, users will often deviate from happy
+paths with questions, chit chat, or other asks. We call these unhappy path.
 
+It's important for your bot to handle unhappy paths gracefully, but it's also impossible
+to predict what path a given user might take.
 Often, developers will try to account for every possible diverging path when designing
-unhappy paths. In a happy path with N number of possible branching points, this would
-require on the order of 2^N stories! Instead, we recommend taking a
-[conversation-driven development](./conversation-driven-development.mdx) approach when designing
-unhappy paths.
+unhappy paths. Planning for every possible state in a state machine (many of which will never be reached)
+requires a lot of extra work and increases training time significantly.
 
+Instead, we recommend taking a [conversation-driven development](./conversation-driven-development.mdx) 
+approach when designing unhappy paths.
 Conversation-Driven Development promotes sharing your bot as early as possible with test users and
 collecting real conversation data that tells you exactly how users diverge from the
 happy paths. From this data, you can create stories to accomplish what the user is
 requesting and start to think about ways to guide them back into a happy path.
 
 
-## When to Use Stories vs. Rules
+## When to Write Stories vs. Rules
 
 [Rules](./rules.mdx) are a type of training data used by the dialogue manager for
-handling parts of conversations that should always follow the same path.
+handling pieces of conversations that should always follow the same path.
 
-Example use cases for rules include:
+Rules can be useful when implementing: 
 
-* FAQ-style questions where there is a fixed response to a given question
-(e.g. "What are the hours of operation?")
+* [One-turn interactions](./chitchat-faqs.mdx): Some messages do not require any context to answer them. 
+  Rules are an easy way to map intents to responses, specifying fixed answers to these messages.
 
-* Collecting user information via [Forms](./forms.mdx), such as asking for a mailing address
+* [Fallback behavior](./fallback-handoff.mdx):
+  In combination with the [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier),
+  you can write rules to respond to low-confidence user messages with a certain fallback behavior.
 
-* [Fallback actions](./fallback-handoff.mdx) for handling messages with low confidence scores
+* [Forms](./forms.mdx): Both activating and submitting a form will often follow a fixed path.
+  You can also write rules to handle [unexpected input](./unexpected-input.mdx) during a form.
 
 Because rules do not generalize to unseen conversations, you should reserve them for
-forms and single turn conversation parts while stories are used for training on
-complete conversations.
+single-turn conversation snippets, and use stories to train on multi-turn
+conversations.
 
 An example of a rule where the bot returns a fixed response "utter_greet" to a user
 message with intent "greet" would be:
@@ -63,6 +67,7 @@ rules:
 For multiple-turn interactions, you should define a story, for example:
 
 ```yaml-rasa
+stories:
  - story: Greeting and ask user how they're doing
    steps:
    - intent: greet
@@ -81,23 +86,24 @@ Here are some tips for managing the conversation flow in your stories:
 
 ### When to Use Featurized Slots
 
-Slots are your bot’s memory that you can use to influence how the dialogue engine makes
-predictions. These slots must be included in your story files when they are set by a
-[custom action](./actions.mdx). Most slot types are passed into the dialogue engine as
-featurized representations that only take into account whether or not the slot is set.
-If the value of the slot itself is important, consider using a categorical or bool
-slot type.
+Slots act as your bot’s memory. When you define a slot, you can define its [slot type](domain#slot-type)
+as either `unfeaturized` or one of the featurized slot types.
+An unfeaturized slot can only store information, but a featurized slot can affect the 
+dialogue flow based on the information stored in it. 
 
+Because they affect the dialogue flow, you need to include any featurized slots set by
+[custom actions](./actions.mdx) in your stories. 
 For example, you can use a boolean slot set by a custom action to control the dialogue
 flow based on its value using the following stories:
 
 ```yaml-rasa
+stories:
 - story: Welcome message, premium user
   steps:
    - intent: greet
    - action: action_check_profile
    - slot_was_set:
-     - premium_account: True
+     - premium_account: true
    - action: utter_welcome_premium
 
 - story: Welcome message, basic user
@@ -105,33 +111,36 @@ flow based on its value using the following stories:
    - intent: greet
    - action: action_check_profile
    - slot_was_set:
-     - premium_account: False
+     - premium_account: false
    - action: utter_welcome_basic
    - action: utter_ask_upgrade
 ```
 
 In cases where you don't want a slot to affect the conversation flow, you should use
-an unfeaturized slot. Note that, unlike featurized slots, unfeaturized slots should not
-be included in your story files.
+an unfeaturized slot. You do not need to include `slot_was_set` events for unfeaturized
+slots in your stories. 
 
 
-### Where to Implement Branching Logic
+### Implementing Branching Logic
 
-When writing stories, it's important to find the right balance between using slots and
-using custom action code to decide the next action your bot should take. In cases where
-a slot value is used only to determine the bot's response, consider embedding the
+When writing stories, sometimes the next action will depend on a value returned in one of your custom
+actions. In these cases, it's important to find the right balance between returning slots and
+using custom action code directly to affect what your bot does next. 
+
+In cases where a value is used only to determine the bot's response, consider embedding the
 decision logic inside a custom action as opposed to using a featurized slot in your
 stories. This can help reduce overall complexity and make your stories easier to manage.
 
 For example, you can convert these stories:
 
 ```yaml-rasa
+stories:
 - story: It's raining now
   steps:
   - intent: check_for_rain
   - action: action_check_for_rain
   - slot_was_set:
-    - raining: True
+    - raining: true
   - action: utter_is_raining
   - action: utter_bring_umbrella
 
@@ -140,7 +149,7 @@ For example, you can convert these stories:
   - intent: check_for_rain
   - action: action_check_for_rain
   - slot_was_set:
-    - raining: False
+    - raining: false
   - action: utter_not_raining
   - action: utter_no_umbrella_needed
 ```
@@ -148,6 +157,7 @@ For example, you can convert these stories:
 into a single story:
 
 ```yaml-rasa
+stories:
 - story: check for rain
   steps:
   - intent: check_for_rain
@@ -168,12 +178,39 @@ def run(self, dispatcher, tracker, domain):
 	return []
 ```
 
+In cases where the value is used to influence the action flow going forward,
+return a featurized slot to determine the stories. For example, if you want to collect
+information about new users, but not returning ones, your stories might look like this:
+
+```yaml-rasa
+stories:
+- story: greet new user
+  steps:
+  - intent: greet
+  - action: check_user_status
+  - slot_was_set:
+    - new_user: true
+  - action: utter_greet
+  - action: new_user_form
+  - active_loop: new_user_form
+  - active_loop: null
+
+- story: greet returning user 
+  steps:
+  - intent: greet
+  - action: check_user_status
+  - slot_was_set:
+    - new_user: false
+  - action: utter_greet
+  - action: utter_how_can_help
+```
+
 
 ### Using OR statements and Checkpoints
 
 [OR statements](./stories.mdx#or-statements) and [checkpoints](./stories.mdx#checkpoints)
-are useful for reducing the number of stories you have to write, however, they should
-be used with caution. Overusing OR statements will slow down training,
+can be useful for reducing the number of stories you have to write. However, they should
+be used with caution. Overusing OR statements or checkpoints will slow down training,
 and creating too many checkpoints can make your stories hard to understand.
 
 #### OR statements
@@ -184,39 +221,43 @@ you can use OR statements as an alternative to creating a new story.
 For example, you can merge these two stories:
 
 ```yaml-rasa
-- story: tell a joke, user thinks it's funny
+stories:
+- story: newsletter signup
   steps:
-  - intent: tell_a_joke
-  - action: utter_joke
-  - action: utter_was_that_funny
+  - intent: signup_newsletter
+  - action: utter_ask_confirm_signup
   - intent: affirm
-  - action: utter_happy
+  - action: action_signup_newsletter
 
-- story: tell a joke, user laughs
+- story: newsletter signup, confirm via thanks
   steps:
-  - intent: tell_a_joke
-  - action: utter_joke
-  - action: utter_was_that_funny
-  - intent: laugh
-  - action: utter_happy
+  - intent: signup_newsletter
+  - action: utter_ask_confirm_signup
+  - intent: thanks
+  - action: action_signup_newsletter
 ```
 
 into a single story with an OR statement:
 
-```yaml-rasa
-- story: tell a joke, user thinks it's funny
+```yaml-rasa {6-8}
+stories:
+- story: newsletter signup with OR
   steps:
-  - intent: tell_a_joke
-  - action: utter_joke
-  - action: utter_was_that_funny
-  - intent: affirm OR laugh
-  - action: utter_happy
+  - intent: signup_newsletter
+  - action: utter_ask_confirm_signup
+  - or:
+    - intent: affirm
+    - intent: thanks
+  - action: action_signup_newsletter
 ```
 
-At training time, this story gets converted into the two original stories and provides
-a more compact representation. If you notice that you are using OR statements frequently
+At training time, this story will be split into the two original stories.
+
+:::caution consider restructuring data
+If you notice that you are using OR statements frequently
 in your stories, consider restructuring your intents to reduce their granularity and
 more broadly capture user messages.
+:::
 
 #### Checkpoints
 
@@ -232,12 +273,12 @@ interaction at the end of each story:
   - action: utter_greet
   - intent: goodbye
   - action: utter_goodbye
-  - action: utter_ask_feedback
   - checkpoint: ask_feedback
 
 - story: user provides feedback
   steps:
   - checkpoint: ask_feedback
+  - action: utter_ask_feedback
   - intent: inform
   - action: utter_thank_you
   - action: utter_anything_else
@@ -245,10 +286,17 @@ interaction at the end of each story:
 - story: user doesn't have feedback
   steps:
   - checkpoint: ask_feedback
+  - action: utter_ask_feedback
   - intent: deny
   - action: utter_no_problem
   - action: utter_anything_else
 ```
+
+:::warning do not overuse
+Checkpoints are meant to make it easier to re-use certain sections of conversation in lots 
+of different stories. We highly discourage using checkpoints inside existing checkpoints, 
+as this increases training time significantly and makes your stories difficult to understand.
+:::
 
 ### Creating Logical Breaks in Stories
 
@@ -367,10 +415,11 @@ User: "I want to pay the minimum balance"
 
 In this example, the user is in the middle of paying their credit card bill, asks for
 their account balance, and is then guided back into the credit card payment form.
-Because asking for the account balance triggers the same action regardless of context,
+Because asking for the account balance should always get the same response regardless of context,
 you can create a rule that will automatically be triggered inside of an existing flow:
 
 ```yaml-rasa
+rules:
 - rule: Check my account balance
   steps:
   - intent: check_account_balance
@@ -412,30 +461,31 @@ Bot: "Would you like to pay your credit card bill now?"
 You will need to create a story that describes this context-switching interaction:
 
 ```yaml-rasa
+stories:
 - story: Context switch from credit card payment to money transfer
   steps:
   - intent: pay_credit_card
   - action: credit_card_payment_form
   - active_loop{"name": "credit_card_payment_form"}
-  - intent: transfer_money                         # user requests a money transfer
-  - active_loop{"name": null}                      # deactivate the credit card form
-  - action: transfer_money_form                    # switch to the money transfer form
+  - intent: transfer_money                         # - user requests a money transfer
+  - active_loop{"name": null}                      # - deactivate the credit card form
+  - action: transfer_money_form                    # - switch to the money transfer form
   - active_loop{"name": "transfer_money_form"}
   - active_loop{"name": null}
-  - action: utter_continue_credit_card_payment     # once the money transfer is completed,
-                                                   # ask the user to return to the
-                                                   # credit card payment form
+  - action: utter_continue_credit_card_payment     # - once the money transfer is completed,
+                                                   #   ask the user to return to the
+                                                   #   credit card payment form
 ```
 
-## Managing Story Files
+## Managing Conversation Data Files
 
-You can provide training data to Rasa Open Source in Markdown format as
+You can provide training data to Rasa Open Source as
 a single file or as a directory containing multiple files.
-When writing stories, it's usually a good idea to create separate
-story files based on the types of conversations being represented.
+When writing stories and rules, it's usually a good idea to create separate
+files based on the types of conversations being represented.
 
-For example, you might create a file `chitchat.md` for handling chitchat
-stories and an `faqs.md` file for FAQ's.
+For example, you might create a file `chitchat.yml` for handling chitchat,
+and a `faqs.yml` file for FAQs.
 Refer to our [rasa-demo bot](https://github.com/RasaHQ/rasa-demo)
 for examples of story file management in complex assistants.
 

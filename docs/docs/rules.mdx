@@ -7,26 +7,13 @@ abstract: Rasa rules are a type of training data used to train Rasa's dialogue m
   Rules describe short pieces of conversations that should always follow the same path.
 ---
 
-Rules can be useful when implementing: 
-
-* [One-turn interactions](./chitchat-faqs.mdx): Some messages do not require any context to answer them. 
-  Rules are an easy way to map intents to responses, specifying fixed answers to these messages.
-
-* [Fallback behavior](./fallback-handoff.mdx):
-  In combination with the [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier),
-  you can write rules to respond to low-confidence user messages with a certain fallback behavior.
-
-* [Forms](./forms.mdx): Both activating and submitting a form will often follow a fixed path.
-  You can also write rules to handle [unexpected input](./unexpected-input.mdx) during a form.
-
-
 **Don't overuse rules**. Rules are great to handle small specific conversation patterns, but
 unlike [stories](./stories.mdx), rules don't have the power to generalize to unseen conversation
 paths. Combine rules and stories to make your assistant robust and able to handle
 real user behavior.
 
 If you can't decide whether to write a story or a rule to implement a certain behavior, see the 
-best practices for [Writing Stories](./writing-stories.mdx)).
+best practices for [Writing Conversation Data](./writing-stories.mdx)).
 
 ## Writing a Rule
 
