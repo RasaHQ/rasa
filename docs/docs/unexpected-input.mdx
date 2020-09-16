@@ -44,12 +44,12 @@ maybe because they were gone for a few minutes:
 
 
 In this example, we will always give the same response to the greet intent but don't want the
-intent to affect the dialogue history. To do this, the `UserUtteranceReverted()` event must be used
+intent to affect the dialogue history. To do this, the `UserUtteranceReverted` event must be used
 to remove the interaction from the dialogue history. This can be implemented as follows:
 
 #### 1. Updating the configuration
 
-First, make sure the `RulePolicy` is in the policies section of your configuration file:
+First, make sure the RulePolicy is in the policies section of your configuration file:
 
 ```rasa-yaml
 policies:
@@ -104,7 +104,7 @@ responses:
 
 Generic interjections that aren't reverted should be added to stories wherever you see them occurring.
 
-If you're using the [`ResponseSelector`](components.mdx#responseselector)
+If you're using the [ResponseSelector](components.mdx#responseselector)
 for any generic interjection intents, you'll only need to include one kind of interruption for each retrieval
 intent. For example, if you had an `faq` retrieval intent,
 you can account for a user asking an FAQ in the middle of a form using the following story:
@@ -187,13 +187,13 @@ How you handle unexpected input depends on whether the response should be
 context sensitive or not.
 
 For reverting user utterances:
-  - [ ] Add the `RulePolicy` to your `config.yml`.
-  - [ ] Define a custom action that calls the `UserUtteranceReverted()` method.
+  - [ ] Add the RulePolicy to config.yml.
+  - [ ] Define a custom action that returns `UserUtteranceReverted`
   - [ ] Define a rule for the intent that should be reverted.
 
 For generic interjections:
-  - [ ] Define rules for single-turn interactions with actions that return the `UserUtteranceReverted` event
-  - [ ] Use the `ResponseSelector` for [FAQ and chitchat interruptions](chitchat-faqs.mdx)
+  - [ ] Define rules for single-turn interactions with actions that return `UserUtteranceReverted`
+  - [ ] Use the ResponseSelector for [FAQ and chitchat interruptions](chitchat-faqs.mdx)
 
 For contextual interjections:
   - [ ] Make `requested_slot` a categorical slot (for forms)

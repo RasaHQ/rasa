@@ -24,8 +24,6 @@ User: Yes
           - outdoor_seating: True
 ```
 
-This type of behavior can and should be handled in a rule based way, as it
-is clear how this information should be collected.
 This page is a guide on handling the business logic of collecting user information to fulfill a request.
 In the example above, business logic includes needing to know the user's preferred cuisine, party size, and seating preference.
 It uses abbreviated examples from the [formbot example bot](https://github.com/RasaHQ/rasa/tree/master/examples/formbot).
@@ -42,12 +40,10 @@ the bot fulfills the user's original request.
 
 ### 1. Defining the form
 
-To define and use a form, you will need to define:
+To define a form, you will need to define:
 
 * Slot mappings: The required info to collect
 * Responses: How your bot should ask for each piece of information
-* Rules: When the form should start, and what should happen after it is completed
-
 
 #### Slot Mappings
 
@@ -90,7 +86,7 @@ entities:
 ```
 
 Entities like numbers
-can be extracted by the [`DucklingEntityExtractor`](./components.mdx#ducklingentityextractor). To use it, add  `DucklingEntityExtractor`
+can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
 to your NLU pipeline in `config.yml`.
 
 ```rasa-yaml
@@ -147,22 +143,10 @@ responses:
     - text: "Do you want to sit outside?"
 ```
 
-#### Completing the Form
-
-Once all required slots have been filled, the bot can act on the
-information it has collected. Depending on the use case, the assistant
-might just respond with a message, or take a more complicated action behind
-the scenes before responding to the user.
-
-For the restaurant search example, in real life the assistant would look up
-a restaurant based on the user's preferences.
-In this case, the bot will just utter a response with the details
-that would be used for a search.
-
 
 ### 2. Updating the configuration
 
-A form's [happy path](glossary.mdx#happy-path) should be defined as a [rule](rules.mdx) which means you'll need to add the [`RulePolicy`](policies.mdx#rulepolicy)
+A form's [happy path](glossary.mdx#happy-path) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](policies.mdx#rulepolicy)
 to your policies in your configuration file:
 
 ```rasa-yaml
@@ -172,27 +156,31 @@ policies:
 
 ### 3. Creating rules
 
-You need two rules for a form's happy path:
-One to activate it, and one to submit it.
-All the slot collection happens inside the form, and
-therefore doesn't need to be covered explicitly by a rule.
+The form itself takes care of the logic around asking the user for all 
+the required information, so
+you need only two rules for a form's happy path:
+One to that defines when it starts, and one that defines what happens when it has been filled.
+For the restaurant search example, in real life the assistant would look up
+a restaurant based on the user's preferences. 
+In this case, the bot will utter a response with the details
+that would be used for a search. 
 
 
 ```rasa-yaml
   - rule: activate restaurant form
     steps:
-      - intent: request_restaurant
-      - action: restaurant_form
-      - active_loop: restaurant_form
+      - intent: request_restaurant   # intent that triggers form activation
+      - action: restaurant_form      # run the form
+      - active_loop: restaurant_form # this form is active
 
   - rule: submit form
     condition:
-    - active_loop: restaurant_form
+    - active_loop: restaurant_form   # this form must be active
     steps:
-      - action: restaurant_form
-      - active_loop: null
-      - action: utter_submit
-      - action: utter_slots_values
+      - action: restaurant_form      # run the form
+      - active_loop: null            # the form is no longer active because it has been filled
+      - action: utter_submit         # action to take after the form is complete
+      - action: utter_slots_values   # action to take after the form is complete
 ```
 
 By splitting up the activation and submission of the form,
@@ -210,7 +198,7 @@ examples for how the user will provide the required information.
 
 You need to provide training examples for the
 intent(s) that should activate the form.
-For the restaurant search use case, we want the intent `request_restaurant` to activate the form:
+Add the intent `request_restaurant` to nlu.yml:
 
 ```rasa-yaml
 nlu:
@@ -238,8 +226,8 @@ For the restaurant search example, the `outdoor_seating` slot is mapped to two i
 so you need to add training data for these intents.
 
 For the `cuisine` and `number` slots, no intent is specified, so you can add examples to a generic `inform` intent. You need
-to annotate the `cuisine` entity so that `DIETClassifier` can
-learn to extract it. You don't need to annotate the `number` entity since `DucklingEntityExtractor` is a rule-based extractors
+to annotate the `cuisine` entity so that DIETClassifier can
+learn to extract it. You don't need to annotate the `number` entity since DucklingEntityExtractor is a rule-based extractors
 that isn't trained on your training data. Only a few examples are shown for each intent;
 for your bot to work well, you should add more training data than is shown here:
 
@@ -275,21 +263,22 @@ nlu:
     - nine people
 ```
 
-Be sure to update your domain file to include these added intents.
+Update domain.yml to include these intents:
+
+```rasa-yaml
+intents:
+  - request_restaurant
+  - affirm
+  - deny
+  - inform
+```
 
 ### 5. Defining the responses
 
-You should include responses for after the form has been submitted:
+Add the responses that are sent after the form has been submitted:
 
 ```rasa-yaml
 responses:
-  utter_ask_cuisine:
-    - text: "What cuisine?"
-  utter_ask_num_people:
-    - text: "How many people?"
-  utter_ask_outdoor_seating:
-    - text: "Do you want to seat outside?"
-  # responses after form is submitted
   utter_submit:
     - text: "All done!"
   utter_slots_values:
@@ -315,6 +304,6 @@ example above, this is a summary of what you'll need to do:
 - [ ] Update your domain with new intents and actions you've defined
 
 To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
-Because the `DucklingEntityExtractor` is being used to extract
+Because the DucklingEntityExtractor is being used to extract
 entities, you'll need to start Duckling in the background as well
 (see the [instructions for running Duckling](components.mdx#ducklingentityextractor)).

@@ -35,8 +35,7 @@ This page is a guide on creating contextual conversation patterns using Rasa.
 
 ### 1. Creating Stories
 
-[Stories](./stories.mdx) are used to train the [`MemoizationPolicy`](policies.mdx#memoizationpolicy) and machine
-learning policies like the [`TEDPolicy`](policies.mdx#tedpolicy). For example, in order for Sara to respond differently for new users
+[Stories](./stories.mdx) are examples of how conversations should go. In order for Sara to respond differently for new users
 and users with previous experience, you'd need stories like this:
 
 
@@ -86,7 +85,7 @@ slots:
     type: bool
 ```
 
-### 3. Configuring the `TEDPolicy`
+### 3. Configuring the TEDPolicy
 
 In addition to adding stories to account for context,
 machine learning policies can help your model generalize
@@ -95,7 +94,7 @@ to understand that using machine-learning policies does not mean letting go of c
 assistant.** If a rule based policy is able to make a prediction, that prediction will
 always have a higher priority (read more [here](./policies.mdx#action-selection)) and predict the next action.
 
-The [`TEDPolicy`](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) is made to handle
+The [TEDPolicy](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) is made to handle
 unexpected user behaviors. For example,
 in the conversation below (extracted from a conversation on [Rasa X](https://rasa.com/docs/rasa-x/user-guide/review-conversations/)):
 

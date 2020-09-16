@@ -38,9 +38,9 @@ policies:
 - name: RulePolicy
 ```
 
-The `RulePolicy` works alongside other policies in your configuration (like the `TEDPolicy`). Its job is to enforce rule-based logic for conversation paths where you already know how the assistant should respond to a given input.
+The RulePolicy works alongside other policies in your configuration (like the TEDPolicy). Its job is to enforce rule-based logic for conversation paths where you already know how the assistant should respond to a given input.
 
-To use retrieval actions, include the `ResponseSelector` in your NLU pipeline in your configuration file.
+To use retrieval actions, include the ResponseSelector in your NLU pipeline in your configuration file.
 The ResponseSelector requires a featurizer and intent classifier to work, so
 it should come after these components in your pipeline, for example:
 
@@ -61,8 +61,8 @@ pipeline:
     epochs: 100
 ```
 
-By default, the `ResponseSelector` will build a single retrieval model for all retrieval intents.
-If you want to retrieve responses for FAQs and chitchat separately, you can use multiple `ResponseSelector` components
+By default, the ResponseSelector will build a single retrieval model for all retrieval intents.
+If you want to retrieve responses for FAQs and chitchat separately, you can use multiple ResponseSelector components
 and specify the `retrieval_intent` key, for example:
 
 ```rasa-yaml
@@ -78,7 +78,7 @@ pipeline:
 
 
 
-### 2. Defining Retrieval Actions and the `ResponseSelector`
+### 2. Defining Retrieval Actions and the `ResponseSelector
 
 Consider an example where you have 20 different FAQs. Although each question is represented as an individual intent, all FAQ intents are handled the same way in the dialogue. For each FAQ intent, the assistant **retrieves** the proper response depending on which question has been asked.
 
@@ -87,7 +87,7 @@ actions](retrieval-actions.mdx) to handle all FAQs with a single rule by groupin
 called e.g. `faq`.
 
 The retrieval action uses the output of the
-[`ResponseSelector`](./components.mdx#response-selector) to return
+[ResponseSelector](./components.mdx#response-selector) to return
 the correct response for the specific FAQ that the user asked.
 
 
@@ -110,11 +110,11 @@ rules:
     - action: respond_chitchat
 ```
 
-The actions `respond_faq` and `respond_chitchat` will use the `ResponseSelector`'s prediction to return the actual response message.
+The actions `respond_faq` and `respond_chitchat` will use the ResponseSelector`'s prediction to return the actual response message.
 
 ### 4. Updating the NLU Training Data
 
-NLU training examples for the `ResponseSelector` look the same as
+NLU training examples for the ResponseSelector look the same as
 regular training examples, except that their names must refer to the retrieval
 intent they are grouped under:
 
@@ -145,7 +145,7 @@ intents:
 
 ### 5. Defining the responses
 
-Responses for the `ResponseSelector` follow the same naming convention as
+Responses for the ResponseSelector follow the same naming convention as
 retrieval intents. Besides this, they can have all the characteristics of
 normal bot [response](domain.mdx#responses). For the FAQs and chitchat intents
 listed above, our responses could look like:
@@ -166,7 +166,7 @@ responses:
 
 Once you've done the following, you can train your bot and try it out!
 
-- [ ] Add `RulePolicy` to your policies and `ResponseSelector` to your pipeline in `config.yml`
+- [ ] Add RulePolicy to your policies and ResponseSelector to your pipeline in `config.yml`
 - [ ] Add at least one rule for responding to FAQs/chitchat
 - [ ] Add examples for your FAQs/chitchat intents
 - [ ] Add responses for your FAQs/chitchat intents

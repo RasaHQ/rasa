@@ -256,7 +256,7 @@ The Two-Stage-Fallback can be enabled using the following steps:
 
 #### 1. Updating the configuration
 
-Add `FallbackClassifier` to your pipeline and the [RulePolicy](./policies.mdx#rule-policy)
+Add FallbackClassifier to your pipeline and the [RulePolicy](./policies.mdx#rule-policy)
 to your policy configuration:
 
 ```yaml
@@ -293,7 +293,7 @@ can be overwritten using [Custom Actions](./actions.mdx#custom-actions).
 #### 3. Defining a Two-Stage Fallback rule
 
 Add the following [Rule](./rules.mdx) to your training data. This rule will make sure
-that the `Two-Stage-Fallback` will be activated whenever a message is received with
+that the Two-Stage-Fallback will be activated whenever a message is received with
 low classification confidence.
 
 ```yaml
@@ -342,16 +342,16 @@ For known out-of-scope intents:
   - [ ] Define rules for each out-of-scope intent
 
 For single stage NLU fallback:
-  - [ ] Add `FallbackClassifier` to your pipeline in `config.yml`
+  - [ ] Add FallbackClassifier to your pipeline in `config.yml`
   - [ ] Define the fallback response or action
   - [ ] Define a rule for the `nlu_fallback` intent
 
 For handling low core confidence:
-  - [ ] Configure the `RulePolicy` for core fallback in `config.yml`
+  - [ ] Configure the RulePolicy for core fallback in `config.yml`
   - [ ] Optionally customize the fallback action you configure
 
 For Two-Stage Fallback:
-  - [ ] Add `FallbackClassifier` to your pipeline in `config.yml`
+  - [ ] Add FallbackClassifier to your pipeline in `config.yml`
   - [ ] Define a rule for the `nlu_fallback` intent that triggers the `two_stage_fallback` action
   - [ ] Define an out-of-scope intent in your domain
 
