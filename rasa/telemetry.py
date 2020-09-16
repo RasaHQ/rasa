@@ -776,7 +776,7 @@ def track_server_start(
     """
     from rasa.core.utils import AvailableEndpoints
 
-    def project_fingerprint_from_app(_agent: "agent") -> Optional[Text]:
+    def project_fingerprint_from_app(_agent: "Agent") -> Optional[Text]:
         """Get project fingerprint from an app's loaded agent."""
         if _agent:
             # if this property does not exist, the agent has not been loaded
