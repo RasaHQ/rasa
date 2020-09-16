@@ -8,7 +8,7 @@ import rasa.shared.utils.io
 from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
-from rasa.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.trackers import is_prev_action_listen_in_state
 from rasa.shared.nlu.constants import (
     ENTITIES,

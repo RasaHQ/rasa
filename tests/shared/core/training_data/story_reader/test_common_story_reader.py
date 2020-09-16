@@ -216,6 +216,8 @@ async def test_load_multi_file_training_data(
     trackers = await training.load_data(
         stories_resources[0], default_domain, augmentation_factor=0
     )
+    trackers = sorted(trackers, key=lambda t: t.sender_id)
+
     (tr_as_sts, tr_as_acts) = featurizer.training_states_and_actions(
         trackers, default_domain
     )
@@ -232,6 +234,8 @@ async def test_load_multi_file_training_data(
     trackers_mul = await training.load_data(
         stories_resources[1], default_domain, augmentation_factor=0
     )
+    trackers_mul = sorted(trackers_mul, key=lambda t: t.sender_id)
+
     (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_actions(
         trackers_mul, default_domain
     )

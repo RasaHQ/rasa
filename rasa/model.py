@@ -9,13 +9,14 @@ from typing import Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.cli.utils import print_success, create_output_path
-from rasa.constants import (
-    DEFAULT_MODELS_PATH,
+from rasa.cli.utils import create_output_path
+from rasa.shared.utils.cli import print_success
+from rasa.shared.constants import (
     CONFIG_KEYS_CORE,
     CONFIG_KEYS_NLU,
     CONFIG_KEYS,
     DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
@@ -25,7 +26,7 @@ from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
 
 
 logger = logging.getLogger(__name__)
@@ -444,7 +445,7 @@ def package_model(
     train_path: Text,
     fixed_model_name: Optional[Text] = None,
     model_prefix: Text = "",
-):
+) -> Text:
     """
     Compress a trained model.
 

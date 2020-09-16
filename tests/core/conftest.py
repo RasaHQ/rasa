@@ -73,7 +73,7 @@ class CustomSlot(Slot):
 # noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
 class ExamplePolicy(Policy):
     def __init__(self, example_arg):
-        pass
+        super(ExamplePolicy, self).__init__()
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):
@@ -85,6 +85,7 @@ class MockedMongoTrackerStore(MongoTrackerStore):
         self.db = MongoClient().rasa
         self.collection = "conversations"
 
+        # skipcq: PYL-E1003
         # Skip `MongoTrackerStore` constructor to avoid that actual Mongo connection
         # is created.
         super(MongoTrackerStore, self).__init__(_domain, None)

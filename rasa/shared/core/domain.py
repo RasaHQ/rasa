@@ -63,6 +63,7 @@ class InvalidDomain(Exception):
 
     def __init__(self, message) -> None:
         self.message = message
+        super(InvalidDomain, self).__init__()
 
     def __str__(self) -> Text:
         # return message in error colours
@@ -327,7 +328,7 @@ class Domain:
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
                 f"Please resolve that ambiguity.",
-                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}#ignoring-entities-for-certain-intents",
+                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}",
             )
 
         properties[USED_ENTITIES_KEY] = used_entities
@@ -1134,12 +1135,11 @@ class Domain:
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "
                     f"check your domain.",
-                    docs=rasa.shared.constants.DOCS_URL_DOMAINS + "#responses",
+                    docs=rasa.shared.constants.DOCS_URL_RESPONSES,
                 )
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
-
         return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod

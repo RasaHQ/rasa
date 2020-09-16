@@ -186,7 +186,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   `from_entity` (see [Forms](./forms.mdx)).
 
   :::note
-  Composite entities are currently just supported by the [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) and [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor).
+  Composite entities are currently just supported by the [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor).
 
   :::
 
@@ -385,7 +385,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5006](https://github.com/rasahq/rasa/issues/5006): Channel `hangouts` for Rasa integration with Google Hangouts Chat is now supported out-of-the-box.
 
-* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for [HFTransformersNLP](./components/language-models.mdx#hftransformersnlp).
+* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for [HFTransformersNLP](./components.mdx#hftransformersnlp).
 
 * [#5422](https://github.com/rasahq/rasa/issues/5422): Add options `tensorboard_log_directory` and `tensorboard_log_level` to `EmbeddingIntentClassifier`,
   `DIETClasifier`, `ResponseSelector`, `EmbeddingPolicy` and `TEDPolicy`.
@@ -544,7 +544,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#4088](https://github.com/rasahq/rasa/issues/4088): Add story structure validation functionality (e.g. rasa data validate stories –max-history 5).
 
-* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer) to sparse featurizers.
+* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer) to sparse featurizers.
 
   `LexicalSyntacticFeaturizer` does the same featurization as the `CRFEntityExtractor`. We extracted the
   featurization into a separate component so that the features can be reused and featurization is independent from the
@@ -552,10 +552,10 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5187](https://github.com/rasahq/rasa/issues/5187): Integrate language models from HuggingFace's [Transformers](https://github.com/huggingface/transformers) Library.
 
-  Add a new NLP component [HFTransformersNLP](./components/language-models.mdx#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
+  Add a new NLP component [HFTransformersNLP](./components.mdx#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add [LanguageModelTokenizer](./components/tokenizers.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components/featurizers.mdx#languagemodelfeaturizer) which use the information from
-  [HFTransformersNLP](./components/language-models.mdx#hftransformersnlp) and sets them correctly for message object.
+  Add [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
+  [HFTransformersNLP](./components.mdx#hftransformersnlp) and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
 * [#5225](https://github.com/rasahq/rasa/issues/5225): Added a new CLI command `rasa export` to publish tracker events from a persistent
@@ -578,12 +578,12 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   TF_INTRA_OP_PARALLELISM_THREADS="2"
   ```
 
-* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
+* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components.mdx#dietclassifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
-  recognition. You can read more about this component in our [documentation](./components/intent-classifiers.mdx#dietclassifier).
+  recognition. You can read more about this component in our [documentation](./components.mdx#dietclassifier).
   The new component will replace the `EmbeddingIntentClassifier` and the
-  [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor) in the future.
+  [CRFEntityExtractor](./components.mdx#crfentityextractor) in the future.
   Those two components are deprecated from now on.
   See [migration guide](./migration-guide.mdx#migration-to-rasa-1-8) for details on how to
   switch to the new component.
@@ -848,7 +848,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
     min_df: 5
   ```
 
-* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](./components/entity-extractors.mdx#passing-custom-features-to-crfentityextractor)
+* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](./components.mdx#passing-custom-features-to-crfentityextractor)
   use `text_dense_features` instead of `ner_features`. If
   `text_dense_features` are present in the feature set, the `CRFEntityExtractor` will automatically make use of
   them. Just make sure to add a dense featurizer in front of the `CRFEntityExtractor` in your pipeline and set the
@@ -899,13 +899,13 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   Add option `return_sequence` to all featurizers. By default all featurizers return a matrix of size
   (1 x feature-dimension). If the option `return_sequence` is set to `True`, the corresponding featurizer will return
-  a matrix of size (token-length x feature-dimension). See [Text Featurizers](./components/featurizers.mdx).
+  a matrix of size (token-length x feature-dimension). See [Text Featurizers](./components.mdx#featurizers).
   Default value is set to `False`. However, you might want to set it to `True` if you want to use custom features
   in the `CRFEntityExtractor`.
-  See [passing custom features to the `CRFEntityExtractor`](./components/entity-extractors.mdx#passing-custom-features-to-crfentityextractor)
+  See [passing custom features to the `CRFEntityExtractor`](./components.mdx#passing-custom-features-to-crfentityextractor)
 
   Changed some featurizers to use sparse features, which should reduce memory usage with large amounts of training data significantly.
-  Read more: [Text Featurizers](./components/featurizers.mdx) .
+  Read more: [Text Featurizers](./components.mdx#featurizers) .
 
   :::caution
   These changes break model compatibility. You will need to retrain your old models!

@@ -5,12 +5,22 @@ import uuid
 from pathlib import Path
 from typing import Text, Optional, Union, List, Tuple, Callable, Set, Iterable
 
-YAML_FILE_EXTENSIONS = {".yml", ".yaml"}
-JSON_FILE_EXTENSIONS = {".json"}
-MARKDOWN_FILE_EXTENSIONS = {".md"}
-TRAINING_DATA_EXTENSIONS = JSON_FILE_EXTENSIONS.union(MARKDOWN_FILE_EXTENSIONS).union(
-    YAML_FILE_EXTENSIONS
+YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
+JSON_FILE_EXTENSIONS = [".json"]
+MARKDOWN_FILE_EXTENSIONS = [".md"]
+TRAINING_DATA_EXTENSIONS = set(
+    JSON_FILE_EXTENSIONS + MARKDOWN_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS
 )
+
+
+def markdown_file_extension() -> Text:
+    """Return Markdown file extension"""
+    return MARKDOWN_FILE_EXTENSIONS[0]
+
+
+def yaml_file_extension() -> Text:
+    """Return Markdown file extension"""
+    return YAML_FILE_EXTENSIONS[0]
 
 
 def is_likely_yaml_file(file_path: Text) -> bool:
@@ -22,7 +32,7 @@ def is_likely_yaml_file(file_path: Text) -> bool:
     Returns:
         `True` if the file likely contains data in yaml format, `False` otherwise.
     """
-    return Path(file_path).suffix in YAML_FILE_EXTENSIONS
+    return Path(file_path).suffix in set(YAML_FILE_EXTENSIONS)
 
 
 def is_likely_json_file(file_path: Text) -> bool:
@@ -34,7 +44,7 @@ def is_likely_json_file(file_path: Text) -> bool:
     Returns:
         `True` if the file likely contains data in json format, `False` otherwise.
     """
-    return Path(file_path).suffix in JSON_FILE_EXTENSIONS
+    return Path(file_path).suffix in set(JSON_FILE_EXTENSIONS)
 
 
 def is_likely_markdown_file(file_path: Text) -> bool:
@@ -47,7 +57,7 @@ def is_likely_markdown_file(file_path: Text) -> bool:
         `True` if the file likely contains data in markdown format,
         `False` otherwise.
     """
-    return Path(file_path).suffix in MARKDOWN_FILE_EXTENSIONS
+    return Path(file_path).suffix in set(MARKDOWN_FILE_EXTENSIONS)
 
 
 def get_test_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
@@ -228,7 +238,7 @@ def is_test_stories_file(file_path: Text) -> bool:
         MarkdownStoryReader,
     )
 
-    return YAMLStoryReader.is_yaml_story_file(
+    return YAMLStoryReader.is_yaml_test_stories_file(
         file_path
     ) or MarkdownStoryReader.is_markdown_test_stories_file(file_path)
 

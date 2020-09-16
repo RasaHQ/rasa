@@ -155,7 +155,7 @@ async def test_interpreter_passed_to_agent(
     assert isinstance(agent.interpreter, RasaNLUInterpreter)
 
 
-async def test_e2e_warning_if_no_nlu_model(
+def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
     from rasa.test import test_core
@@ -163,7 +163,7 @@ async def test_e2e_warning_if_no_nlu_model(
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
     monkeypatch.setattr(
-        sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
+        sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
     test_core(trained_core_model, additional_arguments={"e2e": True})

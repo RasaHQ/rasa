@@ -13,10 +13,10 @@ from rasa.shared.nlu.training_data import training_data
 
 # noinspection PyProtectedMember
 from rasa.cli.train import _get_valid_config
-from rasa.constants import (
+from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
-    CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_NLU,
+    CONFIG_MANDATORY_KEYS,
 )
 import rasa.utils.io as io_utils
 
@@ -330,9 +330,10 @@ def test_train_help(run):
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_train_nlu_help(run: Callable[..., RunResult]):
@@ -344,9 +345,10 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
                       [--persist-nlu-data]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_train_core_help(run: Callable[..., RunResult]):
@@ -360,9 +362,10 @@ def test_train_core_help(run: Callable[..., RunResult]):
                        [--runs RUNS]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 @pytest.mark.parametrize(
