@@ -77,7 +77,7 @@ async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
 
     telemetry.track_visualization()
 
-    telemetry.track_core_model_test(5, default_agent)
+    telemetry.track_core_model_test(5, True, default_agent)
 
     telemetry.track_nlu_model_test(TrainingData())
 
