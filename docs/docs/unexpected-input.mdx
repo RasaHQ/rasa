@@ -3,7 +3,7 @@ id: unexpected-input
 sidebar_label: Handling Unexpected Input
 title: Handling Unexpected Input
 abstract: One thing you can count on when building a conversational assistant is that users
-will say unexpected things. This page is a guide on handling unexpected input.
+  will say unexpected things. This page is a guide on handling unexpected input.
 ---
 
 Unexpected input is a deviation from the [happy path](glossary.mdx#happy_unhappy_paths)
@@ -41,11 +41,11 @@ The response should differ for each slot. For example:
 
 ```yaml
 User: I want to talk to sales
-    Bot: Sure, we can book a sales call! Let's get to know each other first.
-    Bot: What's your job?
+  Bot: Sure, we can book a sales call! Let's get to know each other first.
+  Bot: What's your job?
 User: Why do you need to know that?
-    Bot: Your job function helps us in understanding how we can talk to you best.
-    Bot: Do you still want to talk to sales?
+  Bot: Your job function helps us in understanding how we can talk to you best.
+  Bot: Do you still want to talk to sales?
 ```
 
 Since we want the `requested_slot` to influence the conversation,
