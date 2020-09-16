@@ -1,6 +1,3 @@
+# Local Netlify folder
 .netlify
-.docusaurus
-docs/variables.json
-docs/sources
-docs/reference
-docs/changelog.mdx
+docs/telemetry/reference.mdx
