@@ -38,8 +38,6 @@ policies:
 - name: RulePolicy
 ```
 
-The RulePolicy works alongside other policies in your configuration (like the TEDPolicy). Its job is to enforce rule-based logic for conversation paths where you already know how the assistant should respond to a given input.
-
 To use retrieval actions, include the ResponseSelector in your NLU pipeline in your configuration file.
 The ResponseSelector requires a featurizer and intent classifier to work, so
 it should come after these components in your pipeline, for example:
@@ -62,8 +60,8 @@ pipeline:
 ```
 
 By default, the ResponseSelector will build a single retrieval model for all retrieval intents.
-If you want to retrieve responses for FAQs and chitchat separately, you can use multiple ResponseSelector components
-and specify the `retrieval_intent` key, for example:
+To retrieve responses for FAQs and chitchat separately, use multiple ResponseSelector components
+and specify the `retrieval_intent` key:
 
 ```rasa-yaml
 pipeline:
