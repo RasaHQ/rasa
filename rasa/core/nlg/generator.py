@@ -2,9 +2,9 @@ import logging
 from typing import Optional, Union, Text, Any, Dict
 
 import rasa.shared.utils.common
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

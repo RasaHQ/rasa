@@ -1,17 +1,12 @@
 import pytest
 
-
+import rasa.shared.utils.io
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    TEXT,
-    INTENT,
-    ACTION_NAME,
-    ACTION_TEXT,
-)
-
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_TEXT, ACTION_NAME
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
@@ -60,13 +55,13 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             ],
         ),
         (
-            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
+            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/rasa/components#whitespacetokenizer",
             [
                 "https://www.google.com/search?"
                 "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
-                "https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
+                "https://rasa.com/docs/rasa/components#whitespacetokenizer",
             ],
-            [(0, 82), (83, 141)],
+            [(0, 82), (83, 140)],
         ),
         (
             "Joselico gracias Dois 🙏🇺🇸🏦🛠🔥⭐️🦅👑💪",
@@ -118,7 +113,7 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
                 "entities": [
                     {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}
                 ],
-            },
+            }
         ),
         Message(
             data={
@@ -127,15 +122,15 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
                 "entities": [
                     {"start": 7, "end": 12, "value": "Mexican", "entity": "cuisine"}
                 ],
-            },
+            }
         ),
-        Message(data={TEXT: "action_restart", "action_name": "action_restart"},),
+        Message(data={TEXT: "action_restart", "action_name": "action_restart"}),
         Message(
             data={
                 TEXT: "Where are you going?",
                 ACTION_NAME: "Where are you going?",
                 ACTION_TEXT: "Where are you going?",
-            },
+            }
         ),
     ]
 
@@ -165,7 +160,9 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
 def test_whitespace_does_not_throw_error():
     import rasa.utils.io as io_utils
 
-    texts = io_utils.read_json_file("data/test_tokenizers/naughty_strings.json")
+    texts = rasa.shared.utils.io.read_json_file(
+        "data/test_tokenizers/naughty_strings.json"
+    )
 
     tk = WhitespaceTokenizer()
 
@@ -196,7 +193,7 @@ def test_whitespace_processing_with_attribute(
             "entities": [
                 {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}
             ],
-        },
+        }
     )
     expected_tokens_intent = ["restaurant_search"]
     expected_tokens_text = ["Any", "Mexican", "restaurant", "will", "do"]
@@ -214,7 +211,7 @@ def test_whitespace_processing_with_attribute(
             TEXT: "Where are you going?",
             ACTION_NAME: "Where are you going?",
             ACTION_TEXT: "Where are you going?",
-        },
+        }
     )
     expected_action_tokens_text = ["Where", "are", "you", "going"]
 

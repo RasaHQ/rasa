@@ -5,8 +5,9 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
 from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
     IntentClassifier,
@@ -15,19 +16,17 @@ from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=p
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
-from rasa.nlu.constants import (
-    INTENT_NAME_KEY,
+from rasa.nlu.persistor import Persistor
+from rasa.shared.nlu.constants import (
     TEXT,
-    INTENT,
     ENTITIES,
+    INTENT,
+    INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-
-from rasa.nlu.persistor import Persistor
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
-
-MODEL_NAME_PREFIX = "nlu_"
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +40,7 @@ class InvalidModelError(Exception):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(InvalidModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
@@ -55,6 +55,7 @@ class UnsupportedModelError(Exception):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(UnsupportedModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
@@ -74,7 +75,7 @@ class Metadata:
         """
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
-            data = rasa.utils.io.read_json_file(metadata_file)
+            data = rasa.shared.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
@@ -232,12 +233,12 @@ class Trainer:
         if fixed_model_name:
             model_name = fixed_model_name
         else:
-            model_name = MODEL_NAME_PREFIX + timestamp
+            model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
 
-        rasa.utils.io.create_directory(dir_name)
+        rasa.shared.utils.io.create_directory(dir_name)
 
         if self.training_data and persist_nlu_training_data:
             metadata.update(self.training_data.persist(dir_name))

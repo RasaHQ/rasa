@@ -3,9 +3,10 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
-from rasa.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
@@ -174,7 +175,7 @@ def validate_required_components_from_data(
 
     Args:
         pipeline: The list of the :class:`rasa.nlu.components.Component`s.
-        data: The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+        data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
     """
 
     if data.response_examples and not any_components_in_pipeline(
@@ -339,7 +340,7 @@ class Component(metaclass=ComponentMetaclass):
     # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
     @property
-    def name(self):
+    def name(self) -> Text:
         """Access the class's property name from an instance."""
 
         return type(self).name
@@ -500,7 +501,7 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             training_data:
-                The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+                The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
 
         """
@@ -520,7 +521,7 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
 
         """
 
@@ -599,10 +600,11 @@ class Component(metaclass=ComponentMetaclass):
         previous to this one in the pipeline.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to
+            process.
 
         Returns:
-            The processed :class:`rasa.nlu.training_data.message.Message`.
+            The processed :class:`rasa.shared.nlu.training_data.message.Message`.
 
         """
 

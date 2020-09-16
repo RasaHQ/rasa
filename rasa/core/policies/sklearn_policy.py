@@ -1,32 +1,32 @@
 import json
 import logging
-import os
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 from collections import defaultdict, OrderedDict
 import scipy.sparse
 
 import numpy as np
 import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
-from rasa.utils.features import Features
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.shared.utils.io
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
-from rasa.nlu.constants import TEXT, ACTION_TEXT
+from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
+from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.utils.tensorflow.model_data import Data
 
@@ -117,6 +117,11 @@ class SklearnPolicy(Policy):
         self._pickle_params = ["model", "cv", "param_grid", "scoring", "label_encoder"]
         self._train_params = kwargs
         self.zero_state_features = zero_state_features or defaultdict(list)
+
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{SklearnPolicy.__name__}' is deprecated and will be removed in "
+            "the future. It is recommended to use the 'TEDPolicy' instead."
+        )
 
     @staticmethod
     def _default_model() -> Any:
@@ -273,20 +278,23 @@ class SklearnPolicy(Policy):
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
 
         if self.model:
             self.featurizer.persist(path)
 
             meta = {"priority": self.priority}
+            path = Path(path)
 
-            meta_file = os.path.join(path, "sklearn_policy.json")
-            io_utils.dump_obj_as_json_to_file(meta_file, meta)
+            meta_file = path / "sklearn_policy.json"
+            rasa.shared.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
-            filename = os.path.join(path, "sklearn_model.pkl")
-            io_utils.pickle_dump(filename, self._state)
-            zero_features_filename = os.path.join(path, "zero_state_features.pkl")
+            filename = path / "sklearn_model.pkl"
+            rasa.utils.io.pickle_dump(filename, self._state)
+
+            zero_features_filename = path / "zero_state_features.pkl"
             io_utils.pickle_dump(zero_features_filename, self.zero_state_features)
+
         else:
             rasa.shared.utils.io.raise_warning(
                 "Persist called without a trained model present. "
@@ -294,23 +302,23 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Text) -> Policy:
-        filename = os.path.join(path, "sklearn_model.pkl")
-        zero_features_filename = os.path.join(path, "zero_state_features.pkl")
-        if not os.path.exists(path):
+    def load(cls, path: Union[Text, Path]) -> Policy:
+        filename = Path(path) / "sklearn_model.pkl"
+        zero_features_filename = Path(path) / "zero_state_features.pkl"
+        if not Path(path).exists():
             raise OSError(
-                "Failed to load dialogue model. Path {} "
-                "doesn't exist".format(os.path.abspath(filename))
+                f"Failed to load dialogue model. Path {filename.absolute()} "
+                f"doesn't exist."
             )
 
         featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (
-            "Loaded featurizer of type {}, should be "
-            "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__)
+            f"Loaded featurizer of type {type(featurizer).__name__}, should be "
+            f"MaxHistoryTrackerFeaturizer."
         )
 
-        meta_file = os.path.join(path, "sklearn_policy.json")
-        meta = json.loads(io_utils.read_file(meta_file))
+        meta_file = Path(path) / "sklearn_policy.json"
+        meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
         zero_state_features = io_utils.pickle_load(zero_features_filename)
 
         policy = cls(

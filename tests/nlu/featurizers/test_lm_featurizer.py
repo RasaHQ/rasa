@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.constants import TEXT, INTENT
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.constants import TEXT, INTENT
 
 
 @pytest.mark.skip(reason="Results in random crashing of github action workers")

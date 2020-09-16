@@ -9,6 +9,7 @@ from rasa.shared.core.slots import (
     ListSlot,
     UnfeaturizedSlot,
     CategoricalSlot,
+    bool_from_any,
 )
 
 
@@ -96,15 +97,29 @@ class TestBooleanSlot(SlotTestCollection):
         params=[
             (None, [0, 0]),
             (True, [1, 1]),
-            ("9", [1, 1]),
-            (12, [1, 1]),
+            ("9", [1, 0]),
+            (12, [1, 0]),
             (False, [1, 0]),
             ("0", [1, 0]),
             (0, [1, 0]),
+            ("true", [1, 1]),
+            ("True", [1, 1]),
+            ("false", [1, 0]),
+            ("False", [1, 0]),
         ]
     )
     def value_feature_pair(self, request):
         return request.param
+
+
+def test_bool_from_any_raises_value_error():
+    with pytest.raises(ValueError):
+        bool_from_any("abc")
+
+
+def test_bool_from_any_raises_type_error():
+    with pytest.raises(TypeError):
+        bool_from_any(None)
 
 
 class TestFloatSlot(SlotTestCollection):

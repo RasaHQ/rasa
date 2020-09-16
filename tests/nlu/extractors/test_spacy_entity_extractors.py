@@ -1,6 +1,6 @@
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import Message
-from rasa.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.message import Message
 
 
 def test_spacy_ner_extractor(component_builder, spacy_nlp):
@@ -12,7 +12,7 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
             "intent": "restaurant_search",
             "entities": [],
             "text_spacy_doc": spacy_nlp("anywhere in the west"),
-        },
+        }
     )
 
     ext.process(example, spacy_nlp=spacy_nlp)
@@ -35,7 +35,7 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
             "intent": "example_intent",
             "entities": [],
             "text_spacy_doc": spacy_nlp("anywhere in the West with Sebastian Thrun"),
-        },
+        }
     )
     _config = RasaNLUModelConfig({"pipeline": [{"name": "SpacyEntityExtractor"}]})
 

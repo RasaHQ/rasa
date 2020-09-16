@@ -3,15 +3,15 @@ import logging
 import re
 from typing import Any, Dict, Optional, Text
 
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.constants import INTENT, TEXT
+from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ class KeywordIntentClassifier(IntentClassifier):
             file_name = meta.get("file")
             keyword_file = os.path.join(model_dir, file_name)
             if os.path.exists(keyword_file):
-                intent_keyword_map = utils.read_json_file(keyword_file)
+                intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Failed to load key word file for `IntentKeywordClassifier`, "

@@ -37,9 +37,9 @@ description: Glossary for all Rasa-related terms
 
   For example a telephone number, a person's name, a location, the name of a product
 
-## [Event](./events.mdx)
+## [Event](https://rasa.com/docs/action-server/events)
 
-  All conversations in Rasa are represented as a sequence of events. For instance, a `UserUttered` represents a user entering a message, and an `ActionExecuted` represents the assistant executing an action. You can learn more about them [here](./events.mdx).
+  All conversations in Rasa are represented as a sequence of events. For instance, a `UserUttered` represents a user entering a message, and an `ActionExecuted` represents the assistant executing an action. You can learn more about them [here](https://rasa.com/docs/action-server/events).
 
 ## [Form](./forms.mdx)
 
@@ -54,6 +54,10 @@ description: Glossary for all Rasa-related terms
 ## Intent
 
   Something that a user is trying to convey or accomplish (e,g., greeting, specifying a location).
+
+## Retrieval Intent
+
+  A special instance of an intent which can be divided into smaller sub-intents. Each sub-intent has a fixed response and hence the context of the conversation does not matter when user expresses one of these sub-intents.
 
 ## [Interactive Learning](./writing-stories.mdx#using-interactive-learning)
 

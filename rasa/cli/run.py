@@ -3,24 +3,31 @@ import logging
 import os
 from typing import List, Text
 
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
-from rasa.cli.utils import get_validated_path, print_error
-from rasa.constants import (
-    DEFAULT_ACTIONS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_MODELS_PATH,
+import rasa.cli.utils
+import rasa.shared.utils.cli
+from rasa.shared.constants import (
     DOCS_BASE_URL,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_ACTIONS_PATH,
+    DEFAULT_MODELS_PATH,
 )
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all run parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     run_parser = subparsers.add_parser(
         "run",
         parents=parents,
@@ -70,10 +77,10 @@ def _validate_model_path(model_path: Text, parameter: Text, default: Text):
 def run(args: argparse.Namespace):
     import rasa.run
 
-    args.endpoints = get_validated_path(
+    args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
-    args.credentials = get_validated_path(
+    args.credentials = rasa.cli.utils.get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
 
@@ -114,7 +121,7 @@ def run(args: argparse.Namespace):
         rasa.run(**vars(args))
         return
 
-    print_error(
+    rasa.shared.utils.cli.print_error(
         "No model found. You have three options to provide a model:\n"
         "1. Configure a model server in the endpoint configuration and provide "
         "the configuration via '--endpoints'.\n"
@@ -122,7 +129,5 @@ def run(args: argparse.Namespace):
         "from.\n"
         "3. Train a model before running the server using `rasa train` and "
         "use '--model' to provide the model path.\n"
-        "For more information check {}.".format(
-            DOCS_BASE_URL + "/user-guide/configuring-http-api/"
-        )
+        "For more information check {}.".format(DOCS_BASE_URL + "/model-storage")
     )

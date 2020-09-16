@@ -195,10 +195,8 @@ def test_facebook_channel():
     # in the docs
     routes_list = utils.list_routes(s)
 
-    assert routes_list.get("fb_webhook.health").startswith("/webhooks/facebook")
-    assert routes_list.get("fb_webhook.webhook").startswith(
-        "/webhooks/facebook/webhook"
-    )
+    assert routes_list["fb_webhook.health"].startswith("/webhooks/facebook")
+    assert routes_list["fb_webhook.webhook"].startswith("/webhooks/facebook/webhook")
 
 
 # USED FOR DOCS - don't rename without changing in the docs
@@ -218,10 +216,8 @@ def test_webexteams_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("webexteams_webhook.health").startswith(
-        "/webhooks/webexteams"
-    )
-    assert routes_list.get("webexteams_webhook.webhook").startswith(
+    assert routes_list["webexteams_webhook.health"].startswith("/webhooks/webexteams")
+    assert routes_list["webexteams_webhook.webhook"].startswith(
         "/webhooks/webexteams/webhook"
     )
 
@@ -243,10 +239,8 @@ def test_slack_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("slack_webhook.health").startswith("/webhooks/slack")
-    assert routes_list.get("slack_webhook.webhook").startswith(
-        "/webhooks/slack/webhook"
-    )
+    assert routes_list["slack_webhook.health"].startswith("/webhooks/slack")
+    assert routes_list["slack_webhook.webhook"].startswith("/webhooks/slack/webhook")
 
 
 # USED FOR DOCS - don't rename without changing in the docs
@@ -269,10 +263,8 @@ def test_mattermost_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("mattermost_webhook.health").startswith(
-        "/webhooks/mattermost"
-    )
-    assert routes_list.get("mattermost_webhook.webhook").startswith(
+    assert routes_list["mattermost_webhook.health"].startswith("/webhooks/mattermost")
+    assert routes_list["mattermost_webhook.webhook"].startswith(
         "/webhooks/mattermost/webhook"
     )
 
@@ -294,10 +286,10 @@ def test_botframework_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("botframework_webhook.health").startswith(
+    assert routes_list["botframework_webhook.health"].startswith(
         "/webhooks/botframework"
     )
-    assert routes_list.get("botframework_webhook.webhook").startswith(
+    assert routes_list["botframework_webhook.webhook"].startswith(
         "/webhooks/botframework/webhook"
     )
 
@@ -321,10 +313,8 @@ def test_rocketchat_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("rocketchat_webhook.health").startswith(
-        "/webhooks/rocketchat"
-    )
-    assert routes_list.get("rocketchat_webhook.webhook").startswith(
+    assert routes_list["rocketchat_webhook.health"].startswith("/webhooks/rocketchat")
+    assert routes_list["rocketchat_webhook.webhook"].startswith(
         "/webhooks/rocketchat/webhook"
     )
 
@@ -351,8 +341,8 @@ def test_telegram_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("telegram_webhook.health").startswith("/webhooks/telegram")
-    assert routes_list.get("telegram_webhook.message").startswith(
+    assert routes_list["telegram_webhook.health"].startswith("/webhooks/telegram")
+    assert routes_list["telegram_webhook.message"].startswith(
         "/webhooks/telegram/webhook"
     )
 
@@ -383,10 +373,8 @@ def test_twilio_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("twilio_webhook.health").startswith("/webhooks/twilio")
-    assert routes_list.get("twilio_webhook.message").startswith(
-        "/webhooks/twilio/webhook"
-    )
+    assert routes_list["twilio_webhook.health"].startswith("/webhooks/twilio")
+    assert routes_list["twilio_webhook.message"].startswith("/webhooks/twilio/webhook")
 
 
 # USED FOR DOCS - don't rename without changing in the docs
@@ -404,8 +392,8 @@ def test_callback_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("callback_webhook.health").startswith("/webhooks/callback")
-    assert routes_list.get("callback_webhook.webhook").startswith(
+    assert routes_list["callback_webhook.health"].startswith("/webhooks/callback")
+    assert routes_list["callback_webhook.webhook"].startswith(
         "/webhooks/callback/webhook"
     )
 
@@ -429,8 +417,8 @@ def test_socketio_channel():
     # the above marker marks the end of the code snipped included
     # in the docs
     routes_list = utils.list_routes(s)
-    assert routes_list.get("socketio_webhook.health").startswith("/webhooks/socketio")
-    assert routes_list.get("handle_request").startswith("/socket.io")
+    assert routes_list["socketio_webhook.health"].startswith("/webhooks/socketio")
+    assert routes_list["handle_request"].startswith("/socket.io")
 
 
 async def test_callback_calls_endpoint():
@@ -1242,10 +1230,10 @@ def test_channel_inheritance():
     s = rasa.core.run.configure_app([RestInput(), rasa_input], port=5004)
 
     routes_list = utils.list_routes(s)
-    assert routes_list.get("custom_webhook_RasaChatInput.health").startswith(
+    assert routes_list["custom_webhook_RasaChatInput.health"].startswith(
         "/webhooks/rasa"
     )
-    assert routes_list.get("custom_webhook_RasaChatInput.receive").startswith(
+    assert routes_list["custom_webhook_RasaChatInput.receive"].startswith(
         "/webhooks/rasa/webhook"
     )
 
@@ -1299,7 +1287,7 @@ def test_register_channel_without_route():
     rasa.core.channels.channel.register([input_channel], app, route=None)
 
     routes_list = utils.list_routes(app)
-    assert routes_list.get("custom_webhook_RestInput.receive").startswith("/webhook")
+    assert routes_list["custom_webhook_RestInput.receive"].startswith("/webhook")
 
 
 def test_channel_registration_with_absolute_url_prefix_overwrites_route():
@@ -1319,7 +1307,7 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     # Assure that an absolute url returned by `url_prefix` overwrites route parameter
     # given in `register`.
     routes_list = utils.list_routes(app)
-    assert routes_list.get("custom_webhook_RestInput.health").startswith(test_route)
+    assert routes_list["custom_webhook_RestInput.health"].startswith(test_route)
     assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")
 
 

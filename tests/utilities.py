@@ -1,6 +1,7 @@
 from yarl import URL
 from typing import Text
 
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -17,7 +18,7 @@ def json_of_latest_request(r):
 
 
 def update_number_of_epochs(config_path: Text, output_file: Text):
-    config = io_utils.read_yaml_file(config_path)
+    config = rasa.shared.utils.io.read_yaml_file(config_path)
 
     if "pipeline" not in config.keys():
         raise ValueError(f"Invalid config provided! File: '{config_path}'.")
@@ -30,4 +31,4 @@ def update_number_of_epochs(config_path: Text, output_file: Text):
         if component["name"] in [DIETClassifier.name, ResponseSelector.name]:
             component[EPOCHS] = 1
 
-    io_utils.write_yaml(config, output_file)
+    rasa.shared.utils.io.write_yaml(config, output_file)

@@ -5,36 +5,42 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
+from pathlib import Path
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Union
 
 import rasa.core
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import (
-    MINIMUM_COMPATIBLE_VERSION,
-    DOCS_URL_POLICIES,
-    DEFAULT_CONFIG_PATH,
-    DOCS_URL_MIGRATION_GUIDE,
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.shared.constants import (
     DOCS_URL_RULES,
+    DOCS_URL_POLICIES,
+    DOCS_URL_MIGRATION_GUIDE,
+    DEFAULT_CONFIG_PATH,
 )
-
-from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
-from rasa.core.actions.action import (
+from rasa.shared.core.constants import (
+    USER_INTENT_BACK,
+    USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
-    ACTION_BACK_NAME,
     ACTION_RESTART_NAME,
+    ACTION_BACK_NAME,
 )
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
+from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.events import (
+    SlotSet,
+    ActionExecuted,
+    ActionExecutionRejected,
+    Event,
+)
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils import common as common_utils
 
@@ -216,7 +222,7 @@ class PolicyEnsemble:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         raise NotImplementedError
 
     def _max_histories(self) -> List[Optional[int]]:
@@ -263,7 +269,7 @@ class PolicyEnsemble:
 
         # make sure the directory we persist exists
         domain_spec_path = os.path.join(path, "metadata.json")
-        rasa.utils.io.create_directory_for_file(domain_spec_path)
+        rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [
             rasa.shared.utils.common.module_path_from_instance(p) for p in self.policies
@@ -280,22 +286,24 @@ class PolicyEnsemble:
 
         self._add_package_version_info(metadata)
 
-        rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to storage."""
 
         self._persist_metadata(path)
 
         for i, policy in enumerate(self.policies):
             dir_name = "policy_{}_{}".format(i, type(policy).__name__)
-            policy_path = os.path.join(path, dir_name)
+            policy_path = Path(path) / dir_name
             policy.persist(policy_path)
 
     @classmethod
     def load_metadata(cls, path) -> Any:
         metadata_path = os.path.join(path, "metadata.json")
-        metadata = json.loads(rasa.utils.io.read_file(os.path.abspath(metadata_path)))
+        metadata = json.loads(
+            rasa.shared.utils.io.read_file(os.path.abspath(metadata_path))
+        )
         return metadata
 
     @staticmethod
@@ -330,7 +338,7 @@ class PolicyEnsemble:
             )
 
     @classmethod
-    def load(cls, path: Text) -> "PolicyEnsemble":
+    def load(cls, path: Union[Text, Path]) -> "PolicyEnsemble":
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)
@@ -503,7 +511,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     def _pick_best_policy(
         self, predictions: Dict[Text, Prediction]
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Picks the best policy prediction based on probabilities and policy priority.
 
         Args:
@@ -552,12 +560,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Finds the best policy prediction.
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
 
@@ -601,7 +609,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         interpreter: NaturalLanguageInterpreter,
     ) -> Prediction:
         number_of_arguments_in_rasa_1_0 = 2
-        arguments = common_utils.arguments_of(policy.predict_action_probabilities)
+        arguments = rasa.shared.utils.common.arguments_of(
+            policy.predict_action_probabilities
+        )
         if (
             len(arguments) > number_of_arguments_in_rasa_1_0
             and "interpreter" in arguments
@@ -635,7 +645,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
           other than the MemoizationPolicy
 
         Args:
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             probabilities: the list of probabilities for the next actions
             policy_name: the name of the picked policy
 
@@ -668,7 +678,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text]]:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Picks the best policy prediction based on probabilities and policy priority.
@@ -676,7 +686,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
 
