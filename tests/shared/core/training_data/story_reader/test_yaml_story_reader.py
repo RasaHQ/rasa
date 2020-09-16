@@ -5,6 +5,7 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core import training
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import Domain
