@@ -5,63 +5,36 @@ const {
   remarkPlugins: themeRemarkPlugins,
 } = require('@rasahq/docusaurus-theme-tabula');
 
+const isDev = process.env.NODE_ENV === 'development';
+const isStaging = process.env.NETLIFY && process.env.CONTEXT === 'staging';
+const isPreview = process.env.NETLIFY && process.env.CONTEXT === 'deploy-preview';
 
 // FIXME: remove "next/" when releasing + remove the "next/" in
-// http://github.com/RasaHQ/rasa-website/blob/master/netlify.toml
+// https://github.com/RasaHQ/rasa-website/blob/master/netlify.toml
 const BASE_URL = '/docs/rasa/next/';
 const SITE_URL = 'https://rasa.com';
-
 // NOTE: this allows switching between local dev instances of rasa/rasa-x
-const isDev = process.env.NODE_ENV === 'development';
 const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
-/* VERSIONING: WIP */
+let existingVersions = [];
+try { existingVersions = require('./versions.json'); } catch (e) { console.info('no versions.json file found') }
+const currentVersionPath = isDev || isPreview ? '/' : `${existingVersions[0]}/`;
 
 const routeBasePath = '/';
-let versions = [];
-try { versions = require('./versions.json'); } catch (ex) { console.info('no versions.json file found; assuming dev mode.') }
+const existingVersionRE = new RegExp(
+  `${routeBasePath}/(${existingVersions.reduce((s, v, i) => `${s}${i > 0 ? '|' : ''}${v}`, '')}).?`,
+);
+const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
-const legacyVersion = {
-  label: 'Legacy 1.x',
-  href: 'https://legacy-docs-v1.rasa.com',
-  target: '_self',
-};
-
-const allVersions = {
-  label: 'Versions',
-  to: '/', // "fake" link
-  position: 'left',
-  items: versions.length > 0 ? [
-    {
-      label: versions[0],
-      to: '/',
-      activeBaseRegex: versions[0],
-    },
-    ...versions.slice(1).map((version) => ({
-      label: version,
-      to: `${version}/`,
-      activeBaseRegex: version,
-    })),
-    {
-      label: 'Master/Unreleased',
-      to: 'next/',
-      activeBaseRegex: `next`,
-    },
-    legacyVersion,
-  ]
-: [
-    {
-      label: 'Master/Unreleased',
-      to: '/',
-      activeBaseRegex: `/`,
-    },
-    legacyVersion,
-  ],
-}
 
 module.exports = {
+  onBrokenLinks: 'warn',
   customFields: {
-    // NOTE: all non-standard options should go in this object
+    legacyVersions: [{
+      label: 'Legacy 1.x',
+      href: 'https://legacy-docs-v1.rasa.com',
+      target: '_self',
+    }]
   },
   title: 'Rasa Open Source Documentation',
   tagline: 'An open source machine learning framework for automated text and voice-based conversations',
@@ -71,6 +44,11 @@ module.exports = {
   organizationName: 'RasaHQ',
   projectName: 'rasa',
   themeConfig: {
+    algolia: {
+      apiKey: '09ef5d111ebd9002df72575d516693af',
+      indexName: 'BH4D9OD16A',
+      // searchParameters: {}, // Optional (if provided by Algolia)
+    },
     colorMode: {
       defaultMode: 'light',
       disableSwitch: true,
@@ -96,8 +74,13 @@ module.exports = {
           target: '_self',
         },
         {
+          label: 'Rasa Action Server',
+          position: 'left',
+          href: 'https://rasa.com/docs/action-server',
+        },
+        {
           target: '_self',
-          href: 'http://blog.rasa.com/',
+          href: 'https://blog.rasa.com/',
           label: 'Blog',
           position: 'right',
         },
@@ -117,6 +100,7 @@ module.exports = {
     },
   },
   themes: [
+    '@docusaurus/theme-search-algolia',
     '@rasahq/docusaurus-theme-tabula',
     path.resolve(__dirname, './themes/theme-custom')
   ],
@@ -134,6 +118,14 @@ module.exports = {
         ...themeRemarkPlugins,
         remarkProgramOutput,
       ],
+      lastVersion: isDev || isPreview || existingVersions.length < 1 ? 'current' : undefined, // aligns / to last versioned folder in production
+      // includeCurrentVersion: true, // default is true
+      versions: {
+        current: {
+          label: isDev || isPreview ? `Next (${isPreview ? 'deploy preview' : 'dev'})` : existingVersions.length < 1 ? 'Current' : 'Next',
+          path: isDev || isPreview || existingVersions.length < 1 ? '' : 'next',
+        },
+      },
     }],
     ['@docusaurus/plugin-content-pages', {}],
     ['@docusaurus/plugin-sitemap',
