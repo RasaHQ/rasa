@@ -624,7 +624,7 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
         [
             StoryStep(
                 events=[
-                    UserUttered("greet_from_stories", {"name": "greet_from_stories"}),
+                    UserUttered(None, {"name": "greet_from_stories"}),
                     ActionExecuted("utter_greet_from_stories"),
                 ]
             )
