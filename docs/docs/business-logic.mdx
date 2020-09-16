@@ -42,7 +42,14 @@ the bot fulfills the user's original request.
 
 ### 1. Defining the form
 
-#### Required Slots
+To define and use a form, you will need to define:
+
+* Slot mappings: The required info to collect
+* Responses: How your bot should ask for each piece of information
+* Rules: When the form should start, and what should happen after it is completed
+
+
+#### Slot Mappings
 
 For the restaurant search example, we want to collect the following information
 from the user:
@@ -53,7 +60,8 @@ from the user:
 
 
 You define a form in the domain file (domain.yml) by specifying [slot mappings](forms.mdx#slot-mappings) for each
-piece of required information:
+piece of required information. Slot mappings define both which 
+slots are required, and how each slot can be filled:
 
 ```rasa-yaml
   - restaurant_form:
@@ -62,7 +70,7 @@ piece of required information:
           entity: cuisine
       num_people:
         - type: from_entity
-          entity: number
+          entity: number 
       outdoor_seating:
         - type: from_intent
           intent: affirm
@@ -72,41 +80,23 @@ piece of required information:
           value: false
 ```
 
+For any slot filled `from_entity`, the entity needs to be added 
+to the domain. 
 
-See the following section for an explanation of what the slot mappings mean.
-
-Since the form relies on certain slots being available,  you need to add these slots to the domain. Slots filled by
-forms are usually unfeaturized, since their value doesn't change
-the flow of the conversation.
-
-```rasa-yaml
-slots:
-  cuisine:
-    type: unfeaturized
-  num_people:
-    type: unfeaturized
-  outdoor_seating:
-    type: unfeaturized
+```
+entities:
+  - cuisine
+  - number
 ```
 
-#### Filling Slots
-
-[`Slot mappings`](forms.mdx#slot-mappings) define how a slot in a form can be filled.
-By default, a slot will be filled by an entity with the same name.
-
-The `cuisine` slot is filled from the entity of the same name.
-The `num_people` slot is filled by the `number` entity. Entities like numbers
-are best extracted using the [`DucklingEntityExtractor`](entity-extractors.mdx#ducklingentityextractor),
-while `cuisine` is a custom entity that will need to be extracted by the `DIETClassifier`.
-To extract these two entities, you need to add `DIETClassifier` and `DucklingEntityExtractor`
-to your NLU pipeline in `config.yml`:
+Entities like numbers
+can be extracted by the [`DucklingEntityExtractor`](./components.mdx#ducklingentityextractor). To use it, add  `DucklingEntityExtractor`
+to your NLU pipeline in `config.yml`.
 
 ```rasa-yaml
 language: en
 pipeline:
 # other components
-- DIETClassifier
-  epochs: 100
 - DucklingEntityExtractor:
   dimensions: ["number"]
 ```
@@ -116,6 +106,23 @@ The `outdoor_seating` slot is
 filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
 `deny`, it'll be `false`.
 
+
+Since the form relies on certain [slots](domain.mdx#slots) being available,  you need to add these slots to the domain. Slots filled by
+forms are usually `unfeaturized`, since their value doesn't change
+the flow of the conversation.
+
+```rasa-yaml
+slots:
+  cuisine:
+    type: unfeaturized
+    auto_fill: false
+  num_people:
+    type: unfeaturized
+    auto_fill: false
+  outdoor_seating:
+    type: unfeaturized
+    auto_fill: false
+```
 
 #### Validating Slots
 
@@ -128,8 +135,7 @@ about validation actions.
 #### Requesting Slots
 
 To specify how the bot should ask for the required information,
-you define [responses](domain.mdx#responses) called `utter_ask_{slotname}` in your domain.
-For the restaurant search example, the responses look like this:
+you define [`responses`](domain.mdx#responses) called `utter_ask_{slotname}` in your domain:
 
 ```rasa-yaml
 responses:
@@ -311,4 +317,4 @@ example above, this is a summary of what you'll need to do:
 To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
 Because the `DucklingEntityExtractor` is being used to extract
 entities, you'll need to start Duckling in the background as well
-(see the [instructions for running Duckling](entity-extractors.mdx#ducklingentityextractor)).
+(see the [instructions for running Duckling](components.mdx#ducklingentityextractor)).
