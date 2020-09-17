@@ -245,11 +245,13 @@ class UserUttered(Event):
         self.input_channel = input_channel
         self.message_id = message_id
 
+        super().__init__(timestamp, metadata)
+
         # define how this user utterance should be featurized
         if self.text and not self.intent_name:
             # happens during training
             self.use_text_for_featurization = True
-        if self.intent_name and not self.text:
+        elif self.intent_name and not self.text:
             # happens during training
             self.use_text_for_featurization = False
         else:
@@ -258,12 +260,10 @@ class UserUttered(Event):
             # and set in the applied events
             self.use_text_for_featurization = None
 
-        super().__init__(timestamp, metadata)
-
         self.parse_data = {
             "intent": self.intent,
             "entities": self.entities,
-            "text": text,
+            "text": self.text,
             "message_id": self.message_id,
             "metadata": self.metadata,
         }
