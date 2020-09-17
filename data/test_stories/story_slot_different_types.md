@@ -1,4 +1,4 @@
-## story: Customer loses a credit card, reviews transactions, and gets a new card
+## story: Story with all different slot types
 * card_lost
   - check_transactions
   - slot{"list_slot": ["value1", "value2"]}

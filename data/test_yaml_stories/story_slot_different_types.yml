@@ -1,5 +1,5 @@
 stories:
-- story: Customer loses a credit card, reviews transactions, and gets a new card
+- story: Story with all different slot types
   steps:
   - intent: card_lost
   - action: check_transactions
