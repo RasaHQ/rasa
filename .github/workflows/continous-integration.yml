@@ -314,6 +314,7 @@ jobs:
         SENTRY_ORG: rasahq
         SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       run: |
+        curl -sL https://sentry.io/get-cli/ | bash
         GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
         sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
         sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
