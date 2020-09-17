@@ -151,7 +151,15 @@ jobs:
       run: |
         poetry config virtualenvs.in-project true
 
-    - name: Load Poetry Cached Libraries ⬇
+    - name: Load Poetry Cached Libraries (Linux) ⬇
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+
+    - name: Load Poetry Cached Libraries (Windows) ⬇
       if: matrix.os == 'windows-latest'
       uses: actions/cache@v1
       with:
