@@ -24,7 +24,7 @@ Often, developers will try to account for every possible diverging path when des
 unhappy paths. Planning for every possible state in a state machine (many of which will never be reached)
 requires a lot of extra work and increases training time significantly.
 
-Instead, we recommend taking a [conversation-driven development](./conversation-driven-development.mdx) 
+Instead, we recommend taking a [conversation-driven development](./conversation-driven-development.mdx)
 approach when designing unhappy paths.
 Conversation-Driven Development promotes sharing your bot as early as possible with test users and
 collecting real conversation data that tells you exactly how users diverge from the
@@ -37,13 +37,13 @@ requesting and start to think about ways to guide them back into a happy path.
 [Rules](./rules.mdx) are a type of training data used by the dialogue manager for
 handling pieces of conversations that should always follow the same path.
 
-Rules can be useful when implementing: 
+Rules can be useful when implementing:
 
-* [One-turn interactions](./chitchat-faqs.mdx): Some messages do not require any context to answer them. 
+* [One-turn interactions](./chitchat-faqs.mdx): Some messages do not require any context to answer them.
   Rules are an easy way to map intents to responses, specifying fixed answers to these messages.
 
 * [Fallback behavior](./fallback-handoff.mdx):
-  In combination with the [FallbackClassifier](./components/intent-classifiers.mdx#fallbackclassifier),
+  In combination with the [FallbackClassifier](./components#fallbackclassifier),
   you can write rules to respond to low-confidence user messages with a certain fallback behavior.
 
 * [Forms](./forms.mdx): Both activating and submitting a form will often follow a fixed path.
@@ -88,11 +88,11 @@ Here are some tips for managing the conversation flow in your stories:
 
 Slots act as your bot’s memory. When you define a slot, you can define its [slot type](domain#slot-type)
 as either `unfeaturized` or one of the featurized slot types.
-An unfeaturized slot can only store information, but a featurized slot can affect the 
-dialogue flow based on the information stored in it. 
+An unfeaturized slot can only store information, but a featurized slot can affect the
+dialogue flow based on the information stored in it.
 
 Because they affect the dialogue flow, you need to include any featurized slots set by
-[custom actions](./actions.mdx) in your stories. 
+[custom actions](./actions.mdx) in your stories.
 For example, you can use a boolean slot set by a custom action to control the dialogue
 flow based on its value using the following stories:
 
@@ -118,14 +118,14 @@ stories:
 
 In cases where you don't want a slot to affect the conversation flow, you should use
 an unfeaturized slot. You do not need to include `slot_was_set` events for unfeaturized
-slots in your stories. 
+slots in your stories.
 
 
 ### Implementing Branching Logic
 
 When writing stories, sometimes the next action will depend on a value returned in one of your custom
 actions. In these cases, it's important to find the right balance between returning slots and
-using custom action code directly to affect what your bot does next. 
+using custom action code directly to affect what your bot does next.
 
 In cases where a value is used only to determine the bot's response, consider embedding the
 decision logic inside a custom action as opposed to using a featurized slot in your
@@ -195,7 +195,7 @@ stories:
   - active_loop: new_user_form
   - active_loop: null
 
-- story: greet returning user 
+- story: greet returning user
   steps:
   - intent: greet
   - action: check_user_status
@@ -294,8 +294,8 @@ stories:
 ```
 
 :::warning do not overuse
-Checkpoints are meant to make it easier to re-use certain sections of conversation in lots 
-of different stories. We highly discourage using checkpoints inside existing checkpoints, 
+Checkpoints are meant to make it easier to re-use certain sections of conversation in lots
+of different stories. We highly discourage using checkpoints inside existing checkpoints,
 as this increases training time significantly and makes your stories difficult to understand.
 :::
 
