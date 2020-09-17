@@ -128,13 +128,6 @@ class YAMLStoryWriter:
         )
 
     @staticmethod
-    def _text_is_real_message(user_utterance: UserUttered) -> bool:
-        return (
-            not user_utterance.intent
-            or user_utterance.text != user_utterance.as_story_string()
-        )
-
-    @staticmethod
     def process_user_utterance(user_utterance: UserUttered) -> OrderedDict:
         """Converts a single user utterance into an ordered dict.
 
@@ -145,16 +138,17 @@ class YAMLStoryWriter:
             Dict with a user utterance.
         """
         result = CommentedMap()
-        result[KEY_USER_INTENT] = user_utterance.intent["name"]
+        if user_utterance.intent_name and not user_utterance.use_text_for_featurization:
+            result[KEY_USER_INTENT] = user_utterance.intent_name
 
         if hasattr(user_utterance, "inline_comment"):
             result.yaml_add_eol_comment(
                 user_utterance.inline_comment(), KEY_USER_INTENT
             )
 
-        if (
-            YAMLStoryWriter._text_is_real_message(user_utterance)
-            and user_utterance.text
+        if user_utterance.text and (
+            user_utterance.use_text_for_featurization
+            or user_utterance.use_text_for_featurization is None
         ):
             result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
 

@@ -429,9 +429,10 @@ class DialogueStateTracker:
                 )
             elif isinstance(event, UserUttered):
                 # update event's featurization based on the future event
-                event.use_text_for_featurization = self._define_user_featurization(
-                    events_as_list[i + 1 :]
-                )
+                if event.use_text_for_featurization is None:
+                    event.use_text_for_featurization = self._define_user_featurization(
+                        events_as_list[i + 1 :]
+                    )
                 applied_events.append(event)
             else:
                 applied_events.append(event)

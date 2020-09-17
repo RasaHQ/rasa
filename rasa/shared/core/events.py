@@ -374,33 +374,33 @@ class UserUttered(Event):
         except KeyError as e:
             raise ValueError(f"Failed to parse bot uttered event. {e}")
 
-    def as_story_string(self, e2e: bool = False) -> Text:
-        # TODO figure out how to print if TED chose to use text,
-        #  during prediction there will be always intent
-        if self.intent:
-            if self.entities:
-                ent_string = json.dumps(
-                    {
-                        entity[ENTITY_ATTRIBUTE_TYPE]: entity[ENTITY_ATTRIBUTE_VALUE]
-                        for entity in self.entities
-                    },
-                    ensure_ascii=False,
-                )
-            else:
-                ent_string = ""
-
-            parse_string = "{intent}{entities}".format(
-                intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
+    def _entity_string(self):
+        if self.entities:
+            return json.dumps(
+                {
+                    entity[ENTITY_ATTRIBUTE_TYPE]: entity[ENTITY_ATTRIBUTE_VALUE]
+                    for entity in self.entities
+                },
+                ensure_ascii=False,
             )
-            if e2e:
-                message = md_format_message(
-                    self.text, self.intent.get(INTENT_NAME_KEY), self.entities
-                )
-                return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
-            else:
-                return parse_string
-        else:
-            return self.text
+        return ""
+
+    def as_story_string(self, e2e: bool = False) -> Text:
+        text_with_entities = md_format_message(
+            self.text, self.intent_name, self.entities
+        )
+        if e2e or self.use_text_for_featurization is None:
+            intent_prefix = f"{self.intent_name}: " if self.intent_name else ""
+            return f"{intent_prefix}{text_with_entities}"
+
+        if self.intent_name and not self.use_text_for_featurization:
+            return f"{self.intent_name or ''}{self._entity_string()}"
+
+        if self.text and self.use_text_for_featurization:
+            return text_with_entities
+
+        # UserUttered is empty
+        return ""
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.latest_message = self
