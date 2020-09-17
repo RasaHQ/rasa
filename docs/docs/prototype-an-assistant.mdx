@@ -165,7 +165,7 @@ You can download this project and continue building to create a more advanced as
 
 [Install Rasa open source to keep building.](./installation.mdx)
 
-<br/><br/>
+<br/>
 
 <!-- TODO: REMOVE THIS NOTE FOR THE 2.0 release -->
 
@@ -173,4 +173,37 @@ You can download this project and continue building to create a more advanced as
 Please make sure you've [installed at least Rasa Open Source 2.0.0a5](installation.mdx) to develop
 your project further.*
 
+<br/>
+
+When you train a model, you always want to check that your assistant still behaves as
+you expect. You can do that by talking to your assistant and seeing that it works.
+However, as your assistant becomes more complex, you will want to use test stories to
+ensure your model makes correct predictions.
+
+<br/>
+
+Try running `rasa test` to make sure that your assistant passes your tests:
+
+```yaml-rasa noResult name=rules
+stories:
+- story: test for greet and subscribe
+  steps:
+  - user: |
+     Hello there
+    intent: greet
+  - action: utter_greet
+  - user: |
+     I want to subscribe to the newsletter. My email is example@email.com
+    intent: subscribe
+  - action:  utter_subscribed
+```
+
+Check out other docs pages to learn more about
+[Rasa’s CLI](./command-line-interface.mdx),
+[Domains](./domain.mdx),
+[Actions](./actions.mdx),
+and your config’s [Pipeline](./tuning-your-model.mdx) and [Policies](./policies.mdx).
+
 </Prototyper>
+
+
