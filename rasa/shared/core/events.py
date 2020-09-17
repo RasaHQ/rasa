@@ -19,6 +19,7 @@ from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     IS_EXTERNAL,
+    USE_TEXT_FOR_FEATURIZATION,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -244,6 +245,19 @@ class UserUttered(Event):
         self.input_channel = input_channel
         self.message_id = message_id
 
+        # define how this user utterance should be featurized
+        if self.text and not self.intent_name:
+            # happens during training
+            self.use_text_for_featurization = True
+        if self.intent_name and not self.text:
+            # happens during training
+            self.use_text_for_featurization = False
+        else:
+            # happens during prediction
+            # featurization should be defined by the policy
+            # and set in the applied events
+            self.use_text_for_featurization = None
+
         super().__init__(timestamp, metadata)
 
         self.parse_data = {
@@ -333,10 +347,10 @@ class UserUttered(Event):
         out = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
-        if self.intent_name:
-            out[INTENT] = self.intent_name
-        if self.text:
+        if self.use_text_for_featurization or self.use_text_for_featurization is None:
             out[TEXT] = self.text
+        if not self.use_text_for_featurization:
+            out[INTENT] = self.intent_name
         if entities:
             out[ENTITIES] = entities
 
@@ -403,6 +417,46 @@ class UserUttered(Event):
             entities=entity_list or [],
             input_channel=input_channel,
         )
+
+
+# noinspection PyProtectedMember
+class DefinePrevUserUtteredFeaturization(Event):
+
+    type_name = "user_featurization"
+
+    def __init__(
+        self,
+        use_text_for_featurization: bool,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        self.use_text_for_featurization = use_text_for_featurization
+        super().__init__(timestamp, metadata)
+
+    def __str__(self) -> Text:
+        return f"DefinePrevUserUtteredFeaturization({self.use_text_for_featurization})"
+
+    def __hash__(self) -> int:
+        return hash(self.use_text_for_featurization)
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, DefinePrevUserUtteredFeaturization)
+
+    def as_story_string(self) -> None:
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters) -> "DefinePrevUserUtteredFeaturization":
+        return DefinePrevUserUtteredFeaturization(
+            parameters.get(USE_TEXT_FOR_FEATURIZATION),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        d.update({USE_TEXT_FOR_FEATURIZATION: self.use_text_for_featurization})
+        return d
 
 
 # noinspection PyProtectedMember

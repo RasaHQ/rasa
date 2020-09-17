@@ -131,9 +131,11 @@ def convert_to_data_format(
     # In case an attribute is not present during prediction, replace it with
     # None values that will then be replaced by zero features
     dialogue_length = 1
+    num_examples = 1
     for tracker_features in state_to_tracker_features.values():
+        num_examples = max(num_examples, len(tracker_features))
         dialogue_length = max(dialogue_length, len(tracker_features[0]))
-    empty_features = [[None] * dialogue_length]
+    empty_features = [[None] * dialogue_length] * num_examples
 
     for attribute in attributes:
         attribute_data[attribute] = _features_for_attribute(

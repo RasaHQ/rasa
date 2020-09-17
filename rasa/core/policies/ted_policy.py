@@ -25,6 +25,7 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.events import DefinePrevUserUtteredFeaturization
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
@@ -381,16 +382,39 @@ class TEDPolicy(Policy):
             return self._default_predictions(domain)
 
         # create model data from tracker
-        tracker_state_features = self.featurizer.create_state_features(
-            [tracker], domain, interpreter
+        intent_tracker_state_features = self.featurizer.create_state_features(
+            [tracker], domain, interpreter, use_text_for_last_user_input=False
+        )
+        text_tracker_state_features = self.featurizer.create_state_features(
+            [tracker], domain, interpreter, use_text_for_last_user_input=True
+        )
+        # the first example in a batch uses intent, the second - text
+        tracker_state_features = (
+            intent_tracker_state_features + text_tracker_state_features
         )
         model_data = self._create_model_data(tracker_state_features)
 
         output = self.model.predict(model_data)
 
-        confidence = output["action_scores"].numpy()
-        # remove batch dimension and take the last prediction in the sequence
-        confidence = confidence[0, -1, :]
+        # take the last prediction in the sequence
+        similarities = output["similarities"].numpy()[:, -1, :]
+
+        # TODO using similarities to pick appropriate input,
+        #  since it seems to be more accurate measure, but confidences might be better
+        if np.max(similarities[1]) > np.max(similarities[0]):
+            # TODO above condition is not optimal
+            batch_index = 1
+            logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
+            tracker.update(DefinePrevUserUtteredFeaturization(True))
+        else:
+            batch_index = 0
+            logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+            tracker.update(DefinePrevUserUtteredFeaturization(False))
+
+        # take the last prediction in the sequence
+        confidence = output["action_scores"].numpy()[:, -1, :]
+        # take correct batch dimension
+        confidence = confidence[batch_index, :]
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
@@ -497,6 +521,7 @@ class TEDPolicy(Policy):
                 feature_name: features
                 for feature_name, features in model_data_example.items()
                 if feature_name
+                # we need to remove label features for prediction if they are present
                 in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
             },
         )
@@ -839,7 +864,7 @@ class TED(TransformerRasaModel):
             sim_all, self.config[SIMILARITY_TYPE]
         )
 
-        return {"action_scores": scores}
+        return {"action_scores": scores, "similarities": sim_all}
 
 
 # pytype: enable=key-error

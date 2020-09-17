@@ -7,7 +7,12 @@ import json
 
 from rasa.shared.constants import DOCS_URL_RULES
 import rasa.shared.utils.io
-from rasa.shared.core.events import FormValidation, UserUttered, ActionExecuted
+from rasa.shared.core.events import (
+    FormValidation,
+    UserUttered,
+    ActionExecuted,
+    DefinePrevUserUtteredFeaturization,
+)
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -627,6 +632,8 @@ class RulePolicy(MemoizationPolicy):
         # accordingly.
         default_action_name = self._find_action_from_default_actions(tracker)
         if default_action_name:
+            logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+            tracker.update(DefinePrevUserUtteredFeaturization(False))
             return self._prediction_result(default_action_name, tracker, domain)
 
         # A loop has priority over any other rule.
@@ -635,10 +642,14 @@ class RulePolicy(MemoizationPolicy):
         # simply force predict the loop.
         loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
+            logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+            tracker.update(DefinePrevUserUtteredFeaturization(False))
             return self._prediction_result(loop_happy_path_action_name, tracker, domain)
 
         rules_action_name = self._find_action_from_rules(tracker, domain)
         if rules_action_name:
+            logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+            tracker.update(DefinePrevUserUtteredFeaturization(False))
             return self._prediction_result(rules_action_name, tracker, domain)
 
         return result

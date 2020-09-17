@@ -54,6 +54,7 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
     ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State  # pytype: disable=pyi-error
 from rasa.shared.core.slots import Slot
@@ -399,10 +400,12 @@ class DialogueStateTracker:
             for event in self.events
             if isinstance(event, ActiveLoop) and event.name
         ]
+        # we'll need to slice events, so convert the deque into a list
+        events_as_list = list(self.events)
 
         applied_events = []
 
-        for event in self.events:
+        for i, event in enumerate(self.events):
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
@@ -424,10 +427,30 @@ class DialogueStateTracker:
                 self._undo_till_previous_loop_execution(
                     event.action_name, applied_events
                 )
+            elif isinstance(event, UserUttered):
+                # update event's featurization based on the future event
+                event.use_text_for_featurization = self._define_user_featurization(
+                    events_as_list[i + 1 :]
+                )
+                applied_events.append(event)
             else:
                 applied_events.append(event)
 
         return applied_events
+
+    @staticmethod
+    def _define_user_featurization(future_events: List[Event]) -> Optional[bool]:
+        use_text_for_featurization = None
+        for future_event in future_events:
+            if isinstance(future_event, ActionExecuted):
+                return
+            elif isinstance(future_event, DefinePrevUserUtteredFeaturization):
+                # there might be several DefinePrevUserUtteredFeaturization events,
+                # we assume that text is more powerful prediction,
+                # so only overwrite False or None
+                if not use_text_for_featurization:
+                    use_text_for_featurization = future_event.use_text_for_featurization
+        return use_text_for_featurization
 
     @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:

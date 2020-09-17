@@ -3,7 +3,7 @@ from pathlib import Path
 import jsonpickle
 import logging
 
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, INTENT
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union
 import numpy as np
@@ -144,14 +144,33 @@ class TrackerFeaturizer:
 
         return tracker_state_features, label_ids
 
+    @staticmethod
+    def _choose_last_user_input(
+        trackers_as_states: List[List[State]], use_text_for_last_user_input: bool
+    ) -> None:
+        for states in trackers_as_states:
+            last_state = states[-1]
+            if use_text_for_last_user_input:
+                # remove intent features to only use text
+                if last_state.get(USER, {}).get(INTENT):
+                    del last_state[USER][INTENT]
+            else:
+                # remove text features to only use intent
+                if last_state.get(USER, {}).get(TEXT):
+                    del last_state[USER][TEXT]
+
     def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
+            use_text_for_last_user_input: boolean
 
         Returns:
             A list of states.
@@ -165,6 +184,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        use_text_for_last_user_input: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Create state features for prediction.
 
@@ -172,13 +192,16 @@ class TrackerFeaturizer:
             trackers: A list of state trackers
             domain: The domain
             interpreter: The interpreter
+            use_text_for_last_user_input: boolean
 
         Returns:
             A dictionary of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
             ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
             turns in all trackers.
         """
-        trackers_as_states = self.prediction_states(trackers, domain)
+        trackers_as_states = self.prediction_states(
+            trackers, domain, use_text_for_last_user_input
+        )
         return self._featurize_states(trackers_as_states, interpreter)
 
     def persist(self, path: Union[Text, Path]) -> None:
@@ -283,13 +306,17 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         return trackers_as_states, trackers_as_actions
 
     def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
             trackers: The trackers to transform
-            domain: The domain
+            domain: The domain,
+            use_text_for_last_user_input: boolean
 
         Returns:
             A list of states.
@@ -298,12 +325,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_states = [
             self._create_states(tracker, domain) for tracker in trackers
         ]
-        # TODO there is no prediction support for e2e input right now, therefore
-        #  temporary remove TEXT features from USER state during prediction
-        for states in trackers_as_states:
-            for state in states:
-                if state.get(USER, {}).get(TEXT):
-                    del state[USER][TEXT]
+        self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
         return trackers_as_states
 
@@ -431,13 +453,17 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return trackers_as_states, trackers_as_actions
 
     def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
+            use_text_for_last_user_input: boolean
 
         Returns:
             A list of states.
@@ -450,11 +476,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             self.slice_state_history(states, self.max_history)
             for states in trackers_as_states
         ]
-        # TODO there is no prediction support for e2e input right now, therefore
-        #  temporary remove TEXT features from USER state during prediction
-        for states in trackers_as_states:
-            for state in states:
-                if state.get(USER, {}).get(TEXT):
-                    del state[USER][TEXT]
+        self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
         return trackers_as_states
