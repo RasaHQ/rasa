@@ -351,7 +351,7 @@ Determine whether `url` configures a PostgreSQL connection.
 #### create\_engine\_kwargs
 
 ```python
-create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Union[Text, int]]
+create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]
 ```
 
 Get `sqlalchemy.create_engine()` kwargs.
