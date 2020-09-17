@@ -122,7 +122,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        6bbaa10c5daf47baa8c5dce38ea31c79)
+                        8600daa5604e4d3dbf00c19788b0e2e2)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
