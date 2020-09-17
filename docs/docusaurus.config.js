@@ -104,7 +104,7 @@ module.exports = {
           href: 'https://rasa.com/docs/action-server',
         },
         {
-          href: 'https://github.com/rasahq/tabula',
+          href: 'https://github.com/rasahq/rasa',
           className: 'header-github-link',
           'aria-label': 'GitHub repository',
           position: 'right',
