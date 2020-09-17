@@ -22,6 +22,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_OR,
     KEY_USER_MESSAGE,
     KEY_ACTIVE_LOOP,
+    KEY_BOT_END_TO_END_MESSAGE,
 )
 from rasa.shared.core.training_data.structures import StoryStep, Checkpoint, STORY_START
 
@@ -179,7 +180,10 @@ class YAMLStoryWriter:
             Dict with an action.
         """
         result = CommentedMap()
-        result[KEY_ACTION] = action.action_name
+        if action.action_name:
+            result[KEY_ACTION] = action.action_name
+        elif action.action_text:
+            result[KEY_BOT_END_TO_END_MESSAGE] = action.action_text
 
         if hasattr(action, "inline_comment"):
             result.yaml_add_eol_comment(action.inline_comment(), KEY_ACTION)
