@@ -9,9 +9,7 @@ const isDev = process.env.NODE_ENV === 'development';
 const isStaging = process.env.NETLIFY && process.env.CONTEXT === 'staging';
 const isPreview = process.env.NETLIFY && process.env.CONTEXT === 'deploy-preview';
 
-// FIXME: remove "next/" when releasing + remove the "next/" in
-// https://github.com/RasaHQ/rasa-website/blob/master/netlify.toml
-const BASE_URL = '/docs/rasa/next/';
+const BASE_URL = '/docs/rasa/';
 const SITE_URL = 'https://rasa.com';
 // NOTE: this allows switching between local dev instances of rasa/rasa-x
 const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
