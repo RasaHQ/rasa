@@ -2,164 +2,143 @@
 id: responses
 sidebar_label: Responses
 title: Responses
+abstract: Responses are messages that your assistant can send to the user. You can also use responses as actions,
+  making them the simplest type of action.
 ---
+## Defining Responses
 
-
-Responses are the simplest type of action, which utter a response you define in your
-domain file, starting with `utter_`:
-
-```yaml-rasa
-responses:
-  utter_my_message:
-    - text: "This is what I want my action to say!"
-```
-
-
-:::note
-If you want to change the text, or any other part of the bots response,
-you need to retrain the assistant before these changes will be picked up.
-
-:::
-
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="in-domain-responses"></a>
-
-
-## Using Responses
-
-Responses are messages the bot will send back to the user. There are
-two ways to use these responses:
-
-1. So long as the name of the response starts with `utter_`, the response can
-   directly be used as an action. You would add the response
-   to the domain:
-
-   ```yaml-rasa
-   responses:
-     utter_greet:
-     - text: "Hey! How are you?"
-   ```
-
-   Afterwards, you can use the response as an action in the
-   stories:
-
-   ```yaml-rasa
-   stories:
-   - story: greet user
-     steps:
-     - intent: greet
-     - action: utter_greet
-   ```
-
-   When `utter_greet` is run as an action, it will send the message from
-   the response back to the user.
-
-2. You can use the responses to generate response messages from your
-   custom actions using the dispatcher:
-   `dispatcher.utter_message(template="utter_greet")`.
-   This allows you to separate the logic of generating
-   the messages from the actual copy. In your custom action code, you can
-   send a message based on the response like this:
-
-   ```python
-   from rasa_sdk.actions import Action
-
-   class ActionGreet(Action):
-     def name(self):
-         return 'action_greet'
-
-     def run(self, dispatcher, tracker, domain):
-         dispatcher.utter_message(template="utter_greet")
-         return []
-   ```
-
-## Rich Responses
-
-A response can be as simple as some text, or can include variation, visual
+A response can be as simple as pure text. Responses can also include random variation, visual
 and interactive components, and more.
 
-### Images and Buttons
+Responses go under the `responses` key in your domain file. Each response name should start with `utter_`.
+This response name is the key you should list your response under.
 
-Responses defined in a domain's yaml file can contain images and
-buttons as well:
+For example, here is a minimal text response called `utter_greet`:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 responses:
   utter_greet:
-  - text: "Hey! How are you?"
-    buttons:
-    - title: "great"
-      payload: "great"
-    - title: "super sad"
-      payload: "super sad"
-  utter_cheer_up:
-  - text: "Here is something to cheer you up:"
-    image: "https://i.imgur.com/nGF1K8f.jpg"
+  - text: "Hi there!"
 ```
 
-It's common to use buttons as a shortcut to bypass NLU.
-Rasa Open Source will send messages starting with a `/` to the
-`RegexInterpreter`, which expects NLU input in the same format
-as in story files, e.g. `/intent{entities}`. For example, if you let
-users choose a color by clicking a button, the button payloads may look like:
+### Defining Responses for Retrieval Intents
+
+If you are using retrieval intents in your assistant, you also need to add responses
+for your assistant's replies to these intents:
 
 ```yaml-rasa
 responses:
-  utter_ask_color:
-  - text: "what color would you like?"
-    buttons:
-    - title: "blue"
-      payload: '/choose{"color": "blue"}'
-    - title: "red"
-      payload: '/choose{"color": "red"}'
+  utter_chitchat/ask_name:
+  - image: "https://i.imgur.com/zTvA58i.jpeg"
+    text: hello, my name is retrieval bot.
+  - text: Oh yeah, I am called the retrieval bot.
+
+  utter_chitchat/ask_weather:
+  - text: Oh, it does look sunny right now in Berlin.
+    image: "https://i.imgur.com/vwv7aHN.png"
+  - text: I am not sure of the whole week but I can see the sun is out today.
+```
+
+All such responses (e.g. `utter_chitchat/ask_name`) start with the
+`utter_` prefix followed by the retrieval intent name (`chitchat`)
+and the associated response key (`ask_name`).
+
+### Using Variables
+
+You can use variables in your responses to insert information
+collected during the conversation. You can either do that in your custom action
+code or by using the automatic slot filling mechanism.
+
+#### Defining Response Variables
+
+In responses, variables are represented in curly braces, for example:
+```yaml-rasa title="domain.yml"
+responses:
+  utter_greet:
+  - text: "Hey, {name}. How are you?"
+```
+
+Rasa will automatically fill that variable with a value found in a slot called
+`name`. If the slot name is not found or there is no value in the slot, it will be filled
+with `None`.
+
+#### Using Variables from Custom Actions
+
+If your custom action code calls a template from your domain file,
+you can supply values to the template that in order to fill those variables.
+
+If you're using Rasa SDK for your action server,
+you can pass a value for the variable as a keyword argument to `dispatcher.utter_message`:
+
+```python {3}
+dispatcher.utter_message(
+    template="utter_greet",
+    name="Sara"
+)
+```
+
+If using a different custom action server, you can add extra parameters to the responses you return
+to achieve the same result:
+
+```json {8}
+{
+  "events":[
+    ...
+  ],
+  "responses":[
+    {
+      "template":"utter_greet",
+      "name":"Sara"
+    }
+  ]
+}
 ```
 
 
-:::note
-Please keep in mind that it is up to the implementation of the output
-channel on how to display the defined buttons. The command line, for
-example, can't display buttons or images, but tries to mimic them by
-printing the options.
+### Response Variations
 
+If you want to randomly vary the response sent to the user, you can list
+multiple response variations by adding another response to the list of
+responses under your response name.
+
+The following example has 2 different choices for `utter_greet`:
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_greet:
+  - text: "Hey, {name}. How are you?"
+  - text: "Hey, {name}. How is your day going?"
+```
+
+When the model predicts `utter_greet`, Rasa will randomly pick one of them.
+
+
+### Channel-Specific Response Variations
+
+If you want to specify different response variations that depend on which channel
+the user is connected to, you can do this with channel-specific response variations.
+
+Each time your bot looks for a response variation under a given response name, it will first check
+to see if there are any channel-specific response variations for the connected channel.
+If there are, it will choose a response from **only** these response variations.
+
+If no channel-specific response variations are
+found, the bot will choose from any response variations that do not have a defined `channel`.
+
+:::caution
+It is good practice to always have at least one response variation for each
+response that has no `channel` specified. This allows your bot to respond in all
+environments, including in new environments, in the shell, and in interactive learning.
 :::
 
-### Custom Output Payloads
+#### Defining Channel-Specific Response Variations
 
-You can also send any arbitrary output to the output channel using the
-`custom:` key. Note that since the domain is in yaml format, the json
-payload should first be converted to yaml format.
+Channel-specific responses are defined in a response with the `channel` key.
 
-For example, although date pickers are not a defined parameter in responses
-because they are not supported by most channels, a Slack date picker
-can be sent like so:
+The following example shows how you might use channel-specific responses to send a
+specific `utter_ask_game` response to the `slack` channel:
 
-```yaml-rasa
-responses:
-  utter_take_bet:
-  - custom:
-      blocks:
-      - type: section
-        text:
-          text: "Make a bet on when the world will end:"
-          type: mrkdwn
-        accessory:
-          type: datepicker
-          initial_date: '2019-05-21'
-          placeholder:
-            type: plain_text
-            text: Select a date
-```
-
-### Channel-Specific Responses
-
-For each response, you can have multiple **response variations** (see [Variations](./domain.mdx#variations)).
-If you have certain response variations that you would like sent only to specific
-channels, you can specify this with the `channel:` key. The value should match
-the name defined in the `name()` method of the channel's `OutputChannel`
-class. Channel-specific responses are especially useful if creating custom
-output payloads that will only work in certain channels.
-
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 responses:
   utter_ask_game:
   - text: "Which game would you like to play?"
@@ -180,81 +159,156 @@ responses:
               emoji: true
               text: "Checkers :checkered_flag:"
             value: '/inform{"game": "checkers"}'
-          - type: button
-            text:
-              type: plain_text
-              emoji: true
-              text: "Fortnite :european_castle:"
-            value: '/inform{"game": "fortnite"}'
-            style: danger
   - text: "Which game would you like to play?"
     buttons:
     - title: "Chess"
       payload: '/inform{"game": "chess"}'
     - title: "Checkers"
       payload: '/inform{"game": "checkers"}'
-    - title: "Fortnite"
-      payload: '/inform{"game": "fortnite"}'
 ```
 
-Each time your bot looks for responses, it will first check to see if there
-are any channel-specific response variations for the connected channel. If there are, it
-will choose **only** from these response variations. If no channel-specific response variations are
-found, it will choose from any response variations that do not have a defined `channel`.
-Therefore, it is good practice to always have at least one response variation for each
-response that has no `channel` specified so that your bot can respond in all
-environments, including in the shell and in interactive learning.
+When using channel-specific responses, the value of the `channel` key should match
+the name used to provide the credentials for that channel
+in the `credentials.yml` file.
 
-### Variables
+The second response variation, in this case, does not have a defined `channel`, which means it
+will be the response used on all channels other than `slack`.
 
-You can also use **variables** in your responses to insert information
-collected during the dialogue. You can either do that in your custom python
-code or by using the automatic slot filling mechanism. For example, if you
-have a response like this:
 
-```yaml-rasa
+## Rich Responses
+
+Rich responses allow you to add visual and interactive elements to your responses.
+There are a few types of rich responses that are supported across multiple channels. These
+can be added to the `text` of your response.
+
+You can also use `custom` content to send a rich response of any type to the output channel.
+Custom responses do not require any `text`, but may if your channel supports it.
+
+### Buttons
+
+Here is an example of a response that uses buttons:
+
+```yaml-rasa title="domain.yml"
 responses:
   utter_greet:
-  - text: "Hey, {name}. How are you?"
+  - text: "Hey! How are you?"
+    buttons:
+    - title: "great"
+      payload: "/mood_great"
+    - title: "super sad"
+      payload: "/mood_sad"
+```
+Each button in the list of `buttons` should have two keys:
+* `title`: The text displayed on the buttons that the user sees.
+* `payload`: The message sent from the user to the bot when a user clicks a given button.
+
+:::note bypass nlu with buttons
+It's common to use buttons as a shortcut to bypass NLU.
+Rasa Open Source will send messages starting with a `/` to the
+`RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format.
+In the above example, if a user clicks either button to respond with their mood, the user input
+will be directly classified as either the `/mood_great` or `/mood_sad` intent.
+:::
+
+:::caution Check your channel
+Keep in mind that it is up to the implementation of the output
+channel on how to display the defined buttons. For example, some channels define a limit for the number of
+buttons you can provide. Check your channel's documentation under
+**Concepts > Channel Connectors** for any channel-specific restrictions.
+
+:::
+
+### Images
+
+You can add images to a response by providing a URL to the image under the `image` key:
+
+```yaml-rasa title="domain.yml"
+  utter_cheer_up:
+  - text: "Here is something to cheer you up:"
+    image: "https://i.imgur.com/nGF1K8f.jpg"
 ```
 
-Rasa will automatically fill that variable with a value found in a slot called
-`name`.
+### Custom Output Payloads
 
-In custom code, you can retrieve a response by using:
+You can send any arbitrary output to the output channel using the
+`custom:` key.
 
-```python
-from rasa_sdk.actions import Action
+Note that since the domain is in yaml format, a json payload
+payload should first be converted to yaml format.
 
-class ActionCustom(Action):
-   def name(self):
-      return "action_custom"
+For example, although date pickers are not a defined parameter in responses
+because they are not supported by most channels, a Slack date picker
+can be sent like so:
 
-   def run(self, dispatcher, tracker, domain):
-      # send utter default response to user
-      dispatcher.utter_message(template="utter_default")
-      # ... other code
-      return []
-```
-
-If the response contains variables denoted with `{my_variable}`
-you can supply values for the fields by passing them as keyword
-arguments to `utter_message`:
-
-```python
-dispatcher.utter_message(template="utter_greet", my_variable="my text")
-```
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="variations"></a>
-
-### Response Variations
-
-If you want to randomly vary the response sent to the user, you can list
-multiple **response variations** and Rasa will randomly pick one of them, e.g.:
-
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 responses:
-  utter_greeting:
-  - text: "Hey, {name}. How are you?"
-  - text: "Hey, {name}. How is your day going?"
+  utter_take_bet:
+  - custom:
+      blocks:
+      - type: section
+        text:
+          text: "Make a bet on when the world will end:"
+          type: mrkdwn
+        accessory:
+          type: datepicker
+          initial_date: '2019-05-21'
+          placeholder:
+            type: plain_text
+            text: Select a date
 ```
+
+
+## Using Responses in Conversations
+
+### Calling Responses as Actions
+
+1. So long as the name of the response starts with `utter_`, the response can
+   directly be used as an action. You would add the response
+   to the domain:
+
+```yaml-rasa title="domain.yml"
+   responses:
+     utter_greet:
+     - text: "Hey! How are you?"
+   ```
+
+   Afterwards, you can use the response as an action in the
+   stories:
+
+```yaml-rasa title="domain.yml"
+   stories:
+   - story: greet user
+     steps:
+     - intent: greet
+     - action: utter_greet
+```
+
+When `utter_greet` is run as an action, it will send the message from
+the response back to the user.
+
+:::note
+If you want to change the text, or any other part of the bots response,
+you need to retrain the assistant before these changes will be picked up.
+
+:::
+
+### Calling Responses from Custom Actions
+
+2. You can use the responses to generate response messages from your
+   custom actions using the dispatcher:
+   `dispatcher.utter_message(template="utter_greet")`.
+   This allows you to separate the logic of generating
+   the messages from the actual copy. In your custom action code, you can
+   send a message based on the response like this:
+
+   ```python
+   from rasa_sdk.actions import Action
+
+   class ActionGreet(Action):
+     def name(self):
+         return 'action_greet'
+
+     def run(self, dispatcher, tracker, domain):
+         dispatcher.utter_message(template="utter_greet")
+         return []
+   ```

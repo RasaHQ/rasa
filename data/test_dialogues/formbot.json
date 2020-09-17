@@ -166,7 +166,7 @@
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
-      "action_name":"action_deactivate_form",
+      "action_name":"action_deactivate_loop",
       "confidence":null,
       "policy":null,
       "timestamp":1551884214.951055,

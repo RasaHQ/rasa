@@ -6,7 +6,7 @@
     "theme:link": "yarn link @rasahq/docusaurus-theme-tabula",
     "theme:install": "yarn unlink @rasahq/docusaurus-theme-tabula && yarn install",
     "theme:upgrade": "yarn upgrade @rasahq/docusaurus-theme-tabula --latest",
-    "pre-build": "yarn copy-md-files && yarn variables && yarn program-outputs && yarn included-sources && yarn autodoc",
+    "pre-build": "yarn copy-md-files && yarn variables && yarn program-outputs && yarn included-sources && yarn autodoc && yarn telemetry",
     "start": "yarn pre-build && yarn develop",
     "develop": "docusaurus start --port 3000",
     "build": "docusaurus build",
@@ -16,6 +16,7 @@
     "variables": "node scripts/compile_variables.js",
     "program-outputs": "node scripts/compile_program_outputs.js",
     "copy-md-files": "node scripts/copy_md_files.js",
+    "telemetry": "node scripts/compile_telemetry_reference.js --unhandled-rejections=strict",
     "included-sources": "node scripts/compile_included_sources.js",
     "autodoc": "echo 'Generating autodoc' && pydoc-markdown",
     "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}",
@@ -91,5 +92,8 @@
     "netlify-cli": "^2.59.0",
     "prettier": "^2.0.5",
     "toml": "^3.0.0"
+  },
+  "telemetryReference": {
+    "outputPath": "./docs/telemetry/reference.mdx"
   }
 }

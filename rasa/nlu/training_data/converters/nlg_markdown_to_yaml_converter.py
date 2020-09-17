@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from rasa.cli.utils import print_success
+from rasa.shared.utils.cli import print_success
 from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.utils.converter import TrainingDataConverter
@@ -21,7 +21,7 @@ class NLGMarkdownToYamlConverter(TrainingDataConverter):
         return NLGMarkdownReader.is_markdown_nlg_file(source_path)
 
     @classmethod
-    def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
+    async def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
         """Converts the given training data file and saves it to the output directory.
 
         Args:

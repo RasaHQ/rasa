@@ -2,11 +2,11 @@ import argparse
 import logging
 from typing import Text, Union, Optional
 
-from rasa.constants import (
-    DEFAULT_DATA_PATH,
-    DEFAULT_MODELS_PATH,
-    DEFAULT_DOMAIN_PATH,
+from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_DATA_PATH,
 )
 
 

@@ -8,7 +8,6 @@ import numpy as np
 
 import rasa.shared.utils.io
 import rasa.core.actions.action
-from rasa.constants import DOCS_URL_POLICIES
 from rasa.core import jobs
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
@@ -20,7 +19,6 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     REQUESTED_SLOT,
-    UTTER_PREFIX,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -38,6 +36,8 @@ from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DOCS_URL_DOMAINS,
     DEFAULT_SENDER_ID,
+    DOCS_URL_POLICIES,
+    UTTER_PREFIX,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
