@@ -186,7 +186,12 @@ class YAMLStoryWriter:
             result[KEY_BOT_END_TO_END_MESSAGE] = action.action_text
 
         if hasattr(action, "inline_comment"):
-            result.yaml_add_eol_comment(action.inline_comment(), KEY_ACTION)
+            if KEY_ACTION in result:
+                result.yaml_add_eol_comment(action.inline_comment(), KEY_ACTION)
+            elif KEY_BOT_END_TO_END_MESSAGE in result:
+                result.yaml_add_eol_comment(
+                    action.inline_comment(), KEY_BOT_END_TO_END_MESSAGE
+                )
 
         return result
 
