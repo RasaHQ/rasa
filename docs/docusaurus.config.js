@@ -36,6 +36,7 @@ const versionLabels = {
 module.exports = {
   onBrokenLinks: 'warn',
   customFields: {
+    productLogo: '/img/logo-rasa-oss.png',
     versionLabels,
     legacyVersions: [{
       label: 'Legacy 1.x',
@@ -103,8 +104,9 @@ module.exports = {
           href: 'https://rasa.com/docs/action-server',
         },
         {
-          href: 'https://github.com/rasahq/rasa',
-          label: 'GitHub',
+          href: 'https://github.com/rasahq/tabula',
+          className: 'header-github-link',
+          'aria-label': 'GitHub repository',
           position: 'right',
         },
         {
