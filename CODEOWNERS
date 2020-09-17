@@ -1,3 +1,3 @@
 # Code in the `rasa.shared` package is potentially re-used by downstream dependencies
 # such as Rasa X. Hence, changes within this package require double checking.
-/rasa/shared/ @alwx @ricwo @wochinge @degiz @federicotdn
+/rasa/shared/ @backend

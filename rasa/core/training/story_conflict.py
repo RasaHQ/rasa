@@ -1,29 +1,22 @@
-import logging
 from collections import defaultdict
-from typing import List, Optional, Dict, Text, Tuple, Generator, NamedTuple
+import logging
+from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.shared.core.domain import PREV_PREFIX
-from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, Event
-from rasa.shared.nlu.constants import INTENT
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.domain import Domain, PREV_PREFIX, State
+from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.nlu.constants import INTENT
 
 logger = logging.getLogger(__name__)
 
 
 class StoryConflict:
-    """
-    Represents a conflict between two or more stories.
+    """Represents a conflict between two or more stories.
 
     Here, a conflict means that different actions are supposed to follow from
     the same dialogue state, which most policies cannot learn.
-
-    Attributes:
-        conflicting_actions: A list of actions that all follow from the same state.
-        conflict_has_prior_events: If `False`, then the conflict occurs without any
-                                   prior events (i.e. at the beginning of a dialogue).
     """
 
     def __init__(self, sliced_states: List[State]) -> None:
@@ -33,7 +26,9 @@ class StoryConflict:
         Args:
             sliced_states: The (sliced) dialogue state at which the conflict occurs.
         """
+
         self._sliced_states = sliced_states
+        # A list of actions that all follow from the same state.
         self._conflicting_actions = defaultdict(
             list
         )  # {"action": ["story_1", ...], ...}

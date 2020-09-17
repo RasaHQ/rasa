@@ -23,13 +23,14 @@ def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("--help")
 
     help_text = """usage: rasa [-h] [--version]
-            {init,run,shell,train,interactive,test,visualize,data,export,x}
+            {init,run,shell,train,interactive,telemetry,test,visualize,data,export,x}
             ..."""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 @pytest.mark.xfail(

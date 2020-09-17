@@ -1,6 +1,5 @@
 import copy
 import logging
-import os
 from pathlib import Path
 from collections import defaultdict
 
@@ -65,6 +64,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    CHECKPOINT_MODEL,
     ENCODING_DIMENSION,
     UNIDIRECTIONAL_ENCODER,
     SEQUENCE,
@@ -108,8 +108,6 @@ class TEDPolicy(Policy):
           actions. This step is based on the StarSpace
           (https://arxiv.org/abs/1709.03856) idea.
     """
-
-    SUPPORTS_ONLINE_TRAINING = True
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
@@ -202,6 +200,8 @@ class TEDPolicy(Policy):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Perform model checkpointing
+        CHECKPOINT_MODEL: False,
     }
 
     @staticmethod
@@ -320,6 +320,13 @@ class TEDPolicy(Policy):
     ) -> None:
         """Train the policy on given training trackers."""
 
+        if not training_trackers:
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
+            )
+            return
+
         # dealing with training data
         tracker_state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
@@ -390,7 +397,7 @@ class TEDPolicy(Policy):
 
         return confidence.tolist()
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
 
         if self.model is None:
@@ -408,7 +415,10 @@ class TEDPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        self.model.save(str(tf_model_file))
+        if self.model.checkpoint_model:
+            self.model.copy_best(str(tf_model_file))
+        else:
+            self.model.save(str(tf_model_file))
 
         io_utils.json_pickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
@@ -429,18 +439,18 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def load(cls, path: Text) -> "TEDPolicy":
+    def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
         """Loads a policy from the storage.
         **Needs to load its featurizer**
         """
+        model_path = Path(path)
 
-        if not os.path.exists(path):
+        if not model_path.exists():
             raise Exception(
                 f"Failed to load TED policy model. Path "
-                f"'{os.path.abspath(path)}' doesn't exist."
+                f"'{model_path.absolute()}' doesn't exist."
             )
 
-        model_path = Path(path)
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)

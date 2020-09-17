@@ -8,12 +8,8 @@ from rasa.core.channels import OutputChannel
 from rasa.shared.core.domain import Domain
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
-from rasa.shared.core.constants import (
-    ACTION_LISTEN_NAME,
-    LOOP_VALIDATE,
-    REQUESTED_SLOT,
-    UTTER_PREFIX,
-)
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, LOOP_VALIDATE, REQUESTED_SLOT
+from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker

@@ -9,7 +9,9 @@ def test_run_does_not_start(run_in_simple_project: Callable[..., RunResult]):
     # the server should not start as no model is configured
     output = run_in_simple_project("run")
 
-    assert "No model found." in output.outlines[0]
+    error = "No model found. You have three options to provide a model:"
+
+    assert any(error in line for line in output.outlines)
 
 
 def test_run_help(run: Callable[..., RunResult]):
@@ -28,9 +30,10 @@ def test_run_help(run: Callable[..., RunResult]):
                 {actions} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_run_action_help(run: Callable[..., RunResult]):
@@ -40,6 +43,7 @@ def test_run_action_help(run: Callable[..., RunResult]):
                         [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help

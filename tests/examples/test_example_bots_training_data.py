@@ -4,7 +4,7 @@ from typing import Text
 import pytest
 
 from rasa.cli import scaffold
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 
 
 @pytest.mark.parametrize(
