@@ -347,9 +347,11 @@ class UserUttered(Event):
         out = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
-        if self.use_text_for_featurization or self.use_text_for_featurization is None:
+        if self.text and (
+            self.use_text_for_featurization or self.use_text_for_featurization is None
+        ):
             out[TEXT] = self.text
-        if not self.use_text_for_featurization:
+        if self.intent_name and not self.use_text_for_featurization:
             out[INTENT] = self.intent_name
         if entities:
             out[ENTITIES] = entities
