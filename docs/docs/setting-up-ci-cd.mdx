@@ -91,7 +91,7 @@ user input, your model will behave in the expected manner. This is especially
 important as you start introducing more complicated stories from user
 conversations.
 
-The command to run test conversations looks like:
+The command to run test conversations is:
 
 ```bash
 rasa test --fail-on-prediction-errors
@@ -168,7 +168,7 @@ curl -k -F "model=@models/my_model.tar.gz" "https://example.rasa.com/api/project
 ```
 
 If you are using Rasa X, you can also [tag the uploaded model](https://rasa.com/docs/rasa-x/api/rasa-x-http-api/#tag/Models/paths/~1projects~1{project_id}~1models~1{model}~1tags~1{tag}/put)
-as active (or whichever deployment you want to tag if using multiple [deployment environments](https://rasa.com/docs/rasa-x/enterprise/deployment-environments/#)):
+as production (or whichever deployment you want to tag if using multiple [deployment environments](https://rasa.com/docs/rasa-x/enterprise/deployment-environments/#)):
 
 ```bash
 curl -X PUT "https://example.rasa.com/api/projects/default/models/my_model/tags/production"

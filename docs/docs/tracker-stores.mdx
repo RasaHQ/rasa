@@ -284,7 +284,7 @@ import variables from './variables.json';
 
   4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
 
-     ```yaml-rasa title="docker-compose.ymll"
+     ```yaml-rasa title="docker-compose.yml"
      mongo:
        image: mongo
        environment:
@@ -375,7 +375,7 @@ import variables from './variables.json';
 If you require a tracker store which is not available out of the box, you can implement your own.
 This is done by extending the base class `TrackerStore`.
 
-To write a custom tracker store, extend the `TrackerStore` base class. Note that your constructor has to
+To write a custom tracker store, extend the `TrackerStore` base class. Your constructor has to
 provide a parameter `host`.
 
 * **Configuration**
