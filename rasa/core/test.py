@@ -222,6 +222,7 @@ class WronglyPredictedAction(ActionExecuted):
     def __init__(
         self,
         action_name_target: Text,
+        action_text_target: Text,
         action_name_prediction: Text,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
@@ -229,7 +230,14 @@ class WronglyPredictedAction(ActionExecuted):
         metadata: Optional[Dict] = None,
     ) -> None:
         self.action_name_prediction = action_name_prediction
-        super().__init__(action_name_target, policy, confidence, timestamp, metadata)
+        super().__init__(
+            action_name_target,
+            policy,
+            confidence,
+            timestamp,
+            metadata,
+            action_text=action_text_target,
+        )
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
@@ -415,7 +423,9 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
-    gold = event.action_name or event.action_text
+    gold_action_name = event.action_name
+    gold_action_text = event.action_text
+    gold = gold_action_name or gold_action_text
 
     if circuit_breaker_tripped:
         predicted = "circuit breaker tripped"
@@ -450,7 +460,12 @@ def _collect_action_executed_predictions(
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
-                gold, predicted, event.policy, event.confidence, event.timestamp
+                gold_action_name,
+                gold_action_text,
+                predicted,
+                event.policy,
+                event.confidence,
+                event.timestamp,
             )
         )
         if fail_on_prediction_errors:
