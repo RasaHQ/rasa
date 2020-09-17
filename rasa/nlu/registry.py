@@ -28,6 +28,7 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturiz
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
+from rasa.nlu.featurizers.sparse_featurizer.semantic_map_featurizer import SemanticMapFeaturizer
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
@@ -77,6 +78,7 @@ component_classes = [
     RegexFeaturizer,
     LexicalSyntacticFeaturizer,
     CountVectorsFeaturizer,
+    SemanticMapFeaturizer,
     ConveRTFeaturizer,
     LanguageModelFeaturizer,
     # classifiers
