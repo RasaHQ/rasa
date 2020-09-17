@@ -37,6 +37,7 @@ async def test_stories_are_converted(tmpdir: Path):
     * greet OR goodbye
         - utter_greet
         - form{"name": null}
+        - slot{"name": ["value1", "value2"]}
     """
 
     with open(training_data_file, "w") as f:
@@ -60,4 +61,8 @@ async def test_stories_are_converted(tmpdir: Path):
             "    - intent: goodbye\n"
             "  - action: utter_greet\n"
             "  - active_loop: null\n"
+            "  - slot_was_set:\n"
+            "    - name:\n"
+            "      - value1\n"
+            "      - value2\n"
         )
