@@ -65,14 +65,19 @@ module.exports = {
   organizationName: 'RasaHQ',
   projectName: 'rasa',
   themeConfig: {
-    algolia: {
-      apiKey: '09ef5d111ebd9002df72575d516693af',
-      indexName: 'BH4D9OD16A',
-      // searchParameters: {}, // Optional (if provided by Algolia)
+    announcementBar: {
+      id: 'pre_release_notice', // Any value that will identify this message.
+      content: 'These docs are for v2.0.0-rc1 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the stable 1.x series can be found here.</a>',
+      backgroundColor: '#6200F5', // Defaults to `#fff`.
+      textColor: '#fff', // Defaults to `#000`.
+      // isCloseable: false, // Defaults to `true`.
     },
-    colorMode: {
-      defaultMode: 'light',
-      disableSwitch: true,
+    algolia: {
+      disabled: !isDev, // FIXME: remove this when our index is good
+      apiKey: '25626fae796133dc1e734c6bcaaeac3c', // FIXME: replace with values from our own index
+      indexName: 'docsearch', // FIXME: replace with values from our own index
+      inputSelector: '.search-bar',
+      // searchParameters: {}, // Optional (if provided by Algolia)
     },
     navbar: {
       hideOnScroll: false,
@@ -98,6 +103,11 @@ module.exports = {
           label: 'Rasa Action Server',
           position: 'left',
           href: 'https://rasa.com/docs/action-server',
+        },
+        {
+          href: 'https://github.com/rasahq/rasa',
+          label: 'GitHub',
+          position: 'right',
         },
         {
           target: '_self',
@@ -133,9 +143,6 @@ module.exports = {
         },
       ],
     },
-    // footer: {
-    //   copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
-    // },
     gtm: {
       containerID: 'GTM-PK448GB',
     },
