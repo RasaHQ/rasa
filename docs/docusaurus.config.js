@@ -143,6 +143,9 @@ module.exports = {
         },
       ],
     },
+    footer: {
+      copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
+    },
     gtm: {
       containerID: 'GTM-PK448GB',
     },
