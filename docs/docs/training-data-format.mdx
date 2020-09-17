@@ -9,17 +9,17 @@ description: Description of the YAML format for training data
 
 Rasa Open Source uses [YAML](https://yaml.org/spec/1.2/spec.html) as
 a unified and extendable way to manage all training data,
-including NLU data, stories and rules. 
+including NLU data, stories and rules.
 
 With the YAML format, training data can be split over any number of YAML files,
-and every file can contain any kind of data. 
+and every file can contain any kind of data.
 The training data parser will read the top level keys in each file to decide
 what kind of data is in a section at training time.
 
 The [domain](glossary.mdx#domain) uses
 the same YAML format as the training data and can also be split across
 multiple files or combined in one file. The domain includes
-the definitions for [responses](domain.mdx#responses) and [forms](forms.mdx).
+the definitions for [responses](responses.mdx) and [forms](forms.mdx).
 See the [documentation for the domain](domain.mdx) for information on how to format your domain file.
 
 :::note Legacy Formats
@@ -45,7 +45,7 @@ All YAML training data files should specify the `version` key to be parsed
 correctly. If you don't specify a version key in your training data file, Rasa
 will assume you are using the latest training data format specification supported
 by the version of Rasa Open Source you have installed.
-Training data files with a version greater than is currently available in 
+Training data files with a version greater than is currently available in
 the version of Rasa Open Source you have installed will be
 skipped.
 Currently, the latest training data format specification for Rasa 2.x is 2.0.
