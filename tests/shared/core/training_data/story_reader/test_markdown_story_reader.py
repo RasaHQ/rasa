@@ -251,14 +251,6 @@ async def test_read_stories_with_multiline_comments(tmpdir, default_domain: Doma
     assert len(story_steps[3].events) == 2
 
 
-async def test_read_stories_with_slot_list(tmpdir, default_domain: Domain):
-    reader = MarkdownStoryReader(default_domain)
-
-    story_steps = await reader.read_from_file("data/test_stories/stories_slot.md")
-
-    assert len(story_steps) == 4
-
-
 async def test_read_stories_with_rules(default_domain: Domain):
     story_steps = await loading.load_data_from_files(
         ["data/test_stories/stories_with_rules.md"], default_domain
