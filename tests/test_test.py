@@ -155,7 +155,7 @@ async def test_interpreter_passed_to_agent(
     assert isinstance(agent.interpreter, RasaNLUInterpreter)
 
 
-async def test_e2e_warning_if_no_nlu_model(
+def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
     from rasa.test import test_core
@@ -163,7 +163,7 @@ async def test_e2e_warning_if_no_nlu_model(
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
     monkeypatch.setattr(
-        sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
+        sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
     test_core(trained_core_model, additional_arguments={"e2e": True})
@@ -365,7 +365,7 @@ def test_evaluation_store_serialise(entity_predictions, entity_targets):
 
 
 async def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
-    from rasa.core.test import _generate_trackers
+    from rasa.core.test import _create_data_generator
 
     test_file = tmp_path / "test.yml"
     test_name = "my test story"
@@ -385,6 +385,7 @@ rules:
 
     test_file.write_text(tests)
 
-    test_trackers = await _generate_trackers(str(test_file), default_agent)
+    generator = await _create_data_generator(str(test_file), default_agent)
+    test_trackers = generator.generate_story_trackers()
     assert len(test_trackers) == 1
     assert test_trackers[0].sender_id == test_name

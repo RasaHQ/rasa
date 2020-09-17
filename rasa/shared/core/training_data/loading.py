@@ -49,7 +49,7 @@ def _guess_reader(
     raise ValueError(
         f"Failed to find a reader class for the story file `{filename}`. "
         f"Supported formats are "
-        f"{', '.join(MARKDOWN_FILE_EXTENSIONS.union(YAML_FILE_EXTENSIONS))}."
+        f"{', '.join(MARKDOWN_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)}."
     )
 
 

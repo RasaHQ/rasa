@@ -24,9 +24,10 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.util import check_duplicate_synonym
+from rasa.shared.nlu.training_data import util
 
-DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
+
+DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ class TrainingData:
             lookup_tables.extend(copy.deepcopy(o.lookup_tables))
 
             for text, syn in o.entity_synonyms.items():
-                check_duplicate_synonym(
+                util.check_duplicate_synonym(
                     entity_synonyms, text, syn, "merging training data"
                 )
 
@@ -135,7 +136,7 @@ class TrainingData:
 
     @lazy_property
     def response_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get(RESPONSE)]
+        return [ex for ex in self.training_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
@@ -152,7 +153,7 @@ class TrainingData:
         return {
             ex.get(INTENT)
             for ex in self.training_examples
-            if ex.get(RESPONSE) is not None
+            if ex.get(INTENT_RESPONSE_KEY)
         }
 
     @lazy_property
@@ -165,7 +166,9 @@ class TrainingData:
     def number_of_examples_per_response(self) -> Dict[Text, int]:
         """Calculates the number of examples per response."""
         responses = [
-            ex.get(RESPONSE) for ex in self.training_examples if ex.get(RESPONSE)
+            ex.get(INTENT_RESPONSE_KEY)
+            for ex in self.training_examples
+            if ex.get(INTENT_RESPONSE_KEY)
         ]
         return dict(Counter(responses))
 
@@ -238,8 +241,10 @@ class TrainingData:
                 continue
 
             # look for corresponding bot utterance
-            story_lookup_intent = example.get_full_intent()
-            assistant_utterances = self.responses.get(story_lookup_intent, [])
+            story_lookup_key = util.intent_response_key_to_template_key(
+                example.get_full_intent()
+            )
+            assistant_utterances = self.responses.get(story_lookup_key, [])
             if assistant_utterances:
 
                 # Use the first response text as training label if needed downstream
@@ -249,7 +254,7 @@ class TrainingData:
 
                 # If no text attribute was found use the key for training
                 if not example.get(RESPONSE):
-                    example.set(RESPONSE, story_lookup_intent)
+                    example.set(RESPONSE, story_lookup_key)
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
@@ -311,10 +316,10 @@ class TrainingData:
         elif rasa.shared.data.is_likely_markdown_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_markdown(), filename)
         elif rasa.shared.data.is_likely_yaml_file(filename):
-            rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
+            rasa.shared.utils.io.write_text_file(self.nlu_as_yaml(), filename)
         else:
-            ValueError(
-                "Unsupported file format detected. Supported file formats are 'json' "
+            raise ValueError(
+                "Unsupported file format detected. Supported file formats are 'json', 'yml' "
                 "and 'md'."
             )
 
@@ -326,7 +331,7 @@ class TrainingData:
             if nlg_serialized_data:
                 rasa.shared.utils.io.write_text_file(nlg_serialized_data, filename)
         else:
-            ValueError(
+            raise ValueError(
                 "Unsupported file format detected. Supported file formats are 'md' "
                 "and 'yml'."
             )
@@ -340,12 +345,12 @@ class TrainingData:
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use
             # md as we do not have a NLG json format
-            extension = "md"
+            extension = rasa.shared.data.markdown_file_extension()
         # Add nlg_ as prefix and change extension to .md
         filename = (
             Path(nlu_filename)
             .with_name("nlg_" + Path(nlu_filename).name)
-            .with_suffix("." + extension)
+            .with_suffix(extension)
         )
         return str(filename)
 
@@ -376,7 +381,8 @@ class TrainingData:
         """Sorts the intent examples by the name of the intent and then response"""
 
         return sorted(
-            self.intent_examples, key=lambda e: (e.get(INTENT), e.get(RESPONSE))
+            self.intent_examples,
+            key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
         )
 
     def validate(self) -> None:
@@ -426,7 +432,7 @@ class TrainingData:
                     f"You either need to add a response phrase or correct the "
                     f"intent for this example in your training data. "
                     f"If you intend to use Response Selector in the pipeline, the "
-                    f"training ."
+                    f"training may fail."
                 )
 
     def train_test_split(
@@ -475,7 +481,7 @@ class TrainingData:
         responses = {}
         for ex in examples:
             if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
-                key = ex.get_full_intent()
+                key = util.intent_response_key_to_template_key(ex.get_full_intent())
                 responses[key] = self.responses[key]
         return responses
 
@@ -512,7 +518,7 @@ class TrainingData:
             examples = [
                 e
                 for e in training_examples
-                if RESPONSE in e.data and e.data[RESPONSE] == response
+                if e.get(INTENT_RESPONSE_KEY) and e.get(INTENT_RESPONSE_KEY) == response
             ]
             _split(examples, count)
             training_examples = training_examples - set(examples)

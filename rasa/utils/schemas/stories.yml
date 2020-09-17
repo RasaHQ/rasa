@@ -36,7 +36,7 @@ mapping:
                 - type: "map"
                   mapping:
                     regex;(.*):
-                      type: "text"
+                      type: "any"
                 - type: "str"
           - type: "map"
             mapping: &active_loop

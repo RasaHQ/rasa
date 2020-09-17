@@ -10,20 +10,54 @@ from typing import Callable, Text
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
+from rasa.shared.utils.io import read_yaml_file
 
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
-    run_in_simple_project(
-        "data", "split", "nlu", "-u", "data/nlu.yml", "--training-fraction", "0.75"
+    responses_yml = (
+        "responses:\n"
+        "  chitchat/ask_name:\n"
+        "  - text: my name is Sara, Rasa's documentation bot!\n"
+        "  chitchat/ask_weather:\n"
+        "  - text: the weather is great!\n"
     )
 
-    assert os.path.exists("train_test_split")
-    # TODO: Comment back in as soon as NLU YAML writer is merged
-    # https://github.com/RasaHQ/rasa/issues/6363
-    # assert os.path.exists(os.path.join("train_test_split", "test_data.md"))
-    # assert os.path.exists(os.path.join("train_test_split", "training_data.md"))
+    with open("data/responses.yml", "w") as f:
+        f.write(responses_yml)
+
+    run_in_simple_project(
+        "data",
+        "split",
+        "nlu",
+        "-u",
+        "data/nlu.yml",
+        "--training-fraction",
+        "0.75",
+        "--random-seed",
+        "12345",
+    )
+
+    folder = Path("train_test_split")
+    assert folder.exists()
+
+    nlu_files = [
+        folder / "test_data.yml",
+        folder / "training_data.yml",
+    ]
+    nlg_files = [
+        folder / "nlg_test_data.yml",
+        folder / "nlg_training_data.yml",
+    ]
+    for yml_file in nlu_files:
+        assert yml_file.exists(), f"{yml_file} file does not exist"
+        nlu_data = read_yaml_file(yml_file)
+        assert "version" in nlu_data
+        assert nlu_data.get("nlu")
+
+    for yml_file in nlg_files:
+        assert yml_file.exists(), f"{yml_file} file does not exist"
 
 
 def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
@@ -50,9 +84,10 @@ def test_data_split_help(run: Callable[..., RunResult]):
                            [--random-seed RANDOM_SEED] [--out OUT]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):
@@ -62,9 +97,10 @@ def test_data_convert_help(run: Callable[..., RunResult]):
                              --data DATA --out OUT [-l LANGUAGE]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_data_validate_help(run: Callable[..., RunResult]):
@@ -74,9 +110,10 @@ def test_data_validate_help(run: Callable[..., RunResult]):
                           [--max-history MAX_HISTORY] [--fail-on-warnings]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:

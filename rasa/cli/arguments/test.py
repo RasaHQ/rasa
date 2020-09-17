@@ -1,7 +1,7 @@
 import argparse
 from typing import Union
 
-from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_RESULTS_PATH
+from rasa.shared.constants import DEFAULT_MODELS_PATH, DEFAULT_RESULTS_PATH
 
 from rasa.cli.arguments.default_arguments import (
     add_stories_param,

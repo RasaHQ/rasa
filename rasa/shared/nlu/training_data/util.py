@@ -15,7 +15,9 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
+from rasa.shared.constants import UTTER_PREFIX
 import rasa.shared.utils.io
+import rasa.shared.data
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +51,21 @@ def check_duplicate_synonym(
         )
 
 
-def get_file_format(resource_name: Text) -> Text:
+def get_file_format_extension(resource_name: Text) -> Text:
+    """
+    Get the file extension based on training data format. It supports both a folder and
+    a file, and tries to guess the format as follows:
+
+    - if the resource is a file and has a known format, return this format's extension
+    - if the resource is a folder and all the resources have the
+      same known format, return it's extension
+    - otherwise, default to DEFAULT_FILE_FORMAT (yml).
+
+    Args:
+        resource_name: The name of the resource, can be a file or a folder.
+    Returns:
+        The resource file format.
+    """
     from rasa.shared.nlu.training_data import loading
 
     if resource_name is None or not os.path.exists(resource_name):
@@ -60,15 +76,17 @@ def get_file_format(resource_name: Text) -> Text:
     file_formats = list(map(lambda f: loading.guess_format(f), files))
 
     if not file_formats:
-        return "json"
+        return rasa.shared.data.yaml_file_extension()
 
+    known_file_formats = {
+        loading.MARKDOWN: rasa.shared.data.markdown_file_extension(),
+        loading.RASA_YAML: rasa.shared.data.yaml_file_extension(),
+    }
     fformat = file_formats[0]
-    if fformat in [loading.MARKDOWN, loading.RASA_YAML] and all(
-        f == fformat for f in file_formats
-    ):
-        return fformat
+    if all(f == fformat for f in file_formats):
+        return known_file_formats.get(fformat, rasa.shared.data.yaml_file_extension())
 
-    return "json"
+    return rasa.shared.data.yaml_file_extension()
 
 
 def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
@@ -101,6 +119,30 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
             trainable_entities.append(entity)
 
     example[ENTITIES] = trainable_entities
+
+
+def intent_response_key_to_template_key(intent_response_key: Text) -> Text:
+    """Resolve the response template key for a given intent response key.
+
+    Args:
+        intent_response_key: retrieval intent with the response key suffix attached.
+
+    Returns: The corresponding response template.
+
+    """
+    return f"{UTTER_PREFIX}{intent_response_key}"
+
+
+def template_key_to_intent_response_key(template_key: Text) -> Text:
+    """Resolve the intent response key for the given response template.
+
+    Args:
+        template_key: Name of the response template.
+
+    Returns: The corresponding intent response key.
+
+    """
+    return template_key.split(UTTER_PREFIX)[1]
 
 
 def encode_string(s: Text) -> Text:

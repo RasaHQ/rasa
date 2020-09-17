@@ -72,6 +72,7 @@ module.exports = {
             'fallback-handoff',
             'unexpected-input',
             'contextual-conversations',
+            'reaching-out-to-user',
           ],
         },
         {
@@ -105,19 +106,7 @@ module.exports = {
           label: 'Config',
           items: [
             'model-configuration',
-            {
-              type: 'category',
-              label: 'Pipeline Components',
-              items: [
-                'components/language-models',
-                'components/tokenizers',
-                'components/featurizers',
-                'components/intent-classifiers',
-                'components/entity-extractors',
-                'components/selectors',
-                'components/custom-nlu-components',
-              ],
-            },
+            'components',
             'policies',
             'training-data-importers',
           ],
@@ -126,30 +115,11 @@ module.exports = {
           type: 'category',
           label: 'Actions',
           items: [
-            // 'actions',
+            'actions',
             'responses',
-            {
-              type: 'category',
-              label: 'Custom Actions',
-              items: [
-                'custom-actions',
-                'knowledge-bases',
-                {
-                  type: 'category',
-                  label: 'Rasa SDK',
-                  collapsed: true,
-                  items: [
-                    'running-action-server',
-                    'tracker-dispatcher',
-                    // 'events',
-                    // 'rasa-sdk-changelog'
-                  ],
-                },
-              ],
-            },
+            'custom-actions',
             'retrieval-actions',
             'forms',
-            'reminders-and-external-events',
             'default-actions',
           ],
         },
@@ -195,7 +165,10 @@ module.exports = {
       type: 'category',
       label: 'Reference',
       collapsed: true,
-      items: [require('./docs/reference/sidebar.json')],
+      items: [
+        'telemetry/telemetry',
+        'telemetry/reference',
+        require('./docs/reference/sidebar.json')],
     },
     {
       type: 'category',

@@ -10,14 +10,14 @@ import rasa.utils.io as io_utils
 
 @pytest.mark.parametrize("file, parents", [("A/test.md", "A"), ("A", "A")])
 def test_file_in_path(file, parents):
-    assert io_utils.is_subdirectory(file, parents)
+    assert rasa.shared.utils.io.is_subdirectory(file, parents)
 
 
 @pytest.mark.parametrize(
     "file, parents", [("A", "A/B"), ("B", "A"), ("A/test.md", "A/B"), (None, "A")]
 )
 def test_file_not_in_path(file, parents):
-    assert not io_utils.is_subdirectory(file, parents)
+    assert not rasa.shared.utils.io.is_subdirectory(file, parents)
 
 
 @pytest.mark.parametrize("actual_path", ["", "file.md", "file"])

@@ -18,7 +18,9 @@ from colorclass import Color
 import questionary
 from questionary import Choice, Form, Question
 
+from rasa import telemetry
 import rasa.shared.data
+import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.cli.utils
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
@@ -31,7 +33,6 @@ from rasa.shared.core.constants import (
     LOOP_VALIDATE,
     LOOP_REJECTED,
     REQUESTED_SLOT,
-    UTTER_PREFIX,
 )
 from rasa.core import run, train, utils
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
@@ -47,7 +48,7 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
 )
 import rasa.core.interpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID, UTTER_PREFIX
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
@@ -55,7 +56,7 @@ from rasa.shared.core.training_data.visualization import (
     visualize_neighborhood,
 )
 from rasa.core.utils import AvailableEndpoints
-from rasa.importers.rasa import TrainingDataImporter
+from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
@@ -1383,7 +1384,7 @@ def _print_help(skip_visualization: bool) -> None:
     else:
         visualization_help = ""
 
-    rasa.cli.utils.print_success(
+    rasa.shared.utils.cli.print_success(
         f"Bot loaded. {visualization_help}\n"
         f"Type a message and press enter "
         f"(press 'Ctr-c' to exit)."
@@ -1485,7 +1486,7 @@ async def _get_tracker_events_to_plot(
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
-        rasa.cli.utils.print_warning(
+        rasa.shared.utils.cli.print_warning(
             f"You have {number_of_trackers} different story paths in "
             f"your training data. Visualizing them is very resource "
             f"consuming. Hence, the visualization will only show the stories "
@@ -1668,6 +1669,8 @@ def run_interactive_learning(
         partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
         "before_server_start",
     )
+
+    telemetry.track_interactive_learning_start(skip_visualization, SAVE_IN_E2E)
 
     _serve_application(app, file_importer, skip_visualization, conversation_id, port)
 

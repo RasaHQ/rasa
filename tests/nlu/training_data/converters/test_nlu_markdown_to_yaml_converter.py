@@ -22,7 +22,7 @@ def test_converter_filters_correct_files(training_data_file: Text, should_filter
     assert should_filter == NLUMarkdownToYamlConverter.filter(Path(training_data_file))
 
 
-def test_nlu_intents_are_converted(tmpdir: Path):
+async def test_nlu_intents_are_converted(tmpdir: Path):
     converted_data_folder = tmpdir / "converted_data"
     os.mkdir(converted_data_folder)
 
@@ -39,7 +39,7 @@ def test_nlu_intents_are_converted(tmpdir: Path):
     with open(training_data_file, "w") as f:
         f.write(simple_nlu_md)
 
-    NLUMarkdownToYamlConverter().convert_and_write(
+    await NLUMarkdownToYamlConverter().convert_and_write(
         training_data_file, converted_data_folder
     )
 
@@ -57,7 +57,7 @@ def test_nlu_intents_are_converted(tmpdir: Path):
         )
 
 
-def test_nlu_lookup_tables_are_converted(tmpdir: Path):
+async def test_nlu_lookup_tables_are_converted(tmpdir: Path):
     converted_data_folder = tmpdir / "converted_data"
     os.mkdir(converted_data_folder)
 
@@ -82,7 +82,7 @@ def test_nlu_lookup_tables_are_converted(tmpdir: Path):
     with open(lookup_tables_file, "w") as f:
         f.write(simple_lookup_table_txt)
 
-    NLUMarkdownToYamlConverter().convert_and_write(
+    await NLUMarkdownToYamlConverter().convert_and_write(
         training_data_file, converted_data_folder
     )
 
