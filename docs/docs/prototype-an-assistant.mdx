@@ -55,7 +55,7 @@ nlu:
 
 [Learn more about NLU data and its format](./training-data-format.mdx)
 
-## 2. Edit responses
+## 2. Responses
 
 Now that the assistant understands a few messages users might say, it needs responses it can send back to the user.
 
@@ -83,7 +83,7 @@ responses:
 
 [Learn more about responses](./responses.mdx)
 
-## 3. Write some stories
+## 3. Stories
 
 [Stories](./stories.mdx) are example conversations that train an assistant to respond correctly depending on what the user has said previously in the conversation.
 The story format shows the intent of the user message followed by the assistant’s action or response.
@@ -103,7 +103,7 @@ stories:
    - active_loop: newsletter_form
 ```
 
-[Read about best practices for writing stories](./writing-stories.mdx)
+[Learn more about stories](./writing-stories.mdx)
 
 ## 4. Forms
 
@@ -125,7 +125,7 @@ forms:
 Rules describe parts of conversations that should always follow the same path no matter what has been said previously in the conversation.
 
 We want our assistant to always respond to a certain intent with a specific action, so we use a rule to map that action to the intent.
-On the code block below, we have added a rule that triggers the
+In the code block below, we have added a rule that triggers the
 `newsletter_form` whenever the user expresses the intent “subscribe”.
 
 
@@ -149,10 +149,7 @@ To train the assistant on the NLU data, stories, forms, rules and responses abov
 
 <TrainButton />
 
-Once your model has finished training, you can talk to your assistant:
-
 <div id="rasa-chat-block"></div>
-
 
 ## Looking for a challenge? Customize your assistant
 
