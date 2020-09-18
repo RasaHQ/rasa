@@ -382,16 +382,18 @@ class TEDPolicy(Policy):
             return self._default_predictions(domain)
 
         # create model data from tracker
-        intent_tracker_state_features = self.featurizer.create_state_features(
-            [tracker], domain, interpreter, use_text_for_last_user_input=False
-        )
-        text_tracker_state_features = self.featurizer.create_state_features(
-            [tracker], domain, interpreter, use_text_for_last_user_input=True
-        )
-        # the first example in a batch uses intent, the second - text
-        tracker_state_features = (
-            intent_tracker_state_features + text_tracker_state_features
-        )
+        tracker_state_features = []
+        if INTENT in self.zero_state_features:
+            # the first example in a batch uses intent
+            tracker_state_features += self.featurizer.create_state_features(
+                [tracker], domain, interpreter, use_text_for_last_user_input=False
+            )
+        if TEXT in self.zero_state_features:
+            # the second - text
+            tracker_state_features += self.featurizer.create_state_features(
+                [tracker], domain, interpreter, use_text_for_last_user_input=True
+            )
+
         model_data = self._create_model_data(tracker_state_features)
 
         output = self.model.predict(model_data)
@@ -401,15 +403,23 @@ class TEDPolicy(Policy):
 
         # TODO using similarities to pick appropriate input,
         #  since it seems to be more accurate measure, but confidences might be better
-        if np.max(similarities[1]) > np.max(similarities[0]):
-            # TODO above condition is not optimal
+        if len(tracker_state_features) == 2 and np.max(similarities[1]) > np.max(
+            similarities[0]
+        ):
+            # TODO similarity condition is not optimal
             batch_index = 1
             logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
             tracker.update(DefinePrevUserUtteredFeaturization(True))
-        else:
+        elif len(tracker_state_features) == 2 or INTENT in self.zero_state_features:
             batch_index = 0
             logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
             tracker.update(DefinePrevUserUtteredFeaturization(False))
+        elif TEXT in self.zero_state_features:
+            batch_index = 0
+            logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
+            tracker.update(DefinePrevUserUtteredFeaturization(True))
+        else:
+            raise Exception("Conditions above went wrong")
 
         # take the last prediction in the sequence
         confidence = output["action_scores"].numpy()[:, -1, :]

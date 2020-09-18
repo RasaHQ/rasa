@@ -633,6 +633,7 @@ class RulePolicy(MemoizationPolicy):
         default_action_name = self._find_action_from_default_actions(tracker)
         if default_action_name:
             logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+            # TODO temporary bad solution
             tracker.update(DefinePrevUserUtteredFeaturization(False))
             return self._prediction_result(default_action_name, tracker, domain)
 
@@ -643,12 +644,14 @@ class RulePolicy(MemoizationPolicy):
         loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
             logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+            # TODO temporary bad solution
             tracker.update(DefinePrevUserUtteredFeaturization(False))
             return self._prediction_result(loop_happy_path_action_name, tracker, domain)
 
         rules_action_name = self._find_action_from_rules(tracker, domain)
         if rules_action_name:
             logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+            # TODO temporary bad solution
             tracker.update(DefinePrevUserUtteredFeaturization(False))
             return self._prediction_result(rules_action_name, tracker, domain)
 
