@@ -137,7 +137,7 @@ module.exports = {
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
     gtm: {
-      containerID: 'GTM-PK448GB',
+      containerID: 'GTM-MMHSZCS',
     },
   },
   themes: [
