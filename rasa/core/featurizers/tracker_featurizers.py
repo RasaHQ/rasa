@@ -11,7 +11,10 @@ import numpy as np
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import (
+    DialogueStateTracker,
+    is_prev_action_listen_in_state,
+)
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
 import rasa.shared.utils.io
@@ -150,6 +153,10 @@ class TrackerFeaturizer:
     ) -> None:
         for states in trackers_as_states:
             last_state = states[-1]
+            # only update the state of the real user utterance
+            if not is_prev_action_listen_in_state(last_state):
+                continue
+
             if use_text_for_last_user_input:
                 # remove intent features to only use text
                 if last_state.get(USER, {}).get(INTENT):

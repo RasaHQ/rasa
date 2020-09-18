@@ -22,7 +22,7 @@ from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, EN
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
-from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.events import DefinePrevUserUtteredFeaturization
@@ -383,13 +383,20 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         tracker_state_features = []
-        if INTENT in self.zero_state_features:
+        if (
+            INTENT in self.zero_state_features
+            or not tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
             # the first example in a batch uses intent
+            # or current prediction is not after user utterance
             tracker_state_features += self.featurizer.create_state_features(
                 [tracker], domain, interpreter, use_text_for_last_user_input=False
             )
-        if TEXT in self.zero_state_features:
-            # the second - text
+        if (
+            TEXT in self.zero_state_features
+            and tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # the second - text, but only after user utterance
             tracker_state_features += self.featurizer.create_state_features(
                 [tracker], domain, interpreter, use_text_for_last_user_input=True
             )
@@ -408,16 +415,19 @@ class TEDPolicy(Policy):
         ):
             # TODO similarity condition is not optimal
             batch_index = 1
-            logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
-            tracker.update(DefinePrevUserUtteredFeaturization(True))
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
+                tracker.update(DefinePrevUserUtteredFeaturization(True))
         elif len(tracker_state_features) == 2 or INTENT in self.zero_state_features:
             batch_index = 0
-            logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
-            tracker.update(DefinePrevUserUtteredFeaturization(False))
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+                tracker.update(DefinePrevUserUtteredFeaturization(False))
         elif TEXT in self.zero_state_features:
             batch_index = 0
-            logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
-            tracker.update(DefinePrevUserUtteredFeaturization(True))
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
+                tracker.update(DefinePrevUserUtteredFeaturization(True))
         else:
             raise Exception("Conditions above went wrong")
 

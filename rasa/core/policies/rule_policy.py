@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
+from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
 from tqdm import tqdm
 import numpy as np
@@ -554,11 +554,22 @@ class RulePolicy(MemoizationPolicy):
             return ACTION_LISTEN_NAME
 
     def _find_action_from_rules(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        use_text_for_last_user_input: bool,
     ) -> Optional[Text]:
-        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
-        states = tracker_as_states[0]
+        if (
+            use_text_for_last_user_input
+            and not tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # make text prediction only after user utterance
+            return
 
+        tracker_as_states = self.featurizer.prediction_states(
+            [tracker], domain, use_text_for_last_user_input
+        )
+        states = tracker_as_states[0]
         logger.debug(f"Current tracker state: {states}")
 
         rule_keys = self._get_possible_keys(self.lookup[RULES], states)
@@ -624,17 +635,22 @@ class RulePolicy(MemoizationPolicy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
-
-        result = self._default_predictions(domain)
+        # user text input is ground truth, so try to predict using it first
+        rules_action_name_from_text = self._find_action_from_rules(
+            tracker, domain, use_text_for_last_user_input=True
+        )
 
         # Rasa Open Source default actions overrule anything. If users want to achieve
         # the same, they need to write a rule or make sure that their loop rejects
         # accordingly.
         default_action_name = self._find_action_from_default_actions(tracker)
-        if default_action_name:
-            logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
-            # TODO temporary bad solution
-            tracker.update(DefinePrevUserUtteredFeaturization(False))
+        # text has priority over intents including default,
+        # however loop happy path has priority over rules prediction
+        if default_action_name and not rules_action_name_from_text:
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+                # TODO temporary bad solution
+                tracker.update(DefinePrevUserUtteredFeaturization(False))
             return self._prediction_result(default_action_name, tracker, domain)
 
         # A loop has priority over any other rule.
@@ -643,19 +659,31 @@ class RulePolicy(MemoizationPolicy):
         # simply force predict the loop.
         loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
-            logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
-            # TODO temporary bad solution
-            tracker.update(DefinePrevUserUtteredFeaturization(False))
+            # TODO check: we don't know whether intent or text should be used
+            #  and happy user input anyhow should be ignored
             return self._prediction_result(loop_happy_path_action_name, tracker, domain)
 
-        rules_action_name = self._find_action_from_rules(tracker, domain)
-        if rules_action_name:
-            logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
-            # TODO temporary bad solution
-            tracker.update(DefinePrevUserUtteredFeaturization(False))
-            return self._prediction_result(rules_action_name, tracker, domain)
+        # # predict rules from text first
+        if rules_action_name_from_text:
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
+                # TODO temporary bad solution
+                tracker.update(DefinePrevUserUtteredFeaturization(True))
+            return self._prediction_result(rules_action_name_from_text, tracker, domain)
 
-        return result
+        rules_action_name_from_intent = self._find_action_from_rules(
+            tracker, domain, use_text_for_last_user_input=False
+        )
+        if rules_action_name_from_intent:
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+                # TODO temporary bad solution
+                tracker.update(DefinePrevUserUtteredFeaturization(False))
+            return self._prediction_result(
+                rules_action_name_from_intent, tracker, domain
+            )
+
+        return self._default_predictions(domain)
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)
