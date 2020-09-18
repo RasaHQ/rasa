@@ -170,8 +170,10 @@ def replace_entities(training_example: Text) -> Text:
 
 def parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message":
     """Extract entities and synonyms, and convert to plain text."""
+    if example is not None:
+        entities = find_entities_in_training_example(example)
+        plain_text = replace_entities(example)
 
-    entities = find_entities_in_training_example(example)
-    plain_text = replace_entities(example)
-
-    return Message.build(plain_text, intent, entities)
+        return Message.build(plain_text, intent, entities)
+    else:
+        return Message.build(None, intent, [])

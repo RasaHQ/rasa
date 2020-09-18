@@ -85,15 +85,16 @@ class TrainingDataWriter:
         # in end-to-end stories) then potential entities were provided in the json
         # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
         # entity annotation
-        if not text.startswith(INTENT_MESSAGE_PREFIX):
-            entities = sorted(message.get("entities", []), key=lambda k: k["start"])
+        if text:
+            if not text.startswith(INTENT_MESSAGE_PREFIX):
+                entities = sorted(message.get("entities", []), key=lambda k: k["start"])
 
-            for entity in entities:
-                md += text[pos : entity["start"]]
-                md += TrainingDataWriter.generate_entity(text, entity)
-                pos = entity["end"]
+                for entity in entities:
+                    md += text[pos : entity["start"]]
+                    md += TrainingDataWriter.generate_entity(text, entity)
+                    pos = entity["end"]
 
-        md += text[pos:]
+            md += text[pos:]
 
         return md
 
