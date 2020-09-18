@@ -26,11 +26,6 @@ const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
 const versionLabels = {
   current: 'Master/Unreleased'
-    // isDev || isPreview
-    //   ? `Next (${isPreview ? 'deploy preview' : 'dev'})`
-    //   : existingVersions.length < 1
-    //   ? 'Current'
-    //   : 'Next',
 };
 
 module.exports = {
@@ -95,7 +90,7 @@ module.exports = {
         {
           label: 'Rasa X',
           position: 'left',
-          href: `${SWAP_URL}/docs/rasa-x/next/`,
+          href: `${SWAP_URL}/docs/rasa-x/`,
           target: '_self',
         },
         {
