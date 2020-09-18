@@ -387,7 +387,7 @@ class UserUttered(Event):
 
     def as_story_string(self, e2e: bool = False) -> Text:
         text_with_entities = md_format_message(
-            self.text, self.intent_name, self.entities
+            self.text or "", self.intent_name, self.entities
         )
         if e2e or self.use_text_for_featurization is None:
             intent_prefix = f"{self.intent_name}: " if self.intent_name else ""
