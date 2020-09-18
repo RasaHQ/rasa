@@ -76,11 +76,6 @@ module.exports = {
     navbar: {
       hideOnScroll: false,
       title: 'Rasa Open Source',
-      logo: {
-        alt: 'Rasa Logo',
-        src: `/img/rasa-logo.svg`,
-        href: SITE_URL,
-      },
       items: [
         {
           label: 'Rasa Open Source',
@@ -142,7 +137,7 @@ module.exports = {
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
     gtm: {
-      containerID: 'GTM-PK448GB',
+      containerID: 'GTM-MMHSZCS',
     },
   },
   themes: [
