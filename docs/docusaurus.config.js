@@ -26,16 +26,12 @@ const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
 const versionLabels = {
   current: 'Master/Unreleased'
-    // isDev || isPreview
-    //   ? `Next (${isPreview ? 'deploy preview' : 'dev'})`
-    //   : existingVersions.length < 1
-    //   ? 'Current'
-    //   : 'Next',
 };
 
 module.exports = {
   onBrokenLinks: 'warn',
   customFields: {
+    productLogo: '/img/logo-rasa-oss.png',
     versionLabels,
     legacyVersions: [{
       label: 'Legacy 1.x',
@@ -94,7 +90,7 @@ module.exports = {
         {
           label: 'Rasa X',
           position: 'left',
-          href: `${SWAP_URL}/docs/rasa-x/next/`,
+          href: `${SWAP_URL}/docs/rasa-x/`,
           target: '_self',
         },
         {
@@ -104,7 +100,8 @@ module.exports = {
         },
         {
           href: 'https://github.com/rasahq/rasa',
-          label: 'GitHub',
+          className: 'header-github-link',
+          'aria-label': 'GitHub repository',
           position: 'right',
         },
         {
