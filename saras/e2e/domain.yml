@@ -1,0 +1,57 @@
+slots:
+  feedback_value:
+    type: categorical
+    values:
+    - positive
+    - negative
+  onboarding:
+    type: bool
+  step:
+    type: unfeaturized
+  product:
+    type: categorical
+    values:
+    - core
+    - nlu
+    - x
+    - rasa
+    - all
+    - both
+
+entities:
+- amount-of-money
+- company
+- current_api
+- email
+- entity
+- feedback_value
+- job_function
+- language
+- location
+- name
+- nlu_part
+- number
+- product
+- user_type
+
+forms:
+- sales_form
+- subscribe_newsletter_form
+- suggestion_form
+
+actions:
+- respond_faq
+- action_explain_faq
+- respond_out_of_scope
+- action_docs_search
+- action_tag_docs_search
+- action_forum_search
+- action_next_step
+- action_set_faq_slot
+
+intents:
+- faq
+- explain
+- get_started_step2
+- get_started_step3
+- get_started_step4
