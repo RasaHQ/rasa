@@ -35,10 +35,10 @@ stories:
 - story: chitchat
   steps:
   - intent: chitchat
-  - action: respond_chitchat
+  - action: utter_chitchat
 ```
 
-A retrieval action uses the output of a [ResponseSelector](./components.mdx#responseselector) 
+A retrieval action uses the output of a [ResponseSelector](./components.mdx#responseselector)
 pipeline component which learns a retrieval model to predict the correct response
 from a list of candidate responses given a user message text.
 
@@ -126,7 +126,7 @@ The retrieval model is trained separately as part of the NLU training pipeline
 to select the correct response. The default configuration uses the user message text as input and the retrieval intent combined with the
 response key suffix (e.g. `chitchat/ask_name`) as the correct label for that user message. However, the
 retrieval model can also be configured to use the text of the response message as the label by setting `use_text_as_label`
-to `true` in the component's configuration: 
+to `true` in the component's configuration:
 
 ```yaml-rasa title="config.yml" {8-9}
 language: "en"
@@ -143,31 +143,22 @@ pipeline:
 ### Domain
 
 Rasa uses a naming convention to match a retrieval intent name
-to its corresponding retrieval action. 
-The `respond_` prefix identifies an action as a retrieval action.
+to its corresponding retrieval action.
 
-By this convention, the `respond_chitchat` action is configured as a response to the `chitchat`
-retrieval intent, and `respond_faq` is a response  to `faq`.
-
-To include a retrieval action in your domain, add it to the list of actions:
-
-```yaml-rasa title="domain.yml"
-actions:
-  # ...
-  - respond_chitchat
-  - respond_faq
-```
+By this convention, the `utter_chitchat` action is configured as a response to the `chitchat`
+retrieval intent, and `utter_faq` is a response  to `faq`. These actions do not need to be
+added to the domain file.
 
 The best way to ensure that the retrieval action is predicted after the chitchat
 intent is to a [rule](./rules.mdx). A rule will tell your bot to respond
-appropriately to a retrieval intent at any point in the conversation: 
+appropriately to a retrieval intent at any point in the conversation:
 
 ```yaml-rasa title="data/rules.yml" {6-8}
 rules:
 - rule: respond to chitchat
   steps:
   - intent: chitchat
-  - action: respond_chitchat
+  - action: utter_chitchat
 ```
 
 However, you can also include this action in your stories.
@@ -180,7 +171,7 @@ stories:
   - intent: search_restaurant
   - action: utter_ask_cuisine
   - intent: chitchat
-  - action: respond_chitchat
+  - action: utter_chitchat
   - action: utter_ask_cuisine
 ```
 
@@ -189,7 +180,7 @@ stories:
 If your assistant includes both FAQs and chitchat, it is possible to
 separate these into separate retrieval actions, for example having sub-intents
 like `chitchat/ask_weather` and `faq/returns_policy`. Rasa supports adding multiple `RetrievalActions`
-like `respond_chitchat` and `respond_faq`. To train separate retrieval models for each of the retrieval intents,
+like `utter_chitchat` and `utter_faq`. To train separate retrieval models for each of the retrieval intents,
 you need to include a separate `ResponseSelector` component in the config for each retrieval intent:
 
 ```yaml-rasa title="config.yml" {8-12}
