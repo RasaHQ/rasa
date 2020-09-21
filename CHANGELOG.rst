@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.13] - 2020-09-21
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6577 <https://github.com/rasahq/rasa/issues/6577>`_: Remove BILOU tag prefix from role and group labels when creating entities.
+
+
 [1.10.12] - 2020-09-03
 ^^^^^^^^^^^^^^^^^^^^^^
 
