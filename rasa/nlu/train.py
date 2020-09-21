@@ -2,6 +2,7 @@ import logging
 import typing
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
+import rasa.shared.utils.common
 import rasa.utils.common as common_utils
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
@@ -13,7 +14,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 
 if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ class TrainingException(Exception):
             self.message = exception.args[0]
         else:
             self.message = ""
+        super(TrainingException, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
@@ -84,7 +86,7 @@ async def train(
     **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
 
     if not isinstance(nlu_config, RasaNLUModelConfig):
         nlu_config = config.load(nlu_config)
@@ -105,7 +107,9 @@ async def train(
 
     training_data.print_stats()
     if training_data.entity_roles_groups_used():
-        common_utils.mark_as_experimental_feature("Entity Roles and Groups feature")
+        rasa.shared.utils.common.mark_as_experimental_feature(
+            "Entity Roles and Groups feature"
+        )
 
     interpreter = trainer.train(training_data, **kwargs)
 

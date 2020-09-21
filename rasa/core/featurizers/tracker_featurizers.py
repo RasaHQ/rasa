@@ -1,13 +1,13 @@
+from pathlib import Path
+
 import jsonpickle
 import logging
-import os
 
 from rasa.shared.nlu.constants import TEXT
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text
+from typing import Tuple, List, Optional, Dict, Text, Union
 import numpy as np
 
-import rasa.utils.io as io_utils
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
@@ -17,6 +17,8 @@ from rasa.shared.core.constants import USER
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 
+FEATURIZER_FILE = "featurizer.json"
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,6 +27,7 @@ class InvalidStory(Exception):
 
     def __init__(self, message) -> None:
         self.message = message
+        super(InvalidStory, self).__init__()
 
     def __str__(self) -> Text:
         # return message in error colours
@@ -178,17 +181,19 @@ class TrackerFeaturizer:
         trackers_as_states = self.prediction_states(trackers, domain)
         return self._featurize_states(trackers_as_states, interpreter)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
         """Persist the tracker featurizer to the given path.
 
         Args:
             path: The path to persist the tracker featurizer to.
         """
-        featurizer_file = os.path.join(path, "featurizer.json")
+        featurizer_file = Path(path) / FEATURIZER_FILE
         rasa.shared.utils.io.create_directory_for_file(featurizer_file)
 
         # noinspection PyTypeChecker
-        io_utils.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
+        rasa.shared.utils.io.write_text_file(
+            str(jsonpickle.encode(self)), featurizer_file
+        )
 
     @staticmethod
     def load(path: Text) -> Optional["TrackerFeaturizer"]:
@@ -200,9 +205,9 @@ class TrackerFeaturizer:
         Returns:
             The loaded tracker featurizer.
         """
-        featurizer_file = os.path.join(path, "featurizer.json")
-        if os.path.isfile(featurizer_file):
-            return jsonpickle.decode(io_utils.read_file(featurizer_file))
+        featurizer_file = Path(path) / FEATURIZER_FILE
+        if featurizer_file.is_file():
+            return jsonpickle.decode(rasa.shared.utils.io.read_file(featurizer_file))
 
         logger.error(
             f"Couldn't load featurizer for policy. "

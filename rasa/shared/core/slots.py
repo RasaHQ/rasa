@@ -149,7 +149,7 @@ class BooleanSlot(Slot):
     def as_feature(self) -> List[float]:
         try:
             if self.value is not None:
-                return [1.0, float(float(self.value) != 0.0)]
+                return [1.0, float(bool_from_any(self.value))]
             else:
                 return [0.0, 0.0]
         except (TypeError, ValueError):
@@ -158,6 +158,26 @@ class BooleanSlot(Slot):
 
     def feature_dimensionality(self) -> int:
         return len(self.as_feature())
+
+
+def bool_from_any(x: Any) -> bool:
+    """ Converts bool/float/int/str to bool or raises error """
+
+    if isinstance(x, bool):
+        return x
+    elif isinstance(x, (float, int)):
+        return x == 1.0
+    elif isinstance(x, str):
+        if x.isnumeric():
+            return float(x) == 1.0
+        elif x.strip().lower() == "true":
+            return True
+        elif x.strip().lower() == "false":
+            return False
+        else:
+            raise ValueError("Cannot convert string to bool")
+    else:
+        raise TypeError("Cannot convert to bool")
 
 
 class TextSlot(Slot):
