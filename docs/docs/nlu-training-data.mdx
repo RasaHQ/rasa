@@ -3,27 +3,23 @@ id: nlu-training-data
 sidebar_label: NLU Training Data
 title: NLU Training Data
 description: Read more about how to format training data with Rasa NLU for open source natural language processing.
+abstract: NLU training data stores structured information about user messages.
 ---
 
-NLU training data is structured into different parts:
+The goal of NLU (Natural Language Understanding) is to extract structured information from user messages. 
 
-* training examples
+## Training examples
 
-* synonyms
+NLU training data consists of example user utterances categorized by
+**[intents](glossary.mdx#intent)**. Training examples can also include **[entities](glossary.mdx#entities)**. You can also
+add extra information such as **[regular expressions](#regular-expression-features)** and **[lookup tables](#lookup-tables)** to your
+training data to help the model identify intents and entities correctly.
 
-* regex features and
+:::note
+`/` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
+to use it in the name of your intents.
 
-* lookup tables
-
-While training examples is the only part that is mandatory, including the others will help the NLU model
-learn the domain with fewer examples and also help it be more confident of its predictions.
-
-Synonyms will map extracted entities to the same name, for example mapping “my savings account” to simply “savings”.
-However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms
-present so that Rasa can learn to pick them up.
-
-Lookup tables are lists of words used to generate
-case-insensitive regex patterns that are added to the regex features.
+:::
 
 :::note
 The common theme here is that training examples, regex features and lookup tables merely act as cues to the final NLU
@@ -33,15 +29,18 @@ across all variants of that example.
 
 :::
 
-:::note
-`/` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
-to use it in the name of your intents.
+## Entities
 
-:::
+[Entities](glossary.mdx#entity) are structured pieces of information inside a user message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
 
-## Improving Intent Classification and Entity Recognition
+## Synonyms
 
-### Regular Expression Features (regex)
+Synonyms map extracted entities to the same name, for example mapping “my savings account” to simply “savings”.
+However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms
+present so that Rasa can learn to pick them up.
+
+
+## Regular Expression Features
 
 For example, the names of German streets often end in `strasse`. By adding this as a regex,
 we are telling the model to pay attention to words ending this way, and will quickly learn to
@@ -87,8 +86,13 @@ training data!
 
 :::
 
+## Lookup Tables
 
-### Entities Roles and Groups
+Lookup tables are lists of words used to generate
+case-insensitive regex patterns that are added to the regex features.
+
+
+## Entities Roles and Groups
 
 :::caution
 This feature is experimental.
