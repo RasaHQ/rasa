@@ -119,7 +119,7 @@ def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Any]:
 def _write_default_telemetry_configuration(
     is_enabled: bool = TELEMETRY_ENABLED_BY_DEFAULT,
 ) -> None:
-    if is_enabled:
+    if is_enabled and os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE) is None:
         print_telemetry_reporting_info()
 
     new_config = _default_telemetry_configuration(is_enabled)
