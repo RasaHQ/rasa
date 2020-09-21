@@ -269,14 +269,14 @@ class SklearnPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         X = self.featurizer.create_state_features([tracker], domain, interpreter)
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )
         Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
-        return self._postprocess_prediction(y_proba, domain)
+        return self._postprocess_prediction(y_proba, domain), False
 
     def persist(self, path: Union[Text, Path]) -> None:
 

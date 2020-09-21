@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
+from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Tuple
 
 from tqdm import tqdm
 import numpy as np
@@ -11,7 +11,6 @@ from rasa.shared.core.events import (
     FormValidation,
     UserUttered,
     ActionExecuted,
-    DefinePrevUserUtteredFeaturization,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -634,7 +633,7 @@ class RulePolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], Optional[bool]]:
         # user text input is ground truth, so try to predict using it first
         rules_action_name_from_text = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=True
@@ -647,11 +646,7 @@ class RulePolicy(MemoizationPolicy):
         # text has priority over intents including default,
         # however loop happy path has priority over rules prediction
         if default_action_name and not rules_action_name_from_text:
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
-                # TODO temporary bad solution
-                tracker.update(DefinePrevUserUtteredFeaturization(False))
-            return self._prediction_result(default_action_name, tracker, domain)
+            return self._prediction_result(default_action_name, tracker, domain), False
 
         # A loop has priority over any other rule.
         # The rules or any other prediction will be applied only if a loop was rejected.
@@ -659,31 +654,30 @@ class RulePolicy(MemoizationPolicy):
         # simply force predict the loop.
         loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
-            # TODO check: we don't know whether intent or text should be used
-            #  and happy user input anyhow should be ignored
-            return self._prediction_result(loop_happy_path_action_name, tracker, domain)
+            # this prediction doesn't use user input
+            # and happy user input anyhow should be ignored during featurization
+            return (
+                self._prediction_result(loop_happy_path_action_name, tracker, domain),
+                None,
+            )
 
         # # predict rules from text first
         if rules_action_name_from_text:
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
-                # TODO temporary bad solution
-                tracker.update(DefinePrevUserUtteredFeaturization(True))
-            return self._prediction_result(rules_action_name_from_text, tracker, domain)
+            return (
+                self._prediction_result(rules_action_name_from_text, tracker, domain),
+                True,
+            )
 
         rules_action_name_from_intent = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=False
         )
         if rules_action_name_from_intent:
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
-                # TODO temporary bad solution
-                tracker.update(DefinePrevUserUtteredFeaturization(False))
-            return self._prediction_result(
-                rules_action_name_from_intent, tracker, domain
+            return (
+                self._prediction_result(rules_action_name_from_intent, tracker, domain),
+                False,
             )
 
-        return self._default_predictions(domain)
+        return self._default_predictions(domain), None
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)

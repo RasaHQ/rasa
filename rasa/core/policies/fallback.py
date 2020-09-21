@@ -146,7 +146,7 @@ class FallbackPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         """Predicts a fallback action.
 
         The fallback action is predicted if the NLU confidence is low
@@ -184,7 +184,7 @@ class FallbackPolicy(Policy):
             )
             result = self.fallback_scores(domain, self.core_threshold)
 
-        return result
+        return result, False
 
     def _metadata(self) -> Dict[Text, Any]:
         return {

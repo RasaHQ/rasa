@@ -1,5 +1,5 @@
 import logging
-from typing import List, Text, Optional, Any, TYPE_CHECKING, Dict
+from typing import List, Text, Optional, Any, TYPE_CHECKING, Dict, Tuple
 
 from rasa.shared.core.events import UserUttered, ActionExecuted
 
@@ -113,7 +113,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         """Predicts the next action if NLU confidence is low."""
 
         nlu_data = tracker.latest_message.parse_data
@@ -172,7 +172,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             )
             result = self.fallback_scores(domain, self.core_threshold)
 
-        return result
+        return result, False
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
         action_requires_input = tracker.latest_action.get(ACTION_NAME) in [

@@ -7,8 +7,7 @@ import numpy as np
 import rasa.shared.utils.io
 import tensorflow as tf
 import tensorflow_addons as tfa
-import typing
-from typing import Any, List, Optional, Text, Dict, Tuple, Union
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
 
 import rasa.utils.io as io_utils
 from rasa.shared.core.domain import Domain
@@ -25,7 +24,6 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.events import DefinePrevUserUtteredFeaturization
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
@@ -71,10 +69,11 @@ from rasa.utils.tensorflow.constants import (
     SEQUENCE,
     SENTENCE,
     DENSE_DIMENSION,
+    E2E_CONFIDENCE_THRESHOLD,
 )
 
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
 
@@ -203,6 +202,8 @@ class TEDPolicy(Policy):
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
+        # Only pick e2e prediction if the policy is confident enough
+        E2E_CONFIDENCE_THRESHOLD: 0.8,
     }
 
     @staticmethod
@@ -373,13 +374,13 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         """Predict the next action the bot should take.
         Return the list of probabilities for the next actions.
         """
 
         if self.model is None:
-            return self._default_predictions(domain)
+            return self._default_predictions(domain), False
 
         # create model data from tracker
         tracker_state_features = []
@@ -407,39 +408,38 @@ class TEDPolicy(Policy):
 
         # take the last prediction in the sequence
         similarities = output["similarities"].numpy()[:, -1, :]
+        confidences = output["action_scores"].numpy()[:, -1, :]
 
-        # TODO using similarities to pick appropriate input,
-        #  since it seems to be more accurate measure, but confidences might be better
-        if len(tracker_state_features) == 2 and np.max(similarities[1]) > np.max(
-            similarities[0]
+        # we using similarities to pick appropriate input,
+        # since it seems to be more accurate measure,
+        # policy is trained to maximize the similarity not the confidence
+        if (
+            len(tracker_state_features) == 2
+            and np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
+            and np.max(similarities[1]) > np.max(similarities[0])
         ):
-            # TODO similarity condition is not optimal
             batch_index = 1
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
-                tracker.update(DefinePrevUserUtteredFeaturization(True))
-        elif len(tracker_state_features) == 2 or INTENT in self.zero_state_features:
+            is_e2e_prediction = True
+        elif len(tracker_state_features) == 2:
+            batch_index = 0
+            is_e2e_prediction = False
+        else:  # only one tracker present
             batch_index = 0
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
-                tracker.update(DefinePrevUserUtteredFeaturization(False))
-        elif TEXT in self.zero_state_features:
-            batch_index = 0
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
-                tracker.update(DefinePrevUserUtteredFeaturization(True))
-        else:
-            raise Exception("Conditions above went wrong")
+                if TEXT in self.zero_state_features:
+                    is_e2e_prediction = True
+                else:
+                    is_e2e_prediction = False
+            else:
+                is_e2e_prediction = None
 
-        # take the last prediction in the sequence
-        confidence = output["action_scores"].numpy()[:, -1, :]
         # take correct batch dimension
-        confidence = confidence[batch_index, :]
+        confidence = confidences[batch_index, :]
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return confidence.tolist()
+        return list(confidence.tolist()), is_e2e_prediction
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""

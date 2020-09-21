@@ -81,3 +81,5 @@ SENTENCE_FEATURES = "sentence_features"
 
 FEATURIZERS = "featurizers"
 CHECKPOINT_MODEL = "checkpoint_model"
+
+E2E_CONFIDENCE_THRESHOLD = "e2e_confidence_threshold"
