@@ -94,7 +94,7 @@ that are part of your action code but not included in the base `rasa/rasa-sdk` i
 
 #### Automating your Action Server Image Builds
 
-In addition to a manual step to create a new Action Server Image. You can use [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) to automate image builds.
+In addition to a manually creating a new Action Server image, you can use the [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) to automate image builds.
 If GitHub Actions are new to you, it might be helpful to get familiar with [GitHub Actions Documentation](https://docs.github.com/en/actions).
 
 The following steps assume that you already created a GitHub repository and you have a DockerHub account.
@@ -110,13 +110,15 @@ To create a workflow for building and pushing a Docker image into a DockerHub re
 
 2. In your GitHub repository create a file [`.github/workflows/action_server.yml`](https://github.com/RasaHQ/action-server-gha/blob/master/examples/action_server.yml).
 
-The GitHub Action workflow below builds a new docker image every time new changes are pushed into the `master` branch.
+The GitHub Action workflow below builds a new docker image every time files inside the `actions/` directory have changed and the changes are pushed into the `master` branch.
 
 ```yaml
 on:
   push:
     branches:
       - master
+    paths:
+    - 'actions/**'
 
 jobs:
   build_and_deploy:
@@ -143,8 +145,9 @@ jobs:
 
 3. Push your changes to the `master` branch. After changes are pushed, the workflow will build and push a new image into the DockerHub registry.
 
-4. Now, you can use your new brand docker image or, for example, extend your workflow.
-The example below shows how to extend your workflow by a new step that updates a Rasa X deployment based on [Helm Chart](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server)
+4. Now, you can use your new brand docker image.
+
+5. You can also extend your workflow, so that you do not have to manually update your Rasa X deployment. The example below shows how to extend your workflow with an additional step that updates a Rasa X [Helm Chart](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server) deployment.
 
 ```yaml
 on:
