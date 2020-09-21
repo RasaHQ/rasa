@@ -3,16 +3,15 @@ id: stories
 sidebar_label: Stories
 title: Stories
 description: Stories are used to teach Rasa real conversation designs to learn from providing the basis for a scalable machine learning dialogue management.
-abstract: Stories are a type of training data used to train your assistant's dialogue management
-  model. Stories can be used to train models that are able to generalize to unseen conversation paths.
+abstract: Stories are one way (rules are the other) to train your assistant's dialogue management model. Rasa uses stories to train your model and enable it to respond to conversations it doesn't already have in its training data.
 ---
 ## Format
 
-A story is a representation of a conversation between a user and an AI assistant,
-converted into a specific format where user inputs are expressed as intents
-(and entities when necessary), while the assistant's responses and actions are expressed as action names.
+All Rasa training data is written using YAML, you can learn more about using YAML in the [Training Data Format](./training-data-format.mdx) page.
 
-Here's an example of a dialogue in the Rasa story format:
+A Rasa story describes a conversation between a user and an AI assistant, in a format where user inputs are expressed as intents (and entities when necessary), while the assistant's actions are expressed as action names.
+
+Here's an example of a conversation in the story format that will be explained below:
 
 ```yaml-rasa
 stories: 
@@ -34,20 +33,31 @@ stories:
 
 ### User Messages
 
-While writing stories, you do not have to deal with the specific contents of
-the messages that the users send. Instead, you can take advantage of the output
-from the NLU pipeline, which lets you use just the combination of an intent and
-entities to refer to all the possible messages the users can send to mean the
-same thing.
+In stories, you describe a user's input using intents and entities that Rasa's NLU will predict based on your users' messages.
 
-It is important to include the entities here as well because the policies learn
-to predict the next action based on a *combination* of both the intent and
-entities (you can, however, change this behavior using the
-[use_entities](./domain.mdx#use-entities) attribute).
+```yaml-rasa {6-9}
+stories: 
+- story: collect restaurant booking info  # name of the story - just for debugging
+  steps: 
+  - intent: greet                         # user message with no entities
+  - action: utter_ask_howcanhelp
+  - intent: inform                        # user message with no entities
+    entities:
+    - location: "rome"
+    - price: "cheap" 
+  - action: utter_on_it                  # action that the bot should execute
+  - action: utter_ask_cuisine 
+  - intent: inform
+    entities:
+    - cuisine: "spanish"
+  - action: utter_ask_num_people
+```
+
+If you expect your user messages to contain entities, you should include them in your stories so that your model can predict the next action based on the *combination* of both the intent and entities.
 
 ### Actions
 
-All actions executed by the bot, including [responses](./responses.mdx) are listed
+All actions executed by the assistant, including [responses](./responses.mdx) are listed
 in stories under the `action` key.
 
 You can use a response from your domain as an action by listing it as one 
