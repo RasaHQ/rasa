@@ -11,90 +11,45 @@ API, search a database, etc.). This is also called **slot filling**.
 
 ## Usage
 
-To use forms with Rasa Open Source you need to make sure that the
-[Rule Policy](./policies.mdx#rule-policy) is added to your policy configuration.
-For example:
+### Defining a Form
 
-```yaml-rasa
+Before you define a form, you need to add the [Rule Policy](./policies.mdx#rule-policy)
+to your configuration:
+
+```yaml-rasa title="config.yml"
 policies:
 - name: RulePolicy
 ```
 
-### Defining a Form
-
-Define a form by adding it to the `forms` section in your [Domain](./domain.mdx).
-The name of the form is also the name of the action which you can use in
-[Stories](./stories.mdx) or [Rules](./rules.mdx) to handle form executions. Further you
-need to define [Slot Mappings](./forms.mdx#slot-mappings) for each slot which your
-form should fill.
-You can specify one or more slot mappings for each slot to be filled.
-
-The following example of a form `your_form` will fill only one slot
-`age` from an extracted entity `age`.
+To define a form, add it to the `forms` section in your [Domain](./domain.mdx).
+For example:
 
 ```yaml-rasa
 forms:
-  your_form:
+  birthday_form:
     age:
     - type: from_entity
       entity: age
 ```
 
-Once the form action gets called for the first time, the form gets activated and will
-prompt the user for the next required slot value. It does this by
-looking for a [response](./responses.mdx) called
-`utter_ask_{form_name}_{slot_name}` or `utter_ask_{slot_name}` if the former isn't
-found. Make sure to define these responses in your domain file for
-each required slot.
+The top-level key underneath `forms` is the name of your form, in this case `birthday_form`.
 
-### Activating a Form
+For each [slot](./domain.mdx#slots) you want your form to fill, list the name of slot
+and specify one or more [slot mappings](./forms.mdx#slot-mappings) for that slot.
+The example above fills only one slot, `age`, from an extracted entity `age`.
 
-To activate a form you need to add a [Story](./stories.mdx) or [Rule](./rules.mdx),
-which describes when the assistant should run the form. In the case a specific intent
-triggering a form, you can for example use the following rule:
+Your assistant will use responses you define to ask the user for information. 
+For each slot in your form, write a [response](./responses.mdx) with a name
+that follows one of the formats below: 
+  - `utter_ask_{form_name}_{slot_name}`
+  - `utter_ask_{slot_name}`
 
+For example:
 ```yaml-rasa
-rules:
-- rule: Activate form
-  steps:
-  - intent: intent_which_activates_form
-  - action: your_form
-  - active_loop: your_form
+responses:
+  utter_ask_birthday_form_age:
+    - text: "How old are you turning?"
 ```
-
-:::note
-The `active_loop: your_form` step indicates that the form should be activated after
-`your_form` was run.
-:::
-
-### Deactivating a Form
-
-A form will automatically deactivate itself once all required slots are filled.
-You can describe your assistant's behavior for the end of a form with a rule or a story.
-If you don't add an applicable story or rule, the assistant will automatically listen
-for the next user message after the form is finished.
-The following example runs the utterance `utter_all_slots_filled` as soon as the form
-`your_form` filled all required slots.
-
-```yaml-rasa
-rules:
-- rule: Submit form
-  condition:
-  # Condition that form is active.
-  - active_loop: your_form
-  steps:
-  # Form is deactivated
-  - action: your_form
-  - active_loop: null
-  - slot_was_set: 
-    - requested_slot: null
-  # The action we want to run when the form is submitted.
-  - action: utter_all_slots_filled
-```
-
-Users might want to break out of a form early. Please see
-[Writing Stories / Rules for Unhappy Form Paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths) on how to
-write stories or rules for this case.
 
 ### Slot Mappings
 
@@ -185,6 +140,55 @@ forms:
       intent: intent_name
       not_intent: excluded_intent
 ```
+
+### Activating a Form
+
+To activate a form you need to add a [Story](./stories.mdx) or [Rule](./rules.mdx),
+which describes when the assistant should run the form. In the case a specific intent
+triggering a form, you can for example use the following rule:
+
+```yaml-rasa
+rules:
+- rule: Activate form
+  steps:
+  - intent: intent_which_activates_form
+  - action: your_form
+  - active_loop: your_form
+```
+
+:::note
+The `active_loop: your_form` step indicates that the form should be activated after
+`your_form` was run.
+:::
+
+### Deactivating a Form
+
+A form will automatically deactivate itself once all required slots are filled.
+You can describe your assistant's behavior for the end of a form with a rule or a story.
+If you don't add an applicable story or rule, the assistant will automatically listen
+for the next user message after the form is finished.
+The following example runs the utterance `utter_all_slots_filled` as soon as the form
+`your_form` filled all required slots.
+
+```yaml-rasa
+rules:
+- rule: Submit form
+  condition:
+  # Condition that form is active.
+  - active_loop: your_form
+  steps:
+  # Form is deactivated
+  - action: your_form
+  - active_loop: null
+  - slot_was_set: 
+    - requested_slot: null
+  # The action we want to run when the form is submitted.
+  - action: utter_all_slots_filled
+```
+
+Users might want to break out of a form early. Please see
+[Writing Stories / Rules for Unhappy Form Paths](./forms.mdx#writing-stories--rules-for-unhappy-form-paths) on how to
+write stories or rules for this case.
 
 ### Writing Stories / Rules for Unhappy Form Paths
 
