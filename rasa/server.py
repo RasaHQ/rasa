@@ -29,16 +29,13 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils import common as common_utils
 from rasa import model
-from rasa.constants import (
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_MODELS_PATH,
-    DEFAULT_RESPONSE_TIMEOUT,
-    MINIMUM_COMPATIBLE_VERSION,
-)
+from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
     DOCS_BASE_URL,
     DEFAULT_SENDER_ID,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
 )
 from rasa.shared.core.domain import InvalidDomain
 from rasa.core.agent import Agent
@@ -91,6 +88,7 @@ class ErrorResponse(Exception):
         }
         self.status = status
         logger.error(message)
+        super(ErrorResponse, self).__init__()
 
 
 def _docs(sub_url: Text) -> Text:

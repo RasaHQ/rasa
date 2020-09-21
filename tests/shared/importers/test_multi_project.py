@@ -5,9 +5,12 @@ import pytest
 import os
 
 import rasa.shared.utils.io
-from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
-from rasa.shared.constants import DEFAULT_E2E_TESTS_PATH
-from rasa.shared.nlu.training_data.formats import RasaReader
+from rasa.shared.constants import (
+    DEFAULT_E2E_TESTS_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
+from rasa.shared.nlu.training_data.formats import RasaReader, RasaYAMLReader
 import rasa.utils.io
 from rasa import model
 from rasa.core import utils
@@ -348,8 +351,8 @@ async def test_multi_project_training(trained_async):
 
     assert all([i in domain.intents for i in expected_intents])
 
-    nlu_training_data_file = os.path.join(unpacked, "nlu", "training_data.json")
-    nlu_training_data = RasaReader().read(nlu_training_data_file)
+    nlu_training_data_file = os.path.join(unpacked, "nlu", "training_data.yml")
+    nlu_training_data = RasaYAMLReader().read(nlu_training_data_file)
 
     assert expected_intents == nlu_training_data.intents
 

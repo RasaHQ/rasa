@@ -1,0 +1,13 @@
+language: "en"
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+
+policies:
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 5
+    evaluate_on_number_of_examples: 14
+    evaluate_every_number_of_epochs: 1
+    checkpoint_model: True
+  - name: RulePolicy

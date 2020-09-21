@@ -17,16 +17,15 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import (
     guess_format,
     UNK,
-    RASA_YAML,
-    JSON,
-    MARKDOWN,
     load_data,
 )
 from rasa.shared.nlu.training_data.util import (
-    get_file_format,
+    get_file_format_extension,
     template_key_to_intent_response_key,
     intent_response_key_to_template_key,
 )
+
+import rasa.shared.data
 
 
 def test_luis_data():
@@ -558,21 +557,27 @@ def test_training_data_conversion(
 @pytest.mark.parametrize(
     "data_file,expected_format",
     [
-        ("data/examples/luis/demo-restaurants_v5.json", JSON),
-        ("data/examples", JSON),
-        ("data/examples/rasa/demo-rasa.md", MARKDOWN),
-        ("data/rasa_yaml_examples", RASA_YAML),
+        (
+            "data/examples/luis/demo-restaurants_v5.json",
+            rasa.shared.data.yaml_file_extension(),
+        ),
+        ("data/examples", rasa.shared.data.yaml_file_extension()),
+        (
+            "data/examples/rasa/demo-rasa.md",
+            rasa.shared.data.markdown_file_extension(),
+        ),
+        ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],
 )
 def test_get_supported_file_format(data_file: Text, expected_format: Text):
-    fformat = get_file_format(data_file)
+    fformat = get_file_format_extension(data_file)
     assert fformat == expected_format
 
 
 @pytest.mark.parametrize("data_file", ["path-does-not-exists", None])
 def test_get_non_existing_file_format_raises(data_file: Text):
     with pytest.raises(AttributeError):
-        get_file_format(data_file)
+        get_file_format_extension(data_file)
 
 
 def test_guess_format_from_non_existing_file_path():

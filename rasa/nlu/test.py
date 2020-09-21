@@ -17,16 +17,17 @@ from typing import (
     Any,
 )
 
+from rasa import telemetry
 import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
+import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
-    PREDICTED_CONFIDENCE_KEY,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
@@ -44,6 +45,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
@@ -1514,6 +1516,8 @@ def run_evaluation(
             errors,
             disable_plotting,
         )
+
+    telemetry.track_nlu_model_test(test_data)
 
     return result
 

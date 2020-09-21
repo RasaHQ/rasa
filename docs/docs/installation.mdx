@@ -9,12 +9,17 @@ import TabItem from '@theme/TabItem';
 import { Button } from '@theme/Button';
 
 ## Quick Installation
+:::info Release candidate
+This is the documentation for Rasa Open Source 2.0.0rc1. If you are looking for the
+production ready stable release, please head over to our
+[1.x documentation](https://legacy-docs-v1.rasa.com/user-guide/installation/).
+:::
 
 You can install Rasa Open Source using pip (requires Python 3.6, 3.7 or 3.8).
 
 <!-- TODO: REMOVE VERSION NUMBER FOR RASA 2.0 RELEASE -->
 ```bash
-pip3 install rasa==2.0.0a2
+pip3 install rasa==2.0.0rc1
 ```
 
 You are now ready to go! So what's next?
@@ -167,6 +172,13 @@ without root privileges.
   </TabItem>
 </Tabs>
 
+:::note Telemetry reporting
+When you run Rasa Open Source for the first time, you’ll see a
+message notifying you about anonymous usage data that is being collected.
+You can read more about how that data is pulled out and what it is used for in the
+[telemetry documentation](./telemetry/telemetry.mdx).
+:::
+
 **Congratulations! You have successfully installed Rasa Open Source!**
 
 Next step: Start prototyping your first assistant online and download it afterwards
@@ -184,7 +196,6 @@ git clone https://github.com/RasaHQ/rasa.git
 cd rasa
 poetry install
 ```
-
 ## Additional Dependencies
 
 For some machine learning algorithms you need to install additional python packages.
@@ -237,3 +248,17 @@ The file you need is `total_word_feature_extractor.dat`. Save this
 anywhere. If you want to use MITIE, you need to
 tell it where to find this file (in this example it was saved in the
 `data` folder of the project directory).
+
+## Upgrading Versions
+
+To upgrade your installed version of Rasa Open Source to the latest version from PyPI:
+
+```bash
+pip install --upgrade rasa
+```
+
+To download a specific version, specify the version number:
+
+```bash
+pip install rasa==1.8.3
+```

@@ -1,19 +1,5 @@
 import os
 
-from rasa.shared.constants import DOCS_BASE_URL
-
-DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
-DEFAULT_CREDENTIALS_PATH = "credentials.yml"
-DEFAULT_CONFIG_PATH = "config.yml"
-DEFAULT_DOMAIN_PATH = "domain.yml"
-DEFAULT_ACTIONS_PATH = "actions"
-DEFAULT_MODELS_PATH = "models"
-DEFAULT_CONVERTED_DATA_PATH = "converted_data"
-DEFAULT_DATA_PATH = "data"
-DEFAULT_RESULTS_PATH = "results"
-DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
-DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
-DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
@@ -25,20 +11,18 @@ NUMBER_OF_TRAINING_STORIES_FILE = "num_stories.json"
 PERCENTAGE_KEY = "__percentage__"
 
 PACKAGE_NAME = "rasa"
+NLU_MODEL_NAME_PREFIX = "nlu_"
+CHECKPOINT_MODEL_NAME = "rasa_model_checkpoint"
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 
-DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
-DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
-DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/user-guide/connectors/"
-DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/api/event-brokers/"
-DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
-DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/api/tracker-stores/"
-DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/nlu/components/"
-DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide/"
-
-DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
+# Key in global config file which contains whether the user agreed to telemetry
+# reporting. These are reused in Rasa X. Keep this in mind when changing their names.
+CONFIG_FILE_TELEMETRY_KEY = "metrics"
+CONFIG_TELEMETRY_ID = "rasa_user_id"
+CONFIG_TELEMETRY_ENABLED = "enabled"
+CONFIG_TELEMETRY_DATE = "date"
 
 MINIMUM_COMPATIBLE_VERSION = "2.0.0a3"
 

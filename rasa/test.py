@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import typing
@@ -8,14 +7,9 @@ from pathlib import Path
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
-from rasa.constants import (
-    DEFAULT_RESULTS_PATH,
-    RESULTS_FILE,
-    NUMBER_OF_TRAINING_STORIES_FILE,
-)
-import rasa.cli.utils as cli_utils
-import rasa.utils.common as utils
+import rasa.utils.common
+from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
+from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.exceptions import ModelNotFound
 import rasa.shared.nlu.training_data.loading
 
@@ -32,8 +26,9 @@ def test_core_models_in_directory(
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
+    rasa.utils.common.run_in_loop(
+        compare_models_in_dir(model_directory, stories, output)
+    )
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
     number_of_stories = rasa.shared.utils.io.read_json_file(story_n_path)
@@ -92,8 +87,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
 def test_core_models(models: List[Text], stories: Text, output: Text):
     from rasa.core.test import compare_models
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(compare_models(models, stories, output))
+    rasa.utils.common.run_in_loop(compare_models(models, stories, output))
 
 
 def test(
@@ -157,18 +151,7 @@ def test_core(
         additional_arguments, test, ["stories", "agent"]
     )
 
-    _test_core(stories, _agent, output, **kwargs)
-
-
-def _test_core(
-    stories: Optional[Text], agent: "Agent", output_directory: Text, **kwargs: Any
-) -> None:
-    from rasa.core.test import test
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        test(stories, agent, out_directory=output_directory, **kwargs)
-    )
+    rasa.utils.common.run_in_loop(test(stories, _agent, out_directory=output, **kwargs))
 
 
 def test_nlu(
@@ -218,7 +201,6 @@ def compare_nlu_models(
     from rasa.nlu.utils import write_json_to_file
     from rasa.utils.io import create_path
     from rasa.nlu.test import compare_nlu
-    import rasa.shared.nlu.training_data.loading
 
     data = rasa.shared.nlu.training_data.loading.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=5)

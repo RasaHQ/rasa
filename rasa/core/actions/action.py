@@ -15,7 +15,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_TEMPLATE_NAME_KEY,
-    INTENT_RANKING_KEY,
 )
 
 from rasa.shared.constants import (
@@ -36,7 +35,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
 )
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
 from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
@@ -545,10 +544,10 @@ class RemoteAction(Action):
             return True
         except ValidationError as e:
             e.message += (
-                ". Failed to validate Action server response from API, "
-                "make sure your response from the Action endpoint is valid. "
-                "For more information about the format visit "
-                "{}/core/actions/".format(DOCS_BASE_URL)
+                f". Failed to validate Action server response from API, "
+                f"make sure your response from the Action endpoint is valid. "
+                f"For more information about the format visit "
+                f"{DOCS_BASE_URL}/custom-actions"
             )
             raise e
 
@@ -596,13 +595,12 @@ class RemoteAction(Action):
         json_body = self._action_call_format(tracker, domain)
         if not self.action_endpoint:
             logger.error(
-                "The model predicted the custom action '{}', "
-                "but you didn't configure an endpoint to "
-                "run this custom action. Please take a look at "
-                "the docs and set an endpoint configuration via the "
-                "--endpoints flag. "
-                "{}/core/actions"
-                "".format(self.name(), DOCS_BASE_URL)
+                f"The model predicted the custom action '{self.name()}', "
+                f"but you didn't configure an endpoint to "
+                f"run this custom action. Please take a look at "
+                f"the docs and set an endpoint configuration via the "
+                f"--endpoints flag. "
+                f"{DOCS_BASE_URL}/custom-actions"
             )
             raise Exception("Failed to execute custom action.")
 
@@ -672,6 +670,7 @@ class ActionExecutionRejection(Exception):
         self.message = message or "Custom action '{}' rejected to run".format(
             action_name
         )
+        super(ActionExecutionRejection, self).__init__()
 
     def __str__(self) -> Text:
         return self.message

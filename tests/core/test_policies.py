@@ -47,6 +47,7 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
 )
+from rasa.train import train_core
 from rasa.utils import train_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
@@ -285,6 +286,24 @@ class TestSklearnPolicy(PolicyTestCollection):
 
 
 class TestTEDPolicy(PolicyTestCollection):
+    def test_train_model_checkpointing(self, tmpdir: Path):
+
+        from pathlib import Path
+
+        model_name = "core-checkpointed-model"
+        best_model_file = Path(tmpdir.strpath, model_name + ".tar.gz")
+        assert not best_model_file.exists()
+
+        train_core(
+            domain="data/test_domains/default.yml",
+            stories="data/test_stories/stories_defaultdomain.md",
+            output=tmpdir.strpath,
+            fixed_model_name=model_name,
+            config="data/test_config/config_ted_policy_model_checkpointing.yml",
+        )
+
+        assert best_model_file.exists()
+
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(featurizer=featurizer, priority=priority)
         return p
