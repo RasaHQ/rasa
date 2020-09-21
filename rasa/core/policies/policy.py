@@ -199,7 +199,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
@@ -210,6 +210,7 @@ class Policy:
 
         Returns:
              the list of probabilities for the next actions
+             and whether the prediction was e2e
         """
 
         raise NotImplementedError("Policy must have the capacity to predict.")

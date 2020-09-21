@@ -135,7 +135,7 @@ class FormPolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)
 
@@ -149,7 +149,7 @@ class FormPolicy(MemoizationPolicy):
                 if tracker.active_loop.get(LOOP_REJECTED):
                     if self.state_is_unhappy(tracker, domain):
                         tracker.update(FormValidation(False))
-                        return result
+                        return result, False
 
                 result = self._prediction_result(
                     tracker.active_loop_name, tracker, domain
@@ -162,7 +162,7 @@ class FormPolicy(MemoizationPolicy):
         else:
             logger.debug("There is no active form")
 
-        return result
+        return result, False
 
     def _metadata(self) -> Dict[Text, Any]:
         return {"priority": self.priority, "lookup": self.lookup}

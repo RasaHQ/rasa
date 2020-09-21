@@ -32,6 +32,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
     Event,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -480,6 +481,7 @@ class Prediction(NamedTuple):
     """Stores the probabilities and the priority of the prediction."""
 
     probabilities: List[float]
+    is_e2e_prediction: Optional[bool]
     priority: int
 
 
@@ -511,7 +513,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     def _pick_best_policy(
         self, predictions: Dict[Text, Prediction]
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text], Optional[bool]]:
         """Picks the best policy prediction based on probabilities and policy priority.
 
         Args:
@@ -535,7 +537,18 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         form_confidence = None
         form_policy_name = None
 
+        e2e_predictions = []
+        classic_predictions = []
         for policy_name, prediction in predictions.items():
+            if prediction.is_e2e_prediction:
+                e2e_predictions.append((policy_name, prediction))
+            else:
+                classic_predictions.append((policy_name, prediction))
+
+        # if there is at least one e2e prediction, compare only e2e predicitons
+        predictions_to_use = e2e_predictions if e2e_predictions else classic_predictions
+
+        for policy_name, prediction in predictions_to_use:
             confidence = (max(prediction.probabilities), prediction.priority)
             if self._is_form_policy(policy_name):
                 # store form prediction separately
@@ -553,14 +566,18 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             if form_confidence > best_confidence:
                 best_policy_name = form_policy_name
 
-        return predictions[best_policy_name].probabilities, best_policy_name
+        return (
+            predictions[best_policy_name].probabilities,
+            best_policy_name,
+            predictions[best_policy_name].is_e2e_prediction,
+        )
 
     def _best_policy_prediction(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> Tuple[List[float], Optional[Text], Optional[bool]]:
         """Finds the best policy prediction.
 
         Args:
@@ -616,7 +633,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             len(arguments) > number_of_arguments_in_rasa_1_0
             and "interpreter" in arguments
         ):
-            probabilities = policy.predict_action_probabilities(
+            probabilities, is_e2e_prediction = policy.predict_action_probabilities(
                 tracker, domain, interpreter
             )
         else:
@@ -627,11 +644,11 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 "adapt your custom `Policy` implementation.",
                 category=DeprecationWarning,
             )
-            probabilities = policy.predict_action_probabilities(
+            probabilities, is_e2e_prediction = policy.predict_action_probabilities(
                 tracker, domain, RegexInterpreter()
             )
 
-        return Prediction(probabilities, policy.priority)
+        return Prediction(probabilities, is_e2e_prediction, policy.priority)
 
     def _fallback_after_listen(
         self, domain: Domain, probabilities: List[float], policy_name: Text
@@ -695,9 +712,24 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_policy_name: the name of the picked policy
         """
 
-        probabilities, policy_name = self._best_policy_prediction(
+        probabilities, policy_name, is_e2e_prediction = self._best_policy_prediction(
             tracker, domain, interpreter
         )
+
+        if tracker.latest_action_name == ACTION_LISTEN_NAME:
+            if is_e2e_prediction is None:
+                # TODO figure out what to do in case of `None`
+                logger.debug("Made prediction without using user input.")
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+                tracker.update(DefinePrevUserUtteredFeaturization(False))
+            elif is_e2e_prediction:
+                logger.debug("Made e2e prediction using user text.")
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
+                tracker.update(DefinePrevUserUtteredFeaturization(True))
+            else:
+                logger.debug("Made prediction using user intent.")
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+                tracker.update(DefinePrevUserUtteredFeaturization(False))
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME

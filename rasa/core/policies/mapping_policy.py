@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING
+from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING, Tuple
 
 import rasa.shared.utils.common
 import rasa.utils.io
@@ -95,7 +95,7 @@ class MappingPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         """Predicts the assigned action.
 
         If the current intent is assigned to an action that action will be
@@ -168,7 +168,7 @@ class MappingPolicy(Policy):
                 "There is no mapped action for the predicted intent, "
                 "'{}'.".format(intent)
             )
-        return result
+        return result, False
 
     def _metadata(self) -> Dict[Text, Any]:
         return {"priority": self.priority}

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Any, Text
+from typing import List, Any, Text, Tuple
 
 import pytest
 import copy
@@ -57,7 +57,7 @@ class WorkingPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         pass
 
     def __eq__(self, other: Any) -> bool:
@@ -100,10 +100,10 @@ class ConstantPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         result = [0.0] * domain.num_actions
         result[self.predict_index] = 1.0
-        return result
+        return result, False
 
 
 def test_policy_priority():
@@ -297,7 +297,7 @@ class LoadReturnsNonePolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         pass
 
 
@@ -333,7 +333,7 @@ class LoadReturnsWrongTypePolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], bool]:
         pass
 
 

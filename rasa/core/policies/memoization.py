@@ -5,7 +5,7 @@ import json
 import logging
 
 from tqdm import tqdm
-from typing import Optional, Any, Dict, List, Text
+from typing import Optional, Any, Dict, List, Text, Tuple
 
 import rasa.utils.io
 import rasa.shared.utils.io
@@ -221,7 +221,7 @@ class MemoizationPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], Optional[bool]]:
         result = self._default_predictions(domain)
 
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
@@ -234,7 +234,7 @@ class MemoizationPolicy(Policy):
         else:
             logger.debug("There is no memorised next action")
 
-        return result
+        return result, False
 
     def _metadata(self) -> Dict[Text, Any]:
         return {
