@@ -203,7 +203,7 @@ class TEDPolicy(Policy):
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
         # Only pick e2e prediction if the policy is confident enough
-        E2E_CONFIDENCE_THRESHOLD: 0.8,
+        E2E_CONFIDENCE_THRESHOLD: 0.5,
     }
 
     @staticmethod
