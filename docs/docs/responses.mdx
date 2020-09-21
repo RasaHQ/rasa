@@ -2,46 +2,31 @@
 id: responses
 sidebar_label: Responses
 title: Responses
-abstract: Responses are messages that your assistant can send to the user. You can also use responses as actions,
-  making them the simplest type of action.
+abstract: Responses are messages that your assistant can send to the user. A response
+ can be as simple as pure text, or can include other content like images or buttons.
 ---
 ## Defining Responses
 
-A response can be as simple as pure text. Responses can also include random variation, visual
-and interactive components, and more.
+Responses go under the `responses` key in your [Domain](./domain.mdx) file. Each
+ response name needs to start with `utter_`.
 
-Responses go under the `responses` key in your domain file. Each response name should start with `utter_`.
-This response name is the key you should list your response under.
+Here's is a minimal example of a response called `utter_greet`:
 
-For example, here is a minimal text response called `utter_greet`:
+```yaml-rasa {6-9} title="domain.yml"
+version: "2.0"
 
-```yaml-rasa title="domain.yml"
+intents:
+  - greet
+
 responses:
   utter_greet:
   - text: "Hi there!"
 ```
 
-### Defining Responses for Retrieval Intents
-
-If you are using retrieval intents in your assistant, you also need to add responses
-for your assistant's replies to these intents:
-
-```yaml-rasa
-responses:
-  utter_chitchat/ask_name:
-  - image: "https://i.imgur.com/zTvA58i.jpeg"
-    text: hello, my name is retrieval bot.
-  - text: Oh yeah, I am called the retrieval bot.
-
-  utter_chitchat/ask_weather:
-  - text: Oh, it does look sunny right now in Berlin.
-    image: "https://i.imgur.com/vwv7aHN.png"
-  - text: I am not sure of the whole week but I can see the sun is out today.
-```
-
-All such responses (e.g. `utter_chitchat/ask_name`) start with the
-`utter_` prefix followed by the retrieval intent name (`chitchat`)
-and the associated response key (`ask_name`).
+:::note
+Responses are important when your assistant uses
+[Retrieval Actions](./retrieval-intents#training-data).
+:::
 
 ### Using Variables
 
