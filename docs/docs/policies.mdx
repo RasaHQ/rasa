@@ -4,8 +4,8 @@ sidebar_label: Policies
 title: Policies
 abstract: Your AI assistant uses policies to decide which action to take at each step in a conversation. There are machine-learning and rule-based policies that your assistant can use in tandem.
 ---
-Your project's `config.yml` file takes a `policies` key
-which you can use to customize the policies your assistant uses.
+You can customize the policies your assistant uses by specifying the `policies`
+key in your project's `config.yml`.
 There are different policies to choose from, and you can include
 multiple policies in a single configuration. Here's an example of
 what a list of policies might look like:
@@ -35,7 +35,7 @@ feature will provide default policies for you.
 At every turn, each policy defined in your configuration will
 predict a next action with a certain confidence level. For more information
 about how each policy makes its decision, read into the policy's description below.
-The assistant's next action is then decided by the policy that predicts with the highest confidence.
+The policy that predicts with the highest confidence decides the assistant's next action.
 
 :::note
 By default, your assistant can predict a maximum of 10 next actions
@@ -102,8 +102,8 @@ It is recommended to use `state_featurizer=LabelTokenizerSingleStateFeaturizer(.
 
 **Configuration:**
 
-Configuration parameters can be passed as parameters to the `TEDPolicy` within the configuration file.
-If you want to adapt your model, start by modifying the following parameters:
+You can pass configuration parameters to the `TEDPolicy` using the `config.yml` file.
+If you want to fine-tune your model, start by modifying the following parameters:
 
 * `epochs`:
   This parameter sets the number of times the algorithm will see the training data (default: `1`).
