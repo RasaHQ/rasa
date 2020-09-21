@@ -33,7 +33,7 @@ you can still find the documentation for
 ### High-Level Structure
 
 Each file can contain one or more **keys** with corresponding training
-data. One file can contain multiple keys, but each top-level key can only appear
+data. One file can contain multiple keys, but each key can only appear
 once in a single file. The available keys are:
 
 - `version`
@@ -46,7 +46,6 @@ You should specify the `version` key in all YAML training data files.
 If you don't specify a version key in your training data file, Rasa
 will assume you are using the latest training data format specification supported
 by the version of Rasa Open Source you have installed.
-
 Training data files with a Rasa Open Source version greater than what you have
 installed on your machine will be skipped.
 Currently, the latest training data format specification for Rasa 2.x is 2.0.
@@ -183,8 +182,8 @@ nlu:
       hey there!
 ```
 
-The `metadata` key can contain arbitrary key-value data that is tied with an example.
-The `metadata` key is accessible by the components in the NLU pipeline.
+The `metadata` key can contain arbitrary key-value data that is tied to an example and
+accessible by the components in the NLU pipeline.
 In the example above, the sentiment metadata could be used by a custom component in
 the pipeline for sentiment analysis.
 
@@ -269,7 +268,7 @@ for, see the section on [entity roles and groups](nlu-training-data.mdx#entities
 
 Synonyms normalize your training data by mapping an
 extracted entity to a value other than the literal text extracted.
-Synonyms can be defined in the format:
+You can define synonyms using the format:
 
 ```yaml-rasa
 nlu:
@@ -279,7 +278,7 @@ nlu:
     - credit account
 ```
 
-Synonyms can also be defined in-line in your training examples by
+You can also define synonyms in-line in your training examples by
 specifying the `value` of the entity:
 
 ```yaml-rasa
@@ -769,7 +768,7 @@ stories:
   - action: utter_ask_price
 ```
 
-Running the tests can be done using the CLI:
+You can run the tests using the following command:
 ```bash
 rasa test
 ```
