@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 class TelegramOutput(Bot, OutputChannel):
     """Output channel for Telegram"""
 
+    # skipcq: PYL-W0236
     @classmethod
     def name(cls) -> Text:
         return "telegram"

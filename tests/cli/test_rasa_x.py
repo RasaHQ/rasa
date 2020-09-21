@@ -8,7 +8,6 @@ from _pytest.pytester import RunResult
 from aioresponses import aioresponses
 
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
@@ -30,9 +29,10 @@ def test_x_help(run: Callable[..., RunResult]):
               [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):
@@ -44,7 +44,7 @@ def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):
         credentials_path, "http://localhost:5002"
     )
 
-    actual = io_utils.read_config_file(tmp_credentials)
+    actual = rasa.shared.utils.io.read_config_file(tmp_credentials)
 
     assert actual["rasa"]["url"] == "http://localhost:5002"
 
@@ -60,7 +60,7 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path):
 
     x._prepare_credentials_for_rasa_x(credentials_path)
 
-    actual = io_utils.read_config_file(credentials_path)
+    actual = rasa.shared.utils.io.read_config_file(credentials_path)
 
     assert actual == credentials
 

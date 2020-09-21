@@ -2,7 +2,7 @@
 # custom Python code.
 #
 # See this guide on how to implement these action:
-# https://rasa.com/docs/rasa/core/actions/#custom-actions/
+# https://rasa.com/docs/rasa/custom-actions
 
 
 # This is a simple example for an assistant that schedules reminders and
@@ -58,7 +58,7 @@ class ActionReactToReminder(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        name = next(tracker.get_latest_entity_values("name"), "someone")
+        name = next(tracker.get_slot("PERSON"), "someone")
         dispatcher.utter_message(f"Remember to call {name}!")
 
         return []

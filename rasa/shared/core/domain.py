@@ -27,6 +27,7 @@ SESSION_CONFIG_KEY = "session_config"
 USED_ENTITIES_KEY = "used_entities"
 USE_ENTITIES_KEY = "use_entities"
 IGNORE_ENTITIES_KEY = "ignore_entities"
+IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -62,6 +63,7 @@ class InvalidDomain(Exception):
 
     def __init__(self, message) -> None:
         self.message = message
+        super(InvalidDomain, self).__init__()
 
     def __str__(self) -> Text:
         # return message in error colours
@@ -326,7 +328,7 @@ class Domain:
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
                 f"Please resolve that ambiguity.",
-                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}#ignoring-entities-for-certain-intents",
+                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}",
             )
 
         properties[USED_ENTITIES_KEY] = used_entities
@@ -334,6 +336,15 @@ class Domain:
         del properties[IGNORE_ENTITIES_KEY]
 
         return intent
+
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intents(self) -> List[Text]:
+        """List retrieval intents present in the domain."""
+        return [
+            intent
+            for intent in self.intent_properties
+            if self.intent_properties[intent].get(IS_RETRIEVAL_INTENT_KEY)
+        ]
 
     @classmethod
     def collect_intent_properties(
@@ -1112,7 +1123,7 @@ class Domain:
         utterances = [
             a
             for a in self.action_names
-            if a.startswith(rasa.shared.core.constants.UTTER_PREFIX)
+            if a.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
         missing_templates = [t for t in utterances if t not in self.templates.keys()]
@@ -1124,12 +1135,11 @@ class Domain:
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "
                     f"check your domain.",
-                    docs=rasa.shared.constants.DOCS_URL_DOMAINS + "#responses",
+                    docs=rasa.shared.constants.DOCS_URL_RESPONSES,
                 )
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
-
         return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod

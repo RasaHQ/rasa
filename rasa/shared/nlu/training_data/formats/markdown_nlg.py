@@ -26,6 +26,7 @@ class NLGMarkdownReader(TrainingDataReader):
 
     def __init__(self) -> None:
         self.responses = {}
+        super(NLGMarkdownReader, self).__init__()
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
