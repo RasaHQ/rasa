@@ -3,22 +3,22 @@ id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
 abstract: Rasa Open Source lets you test dialogues end-to-end by running through
-  test stories. You can also test the dialogue management and the message processing 
-  (NLU) separately.
+  test conversations. In addition to full test conversations, you can
+  also test the dialogue management and the message processing (NLU)
+  separately.
 ---
 
-## End-to-end Testing
+## Writing Test Conversations
 
-Testing your assistant requires you to write test stories, which include
-the user messages and the conversation history. The format is a modified version of [the one
-used to specify stories in your training data](./stories.mdx#format).
+To test your assistant, you will need to write test conversations. These are like
+stories in your training data, but with the actual user utterance included as well.
 
 Here are some examples:
 
 <Tabs values={[{"label": "Basics", "value": "basics"}, {"label": "Custom Actions", "value": "customactions"}, {"label": "Forms Happy Path", "value": "formshappypath"}, {"label": "Forms Unhappy Path", "value": "formsunhappypath"}]} defaultValue="basics">
   <TabItem value="basics">
 
-  ```yaml-rasa title="tests/test_stories.yml"
+  ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
   stories:
   - story: A basic end-to-end test
     steps:
@@ -39,7 +39,7 @@ Here are some examples:
   </TabItem>
   <TabItem value="customactions">
 
-  ```yaml-rasa title="tests/test_stories.yml"
+  ```yaml-rasa title="tests/test_stories.yml" {5,12}
   stories:
   - story: A test where a custom action returns events
     steps:
@@ -60,9 +60,9 @@ Here are some examples:
   </TabItem>
   <TabItem value="formshappypath">
 
-  ```yaml-rasa title="tests/test_stories.yml"
+  ```yaml-rasa title="tests/test_stories.yml" {5,9,14,20}
   stories:
-  - story: A test story with a form
+  - story: A test conversation with a form
     steps:
     - user: |
         hi
@@ -88,9 +88,9 @@ Here are some examples:
   </TabItem>
   <TabItem value="formsunhappypath">
 
-  ```yaml-rasa title="tests/test_stories.yml"
+  ```yaml-rasa title="tests/test_stories.yml" {5,9,14,21}
   stories:
-  - story: A test story with unexpected input during a form
+  - story: A test conversation with unexpected input during a form
     steps:
     - user: |
         hi
@@ -102,7 +102,7 @@ Here are some examples:
     - action: restaurant_form
     - active_loop: restaurant_form
     - user: |
-        can you share your boss with me?
+        How's the weather?
       intent: chitchat
     - action: utter_chitchat
     - action: restaurant_form
@@ -117,56 +117,48 @@ Here are some examples:
   </TabItem>
 </Tabs>
 
-By default Rasa Open Source saves test stories to `tests/test_stories.yml`.
+Rasa Open Source looks for test conversations in all files with the prefix `test_`, e.g. `tests/test_stories.yml`.
 You can test your assistant against them by running:
 
 ```bash
 rasa test
 ```
 
-The command will always load all stories from any story files with filenames
-starting with `test_`, e.g. `test_stories.yml`. Your story test
-file names should always start with `test_` for this detection to work.
+See the [CLI documentation on rasa test command](./command-line-interface.mdx#rasa-test) for
+more configuration options.
 
 :::caution Testing Custom Actions
-[Custom Actions](./custom-actions.mdx) are **not executed as part of test stories.** If your custom
-actions append any events to the conversation, this has to be reflected in your test story
-(e.g. by adding `slot_was_set` events to your test story).
+[Custom Actions](./custom-actions.mdx) are not executed as part of test conversations. If your custom
+actions append any events to the conversation, this has to be reflected in your test conversation
+(e.g. by adding `slot_was_set` events to your test conversation).
 
 To test the code of your custom actions, you should write unit tests
-for them and include these tests in your CI/CD pipeline.
+for them and include these tests in your [CI/CD pipeline](./setting-up-ci-cd.mdx).
 
 :::
 
 If you have any questions or problems, please share them with us in the dedicated
-[testing section on our forum](https://forum.rasa.com/tags/testing).
+[testing section on our forum](https://forum.rasa.com/tags/testing) !
 
 ## Evaluating an NLU Model
 
-:::tip hyperparameter tuning
-If you are looking to tune the hyperparameters of your NLU model,
-check out this [tutorial](https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/).
-:::
-
-
-A standard technique in machine learning is to keep some data separate as a test set.
-You can [split your NLU training data](./command-line-interface.mdx#rasa-data-split)
+You should always test your machine learning model on data which it hasn't been trained on.
+You can [split your NLU data](./command-line-interface.mdx#create-a-train-test-split)
 into train and test sets using:
 
 ```bash
 rasa data split nlu
 ```
 
-If you've done this, you can see how well your NLU model predicts the
-test cases:
+Next, you can see how well your NLU model predicts the
+test cases using:
 
 ```bash
 rasa test nlu --nlu train_test_split/test_data.yml
 ```
 
-If you don't want to create a separate test set, you can
-still estimate how well your model generalises using cross-validation.
-To do this, add the flag `--cross-validation`:
+To test your model more extensively, use cross-validation, which automatically creates
+multiple train/test splits:
 
 ```bash
 rasa test nlu --nlu data/nlu.yml --cross-validation
@@ -175,27 +167,47 @@ rasa test nlu --nlu data/nlu.yml --cross-validation
 You can find the full list of options in the
 [CLI documentation on `rasa test`](command-line-interface.mdx#rasa-test).
 
+:::tip hyperparameter tuning
+To further improve your model check out this
+[tutorial on hyperparameter tuning](https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/).
+:::
+
 
 ### Comparing NLU Pipelines
 
-By passing multiple pipeline configurations (or a folder containing them) to the CLI, Rasa will run
-a comparison between the pipelines:
+To compare different pipeline configurations, specify them in the CLI command:
+
+```bash
+rasa test nlu --config config_1.yml config_2.yml
+  --nlu data/nlu.yml
+```
+
+This performs several steps:
+1. Create a global train/test split from `data/nlu.yml`.
+2. Exclude a certain percentage of data from the global train split.
+3. Train models for each configuration on remaining training data.
+4. Evaluate each model on the global test split.
+
+The above process is repeated three times and the f1-scores for each exclusion percentage is recorded.
+A graph with the mean and standard deviations of f1-scores across the three runs
+for each exclusion percentage and configuration is plotted.
+
+This will create multiple train/test splits from your data (`data/nlu.yml`) with each split
+excluding a pre-defined percentage of data from training.
+then train each pipeline multiple times with 0, 25, 50, 70 and 90% of your intent data excluded from the training set.
+The models are then evaluated on the test set and the f1-score for each exclusion percentage is recorded. This process
+runs three times (i.e. with 3 test sets in total) and then a graph is plotted using the means and standard deviations of
+the f1-scores.
+
+The f1-score graph, along with all train/test sets, the trained models, classification and error reports, 
+will be saved into a folder called `nlu_comparison_results`.
 
 ```bash
 rasa test nlu --config config_1.yml config_2.yml
   --nlu data/nlu.yml --runs 3 --percentages 0 25 50 70 90
 ```
 
-The command in the example above will create a train/test split from your data,
-then train each pipeline multiple times with 0, 25, 50, 70 and 90% of your intent data excluded from the training set.
-The models are then evaluated on the test set and the f1-score for each exclusion percentage is recorded. This process
-runs three times (i.e. with 3 test sets in total) and then a graph is plotted using the means and standard deviations of
-the f1-scores.
-
-The f1-score graph, along with all train/test sets, the trained models, classification and error reports,
-will be saved into a folder called `nlu_comparison_results`.
-
-### Intent Classification
+### Evaluating Intent Classifiers
 
 The `rasa test` script will produce a report, confusion matrix, and confidence histogram for your model.
 
@@ -207,7 +219,7 @@ any samples which have been incorrectly predicted are logged and saved to a file
 
 The histogram that the script produces allows you to visualise the confidence distribution for all predictions, with the volume of correct and incorrect predictions being displayed by blue and red bars respectively. Improving the quality of your training data will move the blue histogram bars to the right and the red histogram bars to the left of the plot.
 
-### Response Selection
+### Evaluating Response Selectors
 
 The evaluation script will produce a combined report for all response selector models in your pipeline.
 
@@ -237,7 +249,7 @@ multiple tokens.
 
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
-expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`.
+expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. 
 
 Our approach is more lenient
 when it comes to evaluation, as it rewards partial extraction and does not punish the splitting of entities.
@@ -289,7 +301,7 @@ your bot, you may not want to exclude some to use as a test set.
 
 Rasa Open Source has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
-full data set.
+full data set. 
 
 To do this, you first have to train models for your different
 configurations. Create two (or more) config files including the policies you want to
