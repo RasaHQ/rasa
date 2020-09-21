@@ -76,6 +76,7 @@ mapping:
                         mapping:
                           regex;(.*):
                             type: "bool"
+                      - type: "text"
                 - type: "str"
           - type: "map"
             matching-rule: 'any'
