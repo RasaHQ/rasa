@@ -24,7 +24,7 @@ const defaultOptions = {
     docsDir: './docs',
     sourceDir: './docs/sources',
     include: ['**.mdx', '**.md'],
-    commandPrefix: 'RASA_TELEMETRY_ENABLED=false',
+    commandPrefix: '',
 };
 
 /**
