@@ -3,7 +3,7 @@ id: training-data-format
 sidebar_label: Training Data Format
 title: Training Data Format
 description: Description of the YAML format for training data
-abstract: This page provides an overview of the different types of training data
+abstract: This page describes the different types of training data
   that go into a Rasa assistant and how this training data is structured.
 ---
 
@@ -13,10 +13,9 @@ Rasa Open Source uses [YAML](https://yaml.org/spec/1.2/spec.html) as
 a unified and extendable way to manage all training data,
 including NLU data, stories and rules.
 
-With the YAML format, training data can be split over any number of YAML files,
-and every file can contain any kind of data.
-The training data parser will read the top level keys in each file to decide
-what kind of data is in a section at training time.
+You can split the training data over any number of YAML files,
+and each file can contain any combination of NLU data, stories, and rules.
+The training data parser determines the training data type using top level keys.
 
 The [domain](glossary.mdx#domain) uses
 the same YAML format as the training data and can also be split across
@@ -34,8 +33,8 @@ you can still find the documentation for
 ### High-Level Structure
 
 Each file can contain one or more **keys** with corresponding training
-data. One file can contain multiple keys, as long as there is not more
-than one of a certain key in a single file. The available keys are:
+data. One file can contain multiple keys, but each top-level key can only appear
+once in a single file. The available keys are:
 
 - `version`
 - `nlu`
@@ -43,13 +42,13 @@ than one of a certain key in a single file. The available keys are:
 - `rules`
 - `e2e_tests`
 
-All YAML training data files should specify the `version` key to be parsed
-correctly. If you don't specify a version key in your training data file, Rasa
+You should specify the `version` key in all YAML training data files.
+If you don't specify a version key in your training data file, Rasa
 will assume you are using the latest training data format specification supported
 by the version of Rasa Open Source you have installed.
-Training data files with a version greater than is currently available in
-the version of Rasa Open Source you have installed will be
-skipped.
+
+Training data files with a Rasa Open Source version greater than what you have
+installed on your machine will be skipped.
 Currently, the latest training data format specification for Rasa 2.x is 2.0.
 
 ### Example
@@ -101,7 +100,7 @@ stories:
     intent: faq/language
   - action: respond_faq
 ```
-They use the same format as the story training data.
+Test stories use the same format as the story training data.
 
 ## NLU Training Data
 
@@ -184,8 +183,10 @@ nlu:
       hey there!
 ```
 
-The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the components in the NLU pipeline. In the example above, the sentiment of
-the example could be used by a custom component in the pipeline for sentiment analysis.
+The `metadata` key can contain arbitrary key-value data that is tied with an example.
+The `metadata` key is accessible by the components in the NLU pipeline.
+In the example above, the sentiment metadata could be used by a custom component in
+the pipeline for sentiment analysis.
 
 You can also specify this metadata at the intent level:
 
@@ -201,7 +202,7 @@ nlu:
       hey there!
 ```
 
-In this case, the content of the `metadata` key is passed on to every intent example.
+In this case, the content of the `metadata` key is passed to every intent example.
 
 
 If you want to specify [retrieval intents](glossary.mdx#retrieval-intent), then your NLU examples will look as follows:
@@ -222,8 +223,8 @@ nlu:
     - I like sunny days in Berlin.
 ```
 All retrieval intents have a suffix
-added to them which identifies a particular response key for your assistant, in the
-above example `ask_name` and `ask_weather` are the suffixes. The suffix is separated from
+added to them which identifies a particular response key for your assistant. In the
+above example, `ask_name` and `ask_weather` are the suffixes. The suffix is separated from
 the retrieval intent name by a `/` delimiter.
 
 :::note Special meaning of `/`
@@ -235,9 +236,9 @@ name of your intents.
 
 ### Entities
 
-[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
+[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
 
-Entities are annotated in training examples with minimally the entity's name.
+Entities are annotated in training examples with the entity's name.
 In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
 
 In training examples, entity annotation would look like this:
@@ -259,14 +260,14 @@ The full possible syntax for annotating an entity is:
 ```
 
 The keywords `role`, `group`, and `value` are optional in this notation.
-The `value` keyword refers to synonyms, which are explained in the
+The `value` field refers to synonyms, which are explained in the
 following section. To understand what the labels `role` and `group` are
 for, see the section on [entity roles and groups](nlu-training-data.mdx#entities-roles-and-groups).
 
 
 ### Synonyms
 
-Synonyms provide a way to normalize your training data by mapping an
+Synonyms normalize your training data by mapping an
 extracted entity to a value other than the literal text extracted.
 Synonyms can be defined in the format:
 
@@ -289,11 +290,10 @@ nlu:
     - how much do I owe on my [credit account]{"entity": "account", "value": "credit"}
 ```
 
-To use the synonyms defined in your training data, you need to make sure the
-pipeline in your configuration file contains the
-[`EntitySynonymMapper`](components.mdx#entitysynonymmapper) component. You
-should define synonyms when there are multiple ways users refer to the same
-thing.
+To use the synonyms defined in your training data, you'll need add the
+[`EntitySynonymMapper`](components.mdx#entitysynonymmapper) component to
+the NLU pipeline in your configuration file. You should define synonyms when there
+are multiple ways users refer to the same thing.
 
 #### Example
 
@@ -304,7 +304,7 @@ account" and "credit card account".
 In this case, you could define "credit card account" and "credit account" as
 **synonyms** to "credit", as in the examples above.
 
-Then, if either of these phrases is extracted as an entity, it will be
+If either of these phrases is extracted as an entity, it will be
 mapped to the **value** `credit`.
 
 :::note Needs Training Examples
@@ -317,15 +317,14 @@ recognize these as entities and replace them with `credit`.
 ### Regular Expressions
 
 You can use regular expressions to improve intent classification and
-entity extraction in combination with the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components in the pipeline.
+entity extraction using the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components.
 
 #### Regular Expressions for Intent Classification
 
-You can use regular expressions to improve intent classification by including the `RegexFeaturizer` component in your pipeline. When using the `RegexFeaturizer`, a regex does not act as a rule for classifying an intent. It only provides a feature that the intent classifier will use
-to learn patterns for intent classification.
+You can use regular expressions to improve intent classification by including the `RegexFeaturizer` component in your pipeline. When using the `RegexFeaturizer`, a regex does not act as a rule for classifying an intent. It only provides a feature that the intent classifier will use to learn patterns for intent classification.
 Currently, all intent classifiers make use of available regex features.
 
-The name of a regex in this case is a human readable description. It can help you remember what a regex is used for, and it is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for greeting might look like this:
+The name of a regex is a human readable description. It can help you remember what a regex is used for and is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for greeting might look like this:
 
 ```yaml-rasa
 nlu:
@@ -336,9 +335,9 @@ nlu:
 
 The intent being matched could be `greet`,`say_hi`, `hallo` or anything else.
 
-Try to create your regular expressions in a way that they match as few
+Try to create your regular expressions in a way that matches as few
 words as possible. E.g. using `hey[^\\s]*` instead of `hey.*`, as the
-later one might match the whole message whereas the first one only
+second example might match the whole message whereas the first only
 matches a single word.
 
 #### Regular Expressions for Entity Extraction
@@ -347,7 +346,7 @@ If your entity has a deterministic structure (like an account number), you can u
 
 1. As features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in the pipeline.
 
-  When used as as features for the `RegexFeaturizer` the
+  When used as features for the `RegexFeaturizer`, the
   name of the regular expression does not matter.
 
   Regex features for entity extraction
@@ -359,8 +358,7 @@ If your entity has a deterministic structure (like an account number), you can u
 
 2. For rule-based entity extraction using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) component in the pipeline.
 
-  When using the `RegexEntityExtractor`, the name of the regular expression should
-  match the name of the entity you want to extract.
+  When using the `RegexEntityExtractor`, you should name the regular expression to match the name of the entity you want to extract.
 
 In both cases, the format for defining the regex is the same.
 For example, a regex for extracting a bank account number that is 10-12 digits long mightlook like this:
@@ -384,7 +382,7 @@ you must provide example inputs that include that regular expression!
 
 ### Lookup Tables
 
-Lookup tables provide a convenient way to supply a list of entity
+Lookup tables are a convenient way to supply a list of entity
 examples. The format is as follows:
 
 ```yaml-rasa
@@ -411,7 +409,7 @@ or with the [RegexEntityExtractor](components.mdx#regexentityextractor).
 :::note Combining with Regexes
 
 If you are using lookup tables in combination with the `RegexFeaturizer`,
-there must be a few examples of matches in your training data. Otherwise the
+you must include a few examples of matches in your training data. Otherwise the
 model will not learn to use the lookup table match features.
 :::
 
@@ -476,9 +474,9 @@ key and an optional `entities:` key.
 
 While writing stories, you do not have to deal with the specific
 contents of the messages that the users send. Instead, you can take
-advantage of the output from the NLU pipeline, which lets you use
-the combination of an intent and entities to refer to all the possible
-messages the users can send to mean the same thing.
+advantage of the output from the NLU pipeline, which uses
+a combination of an intent and entities to refer to all possible
+messages the users can send with the same meaning.
 
 User messages follow the format:
 
@@ -556,11 +554,11 @@ stories:
 A [form](glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
-Once defined, the [happy path](glossary.mdx#happy-unhappy-paths)
-for a form should be specified as a [rule](forms.mdx), but interruptions of forms or
-other "unhappy paths" should be included in stories so that the model can
+Once defined, you should specify the [happy path](glossary.mdx#happy-unhappy-paths)
+for a form as a [rule](forms.mdx). You should include interruptions of forms or
+other "unhappy paths" in stories so that the model can
 generalize to unseen conversation sequences.
-As a step in a story, a form takes the following basic format:
+As a step in a story, a form takes the following format:
 
 
 ```yaml-rasa
