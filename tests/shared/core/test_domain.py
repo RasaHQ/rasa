@@ -16,7 +16,6 @@ from rasa.shared.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
-    ACTION_LISTEN_NAME,
 )
 from rasa.shared.core.domain import (
     InvalidDomain,
@@ -30,7 +29,6 @@ from rasa.shared.core.domain import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import (
     ActionExecuted,
-    UserUttered,
     SlotSet,
 )
 from tests.core.conftest import (
