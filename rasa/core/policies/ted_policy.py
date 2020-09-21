@@ -418,6 +418,7 @@ class TEDPolicy(Policy):
             and np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
             and np.max(similarities[1]) > np.max(similarities[0])
         ):
+            # TODO figure out whether the above condition is optimal
             batch_index = 1
             is_e2e_prediction = True
         elif len(tracker_state_features) == 2:
