@@ -36,7 +36,7 @@ module.exports = {
     legacyVersions: [{
       label: 'Legacy 1.x',
       href: 'https://legacy-docs-v1.rasa.com',
-      target: '_self',
+      target: '_blank',
     }],
     redocPages: [
       {
