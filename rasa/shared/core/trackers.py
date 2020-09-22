@@ -429,10 +429,14 @@ class DialogueStateTracker:
                 )
             elif isinstance(event, UserUttered):
                 # update event's featurization based on the future event
+                use_text_for_featurization = self._define_user_featurization(
+                    events_as_list[i + 1 :]
+                )
                 if event.use_text_for_featurization is None:
-                    event.use_text_for_featurization = self._define_user_featurization(
-                        events_as_list[i + 1 :]
-                    )
+                    event.use_text_for_featurization = use_text_for_featurization
+                elif event.use_text_for_featurization != use_text_for_featurization:
+                    logger.debug("Got contradicting user featurization info.")
+
                 applied_events.append(event)
             else:
                 applied_events.append(event)
@@ -441,17 +445,11 @@ class DialogueStateTracker:
 
     @staticmethod
     def _define_user_featurization(future_events: List[Event]) -> Optional[bool]:
-        use_text_for_featurization = None
         for future_event in future_events:
             if isinstance(future_event, ActionExecuted):
                 return
             elif isinstance(future_event, DefinePrevUserUtteredFeaturization):
-                # there might be several DefinePrevUserUtteredFeaturization events,
-                # we assume that text is more powerful prediction,
-                # so only overwrite False or None
-                if not use_text_for_featurization:
-                    use_text_for_featurization = future_event.use_text_for_featurization
-        return use_text_for_featurization
+                return future_event.use_text_for_featurization
 
     @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:

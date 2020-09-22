@@ -43,7 +43,6 @@ from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizati
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core import registry
-from rasa.utils import common as common_utils
 
 logger = logging.getLogger(__name__)
 
