@@ -18,6 +18,7 @@ from rasa.shared.constants import (
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
 from rasa.shared.utils.cli import print_info
+from rasa.core.test import FAILED_STORIES_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     else:
         test_core_models(args.model, stories, output)
 
-    print_info("Failed stories written to " + output + "/failed_test_stories.yml")
+    print_info("Failed stories written to " + output + "/" + FAILED_STORIES_FILE)
 
 def run_nlu_test(args: argparse.Namespace) -> None:
     """Run NLU tests."""
