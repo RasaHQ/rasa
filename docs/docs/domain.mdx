@@ -8,10 +8,10 @@ title: Domain
 
 The `Domain` defines the universe in which your assistant operates.
 It specifies the `intents`, `entities`, `slots`, `responses` and `actions`
-your bot should know about. It also defines a `session_config` to configure
+your bot should know about. The `Domain` also defines a `session_config` to configure
 conversation sessions.
 
-As an example, the domain created by `rasa init` has the following yaml definition:
+As an example, the `Domain` created by `rasa init` has the following yaml definition:
 <!-- TODO: use an example with all of the pieces! e.g. formbot? -->
 
 ```yaml-rasa (docs/sources/rasa/cli/initial_project/domain.yml)
@@ -19,14 +19,15 @@ As an example, the domain created by `rasa init` has the following yaml definiti
 
 ## Intents
 
-<!-- TODO: intro info about intents -->
+All the intents you've defined in your [NLU training data](./nlu-training-data.mdx) need
+to be listed under the `intents` key in your `Domain`.
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="use-entities"></a>
 
 ### Ignoring entities for certain intents
 
-If you want all entities to be ignored for certain intents, you can
-add the `use_entities: []` parameter to the intent in your domain
+To ignore all entities for certain intents, you can
+add the `use_entities: []` parameter to the intent in your `Domain`
 file like this:
 
 ```yaml-rasa
@@ -49,21 +50,21 @@ intents:
       - age
 ```
 
-This means that excluded entities for those intents will be unfeaturized and therefore
+Excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
 an intent where you don't care about the entities being picked up. If you list
 your intents as normal without this parameter, the entities will be
 featurized as normal.
 
 :::note
-If you really want these entities not to influence action prediction we
-suggest you make the slots with the same name of type `unfeaturized`.
+If you want these entities not to influence action prediction make the slots
+with the same name of type `unfeaturized`.
 
 :::
 
 ## Entities
 
-The `entities` section lists all entities
+The `entities` section lists all entities that can be
 extracted by any [entity extractor](./components.mdx) in your
 NLU pipeline.
 
@@ -108,6 +109,7 @@ of the examples below.
 
 Make this a nice table instead.
 
+
 #### Text Slot
 
 * **Option**
@@ -116,8 +118,7 @@ Make this a nice table instead.
 
 * **Use For**
 
-  User preferences where you only care whether or not they've
-  been specified.
+  Arbitrary text.
 
 
 
@@ -133,8 +134,8 @@ Make this a nice table instead.
 
 * **Description**
 
-  Results in the feature of the slot being set to `1` if any value is set.
-  Otherwise the feature will be set to `0` (no value is set).
+  The value of `Text Slot` will not influence the dialogue. What matters is if the
+  value was set at all or not.
 
 
 #### Boolean Slot
@@ -158,13 +159,16 @@ Make this a nice table instead.
         type: bool
   ```
 
+* **Defaults**
+    `False`
+
 
 
 * **Description**
 
-  Sets two boolean features. The first feature is `1` if the slot is set 
-  and `0` otherwise. The second feature is `1` if the slot value is
-  `"true"`, `"1"`, or a variation of these, and `0` otherwise.
+  Both the value of `Boolean Slot` and the fact if it was set will influence
+  the dialogue.
+
 
 
 #### Categorical Slot
@@ -268,10 +272,8 @@ Make this a nice table instead.
 
 * **Description**
 
-  The feature of this slot is set to `1` if a value with a list is set,
-  where the list is not empty. If no value is set, or the empty list is the
-  set value, the feature will be `0`. The **length of the list stored in
-  the slot does not influence the dialogue**.
+  The length of the list stored in the slot does not influence the dialogue.
+  What matters is the fact if the list length is zero or non-zero.
 
 
 <a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="unfeaturized-slot"></a>
@@ -312,10 +314,10 @@ for up to 6 people. In this case you want the *value* of the
 slot to influence the next selected action (and not just whether
 it's been specified). You can do this by defining a custom slot class.
 
-In the code below, we define a slot class called `NumberOfPeopleSlot`.
+In the code below, you can see a slot class called `NumberOfPeopleSlot`.
 The featurization defines how the value of this slot gets converted to a vector
-to our machine learning model can deal with.
-Our slot has three possible “values”, which we can represent with
+so Rasa Open Source machine learning model can deal with it.
+The `NumberOfPeopleSlot` has three possible “values”, which can be represented with
 a vector of length `2`.
 
 |        |                |
@@ -342,8 +344,8 @@ class NumberOfPeopleSlot(Slot):
         return r
 ```
 
-Now we also need some training stories, so that Rasa Core
-can learn from these how to handle the different situations:
+Now Rasa Core needs some training stories to learn from how to handle the
+different situations:
 
 ```yaml-rasa
 stories:
@@ -370,8 +372,8 @@ stories:
 
 ### Slot Auto-fill
 
-If your NLU model picks up an entity, and your domain contains a
-slot with the same name, the slot will be set automatically. For example:
+The slot will be set automatically if your NLU model picks up an entity, and your domain
+ contains a slot with the same name. For example:
 
 ```yaml-rasa
 stories:
@@ -413,7 +415,7 @@ slots:
 
 ## Responses
 
-Responses are actions that simply send a message to a user without running any custom code or
+Responses are actions that send a message to a user without running any custom code or
 returning events. These responses can be defined directly in the domain file and can include
 rich content such as buttons and attachments. For more information on responses,
 see [Responses](./responses)
@@ -433,7 +435,7 @@ For example, an action could:
 
 * just about anything!
 
-All custom actions should be listed in your domain, except responses which need not be listed
+All [custom actions](./custom-actions.mdx) should be listed in your domain, except responses which need not be listed
 under `actions:` as they are already listed under `responses:`.
 
 ## Session configuration
@@ -449,8 +451,10 @@ Conversation sessions can begin in three ways:
 
 You can define the period of inactivity after which a new conversation
 session is triggered in the domain under the `session_config` key.
-`session_expiration_time` defines the time of inactivity in minutes after which a
-new session will begin. `carry_over_slots_to_new_session` determines whether
+Available parameters are:
+- `session_expiration_time` defines the time of inactivity in minutes after which a
+new session will begin.
+- `carry_over_slots_to_new_session` determines whether
 existing set slots should be carried over to new sessions.
 
 The default session configuration looks as follows:
@@ -463,7 +467,7 @@ session_config:
 
 This means that if a user sends their first message after 60 minutes of inactivity, a
 new conversation session is triggered, and that any existing slots are carried over
-into the new session. Setting the value of `session_expiration_time` to 0 means
+into the new session. Setting the value of `session_expiration_time` to `0` means
 that sessions will not end (note that the `action_session_start` action will still
 be triggered at the very beginning of conversations).
 
