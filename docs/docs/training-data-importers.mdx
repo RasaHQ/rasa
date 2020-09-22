@@ -190,7 +190,7 @@ class MyImporter(TrainingDataImporter):
         )
 
         path_to_stories = self._custom_get_story_file()
-        return await YAMLStoryReader.read_from_file(path_to_stories, await self.get_domain())
+        return YAMLStoryReader.read_from_file(path_to_stories, await self.get_domain())
 
     def _custom_get_story_file(self) -> Text:
         pass
