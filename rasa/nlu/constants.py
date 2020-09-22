@@ -1,5 +1,6 @@
 import rasa.shared.nlu.constants
 
+
 BILOU_ENTITIES = "bilou_entities"
 BILOU_ENTITIES_ROLE = "bilou_entities_role"
 BILOU_ENTITIES_GROUP = "bilou_entities_group"
@@ -65,10 +66,8 @@ RESPONSE_SELECTOR_DEFAULT_INTENT = "default"
 RESPONSE_SELECTOR_PREDICTION_KEY = "response"
 RESPONSE_SELECTOR_RANKING_KEY = "ranking"
 RESPONSE_SELECTOR_RESPONSES_KEY = "response_templates"
-
-INTENT_RANKING_KEY = "intent_ranking"
-PREDICTED_CONFIDENCE_KEY = "confidence"
-INTENT_NAME_KEY = "name"
+RESPONSE_SELECTOR_TEMPLATE_NAME_KEY = "template_name"
+RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 FEATURIZER_CLASS_ALIAS = "alias"
 

@@ -1,10 +1,13 @@
-import asyncio
 from pathlib import Path
 
-from rasa.cli.utils import print_success, print_warning
-from rasa.constants import DOCS_URL_RULES
-from rasa.core.training.story_reader.markdown_story_reader import MarkdownStoryReader
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.constants import DOCS_URL_RULES
+from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
+    MarkdownStoryReader,
+)
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+from rasa.shared.utils.cli import print_success, print_warning
 from rasa.utils.converter import TrainingDataConverter
 
 
@@ -23,14 +26,16 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         return MarkdownStoryReader.is_markdown_story_file(source_path)
 
     @classmethod
-    def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
+    async def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
         """Converts the given training data file and saves it to the output directory.
 
         Args:
             source_path: Path to the training data file.
             output_path: Path to the output directory.
         """
-        from rasa.core.training.story_reader.yaml_story_reader import KEY_ACTIVE_LOOP
+        from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+            KEY_ACTIVE_LOOP,
+        )
 
         output_core_path = cls.generate_path_for_converted_training_data_file(
             source_path, output_path
@@ -39,8 +44,7 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         reader = MarkdownStoryReader(unfold_or_utterances=False)
         writer = YAMLStoryWriter()
 
-        loop = asyncio.get_event_loop()
-        steps = loop.run_until_complete(reader.read_from_file(source_path))
+        steps = await reader.read_from_file(source_path)
 
         if YAMLStoryWriter.stories_contain_loops(steps):
             print_warning(

@@ -11,14 +11,14 @@ import rasa.shared.utils.common
 import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
-from rasa import model, server
+from rasa import model, server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
-from rasa.core.interpreter import NaturalLanguageInterpreter
+import rasa.core.interpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
@@ -35,7 +35,7 @@ def create_http_input_channels(
     """Instantiate the chosen input channel."""
 
     if credentials_file:
-        all_credentials = rasa.utils.io.read_config_file(credentials_file)
+        all_credentials = rasa.shared.utils.io.read_config_file(credentials_file)
     else:
         all_credentials = {}
 
@@ -207,18 +207,23 @@ def serve_application(
         if app.agent.model_directory:
             shutil.rmtree(_app.agent.model_directory)
 
+    number_of_workers = rasa.core.utils.number_of_sanic_workers(
+        endpoints.lock_store if endpoints else None
+    )
+
+    telemetry.track_server_start(
+        input_channels, endpoints, model_path, number_of_workers, enable_api
+    )
+
     app.register_listener(clear_model_files, "after_server_stop")
 
     rasa.utils.common.update_sanic_log_level(log_file)
-
     app.run(
         host="0.0.0.0",
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
-        workers=rasa.core.utils.number_of_sanic_workers(
-            endpoints.lock_store if endpoints else None
-        ),
+        workers=number_of_workers,
     )
 
 
@@ -239,7 +244,9 @@ async def load_agent_on_start(
     try:
         with model.get_model(model_path) as unpacked_model:
             _, nlu_model = model.get_model_subdirectories(unpacked_model)
-            _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or nlu_model)
+            _interpreter = rasa.core.interpreter.create_interpreter(
+                endpoints.nlu or nlu_model
+            )
     except Exception:
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None

@@ -1,14 +1,14 @@
 import asyncio
 from pathlib import Path
-from typing import Text
+from typing import Text, List
 
 import pytest
 
 import rasa.shared.utils.io
-from rasa.core.domain import Domain
-from rasa.core.events import UserUttered, ActionExecuted
-from rasa.core.training.structures import StoryStep, StoryGraph
-from rasa.importers.importer import E2EImporter, TrainingDataImporter
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
+from rasa.shared.importers.importer import E2EImporter, TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -17,12 +17,15 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import (
     guess_format,
     UNK,
-    RASA_YAML,
-    JSON,
-    MARKDOWN,
     load_data,
 )
-from rasa.shared.nlu.training_data.util import get_file_format
+from rasa.shared.nlu.training_data.util import (
+    get_file_format_extension,
+    template_key_to_intent_response_key,
+    intent_response_key_to_template_key,
+)
+
+import rasa.shared.data
 
 
 def test_luis_data():
@@ -115,6 +118,18 @@ def test_composite_entities_data():
     assert td.number_of_examples_per_entity["role 'from'"] == 3
 
 
+def test_intent_response_key_to_template_key():
+    intent_response_key = "chitchat/ask_name"
+    template_key = "utter_chitchat/ask_name"
+    assert intent_response_key_to_template_key(intent_response_key) == template_key
+
+
+def test_template_key_to_intent_response_key():
+    intent_response_key = "chitchat/ask_name"
+    template_key = "utter_chitchat/ask_name"
+    assert template_key_to_intent_response_key(template_key) == intent_response_key
+
+
 @pytest.mark.parametrize(
     "files",
     [
@@ -128,20 +143,29 @@ def test_composite_entities_data():
         ],
     ],
 )
-def test_demo_data(files):
-    from rasa.importers.utils import training_data_from_paths
+def test_demo_data(files: List[Text]):
+    from rasa.shared.importers.utils import training_data_from_paths
 
-    td = training_data_from_paths(files, language="en")
-    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
-    assert td.entities == {"location", "cuisine"}
-    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
-    assert len(td.training_examples) == 46
-    assert len(td.intent_examples) == 46
-    assert len(td.response_examples) == 4
-    assert len(td.entity_examples) == 11
-    assert len(td.responses) == 2
+    trainingdata = training_data_from_paths(files, language="en")
+    assert trainingdata.intents == {
+        "affirm",
+        "greet",
+        "restaurant_search",
+        "goodbye",
+        "chitchat",
+    }
+    assert trainingdata.entities == {"location", "cuisine"}
+    assert set(trainingdata.responses.keys()) == {
+        "utter_chitchat/ask_name",
+        "utter_chitchat/ask_weather",
+    }
+    assert len(trainingdata.training_examples) == 46
+    assert len(trainingdata.intent_examples) == 46
+    assert len(trainingdata.response_examples) == 4
+    assert len(trainingdata.entity_examples) == 11
+    assert len(trainingdata.responses) == 2
 
-    assert td.entity_synonyms == {
+    assert trainingdata.entity_synonyms == {
         "Chines": "chinese",
         "Chinese": "chinese",
         "chines": "chinese",
@@ -149,7 +173,7 @@ def test_demo_data(files):
         "veggie": "vegetarian",
     }
 
-    assert td.regex_features == [
+    assert trainingdata.regex_features == [
         {"name": "greet", "pattern": r"hey[^\s]*"},
         {"name": "zipcode", "pattern": r"[0-9]{5}"},
     ]
@@ -169,7 +193,7 @@ def test_demo_data(files):
     ],
 )
 def test_demo_data_filter_out_retrieval_intents(files):
-    from rasa.importers.utils import training_data_from_paths
+    from rasa.shared.importers.utils import training_data_from_paths
 
     training_data = training_data_from_paths(files, language="en")
     assert len(training_data.training_examples) == 46
@@ -192,36 +216,51 @@ def test_demo_data_filter_out_retrieval_intents(files):
     "filepaths",
     [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
 )
-def test_train_test_split(filepaths):
-    from rasa.importers.utils import training_data_from_paths
+def test_train_test_split(filepaths: List[Text]):
+    from rasa.shared.importers.utils import training_data_from_paths
 
-    td = training_data_from_paths(filepaths, language="en")
+    trainingdata = training_data_from_paths(filepaths, language="en")
 
-    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
-    assert td.entities == {"location", "cuisine"}
-    assert set(td.responses.keys()) == {"chitchat/ask_name", "chitchat/ask_weather"}
+    assert trainingdata.intents == {
+        "affirm",
+        "greet",
+        "restaurant_search",
+        "goodbye",
+        "chitchat",
+    }
+    assert trainingdata.entities == {"location", "cuisine"}
+    assert set(trainingdata.responses.keys()) == {
+        "utter_chitchat/ask_name",
+        "utter_chitchat/ask_weather",
+    }
 
-    assert len(td.training_examples) == 46
-    assert len(td.intent_examples) == 46
-    assert len(td.response_examples) == 4
+    assert len(trainingdata.training_examples) == 46
+    assert len(trainingdata.intent_examples) == 46
+    assert len(trainingdata.response_examples) == 4
 
-    td_train, td_test = td.train_test_split(train_frac=0.8)
-
-    assert len(td_test.training_examples) + len(td_train.training_examples) == 46
-    assert len(td_train.training_examples) == 34
-    assert len(td_test.training_examples) == 12
-
-    assert len(td.number_of_examples_per_intent.keys()) == len(
-        td_test.number_of_examples_per_intent.keys()
+    trainingdata_train, trainingdata_test = trainingdata.train_test_split(
+        train_frac=0.8
     )
-    assert len(td.number_of_examples_per_intent.keys()) == len(
-        td_train.number_of_examples_per_intent.keys()
+
+    assert (
+        len(trainingdata_test.training_examples)
+        + len(trainingdata_train.training_examples)
+        == 46
     )
-    assert len(td.number_of_examples_per_response.keys()) == len(
-        td_test.number_of_examples_per_response.keys()
+    assert len(trainingdata_train.training_examples) == 34
+    assert len(trainingdata_test.training_examples) == 12
+
+    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
+        trainingdata_test.number_of_examples_per_intent.keys()
     )
-    assert len(td.number_of_examples_per_response.keys()) == len(
-        td_train.number_of_examples_per_response.keys()
+    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
+        trainingdata_train.number_of_examples_per_intent.keys()
+    )
+    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
+        trainingdata_test.number_of_examples_per_response.keys()
+    )
+    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
+        trainingdata_train.number_of_examples_per_response.keys()
     )
 
 
@@ -230,7 +269,7 @@ def test_train_test_split(filepaths):
     [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
 )
 def test_train_test_split_with_random_seed(filepaths):
-    from rasa.importers.utils import training_data_from_paths
+    from rasa.shared.importers.utils import training_data_from_paths
 
     td = training_data_from_paths(filepaths, language="en")
 
@@ -518,21 +557,27 @@ def test_training_data_conversion(
 @pytest.mark.parametrize(
     "data_file,expected_format",
     [
-        ("data/examples/luis/demo-restaurants_v5.json", JSON),
-        ("data/examples", JSON),
-        ("data/examples/rasa/demo-rasa.md", MARKDOWN),
-        ("data/rasa_yaml_examples", RASA_YAML),
+        (
+            "data/examples/luis/demo-restaurants_v5.json",
+            rasa.shared.data.yaml_file_extension(),
+        ),
+        ("data/examples", rasa.shared.data.yaml_file_extension()),
+        (
+            "data/examples/rasa/demo-rasa.md",
+            rasa.shared.data.markdown_file_extension(),
+        ),
+        ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],
 )
 def test_get_supported_file_format(data_file: Text, expected_format: Text):
-    fformat = get_file_format(data_file)
+    fformat = get_file_format_extension(data_file)
     assert fformat == expected_format
 
 
 @pytest.mark.parametrize("data_file", ["path-does-not-exists", None])
 def test_get_non_existing_file_format_raises(data_file: Text):
     with pytest.raises(AttributeError):
-        get_file_format(data_file)
+        get_file_format_extension(data_file)
 
 
 def test_guess_format_from_non_existing_file_path():

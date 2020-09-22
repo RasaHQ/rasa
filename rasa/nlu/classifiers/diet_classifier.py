@@ -85,6 +85,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
     CONCAT_DIMENSION,
     FEATURIZERS,
+    CHECKPOINT_MODEL,
     SEQUENCE,
     SENTENCE,
     DENSE_DIMENSION,
@@ -241,6 +242,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
         TENSORBOARD_LOG_LEVEL: "epoch",
+        # Perform model checkpointing
+        CHECKPOINT_MODEL: False,
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
@@ -906,9 +909,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir = Path(model_dir)
         tf_model_file = model_dir / f"{file_name}.tf_model"
 
-        io_utils.create_directory_for_file(tf_model_file)
+        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
-        self.model.save(str(tf_model_file))
+        if self.model.checkpoint_model:
+            self.model.copy_best(str(tf_model_file))
+        else:
+            self.model.save(str(tf_model_file))
 
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self._data_example
@@ -926,7 +932,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if self._entity_tag_specs
             else []
         )
-        io_utils.dump_obj_as_json_to_file(
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
             model_dir / f"{file_name}.entity_tag_specs.json", entity_tag_specs
         )
 

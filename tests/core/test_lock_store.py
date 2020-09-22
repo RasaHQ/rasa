@@ -21,6 +21,7 @@ from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisL
 class FakeRedisLockStore(RedisLockStore):
     """Fake `RedisLockStore` using `fakeredis` library."""
 
+    # skipcq: PYL-W0231
     # noinspection PyMissingConstructor
     def __init__(self):
         import fakeredis

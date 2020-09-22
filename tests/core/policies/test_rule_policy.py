@@ -1,27 +1,26 @@
+from pathlib import Path
 from typing import List, Text
 
 import pytest
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 
 from rasa.core import training
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ActionDefaultFallback,
-    ACTION_RESTART_NAME,
-    ACTION_BACK_NAME,
-    ACTION_SESSION_START_NAME,
-    RULE_SNIPPET_ACTION_NAME,
-)
+from rasa.core.actions.action import ActionDefaultFallback
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.constants import (
-    REQUESTED_SLOT,
+from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
     USER_INTENT_SESSION_START,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_BACK_NAME,
+    RULE_SNIPPET_ACTION_NAME,
+    REQUESTED_SLOT,
 )
-from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
     ActiveLoop,
@@ -29,16 +28,16 @@ from rasa.core.events import (
     ActionExecutionRejected,
     FormValidation,
 )
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.core.policies.rule_policy import RulePolicy, InvalidRule
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
 GREET_RULE = DialogueStateTracker.from_events(
-    "bla",
+    "greet rule",
     evts=[
         ActionExecuted(RULE_SNIPPET_ACTION_NAME),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -53,9 +52,9 @@ GREET_RULE.is_rule_tracker = True
 
 def _form_submit_rule(
     domain: Domain, submit_action_name: Text, form_name: Text
-) -> DialogueStateTracker:
+) -> TrackerWithCachedStates:
     return TrackerWithCachedStates.from_events(
-        "bla",
+        "form submit rule",
         domain=domain,
         slots=domain.slots,
         evts=[
@@ -75,9 +74,9 @@ def _form_submit_rule(
 
 def _form_activation_rule(
     domain: Domain, form_name: Text, activation_intent_name: Text
-) -> DialogueStateTracker:
+) -> TrackerWithCachedStates:
     return TrackerWithCachedStates.from_events(
-        "bla",
+        "form activation rule",
         domain=domain,
         slots=domain.slots,
         evts=[
@@ -93,9 +92,135 @@ def _form_activation_rule(
     )
 
 
+def test_restrict_multiple_user_inputs_in_rules():
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+    """
+    )
+    policy = RulePolicy()
+    greet_events = [
+        UserUttered(intent={"name": GREET_INTENT_NAME}),
+        ActionExecuted(UTTER_GREET_ACTION),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+    forbidden_rule = DialogueStateTracker.from_events(
+        "bla",
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ]
+        + greet_events * (policy.ALLOWED_NUMBER_OF_USER_INPUTS + 1),
+    )
+    forbidden_rule.is_rule_tracker = True
+    with pytest.raises(InvalidRule):
+        policy.train([forbidden_rule], domain, RegexInterpreter())
+
+
+def test_contradicting_rules():
+    utter_anti_greet_action = "utter_anti_greet"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+    """
+    )
+    policy = RulePolicy()
+    anti_greet_rule = TrackerWithCachedStates.from_events(
+        "anti greet rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    anti_greet_rule.is_rule_tracker = True
+
+    with pytest.raises(InvalidRule) as execinfo:
+        policy.train([GREET_RULE, anti_greet_rule], domain, RegexInterpreter())
+    assert all(
+        name in execinfo.value.message
+        for name in {
+            UTTER_GREET_ACTION,
+            GREET_RULE.sender_id,
+            utter_anti_greet_action,
+            anti_greet_rule.sender_id,
+        }
+    )
+
+
+def test_contradicting_rules_and_stories():
+    utter_anti_greet_action = "utter_anti_greet"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {UTTER_GREET_ACTION}
+- {utter_anti_greet_action}
+    """
+    )
+    policy = RulePolicy()
+    anti_greet_story = TrackerWithCachedStates.from_events(
+        "anti greet story",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(utter_anti_greet_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    with pytest.raises(InvalidRule) as execinfo:
+        policy.train([GREET_RULE, anti_greet_story], domain, RegexInterpreter())
+
+    assert all(
+        name in execinfo.value.message
+        for name in {utter_anti_greet_action, anti_greet_story.sender_id}
+    )
+
+
 def test_rule_policy_has_max_history_none():
     policy = RulePolicy()
     assert policy.featurizer.max_history is None
+
+
+def test_all_policy_attributes_are_persisted(tmpdir: Path):
+    priority = 5
+    lookup = {"a": "b"}
+    core_fallback_threshold = 0.451231
+    core_fallback_action_name = "action_some_fallback"
+    enable_fallback_prediction = False
+
+    policy = RulePolicy(
+        priority=priority,
+        lookup=lookup,
+        core_fallback_threshold=core_fallback_threshold,
+        core_fallback_action_name=core_fallback_action_name,
+        enable_fallback_prediction=enable_fallback_prediction,
+    )
+    policy.persist(tmpdir)
+
+    persisted_policy = RulePolicy.load(tmpdir)
+    assert persisted_policy.priority == priority
+    assert persisted_policy.lookup == lookup
+    assert persisted_policy._core_fallback_threshold == core_fallback_threshold
+    assert persisted_policy._fallback_action_name == core_fallback_action_name
+    assert persisted_policy._enable_fallback_prediction == enable_fallback_prediction
 
 
 def test_faq_rule():
@@ -525,7 +650,9 @@ async def test_form_unhappy_path_from_story():
             # We are in an active form
             ActionExecuted(form_name),
             ActiveLoop(form_name),
-            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            # in training stories there is either intent or text, never both
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
             # After our bot says "hi", we want to run a specific action
             ActionExecuted(handle_rejection_action_name),
@@ -612,8 +739,8 @@ async def test_form_unhappy_path_no_validation_from_rule():
         ],
         is_rule_tracker=True,
     )
-
-    policy = RulePolicy()
+    # unhappy rule is multi user turn rule, therefore remove restriction for policy
+    policy = RulePolicy(restrict_rules=False)
     # RulePolicy should memorize that unhappy_rule overrides GREET_RULE
     policy.train([GREET_RULE, unhappy_rule], domain, RegexInterpreter())
 
@@ -688,6 +815,7 @@ async def test_form_unhappy_path_no_validation_from_story():
             # We are in an active form
             ActionExecuted(form_name),
             ActiveLoop(form_name),
+            ActionExecuted(ACTION_LISTEN_NAME),
             # When a user says "hi", and the form is unhappy,
             # we want to run a specific action
             UserUttered(intent={"name": GREET_INTENT_NAME}),
@@ -932,9 +1060,7 @@ def test_immediate_submit():
     form_submit_rule = _form_submit_rule(domain, submit_action_name, form_name)
 
     policy = RulePolicy()
-    policy.train(
-        [GREET_RULE, form_activation_rule, form_submit_rule], domain, RegexInterpreter()
-    )
+    policy.train([form_activation_rule, form_submit_rule], domain, RegexInterpreter())
 
     form_conversation = DialogueStateTracker.from_events(
         "in a form",

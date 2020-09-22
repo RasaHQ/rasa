@@ -8,38 +8,37 @@ from functools import partial
 from multiprocessing import Process
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
-import numpy as np
-from aiohttp import ClientError
-from colorclass import Color
 
-import rasa.shared.data
-import rasa.shared.utils.io
-from rasa.shared.nlu.constants import TEXT
-from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
-from rasa.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
-
+import numpy as np
+from aiohttp import ClientError
+from colorclass import Color
 import questionary
-import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa.core import constants, run, train, utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
-from rasa.core.channels.channel import UserMessage
-from rasa.core.constants import (
-    DEFAULT_SERVER_FORMAT,
-    DEFAULT_SERVER_PORT,
-    REQUESTED_SLOT,
-    UTTER_PREFIX,
+from rasa import telemetry
+import rasa.shared.data
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
+import rasa.cli.utils
+from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
+from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    ACTION_LISTEN_NAME,
     LOOP_NAME,
+    ACTIVE_LOOP,
     LOOP_VALIDATE,
     LOOP_REJECTED,
+    REQUESTED_SLOT,
 )
-from rasa.core.domain import Domain
-import rasa.core.events
-from rasa.core.events import (
+from rasa.core import run, train, utils
+from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
+from rasa.shared.core.domain import Domain
+import rasa.shared.core.events
+from rasa.shared.core.events import (
     ActionExecuted,
     ActionReverted,
     BotUttered,
@@ -48,16 +47,16 @@ from rasa.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-from rasa.core.interpreter import NaturalLanguageInterpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP
-from rasa.core.training import visualization
-from rasa.core.training.visualization import (
+import rasa.core.interpreter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID, UTTER_PREFIX
+from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
+from rasa.shared.core.training_data import visualization
+from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
 )
 from rasa.core.utils import AvailableEndpoints
-from rasa.importers.rasa import TrainingDataImporter
+from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
@@ -794,7 +793,7 @@ def _write_stories_to_file(
     ) as f:
         i = 1
         for conversation in sub_conversations:
-            parsed_events = rasa.core.events.deserialise_events(conversation)
+            parsed_events = rasa.shared.core.events.deserialise_events(conversation)
             tracker = DialogueStateTracker.from_events(
                 f"interactive_story_{i}", evts=parsed_events, slots=domain.slots
             )
@@ -849,8 +848,6 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
-    from rasa import data
-
     guessed_format = loading.guess_format(export_path)
 
     if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
@@ -894,7 +891,7 @@ def _write_domain_to_file(
         {
             e["name"]
             for e in actions
-            if e["name"] not in default_action_names()
+            if e["name"] not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
             and e["name"] not in old_domain.form_names
         }
     )
@@ -1276,7 +1273,7 @@ async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -
 
     message = await _ask_questions(question, conversation_id, endpoint, lambda a: not a)
 
-    if message == (INTENT_MESSAGE_PREFIX + constants.USER_INTENT_RESTART):
+    if message == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
         raise RestartConversation()
 
     await send_message(endpoint, conversation_id, message)
@@ -1335,7 +1332,7 @@ async def _fetch_events(
             events = tracker.get("events", [])
 
             for conversation in _split_conversation_at_restarts(events):
-                parsed_events = rasa.core.events.deserialise_events(conversation)
+                parsed_events = rasa.shared.core.events.deserialise_events(conversation)
                 event_sequences.append(parsed_events)
         else:
             event_sequences.append(conversation_id)
@@ -1387,7 +1384,7 @@ def _print_help(skip_visualization: bool) -> None:
     else:
         visualization_help = ""
 
-    rasa.cli.utils.print_success(
+    rasa.shared.utils.cli.print_success(
         f"Bot loaded. {visualization_help}\n"
         f"Type a message and press enter "
         f"(press 'Ctr-c' to exit)."
@@ -1397,7 +1394,7 @@ def _print_help(skip_visualization: bool) -> None:
 async def record_messages(
     endpoint: EndpointConfig,
     file_importer: TrainingDataImporter,
-    conversation_id: Text = UserMessage.DEFAULT_SENDER_ID,
+    conversation_id: Text = DEFAULT_SENDER_ID,
     max_message_limit: Optional[int] = None,
     skip_visualization: bool = False,
 ) -> None:
@@ -1489,7 +1486,7 @@ async def _get_tracker_events_to_plot(
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
-        rasa.cli.utils.print_warning(
+        rasa.shared.utils.cli.print_warning(
             f"You have {number_of_trackers} different story paths in "
             f"your training data. Visualizing them is very resource "
             f"consuming. Hence, the visualization will only show the stories "
@@ -1584,7 +1581,9 @@ def start_visualization(image_path: Text, port: int) -> None:
 async def train_agent_on_start(
     args, endpoints, additional_arguments, app, loop
 ) -> None:
-    _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or args.get("nlu"))
+    _interpreter = rasa.core.interpreter.create_interpreter(
+        endpoints.nlu or args.get("nlu")
+    )
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
@@ -1670,6 +1669,8 @@ def run_interactive_learning(
         partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
         "before_server_start",
     )
+
+    telemetry.track_interactive_learning_start(skip_visualization, SAVE_IN_E2E)
 
     _serve_application(app, file_importer, skip_visualization, conversation_id, port)
 

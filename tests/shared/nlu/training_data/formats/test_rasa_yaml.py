@@ -5,12 +5,18 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.nlu.constants import INTENT
+from rasa.shared.nlu.constants import (
+    INTENT,
+    METADATA,
+    METADATA_INTENT,
+    METADATA_EXAMPLE,
+)
 from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
 )
+
 
 MULTILINE_INTENT_EXAMPLES = f"""
 version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -40,6 +46,7 @@ INTENT_EXAMPLES_WITH_METADATA = """
 nlu:
 - intent: intent_name
   metadata:
+  - johnny
   examples:
   - text: |
       how much CO2 will that use?
@@ -138,6 +145,23 @@ def test_multiline_intent_is_parsed(example: Text):
         INTENT
     ) == training_data.training_examples[1].get(INTENT)
     assert not len(training_data.entity_synonyms)
+
+
+def test_intent_with_metadata_is_parsed():
+    parser = RasaYAMLReader()
+
+    with pytest.warns(None) as record:
+        training_data = parser.reads(INTENT_EXAMPLES_WITH_METADATA)
+
+    assert not len(record)
+
+    assert len(training_data.training_examples) == 2
+    example_1, example_2 = training_data.training_examples
+    assert example_1.get(METADATA) == {
+        METADATA_INTENT: ["johnny"],
+        METADATA_EXAMPLE: {"sentiment": "positive"},
+    }
+    assert example_2.get(METADATA) == {METADATA_INTENT: ["johnny"]}
 
 
 # This test would work only with examples that have a `version` key specified
@@ -271,7 +295,7 @@ def test_nlg_reads_text():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
     """
     )
@@ -280,7 +304,9 @@ def test_nlg_reads_text():
     result = reader.reads(responses_yml)
 
     assert result.responses == {
-        "chitchat/ask_weather": [{"text": "Where do you want to check the weather?"}]
+        "utter_chitchat/ask_weather": [
+            {"text": "Where do you want to check the weather?"}
+        ]
     }
 
 
@@ -288,7 +314,7 @@ def test_nlg_reads_any_multimedia():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
     """
@@ -298,7 +324,7 @@ def test_nlg_reads_any_multimedia():
     result = reader.reads(responses_yml)
 
     assert result.responses == {
-        "chitchat/ask_weather": [
+        "utter_chitchat/ask_weather": [
             {
                 "text": "Where do you want to check the weather?",
                 "image": "https://example.com/weather.jpg",
@@ -324,7 +350,7 @@ def test_nlg_fails_on_empty_response():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
     """
     )
 
@@ -338,11 +364,11 @@ def test_nlg_multimedia_load_dump_roundtrip():
     responses_yml = textwrap.dedent(
         """
       responses:
-        chitchat/ask_weather:
+        utter_chitchat/ask_weather:
         - text: Where do you want to check the weather?
           image: https://example.com/weather.jpg
 
-        chitchat/ask_name:
+        utter_chitchat/ask_name:
         - text: My name is Sara.
     """
     )
