@@ -506,7 +506,7 @@ def test_train_with_retrieval_events_success(
             nlu=nlu_file.read(),
         )
 
-    _, response = rasa_app.post("/model/train", json=payload)
+    _, response = rasa_app.post("/model/train", json=payload, timeout=60 * 5)
     assert response.status == 200
     assert_trained_model(response.body, tmp_path)
 

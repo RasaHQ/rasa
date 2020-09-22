@@ -280,7 +280,9 @@ class RulePolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> Optional[Text]:
-        probabilities = self.predict_action_probabilities(tracker, domain, interpreter)
+        probabilities, _ = self.predict_action_probabilities(
+            tracker, domain, interpreter
+        )
         # do not raise an error if RulePolicy didn't predict anything for stories;
         # however for rules RulePolicy should always predict an action
         predicted_action_name = None

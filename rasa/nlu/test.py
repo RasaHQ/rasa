@@ -17,9 +17,11 @@ from typing import (
     Any,
 )
 
+from rasa import telemetry
 import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
+import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 from rasa.nlu.constants import (
@@ -1514,6 +1516,8 @@ def run_evaluation(
             errors,
             disable_plotting,
         )
+
+    telemetry.track_nlu_model_test(test_data)
 
     return result
 
