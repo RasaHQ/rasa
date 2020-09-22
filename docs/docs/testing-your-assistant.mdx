@@ -10,7 +10,7 @@ abstract: Rasa Open Source lets you test dialogues end-to-end by running through
 
 ## Writing Test Conversations
 
-To test your assistant, you will need to write test conversations. These are like
+To test your assistant completely, the best approach is to write test conversations. These are like
 stories in your training data, but with the actual user utterance included as well.
 
 Here are some examples:
@@ -175,36 +175,38 @@ To further improve your model check out this
 
 ### Comparing NLU Pipelines
 
-To compare different pipeline configurations, specify them in the CLI command:
+To get the most out of your training data, you should train and evaluate your model on different pipelines
+and different amounts of training data.
 
-```bash
-rasa test nlu --config config_1.yml config_2.yml
-  --nlu data/nlu.yml
+To do so, use:
+
+```bash {2}
+rasa test nlu --nlu data/nlu.yml
+   --config config_1.yml config_2.yml
 ```
 
 This performs several steps:
-1. Create a global train/test split from `data/nlu.yml`.
+1. Create a global 80% train / 20% test split from `data/nlu.yml`.
 2. Exclude a certain percentage of data from the global train split.
 3. Train models for each configuration on remaining training data.
 4. Evaluate each model on the global test split.
 
-The above process is repeated three times and the f1-scores for each exclusion percentage is recorded.
-A graph with the mean and standard deviations of f1-scores across the three runs
-for each exclusion percentage and configuration is plotted.
+The above process is repeated three times for each exclusion percentage and each configuration.
+A graph with the mean and standard deviations of
+[f1-scores](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+across all runs is plotted.
 
-This will create multiple train/test splits from your data (`data/nlu.yml`) with each split
-excluding a pre-defined percentage of data from training.
-then train each pipeline multiple times with 0, 25, 50, 70 and 90% of your intent data excluded from the training set.
-The models are then evaluated on the test set and the f1-score for each exclusion percentage is recorded. This process
-runs three times (i.e. with 3 test sets in total) and then a graph is plotted using the means and standard deviations of
-the f1-scores.
-
-The f1-score graph, along with all train/test sets, the trained models, classification and error reports, 
+The f1-score graph, along with all train/test sets, the trained models, classification and error reports,
 will be saved into a folder called `nlu_comparison_results`.
 
-```bash
-rasa test nlu --config config_1.yml config_2.yml
-  --nlu data/nlu.yml --runs 3 --percentages 0 25 50 70 90
+Inspecting the f1-score graph can help in understanding if you have enough data for your NLU model.
+
+You can also specify different number of runs and different exclusion percentages with:
+
+```bash {3}
+rasa test nlu --nlu data/nlu.yml
+  --config config_1.yml config_2.yml
+  --runs 4 --percentages 0 25 50 70 90
 ```
 
 ### Evaluating Intent Classifiers
