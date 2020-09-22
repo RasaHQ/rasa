@@ -183,7 +183,11 @@ excluded_words:
   - crfentityextractor
   - Comerica
   - entitysynonymmapper
+  - memoizationpolicy
   - NLG
   - nlg
+  - Juste
+  - Tanja
+  - Vova
 
 spellcheck_filenames: false
