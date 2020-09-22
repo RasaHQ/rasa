@@ -103,7 +103,8 @@ def run_core_test(args: argparse.Namespace) -> None:
     else:
         test_core_models(args.model, stories, output)
 
-    print_info("Failed stories written to " + output + "/" + FAILED_STORIES_FILE)
+    print_info("Failed stories written to {}/{}".format(output, FAILED_STORIES_FILE))
+
 
 def run_nlu_test(args: argparse.Namespace) -> None:
     """Run NLU tests."""
