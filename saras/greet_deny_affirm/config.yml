@@ -1,0 +1,12 @@
+language: en
+pipeline:
+- name: WhitespaceTokenizer
+  intent_split_symbol: ' '
+- name: CountVectorsFeaturizer
+policies:
+- name: TEDPolicy
+  scale_loss: False
+  max_history: 5
+  epochs: 50
+  random_seed: 100
+- name: FormPolicy
