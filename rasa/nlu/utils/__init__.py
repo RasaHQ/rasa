@@ -5,10 +5,6 @@ from pathlib import Path
 
 import rasa.shared.utils.io
 
-# backwards compatibility 1.0.x
-# noinspection PyUnresolvedReferences
-from rasa.shared.utils.io import read_json_file, json_to_string
-
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
     """Return the path of file relative to `path`."""
@@ -25,7 +21,7 @@ def module_path_from_object(o: Any) -> Text:
 def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
     """Write an object as a json string to a file."""
 
-    write_to_file(filename, json_to_string(obj, **kwargs))
+    write_to_file(filename, rasa.shared.utils.io.json_to_string(obj, **kwargs))
 
 
 def write_to_file(filename: Text, text: Any) -> None:

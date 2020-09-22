@@ -1,11 +1,5 @@
-import json
 import logging
-import os
-import typing
-from typing import List, Text, Optional, Any
-
-import rasa.shared.utils.io
-import rasa.utils.io
+from typing import List, Text, Optional, Any, TYPE_CHECKING, Dict
 
 from rasa.shared.core.events import UserUttered, ActionExecuted
 
@@ -25,7 +19,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
 
@@ -37,21 +31,21 @@ def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
 
 
 class TwoStageFallbackPolicy(FallbackPolicy):
-    """ This policy handles low NLU confidence in multiple stages.
+    """This policy handles low NLU confidence in multiple stages.
 
-        If a NLU prediction has a low confidence score,
-        the user is asked to affirm whether they really had this intent.
-        If they affirm, the story continues as if the intent was classified
-        with high confidence from the beginning.
-        If they deny, the user is asked to rephrase his intent.
-        If the classification for the rephrased intent was confident, the story
-        continues as if the user had this intent from the beginning.
-        If the rephrased intent was not classified with high confidence,
-        the user is asked to affirm the classified intent.
-        If the user affirm the intent, the story continues as if the user had
-        this intent from the beginning.
-        If the user denies, an ultimate fallback action is triggered
-        (e.g. a hand-off to a human).
+    If a NLU prediction has a low confidence score,
+    the user is asked to affirm whether they really had this intent.
+    If they affirm, the story continues as if the intent was classified
+    with high confidence from the beginning.
+    If they deny, the user is asked to rephrase his intent.
+    If the classification for the rephrased intent was confident, the story
+    continues as if the user had this intent from the beginning.
+    If the rephrased intent was not classified with high confidence,
+    the user is asked to affirm the classified intent.
+    If the user affirm the intent, the story continues as if the user had
+    this intent from the beginning.
+    If the user denies, an ultimate fallback action is triggered
+    (e.g. a hand-off to a human).
     """
 
     def __init__(
@@ -215,10 +209,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         else:
             return confidence_scores_for(ACTION_DEFAULT_ASK_REPHRASE_NAME, 1.0, domain)
 
-    def persist(self, path: Text) -> None:
-        """Persists the policy to storage."""
-        config_file = os.path.join(path, "two_stage_fallback_policy.json")
-        meta = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
             "ambiguity_threshold": self.ambiguity_threshold,
@@ -227,15 +219,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "fallback_nlu_action_name": self.fallback_nlu_action_name,
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
-        rasa.shared.utils.io.create_directory_for_file(config_file)
-        rasa.shared.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
-    def load(cls, path: Text) -> "FallbackPolicy":
-        meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "two_stage_fallback_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(rasa.shared.utils.io.read_file(meta_path))
-
-        return cls(**meta)
+    def _metadata_filename(cls) -> Text:
+        return "two_stage_fallback_policy.json"

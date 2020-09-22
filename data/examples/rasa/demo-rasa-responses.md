@@ -1,7 +1,7 @@
 ##
-* chitchat/ask_weather
+* utter_chitchat/ask_weather
     - It's sunny where I live
     
 ##
-* chitchat/ask_name
+* utter_chitchat/ask_name
     - I am Mr. Bot

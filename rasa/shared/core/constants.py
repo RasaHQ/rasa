@@ -21,7 +21,8 @@ ACTION_LISTEN_NAME = "action_listen"
 ACTION_RESTART_NAME = "action_restart"
 ACTION_SESSION_START_NAME = "action_session_start"
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
-ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
+ACTION_DEACTIVATE_LOOP_NAME = "action_deactivate_loop"
+LEGACY_ACTION_DEACTIVATE_LOOP_NAME = "action_deactivate_form"
 ACTION_REVERT_FALLBACK_EVENTS_NAME = "action_revert_fallback_events"
 ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
 ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
@@ -34,7 +35,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEACTIVATE_FORM_NAME,
+    ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -69,8 +70,6 @@ SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
 SLOT_LAST_OBJECT = "knowledge_base_last_object"
 SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
-
-UTTER_PREFIX = "utter_"
 
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`

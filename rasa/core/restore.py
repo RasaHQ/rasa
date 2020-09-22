@@ -5,6 +5,7 @@ from difflib import SequenceMatcher
 from typing import List, Text, Tuple
 
 import rasa.cli.utils
+import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.cli import utils as cli_utils
@@ -93,7 +94,7 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
             )
 
             actions_between_utterances = []
-            cli_utils.print_success(event.text)
+            rasa.shared.utils.cli.print_success(event.text)
             out = CollectingOutputChannel()
             await agent.handle_text(
                 event.text, sender_id=tracker.sender_id, output_channel=out
@@ -104,9 +105,9 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
 
                 if buttons is not None:
                     color = rasa.shared.utils.io.bcolors.OKBLUE
-                    rasa.cli.utils.print_color("Buttons:", color=color)
+                    rasa.shared.utils.cli.print_color("Buttons:", color=color)
                     for idx, button in enumerate(buttons):
-                        rasa.cli.utils.print_color(
+                        rasa.shared.utils.cli.print_color(
                             cli_utils.button_to_string(button, idx), color=color
                         )
 
