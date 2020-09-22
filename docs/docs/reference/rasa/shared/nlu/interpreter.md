@@ -21,7 +21,7 @@ Parse the user input using regexes to extract intent &amp; entities.
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
+ | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.

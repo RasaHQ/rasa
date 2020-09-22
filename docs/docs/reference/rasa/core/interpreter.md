@@ -25,7 +25,7 @@ class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpre
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
+ | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.
@@ -41,7 +41,7 @@ class RasaNLUInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter)
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
+ | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.
