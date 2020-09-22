@@ -2,59 +2,61 @@
 id: responses
 sidebar_label: Responses
 title: Responses
-abstract: Responses are messages that your assistant can send to the user. A response
- can be as simple as pure text, or can include other content like images or buttons.
+abstract: Responses are messages that your assistant sends to the user. A response
+ is typically a text, but it can include other content like images and buttons.
 ---
 ## Defining Responses
 
-Responses go under the `responses` key in your [Domain](./domain.mdx) file. Each
- response name needs to start with `utter_`.
+Responses go under the `responses` key in your [domain](./domain.mdx) file. Start each
+response name with `utter_`.
 
-Here's is a minimal example of a response called `utter_greet`:
+Here is an example of a domain file with two responses called `utter_greet` and `utter_bye`:
 
-```yaml-rasa {6-9} title="domain.yml"
-version: "2.0"
-
+```yaml-rasa {4-8} title="domain.yml"
 intents:
   - greet
 
 responses:
   utter_greet:
   - text: "Hi there!"
+  utter_bye:
+  - text: "See you!"
 ```
 
+If you use [retrieval actions](./retrieval-actions.mdx), make sure to define the responses 
+for each retrieval action in your domain file, like in the following example:
+```yaml-rasa
+responses:
+  utter_chitchat/ask_name:
+  - text: Oh yeah, I am called the retrieval bot.
+
+  utter_chitchat/ask_weather:
+  - text: Oh, it does look sunny right now in Berlin.
+```
 :::note
-Responses are important when your assistant uses
-[Retrieval Actions](./retrieval-intents#training-data).
+Notice the special format of each retrieval action's name. The name starts with `utter_`, 
+followed by the retrieval intent's name (here `chitchat`) and finally a suffix specifying 
+the different response keys (here `ask_name` and `ask_weather`). See 
+[Retrieval Actions](./retrieval-actions.mdx) and examples of [retrieval intents](./training-data-format.mdx#training-examples) to learn more.
 :::
 
-### Using Variables
+### Using Variables in Responses
 
-You can use variables in your responses to insert information
-collected during the conversation. You can either do that in your custom action
-code or by using the automatic slot filling mechanism.
-
-#### Defining Response Variables
-
-In responses, variables are represented in curly braces, for example:
-```yaml-rasa title="domain.yml"
+You can use variables to insert information into responses.
+Within a response, a variable is represented by using curly braces, see the variable `name` below:
+```yaml-rasa {3} title="domain.yml"
 responses:
   utter_greet:
   - text: "Hey, {name}. How are you?"
 ```
 
-Rasa will automatically fill that variable with a value found in a slot called
-`name`. If the slot name is not found or there is no value in the slot, it will be filled
-with `None`.
+Now, when the `utter_greet` response is used, Rasa automatically fills in the variable with the value
+found in the slot called `name`. If such a slot doesn't exist or is empty, the variable gets
+filled with `None`.
 
-#### Using Variables from Custom Actions
-
-If your custom action code calls a template from your domain file,
-you can supply values to the template that in order to fill those variables.
-
-If you're using Rasa SDK for your action server,
-you can pass a value for the variable as a keyword argument to `dispatcher.utter_message`:
-
+Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
+In an action's code, you can supply values to a response to fill in specific variables. 
+If you're using Rasa SDK for your action server, you can specify values when using `dispatcher.utter_message`:
 ```python {3}
 dispatcher.utter_message(
     template="utter_greet",
