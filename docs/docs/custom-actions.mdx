@@ -52,3 +52,15 @@ Your action server should respond with a list of events and responses:
   "responses": [{}]
 }
 ```
+
+## Configuring the Actions Server URL
+
+To connect Rasa Open Source to your actions server, add the URL to your `endpoints.yml`:
+
+```yaml-rasa title="endpoints.yml"
+action_endpoint:
+  url: http://localhost:5055/webhook
+```
+
+
+
