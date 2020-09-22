@@ -15,16 +15,16 @@ rules:
       - intent: bot_challenge
       - action: utter_iamabot
 
+  - rule: Chitchat
+    steps:
+      - intent: chitchat
+      - action: utter_chitchat
+
   - rule: activate restaurant form
     steps:
       - intent: request_restaurant
       - action: restaurant_form
       - active_loop: restaurant_form
-
-  - rule: Chitchat
-    steps:
-      - intent: chitchat
-      - action: utter_chitchat
 
   - rule: submit form
     condition:
@@ -32,5 +32,4 @@ rules:
     steps:
       - action: restaurant_form
       - active_loop: null
-      - action: utter_submit
-      - action: utter_slots_values
+      - action: action_submit_restaurant_form

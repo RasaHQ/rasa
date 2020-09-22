@@ -10,8 +10,7 @@ stories:
       - intent: affirm
       - action: restaurant_form
       - active_loop: null
-      - action: utter_submit
-      - action: utter_slots_values
+      - action: action_submit_restaurant_form
 
   - story: stop form + stop
     steps:

@@ -1,140 +1,117 @@
 from typing import Dict, Text, Any, List, Union
 
-from rasa_sdk import Tracker
+from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.forms import FormAction
+from rasa_sdk.events import (
+    SlotSet,
+    EventType,
+)
 
 
-class RestaurantForm(FormAction):
+class ActionSubmitRestaurantForm(Action):
     """Example of a custom form action."""
 
     def name(self) -> Text:
-        """Unique identifier of the form."""
+        return "action_submit_restaurant_form"
 
-        return "restaurant_form"
-
-    @staticmethod
-    def required_slots(tracker: Tracker) -> List[Text]:
-        """A list of required slots that the form has to fill."""
-
-        return ["cuisine", "num_people", "outdoor_seating", "preferences", "feedback"]
-
-    def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict]]]:
-        """A dictionary to map required slots to
-            - an extracted entity
-            - intent: value pairs
-            - a whole message
-        or a list of them, where a first match will be picked."""
-
-        return {
-            "cuisine": self.from_entity(entity="cuisine", not_intent="chitchat"),
-            "num_people": [
-                self.from_entity(
-                    entity="number", intent=["inform", "request_restaurant"]
-                ),
-            ],
-            "outdoor_seating": [
-                self.from_entity(entity="seating"),
-                self.from_intent(intent="affirm", value=True),
-                self.from_intent(intent="deny", value=False),
-            ],
-            "preferences": [
-                self.from_intent(intent="deny", value="no additional preferences"),
-                self.from_text(not_intent="affirm"),
-            ],
-            "feedback": [self.from_entity(entity="feedback"), self.from_text()],
-        }
-
-    @staticmethod
-    def cuisine_db() -> List[Text]:
-        """Database of supported cuisines."""
-
-        return [
-            "caribbean",
-            "chinese",
-            "french",
-            "greek",
-            "indian",
-            "italian",
-            "mexican",
-        ]
-
-    @staticmethod
-    def is_int(string: Text) -> bool:
-        """Check if a string is an integer."""
-
-        try:
-            int(string)
-            return True
-        except ValueError:
-            return False
-
-    def validate_cuisine(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> Dict[Text, Any]:
-        """Validate cuisine value."""
-
-        if value.lower() in self.cuisine_db():
-            # validation succeeded, set the value of the "cuisine" slot to value
-            return {"cuisine": value}
-        else:
-            dispatcher.utter_message(template="utter_wrong_cuisine")
-            # validation failed, set this slot to None, meaning the
-            # user will be asked for the slot again
-            return {"cuisine": None}
-
-    def validate_num_people(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> Dict[Text, Any]:
-        """Validate num_people value."""
-
-        if self.is_int(value) and int(value) > 0:
-            return {"num_people": value}
-        else:
-            dispatcher.utter_message(template="utter_wrong_num_people")
-            # validation failed, set slot to None
-            return {"num_people": None}
-
-    def validate_outdoor_seating(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> Dict[Text, Any]:
-        """Validate outdoor_seating value."""
-
-        if isinstance(value, str):
-            if "out" in value:
-                # convert "out..." to True
-                return {"outdoor_seating": True}
-            elif "in" in value:
-                # convert "in..." to False
-                return {"outdoor_seating": False}
-            else:
-                dispatcher.utter_message(template="utter_wrong_outdoor_seating")
-                # validation failed, set slot to None
-                return {"outdoor_seating": None}
-
-        else:
-            # affirm/deny was picked up as True/False by the from_intent mapping
-            return {"outdoor_seating": value}
-
-    def submit(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict]:
+    def run(self, dispatcher, tracker, domain) -> List[EventType]:
         """Define what the form has to do after all required slots are filled."""
 
         dispatcher.utter_message(template="utter_submit")
         return []
+
+
+class ValidateRestaurantForm(Action):
+    def name(self) -> Text:
+        return "validate_restaurant_form"
+
+    def run(self, dispatcher, tracker, domain) -> List[EventType]:
+        extracted_slots = tracker.form_slots_to_validate()
+        validation_events = []
+
+        for slot_name, slot_value in extracted_slots.items():
+            if slot_name == "cuisine":
+                validation_events.append(validate_cuisine(slot_value, dispatcher))
+            elif slot_name == "num_people":
+                validation_events.append(validate_num_people(slot_value, dispatcher))
+            elif slot_name == "outdoor_seating":
+                validation_events.append(
+                    validate_outdoor_seating(slot_value, dispatcher)
+                )
+            else:
+                validation_events.append(SlotSet(slot_name, slot_value))
+
+        return validation_events
+
+
+def cuisine_db() -> List[Text]:
+    """Database of supported cuisines."""
+
+    return [
+        "caribbean",
+        "chinese",
+        "french",
+        "greek",
+        "indian",
+        "italian",
+        "mexican",
+    ]
+
+
+def is_int(string: Text) -> bool:
+    """Check if a string is an integer."""
+
+    try:
+        int(string)
+        return True
+    except ValueError:
+        return False
+
+
+def validate_cuisine(value: Text, dispatcher: CollectingDispatcher) -> Dict[Text, Any]:
+    """Validate cuisine value."""
+
+    if value.lower() in cuisine_db():
+        # validation succeeded, set the value of the "cuisine" slot to value
+        return SlotSet("cuisine", value)
+    else:
+        dispatcher.utter_message(template="utter_wrong_cuisine")
+        # validation failed, set this slot to None, meaning the
+        # user will be asked for the slot again
+        return SlotSet("cuisine", None)
+
+
+def validate_num_people(
+    value: Text, dispatcher: CollectingDispatcher
+) -> Dict[Text, Any]:
+    """Validate num_people value."""
+
+    if is_int(value) and int(value) > 0:
+        return SlotSet("num_people", value)
+    else:
+        dispatcher.utter_message(template="utter_wrong_num_people")
+        # validation failed, set slot to None
+        return SlotSet("num_people", None)
+
+
+def validate_outdoor_seating(
+    value: Text, dispatcher: CollectingDispatcher
+) -> Dict[Text, Any]:
+    """Validate outdoor_seating value."""
+
+    if isinstance(value, str):
+        if "out" in value:
+            # convert "out..." to True
+            return SlotSet("outdoor_seating", True)
+        elif "in" in value:
+            # convert "in..." to False
+            return SlotSet("outdoor_seating", False)
+        else:
+            dispatcher.utter_message(template="utter_wrong_outdoor_seating")
+            # validation failed, set slot to None
+            return SlotSet("outdoor_seating", None)
+
+    else:
+        # affirm/deny was picked up as True/False by the from_intent mapping
+        return SlotSet("outdoor_seating", value)
