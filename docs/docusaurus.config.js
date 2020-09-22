@@ -154,12 +154,11 @@ module.exports = {
         ...themeRemarkPlugins,
         remarkProgramOutput,
       ],
-      lastVersion: isDev || isPreview || existingVersions.length < 1 ? 'current' : undefined, // aligns / to last versioned folder in production
-      // includeCurrentVersion: true, // default is true
+      lastVersion: existingVersions[0] || 'current', // aligns / to last versioned folder in production
       versions: {
         current: {
           label: versionLabels['current'],
-          path: isDev || isPreview || existingVersions.length < 1 ? '' : 'next',
+          path: existingVersions.length < 1 ? '' : 'next',
         },
       },
     }],
