@@ -16,7 +16,8 @@ def test_cli_start(run: Callable[..., RunResult]):
 
     duration = end - start
 
-    assert duration <= 7
+    # it sometimes takes a bit more time to start it on Windows
+    assert duration <= 10 if sys.platform == "win32" else 7
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):
