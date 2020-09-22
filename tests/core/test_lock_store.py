@@ -153,7 +153,7 @@ async def test_multiple_conversation_ids(default_agent: Agent):
 
 @pytest.mark.xfail(
     sys.platform == "win32",
-    reason="This test sometimes fails on Windows. We want to investigate it further"
+    reason="This test sometimes fails on Windows. We want to investigate it further",
 )
 async def test_message_order(tmp_path: Path, default_agent: Agent):
     start_time = time.time()
@@ -227,7 +227,7 @@ async def test_message_order(tmp_path: Path, default_agent: Agent):
 
 @pytest.mark.xfail(
     sys.platform == "win32",
-    reason="This test sometimes fails on Windows. We want to investigate it further"
+    reason="This test sometimes fails on Windows. We want to investigate it further",
 )
 async def test_lock_error(default_agent: Agent):
     lock_lifetime = 0.01
