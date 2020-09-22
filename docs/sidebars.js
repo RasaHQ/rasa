@@ -59,7 +59,7 @@ module.exports = {
         {
           type: 'category',
           label: 'Training Data',
-          items: ['training-data-format', 'nlu-training-data', 'stories', 'rules'],
+          items: ['training-data-format', 'entities', 'stories', 'rules'],
         },
         'domain',
         {
