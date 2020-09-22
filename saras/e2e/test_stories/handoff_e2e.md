@@ -1,93 +1,93 @@
 ## chitchat
-<U> i want to talk to human
+<U> talk to human
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com.
 ## greet + handoff
-<U> hi
+<U> i said, helllllloooooo!!!!
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> speak to a real person
+<U> can you put me in touch with a human?
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com.
 ## just newsletter + handoff, continue
-<U> hello
+<U> whats up my bot
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> Subscribe newsletter
+<U> i go for the newsletter
     <B> Sure thing!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> let me talk to a human
+<U> please give me a human
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com. 
     <B> Do you still want to subscribe to the newsletter?
-<U> yes
+<U> how nice!
     <B> That's great!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null} 
     <B> How is this conversation going?
 ## just newsletter + handoff, don't continue
-<U> hey there
+<U> hi friends
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i want to  suscribe
+<U> i want to signup for the newsletter
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> can i speak to a human
+<U> no, i want to talk to human
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com. 
     <B> Do you still want to subscribe to the newsletter?
-<U> no
+<U> noooooooooooooooooooooooooooooooooooooooo
     <B> Got it.
     - form{"name": null} 
 ## just sales, continue
-<U> hey
+<U> helo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> contact sales for me
+<U> i want to buy the enterprise edition
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
-<U> can I talk to human
+<U> can you put me in touch with a human?
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com. 
     <B> Do you still want to talk to sales?
-<U> Yes
+<U> ya thats cool
     <B> Great!
     - sales_form
     - form{"name": null}
 ## just sales, don't continue
-<U> hi bot
+<U> heyho
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> contact sales
+<U> i want to talk to your sales people
     <B> Sure, we can book a sales call! Let's get to know each other first .
-<U> I need a real person
+<U> no, i want to talk to human
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com.
     - sales_form
     - form{"name": "sales_form"}
-<U> No
+<U> no i dont want to accept :p lol
     <B> Got it.
     - sales_form
     - form{"name": null}
 ## just sales, explain, continue
-<U> hello
+<U> merhaba
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how to book a sales call
+<U> give me someone who can explain your business model
     <B> Sure, we can book a sales call! Let's get to know each other first . 
-<U> could you explain why you need that
+<U> explain that
     <B> Your job function helps us in understanding how we can talk to you best. Do you still want to talk to sales?
-<U> yes
+<U> y
     <B> Great! 
     <B> What's your job? 
 ## just sales, explain, stop
-<U> hi
+<U> konichiwa
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i would like to talk to sales please
+<U> let' contact sales now
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
-<U> could you explain why you need that
+<U> explain that
     <B> Your job function helps us in understanding how we can talk to you best. Do you still want to talk to sales?
-<U> no thanks
+<U> i decline
     <B> Got it.
     - sales_form
     - form{"name": null}

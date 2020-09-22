@@ -1,362 +1,362 @@
 ## thanks
-<U> Thank you
+<U> cheers bro
     <B> No worries! 
     <B> Is there anything else I can help you with?
 ## bye
-<U> bye
+<U> bye bye bot
     <B> Goodbye!
 ## greet
-<U> hello
+<U> salut
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
 ## sales
-<U> hey bot
+<U> hellllooooooo
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> I want to talk to sales
+<U> let me talk to your sales guys
     <B> Sure, we can book a sales call! Let's get to know each other first . 
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> great thanks
+<U> thanks a bunch for everything
     - slot{"feedback_value": "positive"}
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## newsletter + feedback
-<U> greet
+<U> hey rasa
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> i'll subscribe to the newsletter
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> Good!
+<U> ok, i behave now
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "positive"}
 ## newsletter + affirm feedback
-<U> hi
+<U> hlo
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> subcribe
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> Good!
+<U> y
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "positive"}
 ## newsletter + deny feedback
-<U> hi
+<U> good moring
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> i want to subsribe to the newsletter
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> this is a really frustrating experience
+<U> i am sad
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## newsletter, don't give email once
-<U> hi
+<U> hi there it's me
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> newsletter it is
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
 ## newsletter, continue, affirm, then contact sales
-<U> hi
+<U> whats up my bot
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> newsletter
+<U> i want to signup for the nl
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> no
+<U> i'm not giving you my email address
     <B> I can't sign you up if you don't provide your email Do you still want to subscribe to the newsletter?
-<U> yes
+<U> ok great
     <B> Got it.  
     - subscribe_newsletter_form
     - form{"name": null}
     <B> How is this conversation going?
-<U> Perfect! 
+<U> fine
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "positive"}
-<U> how to book a sales call?
+<U> please can you book call for me
     <B> Sure, we can book a sales call! Let's get to know each other first . 
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> good
+<U> going super well
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "positive"}
 ## newsletter, don't continue, then contact sales
-<U> greet
+<U> hi there it's me
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> Subscribe newsletter
+<U> register me for the newsletter
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> nope
+<U> no way
     <B> I can't sign you up if you don't provide your email Do you still want to subscribe to the newsletter?
-<U> not really
+<U> no you did it wrong
     <B> Got it.
     - form{"name": null}
-<U> call with sales team
+<U> i want to be connected to your sales team
     <B> Sure, we can book a sales call! Let's get to know each other first . 
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> good
+<U> sounds good!
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "positive"}
 ## newsletter, don't continue
-<U> hey there
+<U> hallo sara
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> Subscribe newsletter
+<U> subsribing to our newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> nope
+<U> nopes
     <B> I can't sign you up if you don't provide your email Do you still want to subscribe to the newsletter?
-<U> no
+<U> no sorry
     <B> Got it.
     - form{"name": null}
 ## just newsletter (with email already) + confirm
-<U> hi
+<U> helloooo
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> I want to sign up for the newsletter.
+<U> subscribe
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> this is a really frustrating experience
+<U> i am angry over you
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "negative"}
 ## just newsletter (with email already)
-<U> hello
+<U> good mourning
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> sign me up for that newsletter
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
 ## just newsletter
-<U> hello
+<U> hii
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> i'm craving the newsletter
     <B> Can do! 
     <B> What's your email address?
-<U> my email is Richard@Simmons.com
+<U> conversational
     <B> We sent a confirmation email to [bdc@bdce.com](email). If you want some more awesome Rasa content, check out our [forum](https://forum.rasa.com/). How is this conversation going?
 ## newsletter then sales
-<U> hello bot
+<U> hi folks
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> lets try the newsletter registration
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> talk to sales team
+<U> i want ti booking about booking sales
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> great
+<U> yes great
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "positive"}
 ## sales then newsletter
-<U> hello
+<U> hell9o
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> contact call with sales
+<U> i think i want to talk to your sales folks
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> sign up for newsletter
+<U> join that newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
 ## newsletter, confirm, then sales
-<U> hey there
+<U> hello world
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> i would like to subscribe to your newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> Very bad
+<U> non
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "negative"}
-<U> book a sales call
+<U> i want to talk to someone about your pricing system
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null} 
     <B> How is this conversation going?
-<U> Perfect!
+<U> yessoo
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "positive"}
 ## newsletter + ask why email
-<U> hey
+<U> hello it is me again
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> join that newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> i would like to know why you need that
+<U> explain that
     <B> I need your email address to sign you up to the newsletter. 
     <B> Do you still want to subscribe to the newsletter?
-<U> yep
+<U> thats great
     <B> Got it.
     - subscribe_newsletter_form
     - form{"name": null}
     <B> How is this conversation going?
 ## newsletter + ask why email
-<U> hi
+<U> whats up my bot
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up for newsletter
+<U> subcribe
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> why do you need to know that
+<U> could you tell me more
     <B> I need your email address to sign you up to the newsletter. 
     <B> Do you still want to subscribe to the newsletter?
-<U> no
+<U> not right now
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## sales, then newsletter, then confirm
-<U> hi Sara
+<U> hey let's talk
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> talk to sales team
+<U> sign me up, my email is elizabeth@yahoo.com
     <B> Sure, we can book a sales call! Let's get to know each other first . 
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> sign up for newsletter
+<U> i want to signup
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> Very bad
+<U> no sorry
     - slot{"feedback_value": "negative"}
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## neither options
-<U> hey there
+<U> ey boss
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> nothing
+<U> a killer bot
     <B> For now that's all I can do, so feel free to try it out. If you have any suggestions for what I should learn, let me know!
 ## neither --> newsletter
-<U> hello there
+<U> hi man
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> neither
+<U> no sorry
     <B> For now that's all I can do, so feel free to try it out. If you have any suggestions for what I should learn, let me know!
-<U> sign up for newsletter
+<U> subscribe me to newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
 ## neither --> sales
-<U> hi Sara
+<U> rasa hello
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> nothing
+<U> able to integrate with paypal, wordpress, facebook andd twilio
     <B> For now that's all I can do, so feel free to try it out. If you have any suggestions for what I should learn, let me know!
-<U> call with sales team
+<U> i choose the call
     <B> Sure, we can book a sales call! Let's get to know each other first . 
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> Great!
+<U> oh good !!
     <B> Got it. 
     <B> Is there anything else I can help you with?
     - slot{"feedback_value": "positive"}
 ## chitchat --> email --> no email
-<U> hi there
+<U> hello it is me again
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how are you?
+<U> h r u ?
     <B> I'm great! Thanks for asking.
-<U> how old are you?
+<U> how about your age
     <B> Old enough to be a bot!
-<U> who made you?
+<U> who was the person who put you together?
     <B> Engineers at Rasa.
-<U> where were you made
+<U> what is you mother name
     <B> I was born in the coolest city on Earth, in Berlin.
-<U> sign up for newsletter
+<U> i prefer to get the newsletter
     <B> Can do! 
     <B> What's your email address?
-<U> No I can't
+<U> na
     <B> I can't sign you up if you don't provide your email Do you still want to subscribe to the newsletter?
-<U> no thanks
+<U> no ma'am
     <B> Got it. 
-<U> Good!
+<U> oki doki
     <B> Got it. 
     <B> How is this conversation going?
-<U> it is going pretty badly
+<U> sorry not right now
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## anything else? yes
     <B> Is there anything else I can help you with?
-<U> Yes
+<U> hm, i'd like that
     <B> Ok, what can I help you with?
 ## anything else? no
     <B> Is there anything else I can help you with?
-<U> No
+<U> na
     <B> Got it.
 ## anything else?
     <B> Is there anything else I can help you with?
-<U> Got it!
+<U> acme brands
     <B> Hmm, not sure what you mean... 
     <B> You can ask me about:     - how to get started with Rasa     - the components of Rasa,     - booking a sales call     - subscribing to our newsletter
 ## positive reaction
-<U> Great!
+<U> yes it is
     <B> amazing!
 ## negative reaction
-<U> this is a really frustrating experience
+<U> i dont like bots
     <B> horrible!
