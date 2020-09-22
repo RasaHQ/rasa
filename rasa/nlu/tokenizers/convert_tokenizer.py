@@ -11,7 +11,9 @@ import rasa.utils.train_utils as train_utils
 import tensorflow as tf
 
 
-TF_HUB_MODULE_URL = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+TF_HUB_MODULE_URL = (
+    "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
+)
 
 
 class ConveRTTokenizer(WhitespaceTokenizer):
