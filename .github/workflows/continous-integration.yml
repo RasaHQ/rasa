@@ -139,7 +139,7 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Set up virtual environment (Windows)
+    - name: Set up virtual environment
       # Poetry on Windows cannot pick up the virtual environments directory properly,
       # and it creates a new one every time the pipeline runs.
       # We want to  allow Poetry to create a venv directory if it doesn't

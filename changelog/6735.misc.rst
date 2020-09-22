@@ -1,3 +1,0 @@
-Update tests to investigate ``test_lock_store.py`` behaviour`.
-
-Adjust a timeout for ``test_cli_start`` test.
