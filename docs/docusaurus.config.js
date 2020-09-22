@@ -16,13 +16,8 @@ const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
 let existingVersions = [];
 try { existingVersions = require('./versions.json'); } catch (e) { console.info('no versions.json file found') }
-const currentVersionPath = isDev || isPreview ? '/' : `${existingVersions[0]}/`;
 
 const routeBasePath = '/';
-const existingVersionRE = new RegExp(
-  `${routeBasePath}/(${existingVersions.reduce((s, v, i) => `${s}${i > 0 ? '|' : ''}${v}`, '')}).?`,
-);
-const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
 const versionLabels = {
   current: 'Master/Unreleased'
