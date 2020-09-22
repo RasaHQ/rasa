@@ -475,7 +475,9 @@ class MessageProcessor:
                 text, message.message_id, tracker
             )
         else:
-            parse_data = await self.interpreter.parse(text, message.message_id, tracker)
+            parse_data = await self.interpreter.parse(
+                text, message.message_id, tracker, metadata=message.metadata
+            )
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
