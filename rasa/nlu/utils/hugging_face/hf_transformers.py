@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Text, Tuple, Optional
 from rasa.core.utils import get_dict_hash
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.character_tokenizer import CharacterTokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -59,12 +60,35 @@ class HFTransformersNLP(Component):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         skip_model_load: bool = False,
+        language: str = None,
     ) -> None:
         super(HFTransformersNLP, self).__init__(component_config)
 
         self._load_model_metadata()
         self._load_model_instance(skip_model_load)
+        self.language = language
         self.whitespace_tokenizer = WhitespaceTokenizer()
+        self.character_tokenizer = CharacterTokenizer()
+
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional["Metadata"] = None,
+        cached_component: Optional["Component"] = None,
+        **kwargs: Any,
+    ) -> "Component":
+        if cached_component:
+            return cached_component
+
+        return cls(meta, language=model_metadata.language)
+
+    @classmethod
+    def create(
+        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+    ) -> "Component":
+        return cls(component_config, language=config.language)
 
     def _load_model_metadata(self) -> None:
 
@@ -255,7 +279,10 @@ class HFTransformersNLP(Component):
             message.
         """
 
-        tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
+        if self.language is not None and self.character_tokenizer.can_handle_language(self.language):
+            tokens_in = self.character_tokenizer.tokenize(message, attribute)
+        else:
+            tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
 
         tokens_out = []
 
