@@ -251,6 +251,178 @@ def close_pika_connection(connection: "Connection") -> None:
         logger.exception("Failed to close Pika connection with host.")
 
 
+class PikaConnector:
+    def __init__(
+        self,
+        parameters: "Parameters",
+        process_queue: multiprocessing.Queue,
+        queues: Union[List[Text], Tuple[Text], Text, None] = None,
+        on_connected: Optional[Callable[[Channel], None]] = None,
+    ) -> None:
+        self.parameters: "Parameters" = parameters
+        self.pika_connection: Optional["SelectConnection"] = None
+        self.queues = self._get_queues_from_args(queues)
+        self.process_queue = process_queue
+        self.on_connected = on_connected
+
+        # List to store unpublished messages which hopefully will be published later
+        self.unpublished_messages: Deque[Text] = deque()
+
+    @staticmethod
+    def _get_queues_from_args(
+        queues_arg: Union[List[Text], Tuple[Text], Text, None]
+    ) -> Union[List[Text], Tuple[Text]]:
+        """Get queues for this event broker.
+
+        The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
+        publish to is `queues` (as of Rasa Open Source version 1.8.2). This method
+        can be removed in the future, and `self.queues` should just receive the value of
+        the `queues` kwarg in the constructor.
+
+        Args:
+            queues_arg: Value of the supplied `queues` argument.
+
+        Returns:
+            Queues this event broker publishes to.
+
+        Raises:
+            `ValueError` if no valid `queues` argument was found.
+        """
+        if queues_arg and isinstance(queues_arg, (list, tuple)):
+            return queues_arg
+
+        if queues_arg and isinstance(queues_arg, str):
+            logger.debug(
+                f"Found a string value under the `queues` key of the Pika event broker "
+                f"config. Please supply a list of queues under this key, even if it is "
+                f"just a single one. See {DOCS_URL_PIKA_EVENT_BROKER}"
+            )
+            return [queues_arg]
+
+        rasa.shared.utils.io.raise_warning(
+            f"No `queues` argument provided. It is suggested to "
+            f"explicitly specify a queue as described in "
+            f"{DOCS_URL_PIKA_EVENT_BROKER}. "
+            f"Using the default queue '{DEFAULT_QUEUE_NAME}' for now."
+        )
+
+        return [DEFAULT_QUEUE_NAME]
+
+    @staticmethod
+    def _get_message_properties(
+        headers: Optional[Dict[Text, Text]] = None
+    ) -> "BasicProperties":
+        """Create RabbitMQ message `BasicProperties`.
+
+        The `app_id` property is set to the value of `self.rasa_environment` if
+        present, and the message delivery mode is set to 2 (persistent). In
+        addition, the `headers` property is set if supplied.
+
+        Args:
+            headers: Message headers to add to the message properties of the
+            published message (key-value dictionary). The headers can be retrieved in
+            the consumer from the `headers` attribute of the message's
+            `BasicProperties`.
+
+        Returns:
+            `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
+            as the properties' `app_id` value, `delivery_mode`=2 and `headers` as the
+            properties' headers.
+        """
+        from pika.spec import BasicProperties
+
+        # make message persistent
+        kwargs = {"delivery_mode": 2}
+
+        if os.environ.get("RASA_ENVIRONMENT"):
+            kwargs["app_id"] = os.environ.get("RASA_ENVIRONMENT")
+
+        if headers:
+            kwargs["headers"] = headers
+
+        return BasicProperties(**kwargs)
+
+    @property
+    def is_connected(self) -> bool:
+        return self.pika_connection is None or not self.pika_connection.is_open
+
+    def _connect(self):
+        self.pika_connection = initialise_pika_select_connection(
+            self.parameters, self._on_open_connection, self._on_open_connection_error
+        )
+
+    def _on_open_connection(self, connection: "SelectConnection") -> None:
+        logger.debug(f"RabbitMQ connection to '{self.parameters.host}' was established.")
+        connection.channel(on_open_callback=self._on_channel_open)
+
+    def _on_open_connection_error(self, _, error: Text) -> None:
+        logger.warning(
+            f"Connecting to '{self.parameters.host}' failed with error '{error}'. Trying again."
+        )
+
+    def _on_channel_open(self, channel: "Channel") -> None:
+        logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
+
+        # declare exchange of type 'fanout' in order to publish to multiple queues
+        # (https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
+        channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
+
+        for queue in self.queues:
+            channel.queue_declare(queue=queue, durable=True)
+            channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
+
+        if self.on_connected:
+            self.on_connected(channel)
+
+        while self.unpublished_messages:
+            # Send unpublished messages
+            message = self.unpublished_messages.popleft()
+            self.publish(message)
+            logger.debug(
+                f"Published message from queue of unpublished messages. "
+                f"Remaining unpublished messages: {len(self.unpublished_messages)}."
+            )
+
+    def publish(self, body: Text, headers: Optional[Dict[Text, Text]] = None):
+        self.process_queue.put((body, headers))
+
+    def append_unpublished_message(self, body: Text) -> None:
+        logger.warning(
+            f"RabbitMQ channel has not been assigned. Adding message to "
+            f"list of unpublished messages and trying to publish them "
+            f"later. Current number of unpublished messages is "
+            f"{len(self.unpublished_messages)}."
+        )
+        self.unpublished_messages.append(body)
+
+    def process_messages(self, channel: Channel) -> None:
+        if not self.is_connected:
+            self._connect()
+
+        # noinspection PyUnresolvedReferences
+        self._pika_connection.ioloop.start()
+
+        try:
+            while True:
+                (body, headers) = self.process_queue.get()
+                channel.basic_publish(
+                    exchange=RABBITMQ_EXCHANGE,
+                    routing_key="",
+                    body=body.encode(DEFAULT_ENCODING),
+                    properties=self._get_message_properties(headers),
+                )
+                logger.debug(
+                    f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
+                    f"'{self.parameters.host}':\n{body}"
+                )
+        except EOFError:
+            # Will most likely happen when shutting down Rasa X.
+            logger.debug(
+                "Pika message queue of worker was closed. Stopping to listen for more "
+                "messages on this worker."
+            )
+
+
 class PikaEventBroker(EventBroker):
     """Pika-based event broker for publishing messages to RabbitMQ."""
 
@@ -301,16 +473,13 @@ class PikaEventBroker(EventBroker):
         self.username = username
         self.password = password
         self.port = port
+        self.queues = queues
         self.channel: Optional["Channel"] = None
         self.process: Optional[multiprocessing.Process] = None
-        self.process_queue: Optional[multiprocessing.Queue] = None
-        self.queues = self._get_queues_from_args(queues)
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
         self.raise_on_failure = raise_on_failure
 
-        # List to store unpublished messages which hopefully will be published later
-        self._unpublished_messages: Deque[Text] = deque()
-        self._run_pika()
+        self._connect()
 
     def __del__(self) -> None:
         if self.process and self.process.is_alive():
@@ -323,46 +492,6 @@ class PikaEventBroker(EventBroker):
     def close(self) -> None:
         """Close the pika channel and connection."""
         self.__del__()
-
-    @staticmethod
-    def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None]
-    ) -> Union[List[Text], Tuple[Text]]:
-        """Get queues for this event broker.
-
-        The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
-        publish to is `queues` (as of Rasa Open Source version 1.8.2). This method
-        can be removed in the future, and `self.queues` should just receive the value of
-        the `queues` kwarg in the constructor.
-
-        Args:
-            queues_arg: Value of the supplied `queues` argument.
-
-        Returns:
-            Queues this event broker publishes to.
-
-        Raises:
-            `ValueError` if no valid `queues` argument was found.
-        """
-        if queues_arg and isinstance(queues_arg, (list, tuple)):
-            return queues_arg
-
-        if queues_arg and isinstance(queues_arg, str):
-            logger.debug(
-                f"Found a string value under the `queues` key of the Pika event broker "
-                f"config. Please supply a list of queues under this key, even if it is "
-                f"just a single one. See {DOCS_URL_PIKA_EVENT_BROKER}"
-            )
-            return [queues_arg]
-
-        rasa.shared.utils.io.raise_warning(
-            f"No `queues` argument provided. It is suggested to "
-            f"explicitly specify a queue as described in "
-            f"{DOCS_URL_PIKA_EVENT_BROKER}. "
-            f"Using the default queue '{DEFAULT_QUEUE_NAME}' for now."
-        )
-
-        return [DEFAULT_QUEUE_NAME]
 
     @classmethod
     def from_endpoint_config(
@@ -381,133 +510,43 @@ class PikaEventBroker(EventBroker):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def _run_pika(self) -> None:
+    def _connect(self) -> None:
         parameters = _get_pika_parameters(
             self.host, self.username, self.password, self.port
         )
-        self._pika_connection = initialise_pika_select_connection(
-            parameters, self._on_open_connection, self._on_open_connection_error
+
+        def on_connected(channel: Channel):
+            self.channel = channel
+
+        self.pika_connector = PikaConnector(
+            parameters,
+            process_queue=self._get_mp_context().Queue(),
+            queues=self.queues,
+            on_connected=on_connected,
         )
-        self.process_queue = self._get_mp_context().Queue()
         self.process = self._start_pika_process()
-
-    def _on_open_connection(self, connection: "SelectConnection") -> None:
-        logger.debug(f"RabbitMQ connection to '{self.host}' was established.")
-        connection.channel(on_open_callback=self._on_channel_open)
-
-    def _on_open_connection_error(self, _, error: Text) -> None:
-        logger.warning(
-            f"Connecting to '{self.host}' failed with error '{error}'. Trying again."
-        )
-
-    def _on_channel_open(self, channel: "Channel") -> None:
-        logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
-
-        # declare exchange of type 'fanout' in order to publish to multiple queues
-        # (https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
-        channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
-
-        for queue in self.queues:
-            channel.queue_declare(queue=queue, durable=True)
-            channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
-
-        self.channel = channel
-
-        while self._unpublished_messages:
-            # Send unpublished messages
-            message = self._unpublished_messages.popleft()
-            self._publish(message)
-            logger.debug(
-                f"Published message from queue of unpublished messages. "
-                f"Remaining unpublished messages: {len(self._unpublished_messages)}."
-            )
 
     def _get_mp_context(self) -> multiprocessing.context.BaseContext:
         return multiprocessing.get_context(self.MP_CONTEXT)
 
     def _start_pika_process(self) -> multiprocessing.Process:
         process = multiprocessing.Process(
-            target=self._process_pika_messages,
-            args=(self.process_queue, self.channel, self.host),
+            target=self.pika_connector.process_messages,
+            args=(self.channel,),
             daemon=True
         )
         process.start()
         return process
 
-    @staticmethod
-    def _get_message_properties(
-        headers: Optional[Dict[Text, Text]] = None
-    ) -> "BasicProperties":
-        """Create RabbitMQ message `BasicProperties`.
-
-        The `app_id` property is set to the value of `self.rasa_environment` if
-        present, and the message delivery mode is set to 2 (persistent). In
-        addition, the `headers` property is set if supplied.
-
-        Args:
-            headers: Message headers to add to the message properties of the
-            published message (key-value dictionary). The headers can be retrieved in
-            the consumer from the `headers` attribute of the message's
-            `BasicProperties`.
-
-        Returns:
-            `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
-            as the properties' `app_id` value, `delivery_mode`=2 and `headers` as the
-            properties' headers.
-        """
-        from pika.spec import BasicProperties
-
-        # make message persistent
-        kwargs = {"delivery_mode": 2}
-
-        if os.environ.get("RASA_ENVIRONMENT"):
-            kwargs["app_id"] = os.environ.get("RASA_ENVIRONMENT")
-
-        if headers:
-            kwargs["headers"] = headers
-
-        return BasicProperties(**kwargs)
-
-    @staticmethod
-    def _process_pika_messages(queue: multiprocessing.Queue, channel: Channel, host: Text) -> None:
-        # noinspection PyUnresolvedReferences
-        self._pika_connection.ioloop.start()
-
-        try:
-            while True:
-                (body, headers) = queue.get()
-                channel.basic_publish(
-                    exchange=RABBITMQ_EXCHANGE,
-                    routing_key="",
-                    body=body.encode(DEFAULT_ENCODING),
-                    properties=PikaEventBroker._get_message_properties(headers),
-                )
-                logger.debug(
-                    f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-                    f"'{host}':\n{body}"
-                )
-        except EOFError:
-            # Will most likely happen when shutting down Rasa X.
-            logger.debug(
-                "Pika message queue of worker was closed. Stopping to listen for more "
-                "messages on this worker."
-            )
-
     def _publish(self, body: Text, headers: Optional[Dict[Text, Text]] = None) -> None:
-        if self._pika_connection.is_closed:
+        if not self.pika_connector or not self.pika_connector.is_connected:
             # Try to reset connection
-            self._run_pika()
-            self.process_queue.put((body, headers))
+            self._connect()
+            self.pika_connector.publish(body, headers)
         elif not self.channel and self.should_keep_unpublished_messages:
-            logger.warning(
-                f"RabbitMQ channel has not been assigned. Adding message to "
-                f"list of unpublished messages and trying to publish them "
-                f"later. Current number of unpublished messages is "
-                f"{len(self._unpublished_messages)}."
-            )
-            self._unpublished_messages.append(body)
+            self.pika_connector.append_unpublished_message(body)
         else:
-            self.process_queue.put((body, headers))
+            self.pika_connector.publish(body, headers)
 
     def is_ready(
         self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
