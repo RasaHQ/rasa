@@ -124,7 +124,7 @@ async def test_http_parsing():
         assert r
 
 
-async def mocked_parse(self, text, message_id=None, tracker=None):
+async def mocked_parse(self, text, message_id=None, tracker=None, metadata=None):
     """Mock parsing a text message and augment it with the slot
     value from the tracker's state."""
 
