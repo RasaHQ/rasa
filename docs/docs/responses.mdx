@@ -43,7 +43,7 @@ the different response keys (here `ask_name` and `ask_weather`). See
 ### Using Variables in Responses
 
 You can use variables to insert information into responses.
-Within a response, a variable is represented by using curly braces, see the variable `name` below:
+Within a response, a variable is enclosed in curly brackets, see the variable `name` below:
 ```yaml-rasa {3} title="domain.yml"
 responses:
   utter_greet:
@@ -55,8 +55,8 @@ found in the slot called `name`. If such a slot doesn't exist or is empty, the v
 filled with `None`.
 
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
-In an action's code, you can supply values to a response to fill in specific variables. 
-If you're using Rasa SDK for your action server, you can specify values when using `dispatcher.utter_message`:
+In such an action's code, you can supply values to a response to fill in specific variables. 
+If you use Rasa SDK for your action server, you can do this when using `dispatcher.utter_message`:
 ```python {3}
 dispatcher.utter_message(
     template="utter_greet",
@@ -64,9 +64,8 @@ dispatcher.utter_message(
 )
 ```
 
-If using a different custom action server, you can add extra parameters to the responses you return
-to achieve the same result:
-
+If you use a [different custom action server](https://rasa.com/docs/action-server#other-action-servers), 
+supply the values by adding extra parameters to the responses you return:
 ```json {8}
 {
   "events":[
@@ -84,20 +83,16 @@ to achieve the same result:
 
 ### Response Variations
 
-If you want to randomly vary the response sent to the user, you can list
-multiple response variations by adding another response to the list of
-responses under your response name.
-
-The following example has 2 different choices for `utter_greet`:
-
-```yaml-rasa title="domain.yml"
+You can make your assistant's replies more interesting by giving it multiple response variations to choose 
+from for a given response name:
+```yaml-rasa {3-4} title="domain.yml"
 responses:
   utter_greet:
   - text: "Hey, {name}. How are you?"
   - text: "Hey, {name}. How is your day going?"
 ```
-
-When the model predicts `utter_greet`, Rasa will randomly pick one of them.
+In this example, when `utter_greet` gets predicted as the next action, Rasa will randomly pick one of the 
+two response variations and use it.
 
 
 ### Channel-Specific Response Variations
