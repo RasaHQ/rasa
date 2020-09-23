@@ -47,9 +47,9 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
-        super(ConveRTFeaturizer, self).__init__(component_config)
+        super().__init__(component_config)
 
-        self.model_url = component_config.get("model_url", TF_HUB_MODULE_URL)
+        self.model_url = self.component_config.get("model_url", TF_HUB_MODULE_URL)
 
         self.module = train_utils.load_tf_hub_model(self.model_url)
 
