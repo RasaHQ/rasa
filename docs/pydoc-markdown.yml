@@ -11,4 +11,5 @@ processors:
 renderer:
   type: docusaurus
   docs_base_path: docs/
-  sidebar_top_level_label: 'Code reference'
+  sidebar_top_level_label: null
+  sidebar_top_level_module_label: 'Code reference'
