@@ -16,13 +16,8 @@ const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
 let existingVersions = [];
 try { existingVersions = require('./versions.json'); } catch (e) { console.info('no versions.json file found') }
-const currentVersionPath = isDev || isPreview ? '/' : `${existingVersions[0]}/`;
 
 const routeBasePath = '/';
-const existingVersionRE = new RegExp(
-  `${routeBasePath}/(${existingVersions.reduce((s, v, i) => `${s}${i > 0 ? '|' : ''}${v}`, '')}).?`,
-);
-const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
 const versionLabels = {
   current: 'Master/Unreleased'
@@ -159,12 +154,11 @@ module.exports = {
         ...themeRemarkPlugins,
         remarkProgramOutput,
       ],
-      lastVersion: isDev || isPreview || existingVersions.length < 1 ? 'current' : undefined, // aligns / to last versioned folder in production
-      // includeCurrentVersion: true, // default is true
+      lastVersion: existingVersions[0] || 'current', // aligns / to last versioned folder in production
       versions: {
         current: {
           label: versionLabels['current'],
-          path: isDev || isPreview || existingVersions.length < 1 ? '' : 'next',
+          path: existingVersions.length < 1 ? '' : 'next',
         },
       },
     }],
