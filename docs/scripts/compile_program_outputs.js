@@ -4,5 +4,5 @@ console.info('Computing program outputs');
 getProgramOutputs({
   docsDir: './docs',
   include: ['**.mdx', '**.md'],
-  commandPrefix: 'poetry run',
+  commandPrefix: 'RASA_TELEMETRY_ENABLED=false poetry run',
 });
