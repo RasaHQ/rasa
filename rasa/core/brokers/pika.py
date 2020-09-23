@@ -268,6 +268,14 @@ class PikaConnector:
         # List to store unpublished messages which hopefully will be published later
         self.unpublished_messages: Deque[Text] = deque()
 
+    def __del__(self) -> None:
+        if self.is_connected:
+            self.pika_connection.close()
+
+    def close(self) -> None:
+        """Close the pika connector."""
+        self.__del__()
+
     @staticmethod
     def _get_queues_from_args(
         queues_arg: Union[List[Text], Tuple[Text], Text, None]
@@ -344,7 +352,7 @@ class PikaConnector:
 
     @property
     def is_connected(self) -> bool:
-        return self.pika_connection is None or not self.pika_connection.is_open
+        return self.pika_connection and self.pika_connection.is_open
 
     def _connect(self):
         self.pika_connection = initialise_pika_select_connection(
@@ -395,12 +403,14 @@ class PikaConnector:
         )
         self.unpublished_messages.append(body)
 
-    def process_messages(self, channel: Channel) -> None:
+    def process_messages(self, channel: Optional[Channel]) -> None:
         if not self.is_connected:
             self._connect()
 
         # noinspection PyUnresolvedReferences
         self._pika_connection.ioloop.start()
+
+        # TODO(alwx): channel might still not be initialized
 
         try:
             while True:
@@ -484,6 +494,9 @@ class PikaEventBroker(EventBroker):
     def __del__(self) -> None:
         if self.process and self.process.is_alive():
             self.process.terminate()
+
+        if self.pika_connector:
+            self.pika_connector.close()
 
         if self.channel:
             close_pika_channel(self.channel)
