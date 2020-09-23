@@ -284,6 +284,8 @@ ConveRTTokenizer
           "intent_split_symbol": "_"
           # Text will be tokenized with case sensitive as default
           "case_sensitive": True
+          # Remote URL of hosted model
+          "model_url": "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
 
 .. _LanguageModelTokenizer:
 
@@ -417,6 +419,8 @@ ConveRTFeaturizer
 
         pipeline:
         - name: "ConveRTFeaturizer"
+          # Remote URL of hosted model
+          "model_url": "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
 
 
 .. _LanguageModelFeaturizer:

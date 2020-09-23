@@ -6,6 +6,10 @@ from rasa.nlu.training_data import Message
 import rasa.utils.train_utils as train_utils
 import tensorflow as tf
 
+TF_HUB_MODULE_URL = (
+    "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
+)
+
 
 class ConveRTTokenizer(WhitespaceTokenizer):
     """Tokenizer using ConveRT model.
@@ -22,6 +26,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         "intent_split_symbol": "_",
         # Text will be tokenized with case sensitive as default
         "case_sensitive": True,
+        # Remote URL of hosted model
+        "model_url": TF_HUB_MODULE_URL,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -29,8 +35,9 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         super().__init__(component_config)
 
-        model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
-        self.module = train_utils.load_tf_hub_model(model_url)
+        self.model_url = self.component_config.get("model_url", TF_HUB_MODULE_URL)
+
+        self.module = train_utils.load_tf_hub_model(self.model_url)
 
         self.tokenize_signature = self.module.signatures["tokenize"]
 
