@@ -17,6 +17,16 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.14] - 2020-09-23
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#6741 <https://github.com/rasahq/rasa/issues/6741>`_: Fixed the remote URL of ConveRT model as it was recently updated by its authors.
+
+  Also made the remote URL configurable at runtime in the corresponding tokenizer's and featurizer's configuration.
+
+
 [1.10.13] - 2020-09-21
 ^^^^^^^^^^^^^^^^^^^^^^
 
