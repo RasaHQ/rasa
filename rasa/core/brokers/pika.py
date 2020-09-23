@@ -303,6 +303,7 @@ class PikaEventBroker(EventBroker):
         self.port = port
         self.channel: Optional["Channel"] = None
         self.process: Optional[multiprocessing.Process] = None
+        self.process_queue: Optional[multiprocessing.Queue] = None
         self.queues = self._get_queues_from_args(queues)
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
         self.raise_on_failure = raise_on_failure
@@ -312,8 +313,8 @@ class PikaEventBroker(EventBroker):
         self._run_pika()
 
     def __del__(self) -> None:
-        if self.process.is_alive():
-            self.process.kill()
+        if self.process and self.process.is_alive():
+            self.process.terminate()
 
         if self.channel:
             close_pika_channel(self.channel)
@@ -387,7 +388,7 @@ class PikaEventBroker(EventBroker):
         self._pika_connection = initialise_pika_select_connection(
             parameters, self._on_open_connection, self._on_open_connection_error
         )
-        self._process_queue = self._get_mp_context().Queue()
+        self.process_queue = self._get_mp_context().Queue()
         self.process = self._start_pika_process()
 
     def _on_open_connection(self, connection: "SelectConnection") -> None:
@@ -426,8 +427,8 @@ class PikaEventBroker(EventBroker):
 
     def _start_pika_process(self) -> multiprocessing.Process:
         process = multiprocessing.Process(
-            target=self.process_pika_messages,
-            args=(self._process_queue, self.channel, self.host),
+            target=self._process_pika_messages,
+            args=(self.process_queue, self.channel, self.host),
             daemon=True
         )
         process.start()
@@ -468,7 +469,10 @@ class PikaEventBroker(EventBroker):
         return BasicProperties(**kwargs)
 
     @staticmethod
-    def process_pika_messages(queue: multiprocessing.Queue, channel: Channel, host: Text) -> None:
+    def _process_pika_messages(queue: multiprocessing.Queue, channel: Channel, host: Text) -> None:
+        # noinspection PyUnresolvedReferences
+        self._pika_connection.ioloop.start()
+
         try:
             while True:
                 (body, headers) = queue.get()
@@ -478,7 +482,6 @@ class PikaEventBroker(EventBroker):
                     body=body.encode(DEFAULT_ENCODING),
                     properties=PikaEventBroker._get_message_properties(headers),
                 )
-
                 logger.debug(
                     f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
                     f"'{host}':\n{body}"
@@ -494,7 +497,7 @@ class PikaEventBroker(EventBroker):
         if self._pika_connection.is_closed:
             # Try to reset connection
             self._run_pika()
-            self._process_queue.put((body, headers))
+            self.process_queue.put((body, headers))
         elif not self.channel and self.should_keep_unpublished_messages:
             logger.warning(
                 f"RabbitMQ channel has not been assigned. Adding message to "
@@ -504,7 +507,7 @@ class PikaEventBroker(EventBroker):
             )
             self._unpublished_messages.append(body)
         else:
-            self._process_queue.put((body, headers))
+            self.process_queue.put((body, headers))
 
     def is_ready(
         self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
