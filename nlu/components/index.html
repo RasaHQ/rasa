@@ -218,12 +218,13 @@ Natural Language Understanding pipeline" />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.13
+          viewing: 1.10.14
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.14/nlu/components/">1.10.14</a>
               <a href="../.././1.10.13/nlu/components/">1.10.13</a>
               <a href="../.././1.10.12/nlu/components/">1.10.12</a>
               <a href="../.././1.10.11/nlu/components/">1.10.11</a>
@@ -670,6 +671,8 @@ default being <code class="docutils literal notranslate"><span class="pre">case_
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
   <span class="c1"># Text will be tokenized with case sensitive as default</span>
   <span class="s">&quot;case_sensitive&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+  <span class="c1"># Remote URL of hosted model</span>
+  <span class="s">&quot;model_url&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz&quot;</span>
 </pre></div>
 </div>
 </dd>
@@ -821,6 +824,8 @@ be used if your training data is in English language.</p>
 <dt class="field-even">Configuration</dt>
 <dd class="field-even"><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
+  <span class="c1"># Remote URL of hosted model</span>
+  <span class="s">&quot;model_url&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz&quot;</span>
 </pre></div>
 </div>
 </dd>
