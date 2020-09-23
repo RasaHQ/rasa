@@ -692,7 +692,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                [".md"],
+                [".md", ".yml"],
                 "Please provide a valid export path for the stories, e.g. 'stories.md'.",
             ),
         ),
@@ -701,7 +701,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
             validate=io_utils.file_type_validator(
-                [".md", ".json"],
+                [".md", ".json", ".yml"],
                 "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
             ),
         ),
@@ -717,6 +717,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
     )
 
     answers = questions.ask()
+
     if not answers:
         raise Abort()
 

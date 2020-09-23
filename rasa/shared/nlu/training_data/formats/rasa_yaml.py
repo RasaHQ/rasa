@@ -34,6 +34,8 @@ KEY_REGEX_EXAMPLES = "examples"
 KEY_LOOKUP = "lookup"
 KEY_LOOKUP_EXAMPLES = "examples"
 KEY_METADATA = "metadata"
+KEY_RULES = "rules"
+KEY_STORIES = "stories"
 
 MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL = "-"
 
@@ -346,8 +348,13 @@ class RasaYAMLReader(TrainingDataReader):
 
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
+            print('$'*40)
+            print(content)
+            print('@'*40)
+            print(any(key in content for key in {KEY_NLU, KEY_RESPONSES}))
 
-            return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
+            return any(key in content for key in {KEY_NLU, KEY_RESPONSES, KEY_RULES, KEY_STORIES})
+            # ["nlu", "response"]
         except (YAMLError, Warning) as e:
             logger.error(
                 f"Tried to check if '{filename}' is an NLU file, but failed to "
