@@ -39,14 +39,14 @@ One common case of contextual interjections is during slot filling for [form](fo
 asks “Why do you need to know that?” or "Can you explain that?".
 The response should differ for each slot. For example:
 
-```yaml
-User: I want to talk to sales
-  Bot: Sure, we can book a sales call! Let's get to know each other first.
-  Bot: What's your job?
-User: Why do you need to know that?
-  Bot: Your job function helps us in understanding how we can talk to you best.
-  Bot: Do you still want to talk to sales?
-```
+<Chat caption="Contextual interjection">
+<ChatUserText>I want to talk to sales</ChatUserText>
+<ChatBotText>Sure, we can book a sales call! Let's get to know each other first.</ChatBotText>
+<ChatBotText>What's your job?</ChatBotText>
+<ChatUserText>Why do you need to know that?</ChatUserText>
+<ChatBotText>Your job function helps us in understanding how we can talk to you best.</ChatBotText>
+<ChatBotText>Do you still want to talk to sales?</ChatBotText>
+</Chat>
 
 Since we want the `requested_slot` to influence the conversation,
 we need to make the `requested_slot` featurized, and assign it the categorical type:
