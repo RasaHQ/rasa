@@ -76,22 +76,22 @@ You can then write stories for specific responses to interruptions based on the 
 stories:
 - story: cuisine interruption
   steps:
-    - active_loop: restaurant_form
-    - slot_was_set:
-      - requested_slot: cuisine
-    - intent: explain
-    - action: utter_explain_cuisine
-    - action: restaurant_form
-    - active_loop: null
+  - active_loop: restaurant_form
+  - slot_was_set:
+    - requested_slot: cuisine
+  - intent: explain
+  - action: utter_explain_cuisine
+  - action: restaurant_form
+  - active_loop: null
 - story: number of people interruption
   steps:
-    - active_loop: restaurant_form
-    - slot_was_set:
-      - requested_slot: num_people
-    - intent: explain
-    - action: utter_explain_num_people
-    - action: restaurant_form
-    - active_loop: null
+  - active_loop: restaurant_form
+  - slot_was_set:
+    - requested_slot: num_people
+  - intent: explain
+  - action: utter_explain_num_people
+  - action: restaurant_form
+  - active_loop: null
 ```
 
 
