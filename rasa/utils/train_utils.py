@@ -95,22 +95,24 @@ def align_tokens(
     current_token_offset = token_start
 
     for index, string in enumerate(tokens_in):
+        string_len = len(string) if string != "[UNK]" else 1
+
         if index == 0:
             if index == len(tokens_in) - 1:
                 s_token_end = token_end
             else:
-                s_token_end = current_token_offset + len(string)
+                s_token_end = current_token_offset + string_len
             tokens_out.append(Token(string, token_start, end=s_token_end))
         elif index == len(tokens_in) - 1:
             tokens_out.append(Token(string, current_token_offset, end=token_end))
         else:
             tokens_out.append(
                 Token(
-                    string, current_token_offset, end=current_token_offset + len(string)
+                    string, current_token_offset, end=current_token_offset + string_len
                 )
             )
 
-        current_token_offset += len(string)
+        current_token_offset += string_len
 
     return tokens_out
 
