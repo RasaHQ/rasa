@@ -105,7 +105,7 @@ class FormAction(LoopAction):
         return requested_slot_mappings
 
     def _create_unique_entity_mappings(self, domain: Domain) -> Set[Text]:
-        """Finds mappings of type `from_entity` that are uniquely set some slot.
+        """Finds mappings of type `from_entity` that uniquely set a slot.
 
         For example in the following form:
         some_form:
