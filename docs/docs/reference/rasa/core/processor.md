@@ -87,7 +87,7 @@ ML to predict the action. Returns the index of the next action.
 #### handle\_reminder
 
 ```python
- | async handle_reminder(reminder_event: ReminderScheduled, sender_id: Text, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> None
+ | async handle_reminder(reminder_event: ReminderScheduled, sender_id: Text, output_channel: OutputChannel) -> None
 ```
 
 Handle a reminder that is triggered asynchronously.
@@ -165,4 +165,13 @@ Determine whether the processor should predict another action.
 
   `False` if `action_name` is `ACTION_LISTEN_NAME` or
   `ACTION_SESSION_START_NAME`, otherwise `True`.
+
+#### execute\_side\_effects
+
+```python
+ | async execute_side_effects(events: List[Event], tracker: DialogueStateTracker, output_channel: OutputChannel) -> None
+```
+
+Send bot messages, schedule and cancel reminders that are logged
+in the events array.
 
