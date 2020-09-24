@@ -14,7 +14,7 @@ Class that reads the core training data in a Markdown format
 #### read\_from\_file
 
 ```python
- | async read_from_file(filename: Union[Text, Path]) -> List[StoryStep]
+ | read_from_file(filename: Union[Text, Path]) -> List[StoryStep]
 ```
 
 Given a md file reads the contained stories.

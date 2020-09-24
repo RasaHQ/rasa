@@ -32,7 +32,7 @@ Create a reader from another reader.
 #### read\_from\_file
 
 ```python
- | async read_from_file(filename: Union[Text, Path]) -> List[StoryStep]
+ | read_from_file(filename: Union[Text, Path]) -> List[StoryStep]
 ```
 
 Read stories or rules from file.
