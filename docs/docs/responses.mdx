@@ -59,8 +59,9 @@ value found in the slot called `name`. If such a slot doesn't exist or is empty,
 filled with `None`.
 
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
-In custom action code, you can supply values to a response to fill in specific variables. 
-If you use Rasa SDK for your action server, you can do this when using `dispatcher.utter_message`:
+In your custom action code, you can supply values to a response to fill in
+specific variables.
+If you use Rasa SDK for your action server, you can do this using `dispatcher.utter_message`:
 
 ```python {3}
 dispatcher.utter_message(
@@ -138,11 +139,8 @@ in the shell and in interactive learning.
 
 ## Rich Responses
 
-Rich responses allow you to add visual and interactive elements to your responses.
-There are a few types of rich responses that are supported across multiple channels. These
-can be added to the `text` of your response.
-
-You can also use custom content to send a rich response of any type to the output channel.
+You can make responses rich by adding visual and interactive elements.
+There are several types of elements that are supported across many channels:
 
 ### Buttons
 
@@ -161,7 +159,7 @@ responses:
 
 Each button in the list of `buttons` should have two keys:
 * `title`: The text displayed on the buttons that the user sees.
-* `payload`: The message sent from the user to the bot when the button is clicked.
+* `payload`: The message sent from the user to the assistant when the button is clicked.
 
 :::note bypass nlu with buttons
 It's common to use buttons as a shortcut to bypass the ML-based NLU interpreter.
@@ -198,7 +196,7 @@ Here's an example of how to send a
 [date picker](https://api.slack.com/reference/block-kit/block-elements#datepicker) to the
 [Slack Output Channel](connectors/slack.mdx):
 
-```yaml-rasa title="domain.yml"
+```yaml-rasa {3-14} title="domain.yml"
 responses:
   utter_take_bet:
   - custom:
@@ -223,19 +221,19 @@ So long as the name of the response starts with `utter_`, the response can
 directly be used as an action. Say you have the following response in your domain:
 
 ```yaml-rasa title="domain.yml"
-   responses:
-     utter_greet:
-     - text: "Hey! How are you?"
-   ```
+responses:
+  utter_greet:
+  - text: "Hey! How are you?"
+```
 
 You can use that same response as an action in your stories:
 
-```yaml-rasa title="stories.yml"
-   stories:
-   - story: greet user
-     steps:
-     - intent: greet
-     - action: utter_greet
+```yaml-rasa {5} title="stories.yml"
+stories:
+- story: greet user
+  steps:
+  - intent: greet
+  - action: utter_greet
 ```
 
 When `utter_greet` action runs, it will send the message from
@@ -253,14 +251,14 @@ You can call responses from your
 variable. In your custom action code, you can
 send a message based on the responses defined under `utter_greet` like this:
 
-```python
+```python {8} title="actions.py"
 from rasa_sdk.interfaces import Action
 
 class ActionGreet(Action):
- def name(self):
-     return 'action_greet'
+    def name(self):
+        return 'action_greet'
 
- def run(self, dispatcher, tracker, domain):
-     dispatcher.utter_message(template="utter_greet")
-     return []
+    def run(self, dispatcher, tracker, domain):
+        dispatcher.utter_message(template="utter_greet")
+        return []
 ```
