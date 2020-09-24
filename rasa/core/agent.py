@@ -408,7 +408,7 @@ class Agent:
             if not os.path.exists(model_path):
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
             if os.path.isfile(model_path):
-                model_path = get_model(model_path)
+                model_path = get_model(str(model_path))
         except ModelNotFound:
             raise ValueError(
                 "You are trying to load a MODEL from '{}', which is not possible. \n"
