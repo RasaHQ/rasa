@@ -97,7 +97,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
     """Resolve component name to a registered components class."""
 
     if component_name == "DucklingHTTPExtractor":
-        raise_warning(
+        raise_deprecation_warning(
             "The component 'DucklingHTTPExtractor' has been renamed to 'DucklingEntityExtractor'."
             "Update your pipeline to use 'DucklingEntityExtractor'.",
             FutureWarning,
