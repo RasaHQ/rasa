@@ -62,11 +62,12 @@ module.exports = {
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      disabled: !isDev, // FIXME: remove this when our index is good
       apiKey: '25626fae796133dc1e734c6bcaaeac3c', // FIXME: replace with values from our own index
-      indexName: 'docsearch', // FIXME: replace with values from our own index
+      indexName: 'rasa',
       inputSelector: '.search-bar',
-      // searchParameters: {}, // Optional (if provided by Algolia)
+      searchParameters: {
+        'facetFilters': ["tags:rasa"]
+      }
     },
     navbar: {
       hideOnScroll: false,
