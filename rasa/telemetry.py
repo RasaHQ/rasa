@@ -118,13 +118,16 @@ def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Any]:
 
 def _write_default_telemetry_configuration(
     is_enabled: bool = TELEMETRY_ENABLED_BY_DEFAULT,
-) -> None:
-    if is_enabled and os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE) is None:
-        print_telemetry_reporting_info()
-
+) -> bool:
     new_config = _default_telemetry_configuration(is_enabled)
 
-    rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, new_config)
+    success = rasa_utils.write_global_config_value(
+        CONFIG_FILE_TELEMETRY_KEY, new_config
+    )
+
+    if is_enabled and success:
+        print_telemetry_reporting_info()
+    return success
 
 
 def _is_telemetry_enabled_in_configuration() -> bool:
@@ -145,8 +148,9 @@ def _is_telemetry_enabled_in_configuration() -> bool:
         logger.debug(f"Could not read telemetry settings from configuration file: {e}")
 
         # seems like there is no config, we'll create on and enable telemetry
-        _write_default_telemetry_configuration()
-        return TELEMETRY_ENABLED_BY_DEFAULT
+        success = _write_default_telemetry_configuration()
+        # if writing the configuration failed, telemetry will be disabled
+        return TELEMETRY_ENABLED_BY_DEFAULT and success
 
 
 def is_telemetry_enabled() -> bool:
