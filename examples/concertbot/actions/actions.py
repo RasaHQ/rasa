@@ -50,6 +50,7 @@ class ActionShowVenueReviews(Action):
         dispatcher.utter_message(text=f"venues from slots: {venues}")
         return []
 
+
 class ActionSetMusicPreference(Action):
     def name(self):
         return "action_set_music_preference"
