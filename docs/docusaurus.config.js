@@ -24,7 +24,6 @@ const versionLabels = {
 };
 
 module.exports = {
-  onBrokenLinks: 'warn',
   customFields: {
     productLogo: '/img/logo-rasa-oss.png',
     versionLabels,
