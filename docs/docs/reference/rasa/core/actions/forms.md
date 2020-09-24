@@ -60,17 +60,18 @@ Check whether user intent matches intent conditions
 #### entity\_is\_desired
 
 ```python
- | entity_is_desired(requested_slot_mapping: Dict[Text, Any], slot: Text, entity_type_of_slot_to_fill: Optional[Text], tracker: "DialogueStateTracker") -> bool
+ | entity_is_desired(slot_mapping: Dict[Text, Any], slot: Text, entity_type_of_slot_to_fill: Optional[Text], tracker: DialogueStateTracker, domain: Domain) -> bool
 ```
 
 Check whether slot should be filled by an entity in the input or not.
 
 **Arguments**:
 
-- `requested_slot_mapping` - Slot mapping.
+- `slot_mapping` - Slot mapping.
 - `slot` - The slot to be filled.
 - `entity_type_of_slot_to_fill` - Entity type of slot to fill.
 - `tracker` - The tracker.
+- `domain` - The domain.
   
 
 **Returns**:
