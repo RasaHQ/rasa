@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    [
+      "validate-links",
+      {
+        "prefix": "/docs/",
+        "lines": false
+      }
+    ]
+  ]
+}
