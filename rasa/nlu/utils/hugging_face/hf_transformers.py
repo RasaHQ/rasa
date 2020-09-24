@@ -279,7 +279,9 @@ class HFTransformersNLP(Component):
             message.
         """
 
-        if self.language is not None and self.character_tokenizer.can_handle_language(self.language):
+        if self.language is not None and self.character_tokenizer.can_handle_language(
+            self.language
+        ):
             tokens_in = self.character_tokenizer.tokenize(message, attribute)
         else:
             tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
