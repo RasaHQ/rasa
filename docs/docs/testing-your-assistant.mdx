@@ -137,12 +137,11 @@ for them and include these tests in your [CI/CD pipeline](./setting-up-ci-cd.mdx
 
 :::
 
-If you have any questions or problems, please share them with us in the dedicated
-[testing section on our forum](https://forum.rasa.com/tags/testing) !
-
 ## Evaluating an NLU Model
 
-You should always test your machine learning model on data which it hasn't been trained on.
+In addition to end-to-end testing, you can also test the message processing model(NLU) separately.
+Once your assistant is deployed in the real world, it will be processing messages that it hasn't seen
+in the training data. Hence, you should always set aside some part of your training data for testing.
 You can [split your NLU data](./command-line-interface.mdx#create-a-train-test-split)
 into train and test sets using:
 
@@ -150,18 +149,21 @@ into train and test sets using:
 rasa data split nlu
 ```
 
-Next, you can see how well your NLU model predicts the
+Next, you can see how well your trained NLU model predicts the
 test cases using:
 
-```bash
-rasa test nlu --nlu train_test_split/test_data.yml
+```bash {2}
+rasa test nlu
+    --nlu train_test_split/test_data.yml
 ```
 
 To test your model more extensively, use cross-validation, which automatically creates
 multiple train/test splits:
 
-```bash
-rasa test nlu --nlu data/nlu.yml --cross-validation
+```bash {3}
+rasa test nlu
+    --nlu data/nlu.yml
+    --cross-validation
 ```
 
 You can find the full list of options in the
@@ -191,7 +193,8 @@ This performs several steps:
 3. Train models for each configuration on remaining training data.
 4. Evaluate each model on the global test split.
 
-The above process is repeated three times for each exclusion percentage and each configuration.
+The above process is repeated with different percentages of training data excluded in step 2 above.
+Additionally, the whole process is repeated three times for each configuration specified.
 A graph with the mean and standard deviations of
 [f1-scores](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
 across all runs is plotted.
@@ -209,34 +212,42 @@ rasa test nlu --nlu data/nlu.yml
   --runs 4 --percentages 0 25 50 70 90
 ```
 
-### Evaluating Intent Classifiers
+### Interpreting the Output
+#### Intent Classifiers
 
-The `rasa test` script will produce a report, confusion matrix, and confidence histogram for your model.
+The `rasa test` script will produce a report, confusion matrix, and confidence histogram for your intent classification model.
 
-The report logs precision, recall and f1 measure for each intent and entity,
+The report logs [precision](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html),
+[recall](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html) and
+[f1-score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html) for each intent,
 as well as providing an overall average. You can save these reports as JSON files using the `--report` argument.
 
-The confusion matrix shows you which intents are mistaken for others;
-any samples which have been incorrectly predicted are logged and saved to a file called `errors.json` for easier debugging.
+The confusion matrix shows which intents are mistaken for others.
+Any samples which have been incorrectly predicted are logged and saved to a file called `errors.json` for easier debugging.
 
-The histogram that the script produces allows you to visualise the confidence distribution for all predictions, with the volume of correct and incorrect predictions being displayed by blue and red bars respectively. Improving the quality of your training data will move the blue histogram bars to the right and the red histogram bars to the left of the plot.
+The histogram that the script produces allows you to visualise the confidence distribution for all predictions,
+with the volume of correct and incorrect predictions being displayed by blue and red bars respectively.
+Improving the quality of your training data will move the blue histogram bars to the right and the
+red histogram bars to the left of the plot.
 
-### Evaluating Response Selectors
+#### Response Selectors
 
-The evaluation script will produce a combined report for all response selector models in your pipeline.
+Similar to intent classifiers, the evaluation script outputs the same set of artifacts for response selectors -
+report, confusion matrix, confidence histogram and errors.
+If you have multiple response selectors in your pipeline, the evaluation for all of them is combined in a single report.
 
 The report logs precision, recall and f1 measure for
-each response, as well as providing an overall average.
+each sub-intent of a [retrieval intent](./glossary.mdx#retrieval-intent), as well as providing an overall average.
 You can save these reports as JSON files using the `--report` argument.
 
-### Entity Extraction
+#### Entity Extraction
 
-Only trainable entity extractors, such as the `DIETCLassifier` and `CRFEntityExtractor` will be
-evaluated by the `rasa test` script. If you pretrained extractors like the `DucklingHTTPExtractor`
-Rasa Open Source will not include these in the evaluation.
-
-`rasa test` reports recall, precision, and f1 measure for each entity type that
+`rasa test` also reports recall, precision, and f1-score for each entity type that
 your trainable entity extractors are trained to recognize.
+
+Only trainable entity extractors, such as the `DIETClassifier` and `CRFEntityExtractor` will be
+evaluated by the `rasa test` script. If you use pretrained extractors like the `DucklingHTTPExtractor`,
+Rasa Open Source will not include these in the evaluation.
 
 :::caution incorrect entity annotations
 If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
@@ -253,10 +264,10 @@ To evaluate entity extraction we apply a simple tag-based approach. We don't con
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
 expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. 
 
-Our approach is more lenient
-when it comes to evaluation, as it rewards partial extraction and does not punish the splitting of entities.
+Our approach is more lenient when it comes to evaluation, as it rewards
+partial extraction and does not penalize the splitting of entities.
 For example, given the aforementioned entity “near Alexanderplatz” and a system that extracts
-“Alexanderplatz”, our approach rewards the extraction of “Alexanderplatz” and punishes the missed out word “near”.
+“Alexanderplatz”, our approach rewards the extraction of “Alexanderplatz” and penalizes the missed out word “near”.
 
 
 The BILOU-based approach, however, would label this as a complete failure since it expects Alexanderplatz
@@ -285,7 +296,7 @@ rasa test core --stories test_stories.yml --out results
 ```
 
 This will print any failed stories to `results/failed_test_stories.yml`.
-We count a story as failed if at least one of the actions
+Rasa Open Source counts a story as failed if at least one of the actions
 was predicted incorrectly.
 
 The test script will also save a confusion matrix to a file called
@@ -293,17 +304,17 @@ The test script will also save a confusion matrix to a file called
 matrix shows how often the action was correctly predicted and how often an
 incorrect action was predicted instead.
 
-## Comparing Policy Configurations
+### Comparing Policy Configurations
 
 To choose a configuration for your dialogue model, or to choose hyperparameters for a
 specific policy, you want to measure how well your dialogue model will generalize
 to conversations it hasn't seen before. Especially in the beginning
-of a project, when you don't have a lot of real conversations to use to train
-your bot, you may not want to exclude some to use as a test set.
+of a project, when you don't have a lot of real conversations to train
+your bot on, you may not want to exclude some to use as a test set.
 
 Rasa Open Source has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
-full data set. 
+full data set.
 
 To do this, you first have to train models for your different
 configurations. Create two (or more) config files including the policies you want to
@@ -314,9 +325,11 @@ rasa train core -c config_1.yml config_2.yml \
   --out comparison_models --runs 3 --percentages 0 5 25 50 70 95
 ```
 
+Similar to how the NLU model was evaluated the above command trains the dialogue model
+on multiple configurations and different amounts of training data.
 For each config file provided, Rasa Open Source will train dialogue models
 with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
-data. This is done for multiple runs to ensure consistent results.
+data. This is repeated three times to ensure consistent results.
 
 Once this script has finished, you can pass multiple models to the test script
 to compare the models you just trained:
@@ -326,10 +339,11 @@ rasa test core -m comparison_models --stories stories_folder
   --out comparison_results --evaluate-model-directory
 ```
 
-This will evaluate each of the models on the provided stories
+This will evaluate each of the models on the provided stories in `stories_folder`
 (can be either training or test set) and plot some graphs
-to show you which policy performs best. By evaluating on the full set of stories, you
-can measure how well your model predicts the held-out stories.
+to show you which policy performs best. Since the previous train command
+excluded some amount of training data to train each model,
+the above test command can measure how well your model predicts the held-out stories.
 To compare single policies, create config files containing only one policy each.
 
 :::note
@@ -337,3 +351,6 @@ This training process can take a long time, so we'd suggest letting it run
 somewhere in the background where it can't be interrupted.
 
 :::
+
+If you have any questions or problems, please share them with us in the dedicated
+[testing section on our forum](https://forum.rasa.com/tags/testing) !
