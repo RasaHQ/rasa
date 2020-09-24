@@ -23,7 +23,7 @@ responses:
   - text: "See you!"
 ```
 
-If you use [retrieval actions](./retrieval-actions.mdx), make sure to define the responses 
+If you use [retrieval actions](./retrieval-actions.mdx), make sure you define the responses 
 for each retrieval action in your domain file, like in the following example:
 
 ```yaml-rasa
@@ -59,7 +59,7 @@ value found in the slot called `name`. If such a slot doesn't exist or is empty,
 filled with `None`.
 
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
-In such an action's code, you can supply values to a response to fill in specific variables. 
+In custom action code, you can supply values to a response to fill in specific variables. 
 If you use Rasa SDK for your action server, you can do this when using `dispatcher.utter_message`:
 
 ```python {3}
