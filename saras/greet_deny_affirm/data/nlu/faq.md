@@ -1,0 +1,801 @@
+## intent:faq/rasax
+- what is [Rasa X](product) ?
+- how does [Rasa X](product) work?
+- what is [X](product) ?
+- can you explain [rasa x](product) to me
+- could you elaborate more about [rasa x](product)
+- tell me about [Rasa X](product) please
+- what is this [rasa x](product) thing. could you tell me more?
+- what's the purpose of [Rasa X](product)
+- whats [rasax](product)
+- is [Rasa X](product) separate from Rasa?
+- how does [rasa x](product) relate to rasa core
+- I need to know about [Rasa X](product)
+- please tell me more about [rasa x](product)
+- elaborate on [rasa x](product)
+- Can you tell me about [rasa x](product)?
+- I want information about [rasa x](product)
+- [Rasa X](product)
+- [Rasa X](product) features
+- Tell me about [rasa x](product)
+- can someone help me with infos about [rasa x](product)
+- i want to learn more about [Rasa X](product)
+- tell me what is [rasa x](product)
+- what is [rasa x](product) ?
+- what is [rasax](product)
+- what's [rasa x](product)
+
+## intent:faq/channels
+- Can you tell which messaging channels does rasa support?
+- Channels
+- Can I use the rasa code for my own website?
+- Can I use your open source code on my website?
+- how to use rasa in salesforce
+- i want to integrate my rasa bot to webex  may i know how
+- how to setup rasax on slack
+- so... i trying to deploy my rasa bot on
+- how to use rasa caht in react application
+- how can i setup rasa in django project ?
+- how to integrate u in my react application
+- how to integrate rasa chatbot with my website
+- Is there a connector for skype?
+- DOES RASA SUPPORT MESSENGER?
+- DOES RASA SUPPORT SMS?
+- DOES RASA SUPPORT THE WHATS APP?
+- Do you know about rasa supporting channels?
+- Do you know which messaging channels rasa supports?
+- How to connect messaging channels to rasa?
+- Is rasa support message channels?
+- No, I mean how it is possible to use Skype as channel?
+- Rasa is good for messaging chanels
+- Rasa supports some messaging channels, what are those?
+- WHAT MESSAGING PORTALS DOES RASA SUPPORT?
+- What are the requirements for connecting messaging channel to rasa?
+- What channels for messaging are supported by rasa?
+- What channels for messaging does rasa support?
+- What channels of communication does rasa support?
+- What communication channels are supported by rasa?
+- What communication channels does rasa support?
+- What messaging channels are supported by rasa?
+- What messaging systems are supported by rasa?
+- channels supported by Rasa
+- i need a help to integrate rasa with a messenger
+- rasa can use which different messaging channels?
+- rasa supports which messaging channels?
+- what are the channels Rasa [NLU](product) supports
+- what are the messaging channels supported by rasa?
+- what are the messaging channels that can be used with rasa?
+- what channels do you support?
+- what channels does rasa support
+- what chat channels does rasa uses
+- which UI channel is used by Rasa ?
+- which messaging channels are compatible with rasa?
+- which messaging channels are supported by rasa?
+- which messaging channels can I use with rasa?
+- which messaging channels can be used with rasa?
+- which messaging channels does rasa support?
+- which particular messaging channels are supported by rasa?
+- what chat services do you support
+- Any integrations with WhatsApp and Facebook?
+- what ui can I use
+- which user interface can I use?
+- integrate rasa with ui
+- on what channels can I use rasa
+- Do you  help to  integrate Facebook
+- in which rasa version google hangouts chat available
+- What channels does Rasa support?
+- how can i integrate the rasa chat bot to my website
+- how can i integrate rasa in my siteweb ?
+- explain integrations
+- socket io
+- Custom Connectors
+- custom connection
+- Can I create a chat bot and set it up on a web page?
+- Does Rasa have the functionality of being able to set up the bot on web pages?
+
+## intent:faq/community_size
+- Did you know the size of rasa community?
+- Do you know how big the Rasa community is?
+- Do you know how many people are in the Rasa community?
+- How big is the Rasa community
+- How big is the Rasa community?
+- How big is the community?
+- How big is this community?
+- How far does the Rasa community spread?
+- How few members in the community?
+- How large is the Rasa community?
+- How large is the community?
+- How large roughly speaking is the Rasa community?
+- How many in the community?
+- How many individuals are in your community?
+- How many individuals reside in your community?
+- How many members in the community?
+- How many people are here?
+- How many people are in that community?
+- How many people are in the Rasa Community?
+- How many people are in your community
+- How many people are in your community?
+- How massive is the Rasa community?
+- How small is the community?
+- Is rasa community big?
+- Is rasa have more than 1000 members?
+- Is the Rasa Community large?
+- Is the Rasa community large?
+- Is the Rasa community medium?
+- Is the Rasa community small?
+- Is the community large?
+- What is the magnitude of the Rasa community?
+- What is the magnitude of the community?
+- What is the number of people in this community?
+- What is the rough size of the community?
+- What size is the Rasa community?
+- What's the size of the community?
+- do you have a large community
+- how big is your community
+- how many forum members do you have
+- how many people are using Rasa
+
+## intent:faq/differencecorenlu
+- DIFFERENCES BETWEEN [CORE](product) AND [NLU](product)
+- Do you know the difference between [core](product) and [nlu](product)?
+- How do [core](product) and [nlu](product) conflict?
+- How do [core](product) and [nlu](product) differ?
+- How does [core](product) compare to [nlu](product)?
+- How does [core](product) differ to [nlu](product)?
+- How does [nlu](product) contrast to [core](product)?
+- In what ways are [core](product) and [nlu](product) unalike?
+- Is [Core](product) different than [NLU](product)?
+- Is [nlu](product) different to [core](product) and, if so, how?
+- List the dissimilar qualities of [core](product) and [nlu](product)
+- What are some ways that [nlu](product) is different from [core](product)?
+- What are the differences?
+- What does [core](product) and [nlu](product) mean?
+- What does [core](product) offer that [nlu](product) does not?
+- What facts diverge [core](product) from [nlu](product)?
+- What is the Similarities between [core](product) and [nlu](product)?
+- What is the difference between [NLU](product) and [Core](product)?
+- What is the difference between rasa [nlu](product) and rasa [core](product)?
+- What makes [core](product) and [nlu](product) different?
+- What makes [core](product) and [nlu](product) incompatible?
+- What makes [core](product) different from [nlu](product)?
+- What makes [core](product) distinct to [nlu](product)?
+- What sets [nlu](product) apart from [core](product)?
+- What's difference between these?
+- difference between rasa [core](product) and [nlu](product)
+- diffrence between rasa [core](product) and rasa [nlu](product)
+- i dont know the difference
+- rasa [core](product) vs rasa [nlu](product)
+- what are the difference between [NLU](product) and [core](product)?
+- what are the difference?
+- what are the differences?
+- what are the primary areas of difference between [core](product) and [nlu](product)?
+- what differences are there between [core](product) and [nlu](product)?
+- what differences exist between [core](product) and [nlu](product)?
+- what is different
+- what is different about [core](product) compared to [nlu](product)?
+- what is the difference between [core](product) and [nlu](product)
+- what is the difference between [core](product) and [nlu](product)?
+- what is the difference between [nlu](product) and [core](product)
+- what is the difference between [nlu](product) and [core](product)?
+- what is the difference between [nlu](product) and rasa [core](product)
+- what is the difference between rasa [nlu](product) and rasa [core](product)
+- what is the difference between rasa [nlu](product) and rasa [core](product)?
+- what is the difference between the two?
+- what is the difference?
+- what is the different
+- what is the main difference between [core](product) and [nlu](product)?
+- what is the primary difference between [core](product) and [nlu](product)?
+- what makes [core](product) and [nlu](product) unique from each other?
+- what makes [core](product) different from [nlu](product)?
+- what the different with rasa [nlu](product) and rasa [core](product)?
+- what would you say the difference is between [core](product) and [nlu](product)?
+- what's the  difference between rasa [nlu](product) and rasa [core](product)
+- what's the difference between [NLU](product) and [Core](product)?
+- what's the difference between [core](product) and [nlu](product)?
+- what's the difference?
+- whats the diference
+- whats the difference between [core](product) and [nlu](product)
+- does the [open source](product) version have [core](product)?
+- What are the two components that make up [Rasa Open Source](product)?
+
+## intent:faq/differencerasarasax
+- Are [Rasa](product) and [Rasa X](product) the same thing?
+- Can I use [Rasa X](product) without using [Rasa](product)?
+- Can i use [rasa](product) without [rasa x](product)?
+- Do I need both [Rasa](product) and [Rasa X](product)?
+- How is [Rasa X](product) different from [Rasa](product)?
+- If I use [Rasa](product), do I also need [Rasa X](product)?
+- What's new in [Rasa X](product) compared to [Rasa](product)?
+- how does [rasa x](product) stack up against [rasa](product)
+- i am using [rasa](product), why would i need [rasa x](product)?
+- please compare [rasa](product) and [rasa x](product)
+- show me comparison between [rasa x](product) and [[rasa
+- tell me the difference between [rasa](product) and [rasa x](product)
+- tell me the difference between [rasa](product) and [x](product)
+- what's the difference between [rasa](product) and [rasa x](product)
+- whats the diff between [rasa](product) and [rasa x](product)
+- when should i use [rasa](product) and when should i use [rasa x](product)
+- what is the difference between [rasa open source](product) and [rasa x](product)
+- is [rasa open source](product) needed for [rasa x](product)?
+- what is the difference between rasaand [rasa x](product)
+- difference between [rasa](product) and [rasa x](product)
+- what is the difference between [rasa](product) and [rasa x](product)
+- what is the difference between [rasa](product) and rasax
+- the difference between [Rasa](product) and [Rasa X](product)
+- tell me difference between [Rasa](product) and [Rasa X](product)
+- difference between [Rasa](product) and [Rasa X](product)
+- install [rasa x](product) with or without [rasa open source](product) ?
+- relationship between [rasa open source](product) and [rasa x](product)
+
+## intent:faq/ee
+- Can you tell me about the enterprise edition?
+- I want information about the enterprise edition
+- Tell me about rasa x ee
+- can someone help me with infos about the enterprise edition
+- can you tell me about rasa x ee?
+- enterprise features
+- i want to learn more about Rasa X EE
+- tell me about rasa x EE
+- tell me more about rasa x EE
+- tell me what is rasa x ee
+- we built a bot with rasa x but now we're interested in the enterprise edition
+- what is EE?
+- what is rasa x ee?
+- what is rasa x enterprise
+- what is the enterprise edition
+- what's the rasa x enterprise edition
+- please provide information on your enterprise package
+- what is rasa enterprise
+- rasa enterprise
+- tell me about rasa enterprise
+- rasa enterprise please
+- more info about enterprise
+- tell me about rasa enterpeise
+- rasa enterprise plans
+
+## intent:faq/is_programming_required
+- Does rasa require programming knowledge
+- Do I need programming skills to develop a chatbot in rasa
+- do I need programming experience to use rasa
+- how to programe rasa
+- Rasa can be programmed in python
+- programming language use
+- what programming languge do i use
+- How do I do the programming?
+- i have never programed before
+- what language do I need to program?
+- do i need to be able to program to use rasa?
+- what programming language do i need?
+- shall i use Nodejs as a programming language
+- Can i use python to program my bot?
+- must i have to be a good programmer to use RasA
+- must i have to be a good programmer
+- you have to be a good programmer
+- what do i need for programming?
+- what programming language is used by rasa
+- which programming language used for RASA.
+- what programming language is rasa written in?
+- what programming languages does Rasa support?
+- which programming languages
+- which programming languages do you support?
+- which programming languages does rasa supports?
+- rasa php
+- Do I have to be a programmer to use rasa?
+- what's your programming language
+- what programming language do you recommend
+- can I develop using java
+- Does it have a java library
+- does rasa support python
+- programming language
+- what programming language does rasa use
+- But what kind of programming language is the code written in?
+- what programming language?
+- I would like to know about using Java as a programming language with Rasa
+- how i program the bot?
+- which programming language can I use?
+- what programming languages do you support
+- do i need to know how to program to create a bot?
+- what programming knowledge do I need to learn?
+- what is the your programming language
+- which programming language are you written in?
+- which programming language uses rasa?
+- in what programming language is your api
+- Is there API for any other programming languages?
+- which language is rasa programmed in
+- Which programming language is rasa written in?
+- is Rasa available in java ?
+- I need help to make rasa in java
+- Rasa development in Java
+- What language is the open source coding done in?
+
+## intent:faq/languages
+- I want to build a bot in [Hindi](language)
+- Any languages that rasa supports?
+- Can I use Rasa with [Thai](language) language
+- Can rasa support any language?
+- Can we make [Japanese](language) speaking bot with Rasa?
+- Can you built text bot with [Japanese](language)?
+- Can you use other language than [English](language)?
+- Does rasa support different languages
+- Hello, rasa supports [spanish](language)?
+- How can I change the language
+- I want [Vietnamese](language) language processing
+- I want to add [Romanian](language) language support
+- Is RASA [NLU](product) avaiable for [German](language)?
+- What all languages does rasa support for us?
+- What are the languages that rasa supports?
+- What are the specific languages that rasa is intended to work with?
+- What language u support?
+- What language you support?
+- What languages can a program like rasa handle?
+- What languages can be used with rasa?
+- What languages can rasa be relied upon to support?
+- What languages can rasa handle?
+- What languages can rasa support?
+- What languages can rasa use?
+- What languages does rasa know?
+- What languages does rasa work for?
+- What languages does rasa work with?
+- What languages will the utility rasa support?
+- When I use Rasa, Can I make bot speaking [Japanese](language)?
+- Which different languages does rasa support?
+- Which languages are supported by rasa?
+- Which languages can I use with rasa?
+- Which languages can be used by rasa?
+- Which languages can you do?
+- Which specific languages does rasa support?
+- Will it work for [german](language)
+- are there any languages that rasa supports?
+- available for [German](language)?
+- can I use rasa also for another laguage?
+- can rasa speak [portuguese](language)?
+- can rasa support this language?
+- can rasa understand this language?
+- can we make bot who speaks [Japanese](language)?
+- can you tell me what languages rasa supports
+- chatbot language ?
+- do you have a list of languages rasa supports
+- do you know of the languages rasa supports
+- do you know what language rasa uses
+- do you support [french](language) ?
+- doea rasa support a particular langauage?
+- does Rasa support other languages like [spanish](language)?
+- does rasa aid other languages?
+- does rasa support any languages?
+- does rasa support this language?
+- does rasa works in [spanish](language)
+- hich languages supports rasa
+- how can I add new language to rasa
+- how can I add new language to rasa [core](product)
+- how many natural language that rasa supported?
+- in which langauges can i build a rasa bot
+- is it available in [Spanish](language)?
+- is rasa available for node?
+- is support for rasa in this language?
+- language
+- language support
+- languages
+- languages supported
+- my bot can be in [italian](language)?
+- need to use [portuguese](language)
+- support for [serbian](language) language
+- what about languages supported in rasa?
+- what are the languages that is supported by rasa?
+- what dialects does rasa support
+- what different languages does rasa support
+- what is the language rasa supports
+- what is the variety of languages rasa uses
+- what language does rasa support?
+- what language list can I find for rasa
+- what language supported by rasa?
+- what language would rasa use
+- what languages are available?
+- what languages are supported by rasa?
+- what languages can be supported by rasa?
+- what languages do you support
+- what languages does rasa support?
+- which language can I use with rasa?
+- which language do you support?
+- which language supports rasa
+- which languages are supported?
+- which languages do you support
+- which languages does rasa support
+- which languages supports rasa
+- your [NLU](product) understand [spanish](language)?
+- could I program spanish speaking bots?
+- How about [hindi](language)?
+- what lanquages do you support
+- What lanquages do you serve
+- does rasa support other language beside english?
+- how to build rasa with different languages?
+- even non latin based languages?
+
+## intent:faq/opensource_cost
+- Are you free?
+- Can you tell me whats the price for rasa platform?
+- How much do you cost?
+- How much does it cost?
+- How much does rasa cost?
+- How much it costs
+- I want to learn more about the pricing
+- I would like to know the cost first.
+- Subscription cost?
+- Subscription price
+- What does Rasa cost?
+- What is the cost of RASA?
+- What is the price ?
+- Whats the cost?
+- are you free ?
+- are you really free
+- are you really free?
+- can you give me prices ?
+- can you tell me prices
+- cost
+- cost?
+- give me the pricing
+- how cost to install Rasa?
+- how much costs the rasa platform
+- how much do you cost
+- how much does RASA cost
+- how much does Rasa cost ?
+- how much does it cost
+- how much does it cost normally?
+- how much does it cost?
+- how much does rasa cost
+- how much does rasa cost?
+- how much is it
+- how much it costs?
+- how mush does rasa cost
+- is it for free?
+- is it free
+- is it free?
+- is rasa [core](product) paid?
+- is rasa free
+- is rasa free of cost
+- is rasa stack free
+- is this free?
+- this is free?
+- what is price?
+- what is pricing of rasa
+- what is rasa cost ?
+- what is the enterprise pricing schedule?
+- what is the price of rasa
+- what is the price?
+- whats the cost of rasa
+- your cost?
+- Are you open-source?
+- Could you tell me whether rasa is open source or not?
+- How do I find out if rasa is open source?
+- Is Rasa a software formatted as open source?
+- Is Rasa open source
+- Is it a open source or any premium offer is available
+- Is rasa open source?
+- Is the rasa software open source?
+- Is your software open source?
+- Rasa open source?
+- The rasa software, is that open source?
+- are you full open source
+- are you open source
+- could I call rasa open source software?
+- does rasa fall into the open source software category?
+- does rasa use open source software?
+- how do i get the open source rasa
+- is RASA open source?
+- is Rasa open source
+- is Rasa open source?
+- is Rasa open sourced?
+- is it open source
+- is it open source?
+- is rasa Open-Source?
+- is rasa a type of open source software?
+- is rasa an open source software?
+- is rasa considered open source software?
+- is rasa is open source?
+- is rasa like an open source software
+- is rasa open source?
+- is rasa software that is classified as open source?
+- is the Rasa project open sourced?
+- is the project open source?
+- is the software rasa open source?
+- is this open source
+- is this open source license
+- is this opensource?
+- is your product open source
+- ist es freie open source software
+- no budget, that why i looking for open source
+- rasa [core](product) is open source?
+- rasa is the open source
+- what components of Rasa are open source
+- would an example of open source software be rasa?
+- would people consider rasa an open source software?
+- would rasa be open source software?
+- would rasa fall into the category of open source software?
+- would you call rasa open source software?
+- would you consider rasa open source software?
+- How is it opensource
+- What is included in [RASA open source](product) edition?
+- you are [open source](product)
+- is rasa opensource?
+- how much is Rasa stack?
+
+## intent:faq/python_version
+- What Python version should I use?
+- Which python version should I install to run Rasa example?
+- Which version of Python to install?
+- python version
+- python version?
+- what is python version required?
+- what python version do i install
+- what python version should i use
+- what version does python needs
+- what version of python
+- which python do you support?
+- which python version
+- which python version should i install
+- which version of python do i need
+- which python?
+- which python is rasa using?
+
+## intent:faq/slots
+- Definition of slots please.
+- Does anyone know what slots are?
+- Explain slots to me?
+- Give me a description of slots.
+- Help me to figure out the meaning of slots.
+- Help me understand what slots are.
+- I bet you can tell me all about slots.
+- I dunno what a slot is
+- I need a expert opinion on slots.
+- I need to know about slot filling
+- I'd like to know the meaning of slots
+- In Rasa, what are slots used for?
+- Not sure what slots are.
+- Not sure what slots are?
+- Please define the word slots for me.
+- Please elaborate on the game of slots?
+- Talk slots over with me.
+- What are slots used for?
+- What are slots?
+- What do I do with slots?
+- What exactly are slots?
+- What is the definition of slots
+- What is the meaning of the word slots?
+- What's the slots?
+- Where can I find the definition of slots?
+- You can tell me info on slots.
+- a slot is what
+- and what are slots
+- and what are slots?
+- could you inform me of the meaning of slots?
+- describe the word slot please
+- do you know what slots are?
+- help mi with slots
+- how are the slots?
+- how can we keep buttons to get slots
+- how can you tell me what a slot is ?
+- how do slots work
+- how slots are filled
+- how to keep button system for slot selection
+- how to set text slot without mentioned json
+- name what a slot is
+- slots
+- slots are what ?
+- slots are what exactly?
+- slots can be described as ?
+- slots, what do youi mean?
+- slots?
+- tell me about slots
+- tell me the slots?
+- what about slots
+- what are slots
+- what do you mean by slots?
+- what do you think slots are?
+- what is a slot?
+- what is slots
+- what slots are there?
+- what slots are?
+- when can you tell me what a slot is ?
+- where can I find out what a slot is?
+- where slots getting values
+- which are the slots?
+- which slots are there?
+
+## intent:faq/tutorialcore
+- are there some core tutorials i could look at
+- can you show me a core tutorial
+- core tutorial
+- do you have a core tutorial i can follow
+- do you have tutorials about core
+- i am looking for a core tutorial
+- i need a core tutorial
+- i need a rasa core tutorial
+- i need a tutorial on how to use rasa core
+- i want a tutorial on core
+- i want a tutorial on rasa core
+- i would like to follow a core tutorial
+- please show me a core tutorial
+- rasa core tutorial
+
+## intent:faq/tutorialnlu
+- are there some nlu tutorials i could look at
+- can you show me a nlu tutorial
+- do you have a nlu tutorial i can follow
+- do you have tutorials about nlu
+- i am looking for a nlu tutorial
+- i need a nlu tutorial
+- i need a rasa nlu tutorial
+- i need a tutorial on how to use rasa nlu
+- i want a tutorial on nlu
+- i want a tutorial on rasa nlu
+- i would like to follow a nlu tutorial
+- nlu tutorial
+- please show me a nlu tutorial
+- rasa nlu tutorial
+- I am looking for tutorial on Rasa NLU
+- Hey is there a tutorial on how to train an intent cassification model in Python_
+
+## intent:faq/tutorials
+- Did you have an tutorial.
+- Great. Are there any tutorials?
+- Im looking for some tutorial
+- Is there a tutorial for Rasa?
+- TUTORIAL !!!!!!!!!!
+- Tutorials for learning rasa ?
+- any tutorials on using rasa?
+- are there some tutorials i could look at
+- are there tutorials about rasa?
+- basic tutorials
+- best tutorial for rasa
+- can yiu send me a tutorial?
+- can you pint me to a good how-to online about Rasa
+- can you point me to a good manual about Rasa
+- do you have a rasa tutorial
+- download the tutorial
+- get me some tutorials
+- i cannot find tutorial for rasa
+- i need a good tutorial for rasa
+- i want a tutorial of rasa
+- i want some tutorial
+- i'm looking for the youtube tutorial
+- is there a tutorial for this?
+- is there a tutorial?
+- rasa bot tutorial
+- rasa tutorial
+- rasa tutorials
+- show me a tutorial?
+- tutorial
+- tutorial?
+- tutorials
+- what's the best tutorial
+- where can i fid tutorials for rasa
+- where can i find some tutorials?
+- where can i get a tutorial on rasa
+- yes, where I can find some hand-on tutorials to use RASA products?
+- I need to study RASA step by step, which is the best site to study?
+
+## intent:faq/voice
+- Building a rasa voice bot?
+- can i programm a vocal assistant
+- Building a voice bot using rasa.
+- Can I build a rasa voice bot?
+- Can I use my voice to speak to these bots?
+- Can I use rasa to build a voice bot?
+- Can one make a voice bot with rasa?
+- Can you build a voice bot using rasa?
+- Could I build a rasa voice bot?
+- Do you know how to build a voice bot with rasa?
+- Do you know if I can build a voice bot using rasa?
+- Do you see an application of rasa in voice bot building?
+- How can I build a voice bot with rasa?
+- How can I build my voice bot using rasa?
+- How can I use to rasa to build a voice bot?
+- How can i integrate voice in RASA [CORE](product)
+- How could I construct a voice bot with rasa?
+- How to build a voice bot using rasa?
+- How to build a voice bot with rasa?
+- How to build a voice bot?
+- how to integrate speech to text in rasa
+- How to use rasa to build a voice bot.
+- I can build a voice bot with rasa, right?
+- I can build a voice bot with rasa?
+- I could build a voice bot with rasa?
+- I'd like to build a voice bot with rasa.
+- I'd like to use rasa to build a voice bot.
+- Is it possible to build a voice bot with rasa?
+- Is it possible to use rasa to build a voice bot?
+- Is rasa a good fit for building a voice bot?
+- Is rasa any good for building a voice bot?
+- Is rasa suitable to build voice bots?
+- It is possible to build a voice bot with rasa?
+- Rasa voice bot building.
+- Voice bot
+- Voice in Rasa
+- What can I do to build a voice bot with rasa?
+- What to do if I want to build a voice bot using rasa?
+- When can I build a voice bot using rasa?
+- When is the best time to build a voice bot with rasa?
+- Will it be correct if I said I can build a voice bot with rasa?
+- alexa
+- can I construct a voice bot with rasa?
+- can I create a voice bot with rasa?
+- can I form a voice bot with rasa?
+- can I invent a voice bot with rasa?
+- can I make a voice bot with rasa?
+- can I use rasa to build alexa skills
+- can a voice bot be built using rasa?
+- can i build a voice bot
+- can i build a voice bot with rasa?
+- can rasa be used to build a voice bot?
+- can rasa be used with alexa
+- do u know Alexa?
+- do you have voice recognition
+- do you support alexa voice?
+- do you take voice input?
+- does rasa support voice input
+- how can i use rasa with alexa
+- how do i build a voice bot?
+- how to add voice assitant to chat bot
+- i want to build a voice bot
+- is there an alexa integration
+- rasa can't be used to build a voice bot, can it?
+- voice
+- what is the chance of building a rasa voice bot?
+- with rasa can I build a voice bot?
+- with rasa can I construct a voice bot?
+- with rasa can I form a voice bot
+- with rasa can I invent a voice bot?
+- with rasa can I make a voice bot?
+- you have speech recognition?
+- do rasa provide speech intent
+
+## intent:faq/what_is_forum
+- Could you please describe the Rasa forum?
+- Could you please explain the Rasa forum to me?
+- Could you please give me a description of the Rasa forum?
+- Could you please tell me more about Rasa forum?
+- Did you know about Rasa forum?
+- Do you have rasa forum?
+- How do you define the Rasa forum?
+- Is rasa forum reliable?
+- List the characteristics of rasa forum?
+- What are the rules of the Rasa forum?
+- What can a person do in the forum
+- What do people do in the Rasa forum?
+- What happens in the Rasa forum?
+- What is the advantage of rasa forum?
+- What is the purpose of the Rasa forum?
+- What is the scope of the Rasa forum?
+- i would just like to have the link for the community
+- is there anything specific to be done in this forum
+- so what exactly is the Rasa forum?
+- so what is this forum for?
+- tell me about the forum
+- what area is the forum for?
+- what can I do in the forum
+- what can I do in your community's forum
+- what can I post in the forum?
+- what can a person in Rasa do at the forum
+- what can be done in the forum?
+- what can be performed in the forum?
+- what can people do in the forum
+- what can people in Rasa do at the forum
+- what can you put in the forum?
+- what do people do in the forum
+- what do we do in the forum
+- what does a person do in the Rasa forum
+- what exactly is the forum?
+- what is a Rasa forum for?
+- what is the Rasa forum
+- what is the Rasa forum used for
+- what is the forum
+- what is the forum about
+- what is the forum in Rasa used for
+- what is the forum in your community used for
+- what is the forum used for?
+- whats in the forum
+- whats int he forum
+- whats the purpose of this forum
+- whats the task of this forum
+- which are the topics covered in this forum
+- who is the forum for?
+- why should I join the forum

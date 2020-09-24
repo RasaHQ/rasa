@@ -1,826 +1,826 @@
 ## next step prompt
-<U> what is the next step ?
+* next_step: what is the next step ?
     - action_next_step
 ## faqs
-* faq
+* faq: How many people are in that community?
     - respond_faq
 ## more faqs
-<U> hello is anybody there
+* greet: hello is anybody there
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* faq
+* faq: what is rasa x enterprise
     - respond_faq
-* faq
+* faq: what programming languages does Rasa support?
     - respond_faq
 ## just newsletter
-<U> hi there it's me
+* greet: hi there it's me
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* faq
+* faq: What language you support?
     - respond_faq
-<U> i want on this dope newsletter - my email is r_grove@gmail.com
+* signup_newsletter: i want on this dope newsletter - my email is r_grove@gmail.com
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> a little
+* affirm: a little
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## just newsletter, continue + confirm
-<U> hello it is me again
+* greet: hello it is me again
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> subscribe to your newsletter
+* signup_newsletter: subscribe to your newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-* faq
+* faq: what language list can I find for rasa
     - respond_faq
     <B> Do you still want to subscribe to the newsletter?
-<U> ja
+* affirm: ja
     <B> perfect! 
     - subscribe_newsletter_form
     - form{"name": null}
     <B> How is this conversation going?
-<U> okay
+* affirm: okay
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## just newsletter, don't continue + confirm
-<U> hey ther
+* greet: hey ther
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> do the newsletter then
+* signup_newsletter: do the newsletter then
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-* faq
+* faq: are you really free
     - respond_faq
     <B> Do you still want to subscribe to the newsletter?
-<U> no ma'am
+* deny: no ma'am
     <B> Got it. 
     <B> How is this conversation going?
-<U> ok friend
+* affirm: ok friend
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## just newsletter (with email already) + confirm
-<U> hello rasa
+* greet: hello rasa
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* faq
+* faq: how cost to install Rasa?
     - respond_faq
-<U> newsletter - my email is mabel@brown.com
+* signup_newsletter: newsletter - my email is mabel@brown.com
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
-<U> love you
+* react_positive: love you
     <B> Got it.
     <B> Is there anything else I can help you with?
 ## just newsletter (with email already)
-<U> ey boss
+* greet: ey boss
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* faq
+* faq: how much does Rasa cost ?
     - respond_faq
-<U> i just want to signup for your newsletter
+* signup_newsletter: i just want to signup for your newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null}
     <B> How is this conversation going?
 ## just sales
-<U> hi can you speak ?
+* greet: hi can you speak ?
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/). 
-* faq
+* faq: what is the enterprise pricing schedule?
     - respond_faq
-<U> i want to talk to your sales guys
+* contact_sales: i want to talk to your sales guys
     <B> Sure, we can book a sales call! Let's get to know each other first . 
     - sales_form
     - form{"name": "sales_form"}
     - form{"name": null} 
     <B> How is this conversation going?
 ## just sales, continue
-<U> heelio
+* greet: heelio
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i want to talk to someone about your pricing system
+* contact_sales: i want to talk to someone about your pricing system
     <B> Sure, we can book a sales call! Let's get to know each other first . 
     - sales_form
     - form{"name": "sales_form"}
-* faq
+* faq: whats the cost of rasa
     - respond_faq
     <B> Do you still want to talk to sales?
-<U> a little
+* affirm: a little
     - sales_form
     - form{"name": null} 
     <B> How is this conversation going?
 ## just sales, don't continue
-<U> hii
+* greet: hii
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> can someone call me please?
+* contact_sales: can someone call me please?
     <B> Sure, we can book a sales call! Let's get to know each other first . 
     - sales_form
     - form{"name": "sales_form"}
-* faq
+* faq: is Rasa open source
     - respond_faq 
     <B> Do you still want to talk to sales?
-<U> none of them
+* deny: none of them
     - sales_form
     - form{"name": null}
 ## not new to rasa + not interested in products
-<U> hellooo
+* greet: hellooo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> components in rasa
+* how_to_get_started: components in rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-* faq
+* faq: is Rasa open sourced?
     - respond_faq 
     <B> Are you new to Rasa?
-<U> noooooooooooooooooooooooooooooooooooooooo
+* deny: noooooooooooooooooooooooooooooooooooooooo
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> stop it, i do not care!!!
+* deny: stop it, i do not care!!!
     <B> Got it.
 
 ## not new to rasa + not interested in products
-<U> hi can you speak ?
+* greet: hi can you speak ?
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i want to implement rasa
+* how_to_get_started: i want to implement rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> no you did it wrong
+* deny: no you did it wrong
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-* faq
+* faq: which python do you support?
     - respond_faq 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> i decline
+* deny: i decline
     <B> Got it. 
 ## not new to rasa + nlu + nothing special
-<U> yoo
+* greet: yoo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i want to get started
+* how_to_get_started: i want to get started
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> no, i hate it
+* deny: no, i hate it
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> get started with [rasa open source](product)
+* how_to_get_started: get started with [rasa open source](product)
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-* faq
+* faq: which python version should i install
     - respond_faq 
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-<U> sorry not right now
+* deny: sorry not right now
     <B> Rasa Masterclass episodes 2-4 focus on NLU. Check out episode 2 [here](https://www.youtube.com/watch?v=k5UeywXA28k). 
     <B> Is there anything else I can help you with?
 ## not new to rasa + nlu + unknown topic
-<U> hieeeeeeeeeeeee
+* greet: hieeeeeeeeeeeee
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how do i download rasa ?
+* how_to_get_started: how do i download rasa ?
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> no don"t want this!
+* deny: no don"t want this!
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> [rasa open source](product) then lets talk about [rasa x](product)
+* how_to_get_started: [rasa open source](product) then lets talk about [rasa x](product)
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-* faq
+* faq: Help me to figure out the meaning of slots.
     - respond_faq 
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-<U> what about wheather
+* out_of_scope: what about wheather
     <B> Hmm, seems like I haven't learned about that part of NLU yet! Try using the search bar above for now. 
     <B> Is there anything else I can help you with?
 
 ## not new to rasa + nlu + intent + no recommendation
-<U> halo sara
+* greet: halo sara
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i like to build a bot
+* how_to_get_started: i like to build a bot
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> no ma'am
+* deny: no ma'am
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> just [nlu](product)
+* how_to_get_started: just [nlu](product)
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-<U> how do you integrate [duckling](nlu_part)
+* nlu_info: how do you integrate [duckling](nlu_part)
     <B> Check out [part 1](https://blog.rasa.com/rasa-nlu-in-depth-part-1-intent-classification/) of the Rasa NLU In Depth series from our software engineer Tobias to learn more about intent classification. Would you like me to try to recommend a pipeline?
-* faq
+* faq: I bet you can tell me all about slots.
     - respond_faq 
     <B> Would you like me to try to recommend a pipeline?
-<U> none of them
+* deny: none of them
     <B> Got it. 
     <B> Is there anything else I can help you with?
 
 ## not new to rasa + nlu + intent + pipeline recommendation, spacy
-<U> halo sara
+* greet: halo sara
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i wanna build a bot
+* how_to_get_started: i wanna build a bot
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> no. u r idiot
+* deny: no. u r idiot
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> tell me how to get started with [core](product)
+* how_to_get_started: tell me how to get started with [core](product)
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-<U> it would be helpful to learn more about [intent classification](nlu_part)
+* nlu_info: it would be helpful to learn more about [intent classification](nlu_part)
     <B> Check out [part 1](https://blog.rasa.com/rasa-nlu-in-depth-part-1-intent-classification/) of the Rasa NLU In Depth series from our software engineer Tobias to learn more about intent classification. Would you like me to try to recommend a pipeline?
-<U> ofcourse
+* affirm: ofcourse
     <B> Which (human) language is your assistant in?
-* faq
+* faq: I need a expert opinion on slots.
     - respond_faq 
     <B> Which (human) language is your assistant in?
-<U> the assistant is in [french](language)
+* enter_data: the assistant is in [french](language)
     <B> If your training data is in English, a good starting point is this [recommended pipeline](https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/#the-short-answer), which uses both pretrained and supervised embeddings. 
     <B> Is there anything else I can help you with?
 
 ## not new to rasa + nlu + intent + pipeline recommendation, spacy
-<U> bom dia
+* greet: bom dia
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> components of rasa?
+* how_to_get_started: components of rasa?
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> i don't want either of those
+* deny: i don't want either of those
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> and rasa [nlu](product)?
+* how_to_get_started: and rasa [nlu](product)?
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-<U> [intent recognition](nlu_part)
+* nlu_info: [intent recognition](nlu_part)
     <B> Check out [part 1](https://blog.rasa.com/rasa-nlu-in-depth-part-1-intent-classification/) of the Rasa NLU In Depth series from our software engineer Tobias to learn more about intent classification. Would you like me to try to recommend a pipeline?
-<U> which pipeline is better?
+* pipeline_recommendation: which pipeline is better?
     <B> Which (human) language is your assistant in?
-* faq
+* faq: Not sure what slots are.
     - respond_faq 
     <B> Which (human) language is your assistant in?
-<U> it’s an [portuguese](language) bot
+* enter_data: it’s an [portuguese](language) bot
     <B> For <language>, a good starting point is the [recommended pipeline](https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/#the-short-answer) for languages other than English. 
     <B> Is there anything else I can help you with?
 
 ## not new to rasa + nlu + intent + pipeline recommendation, not spacy
-<U> salut
+* greet: salut
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> tell me how i can get started with rasa
+* how_to_get_started: tell me how i can get started with rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> i dont want to tell
+* deny: i dont want to tell
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> just rasa [nlu](product)
+* how_to_get_started: just rasa [nlu](product)
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-<U> i want to learn about [intent classification](nlu_part)
+* nlu_info: i want to learn about [intent classification](nlu_part)
     <B> Check out [part 1](https://blog.rasa.com/rasa-nlu-in-depth-part-1-intent-classification/) of the Rasa NLU In Depth series from our software engineer Tobias to learn more about intent classification. Would you like me to try to recommend a pipeline?
-<U> what i a good pipeline to start with?
+* pipeline_recommendation: what i a good pipeline to start with?
     <B> Which (human) language is your assistant in?
-* faq
+* faq: What are slots?
     - respond_faq 
     <B> Which (human) language is your assistant in?
-<U> it’s in [portuguese](language)
+* enter_data: it’s in [portuguese](language)
     <B> For <language>, a good starting point is the [recommended pipeline](https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/#the-short-answer) for languages other than English. 
     <B> Is there anything else I can help you with?
 
 ## not new to rasa + nlu + entity + pipeline duckling
-<U> hi mister
+* greet: hi mister
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i want to develop a chatbot
+* how_to_get_started: i want to develop a chatbot
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> i don't want either of those
+* deny: i don't want either of those
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> how to get started with rasa [core](product)?
+* how_to_get_started: how to get started with rasa [core](product)?
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-<U> i want to learn about [intent classification](nlu_part)
+* nlu_info: i want to learn about [intent classification](nlu_part)
     <B> [Part 2](https://blog.rasa.com/rasa-nlu-in-depth-part-2-entity-recognition/) of the Rasa NLU In Depth series from our software engineer Tobias is a great tutorial about entity recognition. Would you like me to try to recommend a pipeline?
-* faq
+* faq: do you have a core tutorial i can follow
     - respond_faq 
     <B> Would you like me to try to recommend a pipeline?
-<U> yop
+* affirm: yop
     <B> What kind of entities do you want to extract?
-<U> get [dates](entity) from messages
+* enter_data: get [dates](entity) from messages
     <B> For that entity I'd suggest using the rule-based [DucklingHTTPExtractor](https://rasa.com/docs/rasa/nlu/components/#ducklinghttpextractor) component 
     <B> Is there anything else I can help you with?
 
 ## not new to rasa + nlu + entity + pipeline duckling
-<U> hii
+* greet: hii
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> start rasa
+* how_to_get_started: start rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> it sucks
+* deny: it sucks
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> yes i wanna know more about rasa [nlu](product)
+* how_to_get_started: yes i wanna know more about rasa [nlu](product)
     <B> Anything in particular you'd like to know about, e.g. intent classification or entity recognition?
-<U> [intent](nlu_part) please
+* nlu_info: [intent](nlu_part) please
     <B> [Part 2](https://blog.rasa.com/rasa-nlu-in-depth-part-2-entity-recognition/) of the Rasa NLU In Depth series from our software engineer Tobias is a great tutorial about entity recognition. Would you like me to try to recommend a pipeline?
-<U> yeah do that
+* affirm: yeah do that
     <B> What kind of entities do you want to extract?
-* faq
+* faq: i need a core tutorial
     - respond_faq 
     <B> What kind of entities do you want to extract?
-<U> [numbers](entity)
+* enter_data: [numbers](entity)
     <B> For that entity I'd suggest using the rule-based [DucklingHTTPExtractor](https://rasa.com/docs/rasa/nlu/components/#ducklinghttpextractor) component 
     <B> Is there anything else I can help you with?
 
 ## FAQ - tell more about languages
-* faq
+* faq: i need a tutorial on how to use rasa core
     - respond_faq
-* explain
+* explain: could you explain why you need that
     - action_explain_faq
 
 ## FAQ - Step 2 flow interrupted
-<U> yoo
+* greet: yoo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how to download rasa
+* install_rasa: how to download rasa
     <B> You will first need to install Rasa Open Source using this installation command. pip install rasa. If you are having any trouble installing, you can look up detailed installation instructions here. If you got it successfully installed, are you ready to start building a contextual assistant?
 ## FAQ - Step 2 flow interrupted
-<U> do you mind helping me install rasa?
+* install_rasa: do you mind helping me install rasa?
     <B> You will first need to install Rasa Open Source using this installation command. pip install rasa. If you are having any trouble installing, you can look up detailed installation instructions here. If you got it successfully installed, are you ready to start building a contextual assistant?
-* faq
+* faq: i am looking for a nlu tutorial
     - respond_faq 
     <B> If you got it successfully installed, are you ready to start building a contextual assistant?
 
 ## FAQ - Step 2 flow interrupted
-<U> can you help me to install rasa?
+* install_rasa: can you help me to install rasa?
     <B> You will first need to install Rasa Open Source using this installation command. pip install rasa. If you are having any trouble installing, you can look up detailed installation instructions here. If you got it successfully installed, are you ready to start building a contextual assistant?
-* faq
+* faq: get me some tutorials
     - respond_faq  
     <B> If you got it successfully installed, are you ready to start building a contextual assistant?
-<U> ya go for it
+* affirm: ya go for it
     <B> You can now create a new Rasa assistant and also talk to it by simply running rasa init. This comes with some sample training data and the required configuration files to get you started. You can also talk to the assistant after it is done training. If you have no questions, click here when you're ready to go to the next step. Or, at any point after you're done asking questions, say 'take me to the next step'.
 
 ## FAQ - Step 2 flow interrupted
-<U> i need to install rasa
+* install_rasa: i need to install rasa
     <B> You will first need to install Rasa Open Source using this installation command. pip install rasa. If you are having any trouble installing, you can look up detailed installation instructions here. If you got it successfully installed, are you ready to start building a contextual assistant?
-* faq
+* faq: get me some tutorials
     - respond_faq 
     <B> If you got it successfully installed, are you ready to start building a contextual assistant?
-<U> i guess it means - no
+* deny: i guess it means - no
     <B> Did you encounter any problems during installation?
-<U> how to train model
+* technical_question: how to train model
     <B> If you haven't already read the detailed instruction guide, you can look it up here. If you're still stuck, please ask for help on our [forum](https://forum.rasa.com/). 
     <B> You can now create a new Rasa assistant and also talk to it by simply running rasa init. This comes with some sample training data and the required configuration files to get you started. You can also talk to the assistant after it is done training. If you have no questions, click here when you're ready to go to the next step. Or, at any point after you're done asking questions, say 'take me to the next step'.
 
 ## technical_question - docs_found - deny
-<U> can you help me with this problem
+* technical_question: can you help me with this problem
     - action_docs_search 
     <B> Did that help?
-<U> no, thankyou
+* deny: no, thankyou
     - action_tag_docs_search 
     - action_forum_search
 ## technical_question - docs_found - affirm
-<U> getting some error
+* technical_question: getting some error
     - action_docs_search 
     <B> Did that help?
-<U> ofcoure i do
+* affirm: ofcoure i do
     - action_tag_docs_search 
     <B> Awesome!
 ## technical_question     <B> no docs_found
-<U> credentials
+* technical_question: credentials
     - action_docs_search
     - action_forum_search
 ## FAQ - Step 2 flow interrupted
-<U> installing rasa
+* install_rasa: installing rasa
     <B> You will first need to install Rasa Open Source using this installation command. pip install rasa. If you are having any trouble installing, you can look up detailed installation instructions here. If you got it successfully installed, are you ready to start building a contextual assistant?
-<U> no i haven't decided yet if i want to sign up
+* deny: no i haven't decided yet if i want to sign up
     <B> Did you encounter any problems during installation?
-* faq
+* faq: Can one make a voice bot with rasa?
     - respond_faq 
     <B> If you haven't already read the detailed instruction guide, you can look it up here. If you're still stuck, please ask for help on our [forum](https://forum.rasa.com/). 
     <B> You can now create a new Rasa assistant and also talk to it by simply running rasa init. This comes with some sample training data and the required configuration files to get you started. You can also talk to the assistant after it is done training. If you have no questions, click here when you're ready to go to the next step. Or, at any point after you're done asking questions, say 'take me to the next step'.
 
 ## FAQ - Step 2 flow interrupted
-<U> how do i run rasa on windows
+* install_rasa: how do i run rasa on windows
     <B> You will first need to install Rasa Open Source using this installation command. pip install rasa. If you are having any trouble installing, you can look up detailed installation instructions here. If you got it successfully installed, are you ready to start building a contextual assistant?
-<U> no sorry
+* deny: no sorry
     <B> Did you encounter any problems during installation?
-<U> yes i have built a bot before
+* affirm: yes i have built a bot before
     <B> Can you describe the problem you're having?
-* faq
+* faq: How to build a voice bot with rasa?
     - respond_faq 
     <B> If you haven't already read the detailed instruction guide, you can look it up here. If you're still stuck, please ask for help on our [forum](https://forum.rasa.com/). 
     <B> You can now create a new Rasa assistant and also talk to it by simply running rasa init. This comes with some sample training data and the required configuration files to get you started. You can also talk to the assistant after it is done training. If you have no questions, click here when you're ready to go to the next step. Or, at any point after you're done asking questions, say 'take me to the next step'.
 
 ## FAQ - Step 2 flow interrupted
-* get_started_step2
+* get_started_step2: go to step 2
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> kk
+* affirm: kk
     <B> You will first need to install Rasa Open Source using this installation command. pip install rasa. If you are having any trouble installing, you can look up detailed installation instructions here. If you got it successfully installed, are you ready to start building a contextual assistant?
-* faq
+* faq: It is possible to build a voice bot with rasa?
     - respond_faq 
     <B> If you got it successfully installed, are you ready to start building a contextual assistant?
 
 ## Just don't want to continue
-<U> i need help setting up
+* install_rasa: i need help setting up
     <B> You will first need to install Rasa Open Source using this installation command. pip install rasa. If you are having any trouble installing, you can look up detailed installation instructions here. If you got it successfully installed, are you ready to start building a contextual assistant?
-* faq
+* faq: can a voice bot be built using rasa?
     - respond_faq 
     <B> If you got it successfully installed, are you ready to start building a contextual assistant?
 
 ## new to rasa + not new to chatbots + not migrating
-<U> heelio
+* greet: heelio
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* faq
+* faq: with rasa can I construct a voice bot?
     - respond_faq
-<U> what do i need for rasa implementation?
+* how_to_get_started: what do i need for rasa implementation?
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> yes pleae
+* affirm: yes pleae
     <B> And have you built a contextual assistant or a bot before?
-<U> sweet
+* affirm: sweet
     <B> Are you migrating from another tool?
-<U> i'm not giving you my email address
+* deny: i'm not giving you my email address
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> i want to use [nlu](product)
+* how_to_get_started: i want to use [nlu](product)
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa + not new to chatbots + not migrating
-<U> hei
+* greet: hei
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* faq
+* faq: what can you put in the forum?
     - respond_faq
-<U> how to get starter?
+* how_to_get_started: how to get starter?
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> accepted
+* affirm: accepted
     <B> And have you built a contextual assistant or a bot before?
-<U> i want that
+* affirm: i want that
     <B> Are you migrating from another tool?
-<U> none of them
+* deny: none of them
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> the [rasa open source](product)
+* how_to_get_started: the [rasa open source](product)
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.)
 
 ## new to rasa + not new to chatbots + not migrating
-<U> hello rasa
+* greet: hello rasa
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> hi, can you help in understanding nlu
+* how_to_get_started: hi, can you help in understanding nlu
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-* faq
+* faq: What is the scope of the Rasa forum?
     - respond_faq 
     <B> Are you new to Rasa?
-<U> yes give me information
+* affirm: yes give me information
     <B> And have you built a contextual assistant or a bot before?
-<U> yeah do that
+* affirm: yeah do that
     <B> Are you migrating from another tool?
-<U> nah not for me
+* deny: nah not for me
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> what does that mean
+* explain: what does that mean
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.)
 
 ## new to rasa + not new to chatbots + not migrating
-<U> halo sara
+* greet: halo sara
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> where can i find rasa document
+* how_to_get_started: where can i find rasa document
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> yes i have!
+* affirm: yes i have!
     <B> And have you built a contextual assistant or a bot before?
-* faq
+* faq: tell me about the forum
     - respond_faq 
     <B> And have you built a contextual assistant or a bot before?
-<U> yep thats cool
+* affirm: yep thats cool
     <B> Are you migrating from another tool?
-<U> no thank s
+* deny: no thank s
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> ok cool
+* affirm: ok cool
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa + not new to chatbots + not migrating
-<U> salut
+* greet: salut
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how do i build a bot
+* how_to_get_started: how do i build a bot
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> ye splease
+* affirm: ye splease
     <B> And have you built a contextual assistant or a bot before?
-<U> i do
+* affirm: i do
     <B> Are you migrating from another tool?
-* faq
+* faq: Could you please explain the Rasa forum to me?
     - respond_faq 
     <B> Are you migrating from another tool?
-<U> n
+* deny: n
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> give me more details
+* explain: give me more details
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa + not new to chatbots + not migrating
-<U> bom dia
+* greet: bom dia
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> tell me how i can get started with rasa
+* how_to_get_started: tell me how i can get started with rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> i will!
+* affirm: i will!
     <B> And have you built a contextual assistant or a bot before?
-<U> ah ok
+* affirm: ah ok
     <B> Are you migrating from another tool?
-<U> absolutely not
+* deny: absolutely not
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-* faq
+* faq: can I invent a voice bot with rasa?
     - respond_faq 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> what's rasa [nlu](product)
+* how_to_get_started: what's rasa [nlu](product)
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.)
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa + not new to chatbots + not migrating
-<U> heelio
+* greet: heelio
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> where do i find instructions
+* how_to_get_started: where do i find instructions
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> yeah do that
+* affirm: yeah do that
     <B> And have you built a contextual assistant or a bot before?
-<U> cool story bro
+* affirm: cool story bro
     <B> Are you migrating from another tool?
-<U> it sux
+* deny: it sux
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> ok, sara
+* affirm: ok, sara
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
-* faq
+* faq: Could I build a rasa voice bot?
     - respond_faq 
     <B>You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain stack and try it out
-<U> ey boss
+* greet: ey boss
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i want to create chatbot using rasa
+* how_to_get_started: i want to create chatbot using rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> sweet
+* affirm: sweet
     <B> And have you built a contextual assistant or a bot before?
-* faq
+* faq: Is it possible to use rasa to build a voice bot?
     - respond_faq 
     <B> And have you built a contextual assistant or a bot before?
-<U> no way
+* deny: no way
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> that is cool
+* affirm: that is cool
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain stack and try it out
-<U> bonjour
+* greet: bonjour
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> rasa basics
+* how_to_get_started: rasa basics
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> okay..
+* affirm: okay..
     <B> And have you built a contextual assistant or a bot before?
-<U> no way
+* deny: no way
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-* faq
+* faq: can I create a voice bot with rasa?
     - respond_faq 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> give me more details
+* explain: give me more details
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain x and try it out
-<U> hi mister
+* greet: hi mister
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how to download?
+* how_to_get_started: how to download?
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> ok, i behave now
+* affirm: ok, i behave now
     <B> And have you built a contextual assistant or a bot before?
-<U> i don't want to say
+* deny: i don't want to say
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> [rasa](product)
+* enter_data: [rasa](product)
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> Would you also like me to explain NLU and Core?
-<U> noooooooooooooooooooooooooooooooooooooooo
+* deny: noooooooooooooooooooooooooooooooooooooooo
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
-* faq
+* faq: can a voice bot be built using rasa?
     - respond_faq 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain core and direct to step2
-<U> guten morgen
+* greet: guten morgen
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> from where i should start?
+* how_to_get_started: from where i should start?
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> yes that's great
+* affirm: yes that's great
     <B> And have you built a contextual assistant or a bot before?
-<U> absolutely not
+* deny: absolutely not
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> get started with [rasa open source](product)
+* how_to_get_started: get started with [rasa open source](product)
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Would you also like me to explain NLU?
-* faq
+* faq: rasa can't be used to build a voice bot, can it?
     - respond_faq 
     <B> Would you also like me to explain NLU?
-<U> i don't want to say
+* deny: i don't want to say
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain core and direct to step2
-<U> ey boss
+* greet: ey boss
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> where to start the development of rasa
+* how_to_get_started: where to start the development of rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> that would be great
+* affirm: that would be great
     <B> And have you built a contextual assistant or a bot before?
-<U> no bots at all
+* deny: no bots at all
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> rasa [core](product) quickstart
+* how_to_get_started: rasa [core](product) quickstart
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Would you also like me to explain NLU?
-<U> nehi
+* deny: nehi
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
-* faq
+* faq: What is the purpose of the Rasa forum?
     - respond_faq 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain core, then nlu and direct to step2
-<U> good mourning
+* greet: good mourning
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> hw to get started with rasa
+* how_to_get_started: hw to get started with rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> that ok
+* affirm: that ok
     <B> And have you built a contextual assistant or a bot before?
-<U> i don't think so
+* deny: i don't think so
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> how do i get rasa [nlu](product)
+* how_to_get_started: how do i get rasa [nlu](product)
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Would you also like me to explain NLU?
-* faq
+* faq: tell me about the forum
     - respond_faq 
     <B> Would you also like me to explain NLU?
-<U> top
+* affirm: top
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain x, then direct to step2
-<U> yoo
+* greet: yoo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how to learn rasa
+* how_to_get_started: how to learn rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> ok fine
+* affirm: ok fine
     <B> And have you built a contextual assistant or a bot before?
-<U> nah not for me
+* deny: nah not for me
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> [rasa](product)
+* enter_data: [rasa](product)
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> Would you also like me to explain NLU and Core?
-* faq
+* faq: what can people do in the forum
     - respond_faq
 
 ## new to rasa/bots, explain core, then nlu and direct to step2
-<U> hello sweatheart
+* greet: hello sweatheart
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> show me learning resources about rasa
+* how_to_get_started: show me learning resources about rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> si
+* affirm: si
     <B> And have you built a contextual assistant or a bot before?
-<U> no bots at all
+* deny: no bots at all
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> how to train [rasa open source](product)
+* how_to_get_started: how to train [rasa open source](product)
     <B> Core decides what happens next in this conversation. Its machine learning-based dialogue management predicts the next best action based on the input from NLU, the conversation history and your training data. (Example: Core has a confidence of 87% that ask_primary_change is the next best action to confirm with the user if they want to change their primary contact information.) 
     <B> Would you also like me to explain NLU?
-<U> yaah
+* affirm: yaah
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
-* faq
+* faq: what do people do in the forum
     - respond_faq 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain nlu and direct to step2
-<U> ssup?
+* greet: ssup?
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how to make a bot
+* how_to_get_started: how to make a bot
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> jezz
+* affirm: jezz
     <B> And have you built a contextual assistant or a bot before?
-<U> n
+* deny: n
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> i want to learn about [nlu](product)
+* how_to_get_started: i want to learn about [nlu](product)
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Would you also like me to explain Core?
-* faq
+* faq: what is the forum used for?
     - respond_faq  
     <B> Would you also like me to explain Core?
-<U> no i dont want
+* deny: no i dont want
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain x and direct to step2
-<U> hai
+* greet: hai
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> need help in finding information about rasa
+* how_to_get_started: need help in finding information about rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> ofcoure i do
+* affirm: ofcoure i do
     <B> And have you built a contextual assistant or a bot before?
-<U> i don't want to give you my email
+* deny: i don't want to give you my email
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> [rasa](product)
+* enter_data: [rasa](product)
     <B> Rasa X is a toolset used to improve contextual assistants built using Rasa Open Source by helping you turn real user conversations into training data. Rasa X includes a user interface and a REST API. 
     <B> Would you also like me to explain NLU and Core?
-* faq
+* faq: Is rasa open source?
     - respond_faq
-<U> i'm not going to give it to you
+* deny: i'm not going to give it to you
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, explain nlu and direct to step2
-<U> hello everybody
+* greet: hello everybody
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> where do i find instructions
+* how_to_get_started: where do i find instructions
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> yop
+* affirm: yop
     <B> And have you built a contextual assistant or a bot before?
-<U> thanks but no thanks
+* deny: thanks but no thanks
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> what about [nlu](product)?
+* how_to_get_started: what about [nlu](product)?
     <B> NLU understands the user's message based on your previous training data:     - Intent classification: Interpreting meaning based on predefined intents (Example: Please send the confirmation to amy@example.com? is a send_confirmation intent with 93% confidence)     - Entity extraction: Recognizing structured data (Example: amy@example.com is an email). 
     <B> Would you also like me to explain Core?
-<U> no and no again
+* deny: no and no again
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
-* faq
+* faq: how much costs the rasa platform
     - respond_faq 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, don't explain and direct to step2
-<U> hi friends
+* greet: hi friends
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> tell me how to get started with rasa
+* how_to_get_started: tell me how to get started with rasa
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> yap
+* affirm: yap
     <B> And have you built a contextual assistant or a bot before?
-<U> non
+* deny: non
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-* faq
+* faq: what language would rasa use
     - respond_faq
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> no you did it wrong
+* deny: no you did it wrong
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## new to rasa/bots, don't explain and direct to step2
-<U> good evening
+* greet: good evening
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> how about building chatbot
+* how_to_get_started: how about building chatbot
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> considering
+* affirm: considering
     <B> And have you built a contextual assistant or a bot before?
-<U> no don"t want this!
+* deny: no don"t want this!
     <B> Alright, I'll briefly explain the components that make up Rasa then. Rasa Open Source is a machine learning framework for automated text and voice-based conversations. Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa Open Source framework. 
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> no bots at all
+* deny: no bots at all
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
-* faq
+* faq: do you know what language rasa uses
     - respond_faq 
     <B> You can click here if you want to go to the next step to try out Rasa Open Source.
 
 ## not new to rasa + not interested in products
-<U> hi mister
+* greet: hi mister
     <B> Hey there, my name is Sara.  
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* faq
+* faq: What languages can rasa be relied upon to support?
     - respond_faq
-<U> how toget strated?
+* how_to_get_started: how toget strated?
     <B> To determine how I can help you best, I'm going to ask you a few questions. Let's go. Are you new to Rasa?
-<U> i don't wanna tell the name of my company
+* deny: i don't wanna tell the name of my company
     <B> Would you like to know more about Rasa Open Source or Rasa X?
-<U> no bots at all
+* deny: no bots at all
     <B> Got it.

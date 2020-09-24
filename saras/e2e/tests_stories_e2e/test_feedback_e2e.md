@@ -1,35 +1,35 @@
 ## feedback1
     <B> How is this conversation going?
-<U> rasa is bad
+* react_negative: rasa is bad
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## feedback2
     <B> How is this conversation going?
-<U> today was a nice day
+* react_positive: today was a nice day
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## feedback3
     <B> How is this conversation going?
-<U> ofcourse
+* affirm: ofcourse
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## feedback deny
     <B> How is this conversation going?
-<U> never mind
+* deny: never mind
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## feedback thank
     <B> How is this conversation going?
-<U> today was a nice day
+* react_positive: today was a nice day
     <B> No worries! 
     <B> Is there anything else I can help you with?
 ## feedback thumbsup
     <B> How is this conversation going?
-<U> very very sad
+* react_negative: very very sad
     <B> No worries! 
     <B> Is there anything else I can help you with?
 ## feedback thumbsup
     <B> How is this conversation going?
-<U> yes sirfr
+* affirm: yes sirfr
     <B> No worries! 
     <B> Is there anything else I can help you with?

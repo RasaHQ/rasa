@@ -1,90 +1,90 @@
 ## out of scope
-* out_of_scope
+* out_of_scope: what about wheather
     <B> I can't help you with that, I'm sorry.
     <B> You can ask me about:     - how to get started with Rasa     - the components of Rasa,     - booking a sales call     - subscribing to our newsletter
 
 ## say enter data outside the flows
-<U> ola sara
+* greet: ola sara
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> the people speak [english](language)
+* enter_data: the people speak [english](language)
     <B> Hmm, not sure what you mean... 
     <B> You can ask me about:     - how to get started with Rasa     - the components of Rasa,     - booking a sales call     - subscribing to our newsletter
 ## say confirm outside the flows 2
-<U> heylo
+* greet: heylo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> yes give me information
+* affirm: yes give me information
     <B> Got it.
 ## say greet outside the flows
-<U> heelio
+* greet: heelio
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> hlo
+* greet: hlo
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
 ## just newsletter + confirm
-<U> hhola
+* greet: hhola
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* out_of_scope
+* out_of_scope: I am User
     <B> Hmm, not sure what you mean... 
-<U> register me for the newsletter
+* signup_newsletter: register me for the newsletter
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null} 
     <B> How is this conversation going?
-<U> well yes
+* affirm: well yes
     <B> Got it. 
     <B> Is there anything else I can help you with?
 ## just newsletter, continue + confirm
-<U> hellooo
+* greet: hellooo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> subscribe me to you newsletter
+* signup_newsletter: subscribe me to you newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-* out_of_scope
+* out_of_scope: SEL ME SOMETHING
     <B> Hmm, not sure what you mean... 
     <B> Do you still want to subscribe to the newsletter?
-<U> yes sirfr
+* affirm: yes sirfr
     <B> Got it. 
     - subscribe_newsletter_form
     - form{"name": null}
     <B> How is this conversation going?
-<U> ok sara
+* affirm: ok sara
     <B> Got it. 
     <B> Is there anything else I can help you with?
 
 ## just newsletter, don't continue + confirm
-<U> hello everybody
+* greet: hello everybody
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up newsletter
+* signup_newsletter: sign up newsletter
     <B> Can do!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-* out_of_scope
+* out_of_scope: are you vegan
     <B> Hmm, not sure what you mean...
     <B> Do you still want to subscribe to the newsletter?
-<U> no, i hate it
+* deny: no, i hate it
     <B> Got it. 
     - subscribe_newsletter_form
     - form{"name": null}
     <B> How is this conversation going?
-<U> it is ok
+* affirm: it is ok
     <B> Got it. 
     <B> How is this conversation going?
 
 ## just newsletter (with email already) + confirm
-<U> hello rasa
+* greet: hello rasa
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* out_of_scope
+* out_of_scope: can you learn from our conversation?
     <B> Hmm, not sure what you mean...
-<U> do the newsletter then
+* signup_newsletter: do the newsletter then
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
@@ -92,12 +92,12 @@
     <B> How is this conversation going?
 
 ## just newsletter (with email already)
-<U> hi there it's me
+* greet: hi there it's me
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* out_of_scope
+* out_of_scope: do you have a phone number?
     <B> Hmm, not sure what you mean...
-<U> sign up newsletter
+* signup_newsletter: sign up newsletter
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
@@ -105,64 +105,64 @@
     <B> How is this conversation going?
 
 ## just newsletter
-<U> hellooo
+* greet: hellooo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* out_of_scope
+* out_of_scope: do you like football
     <B> Hmm, not sure what you mean... 
-<U> add me to the newsletter list
+* signup_newsletter: add me to the newsletter list
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null} 
     <B> How is this conversation going?
-<U> yes, cool
+* affirm: yes, cool
     <B> Got it. 
     <B> Is there anything else I can help you with?
 
 ## just newsletter, continue
-<U> salut
+* greet: salut
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i just want to signup for our newsletter
+* signup_newsletter: i just want to signup for our newsletter
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-* out_of_scope
+* out_of_scope: give me a girl friend
     <B> Hmm, not sure what you mean...
     <B> Do you still want to subscribe to the newsletter?
-<U> yes i have built a bot before
+* affirm: yes i have built a bot before
     <B> Got it. 
     - subscribe_newsletter_form
     - form{"name": null}
     <B> How is this conversation going?
-<U> yess
+* affirm: yess
     <B> Got it. 
     <B> Is there anything else I can help you with?
 
 ## just newsletter, don't continue
-<U> konichiwa
+* greet: konichiwa
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> newsletter, here is my email: marcus.miller@yahoo.com
+* signup_newsletter: newsletter, here is my email: marcus.miller@yahoo.com
     <B> Can do! 
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-* out_of_scope
+* out_of_scope: how to get rasa studio
     <B> Hmm, not sure what you mean...
     <B> Do you still want to subscribe to the newsletter?
-<U> i don't wanna tell the name of my company
+* deny: i don't wanna tell the name of my company
     <B> Got it. 
     <B> How is this conversation going?
     - form{"name": null}
 
 ## just sales
-<U> halloooo
+* greet: halloooo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-* out_of_scope
+* out_of_scope: i want to find out what you can build with rasa
     <B> Hmm, not sure what you mean...
-<U> i want to buy the enterprise edition
+* contact_sales: i want to buy the enterprise edition
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
@@ -170,32 +170,32 @@
     <B> How is this conversation going?
 
 ## just sales, continue
-<U> hey let's talk
+* greet: hey let's talk
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> call sales
+* contact_sales: call sales
     - sales_form
     - form{"name": "sales_form"}
-* out_of_scope
+* out_of_scope: machine learning
     <B> Hmm, not sure what you mean...
     <B> Do you still want to talk to sales?
-<U> yes i accept
+* affirm: yes i accept
     - sales_form
     - form{"name": null}
     <B> How is this conversation going?
 
 ## just sales, don't continue
-<U> good mourning
+* greet: good mourning
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> please can you book call for me
+* contact_sales: please can you book call for me
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
-* out_of_scope
+* out_of_scope: please help with my ice cream it's dripping
     <B> Hmm, not sure what you mean... 
     <B> Do you still want to talk to sales?
-<U> i do not need help installing
+* deny: i do not need help installing
     <B> Got it. 
     - sales_form
     - form{"name": null}

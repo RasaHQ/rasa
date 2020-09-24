@@ -1,93 +1,93 @@
 ## chitchat
-<U> i want to talk to someone who is smarter than you
+* human_handoff: i want to talk to someone who is smarter than you
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com.
 ## greet + handoff
-<U> whats popping
+* greet: whats popping
     <B> Hey there, my name is Sara.
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i want to speak to human
+* human_handoff: i want to speak to human
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com.
 ## just newsletter + handoff, continue
-<U> helleo
+* greet: helleo
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> add me to the newsletter list
+* signup_newsletter: add me to the newsletter list
     <B> Sure thing!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> talking to a bot is stupid
+* human_handoff: talking to a bot is stupid
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com. 
     <B> Do you still want to subscribe to the newsletter?
-<U> yaps
+* affirm: yaps
     <B> That's great!
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
     - form{"name": null} 
     <B> How is this conversation going?
 ## just newsletter + handoff, don't continue
-<U> hey dude
+* greet: hey dude
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> sign up newsletter
+* signup_newsletter: sign up newsletter
     - subscribe_newsletter_form
     - form{"name": "subscribe_newsletter_form"}
-<U> can i talk to a human instead
+* human_handoff: can i talk to a human instead
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com. 
     <B> Do you still want to subscribe to the newsletter?
-<U> nevermind
+* deny: nevermind
     <B> Got it.
     - form{"name": null} 
 ## just sales, continue
-<U> hello rasa
+* greet: hello rasa
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> can i get a ssales call
+* contact_sales: can i get a ssales call
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
-<U> that's annoying i'd like to speak to someone real
+* human_handoff: that's annoying i'd like to speak to someone real
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com. 
     <B> Do you still want to talk to sales?
-<U> ok, sara
+* affirm: ok, sara
     <B> Great!
     - sales_form
     - form{"name": null}
 ## just sales, don't continue
-<U> hello everybody
+* greet: hello everybody
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> i want to connect to your sales team
+* contact_sales: i want to connect to your sales team
     <B> Sure, we can book a sales call! Let's get to know each other first .
-<U> i dont wanna talk to a bot
+* human_handoff: i dont wanna talk to a bot
     <B> You can't speak to a human directly in this chat, but you can email us at hi@rasa.com.
     - sales_form
     - form{"name": "sales_form"}
-<U> i don't want to give it to you
+* deny: i don't want to give it to you
     <B> Got it.
     - sales_form
     - form{"name": null}
 ## just sales, explain, continue
-<U> whats popping
+* greet: whats popping
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> connect to sales
+* contact_sales: connect to sales
     <B> Sure, we can book a sales call! Let's get to know each other first . 
-<U> why is that necessary
+* explain: why is that necessary
     <B> Your job function helps us in understanding how we can talk to you best. Do you still want to talk to sales?
-<U> i guess so
+* affirm: i guess so
     <B> Great! 
     <B> What's your job? 
 ## just sales, explain, stop
-<U> hello sweatheart
+* greet: hello sweatheart
     <B> Hey there, my name is Sara. 
     <B> By chatting to me you agree to our [privacy policy](https://rasa.com/privacy-policy/).
-<U> booking a sall
+* contact_sales: booking a sall
     <B> Sure, we can book a sales call! Let's get to know each other first .
     - sales_form
     - form{"name": "sales_form"}
-<U> please elaborate
+* explain: please elaborate
     <B> Your job function helps us in understanding how we can talk to you best. Do you still want to talk to sales?
-<U> absolutely not
+* deny: absolutely not
     <B> Got it.
     - sales_form
     - form{"name": null}
