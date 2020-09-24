@@ -634,6 +634,8 @@ class Domain:
         Returns:
             a dictionary containing intent, text and set entities
         """
+        # proceed with values only if the user of a bot have done something
+        # at the previous step i.e., when the state is not empty.
         latest_message = tracker.latest_message
         if not latest_message or latest_message.is_empty():
             return {}
@@ -663,12 +665,6 @@ class Domain:
         Returns:
             a dictionary mapping slot names to their featurization
         """
-
-        # proceed with values only if the user of a bot have done something
-        # at the previous step i.e., when the state is not empty.
-        if tracker.latest_message == UserUttered.empty() or not tracker.latest_action:
-            return {}
-
         slots = {}
         for slot_name, slot in tracker.slots.items():
             if slot is not None and slot.as_feature():
