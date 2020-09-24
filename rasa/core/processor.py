@@ -328,7 +328,6 @@ class MessageProcessor:
         reminder_event: ReminderScheduled,
         sender_id: Text,
         output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
@@ -475,7 +474,9 @@ class MessageProcessor:
                 text, message.message_id, tracker
             )
         else:
-            parse_data = await self.interpreter.parse(text, message.message_id, tracker)
+            parse_data = await self.interpreter.parse(
+                text, message.message_id, tracker, metadata=message.metadata
+            )
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
@@ -591,6 +592,19 @@ class MessageProcessor:
 
         return action_name not in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME)
 
+    async def execute_side_effects(
+        self,
+        events: List[Event],
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+    ) -> None:
+        """Send bot messages, schedule and cancel reminders that are logged
+        in the events array."""
+
+        await self._send_bot_messages(events, tracker, output_channel)
+        await self._schedule_reminders(events, tracker, output_channel)
+        await self._cancel_reminders(events, tracker)
+
     @staticmethod
     async def _send_bot_messages(
         events: List[Event],
@@ -610,7 +624,6 @@ class MessageProcessor:
         events: List[Event],
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
     ) -> None:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
@@ -625,7 +638,7 @@ class MessageProcessor:
                 self.handle_reminder,
                 "date",
                 run_date=e.trigger_date_time,
-                args=[e, tracker.sender_id, output_channel, nlg],
+                args=[e, tracker.sender_id, output_channel],
                 id=e.name,
                 replace_existing=True,
                 name=e.scheduled_job_name(tracker.sender_id),
@@ -685,9 +698,7 @@ class MessageProcessor:
         ):
             self._log_slots(tracker)
 
-        await self._send_bot_messages(events, tracker, output_channel)
-        await self._schedule_reminders(events, tracker, output_channel, nlg)
-        await self._cancel_reminders(events, tracker)
+        await self.execute_side_effects(events, tracker, output_channel)
 
         return self.should_predict_another_action(action.name())
 

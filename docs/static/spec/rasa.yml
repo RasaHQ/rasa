@@ -153,11 +153,22 @@ paths:
       summary: Append events to a tracker
       description: >-
         Appends one or multiple new events to the tracker state of the conversation.
-        Any existing events will be kept and the new events will be
-        appended, updating the existing state.
+        Any existing events will be kept and the new events will be appended,
+        updating the existing state.
       parameters:
       - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
+      - $ref: '#/components/parameters/output_channel'
+      - in: query
+        name: execute_side_effects
+        schema:
+          type: boolean
+          default: False
+          description: >-
+            If `true`, any ``BotUttered`` event will be forwarded to the
+            channel specified in the ``output_channel`` parameter. Any
+            ``ReminderScheduled`` or ``ReminderCancelled`` event will also be
+            processed.
       requestBody:
         required: true
         content:
