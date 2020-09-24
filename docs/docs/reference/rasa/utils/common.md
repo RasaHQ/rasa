@@ -94,10 +94,20 @@ Sorts a list of dictionaries by their first key.
 #### write\_global\_config\_value
 
 ```python
-write_global_config_value(name: Text, value: Any) -> None
+write_global_config_value(name: Text, value: Any) -> bool
 ```
 
 Read global Rasa configuration.
+
+**Arguments**:
+
+- `name` - Name of the configuration key
+- `value` - Value the configuration key should be set to
+  
+
+**Returns**:
+
+  `True` if the operation was successful.
 
 #### read\_global\_config\_value
 
