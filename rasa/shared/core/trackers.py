@@ -332,8 +332,8 @@ class DialogueStateTracker:
             x.get(ENTITY_ATTRIBUTE_VALUE)
             for x in self.latest_message.entities
             if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
-            and (entity_group is None or x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group)
-            and (entity_role is None or x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role)
+            and x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group
+            and x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role
         )
 
     def get_latest_input_channel(self) -> Optional[Text]:
