@@ -726,7 +726,9 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
                 }
             ],
             "some_intent",
-            {"some_slot": "some_value"},
+            # nothing should be extracted, because entity contain role and group
+            # but mapping expects them to be None
+            {},
         ),
     ],
 )
