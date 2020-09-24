@@ -1,12 +1,24 @@
+# config for e2etests
 language: en
 pipeline:
 - name: WhitespaceTokenizer
   intent_split_symbol: ' '
+- name: RegexFeaturizer
+- name: LexicalSyntacticFeaturizer
 - name: CountVectorsFeaturizer
+  OOV_token: oov
+  token_pattern: (?u)\b\w+\b
+- name: CountVectorsFeaturizer
+  analyzer: char_wb
+  min_ngram: 1
+  max_ngram: 4
+- name: DIETClassifier
+  epochs: 200
+  ranking_length: 5
 policies:
 - name: TEDPolicy
   scale_loss: False
   max_history: 5
-  epochs: 50
+  epochs: 100
   random_seed: 100
 - name: FormPolicy
