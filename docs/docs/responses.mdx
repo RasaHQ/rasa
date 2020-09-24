@@ -23,8 +23,9 @@ responses:
   - text: "See you!"
 ```
 
-If you use [retrieval actions](./retrieval-actions.mdx), make sure to define the responses 
+If you use [retrieval actions](./retrieval-actions.mdx), make sure you define the responses 
 for each retrieval action in your domain file, like in the following example:
+
 ```yaml-rasa
 responses:
   utter_chitchat/ask_name:
@@ -33,30 +34,34 @@ responses:
   utter_chitchat/ask_weather:
   - text: Oh, it does look sunny right now in Berlin.
 ```
+
 :::note
 Notice the special format of each retrieval action's name. The name starts with `utter_`, 
 followed by the retrieval intent's name (here `chitchat`) and finally a suffix specifying 
 the different response keys (here `ask_name` and `ask_weather`). See 
-[Retrieval Actions](./retrieval-actions.mdx) and examples of [retrieval intents](./training-data-format.mdx#training-examples) to learn more.
+[Retrieval Actions](./retrieval-actions.mdx) and examples of 
+[retrieval intents](./training-data-format.mdx#training-examples) to learn more.
 :::
 
 ### Using Variables in Responses
 
 You can use variables to insert information into responses.
-Within a response, a variable is represented by using curly braces, see the variable `name` below:
+Within a response, a variable is enclosed in curly brackets, see the variable `name` below:
+
 ```yaml-rasa {3} title="domain.yml"
 responses:
   utter_greet:
   - text: "Hey, {name}. How are you?"
 ```
 
-Now, when the `utter_greet` response is used, Rasa automatically fills in the variable with the value
-found in the slot called `name`. If such a slot doesn't exist or is empty, the variable gets
+Now, when the `utter_greet` response is used, Rasa automatically fills in the variable with the 
+value found in the slot called `name`. If such a slot doesn't exist or is empty, the variable gets
 filled with `None`.
 
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
-In an action's code, you can supply values to a response to fill in specific variables. 
-If you're using Rasa SDK for your action server, you can specify values when using `dispatcher.utter_message`:
+In custom action code, you can supply values to a response to fill in specific variables. 
+If you use Rasa SDK for your action server, you can do this when using `dispatcher.utter_message`:
+
 ```python {3}
 dispatcher.utter_message(
     template="utter_greet",
@@ -64,8 +69,8 @@ dispatcher.utter_message(
 )
 ```
 
-If using a different custom action server, you can add extra parameters to the responses you return
-to achieve the same result:
+If you use a [different custom action server](https://rasa.com/docs/action-server#other-action-servers), 
+supply the values by adding extra parameters to the responses your server returns:
 
 ```json {8}
 {
@@ -84,82 +89,51 @@ to achieve the same result:
 
 ### Response Variations
 
-If you want to randomly vary the response sent to the user, you can list
-multiple response variations by adding another response to the list of
-responses under your response name.
-
-The following example has 2 different choices for `utter_greet`:
-
-```yaml-rasa title="domain.yml"
+You can make your assistant's replies more interesting if you provide multiple response variations 
+to choose from for a given response name:
+```yaml-rasa {3-4} title="domain.yml"
 responses:
   utter_greet:
   - text: "Hey, {name}. How are you?"
   - text: "Hey, {name}. How is your day going?"
 ```
-
-When the model predicts `utter_greet`, Rasa will randomly pick one of them.
+In this example, when `utter_greet` gets predicted as the next action, Rasa will randomly pick one 
+of the two response variations and use it.
 
 
 ### Channel-Specific Response Variations
 
-If you want to specify different response variations that depend on which channel
-the user is connected to, you can do this with channel-specific response variations.
+To specify different response variations depending on which channel
+the user is connected to, use channel-specific response variations.
 
-Each time your bot looks for a response variation under a given response name, it will first check
-to see if there are any channel-specific response variations for the connected channel.
-If there are, it will choose a response from **only** these response variations.
+In the following example, the `channel` key makes the first response variation channel-specific for 
+the `slack` channel while the second variation is not channel-specific:
 
-If no channel-specific response variations are
-found, the bot will choose from any response variations that do not have a defined `channel`.
-
-:::caution
-It is good practice to always have at least one response variation for each
-response that has no `channel` specified. This allows your bot to respond in all
-environments, including in new environments, in the shell, and in interactive learning.
-:::
-
-#### Defining Channel-Specific Response Variations
-
-Channel-specific responses are defined in a response with the `channel` key.
-
-The following example shows how you might use channel-specific responses to send a
-specific `utter_ask_game` response to the `slack` channel:
-
-```yaml-rasa title="domain.yml"
+```yaml-rasa {4} title="domain.yml"
 responses:
   utter_ask_game:
-  - text: "Which game would you like to play?"
+  - text: "Which game would you like to play on Slack?"
     channel: "slack"
-    custom:
-        blocks:
-        - type: actions
-          elements:
-          - type: button
-            text:
-              type: plain_text
-              emoji: true
-              text: "Chess :crown:"
-            value: '/inform{"game": "chess"}'
-          - type: button
-            text:
-              type: plain_text
-              emoji: true
-              text: "Checkers :checkered_flag:"
-            value: '/inform{"game": "checkers"}'
   - text: "Which game would you like to play?"
-    buttons:
-    - title: "Chess"
-      payload: '/inform{"game": "chess"}'
-    - title: "Checkers"
-      payload: '/inform{"game": "checkers"}'
 ```
 
-When using channel-specific responses, the value of the `channel` key should match
-the name used to provide the credentials for that channel
-in the `credentials.yml` file.
+:::note
+Make sure the value of the `channel` key matches the channel name used in your `credentials.yml` file.
+:::
 
-The second response variation, in this case, does not have a defined `channel`, which means it
-will be the response used on all channels other than `slack`.
+When your assistant looks for suitable response variations under a given response name, it will first 
+try to choose from channel-specific variations for the current channel.
+If there are no such variations, the assistant will choose from any response variations which are not
+channel-specific.
+
+In the above example, the second response variation has no `channel` specified and can be used by
+your assistant for all channels other than `slack`.
+
+:::caution
+For each response, try to have at least one response variation without the `channel` key.
+This allows your assistant to properly respond in all environments, such as in new channels, 
+in the shell and in interactive learning.
+:::
 
 
 ## Rich Responses
