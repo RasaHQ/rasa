@@ -425,7 +425,10 @@ class DialogueStateTracker:
                     event.action_name, applied_events
                 )
             else:
-                applied_events.append(event)
+                if isinstance(event, (SlotSet)):
+                    logger.info("Skipped putting SlotSet event on applied events queue")
+                else:
+                    applied_events.append(event)
 
         return applied_events
 
