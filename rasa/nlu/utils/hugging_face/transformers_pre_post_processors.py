@@ -127,8 +127,8 @@ def bert_embeddings_post_processor(
     Returns:
         sentence level embedding and post-processed sequence level embedding.
     """
-    sentence_embedding = np.zeros_like(sequence_embeddings[0])
-    post_processed_embedding = np.ones_like(sequence_embeddings[1:-1])
+    sentence_embedding = sequence_embeddings[0]
+    post_processed_embedding = sequence_embeddings[1:-1]
 
     return sentence_embedding, post_processed_embedding
 
