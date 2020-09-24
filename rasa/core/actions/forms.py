@@ -105,6 +105,35 @@ class FormAction(LoopAction):
         return requested_slot_mappings
 
     def _create_unique_entity_mappings(self, domain: Domain) -> Set[Text]:
+        """Finds mappings of type `from_entity` that are uniquely set some slot.
+
+        For example in the following form:
+        some_form:
+          departure_city:
+            - type: from_entity
+              entity: city
+              role: from
+            - type: from_entity
+              entity: city
+          arrival_city:
+            - type: from_entity
+              entity: city
+              role: to
+            - type: from_entity
+              entity: city
+
+        An entity `city` with a role `from` uniquely sets the slot `departure_city`
+        and an entity `city` with a role `to` uniquely sets the slot `arrival_city`,
+        so corresponding mappings are unique.
+        But an entity `city` without a role can fill both `departure_city`
+        and `arrival_city`, so corresponding mapping is not unique.
+
+        Args:
+            domain: The domain.
+
+        Returns:
+            A set of json dumps of unique mappings of type `from_entity`.
+        """
         unique_entity_slot_mappings = set()
         duplicate_entity_slot_mappings = set()
         for slot_mappings in domain.slot_mapping_for_form(self.name()).values():
@@ -167,6 +196,8 @@ class FormAction(LoopAction):
 
         # slot name is equal to the entity type
         slot_equals_entity = slot == slot_mapping.get("entity")
+        # if entity mapping is unique, it means that an entity always sets
+        # a certain slot, so try to extract this slot if entity matches slot mapping
         entity_mapping_is_unique = self._entity_mapping_is_unique(slot_mapping, domain)
 
         # use the custom slot mapping 'from_entity' defined by the user to check
