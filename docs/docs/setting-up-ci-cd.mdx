@@ -167,7 +167,7 @@ Rasa server if the CI results are satisfactory. For example, to upload a model t
 curl -k -F "model=@models/my_model.tar.gz" "https://example.rasa.com/api/projects/default/models?api_token={your_api_token}"
 ```
 
-If you are using Rasa X, you can also [tag the uploaded model](https://rasa.com/docs/rasa-x/api/rasa-x-http-api/#tag/Models/paths/~1projects~1{project_id}~1models~1{model}~1tags~1{tag}/put)
+If you are using Rasa X, you can also [tag the uploaded model](https://rasa.com/docs/rasa-x/pages/http-api/#tag/Models/paths/~1projects~1{project_id}~1models~1{model}~1tags~1{tag}/put)
 as production (or whichever deployment you want to tag if using multiple [deployment environments](https://rasa.com/docs/rasa-x/enterprise/deployment-environments/#)):
 
 ```bash

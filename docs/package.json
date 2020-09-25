@@ -99,7 +99,16 @@
         }
       ],
       "remark-lint",
-      "remark-lint-no-dead-urls"
+      [
+        "remark-lint-no-dead-urls",
+        {
+          "skipUrlPatterns": [
+            "^https://github\\.com/rasahq/rasa/issues/[0-9]+$",
+            "\\.prototyping\\.rasa\\.com",
+            "^https://github\\.com/mit-nlp/MITIE/releases/download/v0\\.4/MITIE-models-v0\\.2\\.tar\\.bz2$"
+          ]
+        }
+      ]
     ]
   },
   "telemetryReference": {
