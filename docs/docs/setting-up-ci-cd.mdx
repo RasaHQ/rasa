@@ -84,31 +84,31 @@ to your server as part of the continuous deployment process.
 
 ### Testing Your Assistant
 
-Testing your trained model on [test conversations](./testing-your-assistant.mdx#end-to-end-testing) is the best way to have confidence in how your assistant
+Testing your trained model on [test stories](./testing-your-assistant.mdx#end-to-end-testing) is the best way to have confidence in how your assistant
 will act in certain situations. Written in a modified story
-format, test conversations allow you to provide entire conversations and test that, given certain
+format, test stories allow you to provide entire conversations and test that, given certain
 user input, your model will behave in the expected manner. This is especially
 important as you start introducing more complicated stories from user
 conversations.
 
-The command to run test conversations is:
+The command to run test stories is:
 
 ```bash
 rasa test --fail-on-prediction-errors
 ```
 By default, the command will run tests on stories from any files with names starting with `test_`. You can also provide
-a specific test conversations file or directory with the `--stories` argument.
+a specific test stories file or directory with the `--stories` argument.
 
 The `--fail-on-prediction-errors` flag ensures the test will fail if any test
-conversation fails.
+story fails.
 
 End-to-end conversation testing is only as thorough and accurate as the test
-cases you include, so you should continue to grow your set of test conversations
-as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test conversations
+cases you include, so you should continue to grow your set of test stories
+as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test stories
 to be representative of the true distribution of real conversations.
 Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
 
-Note: Running test conversations does **not** execute your action code. You will need to
+Note: Running test stories does **not** execute your action code. You will need to
 [test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a separate step.
 
 ### Comparing NLU Performance
@@ -126,7 +126,7 @@ rasa test nlu --cross-validation
 ```
 
 You could also train a model on a training set and testing it on a test set. If you use the train-test
-set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#create-a-train-test-split) using `rasa data split` as part of this CI step, as
+set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#rasa-data-split) using `rasa data split` as part of this CI step, as
 opposed to using a static NLU test set, which can easily become outdated.
 
 Because this test doesn't result in a pass/fail exit code, it's best to make
@@ -155,7 +155,7 @@ succeeded.
 
 ### Deploying Your Rasa Model
 
-If you ran [test conversations](./setting-up-ci-cd.mdx#test-the-assistant) in your CI pipeline,
+If you ran [test stories](#testing-your-assistant) in your CI pipeline,
 you'll already have a trained model. You can set up your CD pipeline to upload the trained model to your
 Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X:
 

@@ -137,7 +137,7 @@ their training data will be combined.
 ## Writing a Custom Importer
 
 If you are writing a custom importer, this importer has to implement the interface of
-[TrainingDataImporter](./training-data-importers.mdx#training-data-importers-trainingfileimporter):
+`TrainingDataImporter` class:
 
 ```python
 from typing import Optional, Text, Dict, List, Union
@@ -210,4 +210,4 @@ class MyImporter(TrainingDataImporter):
 
     def _custom_get_nlu_file(self) -> Text:
         pass
-``` 
+```

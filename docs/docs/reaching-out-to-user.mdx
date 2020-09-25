@@ -70,7 +70,7 @@ which includes both reminders and external events.
 
 To have an event from an external device change the course of an ongoing conversation, you can
 have the device post to the
-[`trigger_intent` endpoint](./http-api.mdx#operation/triggerConversationIntent) of your conversation.
+[`trigger_intent` endpoint](./pages/http-api.mdx#operation/triggerConversationIntent) of your conversation.
 The `trigger_intent` endpoint injects a user intent (possibly with entities) into your conversation.
 For Rasa, it is as if you entered a message that got classified with that specific intent and entities.
 The assistant will then predict and execute the next action as usual.
