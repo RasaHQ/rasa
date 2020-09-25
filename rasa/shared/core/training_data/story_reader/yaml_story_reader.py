@@ -70,7 +70,7 @@ class YAMLStoryReader(StoryReader):
             reader.unfold_or_utterances,
         )
 
-    async def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Read stories or rules from file.
 
         Args:
