@@ -1,0 +1,36 @@
+.container {
+  border: 1px solid var(--global-border-color);
+  border-radius: 10px;
+}
+
+.containerTabs {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid var(--global-border-color);
+  padding: 0 16px;
+  font-size: 80%;
+}
+
+.tab {
+  padding: 16px 24px;
+  border-bottom: 3px solid var(--ifm-color-primary);
+}
+
+.containerSections {
+
+}
+
+.section {
+  display: flex;
+  flex-direction: row;
+}
+
+.text {
+  flex: 1;
+  padding: 16px;
+  font-size: 80%;
+}
+
+.code {
+  flex: 1;
+}

@@ -6,6 +6,7 @@ abstract: Learn the basics of building an assistant with Rasa Open Source with t
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import Prototyper, { DownloadButton, TrainButton } from '@theme/Prototyper';
+import AssistantBuilder from '@theme/AssistantBuilder';
 
 <Prototyper
   startPrototyperApi="https://trainer-service.prototyping.rasa.com/startPrototyping"
@@ -18,7 +19,17 @@ import Prototyper, { DownloadButton, TrainButton } from '@theme/Prototyper';
 
 In this guide, we are creating an assistant that helps users subscribe to a newsletter. Go through each of the steps below to see how a simple assistant is created:
 
-## 1. NLU data
+<AssistantBuilder.Container
+  values={[
+    {label: '1. NLU data', value: 'nlu'},
+    {label: '2. Responses', value: 'responses'},
+    {label: '3. Forms', value: 'forms'},
+    {label: '4. Stories', value: 'stories'},
+    {label: '5. Rules', value: 'rules'},
+  ]}
+  defaultValue="nlu">
+<AssistantBuilder.Section value="nlu">
+<AssistantBuilder.Text>
 
 What are the various things people might say to an assistant that can help them subscribe to a newsletter?
 
@@ -28,6 +39,9 @@ In the code block below, we have added an intent called greet, which contains ex
 messages like “Hi”, “Hey”, and “good morning”.
 
 Intents and training examples make up the assistant’s NLU data, which is used to train the NLU model.
+
+</AssistantBuilder.Text>
+<AssistantBuilder.Code>
 
 ```yaml-rasa live noResult name=nlu
 nlu:
@@ -53,7 +67,44 @@ nlu:
     - Email is something@example.com
 ```
 
-[Learn more about NLU data and its format](./training-data-format.mdx)
+</AssistantBuilder.Code>
+</AssistantBuilder.Section>
+
+<AssistantBuilder.Section value="responses">
+<AssistantBuilder.Text>
+
+MAC: What are the various things people might say to an assistant that can help them subscribe to a newsletter?
+
+For an assistant to recognize what a user is saying no matter how the user phrases their message, we need to provide example messages the assistant can learn from.
+We group these examples according to the idea or the goal the message is expressing, which is also called the intent.
+In the code block below, we have added an intent called greet, which contains example
+messages like “Hi”, “Hey”, and “good morning”.
+
+Intents and training examples make up the assistant’s NLU data, which is used to train the NLU model.
+
+</AssistantBuilder.Text>
+<AssistantBuilder.Code>
+
+```yaml-rasa live noResult name=responses
+responses:
+   utter_greet:
+       - text: |
+           Hello! How can I help you?
+       - text: |
+           Hi!
+   utter_ask_email:
+       - text: |
+           What is your email address?
+   utter_subscribed:
+       - text: |
+           I've subscribed {email} to the newsletter!
+       - text: |
+           You've been subscribed, the newsletter will be sent to {email}.
+```
+
+</AssistantBuilder.Code>
+</AssistantBuilder.Section>
+</AssistantBuilder.Container>
 
 ## 2. Responses
 
