@@ -26,11 +26,33 @@ from rasa.shared.core.domain import (
     State,
     Domain,
 )
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import (
+    ActionExecuted,
+    SlotSet,
+)
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     DEFAULT_STORIES_FILE,
 )
+
+
+def test_slots_states_before_user_utterance(default_domain):
+    featurizer = MaxHistoryTrackerFeaturizer()
+    tracker = DialogueStateTracker.from_events(
+        "bla",
+        evts=[
+            SlotSet(default_domain.slots[0].name, "some_value"),
+            ActionExecuted("utter_default"),
+        ],
+        slots=default_domain.slots,
+    )
+    trackers_as_states, _ = featurizer.training_states_and_actions(
+        [tracker], default_domain
+    )
+    expected_states = [[{"slots": {"name": (1.0,)}}]]
+    assert trackers_as_states == expected_states
 
 
 async def test_create_train_data_no_history(default_domain):
