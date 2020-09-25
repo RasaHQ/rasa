@@ -462,10 +462,13 @@ jobs:
 
       - name: Download an artifact with the results for the schedule version
         run: |
-          # Schedule workflows ID - 1498790
+          # Get ID of the schedule workflow
+          SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/RasaHQ/rasa/actions/workflows" \
+            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
 
           ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/RasaHQ/rasa/actions/workflows/1498790/runs?event=schedule&status=completed&branch=master&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+            "https://api.github.com/repos/RasaHQ/rasa/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=master&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
 
           DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
             | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
@@ -535,10 +538,13 @@ jobs:
 
       - name: Download an artifact with the results for the schedule version
         run: |
-          # Schedule workflows ID - 1498790
+          # Get ID of schedule workflow
+          SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/RasaHQ/rasa/actions/workflows" \
+            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
 
           ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/RasaHQ/rasa/actions/workflows/1498790/runs?event=schedule&status=completed&branch=master&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+            "https://api.github.com/repos/RasaHQ/rasa/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=master&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
 
           DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
             | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
