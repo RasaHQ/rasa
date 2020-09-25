@@ -120,7 +120,7 @@ to extract the entities they support without annotating them in your training da
 Regexes are useful for performing entity extraction on structured patterns such as 5-digit
 U.S. zip codes. Regex patterns can be used to generate features for the NLU model to learn,
 or as a method of direct entity matching.
-See [Regular Expression Features](./training-data-format/#regular-expression-features)
+See [Regular Expression Features](./training-data-format.mdx#regular-expression-features)
 for more information.
 
 ### Lookup Tables
@@ -130,7 +130,7 @@ entries exist in the training example. Similar to regexes, lookup tables can be 
 to provide features to the model to improve entity recognition, or used to perform
 match-based entity recognition. Examples of useful applications of lookup tables are
 flavors of ice cream, brands of bottled water, and even sock length styles
-(see [Lookup Tables](./training-data-format/#lookup-tables)).
+(see [Lookup Tables](./training-data-format.mdx#lookup-tables)).
 
 ### Synonyms
 
@@ -143,7 +143,7 @@ For example, in an assistant that asks users what insurance policies they're int
 in, they might respond with "my truck," "a car," or "I drive a batmobile."
 It would be a good idea to map `truck`, `car`, and `batmobile` to the normalized value
 `auto` so that the processing logic will only need to account for a narrow set of
-possibilities (see [Entity Synonyms](./training-data-format/#entity-synonyms)).
+possibilities (see [Entity Synonyms](./training-data-format.mdx#entity-synonyms)).
 
 ## Handling Edge Cases
 
