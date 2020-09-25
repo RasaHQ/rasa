@@ -120,21 +120,30 @@ If you want to fine-tune your model, start by modifying the following parameters
   One `epoch` is equals to one forward pass and one backward pass of all the training examples.
   Sometimes the model needs more epochs to properly learn.
   Sometimes more epochs don't influence the performance.
-  The lower the number of epochs the faster the model is trained.
+  The lower the number of epochs the faster the model is trained. Here is how the config would look like:
 
-
-:::note configure epochs
-Pass an appropriate number, for example 50,  of `epochs` to the `TEDPolicy`, otherwise the policy will
-be trained only for `1` epoch.
-
-:::
+  ```yaml-rasa title="config.yml"
+  policies:
+  - name: TEDPolicy
+    # if not an appropriate number, it'll use the default value
+    epochs: 50
+  ```
 
 * `hidden_layers_sizes`:
   This parameter allows you to define the number of feed forward layers and their output
-  dimensions for dialogues and intents (default: `dialogue: [], label: []`).
+  dimensions for dialogues and intents (it defaults to: `dialogue: [], label: []`).
   Every entry in the list corresponds to a feed forward layer.
-  For example, if you set `dialogue: [256, 128]`, we will add two feed forward layers in front of
-  the transformer. The vectors of the input tokens (coming from the dialogue) will be passed on to those
+  For example, if you use the following configuration:
+
+  ```yaml-rasa title="config.yml"
+  policies:
+  - name: TEDPolicy
+    hidden_layers_sizes:
+      dialogue: [256, 128]
+  ```
+
+  Rasa Open Source will add two feed forward layers in front of the transformer.
+  The vectors of the input tokens (coming from the dialogue) will be passed on to those
   layers. The first layer will have an output dimension of 256 and the second layer will have an output
   dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
   added.
@@ -152,7 +161,7 @@ be trained only for `1` epoch.
 
 * `weight_sparsity`:
   This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
-  in the model (default: `0.8`). The value should be between 0 and 1. If you set `weight_sparsity`
+  in the model (default: `0.8`). The value should be a number between 0 and 1. If you set `weight_sparsity`
   to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
   set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
   to learn.
@@ -160,8 +169,8 @@ be trained only for `1` epoch.
 
 :::tip speeding up training
 Default `max_history` for this policy is `None`, which means it'll use the
-`FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to a finite value in order to
-use `MaxHistoryTrackerFeaturizer` for **faster training**.
+[`FullDialogueTrackerFeaturizer`](#1-full-dialogue). We recommend to set `max_history` to a finite value in order to
+use [`MaxHistoryTrackerFeaturizer`](#2-max-history) for **faster training**.
 See [Featurization of Conversations](./policies.mdx#featurizers) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
@@ -316,10 +325,10 @@ of steps in the conversation history and try to find a match in your stories
 with the reduced history. It predicts the next action with confidence `1.0`
 if a match is found, otherwise it predicts `None` with confidence `0.0`.
 
-:::note
+:::note Slots and predictions
 If you have dialogues where some slots that are set during
 prediction time might not be set in training stories (e.g. in training
-stories starting with a reminder not all previous slots are set),
+stories starting with a [reminder](./reaching-out-to-user.mdx#reminders) not all previous slots are set),
 make sure to add the relevant stories without slots to your training
 data as well.
 
@@ -331,11 +340,11 @@ data as well.
 ### Rule Policy
 
 The `RulePolicy` is a policy that handles conversation parts that follow
-a fixed behavior. It makes predictions based on any `rules` you have in your
-training data. See the [Rules documentation](./rules.mdx) for further information
-on how to define rules.
+a fixed behavior (e.g. business logic). It makes predictions based on
+any `rules` you have in your training data. See the
+[Rules documentation](./rules.mdx) for further information on how to define rules.
 
-The RulePolicy has the following configuration options:
+The `RulePolicy` has the following configuration options:
 
 ```yaml title="config.yml"
 policies:
@@ -356,7 +365,7 @@ policies:
 * `enable_fallback_prediction` (default: `true`): Please see the
    [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
    further information.
-* `check_for_contradictions` (default: `true`): After training, the RulePolicy will
+* `check_for_contradictions` (default: `true`): After training, the `RulePolicy` will
    perform a check to make sure that there are no rules that contradict with each other, or with any stories.
    The following snippet is an example for two contradicting rules:
 
@@ -373,10 +382,14 @@ policies:
       - action: utter_greet  # `utter_greet` contradicts `utter_chitchat` from the rule above
     ```
  * `restrict_rules` (default: `true`): Rules are restricted to one user turn, but
-    there can be multiple bot events, including e.g. a form being filled and its
+    there can be multiple bot events, including e.g. a form being filled and its subsequent submission.
     Change this parameter to `false` at your own risk.
+
+  :::caution Overusing rules
     Overusing rules for purposes outside of the [recommended use cases](rules.mdx)
     will make it very hard to maintain your assistant as the complexity grows.
+
+  :::
 
 ## Configuring Policies
 
