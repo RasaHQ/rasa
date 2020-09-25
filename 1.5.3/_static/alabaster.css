@@ -1022,6 +1022,19 @@ nav#breadcrumbs li+li:before {
     }
 }
 
+.announce-bar {
+    text-align: center;
+    background-color: rgb(98, 0, 245);
+    color: white;
+    padding: .75em;
+    font-weight: 500;
+}
+
+.announce-bar a {
+    color: inherit;
+    text-decoration: underline;
+}
+
 .nav-top {
     background-color: #2c3951;
     color: #617287;
