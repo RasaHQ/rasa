@@ -139,7 +139,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5521](https://github.com/rasahq/rasa/issues/5521): Responses used in ResponseSelector now support new lines with explicitly adding `\\n` between them.
 
-* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [rasa export](https://rasa.com/docs/rasa-x/installation-and-setup/deploy.mdx#connect-rasa-deployment) ([Export Conversations to an Event Broker](./command-line-interface.mdx#export-conversations-to-an-event-broker)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-config).
+* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [rasa export](https://rasa.com/docs/rasa-x/installation-and-setup/deploy.mdx#connect-rasa-deployment) ([Export Conversations to an Event Broker](./command-line-interface.mdx#export-conversations-to-an-event-broker)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-configuration).
 
 ## [1.10.1] - 2020-05-15
 
@@ -184,7 +184,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
   We updated the tracker method `get_latest_entity_values` to take an optional role/group label.
   If you want to use a form, you can add the specific role/group label of interest to the slot mapping function
-  `from_entity` (see [Forms](./forms).mdx).
+  `from_entity` (see [Forms](./forms.mdx)).
 
   :::note
   Composite entities are currently just supported by the [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor).
@@ -438,7 +438,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5446](https://github.com/rasahq/rasa/issues/5446): The endpoint `PUT /conversations/<conversation_id>/tracker/events` no longer
   adds session start events (to learn more about conversation sessions, please
-  see [Session configuration](./domain.mdx#session-config)) in addition to the events which were sent in the request
+  see [Session configuration](./domain.mdx#session-configuration)) in addition to the events which were sent in the request
   payload. To achieve the old behavior send a
   `GET /conversations/<conversation_id>/tracker`
   request before appending events.
@@ -586,7 +586,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   The new component will replace the `EmbeddingIntentClassifier` and the
   [CRFEntityExtractor](./components.mdx#crfentityextractor) in the future.
   Those two components are deprecated from now on.
-  See [migration guide](./migration-guide.mdx#migration-to-rasa-1-8) for details on how to
+  See [migration guide](./migration-guide.mdx#rasa-17-to-rasa-18) for details on how to
   switch to the new component.
 
   [TEDPolicy](./policies.mdx#ted-policy) is the new name for [EmbeddingPolicy](./policies.mdx#embedding-policy).
@@ -773,7 +773,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   are `DucklingHTTPExtractor` and `SpacyEntityExtractor`.
 
 * [#4902](https://github.com/rasahq/rasa/issues/4902): The `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` now by default normalize confidence
-  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](./migration-guide.mdx#migration-to-rasa-1-7) for more details.
+  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](./migration-guide.mdx#rasa-16-to-rasa-17) for more details.
 
 * [#4964](https://github.com/rasahq/rasa/issues/4964): `ReminderCancelled` can now cancel multiple reminders if no name is given. It still cancels a single
   reminder if the reminder's name is specified.

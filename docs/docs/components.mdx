@@ -692,7 +692,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
+  [HFTransformersNLP](./components.mdx#hftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
 
 
 
@@ -705,7 +705,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 * **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
-  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#lhftransformersnlp) component to compute vector
+  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component to compute vector
   representations of input text.
 
   :::note
@@ -718,7 +718,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  Include [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
+  Include [HFTransformersNLP](./components.mdx#hftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
   [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
 
   ```yaml-rasa

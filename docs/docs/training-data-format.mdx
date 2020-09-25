@@ -135,7 +135,7 @@ nlu:
     - credit account
 ```
 
-- [Regular expressions](#regular-expression-features)
+- [Regular expressions](#regular-expressions)
 
 ```yaml-rasa
 nlu:
@@ -462,7 +462,7 @@ stories:
 Each step can be one of the following:
 
   - A [user message](#user-messages), represented by **intent** and **entities**.
-  - An [or statement](#or), which includes two or more user messages under it
+  - An [or statement](#or-statement), which includes two or more user messages under it
   - A bot [action](#actions)
   - A [form](#forms)
   - A [slot was set](#slots) event
@@ -507,7 +507,7 @@ stories:
 It is important to include the entities here as well because the
 policies learn to predict the next action based on a *combination* of
 both the intent and entities (you can, however, change this behavior
-using the [`use_entities`](#use-entities) attribute).
+using the [`use_entities`](#entities) attribute).
 
 
 #### Actions
@@ -556,7 +556,7 @@ stories:
 A [form](glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
-Once defined, the [happy path](glossary.mdx#happy-unhappy-paths)
+Once defined, the [happy path](glossary.mdx#happy--unhappy-paths)
 for a form should be specified as a [rule](forms.mdx), but interruptions of forms or
 other "unhappy paths" should be included in stories so that the model can
 generalize to unseen conversation sequences.
