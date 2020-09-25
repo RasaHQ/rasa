@@ -460,6 +460,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Download an artifact with the results for the schedule version
+        run: |
+          # Get ID of the schedule workflow
+          SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
+            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
+
+          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=master&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+
+          DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
+            | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
+
+          # Download the artifact
+          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
+
+          # Unzip and change name
+          unzip report.json.zip && mv report.json report_master.json
+
       - name: Download the report
         uses: actions/download-artifact@v2
         with:
@@ -473,7 +492,7 @@ jobs:
       - name: Render a comment to add
         id: get_results
         run: |
-          OUTPUT="$(gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl)"
+          OUTPUT="$(gomplate -d data=report.json -d results_master=report_master.json -f .github/templates/model_regression_test_results.tmpl)"
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
@@ -517,6 +536,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Download an artifact with the results for the schedule version
+        run: |
+          # Get ID of schedule workflow
+          SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
+            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
+
+          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=master&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+
+          DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
+            | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
+
+          # Download the artifact
+          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
+
+          # Unzip and change name
+          unzip report.json.zip && mv report.json report_master.json
+
       - name: Download the report
         uses: actions/download-artifact@v2
         with:
@@ -530,7 +568,7 @@ jobs:
       - name: Render a comment to add
         id: get_results
         run: |
-          OUTPUT="$(gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl)"
+          OUTPUT="$(gomplate -d data=report.json -d results_master=report_master.json -f .github/templates/model_regression_test_results.tmpl)"
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
