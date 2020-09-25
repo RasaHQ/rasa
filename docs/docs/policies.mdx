@@ -98,7 +98,7 @@ following steps:
   This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
 It is recommended to use `state_featurizer=LabelTokenizerSingleStateFeaturizer(...)`
-(see [Featurization of Conversations](./policies.mdx#featurization-conversations) for details).
+(see [Featurizers](./policies.mdx#featurizers) for details).
 
 **Configuration:**
 
@@ -152,7 +152,7 @@ be trained only for `1` epoch.
 Default `max_history` for this policy is `None`, which means it'll use the
 `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to a finite value in order to
 use `MaxHistoryTrackerFeaturizer` for **faster training**.
-See [Featurization of Conversations](./policies.mdx#featurization-conversations) for
+See [Featurizers](./policies.mdx#featurizers) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
 
@@ -567,7 +567,7 @@ the `MappingPolicy`, see the
 ### Fallback Policy
 
 :::caution
-The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+The `FallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `FallbackPolicy`, see the
 [migration guide](./migration-guide.mdx#migrating-from-the-fallback-policy).
@@ -576,7 +576,7 @@ the `FallbackPolicy`, see the
 ### Two-Stage Fallback Policy
 
 :::caution
-The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+The `TwoStageFallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `TwoStageFallbackPolicy`, see the
 [migration guide](./migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).

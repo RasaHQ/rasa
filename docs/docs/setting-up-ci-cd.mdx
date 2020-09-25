@@ -40,7 +40,7 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 Data validation verifies that there are no mistakes or
 major inconsistencies in your domain, NLU data, or conversation data. To validate
-your data, have your CI run this command: 
+your data, have your CI run this command:
 
 ```bash
 rasa data validate --fail-on-warnings --max-history <max_history>
@@ -70,7 +70,7 @@ The `rasa data validate stories` command assumes that all your story names are u
 
 ### Training a Model
 
-You can train a model with the following command: 
+You can train a model with the following command:
 
 ```bash
 rasa train
@@ -78,7 +78,7 @@ rasa train
 
 Training a model verifies that your NLU pipeline and policy configurations are
 valid and trainable, and provides a model to use for testing your assistant.
-If the model passes the CI tests, then you can also [upload the trained model](./setting-up-ci-cd.mdx#uploading-a-model)
+If the model passes the CI tests, then you can also [upload the trained model](./setting-up-ci-cd.mdx#deploying-your-rasa-model)
 to your server as part of the continuous deployment process.
 
 

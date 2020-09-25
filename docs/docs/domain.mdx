@@ -160,7 +160,7 @@ Make this a nice table instead.
 
 * **Description**
 
-  Sets two boolean features. The first feature is `1` if the slot is set 
+  Sets two boolean features. The first feature is `1` if the slot is set
   and `0` otherwise. The second feature is `1` if the slot value is
   `"true"`, `"1"`, or a variation of these, and `0` otherwise.
 
@@ -349,7 +349,7 @@ stories:
   steps:
   # ... other story steps
   - intent: inform
-    entities:      
+    entities:
     - people: 3
   - slot_was_set:
     - people: 3
@@ -359,7 +359,7 @@ stories:
   steps:
   # ... other story steps
   - intent: inform
-    entities:      
+    entities:
     - people: 9
   - slot_was_set:
     - people: 9
@@ -376,7 +376,7 @@ stories:
 - story: entity slot-filling
   steps:
   - intent: greet
-    entities:      
+    entities:
     - name: Ali
   - slot_was_set:
     - name: Ali
@@ -471,6 +471,6 @@ implementation moves all existing slots into the new session. Note that all
 conversations begin with an `action_session_start`. Overriding this action could
 for instance be used to initialize the tracker with slots from an external API
 call, or to start the conversation with a bot message. The docs on
-[Customizing the session start action](./default-actions.mdx#custom-session-start) shows you how to do that.
+[Customizing the session start action](./default-actions.mdx#customization) shows you how to do that.
 
 :::
