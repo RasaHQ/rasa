@@ -236,7 +236,7 @@ async def test_persist_form_story():
 async def test_read_stories_with_multiline_comments(tmpdir, default_domain: Domain):
     reader = MarkdownStoryReader(default_domain)
 
-    story_steps = await reader.read_from_file(
+    story_steps = reader.read_from_file(
         "data/test_stories/stories_with_multiline_comments.md"
     )
 
