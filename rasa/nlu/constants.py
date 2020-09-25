@@ -20,9 +20,9 @@ ENTITY_ATTRIBUTE_CONFIDENCE_ROLE = (
 EXTRACTOR = "extractor"
 
 PRETRAINED_EXTRACTORS = {
-    "DucklingEntityExtractor", 
+    "DucklingEntityExtractor",
     "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
-    "SpacyEntityExtractor", 
+    "SpacyEntityExtractor",
 }
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 

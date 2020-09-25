@@ -42,6 +42,8 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 import rasa.shared.utils.common
+import rasa.utils.io
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -97,10 +99,9 @@ def get_component_class(component_name: Text) -> Type["Component"]:
     """Resolve component name to a registered components class."""
 
     if component_name == "DucklingHTTPExtractor":
-        raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "The component 'DucklingHTTPExtractor' has been renamed to 'DucklingEntityExtractor'."
             "Update your pipeline to use 'DucklingEntityExtractor'.",
-            FutureWarning,
             docs=DOCS_URL_COMPONENTS,
         )
         component_name = "DucklingEntityExtractor"
