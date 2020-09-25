@@ -19,6 +19,7 @@ class ActionRestaurant(Action):
         """Define what the form has to do after all required slots are filled."""
 
         dispatcher.utter_message(template="utter_submit")
+        dispatcher.utter_message(template="utter_slots_values")
         return []
 
 
