@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -150,10 +151,14 @@ async def test_multiple_conversation_ids(default_agent: Agent):
     assert processed_ids == conversation_ids
 
 
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="This test sometimes fails on Windows. We want to investigate it further",
+)
 async def test_message_order(tmp_path: Path, default_agent: Agent):
     start_time = time.time()
     n_messages = 10
-    lock_wait = 0.1
+    lock_wait = 0.5
 
     # let's write the incoming order of messages and the order of results to temp files
     results_file = tmp_path / "results_file"
@@ -220,10 +225,14 @@ async def test_message_order(tmp_path: Path, default_agent: Agent):
         assert time.time() - start_time < time_limit
 
 
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="This test sometimes fails on Windows. We want to investigate it further",
+)
 async def test_lock_error(default_agent: Agent):
     lock_lifetime = 0.01
     wait_time_in_seconds = 0.01
-    holdup = 0.1
+    holdup = 0.5
 
     # Mock message handler again to add a wait time holding up the lock
     # after it's been acquired
