@@ -99,13 +99,8 @@ stories:
 How you handle unexpected input depends on whether the response should be
 context sensitive or not.
 
-For reverting user utterances:
-  - [ ] Add the RulePolicy to config.yml.
-  - [ ] Define a custom action that returns `UserUtteranceReverted`
-  - [ ] Define a rule for the intent that should be reverted.
-
 For generic interjections:
-  - [ ] Define rules for single-turn interactions with actions that return `UserUtteranceReverted`
+  - [ ] Define rules for single-turn interactions
   - [ ] Use the ResponseSelector for [FAQ and chitchat interruptions](chitchat-faqs.mdx)
 
 For contextual interjections:
