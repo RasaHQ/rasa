@@ -9,13 +9,13 @@ from rasa_sdk.events import (
 )
 
 
-class ActionSubmitRestaurantForm(Action):
+class ActionRestaurant(Action):
     """Example of a custom form action."""
 
     def name(self) -> Text:
-        return "action_submit_restaurant_form"
+        return "action_restaurant"
 
-    def run(self, dispatcher, tracker, domain) -> List[EventType]:
+    async def run(self, dispatcher, tracker, domain) -> List[EventType]:
         """Define what the form has to do after all required slots are filled."""
 
         dispatcher.utter_message(template="utter_submit")
@@ -26,7 +26,7 @@ class ValidateRestaurantForm(Action):
     def name(self) -> Text:
         return "validate_restaurant_form"
 
-    def run(self, dispatcher, tracker, domain) -> List[EventType]:
+    async def run(self, dispatcher, tracker, domain) -> List[EventType]:
         extracted_slots = tracker.form_slots_to_validate()
         validation_events = []
 
