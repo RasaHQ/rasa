@@ -44,7 +44,7 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         reader = MarkdownStoryReader(unfold_or_utterances=False)
         writer = YAMLStoryWriter()
 
-        steps = await reader.read_from_file(source_path)
+        steps = reader.read_from_file(source_path)
 
         if YAMLStoryWriter.stories_contain_loops(steps):
             print_warning(
