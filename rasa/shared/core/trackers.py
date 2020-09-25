@@ -425,7 +425,10 @@ class DialogueStateTracker:
                     event.action_name, applied_events
                 )
             else:
-                applied_events.append(event)
+                if (len(applied_events) == 0) and isinstance(event, SlotSet):
+                    logger.info("Skipping addition of SlotSet event on applied_events when applied_events is empty")
+                else:
+                    applied_events.append(event)
 
         return applied_events
 
