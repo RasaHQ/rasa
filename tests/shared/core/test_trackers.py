@@ -265,7 +265,8 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
                 {"value": "greet", "entity": "entity_name"},
                 {"value": "bye", "entity": "entity_name", "group": "group"},
             ],
-            ["greet", "bye"],
+            # bye has group set, so it should not be extracted
+            ["greet"],
         ),
     ],
 )

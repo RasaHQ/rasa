@@ -77,7 +77,7 @@ stories:
   - intent: greet
   - action: utter_greet
   - intent: faq
-  - action: respond_faq
+  - action: utter_faq
 
 rules:
 - rule: Greet user
@@ -99,7 +99,7 @@ stories:
   - user: |
       what language do you speak
     intent: faq/language
-  - action: respond_faq
+  - action: utter_faq
 ```
 They use the same format as the story training data.
 
@@ -514,7 +514,7 @@ using the [`use_entities`](#entities) attribute).
 
 All actions executed by the bot are specified with the `action:` key followed
 by the name of the action.
-While writing stories, you will encounter three types of actions:
+While writing stories, you will encounter two types of actions:
 
 
 1. [**Responses**](domain.mdx#responses): start with `utter_` and
@@ -528,18 +528,7 @@ stories:
   - action: utter_greet
 ```
 
-2. [**Retrieval actions**](retrieval-actions.mdx): start with `respond_`
-   and send a message selected by a retrieval model. e.g.
-
-```yaml-rasa {5}
-stories:
-- story: story with a retrieval action
-  steps:
-  - intent: faq
-  - action: respond_faq
-```
-
-3. [**Custom actions**](custom-actions.mdx): start with `action_`, run
+2. [**Custom actions**](custom-actions.mdx): start with `action_`, run
    arbitrary code and send any number of messages (or none).
 
 ```yaml-rasa {5}
