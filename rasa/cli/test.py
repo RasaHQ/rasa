@@ -6,6 +6,7 @@ from typing import List
 from rasa.cli import SubParsersAction
 import rasa.shared.data
 import rasa.shared.utils.io
+import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
@@ -15,10 +16,9 @@ from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
 )
+from rasa.core.test import FAILED_STORIES_FILE
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_info
-from rasa.core.test import FAILED_STORIES_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     else:
         test_core_models(args.model, stories, output)
 
-    print_info("Failed stories written to {}/{}".format(output, FAILED_STORIES_FILE))
+    rasa.shared.utils.cli.print_info(f"Failed stories written to '{output}/{FAILED_STORIES_FILE}'")
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
