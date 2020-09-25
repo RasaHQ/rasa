@@ -271,9 +271,9 @@ class HFTransformersNLP(Component):
 
             token_ids_out += split_token_ids
 
-            token.set(NUMBER_OF_SUB_TOKENS, len(split_token_strings))
-
-            tokens_out.append(token)
+            tokens_out += train_utils.align_tokens(
+                split_token_strings, token.end, token.start
+            )
 
         return tokens_out, token_ids_out
 
