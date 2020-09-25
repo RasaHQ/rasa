@@ -7,6 +7,7 @@ import scipy.sparse
 
 from rasa.utils.tensorflow.model_data import Data
 from rasa.utils.tensorflow.constants import SEQUENCE
+from rasa.utils.tensorflow.model_data import RasaModelData
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -189,12 +190,25 @@ def _features_for_attribute(
     sparse_features = defaultdict(list)
     dense_features = defaultdict(list)
 
-    # vstack serves as removing dimension
-    # TODO check vstack for sequence features
+    # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():
-        sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
+        if key == SEQUENCE:
+            # TODO pad dialogues
+            continue
+            # sparse_features[key] = values
+        else:
+            sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
     for key, values in _dense_features.items():
-        dense_features[key] = [np.vstack(value) for value in values]
+        if key == SEQUENCE:
+            # for the sequence we need to keep the sequence dimension
+            # resulting numpy array has three dimensions (dialogue history x sequence length x number of features)
+            max_seq_len = max([v.shape[0] for value in values for v in value])
+            dense_features[key] = [
+                RasaModelData._pad_dense_data(np.array(value), max_seq_len)
+                for value in values
+            ]
+        else:
+            dense_features[key] = [np.vstack(value) for value in values]
 
     attribute_features = {MASK: [np.array(attribute_masks)]}
 
@@ -203,11 +217,6 @@ def _features_for_attribute(
     feature_types.update(list(sparse_features.keys()))
 
     for feature_type in feature_types:
-        if feature_type == SEQUENCE:
-            # TODO we don't take sequence features because that makes us deal
-            #  with 4D sparse tensors
-            continue
-
         attribute_features[feature_type] = []
         if feature_type in sparse_features:
             attribute_features[feature_type].append(

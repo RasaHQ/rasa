@@ -31,6 +31,11 @@ logger = logging.getLogger(__name__)
 #   "numpy array containing dense features for every training example",
 #   "numpy array containing sparse features for every training example"
 # ]}
+# In case of e2e data, we also deal with 4d tensors, e.g.
+# "action_text" -> { "sequence": [
+#   [["numpy array containing dense features for every training example"]],
+#   ["numpy array containing sparse features for every training example"]
+# ]}
 Data = Dict[Text, Dict[Text, List[np.ndarray]]]
 
 
@@ -211,6 +216,7 @@ class RasaModelData:
         number_of_features = 0
         for data in self.data[key][sub_key]:
             if data.size > 0:
+                # TODO 4D Tensors
                 number_of_features += data[0].shape[-1]
 
         return number_of_features
@@ -347,7 +353,9 @@ class RasaModelData:
 
         return self._convert_train_test_split(output_values, solo_values)
 
-    def get_signature(self) -> Dict[Text, Dict[Text, List[FeatureSignature]]]:
+    def get_signature(
+        self, data: Optional[Data] = None
+    ) -> Dict[Text, Dict[Text, List[FeatureSignature]]]:
         """Get signature of RasaModelData.
 
         Signature stores the shape and whether features are sparse or not for every key.
@@ -356,6 +364,8 @@ class RasaModelData:
             A dictionary of key and sub-key to a list of feature signatures
             (same structure as the data attribute).
         """
+        if not data:
+            data = self.data
 
         return {
             key: {
@@ -368,7 +378,7 @@ class RasaModelData:
                 ]
                 for sub_key, features in attribute_data.items()
             }
-            for key, attribute_data in self.data.items()
+            for key, attribute_data in data.items()
         }
 
     def as_tf_dataset(
@@ -419,6 +429,7 @@ class RasaModelData:
             data = self.data
 
         batch_data = []
+        signature = self.get_signature(data)
 
         for key, attribute_data in data.items():
             for sub_key, f_data in attribute_data.items():
@@ -430,7 +441,7 @@ class RasaModelData:
                         batch_data.append(None)
                     continue
 
-                for v in f_data:
+                for idx, v in enumerate(f_data):
                     if start is not None and end is not None:
                         _data = v[start:end]
                     elif start is not None:
@@ -440,7 +451,7 @@ class RasaModelData:
                     else:
                         _data = v[:]
 
-                    if isinstance(_data[0], scipy.sparse.spmatrix):
+                    if signature[key][sub_key][idx].is_sparse:
                         batch_data.extend(self._scipy_matrix_to_values(_data))
                     else:
                         batch_data.append(self._pad_dense_data(_data))
@@ -468,8 +479,10 @@ class RasaModelData:
                 shapes.append((None,))
             elif features[0].ndim == 1:
                 shapes.append((None, features[0].shape[-1]))
-            else:
+            elif features[0].ndim == 2:
                 shapes.append((None, None, features[0].shape[-1]))
+            else:
+                shapes.append((None, None, None, features[0].shape[-1]))
 
         def append_type(features: np.ndarray) -> None:
             if isinstance(features[0], scipy.sparse.spmatrix):
@@ -814,7 +827,9 @@ class RasaModelData:
         raise ValueError("Unsupported label_ids dimensions")
 
     @staticmethod
-    def _pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
+    def _pad_dense_data(
+        array_of_dense: np.ndarray, max_seq_len: Optional[int] = None
+    ) -> np.ndarray:
         """Pad data of different lengths.
 
         Sequential data is padded with zeros. Zeros are added to the end of data.
@@ -825,13 +840,30 @@ class RasaModelData:
         Returns:
             The padded array.
         """
-
         if array_of_dense[0].ndim < 2:
             # data doesn't contain a sequence
             return array_of_dense.astype(np.float32)
 
+        if array_of_dense.ndim == 4 or array_of_dense[0].ndim == 3:
+            # in case of dialogue data we may have 4 dimensions
+            # batch size x dialogue history length x sequence length x number of features
+            data_size = len(array_of_dense)
+            max_dialogue_len = max([x.shape[0] for x in array_of_dense])
+            max_seq_len = max([x.shape[1] for x in array_of_dense])
+
+            data_padded = np.zeros(
+                [data_size, max_dialogue_len, max_seq_len, array_of_dense[0].shape[-1]],
+                dtype=array_of_dense[0].dtype,
+            )
+            for i in range(data_size):
+                data_padded[
+                    i, : array_of_dense[i].shape[0], : array_of_dense[i].shape[1], :
+                ] = array_of_dense[i]
+
+            return data_padded.astype(np.float32)
+
         data_size = len(array_of_dense)
-        max_seq_len = max([x.shape[0] for x in array_of_dense])
+        max_seq_len = max_seq_len or max([x.shape[0] for x in array_of_dense])
 
         data_padded = np.zeros(
             [data_size, max_seq_len, array_of_dense[0].shape[-1]],
@@ -852,7 +884,6 @@ class RasaModelData:
         Returns:
             A list of dense numpy arrays representing the sparse data.
         """
-
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
         if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
