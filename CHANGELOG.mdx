@@ -26,9 +26,10 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Improvements
 
-- [#6044](https://github.com/rasahq/rasa/issues/6044>): Do not deepcopy slots when instantiating trackers. This leads to a significant
+- [#6044](https://github.com/rasahq/rasa/issues/6044): Do not deepcopy slots when instantiating trackers. This leads to a significant
   speedup when training on domains with a large number of slots.
-- [#6226](https://github.com/rasahq/rasa/issues/6226>): Added more debugging logs to the [Lock Stores](./lock-stores.mdx) to simplify debugging in case of
+- [#6226](https://github.com/rasahq/rasa/issues/6226): Added more debugging logs to the [Lock Stores](./lock-stores.mdx) to simplify debugging in case of
+
   connection problems.
 
   Added a new parameter `socket_timeout` to the `RedisLockStore`. If Redis doesn't
