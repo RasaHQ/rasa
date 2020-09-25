@@ -109,8 +109,6 @@ class TEDPolicy(Policy):
           (https://arxiv.org/abs/1709.03856) idea.
     """
 
-    SUPPORTS_ONLINE_TRAINING = True
-
     # please make sure to update the docs when changing a default parameter
     defaults = {
         # ## Architecture of the used neural network
@@ -321,6 +319,13 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
+
+        if not training_trackers:
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
+            )
+            return
 
         # dealing with training data
         tracker_state_features, label_ids = self.featurize_for_training(

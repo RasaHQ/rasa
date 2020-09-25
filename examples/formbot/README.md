@@ -10,11 +10,11 @@ restaurants based on user preferences.
 This example contains some training data and the main files needed to build an
 assistant on your local machine. The `formbot` consists of the following files:
 
-- **data/nlu.yml** contains training examples for the NLU model  
+- **data/nlu.yml** contains training examples for the NLU model
 - **data/stories.yml** contains training stories for the Core model
 - **actions/actions.py** contains the implementation of a custom `FormAction`
 - **config.yml** contains the model configuration
-- **domain.yml** contains the domain of the assistant  
+- **domain.yml** contains the domain of the assistant
 - **endpoints.yml** contains the webhook configuration for the custom actions
 
 ## How to use this example?
@@ -44,7 +44,7 @@ steps:
     This will load the assistant in your command line for you to chat.
 
 For more information about the individual commands, please check out our
-[documentation](http://rasa.com/docs/rasa/user-guide/command-line-interface/).
+[documentation](http://rasa.com/docs/rasa/command-line-interface).
 
 ## Encountered any issues?
 Let us know about it by posting on [Rasa Community Forum](https://forum.rasa.com)!

@@ -332,8 +332,8 @@ class DialogueStateTracker:
             x.get(ENTITY_ATTRIBUTE_VALUE)
             for x in self.latest_message.entities
             if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
-            and (entity_group is None or x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group)
-            and (entity_role is None or x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role)
+            and x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group
+            and x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role
         )
 
     def get_latest_input_channel(self) -> Optional[Text]:
@@ -367,7 +367,10 @@ class DialogueStateTracker:
         """Creates a new state tracker with the same initial values."""
 
         return DialogueStateTracker(
-            DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
+            DEFAULT_SENDER_ID,
+            self.slots.values(),
+            self._max_event_history,
+            is_rule_tracker=self.is_rule_tracker,
         )
 
     def generate_all_prior_trackers(

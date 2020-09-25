@@ -8,10 +8,16 @@ from aioresponses import aioresponses
 import jsonschema
 from mock import Mock
 import pytest
+import responses
 
 from rasa import telemetry
 import rasa.constants
+from rasa.core.agent import Agent
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.channels import CmdlineInput
+from rasa.core.tracker_store import TrackerStore
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from tests import utilities
 from tests.conftest import DEFAULT_CONFIG_PATH
 
@@ -30,7 +36,7 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
-async def test_events_schema(monkeypatch: MonkeyPatch):
+async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
     # this allows us to patch the printing part used in debug mode to collect the
     # reported events
     monkeypatch.setenv("RASA_TELEMETRY_DEBUG", "true")
@@ -49,12 +55,36 @@ async def test_events_schema(monkeypatch: MonkeyPatch):
     async with telemetry.track_model_training(training_data, "rasa"):
         await asyncio.sleep(1)
 
-    await telemetry.track_telemetry_disabled()
+    telemetry.track_telemetry_disabled()
+
+    telemetry.track_data_split(0.5, "nlu")
+
+    telemetry.track_validate_files(True)
+
+    telemetry.track_data_convert("yaml", "nlu")
+
+    telemetry.track_tracker_export(5, TrackerStore(domain=None), EventBroker())
+
+    telemetry.track_interactive_learning_start(True, False)
+
+    telemetry.track_server_start([CmdlineInput()], None, None, 42, True)
+
+    telemetry.track_project_init("tests/")
+
+    telemetry.track_shell_started("nlu")
+
+    telemetry.track_rasa_x_local()
+
+    telemetry.track_visualization()
+
+    telemetry.track_core_model_test(5, True, default_agent)
+
+    telemetry.track_nlu_model_test(TrainingData())
 
     pending = asyncio.Task.all_tasks() - initial
     await asyncio.gather(*pending)
 
-    assert mock.call_count == 3
+    assert mock.call_count == 15
 
     for call in mock.call_args_list:
         event = call.args[0]
@@ -94,11 +124,11 @@ def test_segment_payload():
     }
 
 
-async def test_track_ignore_exception(monkeypatch: MonkeyPatch):
+def test_track_ignore_exception(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(telemetry, "_send_event", _mock_track_internal_exception)
 
     # If the test finishes without raising any exceptions, then it's successful
-    assert await telemetry.track("Test") is None
+    assert telemetry._track("Test") is None
 
 
 def test_initialize_telemetry():
@@ -158,13 +188,13 @@ def test_default_context_fields_overwrite_by_context():
     assert context["python"] == "foobar"
 
 
-async def test_track_sends_telemetry_id(monkeypatch: MonkeyPatch):
+def test_track_sends_telemetry_id(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     telemetry.initialize_telemetry()
 
     mock = Mock()
     monkeypatch.setattr(telemetry, "_send_event", mock)
-    await telemetry.track("foobar", {"foo": "bar"}, {"baz": "foo"})
+    telemetry._track("foobar", {"foo": "bar"}, {"baz": "foo"})
 
     assert telemetry.get_telemetry_id() is not None
 
@@ -191,23 +221,21 @@ def test_toggle_telemetry_reporting(monkeypatch: MonkeyPatch):
     assert telemetry.initialize_telemetry() is True
 
 
-async def test_segment_gets_called(monkeypatch: MonkeyPatch):
+def test_segment_gets_called(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
     monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     telemetry.initialize_telemetry()
 
-    with aioresponses() as mocked:
-        mocked.post(
-            "https://api.segment.io/v1/track", payload={},
-        )
+    with responses.RequestsMock() as rsps:
+        rsps.add(responses.POST, "https://api.segment.io/v1/track", json={})
 
-        await telemetry.track("test event", {"foo": "bar"}, {"foobar": "baz"})
+        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
 
-        r = utilities.latest_request(mocked, "POST", "https://api.segment.io/v1/track")
+        assert len(rsps.calls) == 1
+        r = rsps.calls[0]
 
         assert r
-
-        b = utilities.json_of_latest_request(r)
+        b = json.loads(r.request.body)
 
         assert "userId" in b
         assert b["event"] == "test event"
@@ -215,20 +243,18 @@ async def test_segment_gets_called(monkeypatch: MonkeyPatch):
         assert b["context"].get("foobar") == "baz"
 
 
-async def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
+def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
     telemetry.initialize_telemetry()
 
-    with aioresponses() as mocked:
-        mocked.post("https://api.segment.io/v1/track", payload={}, status=505)
+    with responses.RequestsMock() as rsps:
+        rsps.add(responses.POST, "https://api.segment.io/v1/track", body="", status=505)
 
         # this call should complete without throwing an exception
-        await telemetry.track("test event", {"foo": "bar"}, {"foobar": "baz"})
+        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
 
-        r = utilities.latest_request(mocked, "POST", "https://api.segment.io/v1/track")
-
-        assert r
+        assert rsps.assert_call_count("https://api.segment.io/v1/track", 1)
 
 
 def test_environment_write_key_overwrites_key_file(monkeypatch: MonkeyPatch):

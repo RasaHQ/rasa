@@ -27,7 +27,13 @@ import rasa.server
 from rasa.core import utils
 from rasa.shared.core import events
 from rasa.core.agent import Agent
-from rasa.core.channels import CollectingOutputChannel, RestInput, SlackInput
+from rasa.core.channels import (
+    channel,
+    CollectingOutputChannel,
+    RestInput,
+    SlackInput,
+    CallbackInput,
+)
 from rasa.core.channels.slack import SlackBot
 from rasa.shared.core.events import Event, UserUttered, SlotSet, BotUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -38,6 +44,7 @@ from sanic import Sanic
 from sanic.testing import SanicTestClient
 from tests.nlu.utilities import ResponseTest
 from tests.conftest import get_test_client
+from tests.utilities import json_of_latest_request, latest_request
 from ruamel.yaml import StringIO
 
 
@@ -506,7 +513,7 @@ def test_train_with_retrieval_events_success(
             nlu=nlu_file.read(),
         )
 
-    _, response = rasa_app.post("/model/train", json=payload)
+    _, response = rasa_app.post("/model/train", json=payload, timeout=60 * 5)
     assert response.status == 200
     assert_trained_model(response.body, tmp_path)
 
@@ -905,6 +912,40 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
 
     # there is also an `ACTION_LISTEN` event at the start
     assert tracker.get("events") == events
+
+
+@pytest.mark.parametrize(
+    "params", ["?execute_side_effects=true&output_channel=callback", ""],
+)
+def test_pushing_event_while_executing_side_effects(rasa_server: Sanic, params: Text):
+    input_channel = CallbackInput(EndpointConfig("https://example.com/callback"))
+    channel.register([input_channel], rasa_server, "/webhooks/")
+    rasa_app = get_test_client(rasa_server)
+    sender_id = str(uuid.uuid1())
+    conversation = f"/conversations/{sender_id}"
+
+    serialized_event = test_events[1].as_dict()
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/callback",
+            repeat=True,
+            headers={"Content-Type": "application/json"},
+        )
+        rasa_app.post(
+            f"{conversation}/tracker/events{params}",
+            json=serialized_event,
+            headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        )
+
+        r = latest_request(mocked, "post", "https://example.com/callback")
+
+        if not params:
+            assert r is None
+        else:
+            message_received = json_of_latest_request(r)
+            assert message_received.get("recipient_id") == sender_id
+            assert message_received.get("text") == serialized_event.get("text")
 
 
 def test_post_conversation_id_with_slash(rasa_app: SanicTestClient):

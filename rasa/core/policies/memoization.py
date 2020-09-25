@@ -53,8 +53,6 @@ class MemoizationPolicy(Policy):
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
 
-    SUPPORTS_ONLINE_TRAINING = True
-
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
     @staticmethod
@@ -268,7 +266,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     """
 
     @staticmethod
-    def _back_to_the_future_again(tracker) -> Optional[DialogueStateTracker]:
+    def _back_to_the_future(
+        tracker, again: bool = False
+    ) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
         the new featurization for the future"""
 
@@ -285,12 +285,15 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                     idx_of_second_action = e_i
                     break
 
-        if idx_of_second_action is None:
-            return None
+        # use first action, if we went first time and second action, if we went again
+        idx_to_use = idx_of_second_action if again else idx_of_first_action
+        if idx_to_use is None:
+            return
+
         # make second ActionExecuted the first one
-        events = tracker.applied_events()[idx_of_second_action:]
+        events = tracker.applied_events()[idx_to_use:]
         if not events:
-            return None
+            return
 
         mcfly_tracker = tracker.init_copy()
         for e in events:
@@ -303,7 +306,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         and then back to the future to recall."""
 
         logger.debug("Launch DeLorean...")
-        mcfly_tracker = self._back_to_the_future_again(tracker)
+
+        mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
             tracker_as_states = self.featurizer.prediction_states(
                 [mcfly_tracker], domain
@@ -319,7 +323,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
+            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True)
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
