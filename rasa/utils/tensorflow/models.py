@@ -153,7 +153,7 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         loading: bool = False,
-        eager: bool = False,
+        eager: bool = True,
     ) -> None:
         """Fit model data"""
 
@@ -285,7 +285,7 @@ class RasaModel(tf.keras.models.Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     def build_for_predict(
-        self, predict_data: RasaModelData, eager: bool = False
+        self, predict_data: RasaModelData, eager: bool = True
     ) -> None:
         self._training = False  # needed for tf graph mode
         self._predict_function = self._get_tf_call_model_function(
@@ -525,8 +525,8 @@ class RasaModel(tf.keras.models.Model):
         idx = 0
         for key, values in data_signature.items():
             for sub_key, signature in values.items():
-                for is_sparse, feature_dimension in signature:
-                    if is_sparse:
+                for is_sparse, feature_dimension, is_4d_tensor in signature:
+                    if is_sparse and not is_4d_tensor:
                         # explicitly substitute last dimension in shape with known
                         # static value
                         batch_data[key][sub_key].append(
@@ -536,6 +536,22 @@ class RasaModel(tf.keras.models.Model):
                                 [
                                     batch[idx + 2][0],
                                     batch[idx + 2][1],
+                                    feature_dimension,
+                                ],
+                            )
+                        )
+                        idx += 3
+                    elif is_sparse and is_4d_tensor:
+                        # explicitly substitute last dimension in shape with known
+                        # static value
+                        batch_data[key][sub_key].append(
+                            tf.SparseTensor(
+                                batch[idx],
+                                batch[idx + 1],
+                                [
+                                    batch[idx + 2][0],
+                                    batch[idx + 2][1],
+                                    batch[idx + 2][2],
                                     feature_dimension,
                                 ],
                             )
@@ -754,7 +770,7 @@ class TransformerRasaModel(RasaModel):
     ) -> None:
         sparse = False
         dense = False
-        for is_sparse, _ in data_signature:
+        for is_sparse, _, _ in data_signature:
             if is_sparse:
                 sparse = True
             else:

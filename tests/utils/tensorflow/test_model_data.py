@@ -1,4 +1,5 @@
 import copy
+from typing import Union, List
 
 import pytest
 import scipy.sparse
@@ -213,3 +214,101 @@ def test_get_num_of_features(model_data: RasaModelData):
     num_features = model_data.feature_dimension("text_features", "sentence")
 
     assert num_features == 24
+
+
+@pytest.mark.parametrize(
+    "incoming_data, expected_shape",
+    [
+        (
+            np.random.rand(7, 12),
+            (7, 12)
+        ),
+        (
+            np.random.rand(7),
+            (7,)
+        ),
+        (
+            np.array([
+                np.random.rand(1, 10),
+                np.random.rand(3, 10),
+                np.random.rand(7, 10),
+                np.random.rand(1, 10)
+            ]),
+            (4, 7, 10)
+        ),
+        (
+            [
+                np.array([
+                    np.random.rand(1, 10),
+                    np.random.rand(5, 10),
+                    np.random.rand(7, 10),
+                ]),
+                np.array([
+                    np.random.rand(1, 10),
+                    np.random.rand(3, 10),
+                    np.random.rand(3, 10),
+                    np.random.rand(7, 10),
+                ]),
+                np.array([
+                    np.random.rand(2, 10),
+                ])
+            ],
+            (3, 4, 7, 10)
+        )
+    ],
+)
+def test_pad_dense_data(
+    incoming_data: Union[List[np.ndarray], np.ndarray], expected_shape: np.ndarray
+):
+    padded_data = RasaModelData._pad_dense_data(incoming_data)
+
+    assert padded_data.shape == expected_shape
+
+
+@pytest.mark.parametrize(
+    "incoming_data, expected_shape",
+    [
+        (
+            np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7, 12)))]),
+            [1, 7, 12]
+        ),
+        (
+            np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7, )))]),
+            [1, 1, 7]
+        ),
+        (
+            np.array([
+                scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
+                scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
+                scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10)))
+            ]),
+            (4, 7, 10)
+        ),
+        (
+            [
+                np.array([
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(5, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
+                ]),
+                np.array([
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
+                ]),
+                np.array([
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(2, 10))),
+                ])
+            ],
+            (3, 4, 7, 10)
+        )
+    ],
+)
+def test_scipy_matrix_to_values(
+    incoming_data: Union[List[np.ndarray], np.ndarray], expected_shape: np.ndarray
+):
+    indices, data, shape = RasaModelData._scipy_matrix_to_values(incoming_data)
+
+    assert np.all(shape == expected_shape)

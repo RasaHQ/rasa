@@ -159,7 +159,7 @@ def _features_for_attribute(
     state_to_tracker_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     zero_state_features: Dict[Text, List["Features"]],
-) -> Dict[Text, List[np.ndarray]]:
+) -> Dict[Text, List[Union[List[np.ndarray], np.ndarray]]]:
     """Create the features for the given attribute from the tracker features.
 
     Args:
@@ -193,22 +193,16 @@ def _features_for_attribute(
     # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():
         if key == SEQUENCE:
-            # TODO pad dialogues
-            continue
-            # sparse_features[key] = values
+            sparse_features[key] = values
         else:
-            sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
+            features = [scipy.sparse.vstack(value) for value in values]
+            sparse_features[key] = np.array(features)
     for key, values in _dense_features.items():
         if key == SEQUENCE:
-            # for the sequence we need to keep the sequence dimension
-            # resulting numpy array has three dimensions (dialogue history x sequence length x number of features)
-            max_seq_len = max([v.shape[0] for value in values for v in value])
-            dense_features[key] = [
-                RasaModelData._pad_dense_data(np.array(value), max_seq_len)
-                for value in values
-            ]
+            dense_features[key] = values
         else:
-            dense_features[key] = [np.vstack(value) for value in values]
+            features = [np.vstack(value) for value in values]
+            dense_features[key] = np.array(features)
 
     attribute_features = {MASK: [np.array(attribute_masks)]}
 
@@ -219,13 +213,9 @@ def _features_for_attribute(
     for feature_type in feature_types:
         attribute_features[feature_type] = []
         if feature_type in sparse_features:
-            attribute_features[feature_type].append(
-                np.array(sparse_features[feature_type])
-            )
+            attribute_features[feature_type].append(sparse_features[feature_type])
         if feature_type in dense_features:
-            attribute_features[feature_type].append(
-                np.array(dense_features[feature_type])
-            )
+            attribute_features[feature_type].append(dense_features[feature_type])
 
     return attribute_features
 
