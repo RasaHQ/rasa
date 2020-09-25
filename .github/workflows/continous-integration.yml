@@ -139,8 +139,7 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Set up virtual environment (Windows)
-      if: matrix.os == 'windows-latest'
+    - name: Set up virtual environment
       # Poetry on Windows cannot pick up the virtual environments directory properly,
       # and it creates a new one every time the pipeline runs.
       # We want to  allow Poetry to create a venv directory if it doesn't
@@ -151,16 +150,7 @@ jobs:
       run: |
         poetry config virtualenvs.in-project true
 
-    - name: Load Poetry Cached Libraries (Linux) ⬇
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
-
-    - name: Load Poetry Cached Libraries (Windows) ⬇
-      if: matrix.os == 'windows-latest'
+    - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
         path: .venv
