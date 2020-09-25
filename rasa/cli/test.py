@@ -103,7 +103,9 @@ def run_core_test(args: argparse.Namespace) -> None:
     else:
         test_core_models(args.model, stories, output)
 
-    rasa.shared.utils.cli.print_info(f"Failed stories written to '{output}/{FAILED_STORIES_FILE}'")
+    rasa.shared.utils.cli.print_info(
+        f"Failed stories written to '{output}/{FAILED_STORIES_FILE}'"
+    )
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
