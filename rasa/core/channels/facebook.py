@@ -161,6 +161,8 @@ class Messenger:
                 "Exception when trying to handle webhook for facebook message."
             )
             pass
+        finally:
+            await out_channel.send_action(sender_id, sender_action="typing_off")
 
 
 class MessengerBot(OutputChannel):
