@@ -606,9 +606,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    await _retry_on_error(_write_stories_to_file, story_path, events, domain)
-    await _retry_on_error(_write_nlu_to_file, nlu_path, events)
-    await _retry_on_error(_write_domain_to_file, domain_path, events, domain)
+    _retry_on_error(_write_stories_to_file, story_path, events, domain)
+    _retry_on_error(_write_nlu_to_file, nlu_path, events)
+    _retry_on_error(_write_domain_to_file, domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
