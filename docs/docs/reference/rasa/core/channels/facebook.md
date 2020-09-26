@@ -59,6 +59,19 @@ Send a message through this channel.
 
 Sends an image. Default will just post the url as a string.
 
+#### send\_action
+
+```python
+ | async send_action(recipient_id: Text, sender_action: Text) -> None
+```
+
+Sends a sender action to facebook (e.g. &quot;typing_on&quot;).
+
+**Arguments**:
+
+- `recipient_id` - recipient
+- `sender_action` - action to send, e.g. &quot;typing_on&quot; or &quot;mark_seen&quot;
+
 #### send\_text\_with\_buttons
 
 ```python
