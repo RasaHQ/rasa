@@ -389,9 +389,9 @@
             },
             {
               "items": [
-                "reference/rasa/nlu/extractors/duckling_http_extractor",
                 "reference/rasa/nlu/extractors/crf_entity_extractor",
                 "reference/rasa/nlu/extractors/regex_entity_extractor",
+                "reference/rasa/nlu/extractors/duckling_entity_extractor",
                 "reference/rasa/nlu/extractors/extractor",
                 "reference/rasa/nlu/extractors/mitie_entity_extractor"
               ],
