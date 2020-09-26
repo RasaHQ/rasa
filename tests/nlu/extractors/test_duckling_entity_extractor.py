@@ -110,7 +110,9 @@ def test_duckling_entity_extractor(component_builder):
             ],
         )
 
-        _config = RasaNLUModelConfig({"pipeline": [{"name": "DucklingHTTPExtractor"}]})
+        _config = RasaNLUModelConfig(
+            {"pipeline": [{"name": "DucklingEntityExtractor"}]}
+        )
         _config.set_component_attr(
             0, dimensions=["time"], timezone="UTC", url="http://localhost:8000"
         )
@@ -158,7 +160,9 @@ def test_duckling_entity_extractor(component_builder):
         assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
 
         # Test dimension filtering includes only specified dimensions
-        _config = RasaNLUModelConfig({"pipeline": [{"name": "DucklingHTTPExtractor"}]})
+        _config = RasaNLUModelConfig(
+            {"pipeline": [{"name": "DucklingEntityExtractor"}]}
+        )
         _config.set_component_attr(
             0, dimensions=["number"], url="http://localhost:8000"
         )
@@ -212,7 +216,7 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
-                {"name": "DucklingHTTPExtractor"},
+                {"name": "DucklingEntityExtractor"},
                 {"name": "EntitySynonymMapper"},
             ]
         }
