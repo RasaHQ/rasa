@@ -580,7 +580,7 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strings
 
 
-async def _retry_on_error(
+def _retry_on_error(
     func: Callable, export_path: Text, *args: Any, **kwargs: Any
 ) -> None:
     while True:
