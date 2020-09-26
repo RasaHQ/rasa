@@ -1,52 +1,57 @@
 import asyncio
+import os
 import random
+import pytest
+import sys
 import uuid
 
 from sanic.request import Request
 from sanic.testing import SanicTestClient
 
-from typing import Tuple, Iterator
+from typing import Iterator, Callable
 
-import pytest
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
 from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
+import rasa.shared.utils.io
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
-from rasa.core.channels import channel
-from rasa.core.channels.channel import RestInput
-from rasa.core.domain import SessionConfig
-from rasa.core.events import UserUttered
+from rasa.core.channels import channel, RestInput
+from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
 from rasa.core.policies import Policy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
-from rasa.core.run import _create_app_without_api
+import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
-import rasa.utils.io as io_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_NLU_DATA,
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
     END_TO_END_STORY_FILE,
-    MOODBOT_MODEL_PATH,
     INCORRECT_NLU_DATA,
 )
 
-
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
+
+DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.yml"
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
+
+
+# these tests are run separately
+collect_ignore_glob = ["docs/*.py"]
+
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -59,7 +64,7 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Tuple[Agent, str]:
+async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
@@ -86,12 +91,11 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path() -> Text:
-    return await train_async(
+async def trained_moodbot_path(trained_async) -> Text:
+    return await trained_async(
         domain="examples/moodbot/domain.yml",
         config="examples/moodbot/config.yml",
         training_files="examples/moodbot/data/",
-        output_path=MOODBOT_MODEL_PATH,
     )
 
 
@@ -120,6 +124,11 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 def default_domain_path() -> Text:
     return DEFAULT_DOMAIN_PATH_WITH_SLOTS
+
+
+@pytest.fixture(scope="session")
+def default_domain() -> Domain:
+    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
 
 @pytest.fixture(scope="session")
@@ -153,8 +162,10 @@ def default_config() -> List[Policy]:
 
 
 @pytest.fixture(scope="session")
-def trained_async(tmpdir_factory):
-    async def _train(*args, output_path=None, **kwargs):
+def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
+    async def _train(
+        *args: Any, output_path: Optional[Text] = None, **kwargs: Any
+    ) -> Optional[Text]:
         if output_path is None:
             output_path = str(tmpdir_factory.mktemp("models"))
 
@@ -165,7 +176,7 @@ def trained_async(tmpdir_factory):
 
 @pytest.fixture(scope="session")
 async def trained_rasa_model(
-    trained_async,
+    trained_async: Callable,
     default_domain_path: Text,
     default_nlu_data: Text,
     default_stories_file: Text,
@@ -181,7 +192,7 @@ async def trained_rasa_model(
 
 @pytest.fixture(scope="session")
 async def trained_core_model(
-    trained_async,
+    trained_async: Callable,
     default_domain_path: Text,
     default_nlu_data: Text,
     default_stories_file: Text,
@@ -197,7 +208,7 @@ async def trained_core_model(
 
 @pytest.fixture(scope="session")
 async def trained_nlu_model(
-    trained_async,
+    trained_async: Callable,
     default_domain_path: Text,
     default_config: List[Policy],
     default_nlu_data: Text,
@@ -210,6 +221,12 @@ async def trained_nlu_model(
     )
 
     return trained_nlu_model_path
+
+
+@pytest.fixture(scope="session")
+def moodbot_domain() -> Domain:
+    domain_path = os.path.join("examples", "moodbot", "domain.yml")
+    return Domain.load(domain_path)
 
 
 @pytest.fixture
@@ -242,9 +259,20 @@ async def rasa_server_secured(default_agent: Agent) -> Sanic:
 
 @pytest.fixture
 async def rasa_server_without_api() -> Sanic:
-    app = _create_app_without_api()
+    app = rasa.core.run._create_app_without_api()
     channel.register([RestInput()], app, "/webhooks/")
     return app
+
+
+@pytest.fixture(scope="session")
+def project() -> Text:
+    import tempfile
+    from rasa.cli.scaffold import create_initial_project
+
+    directory = tempfile.mkdtemp()
+    create_initial_project(directory)
+
+    return directory
 
 
 def get_test_client(server: Sanic) -> SanicTestClient:
@@ -259,7 +287,7 @@ def write_endpoint_config_to_yaml(
     endpoints_path = path / endpoints_filename
 
     # write endpoints config to file
-    io_utils.write_yaml_file(data, endpoints_path)
+    rasa.shared.utils.io.write_yaml(data, endpoints_path)
     return endpoints_path
 
 
@@ -268,6 +296,14 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
         uuid.uuid4().hex,
         timestamp=timestamp if timestamp is not None else random.random(),
     )
+
+
+def pytest_runtest_setup(item) -> None:
+    if (
+        "skip_on_windows" in [mark.name for mark in item.iter_markers()]
+        and sys.platform == "win32"
+    ):
+        pytest.skip("cannot run on Windows")
 
 
 class MockExporter(Exporter):

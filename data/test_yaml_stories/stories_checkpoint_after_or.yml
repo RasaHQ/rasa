@@ -1,0 +1,14 @@
+stories:
+- story: story with checkpoint after or
+  steps:
+  - or:
+    - intent: affirm
+    - intent: thank_you
+  - checkpoint: check_after_or
+
+- story: story to continue checkpoint
+  steps:
+  - checkpoint: check_after_or
+  - action: utter_default
+  - intent: goodbye
+  - action: utter_goodbye

@@ -8,8 +8,10 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -84,9 +86,7 @@ class MitieIntentClassifier(IntentClassifier):
 
     @staticmethod
     def _tokens_of_message(message) -> List[Text]:
-        tokens = [token.text for token in message.get(TOKENS_NAMES[TEXT], [])]
-        # return tokens without CLS token
-        return tokens[:-1]
+        return [token.text for token in message.get(TOKENS_NAMES[TEXT], [])]
 
     @classmethod
     def load(

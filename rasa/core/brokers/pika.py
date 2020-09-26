@@ -19,15 +19,12 @@ from typing import (
     Generator,
 )
 
-from rasa.constants import (
-    DEFAULT_LOG_LEVEL_LIBRARIES,
-    ENV_LOG_LEVEL_LIBRARIES,
-    DOCS_URL_PIKA_EVENT_BROKER,
-)
+from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
+from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 from rasa.core.brokers.broker import EventBroker
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from pika.adapters.blocking_connection import BlockingChannel
@@ -120,7 +117,7 @@ def _get_pika_parameters(
     import pika
 
     if host.startswith("amqp"):
-        # user supplied a amqp url containing all the info
+        # user supplied an AMQP URL containing all the info
         parameters = pika.URLParameters(host)
         parameters.connection_attempts = connection_attempts
         parameters.retry_delay = retry_delay_in_seconds
@@ -291,7 +288,7 @@ class PikaEventBroker(EventBroker):
         self.password = password
         self.port = port
         self.channel: Optional["Channel"] = None
-        self.queues = self._get_queues_from_args(queues, kwargs)
+        self.queues = self._get_queues_from_args(queues)
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
         self.raise_on_failure = raise_on_failure
 
@@ -315,37 +312,24 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any
+        queues_arg: Union[List[Text], Tuple[Text], Text, None]
     ) -> Union[List[Text], Tuple[Text]]:
         """Get queues for this event broker.
 
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
-        publish to is `queues` (as of Rasa Open Source version 1.8.2). This function
-        ensures backwards compatibility with the old `queue` argument. This method
+        publish to is `queues` (as of Rasa Open Source version 1.8.2). This method
         can be removed in the future, and `self.queues` should just receive the value of
         the `queues` kwarg in the constructor.
 
         Args:
             queues_arg: Value of the supplied `queues` argument.
-            kwargs: Additional kwargs supplied to the `PikaEventBroker` constructor.
-                If `queues_arg` is not supplied, the `queue` kwarg will be used instead.
 
         Returns:
             Queues this event broker publishes to.
 
         Raises:
-            `ValueError` if no valid `queue` or `queues` argument was found.
+            `ValueError` if no valid `queues` argument was found.
         """
-        queue_arg = kwargs.pop("queue", None)
-
-        if queue_arg:
-            raise_warning(
-                "Your Pika event broker config contains the deprecated `queue` key. "
-                "Please use the `queues` key instead.",
-                FutureWarning,
-                docs=DOCS_URL_PIKA_EVENT_BROKER,
-            )
-
         if queues_arg and isinstance(queues_arg, (list, tuple)):
             return queues_arg
 
@@ -357,14 +341,8 @@ class PikaEventBroker(EventBroker):
             )
             return [queues_arg]
 
-        if queue_arg and isinstance(queue_arg, str):
-            return [queue_arg]
-
-        if queue_arg:
-            return queue_arg  # pytype: disable=bad-return-type
-
-        raise_warning(
-            f"No `queues` or `queue` argument provided. It is suggested to "
+        rasa.shared.utils.io.raise_warning(
+            f"No `queues` argument provided. It is suggested to "
             f"explicitly specify a queue as described in "
             f"{DOCS_URL_PIKA_EVENT_BROKER}. "
             f"Using the default queue '{DEFAULT_QUEUE_NAME}' for now."
@@ -604,38 +582,3 @@ def create_rabbitmq_ssl_options(
         return pika.SSLOptions(ssl_context, rabbitmq_host)
     else:
         return None
-
-
-class PikaProducer(PikaEventBroker):
-    def __init__(
-        self,
-        host: Text,
-        username: Text,
-        password: Text,
-        port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = ("rasa_core_events",),
-        should_keep_unpublished_messages: bool = True,
-        raise_on_failure: bool = False,
-        log_level: Union[Text, int] = os.environ.get(
-            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-        ),
-        **kwargs: Any,
-    ):
-        raise_warning(
-            "The `PikaProducer` class is deprecated, please inherit "
-            "from `PikaEventBroker` instead. `PikaProducer` will be "
-            "removed in future Rasa versions.",
-            FutureWarning,
-            docs=DOCS_URL_PIKA_EVENT_BROKER,
-        )
-        super(PikaProducer, self).__init__(
-            host,
-            username,
-            password,
-            port,
-            queues,
-            should_keep_unpublished_messages,
-            raise_on_failure,
-            log_level,
-            **kwargs,
-        )

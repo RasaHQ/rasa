@@ -1,0 +1,45 @@
+---
+id: model-configuration
+sidebar_label: Overview
+title: Model Configuration
+description: Learn about model configuration for Rasa Open Source.
+---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+The configuration file defines the NLU and Core components that your model will use. The
+`language` and `pipeline` keys specify how the NLU model should be built. You can
+learn about choosing components for your NLU pipeline [here](./tuning-your-model.mdx). The
+`policies` key defines the [policies](./policies.mdx) that the Core model will
+use.
+
+## Suggested Config
+
+You always need to specify the `language` key in your `config.yml` file with the
+2-letter ISO language code.
+
+The two other keys (`pipeline` and `policies`) can be left out or left empty. When
+running `rasa train`, the Suggested Config feature will select a default configuration
+for the missing key(s) which will then be used to train the model.
+
+Please note, that only the default configuration for `pipeline` will be automatically selected
+if you run `rasa train nlu`, and only the default configuration for `policies`
+will be selected if you run `rasa train core`.
+
+Example `config.yml` file:
+
+```yaml-rasa (docs/sources/data/configs_for_docs/example_for_suggested_config.yml)
+```
+
+The selected configuration will also be written as comments into the `config.yml` file,
+so you can see which configuration was used. For the example above, the resulting file
+might look e.g. like this:
+
+```yaml-rasa (docs/sources/data/configs_for_docs/example_for_suggested_config_after_train.yml)
+```
+
+If you like, you can then un-comment the suggested configuration for one or both of the
+keys and make modifications. Note that this will disable automatic suggestions for this
+key when training again.
+As long as you leave the configuration commented out and don't specify any configuration
+for a key yourself, a default configuration will be suggested whenever you train a new
+model.

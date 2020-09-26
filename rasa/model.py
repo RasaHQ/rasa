@@ -1,21 +1,26 @@
 import glob
+import hashlib
 import logging
 import os
 import shutil
+from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B404
 import tempfile
 import typing
 from pathlib import Path
 from typing import Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.cli.utils import print_success, create_output_path
-from rasa.constants import (
-    DEFAULT_MODELS_PATH,
-    CONFIG_MANDATORY_KEYS_CORE,
-    CONFIG_MANDATORY_KEYS_NLU,
-    CONFIG_MANDATORY_KEYS,
+from rasa.cli.utils import create_output_path
+from rasa.shared.utils.cli import print_success
+from rasa.shared.constants import (
+    CONFIG_KEYS_CORE,
+    CONFIG_KEYS_NLU,
+    CONFIG_KEYS,
     DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
 
 from rasa.core.utils import get_dict_hash
@@ -23,7 +28,7 @@ from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingDataImporter
+    from rasa.shared.importers.importer import TrainingDataImporter
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +47,7 @@ FINGERPRINT_NLG_KEY = "nlg"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
+FINGERPRINT_PROJECT = "project"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 
@@ -88,7 +94,7 @@ class FingerprintComparisonResult:
         Args:
             nlu: `True` if the NLU model should be retrained.
             core: `True` if the Core model should be retrained.
-            nlg: `True` if the templates in the domain should be updated.
+            nlg: `True` if the responses in the domain should be updated.
             force_training: `True` if a training of all parts is forced.
         """
         self.nlu = nlu
@@ -107,7 +113,7 @@ class FingerprintComparisonResult:
         return self.force_training or self.core
 
     def should_retrain_nlg(self) -> bool:
-        """Check if the templates have to be updated."""
+        """Check if the responses have to be updated."""
 
         return self.should_retrain_core() or self.nlg
 
@@ -213,7 +219,7 @@ def get_model_subdirectories(
 
     """
     core_path = os.path.join(unpacked_model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
-    nlu_path = os.path.join(unpacked_model_path, "nlu")
+    nlu_path = os.path.join(unpacked_model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
 
     if not os.path.isdir(core_path):
         core_path = None
@@ -265,6 +271,21 @@ def create_package_rasa(
     return output_filename
 
 
+def project_fingerprint() -> Optional[Text]:
+    """Create a hash for the project in the current working directory.
+
+    Returns:
+        project hash
+    """
+    try:
+        remote = check_output(  # skipcq:BAN-B607,BAN-B603
+            ["git", "remote", "get-url", "origin"], stderr=DEVNULL
+        )
+        return hashlib.sha256(remote).hexdigest()
+    except (CalledProcessError, OSError):
+        return None
+
+
 async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
     """Create a model fingerprint from its used configuration and training data.
 
@@ -275,9 +296,6 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         The fingerprint.
 
     """
-    from rasa.core.domain import Domain
-
-    import rasa
     import time
 
     config = await file_importer.get_config()
@@ -285,26 +303,27 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     stories = await file_importer.get_stories()
     nlu_data = await file_importer.get_nlu_data()
 
-    domain_dict = domain.as_dict()
-    templates = domain_dict.pop("responses")
-    domain_without_nlg = Domain.from_dict(domain_dict)
+    responses = domain.templates
+
+    # don't include the response texts in the fingerprint.
+    # Their fingerprint is separate.
+    domain.templates = []
 
     return {
-        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
-            config, exclude_keys=CONFIG_MANDATORY_KEYS
-        ),
+        FINGERPRINT_CONFIG_KEY: _get_hash_of_config(config, exclude_keys=CONFIG_KEYS),
         FINGERPRINT_CONFIG_CORE_KEY: _get_hash_of_config(
-            config, include_keys=CONFIG_MANDATORY_KEYS_CORE
+            config, include_keys=CONFIG_KEYS_CORE
         ),
         FINGERPRINT_CONFIG_NLU_KEY: _get_hash_of_config(
-            config, include_keys=CONFIG_MANDATORY_KEYS_NLU
+            config, include_keys=CONFIG_KEYS_NLU
         ),
-        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain_without_nlg),
-        FINGERPRINT_NLG_KEY: get_dict_hash(templates),
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain),
+        FINGERPRINT_NLG_KEY: get_dict_hash(responses),
+        FINGERPRINT_PROJECT: project_fingerprint(),
         FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
         FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
-        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
+        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,  # pytype: disable=module-attr
     }
 
 
@@ -338,7 +357,7 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
-        return rasa.utils.io.read_json_file(fingerprint_path)
+        return rasa.shared.utils.io.read_json_file(fingerprint_path)
     else:
         return {}
 
@@ -353,7 +372,7 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
     """
 
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
-    rasa.utils.io.dump_obj_as_json_to_file(path, fingerprint)
+    rasa.shared.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 
 def did_section_fingerprint_change(
@@ -445,7 +464,7 @@ def package_model(
     train_path: Text,
     fixed_model_name: Optional[Text] = None,
     model_prefix: Text = "",
-):
+) -> Text:
     """
     Compress a trained model.
 

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Text
 
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.nlu.emulators.no_emulator import NoEmulator
 
 
@@ -28,7 +29,7 @@ class DialogflowEmulator(NoEmulator):
             "result": {
                 "source": "agent",
                 "resolvedQuery": data["text"],
-                "action": data["intent"]["name"],
+                "action": data["intent"][INTENT_NAME_KEY],
                 "actionIncomplete": False,
                 "parameters": entities,
                 "contexts": [],

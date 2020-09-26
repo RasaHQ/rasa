@@ -1,2 +1,0 @@
-Fixed issue where the ``DucklingHTTPExtractor`` component would
-not work if its `url` contained a trailing slash.

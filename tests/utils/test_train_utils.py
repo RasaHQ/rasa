@@ -5,7 +5,7 @@ from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 
 
-def test_align_token_features_convert():
+def test_align_token_features():
     tokens = [
         Token("This", 0, data={NUMBER_OF_SUB_TOKENS: 1}),
         Token("is", 5, data={NUMBER_OF_SUB_TOKENS: 1}),

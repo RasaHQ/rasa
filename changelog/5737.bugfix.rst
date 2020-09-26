@@ -1,3 +1,0 @@
-Pinned the library version for the Azure :ref:`cloud-storage` to ``2.1.0`` since the
-persistor is currently not compatible with later versions of the ``azure-storage-blob``
-library.

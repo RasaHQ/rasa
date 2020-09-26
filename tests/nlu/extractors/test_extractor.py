@@ -2,11 +2,12 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
-from rasa.nlu.constants import TEXT
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data.formats import MarkdownReader
+from rasa.shared.nlu.training_data.formats import MarkdownReader
 
 
 @pytest.mark.parametrize(
@@ -17,6 +18,37 @@ from rasa.nlu.training_data.formats import MarkdownReader
             {
                 "entity": ["O", "O", "O", "O", "city", "city", "O", "city"],
                 "role": ["O", "O", "O", "O", "from", "from", "O", "to"],
+            },
+            {
+                "entity": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89],
+                "role": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89],
+            },
+            [
+                {
+                    "entity": "city",
+                    "start": 17,
+                    "end": 30,
+                    "value": "San Fransisco",
+                    "role": "from",
+                    "confidence_entity": 0.78,
+                    "confidence_role": 0.78,
+                },
+                {
+                    "entity": "city",
+                    "start": 34,
+                    "end": 43,
+                    "value": "Amsterdam",
+                    "role": "to",
+                    "confidence_entity": 0.89,
+                    "confidence_role": 0.89,
+                },
+            ],
+        ),
+        (
+            "I am flying from San Fransisco to Amsterdam",
+            {
+                "entity": ["O", "O", "O", "O", "B-city", "L-city", "O", "U-city"],
+                "role": ["O", "O", "O", "O", "B-from", "L-from", "O", "U-to"],
             },
             {
                 "entity": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89],
@@ -73,6 +105,116 @@ from rasa.nlu.training_data.formats import MarkdownReader
             None,
             [{"entity": "city", "start": 0, "end": 9, "value": "Amsterdam"}],
         ),
+        (
+            "New-York",
+            {"entity": ["city", "city"], "role": ["O", "O"], "group": ["O", "O"]},
+            None,
+            [{"entity": "city", "start": 0, "end": 8, "value": "New-York"}],
+        ),
+        (
+            "Amsterdam, Berlin, and London",
+            {
+                "entity": ["city", "city", "O", "city"],
+                "role": ["O", "O", "O", "O"],
+                "group": ["O", "O", "O", "O"],
+            },
+            None,
+            [
+                {"entity": "city", "start": 0, "end": 9, "value": "Amsterdam"},
+                {"entity": "city", "start": 11, "end": 17, "value": "Berlin"},
+                {"entity": "city", "start": 23, "end": 29, "value": "London"},
+            ],
+        ),
+        (
+            "Amsterdam Berlin and London",
+            {
+                "entity": ["U-city", "U-city", "O", "U-city"],
+                "role": ["O", "O", "O", "O"],
+                "group": ["O", "O", "O", "O"],
+            },
+            None,
+            [
+                {"entity": "city", "start": 0, "end": 9, "value": "Amsterdam"},
+                {"entity": "city", "start": 10, "end": 16, "value": "Berlin"},
+                {"entity": "city", "start": 21, "end": 27, "value": "London"},
+            ],
+        ),
+        (
+            "San Fransisco Amsterdam, London",
+            {
+                "entity": ["B-city", "L-city", "U-city", "U-city"],
+                "role": ["O", "O", "O", "O"],
+                "group": ["O", "O", "O", "O"],
+            },
+            None,
+            [
+                {"entity": "city", "start": 0, "end": 13, "value": "San Fransisco"},
+                {"entity": "city", "start": 14, "end": 23, "value": "Amsterdam"},
+                {"entity": "city", "start": 25, "end": 31, "value": "London"},
+            ],
+        ),
+        (
+            "New York City Los Angeles and San Diego",
+            {
+                "entity": [
+                    "B-city",
+                    "I-city",
+                    "L-city",
+                    "B-city",
+                    "L-city",
+                    "O",
+                    "B-city",
+                    "L-city",
+                ],
+                "role": ["O", "O", "O", "O", "O", "O", "O", "O"],
+                "group": ["O", "O", "O", "O", "O", "O", "O", "O"],
+            },
+            None,
+            [
+                {"entity": "city", "start": 0, "end": 13, "value": "New York City"},
+                {"entity": "city", "start": 14, "end": 25, "value": "Los Angeles"},
+                {"entity": "city", "start": 30, "end": 39, "value": "San Diego"},
+            ],
+        ),
+        (
+            "Berlin weather",
+            {"entity": ["I-city", "O"], "role": ["O", "O"], "group": ["O", "O"]},
+            None,
+            [{"entity": "city", "start": 0, "end": 6, "value": "Berlin"}],
+        ),
+        (
+            "New-York",
+            {"entity": ["city", "city"], "role": ["O", "O"], "group": ["O", "O"]},
+            None,
+            [{"entity": "city", "start": 0, "end": 8, "value": "New-York"}],
+        ),
+        (
+            "Amsterdam, Berlin, and London",
+            {
+                "entity": ["city", "city", "O", "city"],
+                "role": ["O", "O", "O", "O"],
+                "group": ["O", "O", "O", "O"],
+            },
+            None,
+            [
+                {"entity": "city", "start": 0, "end": 9, "value": "Amsterdam"},
+                {"entity": "city", "start": 11, "end": 17, "value": "Berlin"},
+                {"entity": "city", "start": 23, "end": 29, "value": "London"},
+            ],
+        ),
+        (
+            "Amsterdam Berlin and London",
+            {
+                "entity": ["city", "city", "O", "city"],
+                "role": ["O", "O", "O", "O"],
+                "group": ["O", "O", "O", "O"],
+            },
+            None,
+            [
+                {"entity": "city", "start": 0, "end": 16, "value": "Amsterdam Berlin"},
+                {"entity": "city", "start": 21, "end": 27, "value": "London"},
+            ],
+        ),
     ],
 )
 def test_convert_tags_to_entities(
@@ -84,7 +226,7 @@ def test_convert_tags_to_entities(
     extractor = EntityExtractor()
     tokenizer = WhitespaceTokenizer()
 
-    message = Message(text)
+    message = Message(data={TEXT: text})
     tokens = tokenizer.tokenize(message, TEXT)
 
     actual_entities = extractor.convert_predictions_into_entities(

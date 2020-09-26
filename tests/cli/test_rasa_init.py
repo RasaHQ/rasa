@@ -1,36 +1,33 @@
 import os
+from pathlib import Path
 from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_init(run: Callable[..., RunResult]):
-    run("init", "--no-prompt", "--quiet")
-
-    assert os.path.exists("actions.py")
-    assert os.path.exists("domain.yml")
-    assert os.path.exists("config.yml")
-    assert os.path.exists("credentials.yml")
-    assert os.path.exists("endpoints.yml")
-    assert os.path.exists("models")
-    assert os.path.exists("data/nlu.md")
-    assert os.path.exists("data/stories.md")
-
-
-def test_init_using_init_dir_option(run: Callable[..., RunResult]):
+def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
     os.makedirs("./workspace")
-    run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
+    run_with_stdin(
+        "init", "--quiet", "--init-dir", "./workspace", stdin=b"N"
+    )  # avoid training an initial model
 
-    assert os.path.exists("./workspace/actions.py")
-    assert os.path.exists("./workspace/domain.yml")
-    assert os.path.exists("./workspace/config.yml")
-    assert os.path.exists("./workspace/credentials.yml")
-    assert os.path.exists("./workspace/endpoints.yml")
-    assert os.path.exists("./workspace/models")
-    assert os.path.exists("./workspace/data/nlu.md")
-    assert os.path.exists("./workspace/data/stories.md")
+    required_files = [
+        "actions/__init__.py",
+        "actions/actions.py",
+        "domain.yml",
+        "config.yml",
+        "credentials.yml",
+        "endpoints.yml",
+        "data/nlu.yml",
+        "data/stories.yml",
+        "data/rules.yml",
+    ]
+    assert all((Path("workspace") / file).exists() for file in required_files)
+
+    # ./__init__.py does not exist anymore
+    assert not (Path("workspace") / "__init__.py").exists()
 
 
-def test_not_fount_init_path(run: Callable[..., RunResult]):
+def test_not_found_init_path(run: Callable[..., RunResult]):
     output = run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
 
     assert (
@@ -42,10 +39,15 @@ def test_not_fount_init_path(run: Callable[..., RunResult]):
 def test_init_help(run: Callable[..., RunResult]):
     output = run("init", "--help")
 
-    assert (
-        output.outlines[0]
-        == "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt] [--init-dir INIT_DIR]"
+    help_text = (
+        "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt] [--init-dir INIT_DIR]"
     )
+
+    lines = help_text.split("\n")
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_user_asked_to_train_model(run_with_stdin: Callable[..., RunResult]):

@@ -1,12 +1,20 @@
 import os
 from pathlib import Path
+from typing import Any, Text, Dict
 
+import pytest
+
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.test import (
-    _generate_trackers,
-    collect_story_predictions,
-    test,
+    _create_data_generator,
+    _collect_story_predictions,
+    test as evaluate_stories,
     FAILED_STORIES_FILE,
+    CONFUSION_MATRIX_STORIES_FILE,
+    REPORT_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
+    _clean_entity_results,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 
@@ -23,28 +31,36 @@ from tests.core.conftest import (
 )
 
 
-async def test_evaluation_image_creation(tmpdir: Path, default_agent: Agent):
-    stories_path = str(tmpdir / FAILED_STORIES_FILE)
-    img_path = str(tmpdir / "story_confmat.pdf")
+async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
+    failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
+    success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
+    report_path = str(tmpdir / REPORT_STORIES_FILE)
+    confusion_matrix_path = str(tmpdir / CONFUSION_MATRIX_STORIES_FILE)
 
-    await test(
+    await evaluate_stories(
         stories=DEFAULT_STORIES_FILE,
         agent=default_agent,
         out_directory=str(tmpdir),
         max_stories=None,
         e2e=False,
+        errors=True,
+        successes=True,
     )
 
-    assert os.path.isfile(img_path)
-    assert os.path.isfile(stories_path)
+    assert os.path.isfile(failed_stories_path)
+    assert os.path.isfile(success_stories_path)
+    assert os.path.isfile(report_path)
+    assert os.path.isfile(confusion_matrix_path)
 
 
-async def test_end_to_end_evaluation_script(default_agent: Agent):
-    completed_trackers = await _generate_trackers(
-        END_TO_END_STORY_FILE, default_agent, use_e2e=True
-    )
+@pytest.mark.parametrize(
+    "test_file", [END_TO_END_STORY_FILE, "data/test_evaluations/end_to_end_story.yml"]
+)
+async def test_end_to_end_evaluation_script(default_agent: Agent, test_file: Text):
+    generator = await _create_data_generator(test_file, default_agent, use_e2e=True)
+    completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = collect_story_predictions(
+    story_evaluation, num_stories = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -77,11 +93,12 @@ async def test_end_to_end_evaluation_script(default_agent: Agent):
 
 
 async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent):
-    completed_trackers = await _generate_trackers(
+    generator = await _create_data_generator(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True
     )
+    completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = collect_story_predictions(
+    story_evaluation, num_stories = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -91,11 +108,12 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
 
 
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
-    test_stories = await _generate_trackers(
+    generator = await _create_data_generator(
         "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
     )
+    test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = collect_story_predictions(
+    story_evaluation, num_stories = await _collect_story_predictions(
         test_stories, form_bot_agent, use_e2e=True
     )
 
@@ -105,7 +123,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
 async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
-    await test(
+    await evaluate_stories(
         stories=E2E_STORY_FILE_UNKNOWN_ENTITY,
         agent=default_agent,
         out_directory=str(tmpdir),
@@ -113,10 +131,10 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
         e2e=False,
     )
 
-    failed_stories = rasa.utils.io.read_file(stories_path)
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
     assert (
-        f"## simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"
+        f"story: simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"
         in failed_stories
     )
 
@@ -129,11 +147,12 @@ async def test_end_to_evaluation_trips_circuit_breaker():
     training_data = await agent.load_data(STORY_FILE_TRIPS_CIRCUIT_BREAKER)
     agent.train(training_data)
 
-    test_stories = await _generate_trackers(
+    generator = await _create_data_generator(
         E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER, agent, use_e2e=True
     )
+    test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories = collect_story_predictions(
+    story_evaluation, num_stories = await _collect_story_predictions(
         test_stories, agent, use_e2e=True
     )
 
@@ -156,3 +175,70 @@ async def test_end_to_evaluation_trips_circuit_breaker():
         story_evaluation.evaluation_store.action_predictions == circuit_trip_predicted
     )
     assert num_stories == 1
+
+
+@pytest.mark.parametrize(
+    "text, entity, expected_entity",
+    [
+        (
+            "The first one please.",
+            {
+                "extractor": "DucklingEntityExtractor",
+                "entity": "ordinal",
+                "confidence": 0.87,
+                "start": 4,
+                "end": 9,
+                "value": 1,
+            },
+            {
+                "text": "The first one please.",
+                "entity": "ordinal",
+                "start": 4,
+                "end": 9,
+                "value": "1",
+            },
+        ),
+        (
+            "The first one please.",
+            {
+                "extractor": "CRFEntityExtractor",
+                "entity": "ordinal",
+                "confidence": 0.87,
+                "start": 4,
+                "end": 9,
+                "value": "1",
+            },
+            {
+                "text": "The first one please.",
+                "entity": "ordinal",
+                "start": 4,
+                "end": 9,
+                "value": "1",
+            },
+        ),
+        (
+            "Italian food",
+            {
+                "extractor": "DIETClassifier",
+                "entity": "cuisine",
+                "confidence": 0.99,
+                "start": 0,
+                "end": 7,
+                "value": "Italian",
+            },
+            {
+                "text": "Italian food",
+                "entity": "cuisine",
+                "start": 0,
+                "end": 7,
+                "value": "Italian",
+            },
+        ),
+    ],
+)
+def test_event_has_proper_implementation(
+    text: Text, entity: Dict[Text, Any], expected_entity: Dict[Text, Any]
+):
+    actual_entities = _clean_entity_results(text, [entity])
+
+    assert actual_entities[0] == expected_entity

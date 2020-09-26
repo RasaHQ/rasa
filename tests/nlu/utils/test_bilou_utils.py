@@ -4,9 +4,11 @@ from _pytest.logging import LogCaptureFixture
 import pytest
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.nlu.constants import BILOU_ENTITIES, ENTITIES
+from rasa.nlu.constants import BILOU_ENTITIES
+from rasa.shared.nlu.constants import ENTITIES
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(
@@ -43,7 +45,7 @@ def test_bilou_from_tag(tag, expected):
 
 
 def test_tags_to_ids():
-    message = Message("Germany is part of the European Union")
+    message = Message.build(text="Germany is part of the European Union")
     message.set(
         BILOU_ENTITIES,
         ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
@@ -65,13 +67,13 @@ def test_remove_bilou_prefixes():
 
 
 def test_build_tag_id_dict():
-    message_1 = Message("Germany is part of the European Union")
+    message_1 = Message.build(text="Germany is part of the European Union")
     message_1.set(
         BILOU_ENTITIES,
         ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
     )
 
-    message_2 = Message("Berlin is the capital of Germany")
+    message_2 = Message.build(text="Berlin is the capital of Germany")
     message_2.set(BILOU_ENTITIES, ["U-location", "O", "O", "O", "O", "U-location"])
 
     training_data = TrainingData([message_1, message_2])
@@ -94,7 +96,7 @@ def test_build_tag_id_dict():
 def test_apply_bilou_schema():
     tokenizer = WhitespaceTokenizer()
 
-    message_1 = Message("Germany is part of the European Union")
+    message_1 = Message.build(text="Germany is part of the European Union")
     message_1.set(
         ENTITIES,
         [
@@ -108,7 +110,7 @@ def test_apply_bilou_schema():
         ],
     )
 
-    message_2 = Message("Berlin is the capital of Germany")
+    message_2 = Message.build(text="Berlin is the capital of Germany")
     message_2.set(
         ENTITIES,
         [
@@ -131,7 +133,6 @@ def test_apply_bilou_schema():
         "O",
         "B-organisation",
         "L-organisation",
-        "O",
     ]
     assert message_2.get(BILOU_ENTITIES) == [
         "U-location",
@@ -140,7 +141,6 @@ def test_apply_bilou_schema():
         "O",
         "O",
         "U-location",
-        "O",
     ]
 
 
@@ -163,6 +163,22 @@ def test_apply_bilou_schema():
             "B- tag, L- tag pair encloses multiple entity classes",
         ),
         (["O", "B-person", "O"], ["O", "U-person", "O"], "B- tag not closed"),
+        (["O", "B-person"], ["O", "U-person"], "B- tag not closed"),
+        (
+            ["O", "B-person", "I-person"],
+            ["O", "B-person", "L-person"],
+            "B- tag not closed",
+        ),
+        (
+            ["O", "B-person", "I-location"],
+            ["O", "B-person", "L-person"],
+            "B- tag not closed",
+        ),
+        (
+            ["O", "B-person", "B-location"],
+            ["O", "U-person", "U-location"],
+            "B- tag not closed",
+        ),
     ],
 )
 def test_check_consistent_bilou_tagging(

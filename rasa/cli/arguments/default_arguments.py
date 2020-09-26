@@ -2,11 +2,11 @@ import argparse
 import logging
 from typing import Text, Union, Optional
 
-from rasa.constants import (
-    DEFAULT_DATA_PATH,
-    DEFAULT_MODELS_PATH,
-    DEFAULT_DOMAIN_PATH,
+from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_DATA_PATH,
 )
 
 
@@ -56,7 +56,9 @@ def add_domain_param(
         "--domain",
         type=str,
         default=DEFAULT_DOMAIN_PATH,
-        help="Domain specification (yml file).",
+        help="Domain specification. This can be a single YAML file, or a directory "
+        "that contains several files with domain specifications in it. The content "
+        "of these files will be read and merged together.",
     )
 
 

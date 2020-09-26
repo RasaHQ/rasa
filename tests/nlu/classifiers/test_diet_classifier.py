@@ -1,12 +1,19 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
-
 from unittest.mock import Mock
 
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TEXT, SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, INTENT
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     RANDOM_SEED,
@@ -17,21 +24,24 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
+    CHECKPOINT_MODEL,
     BILOU_FLAG,
 )
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils import train_utils
+from tests.conftest import DEFAULT_NLU_DATA
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 def test_compute_default_label_features():
     label_features = [
-        Message("test a"),
-        Message("test b"),
-        Message("test c"),
-        Message("test d"),
+        Message(data={TEXT: "test a"}),
+        Message(data={TEXT: "test b"}),
+        Message(data={TEXT: "test c"}),
+        Message(data={TEXT: "test d"}),
     ]
 
     output = DIETClassifier._compute_default_label_features(label_features)
@@ -50,18 +60,18 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    "test a",
-                    data={
-                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                    },
+                    data={TEXT: "test a"},
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                    ],
                 ),
                 Message(
-                    "test b",
-                    data={
-                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
-                    },
+                    data={TEXT: "test b"},
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+                    ],
                 ),
             ],
             True,
@@ -69,11 +79,22 @@ def test_compute_default_label_features():
         (
             [
                 Message(
-                    "test a",
-                    data={
-                        SPARSE_FEATURE_NAMES[INTENT]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[INTENT]: np.zeros(1),
-                    },
+                    data={TEXT: "test a"},
+                    features=[
+                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
+                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
+                    ],
+                )
+            ],
+            False,
+        ),
+        (
+            [
+                Message(
+                    data={TEXT: "test a"},
+                    features=[
+                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
+                    ],
                 )
             ],
             False,
@@ -82,38 +103,18 @@ def test_compute_default_label_features():
 )
 def test_check_labels_features_exist(messages, expected):
     attribute = TEXT
+    classifier = DIETClassifier()
+    assert classifier._check_labels_features_exist(messages, attribute) == expected
 
-    assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
 
-
-@pytest.mark.parametrize(
-    "pipeline",
-    [
-        [
-            {
-                "name": "ConveRTTokenizer",
-                "intent_tokenization_flag": True,
-                "intent_split_symbol": "+",
-            },
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "ConveRTFeaturizer"},
-            {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
-        ],
-        [
-            {"name": "WhitespaceTokenizer"},
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
-        ],
-    ],
-)
-async def test_train_persist_load_with_different_settings(
-    pipeline, component_builder, tmpdir
+async def _train_persist_load_with_different_settings(
+    pipeline, component_builder, tmp_path
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/examples/rasa/demo-rasa-multi-intent.md",
         component_builder=component_builder,
     )
@@ -127,9 +128,37 @@ async def test_train_persist_load_with_different_settings(
     assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
 
 
-async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
-    from rasa.nlu import train
+@pytest.mark.skip_on_windows
+async def test_train_persist_load_with_different_settings_non_windows(
+    component_builder, tmpdir
+):
+    pipeline = [
+        {
+            "name": "ConveRTTokenizer",
+            "intent_tokenization_flag": True,
+            "intent_split_symbol": "+",
+        },
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "ConveRTFeaturizer"},
+        {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir
+    )
 
+
+async def test_train_persist_load_with_different_settings(component_builder, tmpdir):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
+    ]
+    await _train_persist_load_with_different_settings(
+        pipeline, component_builder, tmpdir
+    )
+
+
+async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Path):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -143,7 +172,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
     with pytest.raises(Exception) as e:
         await train(
             _config,
-            path=tmpdir.strpath,
+            path=str(tmp_path),
             data=DEFAULT_DATA_PATH,
             component_builder=component_builder,
         )
@@ -187,7 +216,7 @@ def as_pipeline(*components):
         ),  # higher than default ranking_length
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            "examples/moodbot/data/nlu.md",
+            DEFAULT_NLU_DATA,
             7,
             True,
         ),  # less intents than default ranking_length
@@ -195,7 +224,7 @@ def as_pipeline(*components):
 )
 async def test_softmax_normalization(
     component_builder,
-    tmpdir,
+    tmp_path,
     classifier_params,
     data_path,
     output_length,
@@ -209,10 +238,7 @@ async def test_softmax_normalization(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
     (trained_model, _, persisted_path) = await train(
-        _config,
-        path=tmpdir.strpath,
-        data=data_path,
-        component_builder=component_builder,
+        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 
@@ -343,6 +369,51 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
 
     all_files = list(tensorboard_log_dir.rglob("*.*"))
     assert len(all_files) == 3
+
+
+async def test_train_model_checkpointing(
+    component_builder: ComponentBuilder, tmpdir: Path
+):
+    model_name = "nlu-checkpointed-model"
+    best_model_file = Path(str(tmpdir), model_name)
+    assert not best_model_file.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 5,
+                    EVAL_NUM_EXAMPLES: 10,
+                    EVAL_NUM_EPOCHS: 1,
+                    CHECKPOINT_MODEL: True,
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    await train(
+        _config,
+        path=str(tmpdir),
+        data="data/examples/rasa/demo-rasa.md",
+        component_builder=component_builder,
+        fixed_model_name=model_name,
+    )
+
+    assert best_model_file.exists()
+
+    """
+    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+        - metadata.json
+        - checkpoint
+        - component_1_CountVectorsFeaturizer (as per the pipeline above)
+        - component_2_DIETClassifier files (more than 1 file)
+    """
+    all_files = list(best_model_file.rglob("*.*"))
+    assert len(all_files) > 4
 
 
 @pytest.mark.parametrize(

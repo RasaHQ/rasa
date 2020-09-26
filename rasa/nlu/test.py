@@ -16,24 +16,36 @@ from typing import (
     Dict,
     Any,
 )
+
+from rasa import telemetry
+import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
+import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 from rasa.nlu.constants import (
-    DEFAULT_OPEN_UTTERANCE_TYPE,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
-    OPEN_UTTERANCE_PREDICTION_KEY,
-    EXTRACTOR,
-    PRETRAINED_EXTRACTORS,
-    NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
-    INTENT,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    INTENT_RESPONSE_KEY,
+    ENTITIES,
+    EXTRACTOR,
+    PRETRAINED_EXTRACTORS,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
@@ -45,15 +57,11 @@ from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 
 logger = logging.getLogger(__name__)
 
-# Exclude 'EmbeddingIntentClassifier' and 'ResponseSelector' as their super class
+# Exclude 'EntitySynonymMapper' and 'ResponseSelector' as their super class
 # performs entity extraction but those two classifiers don't
-ENTITY_PROCESSORS = {
-    "EntitySynonymMapper",
-    "EmbeddingIntentClassifier",
-    "ResponseSelector",
-}
+ENTITY_PROCESSORS = {"EntitySynonymMapper", "ResponseSelector"}
 
-EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor"}
+EXTRACTORS_WITH_CONFIDENCES = {"CRFEntityExtractor", "DIETClassifier"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
@@ -65,7 +73,7 @@ IntentEvaluationResult = namedtuple(
 
 ResponseSelectionEvaluationResult = namedtuple(
     "ResponseSelectionEvaluationResult",
-    "intent_target response_target response_prediction message confidence",
+    "intent_response_key_target intent_response_key_prediction message confidence",
 )
 
 EntityEvaluationResult = namedtuple(
@@ -85,62 +93,6 @@ def log_evaluation_table(
     logger.info(f"Precision: {precision}")
     logger.info(f"Accuracy:  {accuracy}")
     logger.info(f"Classification report: \n{report}")
-
-
-def get_evaluation_metrics(
-    targets: Iterable[Any],
-    predictions: Iterable[Any],
-    output_dict: bool = False,
-    exclude_label: Text = None,
-) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
-    """Compute the f1, precision, accuracy and summary report from sklearn.
-
-    Args:
-        targets: target labels
-        predictions: predicted labels
-        output_dict: if True sklearn returns a summary report as dict, if False the
-          report is in string format
-        exclude_label: labels to exclude from evaluation
-
-    Returns: a report from sklearn, precision, f1, and accuracy values
-    """
-    from sklearn import metrics
-
-    targets = clean_labels(targets)
-    predictions = clean_labels(predictions)
-
-    labels = get_unique_labels(targets, exclude_label)
-    if not labels:
-        logger.warning("No labels to evaluate. Skip evaluation.")
-        return {}, 0.0, 0.0, 0.0
-
-    report = metrics.classification_report(
-        targets, predictions, labels=labels, output_dict=output_dict
-    )
-    precision = metrics.precision_score(
-        targets, predictions, labels=labels, average="weighted"
-    )
-    f1 = metrics.f1_score(targets, predictions, labels=labels, average="weighted")
-    accuracy = metrics.accuracy_score(targets, predictions)
-
-    return report, precision, f1, accuracy
-
-
-def get_unique_labels(
-    targets: Iterable[Text], exclude_label: Optional[Text]
-) -> List[Text]:
-    """Get unique labels. Exclude 'exclude_label' if specified.
-
-    Args:
-        targets: labels
-        exclude_label: label to exclude
-
-    Returns: unique list of labels
-    """
-    labels = set(targets)
-    if exclude_label and exclude_label in labels:
-        labels.remove(exclude_label)
-    return list(labels)
 
 
 def remove_empty_intent_examples(
@@ -181,24 +133,13 @@ def remove_empty_response_examples(
     for r in response_results:
         # substitute None values with empty string
         # to enable sklearn evaluation
-        if r.response_prediction is None:
-            r = r._replace(response_prediction="")
+        if r.intent_response_key_prediction is None:
+            r = r._replace(intent_response_key_prediction="")
 
-        if r.response_target != "" and r.response_target is not None:
+        if r.intent_response_key_target:
             filtered.append(r)
 
     return filtered
-
-
-def clean_labels(labels: Iterable[Text]) -> List[Text]:
-    """Remove `None` labels. sklearn metrics do not support them.
-
-    Args:
-        labels: list of labels
-
-    Returns: cleaned labels
-    """
-    return [l if l is not None else "" for l in labels]
 
 
 def drop_intents_below_freq(
@@ -218,11 +159,14 @@ def drop_intents_below_freq(
     keep_examples = [
         ex
         for ex in training_data.intent_examples
-        if training_data.examples_per_intent[ex.get(INTENT)] >= cutoff
+        if training_data.number_of_examples_per_intent[ex.get(INTENT)] >= cutoff
     ]
 
     return TrainingData(
-        keep_examples, training_data.entity_synonyms, training_data.regex_features
+        keep_examples,
+        training_data.entity_synonyms,
+        training_data.regex_features,
+        responses=training_data.responses,
     )
 
 
@@ -240,7 +184,7 @@ def write_intent_successes(
             "text": r.message,
             "intent": r.intent_target,
             "intent_prediction": {
-                "name": r.intent_prediction,
+                INTENT_NAME_KEY: r.intent_prediction,
                 "confidence": r.confidence,
             },
         }
@@ -249,7 +193,7 @@ def write_intent_successes(
     ]
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful intent predictions saved to {successes_filename}.")
         logger.debug(f"\n\nSuccessfully predicted the following intents: \n{successes}")
     else:
@@ -270,7 +214,7 @@ def write_intent_errors(
             "text": r.message,
             "intent": r.intent_target,
             "intent_prediction": {
-                "name": r.intent_prediction,
+                INTENT_NAME_KEY: r.intent_prediction,
                 "confidence": r.confidence,
             },
         }
@@ -279,7 +223,7 @@ def write_intent_errors(
     ]
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(errors_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect intent predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -302,19 +246,18 @@ def write_response_successes(
     successes = [
         {
             "text": r.message,
-            "intent_target": r.intent_target,
-            "response_target": r.response_target,
-            "response_prediction": {
-                "name": r.response_prediction,
+            "intent_response_key_target": r.intent_response_key_target,
+            "intent_response_key_prediction": {
+                "name": r.intent_response_key_prediction,
                 "confidence": r.confidence,
             },
         }
         for r in response_results
-        if r.response_prediction == r.response_target
+        if r.intent_response_key_prediction == r.intent_response_key_target
     ]
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following responses: \n{successes}"
@@ -335,19 +278,18 @@ def write_response_errors(
     errors = [
         {
             "text": r.message,
-            "intent_target": r.intent_target,
-            "response_target": r.response_target,
-            "response_prediction": {
-                "name": r.response_prediction,
+            "intent_response_key_target": r.intent_response_key_target,
+            "intent_response_key_prediction": {
+                "name": r.intent_response_key_prediction,
                 "confidence": r.confidence,
             },
         }
         for r in response_results
-        if r.response_prediction != r.response_target
+        if r.intent_response_key_prediction != r.intent_response_key_target
     ]
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(errors_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect response predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese response examples could not be classified "
@@ -419,7 +361,7 @@ def plot_entity_confidences(
         for target, prediction, confidence in zip(
             merged_targets, merged_predictions, merged_confidences
         )
-        if prediction != NO_ENTITY and target != prediction
+        if prediction not in (NO_ENTITY, target)
     ]
 
     plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
@@ -449,6 +391,7 @@ def evaluate_response_selections(
     """
     import sklearn.metrics
     import sklearn.utils.multiclass
+    from rasa.test import get_evaluation_metrics
 
     # remove empty response targets
     num_examples = len(response_selection_results)
@@ -462,36 +405,39 @@ def evaluate_response_selections(
         f"of {num_examples} examples."
     )
 
-    response_to_intent_target = {}
-    for result in response_selection_results:
-        response_to_intent_target[result.response_target] = result.intent_target
-
-    target_responses, predicted_responses = _targets_predictions_from(
-        response_selection_results, "response_target", "response_prediction"
+    (
+        target_intent_response_keys,
+        predicted_intent_response_keys,
+    ) = _targets_predictions_from(
+        response_selection_results,
+        "intent_response_key_target",
+        "intent_response_key_prediction",
     )
 
     confusion_matrix = sklearn.metrics.confusion_matrix(
-        target_responses, predicted_responses
+        target_intent_response_keys, predicted_intent_response_keys
     )
     labels = sklearn.utils.multiclass.unique_labels(
-        target_responses, predicted_responses
+        target_intent_response_keys, predicted_intent_response_keys
     )
 
     if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
-            target_responses, predicted_responses, output_dict=True
+            target_intent_response_keys,
+            predicted_intent_response_keys,
+            output_dict=True,
         )
         report = _add_confused_labels_to_report(report, confusion_matrix, labels)
 
         report_filename = os.path.join(
             output_directory, "response_selection_report.json"
         )
-        io_utils.dump_obj_as_json_to_file(report_filename, report)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
-            target_responses, predicted_responses
+            target_intent_response_keys, predicted_intent_response_keys
         )
         if isinstance(report, str):
             log_evaluation_table(report, precision, f1, accuracy)
@@ -516,10 +462,10 @@ def evaluate_response_selections(
             confusion_matrix_filename = os.path.join(
                 output_directory, confusion_matrix_filename
             )
-        _labels = [response_to_intent_target[label] for label in labels]
+
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
-            classes=_labels,
+            classes=labels,
             title="Response Selection Confusion Matrix",
             output_file=confusion_matrix_filename,
         )
@@ -530,17 +476,16 @@ def evaluate_response_selections(
         plot_attribute_confidences(
             response_selection_results,
             histogram_filename,
-            "response_target",
-            "response_prediction",
+            "intent_response_key_target",
+            "intent_response_key_prediction",
             title="Response Selection Prediction Confidence Distribution",
         )
 
     predictions = [
         {
             "text": res.message,
-            "intent_target": res.intent_target,
-            "response_target": res.response_target,
-            "response_predicted": res.response_prediction,
+            "intent_response_key_target": res.intent_response_key_target,
+            "intent_response_key_prediction": res.intent_response_key_prediction,
             "confidence": res.confidence,
         }
         for res in response_selection_results
@@ -631,6 +576,7 @@ def evaluate_intents(
     """
     import sklearn.metrics
     import sklearn.utils.multiclass
+    from rasa.test import get_evaluation_metrics
 
     # remove empty intent targets
     num_examples = len(intent_results)
@@ -657,7 +603,7 @@ def evaluate_intents(
         report = _add_confused_labels_to_report(report, confusion_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
-        io_utils.dump_obj_as_json_to_file(report_filename, report)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -667,17 +613,13 @@ def evaluate_intents(
         if isinstance(report, str):
             log_evaluation_table(report, precision, f1, accuracy)
 
-    if successes:
-        successes_filename = "intent_successes.json"
-        if output_directory:
-            successes_filename = os.path.join(output_directory, successes_filename)
+    if successes and output_directory:
+        successes_filename = os.path.join(output_directory, "intent_successes.json")
         # save classified samples to file for debugging
         write_intent_successes(intent_results, successes_filename)
 
-    if errors:
-        errors_filename = "intent_errors.json"
-        if output_directory:
-            errors_filename = os.path.join(output_directory, errors_filename)
+    if errors and output_directory:
+        errors_filename = os.path.join(output_directory, "intent_errors.json")
         # log and save misclassified samples to file for debugging
         write_intent_errors(intent_results, errors_filename)
 
@@ -798,7 +740,7 @@ def write_incorrect_entity_predictions(
     )
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(error_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(error_filename, errors)
         logger.info(f"Incorrect entity predictions saved to {error_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -858,7 +800,7 @@ def write_successful_entity_predictions(
     )
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following entities: \n{successes}"
@@ -925,6 +867,7 @@ def evaluate_entities(
     """
     import sklearn.metrics
     import sklearn.utils.multiclass
+    from rasa.test import get_evaluation_metrics
 
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
@@ -961,7 +904,9 @@ def evaluate_entities(
                 report, confusion_matrix, labels, [NO_ENTITY]
             )
 
-            io_utils.dump_obj_as_json_to_file(extractor_report_filename, report)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                extractor_report_filename, report
+            )
 
             logger.info(
                 "Classification report for '{}' saved to '{}'."
@@ -1344,11 +1289,11 @@ def get_eval_data(
     intent_results, entity_results, response_selection_results = [], [], []
 
     response_labels = [
-        e.get("response")
+        e.get(INTENT_RESPONSE_KEY)
         for e in test_data.intent_examples
-        if e.get("response") is not None
+        if e.get(INTENT_RESPONSE_KEY) is not None
     ]
-    intent_labels = [e.get("intent") for e in test_data.intent_examples]
+    intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
     should_eval_intents = (
         is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
     )
@@ -1362,15 +1307,15 @@ def get_eval_data(
     should_eval_entities = is_entity_extractor_present(interpreter)
 
     for example in tqdm(test_data.training_examples):
-        result = interpreter.parse(example.text, only_output_properties=False)
+        result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
-            intent_prediction = result.get("intent", {}) or {}
+            intent_prediction = result.get(INTENT, {}) or {}
             intent_results.append(
                 IntentEvaluationResult(
-                    example.get("intent", ""),
-                    intent_prediction.get("name"),
-                    result.get("text", {}),
+                    example.get(INTENT, ""),
+                    intent_prediction.get(INTENT_NAME_KEY),
+                    result.get(TEXT, {}),
                     intent_prediction.get("confidence"),
                 )
             )
@@ -1379,39 +1324,36 @@ def get_eval_data(
 
             # including all examples here. Empty response examples are filtered at the
             # time of metric calculation
-            intent_target = example.get("intent", "")
+            intent_target = example.get(INTENT, "")
             selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
 
             if intent_target in available_response_selector_types:
                 response_prediction_key = intent_target
             else:
-                response_prediction_key = DEFAULT_OPEN_UTTERANCE_TYPE
+                response_prediction_key = RESPONSE_SELECTOR_DEFAULT_INTENT
 
             response_prediction = selector_properties.get(
                 response_prediction_key, {}
-            ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
+            ).get(RESPONSE_SELECTOR_PREDICTION_KEY, {})
 
-            response_target = example.get("response", "")
-
-            complete_intent = example.get_combined_intent_response_key()
+            intent_response_key_target = example.get(INTENT_RESPONSE_KEY, "")
 
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
-                    complete_intent,
-                    response_target,
-                    response_prediction.get("name"),
-                    result.get("text", {}),
-                    response_prediction.get("confidence"),
+                    intent_response_key_target,
+                    response_prediction.get(INTENT_RESPONSE_KEY),
+                    result.get(TEXT, {}),
+                    response_prediction.get(PREDICTED_CONFIDENCE_KEY),
                 )
             )
 
         if should_eval_entities:
             entity_results.append(
                 EntityEvaluationResult(
-                    example.get("entities", []),
-                    result.get("entities", []),
-                    result.get("tokens", []),
-                    result.get("text", ""),
+                    example.get(ENTITIES, []),
+                    result.get(ENTITIES, []),
+                    result.get(TOKENS_NAMES[TEXT], []),
+                    result.get(TEXT, ""),
                 )
             )
 
@@ -1524,13 +1466,13 @@ def run_evaluation(
 
     Returns: dictionary containing evaluation results
     """
-    import rasa.nlu.training_data
+    import rasa.shared.nlu.training_data.loading
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = rasa.nlu.training_data.load_data(
+    test_data = rasa.shared.nlu.training_data.loading.load_data(
         data_path, interpreter.model_metadata.language
     )
 
@@ -1541,7 +1483,7 @@ def run_evaluation(
     }
 
     if output_directory:
-        io_utils.create_directory(output_directory)
+        rasa.shared.utils.io.create_directory(output_directory)
 
     intent_results, response_selection_results, entity_results, = get_eval_data(
         interpreter, test_data
@@ -1563,7 +1505,7 @@ def run_evaluation(
             disable_plotting,
         )
 
-    if entity_results:
+    if any(entity_results):
         logger.info("Entity evaluation results:")
         extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
@@ -1574,6 +1516,8 @@ def run_evaluation(
             errors,
             disable_plotting,
         )
+
+    telemetry.track_nlu_model_test(test_data)
 
     return result
 
@@ -1588,9 +1532,9 @@ def generate_folds(
     skf = StratifiedKFold(n_splits=n, shuffle=True)
     x = training_data.intent_examples
 
-    # Get labels with response key appended to intent name because we want a
+    # Get labels as they appear in the training data because we want a
     # stratified split on all intents(including retrieval intents if they exist)
-    y = [example.get_combined_intent_response_key() for example in x]
+    y = [example.get_full_intent() for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
         logger.debug(f"Fold: {i_fold}")
         train = [x[i] for i in train_index]
@@ -1600,11 +1544,13 @@ def generate_folds(
                 training_examples=train,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
+                responses=training_data.responses,
             ),
             TrainingData(
                 training_examples=test,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
+                responses=training_data.responses,
             ),
         )
 
@@ -1676,6 +1622,7 @@ def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> boo
     for result in entity_results:
         if result.entity_targets or result.entity_predictions:
             return True
+    return False
 
 
 def cross_validate(
@@ -1703,13 +1650,12 @@ def cross_validate(
               corresponds to the relevant result for one fold
     """
     import rasa.nlu.config
-    from collections import defaultdict
 
     if isinstance(nlu_config, str):
         nlu_config = rasa.nlu.config.load(nlu_config)
 
     if output:
-        io_utils.create_directory(output)
+        rasa.shared.utils.io.create_directory(output)
 
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
@@ -1849,7 +1795,9 @@ def compute_metrics(
     response_selection_metrics = {}
     if response_selection_results:
         response_selection_metrics = _compute_metrics(
-            response_selection_results, "response_target", "response_prediction"
+            response_selection_results,
+            "intent_response_key_target",
+            "intent_response_key_prediction",
         )
 
     return (
@@ -1905,23 +1853,27 @@ def compare_nlu(
         io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
-        io_utils.write_text_file(test.nlu_as_markdown(), test_path)
+        rasa.shared.utils.io.write_text_file(test.nlu_as_markdown(), test_path)
 
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
 
-            _, train = train.train_test_split(percentage / 100)
+            _, train_included = train.train_test_split(percentage / 100)
             # only count for the first run and ignore the others
             if run == 0:
-                training_examples_per_run.append(len(train.training_examples))
+                training_examples_per_run.append(len(train_included.training_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")
             train_nlu_split_path = os.path.join(train_split_path, TRAIN_DATA_FILE)
             train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
             io_utils.create_path(train_nlu_split_path)
-            io_utils.write_text_file(train.nlu_as_markdown(), train_nlu_split_path)
-            io_utils.write_text_file(train.nlg_as_markdown(), train_nlg_split_path)
+            rasa.shared.utils.io.write_text_file(
+                train_included.nlu_as_markdown(), train_nlu_split_path
+            )
+            rasa.shared.utils.io.write_text_file(
+                train_included.nlg_as_markdown(), train_nlg_split_path
+            )
 
             for nlu_config, model_name in zip(configs, model_names):
                 logger.info(
@@ -1937,7 +1889,9 @@ def compare_nlu(
                         model_output_path,
                         fixed_model_name=model_name,
                     )
-                except Exception as e:
+                except Exception as e:  # skipcq: PYL-W0703
+                    # general exception catching needed to continue evaluating other
+                    # model configurations
                     logger.warning(f"Training model '{model_name}' failed. Error: {e}")
                     f_score_results[model_name][run].append(0.0)
                     continue
@@ -1971,6 +1925,8 @@ def _compute_metrics(
 
     Returns: metrics
     """
+    from rasa.test import get_evaluation_metrics
+
     # compute fold metrics
     targets, predictions = _targets_predictions_from(
         results, target_key, prediction_key
@@ -1991,6 +1947,8 @@ def _compute_entity_metrics(
 
     Returns: entity metrics
     """
+    from rasa.test import get_evaluation_metrics
+
     entity_metric_results: EntityMetrics = defaultdict(lambda: defaultdict(list))
     extractors = get_entity_extractors(interpreter)
 

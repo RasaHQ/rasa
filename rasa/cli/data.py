@@ -1,22 +1,36 @@
-import logging
 import argparse
-import asyncio
+import logging
+import os
+from pathlib import Path
 from typing import List
 
-from rasa import data
+from rasa import telemetry
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
-from rasa.constants import DEFAULT_DATA_PATH
+import rasa.nlu.convert
+from rasa.shared.constants import DEFAULT_DATA_PATH
+import rasa.shared.data
+from rasa.shared.importers.rasa import RasaFileImporter
+import rasa.shared.nlu.training_data.loading
+import rasa.shared.nlu.training_data.util
+import rasa.shared.utils.cli
+import rasa.utils.common
+from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
-from rasa.importers.rasa import RasaFileImporter
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all data parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     data_parser = subparsers.add_parser(
         "data",
         conflict_handler="resolve",
@@ -36,8 +50,6 @@ def add_subparser(
 def _add_data_convert_parsers(
     data_subparsers, parents: List[argparse.ArgumentParser]
 ) -> None:
-    from rasa.nlu import convert
-
     convert_parser = data_subparsers.add_parser(
         "convert",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -51,11 +63,31 @@ def _add_data_convert_parsers(
         "nlu",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Converts NLU data between Markdown and json formats.",
+        help="Converts NLU data between formats.",
     )
-    convert_nlu_parser.set_defaults(func=convert.main)
+    convert_nlu_parser.set_defaults(func=_convert_nlu_data)
 
-    arguments.set_convert_arguments(convert_nlu_parser)
+    arguments.set_convert_arguments(convert_nlu_parser, data_type="Rasa NLU")
+
+    convert_nlg_parser = convert_subparsers.add_parser(
+        "nlg",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Converts NLG data between formats.",
+    )
+    convert_nlg_parser.set_defaults(func=_convert_nlg_data)
+
+    arguments.set_convert_arguments(convert_nlg_parser, data_type="Rasa NLG")
+
+    convert_core_parser = convert_subparsers.add_parser(
+        "core",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Converts Core data between formats.",
+    )
+    convert_core_parser.set_defaults(func=_convert_core_data)
+
+    arguments.set_convert_arguments(convert_core_parser, data_type="Rasa Core")
 
 
 def _add_data_split_parsers(
@@ -117,35 +149,37 @@ def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def split_nlu_data(args: argparse.Namespace) -> None:
-    from rasa.nlu.training_data.loading import load_data
-    from rasa.nlu.training_data.util import get_file_format
+    """Load data from a file path and split the NLU data into test and train examples.
 
+    Args:
+        args: Commandline arguments
+    """
     data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    data_path = data.get_nlu_directory(data_path)
+    data_path = rasa.shared.data.get_nlu_directory(data_path)
 
-    nlu_data = load_data(data_path)
-    fformat = get_file_format(data_path)
+    nlu_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
+    extension = rasa.shared.nlu.training_data.util.get_file_format_extension(data_path)
 
     train, test = nlu_data.train_test_split(args.training_fraction, args.random_seed)
 
-    train.persist(args.out, filename=f"training_data.{fformat}")
-    test.persist(args.out, filename=f"test_data.{fformat}")
+    train.persist(args.out, filename=f"training_data{extension}")
+    test.persist(args.out, filename=f"test_data{extension}")
+
+    telemetry.track_data_split(args.training_fraction, "nlu")
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
-    """
-    Validates either the story structure or the entire project.
+    """Validates either the story structure or the entire project.
 
     Args:
         args: Commandline arguments
         stories_only: If `True`, only the story structure is validated.
     """
-    loop = asyncio.get_event_loop()
     file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
     )
 
-    validator = loop.run_until_complete(Validator.from_importer(file_importer))
+    validator = rasa.utils.common.run_in_loop(Validator.from_importer(file_importer))
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
@@ -156,11 +190,19 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
             and _validate_story_structure(validator, args)
         )
 
+    telemetry.track_validate_files(all_good)
     if not all_good:
-        rasa.cli.utils.print_error_and_exit("Project validation completed with errors.")
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Project validation completed with errors."
+        )
 
 
 def validate_stories(args: argparse.Namespace) -> None:
+    """Validates that training data file content conforms to training data spec.
+
+    Args:
+        args: Commandline arguments
+    """
     validate_files(args, stories_only=True)
 
 
@@ -176,9 +218,131 @@ def _validate_story_structure(validator: Validator, args: argparse.Namespace) ->
     # Check if a valid setting for `max_history` was given
     if isinstance(args.max_history, int) and args.max_history < 1:
         raise argparse.ArgumentTypeError(
-            f"The value of `--max-history {args.max_history}` is not a positive integer.",
+            f"The value of `--max-history {args.max_history}` is not a positive integer."
         )
 
     return validator.verify_story_structure(
         not args.fail_on_warnings, max_history=args.max_history
     )
+
+
+def _convert_nlu_data(args: argparse.Namespace) -> None:
+    from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
+        NLUMarkdownToYamlConverter,
+    )
+
+    if args.format in ["json", "md"]:
+        rasa.nlu.convert.convert_training_data(
+            args.data, args.out, args.format, args.language
+        )
+        telemetry.track_data_convert(args.format, "nlu")
+    elif args.format == "yaml":
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, NLUMarkdownToYamlConverter())
+        )
+        telemetry.track_data_convert(args.format, "nlu")
+    else:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Could not recognize output format. Supported output formats: 'json', "
+            "'md', 'yaml'. Specify the desired output format with '--format'."
+        )
+
+
+def _convert_core_data(args: argparse.Namespace) -> None:
+    from rasa.core.training.converters.story_markdown_to_yaml_converter import (
+        StoryMarkdownToYamlConverter,
+    )
+
+    if args.format == "yaml":
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, StoryMarkdownToYamlConverter())
+        )
+        telemetry.track_data_convert(args.format, "core")
+    else:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Could not recognize output format. Supported output formats: "
+            "'yaml'. Specify the desired output format with '--format'."
+        )
+
+
+def _convert_nlg_data(args: argparse.Namespace) -> None:
+    from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
+        NLGMarkdownToYamlConverter,
+    )
+
+    if args.format == "yaml":
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+        )
+        telemetry.track_data_convert(args.format, "nlg")
+    else:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Could not recognize output format. Supported output formats: "
+            "'yaml'. Specify the desired output format with '--format'."
+        )
+
+
+async def _convert_to_yaml(
+    args: argparse.Namespace, converter: TrainingDataConverter
+) -> None:
+
+    output = Path(args.out)
+    if not os.path.exists(output):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The output path '{output}' doesn't exist. Please make sure to specify "
+            f"an existing directory and try again."
+        )
+
+    training_data = Path(args.data)
+    if not os.path.exists(training_data):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The training data path {training_data} doesn't exist "
+            f"and will be skipped."
+        )
+
+    num_of_files_converted = 0
+
+    if os.path.isfile(training_data):
+        if await _convert_file_to_yaml(training_data, output, converter):
+            num_of_files_converted += 1
+    elif os.path.isdir(training_data):
+        for root, _, files in os.walk(training_data, followlinks=True):
+            for f in sorted(files):
+                source_path = Path(os.path.join(root, f))
+                if await _convert_file_to_yaml(source_path, output, converter):
+                    num_of_files_converted += 1
+
+    if num_of_files_converted:
+        rasa.shared.utils.cli.print_info(
+            f"Converted {num_of_files_converted} file(s), saved in '{output}'."
+        )
+    else:
+        rasa.shared.utils.cli.print_warning(
+            f"Didn't convert any files under '{training_data}' path. "
+            "Did you specify the correct file/directory?"
+        )
+
+
+async def _convert_file_to_yaml(
+    source_file: Path, target_dir: Path, converter: TrainingDataConverter
+) -> bool:
+    """Converts a single training data file to `YAML` format.
+
+    Args:
+        source_file: Training data file to be converted.
+        target_dir: Target directory for the converted file.
+        converter: Converter to be used.
+
+    Returns:
+        `True` if file was converted, `False` otherwise.
+    """
+    if not rasa.shared.data.is_valid_filetype(source_file):
+        return False
+
+    if converter.filter(source_file):
+        await converter.convert_and_write(source_file, target_dir)
+        return True
+
+    rasa.shared.utils.cli.print_warning(f"Skipped file: '{source_file}'.")
+
+    return False

@@ -5,12 +5,14 @@ import platform
 
 import rasa.utils.io
 from rasa import version
+import rasa.telemetry
 from rasa.cli import (
     scaffold,
     run,
     train,
     interactive,
     shell,
+    telemetry,
     test,
     visualize,
     data,
@@ -19,7 +21,7 @@ from rasa.cli import (
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
-from rasa.utils.common import set_log_level
+from rasa.utils.common import set_log_level, set_log_and_warnings_filters
 import rasa.utils.tensorflow.environment as tf_env
 from rasa_sdk import __version__ as rasa_sdk_version
 
@@ -56,6 +58,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     shell.add_subparser(subparsers, parents=parent_parsers)
     train.add_subparser(subparsers, parents=parent_parsers)
     interactive.add_subparser(subparsers, parents=parent_parsers)
+    telemetry.add_subparser(subparsers, parents=parent_parsers)
     test.add_subparser(subparsers, parents=parent_parsers)
     visualize.add_subparser(subparsers, parents=parent_parsers)
     data.add_subparser(subparsers, parents=parent_parsers)
@@ -105,6 +108,8 @@ def main() -> None:
 
     if hasattr(cmdline_arguments, "func"):
         rasa.utils.io.configure_colored_logging(log_level)
+        set_log_and_warnings_filters()
+        rasa.telemetry.initialize_error_reporting()
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()
@@ -112,7 +117,7 @@ def main() -> None:
         # user has not provided a subcommand, let's print the help
         logger.error("No command specified.")
         arg_parser.print_help()
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from typing import Callable, Optional, Dict, Text, List, Tuple, Any
+from typing import Callable, Optional, Dict, Text, List, Tuple
 from unittest.mock import Mock
 
 import pytest
@@ -10,8 +10,8 @@ from _pytest.pytester import RunResult
 import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
 from rasa.core.brokers.pika import PikaEventBroker
-from rasa.core.events import UserUttered
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.exceptions import PublishingError, NoEventsToMigrateError
 from tests.conftest import (
     MockExporter,
@@ -29,9 +29,10 @@ def test_export_help(run: Callable[..., RunResult]):
                    [--conversation-ids CONVERSATION_IDS]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 @pytest.mark.parametrize(
@@ -39,7 +40,7 @@ def test_export_help(run: Callable[..., RunResult]):
     [(2, 3), (None, 5.5), (None, None), (5, None)],
 )
 def test_validate_timestamp_options(
-    minimum_timestamp: Optional[float], maximum_timestamp: Optional[float],
+    minimum_timestamp: Optional[float], maximum_timestamp: Optional[float]
 ):
     args = argparse.Namespace()
     args.minimum_timestamp = (
@@ -65,7 +66,14 @@ def test_validate_timestamp_options_with_invalid_timestamps():
 def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
     # write valid config to file
     endpoints_path = write_endpoint_config_to_yaml(
-        tmp_path, {"event_broker": {"type": "sql"}, "tracker_store": {"type": "sql"}}
+        tmp_path,
+        {
+            "event_broker": {
+                "type": "sql",
+                "db": str(tmp_path / "rasa.db").replace("\\", "\\\\"),
+            },
+            "tracker_store": {"type": "sql"},
+        },
     )
 
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)

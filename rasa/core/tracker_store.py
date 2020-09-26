@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from time import sleep
 from typing import (
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -21,19 +22,27 @@ from typing import (
 
 from boto3.dynamodb.conditions import Key
 import rasa.core.utils as core_utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+import rasa.shared.utils.cli
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
     POSTGRESQL_SCHEMA,
     POSTGRESQL_MAX_OVERFLOW,
     POSTGRESQL_POOL_SIZE,
 )
-from rasa.core.conversation import Dialogue
-from rasa.core.domain import Domain
-from rasa.core.events import SessionStarted
-from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
+from rasa.shared.core.conversation import Dialogue
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import SessionStarted
+from rasa.shared.core.trackers import (
+    ActionExecuted,
+    DialogueStateTracker,
+    EventVerbosity,
+)
 import rasa.cli.utils as rasa_cli_utils
-from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.utils import common as common_utils
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
 
@@ -56,11 +65,28 @@ class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
 
     def __init__(
-        self, domain: Optional[Domain], event_broker: Optional[EventBroker] = None
+        self,
+        domain: Optional[Domain],
+        event_broker: Optional[EventBroker] = None,
+        retrieve_events_from_previous_conversation_sessions: bool = False,
     ) -> None:
+        """Create a TrackerStore.
+
+        Args:
+            domain: The `Domain` to initialize the `DialogueStateTracker`.
+            event_broker: An event broker to publish any new events to another
+                destination.
+            retrieve_events_from_previous_conversation_sessions: If `True`, `retrieve`
+                will return all events (even if they are from a previous conversation
+                session). This setting only applies to `TrackerStore`s which usually
+                would only return events for the latest session.
+        """
         self.domain = domain
         self.event_broker = event_broker
         self.max_event_history = None
+        self.load_events_from_previous_conversation_sessions = (
+            retrieve_events_from_previous_conversation_sessions
+        )
 
     @staticmethod
     def create(
@@ -74,23 +100,6 @@ class TrackerStore:
             return obj
         else:
             return _create_from_endpoint_config(obj, domain, event_broker)
-
-    @staticmethod
-    def create_tracker_store(
-        domain: Domain,
-        store: Optional[EndpointConfig] = None,
-        event_broker: Optional[EventBroker] = None,
-    ) -> "TrackerStore":
-        """Returns the tracker_store type"""
-
-        raise_warning(
-            "The `create_tracker_store` function is deprecated, please use "
-            "`TrackerStore.create` instead. `create_tracker_store` will be "
-            "removed in future Rasa versions.",
-            DeprecationWarning,
-        )
-
-        return TrackerStore.create(store, domain, event_broker)
 
     def get_or_create_tracker(
         self,
@@ -185,10 +194,10 @@ class TrackerStore:
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
 
-        logger.warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
-            f"trackers will be deprecated in version 2.0. Rasa will perform any "
+            f"trackers is deprecated. Rasa will perform any "
             f"future save operations of this tracker using json serialisation."
         )
         return pickle.loads(serialised_tracker)
@@ -337,7 +346,9 @@ class DynamoTrackerStore(TrackerStore):
         import boto3
 
         dynamo = boto3.resource("dynamodb", region_name=self.region)
-        if self.table_name not in self.client.list_tables()["TableNames"]:
+        try:
+            self.client.describe_table(TableName=table_name)
+        except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
                 KeySchema=[
@@ -488,8 +499,9 @@ class MongoTrackerStore(TrackerStore):
         """
 
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
+        all_events = self._events_from_serialized_tracker(stored)
         number_events_since_last_session = len(
-            self._events_since_last_session_start(stored)
+            self._events_since_last_session_start(all_events)
         )
 
         return itertools.islice(
@@ -497,11 +509,15 @@ class MongoTrackerStore(TrackerStore):
         )
 
     @staticmethod
-    def _events_since_last_session_start(serialised_tracker: Dict) -> List[Dict]:
+    def _events_from_serialized_tracker(serialised: Dict) -> List[Dict]:
+        return serialised.get("events", [])
+
+    @staticmethod
+    def _events_since_last_session_start(events: List[Dict]) -> List[Dict]:
         """Retrieve events since and including the latest `SessionStart` event.
 
         Args:
-            serialised_tracker: Serialised tracker to inspect.
+            events: All events for a conversation ID.
 
         Returns:
             List of serialised events since and including the latest `SessionStarted`
@@ -509,15 +525,15 @@ class MongoTrackerStore(TrackerStore):
 
         """
 
-        events = []
-        for event in reversed(serialised_tracker.get("events", [])):
-            events.append(event)
+        events_after_session_start = []
+        for event in reversed(events):
+            events_after_session_start.append(event)
             if event["event"] == SessionStarted.type_name:
                 break
 
-        return list(reversed(events))
+        return list(reversed(events_after_session_start))
 
-    def retrieve(self, sender_id):
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """
         Args:
             sender_id: the message owner ID
@@ -529,7 +545,7 @@ class MongoTrackerStore(TrackerStore):
 
         # look for conversations which have used an `int` sender_id in the past
         # and update them.
-        if stored is None and sender_id.isdigit():
+        if not stored and sender_id.isdigit():
             from pymongo import ReturnDocument
 
             stored = self.conversations.find_one_and_update(
@@ -538,11 +554,14 @@ class MongoTrackerStore(TrackerStore):
                 return_document=ReturnDocument.AFTER,
             )
 
-        if stored is not None:
-            events = self._events_since_last_session_start(stored)
-            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
-        else:
-            return None
+        if not stored:
+            return
+
+        events = self._events_from_serialized_tracker(stored)
+        if not self.load_events_from_previous_conversation_sessions:
+            events = self._events_since_last_session_start(events)
+
+        return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store"""
@@ -553,7 +572,7 @@ def _create_sequence(table_name: Text) -> "Sequence":
     """Creates a sequence object for a specific table name.
 
     If using Oracle you will need to create a sequence in your database,
-    as described here: https://rasa.com/docs/rasa/api/tracker-stores/#sqltrackerstore
+    as described here: https://rasa.com/docs/rasa/tracker-stores#sqltrackerstore
     Args:
         table_name: The name of the table, which gets a Sequence assigned
 
@@ -582,7 +601,7 @@ def is_postgresql_url(url: Union[Text, "URL"]) -> bool:
     return url.drivername == "postgresql"
 
 
-def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Union[Text, int]]:
+def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
     """Get `sqlalchemy.create_engine()` kwargs.
 
     Args:
@@ -683,9 +702,7 @@ class SQLTrackerStore(TrackerStore):
             dialect, host, port, db, username, password, login_db, query
         )
 
-        self.engine = sa.engine.create_engine(
-            engine_url, **create_engine_kwargs(engine_url),
-        )
+        self.engine = sa.create_engine(engine_url, **create_engine_kwargs(engine_url))
 
         logger.debug(
             f"Attempting to connect to database via '{repr(self.engine.url)}'."
@@ -816,7 +833,7 @@ class SQLTrackerStore(TrackerStore):
             ensure_schema_exists(session)
             yield session
         except ValueError as e:
-            rasa_cli_utils.print_error_and_exit(
+            rasa.shared.utils.cli.print_error_and_exit(
                 f"Requested PostgreSQL schema '{e}' was not found in the database. To "
                 f"continue, please create the schema by running 'CREATE DATABASE {e};' "
                 f"or unset the '{POSTGRESQL_SCHEMA}' environment variable in order to "
@@ -873,19 +890,20 @@ class SQLTrackerStore(TrackerStore):
             .subquery()
         )
 
-        return (
-            session.query(self.SQLEvent)
-            .filter(
-                self.SQLEvent.sender_id == sender_id,
+        event_query = session.query(self.SQLEvent).filter(
+            self.SQLEvent.sender_id == sender_id
+        )
+        if not self.load_events_from_previous_conversation_sessions:
+            event_query = event_query.filter(
                 # Find events after the latest `SessionStarted` event or return all
                 # events
                 sa.or_(
                     self.SQLEvent.timestamp >= session_start_sub_query.c.session_start,
                     session_start_sub_query.c.session_start.is_(None),
-                ),
+                )
             )
-            .order_by(self.SQLEvent.timestamp)
-        )
+
+        return event_query.order_by(self.SQLEvent.timestamp)
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
@@ -899,7 +917,9 @@ class SQLTrackerStore(TrackerStore):
 
             for event in events:
                 data = event.as_dict()
-                intent = data.get("parse_data", {}).get("intent", {}).get("name")
+                intent = (
+                    data.get("parse_data", {}).get("intent", {}).get(INTENT_NAME_KEY)
+                )
                 action = data.get("name")
                 timestamp = data.get("timestamp")
 
@@ -1046,14 +1066,16 @@ def _create_from_endpoint_config(
             domain=domain, event_broker=event_broker, **endpoint_config.kwargs
         )
     else:
-        tracker_store = _load_from_module_string(domain, endpoint_config, event_broker)
+        tracker_store = _load_from_module_name_in_endpoint_config(
+            domain, endpoint_config, event_broker
+        )
 
     logger.debug(f"Connected to {tracker_store.__class__.__name__}.")
 
     return tracker_store
 
 
-def _load_from_module_string(
+def _load_from_module_name_in_endpoint_config(
     domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None
 ) -> "TrackerStore":
     """Initializes a custom tracker.
@@ -1070,16 +1092,17 @@ def _load_from_module_string(
     """
 
     try:
-        tracker_store_class = class_from_module_path(store.type)
-        init_args = arguments_of(tracker_store_class.__init__)
+        tracker_store_class = rasa.shared.utils.common.class_from_module_path(
+            store.type
+        )
+        init_args = rasa.shared.utils.common.arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
-            raise_warning(
-                "The `url` initialization argument for custom tracker stores is "
-                "deprecated. Your custom tracker store should take a `host` "
-                "argument in its `__init__()` instead.",
-                DeprecationWarning,
+            # DEPRECATION EXCEPTION - remove in 2.1
+            raise Exception(
+                "The `url` initialization argument for custom tracker stores has "
+                "been removed. Your custom tracker store should take a `host` "
+                "argument in its `__init__()` instead."
             )
-            store.kwargs["url"] = store.url
         else:
             store.kwargs["host"] = store.url
 
@@ -1087,7 +1110,7 @@ def _load_from_module_string(
             domain=domain, event_broker=event_broker, **store.kwargs
         )
     except (AttributeError, ImportError):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"Tracker store with type '{store.type}' not found. "
             f"Using `InMemoryTrackerStore` instead."
         )

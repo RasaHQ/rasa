@@ -1,31 +1,43 @@
-import typing
-from typing import Text, List, Optional, Union
+from typing import Text, List, Optional, Union, TYPE_CHECKING
 
-if typing.TYPE_CHECKING:
-    from rasa.core.domain import Domain
-    from rasa.core.interpreter import NaturalLanguageInterpreter
-    from rasa.core.trackers import DialogueStateTracker
-    from rasa.core.training.structures import StoryGraph
-    from rasa.importers.importer import TrainingDataImporter
+if TYPE_CHECKING:
+    from rasa.shared.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
+    from rasa.shared.core.generator import TrackerWithCachedStates
+    from rasa.shared.core.training_data.structures import StoryGraph
+    from rasa.shared.importers.importer import TrainingDataImporter
+
+
+async def extract_rule_data(
+    resource_name: Text,
+    domain: "Domain",
+    use_e2e: bool = False,
+    exclusion_percentage: int = None,
+) -> "StoryGraph":
+    from rasa.shared.core.training_data import loading
+    from rasa.shared.core.training_data.structures import StoryGraph
+
+    story_steps = await loading.load_data_from_resource(
+        resource_name,
+        domain,
+        use_e2e=use_e2e,
+        exclusion_percentage=exclusion_percentage,
+    )
+    return StoryGraph(story_steps)
 
 
 async def extract_story_graph(
     resource_name: Text,
     domain: "Domain",
-    interpreter: Optional["NaturalLanguageInterpreter"] = None,
     use_e2e: bool = False,
-    exclusion_percentage: int = None,
+    exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
-    from rasa.core.interpreter import RegexInterpreter
-    from rasa.core.training.dsl import StoryFileReader
-    from rasa.core.training.structures import StoryGraph
+    from rasa.shared.core.training_data.structures import StoryGraph
+    import rasa.shared.core.training_data.loading as core_loading
 
-    if not interpreter:
-        interpreter = RegexInterpreter()
-    story_steps = await StoryFileReader.read_from_folder(
+    story_steps = await core_loading.load_data_from_resource(
         resource_name,
         domain,
-        interpreter,
         use_e2e=use_e2e,
         exclusion_percentage=exclusion_percentage,
     )
@@ -40,11 +52,34 @@ async def load_data(
     augmentation_factor: int = 50,
     tracker_limit: Optional[int] = None,
     use_story_concatenation: bool = True,
-    debug_plots=False,
-    exclusion_percentage: int = None,
-) -> List["DialogueStateTracker"]:
-    from rasa.core.training.generator import TrainingDataGenerator
-    from rasa.importers.importer import TrainingDataImporter
+    debug_plots: bool = False,
+    exclusion_percentage: Optional[int] = None,
+) -> List["TrackerWithCachedStates"]:
+    """
+    Load training data from a resource.
+
+    Args:
+        resource_name: resource to load the data from. either a path or an importer
+        domain: domain used for loading
+        remove_duplicates: should duplicated training examples be removed?
+        unique_last_num_states: number of states in a conversation that make the
+            a tracker unique (this is used to identify duplicates)
+        augmentation_factor:
+            by how much should the story training data be augmented
+        tracker_limit:
+            maximum number of trackers to generate during augmentation
+        use_story_concatenation:
+            should stories be concatenated when doing data augmentation
+        debug_plots:
+            generate debug plots during loading
+        exclusion_percentage:
+            how much data to exclude
+
+    Returns:
+        list of loaded trackers
+    """
+    from rasa.shared.core.generator import TrainingDataGenerator
+    from rasa.shared.importers.importer import TrainingDataImporter
 
     if resource_name:
         if isinstance(resource_name, TrainingDataImporter):

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from typing import Dict, Text, List, Any
 
 import pytest
@@ -8,8 +10,9 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.nlu.constants import TEXT, SPACY_DOCS, ENTITIES
-from rasa.nlu.training_data import Message
+from rasa.nlu.constants import SPACY_DOCS
+from rasa.shared.nlu.constants import TEXT, ENTITIES
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
 
@@ -18,7 +21,7 @@ def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
 
 
 async def test_train_persist_load_with_composite_entities(
-    component_builder: ComponentBuilder, tmpdir: Any
+    component_builder: ComponentBuilder, tmp_path: Path
 ):
     pipeline = pipeline_from_components("WhitespaceTokenizer", "CRFEntityExtractor")
 
@@ -26,7 +29,7 @@ async def test_train_persist_load_with_composite_entities(
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/test/demo-rasa-composite-entities.md",
         component_builder=component_builder,
     )
@@ -85,7 +88,7 @@ async def test_train_persist_load_with_composite_entities(
     ],
 )
 async def test_train_persist_with_different_configurations(
-    config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmpdir: Any
+    config_params: Dict[Text, Any], component_builder: ComponentBuilder, tmp_path: Path
 ):
     pipeline = pipeline_from_components(
         "SpacyNLP", "SpacyTokenizer", "CRFEntityExtractor"
@@ -97,7 +100,7 @@ async def test_train_persist_with_different_configurations(
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data="data/examples/rasa",
         component_builder=component_builder,
     )
@@ -143,7 +146,7 @@ def test_crf_use_dense_features(spacy_nlp: Any):
     spacy_tokenizer = SpacyTokenizer()
 
     text = "Rasa is a company in Berlin"
-    message = Message(text)
+    message = Message(data={TEXT: text})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
     spacy_tokenizer.process(message)
@@ -153,10 +156,14 @@ def test_crf_use_dense_features(spacy_nlp: Any):
     features = crf_extractor._crf_tokens_to_features(text_data)
 
     assert "0:text_dense_features" in features[0]
-    for i in range(0, len(message.data.get("text_dense_features")[0])):
+    dense_features, _ = message.get_dense_features(TEXT, [])
+    if dense_features:
+        dense_features = dense_features.features
+
+    for i in range(0, len(dense_features[0])):
         assert (
             features[0]["0:text_dense_features"]["text_dense_features"][str(i)]
-            == message.data.get("text_dense_features")[0][i]
+            == dense_features[0][i]
         )
 
 

@@ -6,7 +6,7 @@ import numpy as np
 from typing import Any, Dict, List, Optional, Text, Tuple, Type, Callable
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
-import rasa.utils.common as common_utils
+import rasa.shared.utils.io
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.config import RasaNLUModelConfig
@@ -15,20 +15,19 @@ from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import (
     TEXT,
-    DENSE_FEATURE_NAMES,
     ENTITIES,
-    NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
-import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +94,9 @@ class CRFEntityExtractor(EntityExtractor):
         "L1_c": 0.1,
         # weight of the L2 regularization
         "L2_c": 0.1,
+        # Name of dense featurizers to use.
+        # If list is empty all available dense features are used.
+        "featurizers": [],
     }
 
     function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
@@ -164,7 +166,7 @@ class CRFEntityExtractor(EntityExtractor):
         self.check_correct_entity_annotations(training_data)
 
         if self.component_config[BILOU_FLAG]:
-            bilou_utils.apply_bilou_schema(training_data, include_cls_token=False)
+            bilou_utils.apply_bilou_schema(training_data)
 
         # only keep the CRFs for tags we actually have training data for
         self._update_crf_order(training_data)
@@ -203,7 +205,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.entity_taggers is None:
             return []
 
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         crf_tokens = self._convert_to_crf_tokens(message)
 
         predictions = {}
@@ -220,7 +222,7 @@ class CRFEntityExtractor(EntityExtractor):
         tags, confidences = self._tag_confidences(tokens, predictions)
 
         return self.convert_predictions_into_entities(
-            message.text, tokens, tags, confidences
+            message.get(TEXT), tokens, tags, confidences
         )
 
     def _add_tag_to_crf_token(
@@ -285,7 +287,6 @@ class CRFEntityExtractor(EntityExtractor):
 
             if self.component_config[BILOU_FLAG]:
                 _tags = bilou_utils.ensure_consistent_bilou_tagging(_tags)
-                _tags = bilou_utils.remove_bilou_prefixes(_tags)
 
             confidences[tag_name] = _confidences
             tags[tag_name] = _tags
@@ -301,7 +302,7 @@ class CRFEntityExtractor(EntityExtractor):
         cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "CRFEntityExtractor":
-        from sklearn.externals import joblib
+        import joblib
 
         file_names = meta.get("files")
         entity_taggers = {}
@@ -333,7 +334,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         Returns the metadata necessary to load the model again."""
 
-        from sklearn.externals import joblib
+        import joblib
 
         file_names = {}
 
@@ -407,14 +408,18 @@ class CRFEntityExtractor(EntityExtractor):
                 # get the features to extract for the token we are currently looking at
                 current_feature_idx = pointer_position + half_window_size
                 features = configured_features[current_feature_idx]
-                # we add the 'entity' feature to include the entity type as features
-                # for the role and group CRFs
-                if include_tag_features:
-                    features.append("entity")
 
                 prefix = prefixes[current_feature_idx]
 
-                for feature in features:
+                # we add the 'entity' feature to include the entity type as features
+                # for the role and group CRFs
+                # (do not modify features, otherwise we will end up adding 'entity'
+                # over and over again, making training very slow)
+                additional_features = []
+                if include_tag_features:
+                    additional_features.append("entity")
+
+                for feature in features + additional_features:
                     if feature == "pattern":
                         # add all regexes extracted from the 'RegexFeaturizer' as a
                         # feature: 'pattern_name' is the name of the pattern the user
@@ -462,41 +467,41 @@ class CRFEntityExtractor(EntityExtractor):
             return message.get(TOKENS_NAMES[TEXT])[idx].get("pattern", {})
         return {}
 
-    @staticmethod
-    def _get_dense_features(message: Message) -> Optional[List[Any]]:
+    def _get_dense_features(self, message: Message) -> Optional[List]:
         """Convert dense features to python-crfsuite feature format."""
-
-        features = message.get(DENSE_FEATURE_NAMES[TEXT])
+        features, _ = message.get_dense_features(
+            TEXT, self.component_config["featurizers"]
+        )
 
         if features is None:
             return None
 
-        tokens = message.get(TOKENS_NAMES[TEXT], [])
-        if len(tokens) != len(features):
-            common_utils.raise_warning(
-                f"Number of features ({len(features)}) for attribute "
-                f"'{DENSE_FEATURE_NAMES[TEXT]}' "
-                f"does not match number of tokens ({len(tokens)}).",
+        tokens = message.get(TOKENS_NAMES[TEXT])
+        if len(tokens) != len(features.features):
+            rasa.shared.utils.io.raise_warning(
+                f"Number of dense features ({len(features.features)}) for attribute "
+                f"'TEXT' does not match number of tokens ({len(tokens)}).",
                 docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
             return None
 
         # convert to python-crfsuite feature format
         features_out = []
-        for feature in features:
+        for feature in features.features:
             feature_dict = {
                 str(index): token_features
                 for index, token_features in enumerate(feature)
             }
             converted = {"text_dense_features": feature_dict}
             features_out.append(converted)
+
         return features_out
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
         """Take a message and convert it to crfsuite format."""
 
         crf_format = []
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
 
         text_dense_features = self._get_dense_features(message)
         tags = self._get_tags(message)
@@ -527,7 +532,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _get_tags(self, message: Message) -> Dict[Text, List[Text]]:
         """Get assigned entity tags of message."""
-        tokens = train_utils.tokens_without_cls(message)
+        tokens = message.get(TOKENS_NAMES[TEXT])
         tags = {}
 
         for tag_name in self.crf_order:

@@ -1,0 +1,123 @@
+---
+id: telemetry
+sidebar_label: Rasa Telemetry
+title: Rasa Telemetry
+abstract: |
+  Rasa uses telemetry to report anonymous usage information. This information
+  is essential to help improve Rasa Open Source for all users.
+---
+
+For the team working on Rasa Open Source it is important to understand
+how the product is used. It allows us to properly prioritize our research
+efforts and feature development.
+
+You will be notified about the telemetry reporting when running Rasa Open Source
+for the first time.
+
+## How to opt-out
+
+You can opt out of telemetry reporting at any time by running the command:
+```bash
+rasa telemetry disable
+```
+
+or by defining `RASA_TELEMETRY_ENABLED=false` as an environment variable.
+If you want to enable reporting again, you can run:
+```bash
+rasa telemetry enable
+```
+
+## Why do we use telemetry reporting?
+
+**Anonymous** telemetry data allow us to prioritize our research efforts
+and feature development based on usage. We want to collect aggregated
+information on usage and reliability so that we can ensure a high-quality product.
+
+So how will we use the reported telemetry data? Here are some examples
+of what we use the data for:
+
+- We will be able to know which languages, pipelines and policies are used.
+  This will enable us to direct our research efforts towards text and
+  dialogue handling projects that will have the biggest impact for our users.
+- We will be able to know data set sizes and general structure (e.g. the number
+  of intents). This allows us to better test our software on different types
+  of data sets and optimize the frameworks performance.
+- We will be able to get more detail on the types of errors you are running
+  into while building an assistant (e.g. initialization, training, etc.).
+  This will let us improve the quality of our framework and better focus our
+  time on solving more common, frustrating issues.
+
+## What about sensitive data?
+
+Your sensitive data never leaves your machine. We:
+- **don't** report any personal identifiable information
+- **don't** report your training data
+- **don't** report any messages your assistant receives or sends
+
+:::note Inspect what is reported
+You can view all the telemetry information that is reported
+by defining the environment variable `RASA_TELEMETRY_DEBUG=true`, for example when running the train command:
+```bash
+RASA_TELEMETRY_DEBUG=true rasa train
+```
+When you set `RASA_TELEMETRY_DEBUG` no information will be sent to any server,
+instead it will be logged to the commandline as a json dump for you to inspect.
+:::
+
+## What do we report?
+
+Rasa reports aggregated usage details, command invocations, performance
+measurements and errors.
+We use the telemetry data to better understand usage patterns. The reported data
+will directly allow us to better decide how to design future features
+and prioritize current work.
+
+Specifically, we collect the following information for all telemetry events:
+
+- Type of the reported event (e.g. *Training Started*)
+- Rasa machine ID: This is generated with a UUID and stored in the global Rasa
+  config at `~/.config/rasa/global.yml` and sent as `metrics_id`
+- One-way hash of the current working directory or a hash of the git remote
+- General OS level information (operating system, number of CPUs, number of
+  GPUs and whether the command is run inside a CI)
+- Current Rasa Open Source and Python version
+
+Here is an example report that shows the data reported to Rasa after running
+`rasa train`:
+```json
+{
+  "userId": "38d23c36c9be443281196080fcdd707d",
+  "event": "Training Started",
+  "properties": {
+    "language": "en",
+    "num_intent_examples": 68,
+    "num_entity_examples": 0,
+    "num_actions": 17,
+    "num_templates": 6,
+    "num_slots": 0,
+    "num_forms": 0,
+    "num_intents": 6,
+    "num_entities": 0,
+    "num_story_steps": 5,
+    "num_lookup_tables": 0,
+    "num_synonyms": 0,
+    "num_regexes": 0,
+    "metrics_id": "38d23c36c9be443281196080fcdd707d"
+  },
+  "context": {
+    "os": {
+      "name": "Darwin",
+      "version": "19.4.0"
+    },
+    "ci": false,
+    "project": "a0a7178e6e5f9e6484c5cfa3ea4497ffc0c96d0ad3f3ad8e9399a1edd88e3cf4",
+    "python": "3.7.5",
+    "rasa_open_source": "2.0.0",
+    "gpu": 0,
+    "cpu": 16
+  }
+}
+```
+
+We **cannot identify individual users** from the dataset. It is anonymized and
+untraceable back to the user.

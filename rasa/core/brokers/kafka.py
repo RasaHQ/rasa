@@ -2,10 +2,8 @@ import json
 import logging
 from typing import Optional
 
-from rasa.constants import DOCS_URL_EVENT_BROKERS
 from rasa.core.brokers.broker import EventBroker
-from rasa.utils.common import raise_warning
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
@@ -78,39 +76,3 @@ class KafkaEventBroker(EventBroker):
 
     def _close(self) -> None:
         self.producer.close()
-
-
-class KafkaProducer(KafkaEventBroker):
-    def __init__(
-        self,
-        host,
-        sasl_username=None,
-        sasl_password=None,
-        ssl_cafile=None,
-        ssl_certfile=None,
-        ssl_keyfile=None,
-        ssl_check_hostname=False,
-        topic="rasa_core_events",
-        security_protocol="SASL_PLAINTEXT",
-        loglevel=logging.ERROR,
-    ) -> None:
-        raise_warning(
-            "The `KafkaProducer` class is deprecated, please inherit "
-            "from `KafkaEventBroker` instead. `KafkaProducer` will be "
-            "removed in future Rasa versions.",
-            FutureWarning,
-            docs=DOCS_URL_EVENT_BROKERS,
-        )
-
-        super(KafkaProducer, self).__init__(
-            host,
-            sasl_username,
-            sasl_password,
-            ssl_cafile,
-            ssl_certfile,
-            ssl_keyfile,
-            ssl_check_hostname,
-            topic,
-            security_protocol,
-            loglevel,
-        )

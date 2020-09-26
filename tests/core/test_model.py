@@ -1,3 +1,4 @@
+import asyncio
 import os
 import tempfile
 import time
@@ -7,20 +8,17 @@ from typing import Text, Optional, Any
 from unittest.mock import Mock
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
 
-import rasa
-import rasa.core
-import rasa.nlu
-from rasa.importers.rasa import RasaFileImporter
-from rasa.constants import (
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.rasa import RasaFileImporter
+from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.core.domain import Domain
-from rasa.core.utils import get_dict_hash
+from rasa.shared.core.domain import KEY_RESPONSES
+from rasa.shared.core.domain import Domain
 from rasa import model
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
@@ -46,11 +44,10 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING
 
 
 def test_get_latest_model(trained_rasa_model: str):
-    import shutil
-
     path_of_latest = os.path.join(os.path.dirname(trained_rasa_model), "latest.tar.gz")
     shutil.copy(trained_rasa_model, path_of_latest)
 
@@ -74,13 +71,13 @@ def test_get_model_context_manager(trained_rasa_model: str):
 
 
 @pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
-def test_get_model_exception(model_path):
+def test_get_model_exception(model_path: Optional[Text]):
     with pytest.raises(ModelNotFound):
         get_model(model_path)
 
 
 def test_get_model_from_directory_with_subdirectories(
-    trained_rasa_model, tmpdir_factory: TempdirFactory
+    trained_rasa_model: Text, tmp_path: Path
 ):
     unpacked = get_model(trained_rasa_model)
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
@@ -88,12 +85,11 @@ def test_get_model_from_directory_with_subdirectories(
     assert unpacked_core
     assert unpacked_nlu
 
-    directory = tmpdir_factory.mktemp("empty_model_dir").strpath
     with pytest.raises(ModelNotFound):
-        get_model_subdirectories(directory)
+        get_model_subdirectories(str(tmp_path))  # temp path should be empty
 
 
-def test_get_model_from_directory_nlu_only(trained_rasa_model):
+def test_get_model_from_directory_nlu_only(trained_rasa_model: Text):
     unpacked = get_model(trained_rasa_model)
     shutil.rmtree(os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME))
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
@@ -183,59 +179,85 @@ def test_nlu_fingerprint_changed(fingerprint2, changed):
 
 
 def _project_files(
-    project,
-    config_file=DEFAULT_CONFIG_PATH,
-    domain=DEFAULT_DOMAIN_PATH,
-    training_files=DEFAULT_DATA_PATH,
-):
+    project: Text,
+    config_file: Text = DEFAULT_CONFIG_PATH,
+    domain: Text = DEFAULT_DOMAIN_PATH,
+    training_files: Text = DEFAULT_DATA_PATH,
+) -> TrainingDataImporter:
     paths = {
         "config_file": config_file,
         "domain_path": domain,
         "training_data_paths": training_files,
     }
-
-    paths = {k: v if v is None else os.path.join(project, v) for k, v in paths.items()}
+    paths = {
+        k: v if v is None or Path(v).is_absolute() else os.path.join(project, v)
+        for k, v in paths.items()
+    }
     paths["training_data_paths"] = [paths["training_data_paths"]]
 
     return RasaFileImporter(**paths)
 
 
-async def test_create_fingerprint_from_paths(project):
-    project_files = _project_files(project)
+@pytest.mark.parametrize(
+    "domain_path",
+    [
+        DEFAULT_DOMAIN_PATH,
+        str((Path(".") / DEFAULT_DOMAIN_PATH_WITH_MAPPING).absolute()),
+    ],
+)
+async def test_create_fingerprint_from_paths(project: Text, domain_path: Text):
+    project_files = _project_files(project, domain=domain_path)
 
     assert await model_fingerprint(project_files)
 
 
-@pytest.mark.parametrize(
-    "project_files", [["invalid", "invalid", "invalid"], [None, None, None]]
-)
-async def test_create_fingerprint_from_invalid_paths(project, project_files):
-    from rasa.nlu.training_data import TrainingData
-    from rasa.core.training.structures import StoryGraph
+async def test_fingerprinting_changed_response_text(project: Text):
+    importer = _project_files(project)
 
-    project_files = _project_files(project, *project_files)
-    expected = _fingerprint(
-        config="",
-        config_nlu="",
-        config_core="",
-        domain=hash(Domain.empty()),
-        nlg=get_dict_hash(Domain.empty().templates),
-        stories=hash(StoryGraph([])),
-        nlu=hash(TrainingData()),
-        rasa_version=rasa.__version__,
+    old_fingerprint = await model_fingerprint(importer)
+    old_domain = await importer.get_domain()
+
+    # Change NLG content but keep actions the same
+    domain_with_changed_nlg = old_domain.as_dict()
+    domain_with_changed_nlg[KEY_RESPONSES]["utter_greet"].append({"text": "hi"})
+    domain_with_changed_nlg = Domain.from_dict(domain_with_changed_nlg)
+
+    importer.get_domain = asyncio.coroutine(lambda: domain_with_changed_nlg)
+
+    new_fingerprint = await model_fingerprint(importer)
+
+    assert (
+        old_fingerprint[FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY]
+        == new_fingerprint[FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY]
     )
+    assert old_fingerprint[FINGERPRINT_NLG_KEY] != new_fingerprint[FINGERPRINT_NLG_KEY]
 
-    actual = await model_fingerprint(project_files)
-    assert actual[FINGERPRINT_TRAINED_AT_KEY] is not None
 
-    del actual[FINGERPRINT_TRAINED_AT_KEY]
-    del expected[FINGERPRINT_TRAINED_AT_KEY]
+async def test_fingerprinting_additional_action(project: Text):
+    importer = _project_files(project)
 
-    assert actual == expected
+    old_fingerprint = await model_fingerprint(importer)
+    old_domain = await importer.get_domain()
+
+    domain_with_new_action = old_domain.as_dict()
+    domain_with_new_action[KEY_RESPONSES]["utter_new"] = [{"text": "hi"}]
+    domain_with_new_action = Domain.from_dict(domain_with_new_action)
+
+    importer.get_domain = asyncio.coroutine(lambda: domain_with_new_action)
+
+    new_fingerprint = await model_fingerprint(importer)
+
+    assert (
+        old_fingerprint[FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY]
+        != new_fingerprint[FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY]
+    )
+    assert old_fingerprint[FINGERPRINT_NLG_KEY] != new_fingerprint[FINGERPRINT_NLG_KEY]
 
 
 @pytest.mark.parametrize("use_fingerprint", [True, False])
-async def test_rasa_packaging(trained_rasa_model, project, use_fingerprint):
+async def test_rasa_packaging(
+    trained_rasa_model: Text, project: Text, use_fingerprint: bool, tmp_path: Path
+):
     unpacked_model_path = get_model(trained_rasa_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
@@ -244,8 +266,7 @@ async def test_rasa_packaging(trained_rasa_model, project, use_fingerprint):
     else:
         fingerprint = None
 
-    tempdir = tempfile.mkdtemp()
-    output_path = os.path.join(tempdir, "test.tar.gz")
+    output_path = str(tmp_path / "test.tar.gz")
 
     create_package_rasa(unpacked_model_path, output_path, fingerprint)
 
@@ -314,23 +335,26 @@ async def test_rasa_packaging(trained_rasa_model, project, use_fingerprint):
         },
     ],
 )
-def test_should_retrain(trained_rasa_model: Text, fingerprint: Fingerprint):
-    old_model = set_fingerprint(trained_rasa_model, fingerprint["old"])
+def test_should_retrain(
+    trained_rasa_model: Text, fingerprint: Fingerprint, tmp_path: Path
+):
+    old_model = set_fingerprint(trained_rasa_model, fingerprint["old"], tmp_path)
 
-    retrain = should_retrain(fingerprint["new"], old_model, tempfile.mkdtemp())
+    retrain = should_retrain(fingerprint["new"], old_model, str(tmp_path))
 
     assert retrain.should_retrain_core() == fingerprint["retrain_core"]
     assert retrain.should_retrain_nlg() == fingerprint["retrain_nlg"]
     assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
-def set_fingerprint(trained_rasa_model: Text, fingerprint: Fingerprint) -> Text:
+def set_fingerprint(
+    trained_rasa_model: Text, fingerprint: Fingerprint, tmp_path: Path
+) -> Text:
     unpacked_model_path = get_model(trained_rasa_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
 
-    tempdir = tempfile.mkdtemp()
-    output_path = os.path.join(tempdir, "test.tar.gz")
+    output_path = str(tmp_path / "test.tar.gz")
 
     create_package_rasa(unpacked_model_path, output_path, fingerprint)
 

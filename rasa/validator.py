@@ -1,17 +1,23 @@
 import logging
 from collections import defaultdict
 from typing import Set, Text, Optional
-from rasa.core.domain import Domain
-from rasa.core.training.generator import TrainingDataGenerator
-from rasa.importers.importer import TrainingDataImporter
-from rasa.nlu.training_data import TrainingData
-from rasa.core.training.structures import StoryGraph
-from rasa.core.training.dsl import UserUttered
-from rasa.core.training.dsl import ActionExecuted
-from rasa.core.constants import UTTER_PREFIX
+
 import rasa.core.training.story_conflict
-from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_ACTIONS
-from rasa.utils.common import raise_warning
+from rasa.shared.constants import (
+    DOCS_BASE_URL,
+    DOCS_URL_DOMAINS,
+    UTTER_PREFIX,
+    DOCS_URL_ACTIONS,
+)
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import UserUttered
+from rasa.shared.core.generator import TrainingDataGenerator
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.training_data import TrainingData
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +61,8 @@ class Validator:
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
-                raise_warning(
-                    f"There is a message in the training data labelled with intent "
+                rasa.shared.utils.io.raise_warning(
+                    f"There is a message in the training data labeled with intent "
                     f"'{intent}'. This intent is not listed in your domain. You "
                     f"should need to add that intent to your domain file!",
                     docs=DOCS_URL_DOMAINS,
@@ -74,7 +80,7 @@ class Validator:
 
         duplication_hash = defaultdict(set)
         for example in self.intents.intent_examples:
-            text = example.text
+            text = example.get(TEXT)
             duplication_hash[text].add(example.get("intent"))
 
         for text, intents in duplication_hash.items():
@@ -82,7 +88,7 @@ class Validator:
             if len(duplication_hash[text]) > 1:
                 everything_is_alright = ignore_warnings and everything_is_alright
                 intents_string = ", ".join(sorted(intents))
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"The example '{text}' was found labeled with multiple "
                     f"different intents in the training data. Each annotated message "
                     f"should only appear with one intent. You should fix that "
@@ -107,7 +113,7 @@ class Validator:
 
         for story_intent in stories_intents:
             if story_intent not in self.domain.intents:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"The intent '{story_intent}' is used in your stories, but it "
                     f"is not listed in the domain file. You should add it to your "
                     f"domain file!",
@@ -148,7 +154,7 @@ class Validator:
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"There is no template for the utterance action '{action}'. "
                         f"The action is listed in your domains action list, but "
                         f"there is no template defined with this name. You should "
@@ -183,7 +189,7 @@ class Validator:
                     continue
 
                 if event.action_name not in utterance_actions:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"The action '{event.action_name}' is used in the stories, "
                         f"but is not a valid utterance action. Please make sure "
                         f"the action is listed in your domain and there is a "
