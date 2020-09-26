@@ -183,7 +183,7 @@ async def test_end_to_evaluation_trips_circuit_breaker():
         (
             "The first one please.",
             {
-                "extractor": "DucklingHTTPExtractor",
+                "extractor": "DucklingEntityExtractor",
                 "entity": "ordinal",
                 "confidence": 0.87,
                 "start": 4,

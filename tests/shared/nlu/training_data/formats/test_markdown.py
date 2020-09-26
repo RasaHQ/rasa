@@ -4,7 +4,7 @@ import pytest
 
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
+from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.shared.nlu.training_data.formats import RasaReader
@@ -152,7 +152,7 @@ def test_dump_nlu_with_responses():
         ("", '- [test]{"entity": "word", "value": "random"}'),
         ("random-extractor", '- [test]{"entity": "word", "value": "random"}'),
         (CRFEntityExtractor.__name__, '- [test]{"entity": "word", "value": "random"}'),
-        (DucklingHTTPExtractor.__name__, "- test"),
+        (DucklingEntityExtractor.__name__, "- test"),
         (SpacyEntityExtractor.__name__, "- test"),
         (
             MitieEntityExtractor.__name__,

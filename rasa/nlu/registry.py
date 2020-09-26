@@ -14,7 +14,7 @@ from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifi
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
+from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -42,6 +42,8 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 import rasa.shared.utils.common
+import rasa.utils.io
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -68,7 +70,7 @@ component_classes = [
     SpacyEntityExtractor,
     MitieEntityExtractor,
     CRFEntityExtractor,
-    DucklingHTTPExtractor,
+    DucklingEntityExtractor,
     EntitySynonymMapper,
     RegexEntityExtractor,
     # featurizers
@@ -95,6 +97,14 @@ registered_components = {c.name: c for c in component_classes}
 
 def get_component_class(component_name: Text) -> Type["Component"]:
     """Resolve component name to a registered components class."""
+
+    if component_name == "DucklingHTTPExtractor":
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The component 'DucklingHTTPExtractor' has been renamed to 'DucklingEntityExtractor'."
+            "Update your pipeline to use 'DucklingEntityExtractor'.",
+            docs=DOCS_URL_COMPONENTS,
+        )
+        component_name = "DucklingEntityExtractor"
 
     if component_name not in registered_components:
         try:

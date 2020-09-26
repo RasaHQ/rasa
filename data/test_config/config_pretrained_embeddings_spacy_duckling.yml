@@ -8,6 +8,6 @@ pipeline:
 - name: "CRFEntityExtractor"
 - name: "EntitySynonymMapper"
 - name: "SklearnIntentClassifier"
-- name: "DucklingHTTPExtractor"
+- name: "DucklingEntityExtractor"
   url: "http://duckling:8000"
   
