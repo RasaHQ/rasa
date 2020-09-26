@@ -2211,7 +2211,7 @@ description = "A configurable sidebar-enabled Sphinx theme"
 name = "rasabaster"
 optional = false
 python-versions = "*"
-version = "0.7.33"
+version = "0.7.34"
 
 [package.dependencies]
 "ruamel.yaml" = ">=0.16.10,<0.17.0"
