@@ -1023,11 +1023,13 @@ nav#breadcrumbs li+li:before {
 }
 
 .announce-bar {
+    position: relative;
     text-align: center;
     background-color: rgb(98, 0, 245);
     color: white;
     padding: .75em;
     font-weight: 500;
+    z-index: 1;
 }
 
 .announce-bar a {
