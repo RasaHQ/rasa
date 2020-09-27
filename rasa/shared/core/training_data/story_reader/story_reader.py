@@ -52,7 +52,7 @@ class StoryReader:
         self.source_name = source_name
         self.unfold_or_utterances = unfold_or_utterances
 
-    async def read_from_file(self, filename: Text) -> List[StoryStep]:
+    def read_from_file(self, filename: Text) -> List[StoryStep]:
         raise NotImplementedError
 
     def _add_current_stories_to_result(self):
