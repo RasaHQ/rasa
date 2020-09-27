@@ -29,7 +29,7 @@ from rasa.shared.core.training_data.structures import StoryStep, Checkpoint, STO
 class YAMLStoryWriter:
     """Writes Core training data into a file in a YAML format. """
 
-    def dumps(self, story_steps: List[StoryStep]) -> Text:
+    def dumps(self, story_steps: List[StoryStep], interactive: bool = False) -> Text:
         """Turns Story steps into a string.
 
         Args:
@@ -38,11 +38,11 @@ class YAMLStoryWriter:
             String with story steps in the YAML format.
         """
         stream = yaml.StringIO()
-        self.dump(stream, story_steps)
+        self.dump(stream, story_steps, interactive)
         return stream.getvalue()
 
     def dump(
-        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep]
+        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep], interactive: bool
     ) -> None:
         """Writes Story steps into a target file/stream.
 
@@ -50,11 +50,11 @@ class YAMLStoryWriter:
             target: name of the target file/stream to write the YAML to.
             story_steps: Original story steps to be converted to the YAML.
         """
-        result = self.stories_to_yaml(story_steps)
+        result = self.stories_to_yaml(story_steps, interactive)
 
         rasa.shared.utils.io.write_yaml(result, target, True)
 
-    def stories_to_yaml(self, story_steps: List[StoryStep]) -> Dict[Text, Any]:
+    def stories_to_yaml(self, story_steps: List[StoryStep], interactive: bool) -> Dict[Text, Any]:
         """Converts a sequence of story steps into yaml format.
 
         Args:
@@ -66,6 +66,9 @@ class YAMLStoryWriter:
         for story_step in story_steps:
             processed_story_step = self.process_story_step(story_step)
             stories.append(processed_story_step)
+
+        if interactive:
+            return stories
 
         result = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(

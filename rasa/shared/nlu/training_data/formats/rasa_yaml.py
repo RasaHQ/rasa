@@ -23,6 +23,7 @@ from rasa.shared.nlu.training_data.message import Message
 logger = logging.getLogger(__name__)
 
 KEY_NLU = "nlu"
+KEY_STORIES = "stories"
 KEY_RESPONSES = "responses"
 KEY_INTENT = "intent"
 KEY_INTENT_EXAMPLES = "examples"
@@ -34,8 +35,6 @@ KEY_REGEX_EXAMPLES = "examples"
 KEY_LOOKUP = "lookup"
 KEY_LOOKUP_EXAMPLES = "examples"
 KEY_METADATA = "metadata"
-KEY_RULES = "rules"
-KEY_STORIES = "stories"
 
 MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL = "-"
 
@@ -348,17 +347,12 @@ class RasaYAMLReader(TrainingDataReader):
 
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
-            print('$'*40)
-            print(content)
-            print('@'*40)
-            print(any(key in content for key in {KEY_NLU, KEY_RESPONSES}))
 
-            return any(key in content for key in {KEY_NLU, KEY_RESPONSES, KEY_RULES, KEY_STORIES})
-            # ["nlu", "response"]
+            return any(key in content for key in {KEY_NLU, KEY_RESPONSES, KEY_STORIES})
         except (YAMLError, Warning) as e:
             logger.error(
-                f"Tried to check if '{filename}' is an NLU file, but failed to "
-                f"read it. If this file contains NLU data, you should "
+                f"Tried to check if '{filename}' is a YAML file, but failed to "
+                f"read it. If this file contains YAML data, you should "
                 f"investigate this error, otherwise it is probably best to "
                 f"move the file to a different location. "
                 f"Error: {e}"

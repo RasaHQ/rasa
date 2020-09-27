@@ -784,6 +784,8 @@ def _write_stories_to_file(
 
     io_utils.create_path(export_story_path)
 
+    guessed_format = loading.guess_format(export_story_path)
+
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
     else:
@@ -803,7 +805,7 @@ def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
+                f.write("\n" + tracker.export_stories(SAVE_IN_E2E, False, guessed_format))
 
 
 def _filter_messages(msgs: List[Message]) -> List[Message]:
