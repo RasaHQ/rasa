@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
 
 class JiebaTokenizer(Tokenizer):
 
-    language_list = ["zh"]
+    supported_language_list = ["zh"]
 
     defaults = {
         "dictionary_path": None,
