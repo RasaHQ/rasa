@@ -582,7 +582,9 @@ class DialogueStateTracker:
         )
         return Story.from_events(self.applied_events(), story_name)
 
-    def export_stories(self, e2e: bool = False, include_source: bool = False, story_format: str = '') -> Text:
+    def export_stories(
+        self, e2e: bool = False, include_source: bool = False, story_format: str = ""
+    ) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns:
@@ -594,7 +596,7 @@ class DialogueStateTracker:
         story = self.as_story(include_source)
 
         if story_format == RASA_YAML:
-            story.as_story_yaml()
+            return story.as_story_yaml()
 
         return story.as_story_string(flat=True, e2e=e2e)
 

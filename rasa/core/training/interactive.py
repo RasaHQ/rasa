@@ -805,7 +805,9 @@ def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories(SAVE_IN_E2E, False, guessed_format))
+                f.write(
+                    "\n" + tracker.export_stories(SAVE_IN_E2E, False, guessed_format)
+                )
 
 
 def _filter_messages(msgs: List[Message]) -> List[Message]:

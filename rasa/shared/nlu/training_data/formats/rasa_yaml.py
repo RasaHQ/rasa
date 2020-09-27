@@ -347,10 +347,6 @@ class RasaYAMLReader(TrainingDataReader):
 
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
-            print('$'*40)
-            print(content)
-            print('@'*40)
-            print(any(key in content for key in {KEY_NLU, KEY_RESPONSES}))
 
             return any(key in content for key in {KEY_NLU, KEY_RESPONSES, KEY_STORIES})
         except (YAMLError, Warning) as e:

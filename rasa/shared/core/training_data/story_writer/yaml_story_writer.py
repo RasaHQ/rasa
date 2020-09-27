@@ -29,20 +29,24 @@ from rasa.shared.core.training_data.structures import StoryStep, Checkpoint, STO
 class YAMLStoryWriter:
     """Writes Core training data into a file in a YAML format. """
 
-    def dumps(self, story_steps: List[StoryStep], interactive: bool = False) -> Text:
+    def dumps(self, story_steps: List[StoryStep], append: bool = False) -> Text:
         """Turns Story steps into a string.
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
+            append: Specify if step should be appended on stories list.
         Returns:
             String with story steps in the YAML format.
         """
         stream = yaml.StringIO()
-        self.dump(stream, story_steps, interactive)
+        self.dump(stream, story_steps, append)
         return stream.getvalue()
 
     def dump(
-        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep], interactive: bool
+        self,
+        target: Union[Text, Path, yaml.StringIO],
+        story_steps: List[StoryStep],
+        append: bool,
     ) -> None:
         """Writes Story steps into a target file/stream.
 
@@ -50,11 +54,13 @@ class YAMLStoryWriter:
             target: name of the target file/stream to write the YAML to.
             story_steps: Original story steps to be converted to the YAML.
         """
-        result = self.stories_to_yaml(story_steps, interactive)
+        result = self.stories_to_yaml(story_steps, append)
 
         rasa.shared.utils.io.write_yaml(result, target, True)
 
-    def stories_to_yaml(self, story_steps: List[StoryStep], interactive: bool) -> Dict[Text, Any]:
+    def stories_to_yaml(
+        self, story_steps: List[StoryStep], append: bool
+    ) -> Dict[Text, Any]:
         """Converts a sequence of story steps into yaml format.
 
         Args:
@@ -67,7 +73,7 @@ class YAMLStoryWriter:
             processed_story_step = self.process_story_step(story_step)
             stories.append(processed_story_step)
 
-        if interactive:
+        if append:
             return stories
 
         result = OrderedDict()
