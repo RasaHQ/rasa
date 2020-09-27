@@ -551,6 +551,14 @@ class Domain:
 
         return len(self.input_states)
 
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the templates which are defined for retrieval intents
+
+        These templates have a `/` symbol in their name. Use that to filter them from the rest.
+        """
+        return dict(filter(lambda x: "/" in x[0], self.templates.items()))
+
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
 

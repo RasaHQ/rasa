@@ -392,13 +392,15 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         )
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        """Update NLU data with response templates defined in the domain"""
+        """Update NLU data with response templates for retrieval intents defined in the domain"""
 
         existing_nlu_data = await self._importer.get_nlu_data(language)
         existing_domain = await self._importer.get_domain()
 
         return existing_nlu_data.merge(
-            self._get_nlu_data_with_responses(existing_domain.templates)
+            self._get_nlu_data_with_responses(
+                existing_domain.retrieval_intent_templates
+            )
         )
 
     @staticmethod
