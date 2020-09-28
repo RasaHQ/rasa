@@ -1,17 +1,35 @@
 import * as React from 'react';
 import clsx from 'clsx';
 
+import Button from "../Button";
 import styles from './styles.module.css';
 
-function Text({children, ...props}) {
+function Text({values, selectedValue, setSelectedValue, children, ...props}) {
+  const index = values.findIndex((v) => v.value === selectedValue);
+
+  const onButtonClick = () => {
+    if (index < values.length - 1) {
+      setSelectedValue(values[index + 1].value);
+    }
+  };
+
   return (
     <div className={clsx(styles.text)}>
-      {children}
+      <div className={clsx(styles.textTop)}>
+        {children}
+      </div>
+
+      {
+        index !== -1 && index !== values.length - 1 &&
+        <div className={clsx(styles.textButtons)}>
+          <NextStepButton onClick={onButtonClick}/>
+        </div>
+      }
     </div>
   )
 }
 
-function Code({children, ...props}) {
+function Code({children}) {
   return (
     <div className={clsx(styles.code)}>
       {children}
@@ -22,13 +40,19 @@ function Code({children, ...props}) {
 function Section({children, ...props}) {
   return (
     <div className={clsx(styles.section)}>
-      {children}
+      {React.Children.toArray(children).map(
+        (child) => React.cloneElement(child, props)
+      )}
     </div>
   )
 }
 
-function Button({...props}) {
-
+function NextStepButton(props) {
+  return (
+    <Button {...props}>
+      Next step >>
+    </Button>
+  )
 }
 
 function Container({children, values, defaultValue, ...props}) {
@@ -54,7 +78,7 @@ function Container({children, values, defaultValue, ...props}) {
             onClick={() => {
               changeSelectedValue(value);
             }}
-            >
+          >
             {label}
           </li>
         ))}
@@ -63,6 +87,10 @@ function Container({children, values, defaultValue, ...props}) {
         {
           React.Children.toArray(children).filter(
             (child) => child.props.value === selectedValue
+          ).map(
+            (child) => React.cloneElement(child,
+              {values, selectedValue, setSelectedValue, ...props}
+            )
           )
         }
       </div>
@@ -75,4 +103,5 @@ export default {
   Section,
   Text,
   Code,
+  NextStepButton
 }

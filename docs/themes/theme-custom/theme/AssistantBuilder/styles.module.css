@@ -14,10 +14,13 @@
 .tab {
   padding: 16px 24px;
   border-bottom: 3px solid transparent;
+  cursor: pointer;
+  outline: none;
 }
 
 .tabActive {
   border-bottom: 3px solid var(--ifm-color-primary);
+  cursor: default;
 }
 
 .containerSections {
@@ -35,8 +38,20 @@
 
 .text {
   flex: 1;
-  padding: 16px;
   font-size: 80%;
+  height: 650px;
+  display: flex;
+  flex-direction: column;
+}
+
+.textTop {
+  flex: 1;
+  overflow-y: scroll;
+  padding: 16px;
+}
+
+.textButtons {
+  padding: 48px 16px 16px 16px;
 }
 
 .code {
