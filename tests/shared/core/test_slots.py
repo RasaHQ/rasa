@@ -186,6 +186,10 @@ class TestUnfeaturizedSlot(SlotTestCollection):
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
+    def test_exception_if_featurized(self):
+        with pytest.raises(ValueError):
+            UnfeaturizedSlot("⛔️", unfeaturized=False)
+
 
 class TestCategoricalSlot(SlotTestCollection):
     def create_slot(self, unfeaturized: bool) -> Slot:

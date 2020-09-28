@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Text, Type
 import rasa.shared.core.constants
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.shared.constants import DOCS_URL_SLOTS
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +236,25 @@ class ListSlot(Slot):
 
 class UnfeaturizedSlot(Slot):
     type_name = "unfeaturized"
+
+    def __init__(
+        self,
+        name: Text,
+        initial_value: Any = None,
+        value_reset_delay: Optional[int] = None,
+        auto_fill: bool = True,
+        unfeaturized: bool = True,
+    ) -> None:
+        if not unfeaturized:
+            raise ValueError(
+                f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
+                f"Please use a different slot type instead. See the "
+                f"documentation for more information: {DOCS_URL_SLOTS}"
+            )
+
+        super().__init__(
+            name, initial_value, value_reset_delay, auto_fill, unfeaturized
+        )
 
     def _as_feature(self) -> List[float]:
         return []
