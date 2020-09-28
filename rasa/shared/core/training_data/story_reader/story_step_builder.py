@@ -11,6 +11,7 @@ from rasa.shared.core.training_data.structures import (
     GENERATED_HASH_LENGTH,
     STORY_START,
     StoryStep,
+    RuleStep,
 )
 
 logger = logging.getLogger(__name__)
@@ -101,10 +102,17 @@ class StoryStepBuilder:
                     updated_steps.append(copied)
             self.current_steps = updated_steps
 
-    def add_event(self, event) -> None:
+    def add_event_as_condition(self, event) -> None:
+        self.add_event(event, True)
+
+    def add_event(self, event, is_condition=False) -> None:
         self.ensure_current_steps()
         for t in self.current_steps:
-            t.add_event(event)
+            # conditions are supported only for the RuleSteps
+            if isinstance(t, RuleStep) and is_condition:
+                t.add_event_as_condition(event)
+            else:
+                t.add_event(event)
 
     def ensure_current_steps(self) -> None:
         completed = [step for step in self.current_steps if step.end_checkpoints]
@@ -124,12 +132,12 @@ class StoryStepBuilder:
         start_checkpoints = self._prev_end_checkpoints()
         if not start_checkpoints:
             start_checkpoints = [Checkpoint(STORY_START)]
+        step_class = RuleStep if self.is_rule else StoryStep
         current_turns = [
-            StoryStep(
+            step_class(
                 block_name=self.name,
                 start_checkpoints=start_checkpoints,
                 source_name=self.source_name,
-                is_rule=self.is_rule,
             )
         ]
         return current_turns

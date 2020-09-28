@@ -86,7 +86,6 @@ class StoryStep:
         end_checkpoints: Optional[List[Checkpoint]] = None,
         events: Optional[List[Union[Event, List[Event]]]] = None,
         source_name: Optional[Text] = None,
-        is_rule: bool = None,
     ) -> None:
 
         self.end_checkpoints = end_checkpoints if end_checkpoints else []
@@ -94,7 +93,6 @@ class StoryStep:
         self.events = events if events else []
         self.block_name = block_name
         self.source_name = source_name
-        self.is_rule = is_rule
         # put a counter prefix to uuid to get reproducible sorting results
         global STEP_COUNT
         self.id = "{}_{}".format(STEP_COUNT, uuid.uuid4().hex)
@@ -107,7 +105,6 @@ class StoryStep:
             self.end_checkpoints,
             self.events[:],
             self.source_name,
-            self.is_rule,
         )
         if not use_new_id:
             copied.id = self.id
@@ -221,21 +218,83 @@ class StoryStep:
 
         return events
 
+    def get_rules_condition(self) -> Optional[List[Event]]:
+        pass
+
+    def get_rules_steps(self) -> Optional[List[Event]]:
+        pass
+
     def __repr__(self) -> Text:
         return (
             "StoryStep("
             "block_name={!r}, "
             "start_checkpoints={!r}, "
             "end_checkpoints={!r}, "
-            "is_rule={!r}, "
             "events={!r})".format(
                 self.block_name,
                 self.start_checkpoints,
                 self.end_checkpoints,
-                self.is_rule,
                 self.events,
             )
         )
+
+
+class RuleStep(StoryStep):
+    """A Special type of StoryStep representing a Rule. """
+
+    def __init__(
+        self,
+        block_name: Optional[Text] = None,
+        start_checkpoints: Optional[List[Checkpoint]] = None,
+        end_checkpoints: Optional[List[Checkpoint]] = None,
+        events: Optional[List[Union[Event, List[Event]]]] = None,
+        source_name: Optional[Text] = None,
+    ) -> None:
+        super().__init__(
+            block_name, start_checkpoints, end_checkpoints, events, source_name
+        )
+        self.condition_events_indices = set()
+
+    def __repr__(self) -> Text:
+        return (
+            "RuleStep("
+            "block_name={!r}, "
+            "start_checkpoints={!r}, "
+            "end_checkpoints={!r}, "
+            "events={!r})".format(
+                self.block_name,
+                self.start_checkpoints,
+                self.end_checkpoints,
+                self.events,
+            )
+        )
+
+    def get_rules_condition(self) -> List[Event]:
+        """Returns a list of events forming a condition of the Rule. """
+
+        return [
+            event
+            for event_id, event in enumerate(self.events)
+            if event_id in self.condition_events_indices
+        ]
+
+    def get_rules_events(self) -> List[Event]:
+        """Returns a list of events forming the Rule, that are not conditions. """
+
+        return [
+            event
+            for event_id, event in enumerate(self.events)
+            if event_id not in self.condition_events_indices
+        ]
+
+    def add_event_as_condition(self, event: Event) -> None:
+        """Adds event to the Rule as part of it's condition.
+
+        Args:
+            event: The event to be added.
+        """
+        self.condition_events_indices.add(len(self.events))
+        self.events.append(event)
 
 
 class Story:
