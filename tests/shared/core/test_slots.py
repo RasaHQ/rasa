@@ -13,6 +13,7 @@ from rasa.shared.core.slots import (
     UnfeaturizedSlot,
     CategoricalSlot,
     bool_from_any,
+    AnySlot,
 )
 
 
@@ -254,3 +255,27 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
+
+
+class TestAnySlot(SlotTestCollection):
+    def create_slot(self, unfeaturized: bool) -> Slot:
+        return AnySlot("test", unfeaturized=True)
+
+    @pytest.fixture(params=["there is nothing invalid, but we need to pass something"])
+    def invalid_value(self, request: SubRequest) -> Any:
+        return request.param
+
+    @pytest.fixture(
+        params=[
+            (None, []),
+            ([], []),
+            ({"nested": {"dict": [1, 2, 3]}}, []),
+            (["asd", 1, {}], []),
+        ]
+    )
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
+        return request.param
+
+    def test_exception_if_featurized(self):
+        with pytest.raises(ValueError):
+            UnfeaturizedSlot("⛔️", unfeaturized=False)

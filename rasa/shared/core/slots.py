@@ -336,3 +336,29 @@ class CategoricalSlot(Slot):
 
     def _feature_dimensionality(self) -> int:
         return len(self.values)
+
+
+class AnySlot(Slot):
+    """Slot which can be used to store any value. Users need to create a subclass of
+       `Slot` in case the information is supposed to get featurized."""
+
+    type_name = "any"
+
+    def __init__(
+        self,
+        name: Text,
+        initial_value: Any = None,
+        value_reset_delay: Optional[int] = None,
+        auto_fill: bool = True,
+        unfeaturized: bool = True,
+    ) -> None:
+        if not unfeaturized:
+            raise ValueError(
+                f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
+                f"Please use a different slot type instead. See the "
+                f"documentation for more information: {DOCS_URL_SLOTS}"
+            )
+
+        super().__init__(
+            name, initial_value, value_reset_delay, auto_fill, unfeaturized
+        )

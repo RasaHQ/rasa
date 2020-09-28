@@ -33,7 +33,14 @@ from rasa.shared.core.events import (
     BotUttered,
     LegacyForm,
 )
-from rasa.shared.core.slots import FloatSlot, BooleanSlot, ListSlot, TextSlot, Slot
+from rasa.shared.core.slots import (
+    FloatSlot,
+    BooleanSlot,
+    ListSlot,
+    TextSlot,
+    Slot,
+    AnySlot,
+)
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,
@@ -713,8 +720,7 @@ def test_tracker_without_slots(key, value, caplog):
         (BooleanSlot, True, False),
         (ListSlot, [1, 2, 3], [4, 5, 6]),
         (TextSlot, "some string", "another string"),
-        # TODO: Change to any Slot
-        # (DataSlot, {"a": "nice dict"}, {"b": "better dict"}),
+        (AnySlot, {"a": "nice dict"}, {"b": "better dict"}),
     ],
 )
 def test_tracker_does_not_modify_slots(
