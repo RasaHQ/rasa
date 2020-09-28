@@ -43,7 +43,7 @@ Rules can be useful when implementing:
   Rules are an easy way to map intents to responses, specifying fixed answers to these messages.
 
 * [Fallback behavior](./fallback-handoff.mdx):
-  In combination with the [FallbackClassifier](./components#fallbackclassifier),
+  In combination with the [FallbackClassifier](./components.mdx#fallbackclassifier),
   you can write rules to respond to low-confidence user messages with a certain fallback behavior.
 
 * [Forms](./forms.mdx): Both activating and submitting a form will often follow a fixed path.
@@ -86,7 +86,7 @@ Here are some tips for managing the conversation flow in your stories:
 
 ### When to Use Featurized Slots
 
-Slots act as your bot’s memory. When you define a slot, you can define its [slot type](domain#slot-type)
+Slots act as your bot’s memory. When you define a slot, you can define its [slot type](domain.mdx#slot-types)
 as either `unfeaturized` or one of the featurized slot types.
 An unfeaturized slot can only store information, but a featurized slot can affect the
 dialogue flow based on the information stored in it.
@@ -495,7 +495,7 @@ it makes. One advantage of machine learning-based dialogue is that when
 your bot doesn't know how to do something yet, you can just teach it!
 
 In Rasa Open Source, you can run interactive learning in the command line with
-[`rasa interactive`](./command-line-interface.mdx#interactive-learning).
+[`rasa interactive`](./command-line-interface.mdx#rasa-interactive).
 [Rasa X](http://rasa.com/docs/rasa-x) provides a UI for interactive learning,
 and you can use any user conversation as a starting point.
 See [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot)
