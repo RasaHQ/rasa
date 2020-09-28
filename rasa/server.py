@@ -879,7 +879,9 @@ def create_app(
 
         data_path = os.path.abspath(test_data)
 
-        if not os.path.exists(eval_agent.model_directory):
+        if not eval_agent.model_directory or not os.path.exists(
+            eval_agent.model_directory
+        ):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory

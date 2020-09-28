@@ -872,7 +872,7 @@ def test_remove_pretrained_extractors(component_builder):
             "pipeline": [
                 {"name": "SpacyNLP"},
                 {"name": "SpacyEntityExtractor"},
-                {"name": "DucklingHTTPExtractor"},
+                {"name": "DucklingEntityExtractor"},
             ]
         }
     )
