@@ -20,7 +20,8 @@
     "included-sources": "node scripts/compile_included_sources.js",
     "autodoc": "echo 'Generating autodoc' && pydoc-markdown",
     "clean": "find docs/sources -type f -not -name '.keep' -print0 | xargs -0  -I {} rm {}",
-    "ci": "yarn install --frozen-lockfile"
+    "ci": "yarn install --frozen-lockfile",
+    "mdx-lint": "remark --frail docs/*.mdx docs/*/*.mdx"
   },
   "dependencies": {
     "@docusaurus/core": "2.0.0-alpha.63",
@@ -82,7 +83,33 @@
   },
   "devDependencies": {
     "netlify-cli": "^2.59.0",
+    "remark-cli": "^8.0.1",
+    "remark-lint": "^7.0.1",
+    "remark-lint-no-dead-urls": "^1.1.0",
+    "remark-validate-links": "^10.0.2",
     "toml": "^3.0.0"
+  },
+  "remarkConfig": {
+    "plugins": [
+      [
+        "remark-validate-links",
+        {
+          "prefix": "/docs/",
+          "lines": false
+        }
+      ],
+      "remark-lint",
+      [
+        "remark-lint-no-dead-urls",
+        {
+          "skipUrlPatterns": [
+            "^https://github\\.com/rasahq/rasa/issues/[0-9]+$",
+            "\\.prototyping\\.rasa\\.com",
+            "^https://github\\.com/mit-nlp/MITIE/releases/download/v0\\.4/MITIE-models-v0\\.2\\.tar\\.bz2$"
+          ]
+        }
+      ]
+    ]
   },
   "telemetryReference": {
     "outputPath": "./docs/telemetry/reference.mdx"

@@ -88,7 +88,7 @@ entities:
 ```
 
 Entities like numbers
-can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
+can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklinghttpextractor). To use it, add  DucklingEntityExtractor
 to your NLU pipeline in `config.yml`.
 
 ```yaml-rasa
@@ -148,7 +148,7 @@ responses:
 
 ### 2. Updating the configuration
 
-A form's [happy path](glossary.mdx#happy-path) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](policies.mdx#rulepolicy)
+A form's [happy path](glossary.mdx#happy--unhappy-paths) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](policies.mdx#rule-policy)
 to your policies in your configuration file:
 
 ```yaml-rasa
@@ -309,4 +309,4 @@ example above, this is a summary of what you'll need to do:
 To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
 Because the DucklingEntityExtractor is being used to extract
 entities, you'll need to start Duckling in the background as well
-(see the [instructions for running Duckling](components.mdx#ducklingentityextractor)).
+(see the [instructions for running Duckling](components.mdx#ducklinghttpextractor)).
