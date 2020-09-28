@@ -183,8 +183,8 @@ For example, the training example
 [Alex]{"entity": "person"} is going with [Marty A. Rick]{"entity": "person"} to [Los Angeles]{"entity": "location"}.
 ```
 
-is first split into a list of tokens and then the machine learning model applies the tagging schema
-depending on the option `BILOU_flag` during training.
+is first split into a list of tokens. Then the machine learning model applies the tagging schema
+as shown below depending on the value of the option `BILOU_flag`:
 
 | token   | `BILOU_flag = true`  | `BILOU_flag = false`  |
 |---------|----------------------|-----------------------|
@@ -202,7 +202,7 @@ depending on the option `BILOU_flag` during training.
 The BILOU tagging schema is richer compared to the normal tagging schema. It may help to improve the
 performance of the machine learning model when predicting entities.
 
-:::note inconsistent bilou tags
+:::note inconsistent BILOU tags
 When the option `BILOU_flag` is set to `True`, the model may predict inconsistent BILOU tags, e.g.
 `B-person I-location L-person`. Rasa Open Source uses some heuristics to clean up the inconsistent BILOU tags.
 For example, `B-person I-location L-person` would be changed into `B-person I-person L-person`.
