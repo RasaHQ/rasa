@@ -32,6 +32,10 @@ ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 
 # copy files
 COPY . /build/
+COPY docker/configs/config_pretrained_embeddings_spacy_en_duckling.yml /build/config.yml
+
+# download mitie model
+RUN wget -P /build/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
 # change working directory
 WORKDIR /build
@@ -40,10 +44,29 @@ WORKDIR /build
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U 'pip<20' && \
-  poetry install --no-dev --no-root --no-interaction && \
+  poetry install --extras full --no-dev --no-root --no-interaction && \
+  make install-mitie && \
   poetry build -f wheel -n && \
   pip install --no-deps dist/*.whl && \
   rm -rf dist *.egg-info
+
+# install opentelemetry
+RUN pip install opentelemetry-sdk && \
+  pip install opentelemetry-instrumentation && \
+  pip install opentelemetry-instrumentation-aiohttp-client && \
+  pip install opentelemetry-instrumentation-sqlalchemy && \
+  pip install opentelemetry-exporter-otlp && \
+  pip install opentelemetry-exporter-jaeger && \
+  pip install jaeger-client
+
+# make sure we use the virtualenv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# spacy link
+RUN python -m spacy download en_core_web_md && \
+    python -m spacy download de_core_news_sm && \
+    python -m spacy link en_core_web_md en && \
+    python -m spacy link de_core_news_sm de
 
 # start a new build stage
 FROM base as runner
@@ -59,7 +82,7 @@ WORKDIR /app
 RUN chgrp -R 0 /app && chmod -R g=u /app
 USER 1001
 
-# create a volume for temporary data
+# Create a volume for temporary data
 VOLUME /tmp
 
 # change shell

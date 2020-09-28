@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 
+from rasa.tracer import Tracer
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -73,6 +74,7 @@ class MessageProcessor:
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
+
 
     async def handle_message(
         self, message: UserMessage
@@ -496,7 +498,11 @@ class MessageProcessor:
         if message.parse_data:
             parse_data = message.parse_data
         else:
+            self.tracer = Tracer().t
+            span = self.tracer.start_span('parse_message')
+            #with tracer.start_span('parse_message') as span:
             parse_data = await self.parse_message(message, tracker)
+            span.finish()
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
