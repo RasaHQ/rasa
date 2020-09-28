@@ -18,18 +18,41 @@ class Slot:
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
+        unfeaturized: bool = True,
     ) -> None:
+        """Create a Slot.
+
+        Args:
+            name: The name of the slot.
+            initial_value: The initial value of the slot.
+            value_reset_delay: After how many turns the slot should be reset to the
+                initial_value. This is behavior is currently not implemented.
+            auto_fill: `True` if the slot should be filled automatically by entities
+                with the same name.
+            unfeaturized: If `True` the slot will not be featurized and hence not affect
+                the predictions of dialogue polices.
+        """
         self.name = name
         self.value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
         self.auto_fill = auto_fill
+        self.unfeaturized = unfeaturized
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
 
-        The dimensionality of the array returned by `as_feature` needs
-        to correspond to this value."""
+        Returns:
+            The number of features. `0` if the slot is unfeaturized. The dimensionality
+            of the array returned by `as_feature` needs to correspond to this value.
+        """
+        if self.unfeaturized:
+            return 0
+
+        return self._feature_dimensionality()
+
+    def _feature_dimensionality(self) -> int:
+        """See the docstring for `feature_dimensionality`."""
         return 1
 
     def add_default_value(self) -> None:
@@ -50,6 +73,12 @@ class Slot:
         return self._value_reset_delay
 
     def as_feature(self) -> List[float]:
+        if self.unfeaturized:
+            return []
+
+        return self._as_feature()
+
+    def _as_feature(self) -> List[float]:
         raise NotImplementedError(
             "Each slot type needs to specify how its "
             "value can be converted to a feature. Slot "
@@ -105,8 +134,11 @@ class FloatSlot(Slot):
         auto_fill: bool = True,
         max_value: float = 1.0,
         min_value: float = 0.0,
+        unfeaturized: bool = False,
     ) -> None:
-        super().__init__(name, initial_value, value_reset_delay, auto_fill)
+        super().__init__(
+            name, initial_value, value_reset_delay, auto_fill, unfeaturized
+        )
         self.max_value = max_value
         self.min_value = min_value
 
@@ -125,7 +157,7 @@ class FloatSlot(Slot):
                 f"({self.min_value}) and max ({self.max_value}) values."
             )
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         try:
             capped_value = max(self.min_value, min(self.max_value, float(self.value)))
             if abs(self.max_value - self.min_value) > 0:
@@ -146,7 +178,7 @@ class FloatSlot(Slot):
 class BooleanSlot(Slot):
     type_name = "bool"
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         try:
             if self.value is not None:
                 return [1.0, float(bool_from_any(self.value))]
@@ -156,7 +188,7 @@ class BooleanSlot(Slot):
             # we couldn't convert the value to float - using default value
             return [0.0, 0.0]
 
-    def feature_dimensionality(self) -> int:
+    def _feature_dimensionality(self) -> int:
         return len(self.as_feature())
 
 
@@ -183,14 +215,14 @@ def bool_from_any(x: Any) -> bool:
 class TextSlot(Slot):
     type_name = "text"
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         return [1.0 if self.value is not None else 0.0]
 
 
 class ListSlot(Slot):
     type_name = "list"
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         try:
             if self.value is not None and len(self.value) > 0:
                 return [1.0]
@@ -204,10 +236,10 @@ class ListSlot(Slot):
 class UnfeaturizedSlot(Slot):
     type_name = "unfeaturized"
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         return []
 
-    def feature_dimensionality(self) -> int:
+    def _feature_dimensionality(self) -> int:
         return 0
 
 
@@ -221,8 +253,11 @@ class CategoricalSlot(Slot):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
+        unfeaturized: bool = False,
     ) -> None:
-        super().__init__(name, initial_value, value_reset_delay, auto_fill)
+        super().__init__(
+            name, initial_value, value_reset_delay, auto_fill, unfeaturized
+        )
         self.values = [str(v).lower() for v in values] if values else []
 
     def add_default_value(self) -> None:
@@ -237,7 +272,7 @@ class CategoricalSlot(Slot):
         d["values"] = self.values
         return d
 
-    def as_feature(self) -> List[float]:
+    def _as_feature(self) -> List[float]:
         r = [0.0] * self.feature_dimensionality()
 
         try:
@@ -270,5 +305,5 @@ class CategoricalSlot(Slot):
             return r
         return r
 
-    def feature_dimensionality(self) -> int:
+    def _feature_dimensionality(self) -> int:
         return len(self.values)

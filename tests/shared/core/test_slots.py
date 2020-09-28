@@ -21,7 +21,7 @@ class SlotTestCollection:
 
     Each slot can declare further tests on its own."""
 
-    def create_slot(self) -> Slot:
+    def create_slot(self, unfeaturized: bool) -> Slot:
         raise NotImplementedError
 
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -35,7 +35,7 @@ class SlotTestCollection:
         raise NotImplementedError
 
     def test_featurization(self, value_feature_pair: Tuple[Any, List[float]]):
-        slot = self.create_slot()
+        slot = self.create_slot(unfeaturized=False)
         value, expected = value_feature_pair
         slot.value = value
         assert slot.as_feature() == expected
@@ -50,27 +50,40 @@ class SlotTestCollection:
         ), "Slot should be reset to its initial value"
 
     def test_empty_slot_featurization(self):
-        slot = self.create_slot()
+        slot = self.create_slot(unfeaturized=False)
         assert (
             slot.value == slot.initial_value
         ), "An empty slot should be set to the initial value"
         assert len(slot.as_feature()) == slot.feature_dimensionality()
 
+    def test_featurization_if_marked_as_unfeaturized(
+        self, value_feature_pair: Tuple[Any, List[float]]
+    ):
+        slot = self.create_slot(unfeaturized=True)
+        value, _ = value_feature_pair
+        slot.value = value
+
+        features = slot.as_feature()
+        assert features == []
+
+        dimensions = slot.feature_dimensionality()
+        assert dimensions == 0
+
     def test_has_a_type_name(self):
-        slot = self.create_slot()
+        slot = self.create_slot(unfeaturized=False)
         assert slot.type_name is not None
         assert type(slot) == Slot.resolve_by_type(slot.type_name)
 
     def test_handles_invalid_values(self, invalid_value: Any):
-        slot = self.create_slot()
+        slot = self.create_slot(unfeaturized=False)
         slot.value = invalid_value
         assert slot.as_feature() is not None
         assert len(slot.as_feature()) == slot.feature_dimensionality()
 
 
 class TestTextSlot(SlotTestCollection):
-    def create_slot(self) -> Slot:
-        return TextSlot("test")
+    def create_slot(self, unfeaturized: bool) -> Slot:
+        return TextSlot("test", unfeaturized=unfeaturized)
 
     @pytest.fixture(params=[1, {"a": "b"}, 2.0, [], True])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -89,8 +102,8 @@ class TestTextSlot(SlotTestCollection):
 
 
 class TestBooleanSlot(SlotTestCollection):
-    def create_slot(self) -> Slot:
-        return BooleanSlot("test")
+    def create_slot(self, unfeaturized: bool) -> Slot:
+        return BooleanSlot("test", unfeaturized=unfeaturized)
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -126,8 +139,8 @@ def test_bool_from_any_raises_type_error():
 
 
 class TestFloatSlot(SlotTestCollection):
-    def create_slot(self) -> Slot:
-        return FloatSlot("test")
+    def create_slot(self, unfeaturized: bool = False) -> Slot:
+        return FloatSlot("test", unfeaturized=unfeaturized)
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -149,8 +162,8 @@ class TestFloatSlot(SlotTestCollection):
 
 
 class TestListSlot(SlotTestCollection):
-    def create_slot(self) -> Slot:
-        return ListSlot("test")
+    def create_slot(self, unfeaturized: bool) -> Slot:
+        return ListSlot("test", unfeaturized=unfeaturized)
 
     @pytest.fixture(params=[{"a": "b"}, 1, True, "asd", "🌴"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -162,8 +175,8 @@ class TestListSlot(SlotTestCollection):
 
 
 class TestUnfeaturizedSlot(SlotTestCollection):
-    def create_slot(self) -> Slot:
-        return UnfeaturizedSlot("test")
+    def create_slot(self, unfeaturized: bool) -> Slot:
+        return UnfeaturizedSlot("test", unfeaturized=True)
 
     @pytest.fixture(params=["there is nothing invalid, but we need to pass something"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -175,8 +188,12 @@ class TestUnfeaturizedSlot(SlotTestCollection):
 
 
 class TestCategoricalSlot(SlotTestCollection):
-    def create_slot(self) -> Slot:
-        return CategoricalSlot("test", values=[1, "two", "小于", {"three": 3}, None])
+    def create_slot(self, unfeaturized: bool) -> Slot:
+        return CategoricalSlot(
+            "test",
+            values=[1, "two", "小于", {"three": 3}, None],
+            unfeaturized=unfeaturized,
+        )
 
     @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -200,8 +217,12 @@ class TestCategoricalSlot(SlotTestCollection):
 
 
 class TestCategoricalSlotDefaultValue(SlotTestCollection):
-    def create_slot(self) -> Slot:
-        slot = CategoricalSlot("test", values=[1, "two", "小于", {"three": 3}, None])
+    def create_slot(self, unfeaturized: bool) -> Slot:
+        slot = CategoricalSlot(
+            "test",
+            values=[1, "two", "小于", {"three": 3}, None],
+            unfeaturized=unfeaturized,
+        )
         slot.add_default_value()
         return slot
 
