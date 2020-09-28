@@ -1,4 +1,7 @@
+from typing import Any, Tuple, List
+
 import pytest
+from _pytest.fixtures import SubRequest
 
 import rasa.shared.core.constants
 from rasa.shared.core.slots import (
@@ -18,20 +21,20 @@ class SlotTestCollection:
 
     Each slot can declare further tests on its own."""
 
-    def create_slot(self):
+    def create_slot(self) -> Slot:
         raise NotImplementedError
 
-    def value_feature_pair(self, request):
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         """Values where featurization is defined and should be tested."""
         raise NotImplementedError
 
-    def invalid_value(self, request):
+    def invalid_value(self, request: SubRequest) -> Any:
         """Values, that should be handled gracefully but where the
         featurization is not defined."""
 
         raise NotImplementedError
 
-    def test_featurization(self, value_feature_pair):
+    def test_featurization(self, value_feature_pair: Tuple[Any, List[float]]):
         slot = self.create_slot()
         value, expected = value_feature_pair
         slot.value = value
@@ -58,7 +61,7 @@ class SlotTestCollection:
         assert slot.type_name is not None
         assert type(slot) == Slot.resolve_by_type(slot.type_name)
 
-    def test_handles_invalid_values(self, invalid_value):
+    def test_handles_invalid_values(self, invalid_value: Any):
         slot = self.create_slot()
         slot.value = invalid_value
         assert slot.as_feature() is not None
@@ -66,11 +69,11 @@ class SlotTestCollection:
 
 
 class TestTextSlot(SlotTestCollection):
-    def create_slot(self):
+    def create_slot(self) -> Slot:
         return TextSlot("test")
 
     @pytest.fixture(params=[1, {"a": "b"}, 2.0, [], True])
-    def invalid_value(self, request):
+    def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
@@ -81,16 +84,16 @@ class TestTextSlot(SlotTestCollection):
             ("some test string 🌴", [1]),
         ]
     )
-    def value_feature_pair(self, request):
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
 
 class TestBooleanSlot(SlotTestCollection):
-    def create_slot(self):
+    def create_slot(self) -> Slot:
         return BooleanSlot("test")
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
-    def invalid_value(self, request):
+    def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
@@ -108,7 +111,7 @@ class TestBooleanSlot(SlotTestCollection):
             ("False", [1, 0]),
         ]
     )
-    def value_feature_pair(self, request):
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
 
@@ -123,11 +126,11 @@ def test_bool_from_any_raises_type_error():
 
 
 class TestFloatSlot(SlotTestCollection):
-    def create_slot(self):
+    def create_slot(self) -> Slot:
         return FloatSlot("test")
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
-    def invalid_value(self, request):
+    def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
@@ -141,42 +144,42 @@ class TestFloatSlot(SlotTestCollection):
             (-0.5, [0.0]),
         ]
     )
-    def value_feature_pair(self, request):
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
 
 class TestListSlot(SlotTestCollection):
-    def create_slot(self):
+    def create_slot(self) -> Slot:
         return ListSlot("test")
 
     @pytest.fixture(params=[{"a": "b"}, 1, True, "asd", "🌴"])
-    def invalid_value(self, request):
+    def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(params=[(None, [0]), ([], [0]), ([1], [1]), (["asd", 1, {}], [1])])
-    def value_feature_pair(self, request):
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
 
 class TestUnfeaturizedSlot(SlotTestCollection):
-    def create_slot(self):
+    def create_slot(self) -> Slot:
         return UnfeaturizedSlot("test")
 
     @pytest.fixture(params=["there is nothing invalid, but we need to pass something"])
-    def invalid_value(self, request):
+    def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(params=[(None, []), ([23], []), (1, []), ("asd", [])])
-    def value_feature_pair(self, request):
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
 
 class TestCategoricalSlot(SlotTestCollection):
-    def create_slot(self):
+    def create_slot(self) -> Slot:
         return CategoricalSlot("test", values=[1, "two", "小于", {"three": 3}, None])
 
     @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
-    def invalid_value(self, request):
+    def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
@@ -192,18 +195,18 @@ class TestCategoricalSlot(SlotTestCollection):
             ),
         ]
     )
-    def value_feature_pair(self, request):
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
 
 class TestCategoricalSlotDefaultValue(SlotTestCollection):
-    def create_slot(self):
+    def create_slot(self) -> Slot:
         slot = CategoricalSlot("test", values=[1, "two", "小于", {"three": 3}, None])
         slot.add_default_value()
         return slot
 
     @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
-    def invalid_value(self, request):
+    def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
@@ -220,5 +223,5 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
             ("unseen value", [0, 0, 0, 0, 0, 1]),
         ]
     )
-    def value_feature_pair(self, request):
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
