@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from time import sleep
 from typing import (
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -571,7 +572,7 @@ def _create_sequence(table_name: Text) -> "Sequence":
     """Creates a sequence object for a specific table name.
 
     If using Oracle you will need to create a sequence in your database,
-    as described here: https://rasa.com/docs/rasa/api/tracker-stores/#sqltrackerstore
+    as described here: https://rasa.com/docs/rasa/tracker-stores#sqltrackerstore
     Args:
         table_name: The name of the table, which gets a Sequence assigned
 
@@ -600,7 +601,7 @@ def is_postgresql_url(url: Union[Text, "URL"]) -> bool:
     return url.drivername == "postgresql"
 
 
-def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Union[Text, int]]:
+def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
     """Get `sqlalchemy.create_engine()` kwargs.
 
     Args:
@@ -701,9 +702,7 @@ class SQLTrackerStore(TrackerStore):
             dialect, host, port, db, username, password, login_db, query
         )
 
-        self.engine = sa.engine.create_engine(
-            engine_url, **create_engine_kwargs(engine_url)
-        )
+        self.engine = sa.create_engine(engine_url, **create_engine_kwargs(engine_url))
 
         logger.debug(
             f"Attempting to connect to database via '{repr(self.engine.url)}'."

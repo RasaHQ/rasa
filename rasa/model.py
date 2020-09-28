@@ -1,7 +1,9 @@
 import glob
+import hashlib
 import logging
 import os
 import shutil
+from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B404
 import tempfile
 import typing
 from pathlib import Path
@@ -45,6 +47,7 @@ FINGERPRINT_NLG_KEY = "nlg"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
+FINGERPRINT_PROJECT = "project"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 
@@ -268,6 +271,21 @@ def create_package_rasa(
     return output_filename
 
 
+def project_fingerprint() -> Optional[Text]:
+    """Create a hash for the project in the current working directory.
+
+    Returns:
+        project hash
+    """
+    try:
+        remote = check_output(  # skipcq:BAN-B607,BAN-B603
+            ["git", "remote", "get-url", "origin"], stderr=DEVNULL
+        )
+        return hashlib.sha256(remote).hexdigest()
+    except (CalledProcessError, OSError):
+        return None
+
+
 async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
     """Create a model fingerprint from its used configuration and training data.
 
@@ -301,6 +319,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         ),
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain),
         FINGERPRINT_NLG_KEY: get_dict_hash(responses),
+        FINGERPRINT_PROJECT: project_fingerprint(),
         FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
         FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),

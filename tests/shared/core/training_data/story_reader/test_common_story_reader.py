@@ -10,7 +10,7 @@ import pytest
 from rasa.core import training
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEACTIVATE_LOOP_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted
+from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted, SlotSet
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 
@@ -325,3 +325,25 @@ async def test_action_deactivate_form_is_mapped_to_new_form(
     ]
 
     assert list(training_trackers[0].events) == expected_events
+
+
+@pytest.mark.parametrize(
+    "stories_file",
+    [
+        "data/test_stories/story_slot_different_types.md",
+        "data/test_yaml_stories/story_slot_different_types.yml",
+    ],
+)
+async def test_yaml_slot_different_types(stories_file: Text, default_domain: Domain):
+    with pytest.warns(None):
+        tracker = await training.load_data(
+            stories_file,
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False,
+        )
+
+    assert tracker[0].events[3] == SlotSet(key="list_slot", value=["value1", "value2"])
+    assert tracker[0].events[4] == SlotSet(key="bool_slot", value=True)
+    assert tracker[0].events[5] == SlotSet(key="text_slot", value="some_text")

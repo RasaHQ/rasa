@@ -21,8 +21,6 @@ As an example, the domain created by `rasa init` has the following yaml definiti
 
 <!-- TODO: intro info about intents -->
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="use-entities"></a>
-
 ### Ignoring entities for certain intents
 
 If you want all entities to be ignored for certain intents, you can
@@ -64,17 +62,17 @@ suggest you make the slots with the same name of type `unfeaturized`.
 ## Entities
 
 The `entities` section lists all entities
-extracted by any [entity extractor](./components/entity-extractors.mdx) in your
+extracted by any [entity extractor](./components.mdx) in your
 NLU pipeline.
 
 For example:
 
 ```yaml-rasa
 entities:
-  - PERSON          # entity extracted by SpacyEntityExtractor
-  - time            # entity extracted by DucklingHTTPExtractor
-  - membership_type # custom entity extracted by CRFEntityExtractor
-  - priority        # custom entity extracted by CRFEntityExtractor
+   - PERSON          # entity extracted by SpacyEntityExtractor
+   - time            # entity extracted by DucklingEntityExtractor
+   - membership_type # custom entity extracted by CRFEntityExtractor
+   - priority        # custom entity extracted by CRFEntityExtractor
 ```
 
 ## Slots
@@ -101,8 +99,6 @@ fits the type of behavior you want in your stories.
 
 Define your slot in your domain according to its slot type, following one
 of the examples below.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="slot-types"></a>
 
 ### Slot Types
 
@@ -162,7 +158,7 @@ Make this a nice table instead.
 
 * **Description**
 
-  Sets two boolean features. The first feature is `1` if the slot is set 
+  Sets two boolean features. The first feature is `1` if the slot is set
   and `0` otherwise. The second feature is `1` if the slot value is
   `"true"`, `"1"`, or a variation of these, and `0` otherwise.
 
@@ -274,8 +270,6 @@ Make this a nice table instead.
   the slot does not influence the dialogue**.
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="unfeaturized-slot"></a>
-
 #### Unfeaturized Slot
 
 * **Option**
@@ -351,7 +345,7 @@ stories:
   steps:
   # ... other story steps
   - intent: inform
-    entities:      
+    entities:
     - people: 3
   - slot_was_set:
     - people: 3
@@ -361,7 +355,7 @@ stories:
   steps:
   # ... other story steps
   - intent: inform
-    entities:      
+    entities:
     - people: 9
   - slot_was_set:
     - people: 9
@@ -378,7 +372,7 @@ stories:
 - story: entity slot-filling
   steps:
   - intent: greet
-    entities:      
+    entities:
     - name: Ali
   - slot_was_set:
     - name: Ali
@@ -408,21 +402,17 @@ slots:
     initial_value: 0
 ```
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="domain-responses"></a>
-
-
 ## Responses
 
 Responses are actions that simply send a message to a user without running any custom code or
 returning events. These responses can be defined directly in the domain file and can include
 rich content such as buttons and attachments. For more information on responses,
-see [Responses](./responses)
+see [Responses](./responses.mdx)
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="session-config"></a>
 
 ## Actions
 
-[Actions](./actions) are the things your bot can actually do.
+[Actions](./actions.mdx) are the things your bot can actually do.
 For example, an action could:
 
 * respond to a user,
@@ -473,6 +463,6 @@ implementation moves all existing slots into the new session. Note that all
 conversations begin with an `action_session_start`. Overriding this action could
 for instance be used to initialize the tracker with slots from an external API
 call, or to start the conversation with a bot message. The docs on
-[Customizing the session start action](./default-actions.mdx#custom-session-start) shows you how to do that.
+[Customizing the session start action](./default-actions.mdx#customization) shows you how to do that.
 
 :::

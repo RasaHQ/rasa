@@ -2,24 +2,16 @@
 id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
-description: Test your Rasa Open Source assistant to validate and improve your conversations
+abstract: Rasa Open Source lets you test dialogues end-to-end by running through
+  test stories. In addition to end-to-end test stories, you can
+  also test the dialogue management and the message processing (NLU)
+  separately.
 ---
 
-Rasa Open Source lets you test dialogues end-to-end by running through
-test stories. The test makes sure that user messages are processed correctly
-and the dialogue predictions are correct. In addition to end-to-end tests, you can
-also test the dialogue handling (core) and the message processing (nlu)
-separately.
-
-:::note
-If you are looking to tune the hyperparameters of your NLU model,
-check out this [tutorial](https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/).
-:::
-
-## End-to-End Testing
+## End-to-end Testing
 
 Testing your assistant requires you to write test stories, which include
-the user messages and the conversation history. The format is the same as the one
+the user messages and the conversation history. The format is the a modified version of the one
 used to specify stories in your training data.
 
 Here are some examples:
@@ -71,7 +63,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml"
   stories:
-  - story: A test conversation with a form
+  - story: A test story with a form
     steps:
     - user: |
         hi
@@ -99,7 +91,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml"
   stories:
-  - story: A test conversation with unexpected input during a form
+  - story: A test story with unexpected input during a form
     steps:
     - user: |
         hi
@@ -125,23 +117,23 @@ Here are some examples:
   </TabItem>
 </Tabs>
 
-By default Rasa Open Source saves conversation tests to `tests/test_stories.yml`.
+By default Rasa Open Source saves test stories to `tests/test_stories.yml`.
 You can test your assistant against them by running:
 
 ```bash
 rasa test
 ```
 
-The command will always load all stories from any story files, where the file
-name starts with `test_`, e.g. `test_stories.yml`. Your story test
+The command will always load all stories from any story files with filenames
+starting with `test_`, e.g. `test_stories.yml`. Your story test
 file names should always start with `test_` for this detection to work.
 
 :::caution Testing Custom Actions
-[Custom Actions](./custom-actions.mdx) are **not executed as part of end-to-end tests.** If your custom
-actions append any events to the conversation, this has to be reflected in your end-to-end
-tests (e.g. by adding `slot_was_set` events to your end-to-end story).
+[Custom Actions](./custom-actions.mdx) are **not executed as part of test stories.** If your custom
+actions append any events to the conversation, this has to be reflected in your test story
+(e.g. by adding `slot_was_set` events to your test story).
 
-If you want to test the code of your custom actions, you should write unit tests
+To test the code of your custom actions, you should write unit tests
 for them and include these tests in your CI/CD pipeline.
 
 :::
@@ -151,8 +143,14 @@ If you have any questions or problems, please share them with us in the dedicate
 
 ## Evaluating an NLU Model
 
-A standard technique in machine learning is to keep some data separate as a *test set*.
-You can [split your NLU training data](./command-line-interface.mdx#create-a-train-test-split)
+:::tip hyperparameter tuning
+If you are looking to tune the hyperparameters of your NLU model,
+check out this [tutorial](https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/).
+:::
+
+
+A standard technique in machine learning is to keep some data separate as a test set.
+You can [split your NLU training data](./command-line-interface.mdx#rasa-data-split)
 into train and test sets using:
 
 ```bash
@@ -175,15 +173,16 @@ rasa test nlu --nlu data/nlu.yml --cross-validation
 ```
 
 You can find the full list of options in the
-[CLI documentation on rasa test](command-line-interface.mdx#rasa-test)
+[CLI documentation on `rasa test`](command-line-interface.mdx#rasa-test).
+
 
 ### Comparing NLU Pipelines
 
 By passing multiple pipeline configurations (or a folder containing them) to the CLI, Rasa will run
-a comparative examination between the pipelines.
+a comparison between the pipelines:
 
 ```bash
-rasa test nlu --config pretrained_embeddings_spacy.yml supervised_embeddings.yml
+rasa test nlu --config config_1.yml config_2.yml
   --nlu data/nlu.yml --runs 3 --percentages 0 25 50 70 90
 ```
 
@@ -193,27 +192,20 @@ The models are then evaluated on the test set and the f1-score for each exclusio
 runs three times (i.e. with 3 test sets in total) and then a graph is plotted using the means and standard deviations of
 the f1-scores.
 
-The f1-score graph - along with all train/test sets, the trained models, classification and error reports - will be saved into a folder
-called `nlu_comparison_results`.
+The f1-score graph, along with all train/test sets, the trained models, classification and error reports,
+will be saved into a folder called `nlu_comparison_results`.
 
 ### Intent Classification
 
-The evaluation script will produce a report, confusion matrix, and confidence histogram for your model.
+The `rasa test` script will produce a report, confusion matrix, and confidence histogram for your model.
 
-The report logs precision, recall and f1 measure for each intent and entity, as well as providing an overall average. You can save these reports as JSON files using the `--report` argument.
+The report logs precision, recall and f1 measure for each intent and entity,
+as well as providing an overall average. You can save these reports as JSON files using the `--report` argument.
 
-The confusion matrix shows you which intents are mistaken for others; any samples which have been incorrectly predicted are logged and saved to a file called `errors.json` for easier debugging.
+The confusion matrix shows you which intents are mistaken for others;
+any samples which have been incorrectly predicted are logged and saved to a file called `errors.json` for easier debugging.
 
 The histogram that the script produces allows you to visualise the confidence distribution for all predictions, with the volume of correct and incorrect predictions being displayed by blue and red bars respectively. Improving the quality of your training data will move the blue histogram bars to the right and the red histogram bars to the left of the plot.
-
-:::caution
-If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
-is that an entity cannot stop or start inside a token.
-For example, if you have an example for a `name` entity
-like `[Brian](name)'s house`, this is only valid if your tokenizer splits `Brian's` into
-multiple tokens.
-
-:::
 
 ### Response Selection
 
@@ -225,21 +217,34 @@ You can save these reports as JSON files using the `--report` argument.
 
 ### Entity Extraction
 
-The `CRFEntityExtractor` is the only entity extractor which you train using your own data,
-and so is the only one that will be evaluated. If you use the spaCy or duckling
-pre-trained entity extractors, Rasa NLU will not include these in the evaluation.
+Only trainable entity extractors, such as the `DIETCLassifier` and `CRFEntityExtractor` will be
+evaluated by the `rasa test` script. If you pretrained extractors like the `DucklingHTTPExtractor`
+Rasa Open Source will not include these in the evaluation.
 
-Rasa NLU will report recall, precision, and f1 measure for each entity type that
-`CRFEntityExtractor` is trained to recognize.
+`rasa test` reports recall, precision, and f1 measure for each entity type that
+your trainable entity extractors are trained to recognize.
 
-### Entity Scoring
+:::caution incorrect entity annotations
+If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
+is that an entity cannot stop or start inside a token.
+For example, if you have an example for a `name` entity
+like `[Brian](name)'s house`, this is only valid if your tokenizer splits `Brian's` into
+multiple tokens.
+
+:::
+
+#### Entity Scoring
 
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
-expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. Our approach is more lenient
+expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`.
+
+Our approach is more lenient
 when it comes to evaluation, as it rewards partial extraction and does not punish the splitting of entities.
 For example, given the aforementioned entity “near Alexanderplatz” and a system that extracts
 “Alexanderplatz”, our approach rewards the extraction of “Alexanderplatz” and punishes the missed out word “near”.
+
+
 The BILOU-based approach, however, would label this as a complete failure since it expects Alexanderplatz
 to be labeled as a last token in an entity (`L-LOC`) instead of a single token entity (`U-LOC`). Note also that
 a split extraction of “near” and “Alexanderplatz” would get full scores on our approach and zero on the
@@ -256,55 +261,51 @@ Here's a comparison between the two scoring mechanisms for the phrase “near Al
 |`[near Alexanderplatz tonight](loc)`                |loc loc loc  (2)    |B-loc I-loc L-loc  (1) |
 
 
-## Evaluating a Core Model
+## Evaluating a Dialogue Model
 
-You can evaluate your trained model on a set of test stories
-by using the evaluate script:
+You can evaluate your trained dialogue model on a set of test stories
+by using the test script:
 
 ```bash
 rasa test core --stories test_stories.yml --out results
 ```
 
-This will print the failed stories to `results/failed_test_stories.yml`.
-We count any story as failed if at least one of the actions
+This will print any failed stories to `results/failed_test_stories.yml`.
+We count a story as failed if at least one of the actions
 was predicted incorrectly.
 
-In addition, this will save a confusion matrix to a file called
+The test script will also save a confusion matrix to a file called
 `results/story_confmat.pdf`. For each action in your domain, the confusion
 matrix shows how often the action was correctly predicted and how often an
 incorrect action was predicted instead.
 
-The full list of options for the script is:
+## Comparing Policy Configurations
 
-```text [rasa test core --help]
-```
+To choose a configuration for your dialogue model, or to choose hyperparameters for a
+specific policy, you want to measure how well your dialogue model will generalize
+to conversations it hasn't seen before. Especially in the beginning
+of a project, when you don't have a lot of real conversations to use to train
+your bot, you may not want to exclude some to use as a test set.
 
-## Comparing Core Configurations
-
-To choose a configuration for your core model, or to choose hyperparameters for a
-specific policy, you want to measure how well Rasa Core will generalise
-to conversations which it hasn't seen before. Especially in the beginning
-of a project, you do not have a lot of real conversations to use to train
-your bot, so you don't just want to throw some away to use as a test set.
-
-Rasa Core has some scripts to help you choose and fine-tune your policy configuration.
+Rasa Open Source has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
-full data set. To do this, you first have to train models for your different
+full data set.
+
+To do this, you first have to train models for your different
 configurations. Create two (or more) config files including the policies you want to
-compare, and then use the `compare` mode of the train script to train your models:
+compare, and then provide them to the train script to train your models:
 
 ```bash
 rasa train core -c config_1.yml config_2.yml \
-  -d domain.yml -s stories_folder --out comparison_models --runs 3 \
-  --percentages 0 5 25 50 70 95
+  --out comparison_models --runs 3 --percentages 0 5 25 50 70 95
 ```
 
-For each policy configuration provided, Rasa Core will be trained multiple times
+For each config file provided, Rasa Open Source will train dialogue models
 with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
 data. This is done for multiple runs to ensure consistent results.
 
-Once this script has finished, you can use the evaluate script in `compare`
-mode to evaluate the models you just trained:
+Once this script has finished, you can pass multiple models to the test script
+to compare the models you just trained:
 
 ```bash
 rasa test core -m comparison_models --stories stories_folder
@@ -314,8 +315,8 @@ rasa test core -m comparison_models --stories stories_folder
 This will evaluate each of the models on the provided stories
 (can be either training or test set) and plot some graphs
 to show you which policy performs best. By evaluating on the full set of stories, you
-can measure how well Rasa Core is predicting the held-out stories.
-To compare single policies create config files containing only one policy each.
+can measure how well your model predicts the held-out stories.
+To compare single policies, create config files containing only one policy each.
 
 :::note
 This training process can take a long time, so we'd suggest letting it run

@@ -5,63 +5,45 @@ const {
   remarkPlugins: themeRemarkPlugins,
 } = require('@rasahq/docusaurus-theme-tabula');
 
-
-// FIXME: remove "next/" when releasing + remove the "next/" in
-// http://github.com/RasaHQ/rasa-website/blob/master/netlify.toml
-const BASE_URL = '/docs/rasa/next/';
-const SITE_URL = 'https://rasa.com';
-
-// NOTE: this allows switching between local dev instances of rasa/rasa-x
 const isDev = process.env.NODE_ENV === 'development';
+const isStaging = process.env.NETLIFY && process.env.CONTEXT === 'staging';
+const isPreview = process.env.NETLIFY && process.env.CONTEXT === 'deploy-preview';
+
+const BASE_URL = '/docs/rasa/';
+const SITE_URL = 'https://rasa.com';
+// NOTE: this allows switching between local dev instances of rasa/rasa-x
 const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
-/* VERSIONING: WIP */
+let existingVersions = [];
+try { existingVersions = require('./versions.json'); } catch (e) { console.info('no versions.json file found') }
 
 const routeBasePath = '/';
-let versions = [];
-try { versions = require('./versions.json'); } catch (ex) { console.info('no versions.json file found; assuming dev mode.') }
 
-const legacyVersion = {
-  label: 'Legacy 1.x',
-  href: 'https://legacy-docs-v1.rasa.com',
-  target: '_self',
+const versionLabels = {
+  current: 'Master/Unreleased'
 };
-
-const allVersions = {
-  label: 'Versions',
-  to: '/', // "fake" link
-  position: 'left',
-  items: versions.length > 0 ? [
-    {
-      label: versions[0],
-      to: '/',
-      activeBaseRegex: versions[0],
-    },
-    ...versions.slice(1).map((version) => ({
-      label: version,
-      to: `${version}/`,
-      activeBaseRegex: version,
-    })),
-    {
-      label: 'Master/Unreleased',
-      to: 'next/',
-      activeBaseRegex: `next`,
-    },
-    legacyVersion,
-  ]
-: [
-    {
-      label: 'Master/Unreleased',
-      to: '/',
-      activeBaseRegex: `/`,
-    },
-    legacyVersion,
-  ],
-}
 
 module.exports = {
   customFields: {
-    // NOTE: all non-standard options should go in this object
+    productLogo: '/img/logo-rasa-oss.png',
+    versionLabels,
+    legacyVersions: [{
+      label: 'Legacy 1.x',
+      href: 'https://legacy-docs-v1.rasa.com',
+      target: '_blank',
+    }],
+    redocPages: [
+      {
+        title: 'Rasa HTTP API',
+        specUrl: '/spec/rasa.yml',
+        slug: '/pages/http-api',
+      },
+      {
+        title: 'Rasa Action Server API',
+        specUrl: '/spec/action-server.yml',
+        slug: '/pages/action-server-api',
+      }
+    ]
   },
   title: 'Rasa Open Source Documentation',
   tagline: 'An open source machine learning framework for automated text and voice-based conversations',
@@ -71,18 +53,23 @@ module.exports = {
   organizationName: 'RasaHQ',
   projectName: 'rasa',
   themeConfig: {
-    colorMode: {
-      defaultMode: 'light',
-      disableSwitch: true,
+    announcementBar: {
+      id: 'pre_release_notice', // Any value that will identify this message.
+      content: 'These docs are for version 2.0.0rc2 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the stable 1.x series can be found here.</a>',
+      backgroundColor: '#6200F5', // Defaults to `#fff`.
+      textColor: '#fff', // Defaults to `#000`.
+      // isCloseable: false, // Defaults to `true`.
+    },
+    algolia: {
+      disabled: !isDev, // FIXME: remove this when our index is good
+      apiKey: '25626fae796133dc1e734c6bcaaeac3c', // FIXME: replace with values from our own index
+      indexName: 'docsearch', // FIXME: replace with values from our own index
+      inputSelector: '.search-bar',
+      // searchParameters: {}, // Optional (if provided by Algolia)
     },
     navbar: {
       hideOnScroll: false,
       title: 'Rasa Open Source',
-      logo: {
-        alt: 'Rasa Logo',
-        src: `/img/rasa-logo.svg`,
-        href: SITE_URL,
-      },
       items: [
         {
           label: 'Rasa Open Source',
@@ -92,20 +79,51 @@ module.exports = {
         {
           label: 'Rasa X',
           position: 'left',
-          href: `${SWAP_URL}/docs/rasa-x/next/`,
+          href: `${SWAP_URL}/docs/rasa-x/`,
           target: '_self',
         },
         {
+          label: 'Rasa Action Server',
+          position: 'left',
+          href: 'https://rasa.com/docs/action-server',
+        },
+        {
+          href: 'https://github.com/rasahq/rasa',
+          className: 'header-github-link',
+          'aria-label': 'GitHub repository',
+          position: 'right',
+        },
+        {
           target: '_self',
-          href: 'http://blog.rasa.com/',
+          href: 'https://blog.rasa.com/',
           label: 'Blog',
           position: 'right',
         },
         {
-          target: '_self',
-          href: `${SITE_URL}/community/join/`,
           label: 'Community',
           position: 'right',
+          items: [
+            {
+              target: '_self',
+              href: 'https://rasa.com/community/join/',
+              label: 'Community Hub',
+            },
+            {
+              target: '_self',
+              href: 'https://forum.rasa.com',
+              label: 'Forum',
+            },
+            {
+              target: '_self',
+              href: 'https://rasa.com/community/contribute/',
+              label: 'How to Contribute',
+            },
+            {
+              target: '_self',
+              href: 'https://rasa.com/showcase/',
+              label: 'Community Showcase',
+            },
+          ],
         },
       ],
     },
@@ -113,10 +131,11 @@ module.exports = {
       copyright: `Copyright © ${new Date().getFullYear()} Rasa Technologies GmbH`,
     },
     gtm: {
-      containerID: 'GTM-PK448GB',
+      containerID: 'GTM-MMHSZCS',
     },
   },
   themes: [
+    '@docusaurus/theme-search-algolia',
     '@rasahq/docusaurus-theme-tabula',
     path.resolve(__dirname, './themes/theme-custom')
   ],
@@ -134,6 +153,13 @@ module.exports = {
         ...themeRemarkPlugins,
         remarkProgramOutput,
       ],
+      lastVersion: existingVersions[0] || 'current', // aligns / to last versioned folder in production
+      versions: {
+        current: {
+          label: versionLabels['current'],
+          path: existingVersions.length < 1 ? '' : 'next',
+        },
+      },
     }],
     ['@docusaurus/plugin-content-pages', {}],
     ['@docusaurus/plugin-sitemap',

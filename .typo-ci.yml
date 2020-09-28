@@ -94,6 +94,7 @@ excluded_words:
   - forni
   - gzip
   - gzipped
+  - hftransformersnlp
   - initializer
   - instaclient
   - jwt
@@ -111,6 +112,7 @@ excluded_words:
   - memoization
   - miniconda
   - mitie
+  - mitiefeaturizer
   - mitie's
   - mitienlp
   - dataset
@@ -148,6 +150,7 @@ excluded_words:
   - scipy
   - sklearn
   - spacy
+  - spacyfeaturizer
   - spacynlp
   - ish
   - spaCy
@@ -180,7 +183,11 @@ excluded_words:
   - crfentityextractor
   - Comerica
   - entitysynonymmapper
+  - memoizationpolicy
   - NLG
   - nlg
+  - Juste
+  - Tanja
+  - Vova
 
 spellcheck_filenames: false

@@ -238,7 +238,7 @@ def is_test_stories_file(file_path: Text) -> bool:
         MarkdownStoryReader,
     )
 
-    return YAMLStoryReader.is_yaml_story_file(
+    return YAMLStoryReader.is_yaml_test_stories_file(
         file_path
     ) or MarkdownStoryReader.is_markdown_test_stories_file(file_path)
 
