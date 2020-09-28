@@ -141,7 +141,7 @@ You'll need to define the response text for `utter_warn_dry`:
 
 ```yaml-rasa
 responses:
-  utter_warn_dry: 
+  utter_warn_dry:
   - text: "Your {plant} needs some water!"
 ```
 
@@ -161,7 +161,7 @@ See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/master/examples
 for instructions on how to test your reminders locally.
 :::
 
-Run this POST request to simulate the external event, using your conversation ID: 
+Run this POST request to simulate the external event, using your conversation ID:
 
 ```bash
 curl -H "Content-Type: application/json" -X POST -d \
@@ -170,10 +170,9 @@ curl -H "Content-Type: application/json" -X POST -d \
 ```
 
 You should see the bot respond in your channel:
-
-```yaml
-Bot: Your Orchid needs some water!
-```
+<Chat caption="Bot response">
+<ChatBotText>Your Orchid needs some water!</ChatBotText>
+</Chat>
 
 
 ## Reminders
@@ -405,7 +404,7 @@ rules:
 
 #### 3. Add Training Data
 
-You'll need to define an intent that triggers cancelling the reminder. 
+You'll need to define an intent that triggers cancelling the reminder.
 
 
 ```yaml-rasa
