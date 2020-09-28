@@ -32,7 +32,7 @@ from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
-from rasa.core.lock_store import LockStore, RedisLockStore
+from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
 from sanic.views import CompositionView
@@ -450,13 +450,10 @@ def replace_decimals_with_floats(obj: Any) -> Any:
     return json.loads(json.dumps(obj, cls=DecimalEncoder))
 
 
-def _lock_store_is_redis_lock_store(
+def _lock_store_is_multi_worker_compatible(
     lock_store: Union[EndpointConfig, LockStore, None]
 ) -> bool:
-    if isinstance(lock_store, RedisLockStore):
-        return True
-
-    if isinstance(lock_store, LockStore):
+    if isinstance(lock_store, InMemoryLockStore):
         return False
 
     # `lock_store` is `None` or `EndpointConfig`
@@ -495,7 +492,7 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
         )
         return _log_and_get_default_number_of_workers()
 
-    if _lock_store_is_redis_lock_store(lock_store):
+    if _lock_store_is_multi_worker_compatible(lock_store):
         logger.debug(f"Using {env_value} Sanic workers.")
         return env_value
 
