@@ -130,7 +130,11 @@ The image below shows the call order during the training of this pipeline:
 
 
 
-<img alt="Component Lifecycle" src={useBaseUrl("/img/component_lifecycle.png")} />
+<img caption="Component Lifecycle" src={useBaseUrl("/img/component_lifecycle.png")
+alt="The component lifecycle during training. Components are processed in the order
+they're listed in the configuration file.
+All components are created and initialized in order before they are trained in
+order and then persisted in order."} />
 
 Before the first component is created using the `create` function, a so
 called `context` is created (which is nothing more than a python dict).
