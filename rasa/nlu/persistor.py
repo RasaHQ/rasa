@@ -259,13 +259,13 @@ class AzurePersistor(Persistor):
             # no need to create the container, it already exists
             pass
 
+    def _container_client(self):
+        return self.blob_service.get_container_client(self.container_name)
+
     def list_models(self) -> List[Text]:
 
         try:
-            container_client = self.blob_service.get_container_client(
-                self.container_name
-            )
-            blob_iterator = container_client.list_blobs()
+            blob_iterator = self._container_client().list_blobs()
             return [
                 self._model_dir_and_model_from_filename(b.name)[1]
                 for b in blob_iterator
@@ -277,15 +277,13 @@ class AzurePersistor(Persistor):
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to Azure."""
 
-        container_client = self.blob_service.get_container_client(self.container_name)
         with open(tar_path, "rb") as data:
-            container_client.upload_blob(name=file_key, data=data)
+            self._container_client().upload_blob(name=file_key, data=data)
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to Azure."""
 
-        container_client = self.blob_service.get_container_client(self.container_name)
-        blob_client = container_client.get_blob_client(target_filename)
+        blob_client = self._container_client().get_blob_client(target_filename)
 
         with open(target_filename, "wb") as blob:
             download_stream = blob_client.download_blob()
