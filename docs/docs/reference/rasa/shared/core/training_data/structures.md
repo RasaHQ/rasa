@@ -42,6 +42,42 @@ includes listen actions as well as implicitly
 set slots. This functions makes these events explicit and
 returns them with the rest of the steps events.
 
+## RuleStep Objects
+
+```python
+class RuleStep(StoryStep)
+```
+
+A Special type of StoryStep representing a Rule.
+
+#### get\_rules\_condition
+
+```python
+ | get_rules_condition() -> List[Event]
+```
+
+Returns a list of events forming a condition of the Rule.
+
+#### get\_rules\_events
+
+```python
+ | get_rules_events() -> List[Event]
+```
+
+Returns a list of events forming the Rule, that are not conditions.
+
+#### add\_event\_as\_condition
+
+```python
+ | add_event_as_condition(event: Event) -> None
+```
+
+Adds event to the Rule as part of its condition.
+
+**Arguments**:
+
+- `event` - The event to be added.
+
 ## Story Objects
 
 ```python

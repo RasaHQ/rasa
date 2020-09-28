@@ -46,6 +46,23 @@ Read stories or rules from file.
 
   `StoryStep`s read from `filename`.
 
+#### read\_from\_string
+
+```python
+ | read_from_string(string: Text) -> List[StoryStep]
+```
+
+Read stories or rules from a string.
+
+**Arguments**:
+
+- `string` - Unprocessed YAML file content.
+  
+
+**Returns**:
+
+  `StoryStep`s read from `string`.
+
 #### read\_from\_parsed\_yaml
 
 ```python

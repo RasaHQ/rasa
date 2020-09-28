@@ -110,7 +110,7 @@ Converts a single user utterance into an ordered dict.
 
 ```python
  | @staticmethod
- | process_action(action: ActionExecuted) -> OrderedDict
+ | process_action(action: ActionExecuted) -> Optional[OrderedDict]
 ```
 
 Converts a single action into an ordered dict.
@@ -194,4 +194,21 @@ Converts ActiveLoop event into an ordered dict.
 **Returns**:
 
   Converted event.
+
+#### process\_rule\_step
+
+```python
+ | process_rule_step(rule_step: RuleStep) -> OrderedDict
+```
+
+Converts a RuleStep into an ordered dict.
+
+**Arguments**:
+
+- `rule_step` - RuleStep object.
+  
+
+**Returns**:
+
+  Converted rule step.
 
