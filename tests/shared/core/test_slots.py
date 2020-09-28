@@ -190,6 +190,10 @@ class TestUnfeaturizedSlot(SlotTestCollection):
         with pytest.raises(ValueError):
             UnfeaturizedSlot("⛔️", unfeaturized=False)
 
+    def test_deprecation_warning(self):
+        with pytest.warns(FutureWarning):
+            self.create_slot(False)
+
 
 class TestCategoricalSlot(SlotTestCollection):
     def create_slot(self, unfeaturized: bool) -> Slot:
