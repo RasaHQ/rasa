@@ -172,10 +172,11 @@ To fill slots from entities with a specific role/group, you need to either defin
 
 ### BILOU Entity Tagging
 
-[DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor)
-have the option `BILOU_flag`.
-`BILOU` is short for `Beginning, Inside, Last, Outside, and Unit-length` and refers to a tagging schema that can be
-used by the machine learning model.
+The [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor)
+have the option `BILOU_flag`, which refers to a tagging schema that can be
+used by the machine learning model when processing entities.
+`BILOU` is short for Beginning, Inside, Last, Outside, and Unit-length.
+
 For example, the training example
 
 ```
