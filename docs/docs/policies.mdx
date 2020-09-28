@@ -171,7 +171,7 @@ If you want to fine-tune your model, start by modifying the following parameters
 Default `max_history` for this policy is `None`, which means it'll use the
 [`FullDialogueTrackerFeaturizer`](#1-full-dialogue). We recommend to set `max_history` to a finite value in order to
 use [`MaxHistoryTrackerFeaturizer`](#2-max-history) for **faster training**.
-See [Featurization of Conversations](./policies.mdx#featurizers) for
+See [Featurizers](./policies.mdx#featurizers) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
 
