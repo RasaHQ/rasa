@@ -880,16 +880,19 @@ components:
     200Story:
       description: Success
       content:
-        text/markdown:
+        yml:
           example: >-
-            ## story_00055028
-
-            * greet: hello
-             - utter_ask_howcanhelp
-            * inform: I'm looking for a [moderately priced](price:moderate)
-            [Indian](cuisine) restaurant for [two](people) people
-             - utter_on_it
-             - utter_ask_location
+            - story: 00055028
+              steps:
+              - user: |
+                  hello
+                intent: greet
+              - action: utter_ask_howcanhelp
+              - user: |
+                  I'm looking for a [moderately priced](price:moderate) [Indian](cuisine) restaurant for [two](people) people
+                intent: inform
+              - action: utter_on_it
+              - action: utter_ask_location
     400BadRequest:
       description: Bad Request
       content:
