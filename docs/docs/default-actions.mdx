@@ -50,7 +50,7 @@ This action starts a new conversation session, and is executed in the following
 situations:
   * at the beginning of each new conversation
   * after a user was inactive for a period defined by the `session_expiration_time` parameter in the domain's
-[session configuration](./domain.mdx#session-config)
+[session configuration](./domain.mdx#session-configuration)
   * when a user sends a "/session_start" message during a conversation
 
 The action will reset the conversation tracker, but by default will not clear any slots that were set.
@@ -129,7 +129,7 @@ now handles all [two-stage fallback behavior](./fallback-handoff.mdx)
 ## action_two_stage_fallback
 
 This is a fallback loop that can be used to handle low NLU confidence. Read more about
-[handling low NLU confidence](./fallback-handoff#handling-low-nlu-confidence).
+[handling low NLU confidence](./fallback-handoff.mdx#nlu-fallback).
 
 ## action_default_ask_affirmation
 
