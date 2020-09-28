@@ -31,7 +31,7 @@ nlu:
 ```
 
 As with every intent, you should source the majority of your examples
-[from real conversations](conversation-driven-development.mdx). 
+[from real conversations](conversation-driven-development.mdx).
 
 
 ### 2. Defining the response message
@@ -142,7 +142,7 @@ the corresponding confidence threshold using the following steps:
 
 #### 1. Updating the configuration
 
-You will need to add the RulePolicy to your policies in config.yml. 
+You will need to add the RulePolicy to your policies in config.yml.
 By default, the rule policy comes with the settings below:
 
 ```yaml-rasa
@@ -161,7 +161,7 @@ policies:
 #### 2. Defining the default response message
 
 To define what your bot will say when action confidence is below the threshold,
-define a response `utter_default`. 
+define a response `utter_default`.
 
 ```yaml-rasa
 responses:
@@ -275,7 +275,7 @@ responses:
 
 Rasa provides default implementations for asking which intent the user
 meant and for asking the user to rephrase. To customize the behavior of these actions,
-see the [documentation default actions](default-actions.mdx).
+see the documentation on[default actions](default-actions.mdx).
 
 #### 3. Defining a Two-Stage Fallback rule
 
@@ -320,7 +320,7 @@ starterpacks.
 ## Summary
 
 To let your assistant gracefully handle failures, you should handle known
-out-of-scope messages and add a form of fallback behavior. If you want to add human 
+out-of-scope messages and add a form of fallback behavior. If you want to add human
 handoff, you can add it in addition or as a final step in your fallback
 set up.
 Here's a summary of changes you need to make for each method:

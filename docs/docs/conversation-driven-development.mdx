@@ -7,7 +7,7 @@ description: Find out about best practices for conversational AI using Conversat
 
 ## What is CDD?
 
-Conversation-Driven Development (CDD) is the process of listening to your users and using those insights to improve your AI assistant. It is the overarching best practice approach for chatbot development. 
+Conversation-Driven Development (CDD) is the process of listening to your users and using those insights to improve your AI assistant. It is the overarching best practice approach for chatbot development.
 
 Developing great AI assistants is challenging because users will always say something you didn't anticipate. The principle behind CDD is that in every conversation users are telling you—in their own words—exactly what they want. By practicing CDD at every stage of bot development, you orient your assistant towards real user language and behavior.
 
@@ -22,18 +22,18 @@ CDD includes the following actions:
 
 CDD is not a linear process; you'll circle back to the same actions over and over as you develop and improve your bot.
 
-Read more about these actions and the concept of CDD [here](https://blog.rasa.com/conversation-driven-development-a-better-approach-to-building-ai-assistants/). 
+Read more about these actions and the concept of CDD on the [Rasa Blog](https://blog.rasa.com/conversation-driven-development-a-better-approach-to-building-ai-assistants/).
 
-You can also check out [Rasa X](https://rasa.com/docs/rasa-x/), a purpose-built tool for CDD. 
+You can also check out [Rasa X](https://rasa.com/docs/rasa-x/), a purpose-built tool for CDD.
 
 ## CDD in early stages of development
 
 If you're at the earliest stage of bot development, it might seem like CDD has no role to play - after all, you have no conversations yet! However, there are CDD actions you can take at the very beginning of bot development:
 
 1. See the best practices for [NLU data](generating-nlu-data.mdx) and [Stories](writing-stories.mdx) for details on creating training data with CDD in mind.
-2. Give your bot to test users early on. 
+2. Give your bot to test users early on.
 
-    CDD is all about listening to your users, so the earlier you find some, the better. 
+    CDD is all about listening to your users, so the earlier you find some, the better.
 
     Test users can be anyone who doesn't already know how your bot works from the inside. People on the bot development team should not be test users, since they know exactly what the bot can and can't do. Don't overinstruct your test users; they should have only as much knowledge of the bot's domain as your end users will have.
 
@@ -45,10 +45,10 @@ If you're at the earliest stage of bot development, it might seem like CDD has n
 At this stage, you can [install Rasa X in local mode](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/#local-mode) to make it easier to share your bot with test users, collect conversations, and apply NLU and Story best practices based on the conversations you collect.
 
 
-## CDD with a bot in production 
+## CDD with a bot in production
 
-Once your bot is in production, you'll have more conversations to gain insights from. Then you can fully apply CDD actions. 
-At this stage, you can [install Rasa X on a server](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/#helm-chart) 
+Once your bot is in production, you'll have more conversations to gain insights from. Then you can fully apply CDD actions.
+At this stage, you can [install Rasa X on a server](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/#helm-chart)
 to both deploy your bot and enable CDD with a bot in production.
 
 *   **Review**: Look in conversations for what users are really asking for.
@@ -58,9 +58,9 @@ to both deploy your bot and enable CDD with a bot in production.
     *   Look at conversations where an “out_of_scope” intent or fallback behavior occurred. These could indicate a potential new skill, or just a misclassified user utterance.
     *   Look for user frustration, such as requests for transfer to a human.
 
-*   **Annotate**: Continue to follow [best practices for NLU](generating-nlu-data.mdx) as you add new user utterances from real conversations to your training data. Be careful not to overfit your NLU model to utterances like those already in your training data. This can happen when you continuously add user utterances that were already predicted correctly and with high confidence to your training data.  To avoid overfitting and help your model generalize to more diverse user utterances, add only user utterances that the model previously predicted incorrectly or with low confidence. 
+*   **Annotate**: Continue to follow [best practices for NLU](generating-nlu-data.mdx) as you add new user utterances from real conversations to your training data. Be careful not to overfit your NLU model to utterances like those already in your training data. This can happen when you continuously add user utterances that were already predicted correctly and with high confidence to your training data.  To avoid overfitting and help your model generalize to more diverse user utterances, add only user utterances that the model previously predicted incorrectly or with low confidence.
 
-*   **Test:** Add successful user conversations to your [test conversations](testing-your-assistant.mdx). Doing this consistently will help ensure you don't introduce regressions as you make other fixes to your bot. 
+*   **Test:** Add successful user conversations to your [test conversations](testing-your-assistant.mdx). Doing this consistently will help ensure you don't introduce regressions as you make other fixes to your bot.
 
 *   **Track:** Look for clues to success and failure to help you track your bot's performance.
 

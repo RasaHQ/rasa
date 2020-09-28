@@ -140,7 +140,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5521](https://github.com/rasahq/rasa/issues/5521): Responses used in ResponseSelector now support new lines with explicitly adding `\\n` between them.
 
-* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [rasa export](./command-line-interface.mdx#rasa-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-configuration).
+* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [`rasa export`](./command-line-interface.mdx#rasa-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-configuration).
 
 ## [1.10.1] - 2020-05-15
 
@@ -336,8 +336,8 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   connected to a PostgreSQL database.
 
   The schema is added to the connection string option's `-csearch_path` key, e.g.
-  `-options=-csearch_path=<SCHEMA_NAME>` (see
-  [https://www.postgresql.org/docs/11/contrib-dblink-connect.html](https://www.postgresql.org/docs/11/contrib-dblink-connect.html) for more details).
+  `-options=-csearch_path=<SCHEMA_NAME>` (see the
+  [PostgreSQL docs](https://www.postgresql.org/docs/11/contrib-dblink-connect.html) for more details).
   As before, if no `POSTGRESQL_SCHEMA` is defined, Rasa uses the database's default
   schema (`public`).
 
@@ -566,7 +566,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5230](https://github.com/rasahq/rasa/issues/5230): Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
 
-  Please refer to the [documentation](./tuning-your-model.mdx#configuring-tensorflow) to understand
+  Please refer to the documentation on [Configuring TensorFlow](./tuning-your-model.mdx#configuring-tensorflow) to understand
   which environment variables to set in what scenarios. A couple of examples are shown below as well:
 
   ```python
@@ -583,7 +583,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components.mdx#dietclassifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
-  recognition. You can read more about this component in our [documentation](./components.mdx#dietclassifier).
+  recognition. You can read more about this component in the [DIETClassifier](./components.mdx#dietclassifier) documentation.
   The new component will replace the `EmbeddingIntentClassifier` and the
   [CRFEntityExtractor](./components.mdx#crfentityextractor) in the future.
   Those two components are deprecated from now on.
@@ -965,7 +965,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#4925](https://github.com/rasahq/rasa/issues/4925): “rasa init” will ask if user wants to train a model
 
 * [#4942](https://github.com/rasahq/rasa/issues/4942): Pin `multidict` dependency to 4.6.1 to prevent sanic from breaking,
-  see [https://github.com/huge-success/sanic/issues/1729](https://github.com/huge-success/sanic/issues/1729)
+  see [the Sanic GitHub issue](https://github.com/huge-success/sanic/issues/1729) for more info.
 
 * [#4985](https://github.com/rasahq/rasa/issues/4985): Fix errors during training and testing of `ResponseSelector`.
 
@@ -980,7 +980,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#4914](https://github.com/rasahq/rasa/issues/4914): Added `rasa/nlu/schemas/config.yml` to wheel package
 
 * [#4942](https://github.com/rasahq/rasa/issues/4942): Pin `multidict` dependency to 4.6.1 to prevent sanic from breaking,
-  see [https://github.com/huge-success/sanic/issues/1729](https://github.com/huge-success/sanic/issues/1729)
+  see [the Sanic GitHub issue](https://github.com/huge-success/sanic/issues/1729)
 
 ## [1.5.2] - 2019-12-09
 
@@ -1310,7 +1310,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 ### Bugfixes
 
 * Added the ability to properly deal with spaCy `Doc`-objects created on
-  empty strings as discussed [here](https://github.com/RasaHQ/rasa/issues/4445).
+  empty strings as discussed in [issue #4445](https://github.com/RasaHQ/rasa/issues/4445).
   Only training samples that actually bear content are sent to `self.nlp.pipe`
   for every given attribute. Non-content-bearing samples are converted to empty
   `Doc`-objects. The resulting lists are merged with their preserved order and
