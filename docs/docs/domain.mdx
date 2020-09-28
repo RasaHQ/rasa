@@ -466,3 +466,15 @@ call, or to start the conversation with a bot message. The docs on
 [Customizing the session start action](./default-actions.mdx#customization) shows you how to do that.
 
 :::
+
+## Multiple Domain Files
+
+The domain can be defined as a single YAML file or split across multiple files in a directory.
+When split across multiple files, the domain contents will be read and automatically merged together.
+
+Using the [command line interface](./command-line-interface.mdx#rasa-train),
+you can train a model with split domain files by running:
+
+```bash
+rasa train --domain path_to_domain_directory
+```
