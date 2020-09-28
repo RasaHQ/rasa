@@ -6,7 +6,7 @@ abstract: One thing you can count on when building a conversational assistant is
   will say unexpected things. This page is a guide on handling unexpected input.
 ---
 
-Unexpected input is a deviation from the [happy path](glossary.mdx#happy_unhappy_paths)
+Unexpected input is a deviation from the [happy path](glossary.mdx#happy--unhappy-paths)
 that you have defined.  For example:
 
 - A user walks away in the middle of a conversation about their subscription, then comes back
@@ -25,7 +25,7 @@ the guide on [fallback and human handoff](fallback-handoff.mdx)
 There are two kinds of unexpected input: generic interjections, and contextual interjections.
 Generic interjections are interruptions that should always get the same response regardless of the
 conversation context. If you already have a rule defining the response to an intent, you don't
-need to do anything else to handle it as an interruption.  [FAQs and chitchat](#chitchat-faqs) are common generic interjections.
+need to do anything else to handle it as an interruption.  [FAQs and chitchat](./chitchat-faqs.mdx) are common generic interjections.
 A contextual interjection is one whose response depends on the conversation context.
 For example, if a user asks "Why do you need that?", the answer will depend on what the bot just
 asked for.
