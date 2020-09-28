@@ -51,21 +51,31 @@ Once your bot is in production, you'll have more conversations to gain insights 
 At this stage, you can [install Rasa X on a server](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/#helm-chart)
 to both deploy your bot and enable CDD with a bot in production.
 
-*   **Review**: Look in conversations for what users are really asking for.
+### Review
 
-    Your test users had at least some instruction about what the bot was intended to do; real users often either have no idea, or ignore instructions given to them. You can't cater to every unexpected user behavior, but you can try to address the main friction points you notice. Here are some things you could consider looking for:
+Look in conversations for what users are really asking for.
 
-    *   Look at conversations where an “out_of_scope” intent or fallback behavior occurred. These could indicate a potential new skill, or just a misclassified user utterance.
-    *   Look for user frustration, such as requests for transfer to a human.
+Your test users had at least some instruction about what the bot was intended to do; real users often either have no idea, or ignore instructions given to them. You can't cater to every unexpected user behavior, but you can try to address the main friction points you notice. Here are some things you could consider looking for:
 
-*   **Annotate**: Continue to follow [best practices for NLU](generating-nlu-data.mdx) as you add new user utterances from real conversations to your training data. Be careful not to overfit your NLU model to utterances like those already in your training data. This can happen when you continuously add user utterances that were already predicted correctly and with high confidence to your training data.  To avoid overfitting and help your model generalize to more diverse user utterances, add only user utterances that the model previously predicted incorrectly or with low confidence.
+*   Look at conversations where an “out_of_scope” intent or fallback behavior occurred. These could indicate a potential new skill, or just a misclassified user utterance.
+*   Look for user frustration, such as requests for transfer to a human.
 
-*   **Test:** Add successful user conversations to your [test conversations](testing-your-assistant.mdx). Doing this consistently will help ensure you don't introduce regressions as you make other fixes to your bot.
+### Annotate
 
-*   **Track:** Look for clues to success and failure to help you track your bot's performance.
+Continue to follow [best practices for NLU](generating-nlu-data.mdx) as you add new user utterances from real conversations to your training data. Be careful not to overfit your NLU model to utterances like those already in your training data. This can happen when you continuously add user utterances that were already predicted correctly and with high confidence to your training data.  To avoid overfitting and help your model generalize to more diverse user utterances, add only user utterances that the model previously predicted incorrectly or with low confidence.
 
-    Some metrics are external to your bot. For example, if you are building a bot to relieve demand on a customer service call center, one metric for success could be the reduction in traffic to the call center. Others you can get directly from conversations, such as whether a user reaches a certain action that represents achieving the user goal.
+### Test
 
-    Automatically tracked metrics are by nature proxy metrics; the only way to get a true measure of success would be to individually review and rate every single conversation with your bot. While this clearly isn't realistic, just keep in mind that no metric is a perfect representation of your bot's performance, so don't really only on metrics to see where your bot needs improvement.
+Add successful user conversations to your [test conversations](testing-your-assistant.mdx). Doing this consistently will help ensure you don't introduce regressions as you make other fixes to your bot.
 
-*   **Fix:** Continue to follow [best practices for Stories](writing-stories.mdx) as you expand and improve your bot's skills. Let user demand guide which skills you add and which fixes you make. Make smaller changes frequently rather than making big changes only once in a while. This will help you gauge the effectiveness of changes you're making, since you'll get user feedback more frequently. Your [CI/CD pipeline ](setting-up-ci-cd.mdx) should allow you to do so with confidence.
+### Track
+
+Look for clues to success and failure to help you track your bot's performance.
+
+Some metrics are external to your bot. For example, if you are building a bot to relieve demand on a customer service call center, one metric for success could be the reduction in traffic to the call center. Others you can get directly from conversations, such as whether a user reaches a certain action that represents achieving the user goal.
+
+Automatically tracked metrics are by nature proxy metrics; the only way to get a true measure of success would be to individually review and rate every single conversation with your bot. While this clearly isn't realistic, just keep in mind that no metric is a perfect representation of your bot's performance, so don't really only on metrics to see where your bot needs improvement.
+
+### Fix
+
+Continue to follow [best practices for Stories](writing-stories.mdx) as you expand and improve your bot's skills. Let user demand guide which skills you add and which fixes you make. Make smaller changes frequently rather than making big changes only once in a while. This will help you gauge the effectiveness of changes you're making, since you'll get user feedback more frequently. Your [CI/CD pipeline ](setting-up-ci-cd.mdx) should allow you to do so with confidence.
