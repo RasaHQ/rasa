@@ -78,7 +78,12 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
 
     # first is language followed by list of components
     return [
-        ("en", as_pipeline("SpacyNLP", "SpacyTokenizer", "SpacyFeaturizer", "DIETClassifier")),
+        (
+            "en",
+            as_pipeline(
+                "SpacyNLP", "SpacyTokenizer", "SpacyFeaturizer", "DIETClassifier"
+            ),
+        ),
         (
             "en",
             as_pipeline(
