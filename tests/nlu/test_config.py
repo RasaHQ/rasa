@@ -53,14 +53,14 @@ def test_invalid_many_tokenizers_in_config():
             {
                 "pipeline": [
                     {"name": "WhitespaceTokenizer"},
-                    {"name": "ConveRTFeaturizer"},
+                    #{"name": "ConveRTFeaturizer"},
                 ]
             }
         ),
         pytest.param(
             {
                 "pipeline": [
-                    {"name": "ConveRTTokenizer"},
+                    #{"name": "ConveRTTokenizer"},
                     {"name": "LanguageModelFeaturizer"},
                 ]
             }
