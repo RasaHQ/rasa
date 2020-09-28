@@ -3,12 +3,11 @@ id: model-storage
 sidebar_label: Model Storage
 title: Model Storage
 abstract: |
-  After you've trained a model for your assistant, you can use it to run your
-  bot.
+  Models can be stored in different places after you trained your assistant. This
+  page explains how to configure Rasa to load your models.
 ---
 
-You can load your trained model
-in three different ways:
+You can load your trained model in three different ways:
 
 1. Load the model from your local disk (see [Load Model from Disk](./model-storage.mdx#load-model-from-disk))
 
@@ -16,8 +15,7 @@ in three different ways:
 
 3. Fetch the model from cloud storage like S3 (see [Load Model from Cloud](./model-storage.mdx#load-model-from-cloud))
 
-Loading the model from your local disk will be used as a fallback if you
-don't specify how a model should be loaded.
+By default all commands of Rasa's CLI will load models from your local disk.
 
 ## Load Model from Disk
 
@@ -53,7 +51,7 @@ rasa run
 You can configure the Rasa Open Source server to regularly fetch
 a model from a server and deploy it.
 
-#### Configuration of Rasa Open Source
+#### How to Configure Rasa Open Source
 
 You can configure the HTTP server to fetch models from another URL
 by adding it to your `endpoints.yml`:
@@ -75,7 +73,7 @@ models:
   wait_time_between_pulls: null  # fetches model only once
 ```
 
-#### Configuration of your server
+#### How to Configure Your Server
 
 Rasa Open Source will send a `GET` request to the URL you specified in the
 `endpoints.yml`, e.g. `http://my-server.com/models/default` in the above examples.
@@ -97,8 +95,6 @@ The response of your server to this `GET` request should be one of these:
 Rasa Open Source uses the `If-None-Match` and `ETag` headers for caching. Setting
 the headers will avoid re-downloading the same model over and over, saving
 bandwidth and compute resources.
-
-An example request Rasa might make to your model server looks like this:
 
 ## Load Model from Cloud
 
