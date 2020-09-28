@@ -52,11 +52,13 @@ and Rule Policies might both predict with confidence 1), the priority of the
 policies is considered. Rasa Open Source policies have default priorities that are set to ensure the
 expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
 
-1. `TEDPolicy`
+<!-- We want to have high priority policies first; it's not possible to use a Markdown ordered list for that. -->
 
-2. `MemoizationPolicy` or `AugmentedMemoizationPolicy`
+* 3 - `RulePolicy`
 
-3. `RulePolicy`
+* 2 - `MemoizationPolicy` or `AugmentedMemoizationPolicy`
+
+* 1 - `TEDPolicy`
 
 
 In general, it is not recommended to have more
