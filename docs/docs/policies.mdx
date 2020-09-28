@@ -98,7 +98,7 @@ following steps:
    This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
 It is recommended to use `LabelTokenizerSingleStateFeaturizer`
-(see [Featurization of Conversations](./policies.mdx#featurizers) for details).
+(see [Featurization](./policies.mdx#featurizers) for details).
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -357,13 +357,13 @@ policies:
 ```
 
 * `core_fallback_threshold` (default: `0.3`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
    further information.
 * `core_fallback_action_name` (default: `action_default_fallback`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
    further information.
 * `enable_fallback_prediction` (default: `true`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
    further information.
 * `check_for_contradictions` (default: `true`): After training, the `RulePolicy` will
    perform a check to make sure that there are no rules that contradict with each other, or with any stories.
@@ -588,7 +588,7 @@ the `MappingPolicy`, see the
 ### Fallback Policy
 
 :::caution
-The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+The `FallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `FallbackPolicy`, see the
 [migration guide](./migration-guide.mdx#migrating-from-the-fallback-policy).
@@ -597,7 +597,7 @@ the `FallbackPolicy`, see the
 ### Two-Stage Fallback Policy
 
 :::caution
-The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+The `TwoStageFallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `TwoStageFallbackPolicy`, see the
 [migration guide](./migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
