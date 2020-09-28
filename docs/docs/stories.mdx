@@ -15,17 +15,17 @@ converted into a specific format where user inputs are expressed as intents
 Here's an example of a dialogue in the Rasa story format:
 
 ```yaml-rasa
-stories: 
+stories:
 - story: collect restaurant booking info  # name of the story - just for debugging
-  steps: 
+  steps:
   - intent: greet                         # user message with no entities
   - action: utter_ask_howcanhelp
   - intent: inform                        # user message with no entities
     entities:
     - location: "rome"
-    - price: "cheap" 
+    - price: "cheap"
   - action: utter_on_it                  # action that the bot should execute
-  - action: utter_ask_cuisine 
+  - action: utter_ask_cuisine
   - intent: inform
     entities:
     - cuisine: "spanish"
@@ -43,14 +43,14 @@ same thing.
 It is important to include the entities here as well because the policies learn
 to predict the next action based on a *combination* of both the intent and
 entities (you can, however, change this behavior using the
-[use_entities](./domain.mdx#use-entities) attribute).
+[use_entities](./domain.mdx#ignoring-entities-for-certain-intents) attribute).
 
 ### Actions
 
 All actions executed by the bot, including [responses](./responses.mdx) are listed
 in stories under the `action` key.
 
-You can use a response from your domain as an action by listing it as one 
+You can use a response from your domain as an action by listing it as one
 in a story. Similarly, you can indicate that a story should call a custom action by including
 the name of the custom action from the `actions` list in your domain.
 
@@ -59,10 +59,10 @@ the name of the custom action from the `actions` list in your domain.
 
 During training, Rasa Open Source does not call the action server. This means
 that your assistant's dialogue management model doesn't know which events a custom
-action will return. 
+action will return.
 
 Because of this, events such as setting a slot or activating/deactivating a form have to be
-explicitly written out as part of the stories. You can read more about 
+explicitly written out as part of the stories. You can read more about
 the different types of events [here](https://rasa.com/docs/action-server/events).
 
 #### Slot Events
@@ -70,13 +70,13 @@ the different types of events [here](https://rasa.com/docs/action-server/events)
 Slot events are written under `slot_was_set` in a story. If this slot is set
 inside a custom action, add the `slot_was_set` event immediately following the
 custom action call. If your custom action resets a slot value to `None`, the
-corresponding event for that would look like this: 
+corresponding event for that would look like this:
 
 ```yaml-rasa {6-7}
 stories:
-- story: set slot to none 
+- story: set slot to none
   steps:
-    # ... other story steps 
+    # ... other story steps
     - action: my_custom_action
     - slot_was_set:
         my_slot: null
@@ -103,7 +103,7 @@ way to write these stories is to use [interactive learning](./writing-stories.md
 
 Checkpoints and OR statements should be used with caution, if at all.
 There is usually a better way to achieve what you want by using [Rules](./rules.mdx) or
-the [ResponseSelector](./components.mdx#response-selector).
+the [ResponseSelector](./components.mdx#responseselector).
 
 ### Checkpoints
 
@@ -162,11 +162,11 @@ converted into two stories at training time:
 
 ```yaml-rasa
 stories:
-- story: 
-  steps: 
-  # ... previous steps 
+- story:
+  steps:
+  # ... previous steps
   - action: utter_ask_confirm
-  - or: 
+  - or:
     - intent: affirm
     - intent: thankyou
   - action: action_handle_affirmation
