@@ -272,20 +272,3 @@ class CategoricalSlot(Slot):
 
     def feature_dimensionality(self) -> int:
         return len(self.values)
-
-
-class DataSlot(Slot):
-    def __init__(
-        self,
-        name: Text,
-        initial_value: Any = None,
-        value_reset_delay: Optional[int] = 1,
-        auto_fill: bool = True,
-    ):
-        super().__init__(name, initial_value, value_reset_delay, auto_fill)
-
-    def as_feature(self) -> List[float]:
-        raise NotImplementedError(
-            "Each slot type needs to specify how its "
-            "value can be converted to a feature."
-        )
