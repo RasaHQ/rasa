@@ -85,16 +85,16 @@ The Transformer Embedding Dialogue (TED) Policy is described in
 This policy has a pre-defined architecture, which comprises the
 following steps:
 
-1. concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
-  step into an input vector to pre-transformer embedding layer;
+1. Concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
+  step into an input vector to pre-transformer embedding layer.
 
-2. feed it to transformer;
+2. Feed the input vector into a transformer.
 
-3. apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step;
+3. Apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step.
 
-4. apply a dense layer to create embeddings for system actions for each time step;
+4. Apply a dense layer to create embeddings for system actions for each time step.
 
-5. calculate the similarity between the dialogue embedding and embedded system actions.
+5. Calculate the similarity between the dialogue embedding and embedded system actions.
    This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
 It is recommended to use `LabelTokenizerSingleStateFeaturizer`
