@@ -10,6 +10,10 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 
 
+# TODO
+#   skip tests as the ConveRT model is not publicly available anymore (see https://github.com/RasaHQ/rasa/issues/6806)
+
+
 @pytest.mark.skip
 def test_convert_featurizer_process(component_builder):
     tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)

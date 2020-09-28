@@ -6,6 +6,9 @@ from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 
+# TODO
+#   skip tests as the ConveRT model is not publicly available anymore (see https://github.com/RasaHQ/rasa/issues/6806)
+
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
