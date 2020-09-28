@@ -96,7 +96,6 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `StoryStep`s read from `string`.
         """
-
         try:
             rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
             yaml_content = rasa.shared.utils.io.read_yaml(string)

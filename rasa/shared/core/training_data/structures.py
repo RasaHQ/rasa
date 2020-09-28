@@ -218,12 +218,6 @@ class StoryStep:
 
         return events
 
-    def get_rules_condition(self) -> Optional[List[Event]]:
-        pass
-
-    def get_rules_steps(self) -> Optional[List[Event]]:
-        pass
-
     def __repr__(self) -> Text:
         return (
             "StoryStep("
@@ -249,11 +243,27 @@ class RuleStep(StoryStep):
         end_checkpoints: Optional[List[Checkpoint]] = None,
         events: Optional[List[Union[Event, List[Event]]]] = None,
         source_name: Optional[Text] = None,
+        condition_events_indices: Optional[Set[int]] = None,
     ) -> None:
         super().__init__(
             block_name, start_checkpoints, end_checkpoints, events, source_name
         )
-        self.condition_events_indices = set()
+        self.condition_events_indices = (
+            condition_events_indices if condition_events_indices else set()
+        )
+
+    def create_copy(self, use_new_id: bool) -> "StoryStep":
+        copied = RuleStep(
+            self.block_name,
+            self.start_checkpoints,
+            self.end_checkpoints,
+            self.events[:],
+            self.source_name,
+            self.condition_events_indices,
+        )
+        if not use_new_id:
+            copied.id = self.id
+        return copied
 
     def __repr__(self) -> Text:
         return (
@@ -288,7 +298,7 @@ class RuleStep(StoryStep):
         ]
 
     def add_event_as_condition(self, event: Event) -> None:
-        """Adds event to the Rule as part of it's condition.
+        """Adds event to the Rule as part of its condition.
 
         Args:
             event: The event to be added.

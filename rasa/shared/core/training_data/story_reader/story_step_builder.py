@@ -4,7 +4,7 @@ from typing import Text, Optional, Dict, Any, List
 import rasa.shared.core.training_data.structures
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_STORIES
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import UserUttered, Event
 from rasa.shared.core.training_data.structures import (
     Checkpoint,
     GENERATED_CHECKPOINT_PREFIX,
@@ -102,10 +102,10 @@ class StoryStepBuilder:
                     updated_steps.append(copied)
             self.current_steps = updated_steps
 
-    def add_event_as_condition(self, event) -> None:
+    def add_event_as_condition(self, event: Event) -> None:
         self.add_event(event, True)
 
-    def add_event(self, event, is_condition=False) -> None:
+    def add_event(self, event, is_condition: bool = False) -> None:
         self.ensure_current_steps()
         for t in self.current_steps:
             # conditions are supported only for the RuleSteps

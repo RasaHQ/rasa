@@ -132,6 +132,7 @@ class YAMLStoryWriter:
             return self.process_slot(event)
         if isinstance(event, ActiveLoop):
             return self.process_active_loop(event)
+        return None
 
     @staticmethod
     def stories_contain_loops(stories: List[StoryStep]) -> bool:
