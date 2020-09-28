@@ -5,6 +5,8 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
+from fbmessenger.sender_actions import SenderAction
+
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -145,10 +147,12 @@ class Messenger:
         """Pass on the text to the dialogue engine for processing."""
 
         out_channel = MessengerBot(self.client)
+        await out_channel.send_action(sender_id, sender_action="mark_seen")
+
         user_msg = UserMessage(
             text, out_channel, sender_id, input_channel=self.name(), metadata=metadata
         )
-
+        await out_channel.send_action(sender_id, sender_action="typing_on")
         # noinspection PyBroadException
         try:
             await self.on_new_message(user_msg)
@@ -157,6 +161,8 @@ class Messenger:
                 "Exception when trying to handle webhook for facebook message."
             )
             pass
+        finally:
+            await out_channel.send_action(sender_id, sender_action="typing_off")
 
 
 class MessengerBot(OutputChannel):
@@ -193,6 +199,18 @@ class MessengerBot(OutputChannel):
         """Sends an image. Default will just post the url as a string."""
 
         self.send(recipient_id, Image(url=image))
+
+    async def send_action(self, recipient_id: Text, sender_action: Text) -> None:
+        """Sends a sender action to facebook (e.g. "typing_on").
+
+        Args:
+            recipient_id: recipient
+            sender_action: action to send, e.g. "typing_on" or "mark_seen"
+        """
+
+        self.messenger_client.send_action(
+            SenderAction(sender_action).to_dict(), recipient_id
+        )
 
     async def send_text_with_buttons(
         self,

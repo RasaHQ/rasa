@@ -191,7 +191,7 @@ A pipeline usually consists of three main parts:
 
 For tokenization of English input, we recommend the [ConveRTTokenizer](./components.mdx#converttokenizer).
 You can process other whitespace-tokenized (i.e. words are separated by spaces) languages
-with the [WhitespaceTokenizer](./components.mdx#swhitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
+with the [WhitespaceTokenizer](./components.mdx#whitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
 We support a number of different [tokenizers](./components.mdx), or you can
 create your own [custom tokenizer](./components.mdx).
 
@@ -252,7 +252,7 @@ If you don't use any pre-trained word embeddings inside your pipeline, you are n
 and can train your model to be more domain specific. For example, in general English, the word “balance” is closely
 related to “symmetry”, but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely
 related and you'd like your model to capture that.
-You should only use featurizers from the category [sparse featurizers](./components.mdx#text-featurizers), such as
+You should only use featurizers from the category [sparse featurizers](./components.mdx#featurizers), such as
 [CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer), [RegexFeaturizer](./components.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer), if you don't want to use
 pre-trained word embeddings.
 
@@ -286,14 +286,14 @@ Entity extraction involves parsing user messages for required pieces of informat
 provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
 Here is a summary of the available extractors and what they are best used for:
 
-|       Component        |     Requires     |                      Model                      |              Notes               |
-|------------------------|------------------|-------------------------------------------------|----------------------------------|
-|`DIETClassifier`        | N/A              |conditional random field on top of a transformer |good for training custom entities |
-|`CRFEntityExtractor`    |sklearn-crfsuite  |conditional random field                         |good for training custom entities |
-|`SpacyEntityExtractor`  |spaCy             |averaged perceptron                              |provides pre-trained entities     |
-|`DucklingHTTPExtractor` |running duckling  |context-free grammar                             |provides pre-trained entities     |
-|`MitieEntityExtractor`  |MITIE             |structured SVM                                   |good for training custom entities |
-|`EntitySynonymMapper`   |existing entities |N/A                                              |maps known synonyms               |
+|       Component          |     Requires     |                      Model                      |              Notes               |
+|--------------------------|------------------|-------------------------------------------------|----------------------------------|
+|`DIETClassifier`          | N/A              |conditional random field on top of a transformer |good for training custom entities |
+|`CRFEntityExtractor`      |sklearn-crfsuite  |conditional random field                         |good for training custom entities |
+|`SpacyEntityExtractor`    |spaCy             |averaged perceptron                              |provides pre-trained entities     |
+|`DucklingEntityExtractor` |running duckling  |context-free grammar                             |provides pre-trained entities     |
+|`MitieEntityExtractor`    |MITIE             |structured SVM                                   |good for training custom entities |
+|`EntitySynonymMapper`     |existing entities |N/A                                              |maps known synonyms               |
 
 ## Handling Class Imbalance
 
