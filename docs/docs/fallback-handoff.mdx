@@ -288,8 +288,8 @@ rules:
 - rule: Implementation of the Two-Stage-Fallback
   steps:
   - intent: nlu_fallback
-  - action: two_stage_fallback
-  - form: two_stage_fallback
+  - action: action_two_stage_fallback
+  - form: action_two_stage_fallback
 ```
 
 
@@ -344,7 +344,7 @@ For handling low core confidence:
 
 For Two-Stage Fallback:
   - [ ] Add FallbackClassifier to your pipeline in `config.yml`
-  - [ ] Define a rule for the `nlu_fallback` intent that triggers the `two_stage_fallback` action
+  - [ ] Define a rule for the `nlu_fallback` intent that triggers the `action_two_stage_fallback` action
   - [ ] Define an out-of-scope intent in your domain
   - [ ] Add RulePolicy to config.yml
 
