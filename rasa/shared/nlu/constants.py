@@ -19,7 +19,11 @@ FEATURE_TYPE_SEQUENCE = "sequence"
 VALID_FEATURE_TYPES = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
 
 EXTRACTOR = "extractor"
-PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
+PRETRAINED_EXTRACTORS = {
+    "DucklingEntityExtractor",
+    "SpacyEntityExtractor",
+    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
+}
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
 ENTITIES = "entities"

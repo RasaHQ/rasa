@@ -5,7 +5,7 @@ pipeline:
   model: "en"
 - name: "SpacyTokenizer"
 - name: "SpacyEntityExtractor"
-- name: "DucklingHTTPExtractor"
+- name: "DucklingEntityExtractor"
   url: "http://duckling:8000"
   dimensions:
   - "NUMBER"

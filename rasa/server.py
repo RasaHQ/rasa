@@ -66,6 +66,7 @@ YAML_CONTENT_TYPE = "application/x-yaml"
 
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
+EXECUTE_SIDE_EFFECTS_QUERY_KEY = "execute_side_effects"
 
 
 class ErrorResponse(Exception):
@@ -504,12 +505,19 @@ def create_app(
             async with app.agent.lock_store.lock(conversation_id):
                 processor = app.agent.create_processor()
                 tracker = processor.get_tracker(conversation_id)
+                output_channel = _get_output_channel(request, tracker)
                 _validate_tracker(tracker, conversation_id)
 
                 events = _get_events_from_request_body(request)
 
                 for event in events:
                     tracker.update(event, app.agent.domain)
+                if rasa.utils.endpoints.bool_arg(
+                    request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
+                ):
+                    await processor.execute_side_effects(
+                        events, tracker, output_channel
+                    )
                 app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
@@ -871,7 +879,9 @@ def create_app(
 
         data_path = os.path.abspath(test_data)
 
-        if not os.path.exists(eval_agent.model_directory):
+        if not eval_agent.model_directory or not os.path.exists(
+            eval_agent.model_directory
+        ):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory

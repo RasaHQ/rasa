@@ -726,7 +726,9 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
                 }
             ],
             "some_intent",
-            {"some_slot": "some_value"},
+            # nothing should be extracted, because entity contain role and group
+            # but mapping expects them to be None
+            {},
         ),
     ],
 )
@@ -887,7 +889,8 @@ def test_invalid_slot_mapping():
             ],
             [{"entity": "some_entity", "value": "some_value"}],
             "some_intent",
-            {},
+            # other slot should be extracted because slot mapping is unique
+            {"some_other_slot": "some_value"},
         ),
         (
             [
@@ -907,6 +910,42 @@ def test_invalid_slot_mapping():
             ],
             [{"entity": "some_entity", "value": "some_value", "role": "some_role"}],
             "some_intent",
+            # other slot should be extracted because slot mapping is unique
+            {"some_other_slot": "some_value"},
+        ),
+        (
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                }
+            ],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_other_entity",
+                }
+            ],
+            [{"entity": "some_entity", "value": "some_value", "role": "some_role"}],
+            "some_intent",
+            # other slot should not be extracted
+            # because even though slot mapping is unique it doesn't contain the role
+            {},
+        ),
+        (
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
+            [
+                {
+                    "type": "from_entity",
+                    "intent": "some_intent",
+                    "entity": "some_entity",
+                }
+            ],
+            [{"entity": "some_entity", "value": "some_value"}],
+            "some_intent",
+            # other slot should not be extracted because slot mapping is not unique
             {},
         ),
     ],
