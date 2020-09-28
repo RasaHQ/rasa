@@ -27,7 +27,7 @@ import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
+from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -558,7 +558,7 @@ class Domain:
             s.name for s in self.slots
         ]:
             self.slots.append(
-                UnfeaturizedSlot(rasa.shared.core.constants.REQUESTED_SLOT)
+                TextSlot(rasa.shared.core.constants.REQUESTED_SLOT, unfeaturized=True)
             )
 
     def add_knowledge_base_slots(self) -> None:
@@ -587,7 +587,7 @@ class Domain:
             ]
             for s in knowledge_base_slots:
                 if s not in slot_names:
-                    self.slots.append(UnfeaturizedSlot(s))
+                    self.slots.append(TextSlot(s, unfeaturized=True))
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Look up which action index corresponds to this action name."""
@@ -956,10 +956,10 @@ class Domain:
     def _slots_for_domain_warnings(self) -> List[Text]:
         """Fetch names of slots that are used in domain warnings.
 
-        Excludes slots of type `UnfeaturizedSlot`.
+        Excludes slots which aren't featurized.
         """
 
-        return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
+        return [s.name for s in self.slots if not s.unfeaturized]
 
     @property
     def _actions_for_domain_warnings(self) -> List[Text]:
@@ -1033,7 +1033,7 @@ class Domain:
 
         Returns a dictionary with entries for `intent_warnings`,
         `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
-        of type `UnfeaturizedSlot` from domain warnings.
+        from domain warnings in case they are not featurized.
         """
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
