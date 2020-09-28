@@ -1,6 +1,6 @@
 import React from 'react';
 
-import Button from './button';
+import Button from '../Button';
 import PrototyperContext from './context';
 
 const TrainButton = (props) => {
@@ -10,7 +10,7 @@ const TrainButton = (props) => {
     <Button
       onClick={prototyperContext.trainModel}
       disabled={!!prototyperContext.isTraining}
-      loading={!!prototyperContext.isTraining}
+      isLoading={!!prototyperContext.isTraining}
       {...props}
     >
       Train

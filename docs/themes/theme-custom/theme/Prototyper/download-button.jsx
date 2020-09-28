@@ -1,6 +1,6 @@
 import React from 'react';
 
-import Button from './button';
+import Button from '../Button';
 import PrototyperContext from './context';
 
 const DownloadButton = (props) => {

@@ -23,8 +23,8 @@ In this guide, we are creating an assistant that helps users subscribe to a news
   values={[
     {label: '1. NLU data', value: 'nlu'},
     {label: '2. Responses', value: 'responses'},
-    {label: '3. Forms', value: 'forms'},
-    {label: '4. Stories', value: 'stories'},
+    {label: '3. Stories', value: 'stories'},
+    {label: '4. Forms', value: 'forms'},
     {label: '5. Rules', value: 'rules'},
   ]}
   defaultValue="nlu">
@@ -39,6 +39,8 @@ In the code block below, we have added an intent called greet, which contains ex
 messages like “Hi”, “Hey”, and “good morning”.
 
 Intents and training examples make up the assistant’s NLU data, which is used to train the NLU model.
+
+[Learn more about NLU data and its format](./training-data-format.mdx)
 
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
@@ -73,14 +75,14 @@ nlu:
 <AssistantBuilder.Section value="responses">
 <AssistantBuilder.Text>
 
-MAC: What are the various things people might say to an assistant that can help them subscribe to a newsletter?
+Now that the assistant understands a few messages users might say, it needs responses it can send back to the user.
 
-For an assistant to recognize what a user is saying no matter how the user phrases their message, we need to provide example messages the assistant can learn from.
-We group these examples according to the idea or the goal the message is expressing, which is also called the intent.
-In the code block below, we have added an intent called greet, which contains example
-messages like “Hi”, “Hey”, and “good morning”.
+“Hello, how can I help you?” and “what’s your email address?” are some of the responses our assistant will use. You’ll see how to connect user messages and responses in the next steps.
 
-Intents and training examples make up the assistant’s NLU data, which is used to train the NLU model.
+In the code block below, we have listed some responses and added one or more text
+options for each of them. If a response has multiple text options, one of them will be chosen at random whenever that response is predicted.
+
+[Learn more about responses](./responses.mdx)
 
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
@@ -104,37 +106,9 @@ responses:
 
 </AssistantBuilder.Code>
 </AssistantBuilder.Section>
-</AssistantBuilder.Container>
 
-## 2. Responses
-
-Now that the assistant understands a few messages users might say, it needs responses it can send back to the user.
-
-“Hello, how can I help you?” and “what’s your email address?” are some of the responses our assistant will use. You’ll see how to connect user messages and responses in the next steps.
-
-In the code block below, we have listed some responses and added one or more text
-options for each of them. If a response has multiple text options, one of them will be chosen at random whenever that response is predicted.
-
-```yaml-rasa live noResult name=responses
-responses:
-   utter_greet:
-       - text: |
-           Hello! How can I help you?
-       - text: |
-           Hi!
-   utter_ask_email:
-       - text: |
-           What is your email address?
-   utter_subscribed:
-       - text: |
-           I've subscribed {email} to the newsletter!
-       - text: |
-           You've been subscribed, the newsletter will be sent to {email}.
-```
-
-[Learn more about responses](./responses.mdx)
-
-## 3. Stories
+<AssistantBuilder.Section value="stories">
+<AssistantBuilder.Text>
 
 [Stories](./stories.mdx) are example conversations that train an assistant to respond correctly depending on what the user has said previously in the conversation.
 The story format shows the intent of the user message followed by the assistant’s action or response.
@@ -142,6 +116,11 @@ The story format shows the intent of the user message followed by the assistant�
 Your first story should show a conversation flow where the assistant helps the user accomplish their goal in a straightforward way. Later, you can add stories for situations where the user doesn't want to provide their information or switches to another topic.
 
 In the code block below, we have added a simple story where the user and assistant exchange greetings, the user asks to subscribe to the newsletter, and then the user provides their email address in response to the newsletter_form.
+
+[Learn more about stories](./writing-stories.mdx)
+
+</AssistantBuilder.Text>
+<AssistantBuilder.Code>
 
 ```yaml-rasa live noResult name=stories
 stories:
@@ -154,14 +133,21 @@ stories:
    - active_loop: newsletter_form
 ```
 
-[Learn more about stories](./writing-stories.mdx)
+</AssistantBuilder.Code>
+</AssistantBuilder.Section>
 
-## 4. Forms
+<AssistantBuilder.Section value="forms">
+<AssistantBuilder.Text>
 
 There are many situations where an assistant needs to collect information from the user. For example, when a user wants to subscribe to a newsletter, the assistant must ask for their email address.
 
 You can do this in Rasa using a form. In the code block below, we added the
 `newsletter_form` and used it to collect an email address from the user.
+
+[Learn more about forms here](./forms.mdx)
+
+</AssistantBuilder.Text>
+<AssistantBuilder.Code>
 
 ```yaml-rasa live noResult name=forms
 forms:
@@ -169,9 +155,12 @@ forms:
     email:
     - type: from_text
 ```
-[Learn more about forms here](./forms.mdx)
 
-## 5. Rules
+</AssistantBuilder.Code>
+</AssistantBuilder.Section>
+
+<AssistantBuilder.Section value="rules">
+<AssistantBuilder.Text>
 
 Rules describe parts of conversations that should always follow the same path no matter what has been said previously in the conversation.
 
@@ -183,6 +172,11 @@ We’ve also added a rule that triggers the `utter_subscribed` action once all t
 required information has been provided.
 The second rule only applies when the `newsletter_form` is active to begin with; once
 it is no longer active (`active_loop: null`), the form is complete.
+
+[Learn more about rules and how to write them.](./rules.mdx)
+
+</AssistantBuilder.Text>
+<AssistantBuilder.Code>
 
 ```yaml-rasa live noResult name=rules
 rules:
@@ -201,8 +195,9 @@ rules:
    - action: utter_subscribed
 ```
 
-[Learn more about rules and how to write them.](./rules.mdx)
-
+</AssistantBuilder.Code>
+</AssistantBuilder.Section>
+</AssistantBuilder.Container>
 
 ## Train and talk to your assistant
 
