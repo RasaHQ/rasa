@@ -54,7 +54,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 
 1. `TEDPolicy`
 
-2. `MemoizationPolicy` and `AugmentedMemoizationPolicy`
+2. `MemoizationPolicy` or `AugmentedMemoizationPolicy`
 
 3. `RulePolicy`
 
@@ -62,7 +62,6 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 In general, it is not recommended to have more
 than one policy per priority level. If you have 2 policies with the same priority and they predict
 with the same confidence, the resulting action will be chosen randomly.
-(TODO: why we do it in number 2. then?)
 
 If you create your own policy, use these priorities as a guide for figuring out the priority of your policy.
 If your policy is a machine learning policy, it should most likely have priority 1, the same as the `TEDPolicy`.
