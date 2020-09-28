@@ -138,7 +138,7 @@ their training data will be combined.
 ## Writing a Custom Importer
 
 If you are writing a custom importer, this importer has to implement the interface of
-[TrainingDataImporter](reference/rasa/shared/importers/importer):
+[`TrainingDataImporter`](reference/rasa/shared/importers/importer.md#trainingdataimporter-objects):
 
 ```python
 from typing import Optional, Text, Dict, List, Union
@@ -211,4 +211,4 @@ class MyImporter(TrainingDataImporter):
 
     def _custom_get_nlu_file(self) -> Text:
         pass
-``` 
+```
