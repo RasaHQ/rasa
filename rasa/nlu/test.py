@@ -16,31 +16,36 @@ from typing import (
     Dict,
     Any,
 )
+
+from rasa import telemetry
+import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
+import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
-    PREDICTED_CONFIDENCE_KEY,
-    EXTRACTOR,
-    PRETRAINED_EXTRACTORS,
-    NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
-    RESPONSE,
-    INTENT,
-    INTENT_RESPONSE_KEY,
-    TEXT,
-    ENTITIES,
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    INTENT_RESPONSE_KEY,
+    ENTITIES,
+    EXTRACTOR,
+    PRETRAINED_EXTRACTORS,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
     INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
@@ -188,7 +193,7 @@ def write_intent_successes(
     ]
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful intent predictions saved to {successes_filename}.")
         logger.debug(f"\n\nSuccessfully predicted the following intents: \n{successes}")
     else:
@@ -218,7 +223,7 @@ def write_intent_errors(
     ]
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(errors_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect intent predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -252,7 +257,7 @@ def write_response_successes(
     ]
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following responses: \n{successes}"
@@ -284,7 +289,7 @@ def write_response_errors(
     ]
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(errors_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect response predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese response examples could not be classified "
@@ -427,7 +432,7 @@ def evaluate_response_selections(
         report_filename = os.path.join(
             output_directory, "response_selection_report.json"
         )
-        io_utils.dump_obj_as_json_to_file(report_filename, report)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -598,7 +603,7 @@ def evaluate_intents(
         report = _add_confused_labels_to_report(report, confusion_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
-        io_utils.dump_obj_as_json_to_file(report_filename, report)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
     else:
@@ -735,7 +740,7 @@ def write_incorrect_entity_predictions(
     )
 
     if errors:
-        io_utils.dump_obj_as_json_to_file(error_filename, errors)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(error_filename, errors)
         logger.info(f"Incorrect entity predictions saved to {error_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -795,7 +800,7 @@ def write_successful_entity_predictions(
     )
 
     if successes:
-        io_utils.dump_obj_as_json_to_file(successes_filename, successes)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
         logger.debug(
             f"\n\nSuccessfully predicted the following entities: \n{successes}"
@@ -899,7 +904,9 @@ def evaluate_entities(
                 report, confusion_matrix, labels, [NO_ENTITY]
             )
 
-            io_utils.dump_obj_as_json_to_file(extractor_report_filename, report)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                extractor_report_filename, report
+            )
 
             logger.info(
                 "Classification report for '{}' saved to '{}'."
@@ -1282,9 +1289,9 @@ def get_eval_data(
     intent_results, entity_results, response_selection_results = [], [], []
 
     response_labels = [
-        e.get(RESPONSE)
+        e.get(INTENT_RESPONSE_KEY)
         for e in test_data.intent_examples
-        if e.get(RESPONSE) is not None
+        if e.get(INTENT_RESPONSE_KEY) is not None
     ]
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
     should_eval_intents = (
@@ -1300,7 +1307,7 @@ def get_eval_data(
     should_eval_entities = is_entity_extractor_present(interpreter)
 
     for example in tqdm(test_data.training_examples):
-        result = interpreter.parse(example.text, only_output_properties=False)
+        result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
             intent_prediction = result.get(INTENT, {}) or {}
@@ -1459,13 +1466,13 @@ def run_evaluation(
 
     Returns: dictionary containing evaluation results
     """
-    import rasa.nlu.training_data
+    import rasa.shared.nlu.training_data.loading
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = rasa.nlu.training_data.load_data(
+    test_data = rasa.shared.nlu.training_data.loading.load_data(
         data_path, interpreter.model_metadata.language
     )
 
@@ -1476,7 +1483,7 @@ def run_evaluation(
     }
 
     if output_directory:
-        io_utils.create_directory(output_directory)
+        rasa.shared.utils.io.create_directory(output_directory)
 
     intent_results, response_selection_results, entity_results, = get_eval_data(
         interpreter, test_data
@@ -1509,6 +1516,8 @@ def run_evaluation(
             errors,
             disable_plotting,
         )
+
+    telemetry.track_nlu_model_test(test_data)
 
     return result
 
@@ -1646,7 +1655,7 @@ def cross_validate(
         nlu_config = rasa.nlu.config.load(nlu_config)
 
     if output:
-        io_utils.create_directory(output)
+        rasa.shared.utils.io.create_directory(output)
 
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
@@ -1844,7 +1853,7 @@ def compare_nlu(
         io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
-        io_utils.write_text_file(test.nlu_as_markdown(), test_path)
+        rasa.shared.utils.io.write_text_file(test.nlu_as_markdown(), test_path)
 
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
@@ -1859,10 +1868,10 @@ def compare_nlu(
             train_nlu_split_path = os.path.join(train_split_path, TRAIN_DATA_FILE)
             train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
             io_utils.create_path(train_nlu_split_path)
-            io_utils.write_text_file(
+            rasa.shared.utils.io.write_text_file(
                 train_included.nlu_as_markdown(), train_nlu_split_path
             )
-            io_utils.write_text_file(
+            rasa.shared.utils.io.write_text_file(
                 train_included.nlg_as_markdown(), train_nlg_split_path
             )
 

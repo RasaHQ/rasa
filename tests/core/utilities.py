@@ -2,20 +2,21 @@ import itertools
 
 import contextlib
 import typing
-from typing import Text, List, Optional, Text, Any, Dict
+from typing import List, Optional, Text, Any, Dict
 
 import jsonpickle
 import os
 
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.domain import Domain
-from rasa.core.events import UserUttered, Event
-from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered, Event
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 if typing.TYPE_CHECKING:
-    from rasa.core.conversation import Dialogue
+    from rasa.shared.core.conversation import Dialogue
 
 
 def tracker_from_dialogue_file(
@@ -32,7 +33,7 @@ def tracker_from_dialogue_file(
 
 
 def read_dialogue_file(filename: Text) -> "Dialogue":
-    return jsonpickle.loads(rasa.utils.io.read_file(filename))
+    return jsonpickle.loads(rasa.shared.utils.io.read_file(filename))
 
 
 @contextlib.contextmanager

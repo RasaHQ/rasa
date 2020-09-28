@@ -3,15 +3,15 @@ import logging
 import re
 from typing import Any, Dict, Optional, Text
 
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.constants import INTENT
-from rasa.utils.common import raise_warning
+from rasa.shared.nlu.constants import INTENT, TEXT
+import rasa.shared.utils.io
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class KeywordIntentClassifier(IntentClassifier):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         intent_keyword_map: Optional[Dict] = None,
-    ):
+    ) -> None:
 
         super(KeywordIntentClassifier, self).__init__(component_config)
 
@@ -48,20 +48,20 @@ class KeywordIntentClassifier(IntentClassifier):
         duplicate_examples = set()
         for ex in training_data.training_examples:
             if (
-                ex.text in self.intent_keyword_map.keys()
-                and ex.get(INTENT) != self.intent_keyword_map[ex.text]
+                ex.get(TEXT) in self.intent_keyword_map.keys()
+                and ex.get(INTENT) != self.intent_keyword_map[ex.get(TEXT)]
             ):
-                duplicate_examples.add(ex.text)
-                raise_warning(
-                    f"Keyword '{ex.text}' is a keyword to trigger intent "
-                    f"'{self.intent_keyword_map[ex.text]}' and also "
+                duplicate_examples.add(ex.get(TEXT))
+                rasa.shared.utils.io.raise_warning(
+                    f"Keyword '{ex.get(TEXT)}' is a keyword to trigger intent "
+                    f"'{self.intent_keyword_map[ex.get(TEXT)]}' and also "
                     f"intent '{ex.get(INTENT)}', it will be removed "
                     f"from the list of keywords for both of them. "
                     f"Remove (one of) the duplicates from the training data.",
                     docs=DOCS_URL_COMPONENTS + "#keyword-intent-classifier",
                 )
             else:
-                self.intent_keyword_map[ex.text] = ex.get(INTENT)
+                self.intent_keyword_map[ex.get(TEXT)] = ex.get(INTENT)
         for keyword in duplicate_examples:
             self.intent_keyword_map.pop(keyword)
             logger.debug(
@@ -82,7 +82,7 @@ class KeywordIntentClassifier(IntentClassifier):
                     and intent1 != intent2
                 ):
                     ambiguous_mappings.append((intent1, keyword1))
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"Keyword '{keyword1}' is a keyword of intent '{intent1}', "
                         f"but also a substring of '{keyword2}', which is a "
                         f"keyword of intent '{intent2}."
@@ -99,7 +99,7 @@ class KeywordIntentClassifier(IntentClassifier):
             )
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        intent_name = self._map_keyword_to_intent(message.text)
+        intent_name = self._map_keyword_to_intent(message.get(TEXT))
 
         confidence = 0.0 if intent_name is None else 1.0
         intent = {"name": intent_name, "confidence": confidence}
@@ -147,9 +147,9 @@ class KeywordIntentClassifier(IntentClassifier):
             file_name = meta.get("file")
             keyword_file = os.path.join(model_dir, file_name)
             if os.path.exists(keyword_file):
-                intent_keyword_map = utils.read_json_file(keyword_file)
+                intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
             else:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Failed to load key word file for `IntentKeywordClassifier`, "
                     f"maybe {keyword_file} does not exist?"
                 )

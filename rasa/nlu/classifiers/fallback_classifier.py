@@ -1,16 +1,16 @@
 import logging
 from typing import Any, List, Type, Text, Dict, Union, Tuple, Optional
 
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
-from rasa.nlu.training_data import Message
-from rasa.nlu.constants import (
-    INTENT_RANKING_KEY,
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import (
     INTENT,
-    PREDICTED_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 
 THRESHOLD_KEY = "threshold"
@@ -19,7 +19,7 @@ AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
 logger = logging.getLogger(__name__)
 
 
-class FallbackClassifier(Component):
+class FallbackClassifier(IntentClassifier):
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
@@ -48,7 +48,8 @@ class FallbackClassifier(Component):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to
+            process.
 
         """
 

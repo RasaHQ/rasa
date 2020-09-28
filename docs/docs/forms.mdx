@@ -127,6 +127,40 @@ forms:
       not_intent: excluded_intent
 ```
 
+In `from_entity` mapping, when an extracted entity uniquely maps onto a slot,
+the slot will be filled even if this slot wasn't requested by the form.
+The extracted entity will be ignored if the mapping is not unique.
+
+```yaml-rasa
+forms:
+  your_form:
+    departure_city:
+      - type: from_entity
+        entity: city
+        role: from
+      - type: from_entity
+        entity: city
+    arrival_city:
+      - type: from_entity
+        entity: city
+        role: to
+      - type: from_entity
+        entity: city
+    arrival_date:
+      - type: from_entity
+        entity: date
+```
+
+In the example above, an entity `date` uniquely sets the slot `arrival_date`,
+an entity `city` with a role `from` uniquely sets the slot `departure_city` and
+an entity `city` with a role `to` uniquely sets the slot `arrival_city`,
+therefore they can be used to fit corresponding slots
+even if these slots were not requested.
+However, entity `city` without a role can fill both `departure_city` and `arrival_city`
+slots, depending which one is requested, so if an entity `city` is extracted when
+slot `arrival_date` is requested, it'll be ignored by the form.
+
+
 #### from_text
 
 The `from_text` mapping will use the text of the next user utterance to fill the slot
@@ -214,7 +248,7 @@ rules:
 In some situations, users may change their mind in the middle of the form action
 and decide not to go forward with their initial request. In cases like this, the
 assistant should stop asking for the requested slots. You can handle such situations
-gracefully using a default action `action_deactivate_form` which will deactivate
+gracefully using a default action `action_deactivate_loop` which will deactivate
 the form and reset the requested slot. An example story of such conversation could
 look as follows:
 
@@ -228,7 +262,7 @@ rules:
   - intent: stop
   - action: utter_ask_continue
   - intent: stop
-  - action: action_deactivate_form
+  - action: action_deactivate_loop
   - active_loop: null
 ```
 

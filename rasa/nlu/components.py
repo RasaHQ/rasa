@@ -3,10 +3,11 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
-from rasa.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -174,13 +175,13 @@ def validate_required_components_from_data(
 
     Args:
         pipeline: The list of the :class:`rasa.nlu.components.Component`s.
-        data: The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+        data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
     """
 
     if data.response_examples and not any_components_in_pipeline(
         ["ResponseSelector"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data with examples for training a response "
             "selector, but your NLU pipeline does not include a response selector "
             "component. To train a model on your response selector data, add a "
@@ -190,7 +191,7 @@ def validate_required_components_from_data(
     if data.entity_examples and not any_components_in_pipeline(
         TRAINABLE_EXTRACTORS, pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data consisting of entity examples, but "
             "your NLU pipeline does not include an entity extractor trained on "
             "your training data. To extract non-pretrained entities, add one of "
@@ -201,7 +202,7 @@ def validate_required_components_from_data(
         {"DIETClassifier", "CRFEntityExtractor"}, pipeline
     ):
         if data.entity_roles_groups_used():
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "You have defined training data with entities that have roles/groups, "
                 "but your NLU pipeline does not include a 'DIETClassifier' or a "
                 "'CRFEntityExtractor'. To train entities that have roles/groups, "
@@ -212,7 +213,7 @@ def validate_required_components_from_data(
     if data.regex_features and not any_components_in_pipeline(
         ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data with regexes, but "
             "your NLU pipeline does not include a 'RegexFeaturizer' or a "
             "'RegexEntityExtractor'. To use regexes, include either a "
@@ -222,7 +223,7 @@ def validate_required_components_from_data(
     if data.lookup_tables and not any_components_in_pipeline(
         ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data consisting of lookup tables, but "
             "your NLU pipeline does not include a 'RegexFeaturizer' or a "
             "'RegexEntityExtractor'. To use lookup tables, include either a "
@@ -233,7 +234,7 @@ def validate_required_components_from_data(
         if not any_components_in_pipeline(
             ["CRFEntityExtractor", "DIETClassifier"], pipeline
         ):
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include any components that use these "
                 "features. To make use of lookup tables, add a 'DIETClassifier' or a "
@@ -250,7 +251,7 @@ def validate_required_components_from_data(
                 has_pattern_feature = "pattern" in itertools.chain(*crf_features)
 
             if not has_pattern_feature:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     "You have defined training data consisting of lookup tables, but "
                     "your NLU pipeline's 'CRFEntityExtractor' does not include the "
                     "'pattern' feature. To featurize lookup tables, add the 'pattern' "
@@ -260,7 +261,7 @@ def validate_required_components_from_data(
     if data.entity_synonyms and not any_components_in_pipeline(
         ["EntitySynonymMapper"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined synonyms in your training data, but "
             "your NLU pipeline does not include an 'EntitySynonymMapper'. "
             "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."
@@ -339,7 +340,7 @@ class Component(metaclass=ComponentMetaclass):
     # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
     @property
-    def name(self):
+    def name(self) -> Text:
         """Access the class's property name from an instance."""
 
         return type(self).name
@@ -500,7 +501,7 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             training_data:
-                The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+                The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
 
         """
@@ -520,7 +521,7 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
 
         """
 
@@ -599,10 +600,11 @@ class Component(metaclass=ComponentMetaclass):
         previous to this one in the pipeline.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to
+            process.
 
         Returns:
-            The processed :class:`rasa.nlu.training_data.message.Message`.
+            The processed :class:`rasa.shared.nlu.training_data.message.Message`.
 
         """
 

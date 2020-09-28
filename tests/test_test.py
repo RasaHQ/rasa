@@ -8,16 +8,19 @@ import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.agent import Agent
-from rasa.core.events import UserUttered
+from rasa.shared.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
     WronglyClassifiedUserUtterance,
     WronglyPredictedAction,
 )
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 import rasa.model
 import rasa.cli.utils
 from rasa.nlu.test import NO_ENTITY
@@ -143,7 +146,16 @@ def test_get_label_set(targets, exclude_label, expected):
     assert set(expected) == set(actual)
 
 
-async def test_e2e_warning_if_no_nlu_model(
+async def test_interpreter_passed_to_agent(
+    monkeypatch: MonkeyPatch, trained_rasa_model: Text
+):
+    from rasa.core.interpreter import RasaNLUInterpreter
+
+    agent = Agent.load(trained_rasa_model)
+    assert isinstance(agent.interpreter, RasaNLUInterpreter)
+
+
+def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
     from rasa.test import test_core
@@ -151,7 +163,7 @@ async def test_e2e_warning_if_no_nlu_model(
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
     monkeypatch.setattr(
-        sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
+        sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
     test_core(trained_core_model, additional_arguments={"e2e": True})
@@ -198,7 +210,7 @@ def test_log_failed_stories(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.core.test._log_stories([], path)
 
-    dump = rasa.utils.io.read_file(path)
+    dump = rasa.shared.utils.io.read_file(path)
 
     assert dump.startswith("#")
     assert len(dump.split("\n")) == 1
@@ -229,7 +241,7 @@ def test_log_failed_stories(tmp_path: Path):
                 {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
                 {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
             ],
-            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},],
+            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"}],
         ),
         (
             [
@@ -258,7 +270,7 @@ def test_log_failed_stories(tmp_path: Path):
                     "start": 22,
                     "end": 28,
                     "entity": "city",
-                },
+                }
             ],
         ),
         (
@@ -324,7 +336,7 @@ def test_log_failed_stories(tmp_path: Path):
     ],
 )
 def test_evaluation_store_serialise(entity_predictions, entity_targets):
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     store = EvaluationStore(
         entity_predictions=entity_predictions, entity_targets=entity_targets
@@ -353,7 +365,7 @@ def test_evaluation_store_serialise(entity_predictions, entity_targets):
 
 
 async def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
-    from rasa.core.test import _generate_trackers
+    from rasa.core.test import _create_data_generator
 
     test_file = tmp_path / "test.yml"
     test_name = "my test story"
@@ -373,6 +385,7 @@ rules:
 
     test_file.write_text(tests)
 
-    test_trackers = await _generate_trackers(str(test_file), default_agent)
+    generator = await _create_data_generator(str(test_file), default_agent)
+    test_trackers = generator.generate_story_trackers()
     assert len(test_trackers) == 1
     assert test_trackers[0].sender_id == test_name

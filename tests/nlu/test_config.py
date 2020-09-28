@@ -5,13 +5,14 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.importers import autoconfig
-from rasa.importers.rasa import RasaFileImporter
+from rasa.shared.importers import autoconfig
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu import config, load_data
+from rasa.nlu import config
+import rasa.shared.nlu.training_data.loading
 from rasa.nlu import components
 from rasa.nlu.components import ComponentBuilder
-from rasa.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.model import Trainer
 from tests.nlu.utilities import write_file_config
 
@@ -54,7 +55,7 @@ def test_invalid_many_tokenizers_in_config():
                     {"name": "WhitespaceTokenizer"},
                     {"name": "ConveRTFeaturizer"},
                 ]
-            },
+            }
         ),
         pytest.param(
             {
@@ -62,7 +63,7 @@ def test_invalid_many_tokenizers_in_config():
                     {"name": "ConveRTTokenizer"},
                     {"name": "LanguageModelFeaturizer"},
                 ]
-            },
+            }
         ),
     ],
 )
@@ -183,7 +184,7 @@ async def test_train_docker_and_docs_configs(
         ),
         (
             "data/test_config/config_spacy_entity_extractor.yml",
-            "data/test/md_converted_to_json.json",
+            "data/test/duplicate_intents_markdown/demo-rasa-intents-2.md",
             [f"add one of {TRAINABLE_EXTRACTORS}"],
         ),
         (
@@ -225,7 +226,7 @@ def test_validate_required_components_from_data(
 ):
     loaded_config = config.load(config_path)
     trainer = Trainer(loaded_config)
-    training_data = load_data(data_path)
+    training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
     with pytest.warns(UserWarning) as record:
         components.validate_required_components_from_data(
             trainer.pipeline, training_data

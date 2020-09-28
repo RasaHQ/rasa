@@ -3,27 +3,33 @@ import logging
 import os
 from typing import List
 
+from rasa.cli import SubParsersAction
+import rasa.shared.data
+import rasa.shared.utils.io
 from rasa.cli.arguments import test as arguments
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DATA_PATH,
-    DEFAULT_E2E_TESTS_PATH,
-    DEFAULT_MODELS_PATH,
-    DEFAULT_RESULTS_PATH,
+from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
+    DEFAULT_E2E_TESTS_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_RESULTS_PATH,
 )
-import rasa.utils.validation as validation_utils
-import rasa.cli.utils as cli_utils
-import rasa.utils.io as io_utils
+import rasa.shared.utils.validation as validation_utils
+import rasa.cli.utils
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
-    """Adds a test subparser."""
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all test parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     test_parser = subparsers.add_parser(
         "test",
         parents=parents,
@@ -59,21 +65,26 @@ def add_subparser(
 
 def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
-    from rasa import data
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
-    stories = cli_utils.get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
-    stories = data.get_test_directory(stories)
+    stories = rasa.cli.utils.get_validated_path(
+        args.stories, "stories", DEFAULT_DATA_PATH
+    )
+    if args.e2e:
+        stories = rasa.shared.data.get_test_directory(stories)
+    else:
+        stories = rasa.shared.data.get_core_directory(stories)
+
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
-    io_utils.create_directory(output)
+    rasa.shared.utils.io.create_directory(output)
 
     if isinstance(args.model, list) and len(args.model) == 1:
         args.model = args.model[0]
 
     if isinstance(args.model, str):
-        model_path = cli_utils.get_validated_path(
+        model_path = rasa.cli.utils.get_validated_path(
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
@@ -93,20 +104,19 @@ def run_core_test(args: argparse.Namespace) -> None:
 
 def run_nlu_test(args: argparse.Namespace) -> None:
     """Run NLU tests."""
-    from rasa import data
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
-    nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    nlu_data = data.get_nlu_directory(nlu_data)
+    nlu_data = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    nlu_data = rasa.shared.data.get_nlu_directory(nlu_data)
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
 
-    io_utils.create_directory(output)
+    rasa.shared.utils.io.create_directory(output)
 
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
         if os.path.isdir(args.config):
-            args.config = io_utils.list_files(args.config)
+            args.config = rasa.shared.utils.io.list_files(args.config)
 
     if isinstance(args.config, list):
         logger.info(
@@ -117,7 +127,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
         for file in args.config:
             try:
                 validation_utils.validate_yaml_schema(
-                    io_utils.read_file(file),
+                    rasa.shared.utils.io.read_file(file),
                     CONFIG_SCHEMA_FILE,
                     show_validation_errors=False,
                 )
@@ -137,12 +147,12 @@ def run_nlu_test(args: argparse.Namespace) -> None:
         )
     elif args.cross_validation:
         logger.info("Test model using cross validation.")
-        config = cli_utils.get_validated_path(
+        config = rasa.cli.utils.get_validated_path(
             args.config, "config", DEFAULT_CONFIG_PATH
         )
         perform_nlu_cross_validation(config, nlu_data, output, vars(args))
     else:
-        model_path = cli_utils.get_validated_path(
+        model_path = rasa.cli.utils.get_validated_path(
             args.model, "model", DEFAULT_MODELS_PATH
         )
 

@@ -2,9 +2,8 @@ import argparse
 import os
 from typing import Text
 
-from rasa.cli.utils import print_error
-
-from rasa.nlu import training_data
+from rasa.shared.utils.cli import print_error
+import rasa.shared.nlu.training_data.loading
 from rasa.nlu.utils import write_to_file
 
 
@@ -19,10 +18,10 @@ def convert_training_data(
         return
 
     if output_format == "json":
-        td = training_data.load_data(data_file, language)
+        td = rasa.shared.nlu.training_data.loading.load_data(data_file, language)
         output = td.nlu_as_json(indent=2)
     elif output_format == "md":
-        td = training_data.load_data(data_file, language)
+        td = rasa.shared.nlu.training_data.loading.load_data(data_file, language)
         output = td.nlu_as_markdown()
     else:
         print_error(

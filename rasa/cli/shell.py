@@ -4,19 +4,24 @@ import uuid
 
 from typing import List
 
+from rasa import telemetry
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
-from rasa.cli.utils import print_error
+from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
-
-
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all shell parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     shell_parser = subparsers.add_parser(
         "shell",
         parents=parents,
@@ -54,7 +59,7 @@ def add_subparser(
 
 def shell_nlu(args: argparse.Namespace):
     from rasa.cli.utils import get_validated_path
-    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.shared.constants import DEFAULT_MODELS_PATH
     from rasa.model import get_model, get_model_subdirectories
     import rasa.nlu.run
 
@@ -80,12 +85,13 @@ def shell_nlu(args: argparse.Namespace):
         )
         return
 
+    telemetry.track_shell_started("nlu")
     rasa.nlu.run.run_cmdline(nlu_model)
 
 
 def shell(args: argparse.Namespace):
     from rasa.cli.utils import get_validated_path
-    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.shared.constants import DEFAULT_MODELS_PATH
     from rasa.model import get_model, get_model_subdirectories
 
     args.connector = "cmdline"
@@ -106,8 +112,12 @@ def shell(args: argparse.Namespace):
     if not core_model:
         import rasa.nlu.run
 
+        telemetry.track_shell_started("nlu")
+
         rasa.nlu.run.run_cmdline(nlu_model)
     else:
         import rasa.cli.run
+
+        telemetry.track_shell_started("rasa")
 
         rasa.cli.run.run(args)

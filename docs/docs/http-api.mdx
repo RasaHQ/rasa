@@ -24,7 +24,7 @@ dialogue model is needed to process the request.
 
 :::caution
 Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
-by enabling an authentication method. See [Security Considerations](./model-storage.mdx#server-security).
+by enabling an authentication method. See [Security Considerations](./http-api.mdx#security-considerations).
 
 :::
 
@@ -34,10 +34,8 @@ recommended that you set the number of workers to the number of available CPU co
 (check out the
 [Sanic docs](https://sanic.readthedocs.io/en/latest/sanic/deploying.html#workers)
 for more details). This will only work in combination with the
-`RedisLockStore` (see [Lock Stores](./lock-stores)).
+`RedisLockStore` (see [Lock Stores](./lock-stores.mdx).
 
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-security"></a>
 
 ## Security Considerations
 

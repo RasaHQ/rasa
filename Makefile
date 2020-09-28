@@ -52,11 +52,6 @@ install-mitie:
 install-full: install install-mitie
 	poetry install -E full
 
-install-full-windows: install install-mitie
-	# tensorflow_text is not available on Windows, so we're skipping it
-	# see https://github.com/tensorflow/text/issues/44 for more details
-	poetry install -E spacy -E transformers -E jieba
-
 install-docs:
 	cd docs/ && yarn install
 
@@ -113,6 +108,7 @@ cleanup-generated-changelog:
 
 test-docs: generate-pending-changelog docs
 	poetry run pytest tests/docs/*
+	cd docs && yarn mdx-lint
 
 docs:
 	cd docs/ && poetry run yarn pre-build && yarn build

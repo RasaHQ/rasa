@@ -1,9 +1,9 @@
 {
-  "py/object":"rasa.core.conversation.Dialogue",
+  "py/object":"rasa.shared.core.conversation.Dialogue",
   "name":"formbot",
   "events":[
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":null,
       "policy":null,
@@ -11,7 +11,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.UserUttered",
+      "py/object":"rasa.shared.core.events.UserUttered",
       "entities":[
 
       ],
@@ -35,7 +35,7 @@
       "timestamp":1551884050.259948
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"utter_greet",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -43,7 +43,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.BotUttered",
+      "py/object":"rasa.shared.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -53,7 +53,7 @@
       "timestamp":1551884060.46669
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -61,7 +61,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.UserUttered",
+      "py/object":"rasa.shared.core.events.UserUttered",
       "entities":[
         {
           "end":18,
@@ -107,7 +107,7 @@
       "timestamp":1551884090.9653602
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"restaurant_form",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -115,7 +115,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"utter_slots_values",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -123,7 +123,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.BotUttered",
+      "py/object":"rasa.shared.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -133,7 +133,7 @@
       "timestamp":1551884097.57089
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -141,7 +141,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.UserUttered",
+      "py/object":"rasa.shared.core.events.UserUttered",
       "entities":[
 
       ],
@@ -165,26 +165,26 @@
       "timestamp":1551884208.092693
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
-      "action_name":"action_deactivate_form",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
+      "action_name":"action_deactivate_loop",
       "confidence":null,
       "policy":null,
       "timestamp":1551884214.951055,
       "unpredictable":false
     },
     {
-      "py/object":"rasa.core.events.ActiveLoop",
+      "py/object":"rasa.shared.core.events.ActiveLoop",
       "name":null,
       "timestamp":1551884214.9510589
     },
     {
-      "py/object":"rasa.core.events.SlotSet",
+      "py/object":"rasa.shared.core.events.SlotSet",
       "key":"requested_slot",
       "timestamp":1551884214.951062,
       "value":null
     },
     {
-      "py/object":"rasa.core.events.ActionExecuted",
+      "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":0.7680902069097734,
       "policy":"policy_0_TEDPolicy",

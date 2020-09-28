@@ -1,9 +1,12 @@
 import pytest
 from typing import Text
+
+import rasa.shared.core.domain
+import rasa.shared.nlu.interpreter
 from sanic import Sanic
 from asyncio import AbstractEventLoop
 from pathlib import Path
-from rasa.core import run, interpreter, policies, domain
+from rasa.core import run, interpreter, policies
 from rasa.core.utils import AvailableEndpoints
 
 CREDENTIALS_FILE = "examples/moodbot/credentials.yml"
@@ -49,19 +52,19 @@ def test_create_single_input_channels_by_class_wo_credentials():
 
 
 async def test_load_agent_on_start_with_good_model_file(
-    trained_rasa_model: Text, rasa_server: Sanic, loop: AbstractEventLoop,
+    trained_rasa_model: Text, rasa_server: Sanic, loop: AbstractEventLoop
 ):
     agent = await run.load_agent_on_start(
-        trained_rasa_model, AvailableEndpoints(), None, rasa_server, loop,
+        trained_rasa_model, AvailableEndpoints(), None, rasa_server, loop
     )
 
     assert isinstance(agent.interpreter, interpreter.RasaNLUInterpreter)
     assert isinstance(agent.policy_ensemble, policies.PolicyEnsemble)
-    assert isinstance(agent.domain, domain.Domain)
+    assert isinstance(agent.domain, rasa.shared.core.domain.Domain)
 
 
 async def test_load_agent_on_start_with_bad_model_file(
-    tmp_path: Path, rasa_server: Sanic, loop: AbstractEventLoop,
+    tmp_path: Path, rasa_server: Sanic, loop: AbstractEventLoop
 ):
     fake_model = tmp_path / "fake_model.tar.gz"
     fake_model.touch()
@@ -69,13 +72,13 @@ async def test_load_agent_on_start_with_bad_model_file(
 
     with pytest.warns(UserWarning) as warnings:
         agent = await run.load_agent_on_start(
-            fake_model_path, AvailableEndpoints(), None, rasa_server, loop,
+            fake_model_path, AvailableEndpoints(), None, rasa_server, loop
         )
         assert any(
             "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings
         )
 
     # Fallback agent was loaded even if model was unusable
-    assert isinstance(agent.interpreter, interpreter.RegexInterpreter)
+    assert isinstance(agent.interpreter, rasa.shared.nlu.interpreter.RegexInterpreter)
     assert agent.policy_ensemble is None
-    assert isinstance(agent.domain, domain.Domain)
+    assert isinstance(agent.domain, rasa.shared.core.domain.Domain)

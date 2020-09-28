@@ -1,31 +1,31 @@
 from pathlib import Path
-from typing import Type
+from typing import Type, List, Text
 from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.core.actions.action import (
+import rasa.core.actions.action
+from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_LISTEN_NAME,
-    ActionRevertFallbackEvents,
-    ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
+    PREVIOUS_ACTION,
+    USER,
 )
-from rasa.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK
-from rasa.core.channels.channel import UserMessage
-from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, ConversationPaused
-from rasa.core.featurizers import (
-    BinarySingleStateFeaturizer,
-    LabelTokenizerSingleStateFeaturizer,
-    MaxHistoryTrackerFeaturizer,
-    FullDialogueTrackerFeaturizer,
-)
-from rasa.core.interpreter import RegexInterpreter
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.events import ActionExecuted, ConversationPaused
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import SupportedData, Policy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -35,8 +35,8 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow.constants import (
     SIMILARITY_TYPE,
     RANKING_LENGTH,
@@ -47,6 +47,7 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
 )
+from rasa.train import train_core
 from rasa.utils import train_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
@@ -82,7 +83,7 @@ class PolicyTestCollection:
     @pytest.fixture(scope="module")
     def featurizer(self):
         featurizer = MaxHistoryTrackerFeaturizer(
-            BinarySingleStateFeaturizer(), max_history=self.max_history
+            SingleStateFeaturizer(), max_history=self.max_history
         )
         return featurizer
 
@@ -95,8 +96,8 @@ class PolicyTestCollection:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     @pytest.fixture(scope="module")
-    def tracker(self, default_domain):
-        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID, default_domain.slots)
+    def tracker(self, default_domain: Domain) -> DialogueStateTracker:
+        return DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
 
     @pytest.fixture(scope="module")
     async def trained_policy(self, featurizer, priority):
@@ -110,38 +111,35 @@ class PolicyTestCollection:
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
-            trained_policy.featurizer.state_featurizer, BinarySingleStateFeaturizer
+            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(
-            loaded.featurizer.state_featurizer, BinarySingleStateFeaturizer
-        )
+        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
     async def test_persist_and_load(
         self, trained_policy: Policy, default_domain: Domain, tmp_path: Path
     ):
         trained_policy.persist(str(tmp_path))
+        print("have trained policy", type(trained_policy))
         loaded = trained_policy.__class__.load(str(tmp_path))
         trackers = await train_trackers(default_domain, augmentation_factor=20)
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
-                tracker, default_domain
+                tracker, default_domain, RegexInterpreter()
             )
             actual_probabilities = trained_policy.predict_action_probabilities(
-                tracker, default_domain
+                tracker, default_domain, RegexInterpreter()
             )
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
-        tracker = DialogueStateTracker(
-            UserMessage.DEFAULT_SENDER_ID, default_domain.slots
-        )
+        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain
+            tracker, default_domain, RegexInterpreter()
         )
         assert len(probabilities) == default_domain.num_actions
         assert max(probabilities) <= 1.0
@@ -160,7 +158,9 @@ class PolicyTestCollection:
     def _get_next_action(policy, events, domain):
         tracker = get_tracker(events)
 
-        scores = policy.predict_action_probabilities(tracker, domain)
+        scores = policy.predict_action_probabilities(
+            tracker, domain, RegexInterpreter()
+        )
         index = scores.index(max(scores))
         return domain.action_names[index]
 
@@ -239,13 +239,11 @@ class TestSklearnPolicy(PolicyTestCollection):
         classes = [1, 3]
         new_trackers = []
         for tr in trackers:
-            new_tracker = DialogueStateTracker(
-                UserMessage.DEFAULT_SENDER_ID, default_domain.slots
-            )
+            new_tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
-                    new_action = default_domain.action_for_index(
-                        np.random.choice(classes), action_endpoint=None
+                    new_action = rasa.core.actions.action.action_for_index(
+                        np.random.choice(classes), default_domain, action_endpoint=None
                     ).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
@@ -257,7 +255,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             new_trackers, domain=default_domain, interpreter=RegexInterpreter()
         )
         predicted_probabilities = policy.predict_action_probabilities(
-            tracker, default_domain
+            tracker, default_domain, RegexInterpreter()
         )
 
         assert len(predicted_probabilities) == default_domain.num_actions
@@ -288,6 +286,24 @@ class TestSklearnPolicy(PolicyTestCollection):
 
 
 class TestTEDPolicy(PolicyTestCollection):
+    def test_train_model_checkpointing(self, tmpdir: Path):
+
+        from pathlib import Path
+
+        model_name = "core-checkpointed-model"
+        best_model_file = Path(tmpdir.strpath, model_name + ".tar.gz")
+        assert not best_model_file.exists()
+
+        train_core(
+            domain="data/test_domains/default.yml",
+            stories="data/test_stories/stories_defaultdomain.md",
+            output=tmpdir.strpath,
+            fixed_model_name=model_name,
+            config="data/test_config/config_ted_policy_model_checkpointing.yml",
+        )
+
+        assert best_model_file.exists()
+
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(featurizer=featurizer, priority=priority)
         return p
@@ -301,7 +317,7 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain
+            tracker, default_domain, RegexInterpreter()
         )
         # count number of non-zero confidences
         assert (
@@ -314,32 +330,95 @@ class TestTEDPolicy(PolicyTestCollection):
         # also check our function is called
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(tracker, default_domain)
+        trained_policy.predict_action_probabilities(
+            tracker, default_domain, RegexInterpreter()
+        )
 
         mock.normalize.assert_called_once()
 
     async def test_gen_batch(self, trained_policy, default_domain):
         training_trackers = await train_trackers(default_domain, augmentation_factor=0)
-        training_data = trained_policy.featurize_for_training(
-            training_trackers, default_domain
+        interpreter = RegexInterpreter()
+        training_data, label_ids = trained_policy.featurize_for_training(
+            training_trackers, default_domain, interpreter
         )
-        model_data = trained_policy._create_model_data(training_data.X, training_data.y)
+        label_data, all_labels = trained_policy._create_label_data(
+            default_domain, interpreter
+        )
+        model_data = trained_policy._create_model_data(
+            training_data, label_ids, all_labels
+        )
         batch_size = 2
-        batch_x, batch_y, _ = next(model_data._gen_batch(batch_size=batch_size))
-        assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
+        (
+            batch_label_ids,
+            batch_entities_mask,
+            batch_entities_sentence_1,
+            batch_entities_sentence_2,
+            batch_entities_sentence_3,
+            batch_intent_mask,
+            batch_intent_sentence_1,
+            batch_intent_sentence_2,
+            batch_intent_sentence_3,
+            batch_slots_mask,
+            batch_slots_sentence_1,
+            batch_slots_sentence_2,
+            batch_slots_sentence_3,
+            batch_action_name_mask,
+            batch_action_name_sentence_1,
+            batch_action_name_sentence_2,
+            batch_action_name_sentence_3,
+            batch_dialogue_length,
+        ) = next(model_data._gen_batch(batch_size=batch_size))
+
         assert (
-            batch_x[0].shape == model_data.get("dialogue_features")[0][0].shape
-            and batch_y[0].shape == model_data.get("label_features")[0][0].shape
+            batch_intent_mask.shape[0] == batch_size
+            and batch_action_name_mask.shape[0] == batch_size
+            and batch_entities_mask.shape[0] == batch_size
+            and batch_slots_mask.shape[0] == batch_size
         )
-        batch_x, batch_y, _ = next(
+        assert (
+            batch_intent_sentence_3[1]
+            == batch_action_name_sentence_3[1]
+            == batch_entities_sentence_3[1]
+            == batch_slots_sentence_3[1]
+        )
+
+        (
+            batch_label_ids,
+            batch_entities_mask,
+            batch_entities_sentence_1,
+            batch_entities_sentence_2,
+            batch_entities_sentence_3,
+            batch_intent_mask,
+            batch_intent_sentence_1,
+            batch_intent_sentence_2,
+            batch_intent_sentence_3,
+            batch_slots_mask,
+            batch_slots_sentence_1,
+            batch_slots_sentence_2,
+            batch_slots_sentence_3,
+            batch_action_name_mask,
+            batch_action_name_sentence_1,
+            batch_action_name_sentence_2,
+            batch_action_name_sentence_3,
+            batch_dialogue_length,
+        ) = next(
             model_data._gen_batch(
                 batch_size=batch_size, batch_strategy="balanced", shuffle=True
             )
         )
-        assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
+
         assert (
-            batch_x[0].shape == model_data.get("dialogue_features")[0][0].shape
-            and batch_y[0].shape == model_data.get("label_features")[0][0].shape
+            batch_intent_mask.shape[0] == batch_size
+            and batch_action_name_mask.shape[0] == batch_size
+            and batch_entities_mask.shape[0] == batch_size
+            and batch_slots_mask.shape[0] == batch_size
+        )
+        assert (
+            batch_intent_sentence_3[1]
+            == batch_action_name_sentence_3[1]
+            == batch_entities_sentence_3[1]
+            == batch_slots_sentence_3[1]
         )
 
 
@@ -355,7 +434,9 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         # Mock actual normalization method
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(tracker, default_domain)
+        trained_policy.predict_action_probabilities(
+            tracker, default_domain, RegexInterpreter()
+        )
 
         # function should not get called for margin loss_type
         mock.normalize.assert_not_called()
@@ -382,7 +463,7 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
     def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain
+            tracker, default_domain, RegexInterpreter()
         )
         # there should be no normalization
         assert all([confidence > 0 for confidence in predicted_probabilities])
@@ -390,7 +471,9 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         # also check our function is not called
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(tracker, default_domain)
+        trained_policy.predict_action_probabilities(
+            tracker, default_domain, RegexInterpreter()
+        )
 
         mock.normalize.assert_not_called()
 
@@ -413,26 +496,23 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 11
 
 
-class TestTEDPolicyWithFullDialogue(TestTEDPolicy):
+class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
         # use standard featurizer from TEDPolicy,
-        # since it is using FullDialogueTrackerFeaturizer
+        # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is not specified
         p = TEDPolicy(priority=priority)
         return p
 
-    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
-        assert isinstance(trained_policy.featurizer, FullDialogueTrackerFeaturizer)
+    def test_featurizer(self, trained_policy, tmpdir):
+        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert isinstance(
-            trained_policy.featurizer.state_featurizer,
-            LabelTokenizerSingleStateFeaturizer,
+            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
-        trained_policy.persist(str(tmp_path))
-        loaded = trained_policy.__class__.load(str(tmp_path))
-        assert isinstance(loaded.featurizer, FullDialogueTrackerFeaturizer)
-        assert isinstance(
-            loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
-        )
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
 
 class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
@@ -447,16 +527,13 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
-            trained_policy.featurizer.state_featurizer,
-            LabelTokenizerSingleStateFeaturizer,
+            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(
-            loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
-        )
+        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
 
 class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
@@ -571,6 +648,19 @@ class TestFormPolicy(TestMemoizationPolicy):
         p = FormPolicy(priority=priority)
         return p
 
+    def _test_for_previous_action_and_intent(
+        self, states: List[State], intent: Text, action_name: Text
+    ) -> bool:
+        previous_action_as_expected = False
+        intent_as_expected = False
+        if states[0].get(PREVIOUS_ACTION):
+            previous_action_as_expected = (
+                states[0].get(PREVIOUS_ACTION).get(ACTION_NAME) == action_name
+            )
+        if states[-1].get(USER):
+            intent_as_expected = states[-1].get(USER).get(INTENT) == intent
+        return previous_action_as_expected and intent_as_expected
+
     async def test_memorise(self, trained_policy: FormPolicy, default_domain: Domain):
         domain = Domain.load("data/test_domains/form.yml")
         trackers = await training.load_data("data/test_stories/stories_form.md", domain)
@@ -585,7 +675,8 @@ class TestFormPolicy(TestMemoizationPolicy):
             for state in states:
                 if state is not None:
                     # check that 'form: inform' was ignored
-                    assert "intent_inform" not in state.keys()
+                    if state.get(USER):
+                        assert not state.get(USER).get(INTENT) == "inform"
             recalled = trained_policy.recall(states, tracker, domain)
             active_form = trained_policy._get_active_form_name(states[-1])
 
@@ -595,27 +686,22 @@ class TestFormPolicy(TestMemoizationPolicy):
                 # should add FormValidation(False) event
                 # @formatter:off
                 is_no_validation = (
-                    (
-                        "prev_some_form" in states[0].keys()
-                        and "intent_default" in states[-1].keys()
+                    self._test_for_previous_action_and_intent(
+                        states, "default", "some_form"
                     )
-                    or (
-                        "prev_some_form" in states[0].keys()
-                        and "intent_stop" in states[-1].keys()
+                    or self._test_for_previous_action_and_intent(
+                        states, "stop", "some_form"
                     )
-                    or (
-                        "prev_utter_ask_continue" in states[0].keys()
-                        and "intent_affirm" in states[-1].keys()
+                    or self._test_for_previous_action_and_intent(
+                        states, "affirm", "utter_ask_continue"
                     )
-                    or (
-                        "prev_utter_ask_continue" in states[0].keys()
-                        and "intent_deny" in states[-1].keys()
+                    or self._test_for_previous_action_and_intent(
+                        states, "deny", "utter_ask_continue"
                     )
                     # comes from the fact that intent_inform after utter_ask_continue
                     # is not read from stories
-                    or (
-                        "prev_utter_ask_continue" in states[0].keys()
-                        and "intent_stop" in states[-1].keys()
+                    or self._test_for_previous_action_and_intent(
+                        states, "stop", "utter_ask_continue"
                     )
                 )
                 # @formatter:on
@@ -651,14 +737,12 @@ class TestMappingPolicy(PolicyTestCollection):
         assert loaded.featurizer is None
 
     @pytest.fixture(scope="module")
-    def domain_with_mapping(self):
+    def domain_with_mapping(self) -> Domain:
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_MAPPING)
 
     @pytest.fixture
-    def tracker(self, domain_with_mapping):
-        return DialogueStateTracker(
-            UserMessage.DEFAULT_SENDER_ID, domain_with_mapping.slots
-        )
+    def tracker(self, domain_with_mapping: Domain) -> DialogueStateTracker:
+        return DialogueStateTracker(DEFAULT_SENDER_ID, domain_with_mapping.slots)
 
     @pytest.fixture(
         params=[
@@ -700,7 +784,9 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="policy_0_MappingPolicy"),
         ]
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(tracker, domain_with_mapping)
+        scores = policy.predict_action_probabilities(
+            tracker, domain_with_mapping, RegexInterpreter()
+        )
         index = scores.index(max(scores))
         action_planned = domain_with_mapping.action_names[index]
         assert action_planned == ACTION_LISTEN_NAME
@@ -716,7 +802,9 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="other_policy"),
         ]
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(tracker, domain_with_mapping)
+        scores = policy.predict_action_probabilities(
+            tracker, domain_with_mapping, RegexInterpreter()
+        )
         assert scores == [0] * domain_with_mapping.num_actions
 
 
@@ -784,7 +872,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     @staticmethod
     async def _get_tracker_after_reverts(events, channel, nlg, domain):
         tracker = get_tracker(events)
-        action = ActionRevertFallbackEvents()
+        action = rasa.core.actions.action.ActionRevertFallbackEvents()
         events += await action.run(channel, nlg, tracker, domain)
 
         return get_tracker(events)
@@ -967,7 +1055,7 @@ def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
 
 
 class OnlyRulePolicy(Policy):
-    """Test policy that supports both rule-based and ML-based training data."""
+    """Test policy that supports only rule-based training data."""
 
     @staticmethod
     def supported_data() -> SupportedData:

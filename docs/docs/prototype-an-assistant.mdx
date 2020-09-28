@@ -1,16 +1,11 @@
 ---
 id: prototype-an-assistant
-sidebar_label: 'Prototype an Assistant'
-title: 'Prototype an Assistant'
+sidebar_label: 'Rasa Playground'
+title: 'Rasa Playground'
+abstract: Learn the basics of building an assistant with Rasa Open Source with this interactive guide. You will be able to customize the assistant, talk to it and download the project so you can continue to build.
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
-import Prototyper, { Chat, DownloadButton, TrainButton } from '@site/src/components/prototyper';
-
-Get started with Rasa Open Source and learn how to create an assistant from scratch!
-
-This page explains the basics of building an assistant with Rasa Open Source and shows the structure of a Rasa project.
-You can test it out right here without installing anything. You can also install
-[install Rasa Open Source](./installation.mdx) and follow along in your command line.
+import Prototyper, { DownloadButton, TrainButton } from '@theme/Prototyper';
 
 <Prototyper
   startPrototyperApi="https://trainer-service.prototyping.rasa.com/startPrototyping"
@@ -19,24 +14,20 @@ You can test it out right here without installing anything. You can also install
   chatBlockScriptUrl={useBaseUrl("js/rasa-chatblock.min.js")}
 >
 
-## 1. Define a basic user goal
+## Build your assistant
 
-To prototype an assistant, start with a single [user goal](./glossary.mdx#user-goal)
-that your assistant will handle. You can create a prototype with the "subscribing to a newsletter" user goal
-we have chosen, or you can come up with your own. If you choose your own user goal,
-you can create a prototype that handles your goal by following the instructions to change each
-section throughout the tutorial.
+In this guide, we are creating an assistant that helps users subscribe to a newsletter. Go through each of the steps below to see how a simple assistant is created:
 
+## 1. NLU data
 
-## 2. Create some NLU data
+What are the various things people might say to an assistant that can help them subscribe to a newsletter?
 
-[NLU](./glossary.mdx#rasa-nlu) data provides examples of what users might say to your assistant and what they mean by it.
-[Intent](./glossary.mdx#intent)  refers to what the user means with a specific message.
-Your assistant can only learn to recognize intents for which it has seen examples, so we need to provide some data.
+For an assistant to recognize what a user is saying no matter how the user phrases their message, we need to provide example messages the assistant can learn from.
+We group these examples according to the idea or the goal the message is expressing, which is also called the intent.
+In the code block below, we have added an intent called greet, which contains example
+messages like “Hi”, “Hey”, and “good morning”.
 
-Add examples for your user-goal specific intents in the format shown below.
-You can delete the `subscribe` and `inform` intents if you're not using them;
-you can also add or change examples for any of the other intents.
+Intents and training examples make up the assistant’s NLU data, which is used to train the NLU model.
 
 ```yaml-rasa live noResult name=nlu
 nlu:
@@ -62,71 +53,16 @@ nlu:
     - Email is something@example.com
 ```
 
-[Read about best practices for NLU](./training-data-format.mdx)
+[Learn more about NLU data and its format](./training-data-format.mdx)
 
+## 2. Responses
 
-## 3. Define a simple form
+Now that the assistant understands a few messages users might say, it needs responses it can send back to the user.
 
-For most user goals, the bot will need to collect some information from the user to fulfill their request.
-To do so, we define a [form](./glossary.mdx#form). You can change the name of the form to reflect your user goal.
-Add to or replace the `email` item in the list below to reflect the information the bot needs
-to collect for your user goal. Leave the `type` field the same for any items you add.
+“Hello, how can I help you?” and “what’s your email address?” are some of the responses our assistant will use. You’ll see how to connect user messages and responses in the next steps.
 
-```yaml-rasa live noResult name=forms
-forms:
-- newsletter_form:
-    email:
-    - type: from_text
-```
-
-## 4. Write a rule
-
-Rules are conversation snippets that should always proceed in exactly the same way.
-Update the rule below for running the form you defined above.
-
-```yaml-rasa live noResult name=rules
-rules:
- - rule: activate subscribe form
-   steps:
-   - intent: subscribe
-   - action: newsletter_form
-   - active_loop: newsletter_form
-```
-
-## 5. Write some stories
-
-Stories are example conversations of how your assistant should handle a user's intent in context.
-The first stories you write should follow the [happy path](./glossary.mdx#happy--unhappy-paths) for your user goal.
-
-A story contains one or more blocks of (user) intent and (bot) [actions](./glossary.mdx#action) or [responses](./glossary.mdx#template--response--utterance).
-The form you defined above is one kind of action; responses are just bot messages.
-Give intuitive names to your responses starting with `utter_` for now; you'll define what they return later.
-
-Using the general template of the story we have shown you below, write a story or two that serve
-the user goal you have chosen. You can include the steps from your form rule wherever appropriate.
-
-```yaml-rasa live noResult name=stories
-stories:
- - story: greet and subscribe
-   steps:
-   - intent: greet
-   - action: utter_greet
-   - intent: subscribe
-   - action: newsletter_form
-   - active_loop: newsletter_form
-```
-
-[Read about best practices for writing stories](./stories.mdx)
-
-
-## 6. Edit responses
-
-To give your bot messages to respond to the user with, you need to define responses.
-You can specify one or more text options for each response. If there are multiple, one of the options
-will be chosen at random whenever that response is predicted.
-
-You can add or change text for any of the responses below. If you're using your own user goal,
-replace the last three responses with the response you used in your stories above.
+In the code block below, we have listed some responses and added one or more text
+options for each of them. If a response has multiple text options, one of them will be chosen at random whenever that response is predicted.
 
 ```yaml-rasa live noResult name=responses
 responses:
@@ -145,43 +81,141 @@ responses:
            You've been subscribed, the newsletter will be sent to {email}.
 ```
 
-:::note
-For this prototype, we have only defined responses, meaning the only thing the assistant does is respond with a
-predefined message. Custom actions, however, can be defined to do whatever you'd like.
-For example, for the user goal of subscribing to a newsletter, you could create a custom action
-that adds the user's email to a database. You can see an example of this
-in [Sara's action code](https://github.com/RasaHQ/rasa-demo/blob/master/actions/actions.py).
+[Learn more about responses](./responses.mdx)
 
-:::
+## 3. Stories
 
-## 7. Train and run
+[Stories](./stories.mdx) are example conversations that train an assistant to respond correctly depending on what the user has said previously in the conversation.
+The story format shows the intent of the user message followed by the assistant’s action or response.
 
-Rasa has a command line interface that allows you to train and run your bot from a terminal.
-To train your bot on the NLU data, stories and responses you've just defined, run `rasa train` using
-the button below:
+Your first story should show a conversation flow where the assistant helps the user accomplish their goal in a straightforward way. Later, you can add stories for situations where the user doesn't want to provide their information or switches to another topic.
+
+In the code block below, we have added a simple story where the user and assistant exchange greetings, the user asks to subscribe to the newsletter, and then the user provides their email address in response to the newsletter_form.
+
+```yaml-rasa live noResult name=stories
+stories:
+ - story: greet and subscribe
+   steps:
+   - intent: greet
+   - action: utter_greet
+   - intent: subscribe
+   - action: newsletter_form
+   - active_loop: newsletter_form
+```
+
+[Learn more about stories](./writing-stories.mdx)
+
+## 4. Forms
+
+There are many situations where an assistant needs to collect information from the user. For example, when a user wants to subscribe to a newsletter, the assistant must ask for their email address.
+
+You can do this in Rasa using a form. In the code block below, we added the
+`newsletter_form` and used it to collect an email address from the user.
+
+```yaml-rasa live noResult name=forms
+forms:
+  newsletter_form:
+    email:
+    - type: from_text
+```
+[Learn more about forms here](./forms.mdx)
+
+## 5. Rules
+
+Rules describe parts of conversations that should always follow the same path no matter what has been said previously in the conversation.
+
+We want our assistant to always respond to a certain intent with a specific action, so we use a rule to map that action to the intent.
+
+In the code block below, we have added a rule that triggers the
+`newsletter_form` whenever the user expresses the intent “subscribe”.
+We’ve also added a rule that triggers the `utter_subscribed` action once all the
+required information has been provided.
+The second rule only applies when the `newsletter_form` is active to begin with; once
+it is no longer active (`active_loop: null`), the form is complete.
+
+```yaml-rasa live noResult name=rules
+rules:
+ - rule: activate subscribe form
+   steps:
+   - intent: subscribe
+   - action: newsletter_form
+   - active_loop: newsletter_form
+
+ - rule: submit form
+   condition:
+   - active_loop: newsletter_form
+   steps:
+   - action: newsletter_form
+   - active_loop: null
+   - action: utter_subscribed
+```
+
+[Learn more about rules and how to write them.](./rules.mdx)
+
+
+## Train and talk to your assistant
+
+Once you have reviewed the steps above, you’re ready to train your assistant. The training process generates a new machine learning model based on the training data you’ve provided.
+
+To train the assistant on the NLU data, stories, forms, rules and responses above, click the `Train` button:
 
 <TrainButton />
 
-Once your model has finished training, you can talk to your assistant:
-
 <div id="rasa-chat-block"></div>
 
+## Looking for a challenge? Customize your assistant
 
-## 8. What's next?
+You can use this page to create an assistant that does something other than helping users subscribe to a newsletter.
 
-You can download this project and build on it to create a more advanced assistant.
-In your downloaded project, you'll notice several files that were configured for you that you didn't edit on this page.
-Check out other docs pages to learn more about [domains](./domain.mdx), [actions](./actions.mdx),
-and your [model configuration](./model-configuration.mdx).
+Try choosing a simple task for your assistant to do, like ordering a pizza or booking an appointment. Adapt the code blocks at each step to fit the new scenario, then train your assistant again to see it in action.
+
+## You have built your assistant! What’s next?
+
+You can download this project and continue building to create a more advanced assistant.
 
 <DownloadButton />
 
-<br/><br/>
+[Install Rasa open source to keep building.](./installation.mdx)
+
+<br/>
 
 <!-- TODO: REMOVE THIS NOTE FOR THE 2.0 release -->
 
-*Your prototype was created using a Rasa Open Source alpha release.
-Please make sure you've [installed at least Rasa Open Source 2.0.0a2](installation.mdx) to develop
+*Your prototype was created using a Rasa Open Source 2.0 RC release.
+Please make sure you've [installed at least Rasa Open Source 2.0.0rc2](installation.mdx) to develop
 your project further.*
 
+<br/>
+
+When you train a model, you always want to check that your assistant still behaves as
+you expect. You can do that by talking to your assistant and seeing that it works.
+However, as your assistant becomes more complex, you will want to use test stories to
+ensure your model makes correct predictions.
+
+<br/>
+
+Try running `rasa test` to make sure that your assistant passes your tests:
+
+```yaml-rasa noResult name=rules
+stories:
+- story: test for greet and subscribe
+  steps:
+  - user: |
+     Hello there
+    intent: greet
+  - action: utter_greet
+  - user: |
+     I want to subscribe to the newsletter. My email is example@email.com
+    intent: subscribe
+  - action:  utter_subscribed
+```
+
+Check out other docs pages to learn more about
+[Rasa’s CLI](./command-line-interface.mdx),
+[Domains](./domain.mdx),
+[Actions](./actions.mdx),
+and your config’s [Pipeline](./tuning-your-model.mdx) and [Policies](./policies.mdx).
+
 </Prototyper>
+
+

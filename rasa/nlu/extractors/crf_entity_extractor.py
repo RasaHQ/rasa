@@ -6,7 +6,7 @@ import numpy as np
 from typing import Any, Dict, List, Optional, Text, Tuple, Type, Callable
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
-import rasa.utils.common as common_utils
+import rasa.shared.utils.io
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.config import RasaNLUModelConfig
@@ -15,17 +15,18 @@ from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import (
     TEXT,
     ENTITIES,
-    NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
-from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
 
 logger = logging.getLogger(__name__)
@@ -221,7 +222,7 @@ class CRFEntityExtractor(EntityExtractor):
         tags, confidences = self._tag_confidences(tokens, predictions)
 
         return self.convert_predictions_into_entities(
-            message.text, tokens, tags, confidences
+            message.get(TEXT), tokens, tags, confidences
         )
 
     def _add_tag_to_crf_token(
@@ -407,14 +408,18 @@ class CRFEntityExtractor(EntityExtractor):
                 # get the features to extract for the token we are currently looking at
                 current_feature_idx = pointer_position + half_window_size
                 features = configured_features[current_feature_idx]
-                # we add the 'entity' feature to include the entity type as features
-                # for the role and group CRFs
-                if include_tag_features:
-                    features.append("entity")
 
                 prefix = prefixes[current_feature_idx]
 
-                for feature in features:
+                # we add the 'entity' feature to include the entity type as features
+                # for the role and group CRFs
+                # (do not modify features, otherwise we will end up adding 'entity'
+                # over and over again, making training very slow)
+                additional_features = []
+                if include_tag_features:
+                    additional_features.append("entity")
+
+                for feature in features + additional_features:
                     if feature == "pattern":
                         # add all regexes extracted from the 'RegexFeaturizer' as a
                         # feature: 'pattern_name' is the name of the pattern the user
@@ -472,9 +477,9 @@ class CRFEntityExtractor(EntityExtractor):
             return None
 
         tokens = message.get(TOKENS_NAMES[TEXT])
-        if len(tokens) != len(features):
-            common_utils.raise_warning(
-                f"Number of dense features ({len(features)}) for attribute "
+        if len(tokens) != len(features.features):
+            rasa.shared.utils.io.raise_warning(
+                f"Number of dense features ({len(features.features)}) for attribute "
                 f"'TEXT' does not match number of tokens ({len(tokens)}).",
                 docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
@@ -482,7 +487,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         # convert to python-crfsuite feature format
         features_out = []
-        for feature in features:
+        for feature in features.features:
             feature_dict = {
                 str(index): token_features
                 for index, token_features in enumerate(feature)

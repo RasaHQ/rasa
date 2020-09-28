@@ -4,7 +4,7 @@ import pytest
 from rasa.nlu import registry, train
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from typing import Any, Dict, List, Tuple, Text
@@ -35,7 +35,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
                 "LexicalSyntacticFeaturizer",
                 "CountVectorsFeaturizer",
                 "CRFEntityExtractor",
-                "DucklingHTTPExtractor",
+                "DucklingEntityExtractor",
                 "DIETClassifier",
                 "ResponseSelector",
                 "EntitySynonymMapper",

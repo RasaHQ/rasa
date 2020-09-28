@@ -3,19 +3,20 @@ from typing import Dict
 
 import pytest
 
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.fallback_classifier import (
     FallbackClassifier,
     THRESHOLD_KEY,
     AMBIGUITY_THRESHOLD_KEY,
 )
-from rasa.nlu.training_data import Message
-from rasa.nlu.constants import (
-    INTENT_RANKING_KEY,
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import (
     INTENT,
-    PREDICTED_CONFIDENCE_KEY,
+    TEXT,
     INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 
 
@@ -24,8 +25,8 @@ from rasa.nlu.constants import (
     [
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {
                         INTENT_NAME_KEY: "greet",
                         PREDICTED_CONFIDENCE_KEY: 0.234891876578331,
@@ -46,33 +47,33 @@ from rasa.nlu.constants import (
                             PREDICTED_CONFIDENCE_KEY: 0.0879683718085289,
                         },
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5},
         ),
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
                         {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                         {INTENT_NAME_KEY: "stop", PREDICTED_CONFIDENCE_KEY: 0.9},
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.1},
         ),
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
                         {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                         {INTENT_NAME_KEY: "stop", PREDICTED_CONFIDENCE_KEY: 0.5},
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.51},
         ),
@@ -102,8 +103,8 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
     [
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 0.5},
                     INTENT_RANKING_KEY: [
                         {
@@ -118,20 +119,20 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
                             PREDICTED_CONFIDENCE_KEY: 0.0879683718085289,
                         },
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5},
         ),
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
                         {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                         {INTENT_NAME_KEY: "stop", PREDICTED_CONFIDENCE_KEY: 0.89},
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.1},
         ),

@@ -7,7 +7,6 @@ import sys
 from asyncio import Future
 from decimal import Decimal
 from hashlib import md5, sha1
-from io import StringIO
 from pathlib import Path
 from typing import (
     Any,
@@ -17,7 +16,6 @@ from typing import (
     List,
     Optional,
     Set,
-    TYPE_CHECKING,
     Text,
     Tuple,
     Union,
@@ -25,14 +23,12 @@ from typing import (
 
 import aiohttp
 import numpy as np
+
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from aiohttp import InvalidURL
-from rasa.constants import (
-    DEFAULT_SANIC_WORKERS,
-    ENV_SANIC_WORKERS,
-    DEFAULT_ENDPOINTS_PATH,
-    YAML_VERSION,
-)
+from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
@@ -43,9 +39,6 @@ from sanic.views import CompositionView
 import rasa.cli.utils as cli_utils
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from random import Random
 
 
 def configure_file_logging(
@@ -61,33 +54,12 @@ def configure_file_logging(
         return
 
     formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(log_file, encoding=io_utils.DEFAULT_ENCODING)
+    file_handler = logging.FileHandler(
+        log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+    )
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
-
-
-def module_path_from_instance(inst: Any) -> Text:
-    """Return the module path of an instance's class."""
-    return inst.__module__ + "." + inst.__class__.__name__
-
-
-def subsample_array(
-    arr: List[Any],
-    max_values: int,
-    can_modify_incoming_array: bool = True,
-    rand: Optional["Random"] = None,
-) -> List[Any]:
-    """Shuffles the array and returns `max_values` number of elements."""
-    import random
-
-    if not can_modify_incoming_array:
-        arr = arr[:]
-    if rand is not None:
-        rand.shuffle(arr)
-    else:
-        random.shuffle(arr)
-    return arr[:max_values]
 
 
 def is_int(value: Any) -> bool:
@@ -121,25 +93,6 @@ def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarr
     r = np.zeros(length, dtype)
     r[hot_idx] = 1
     return r
-
-
-def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
-    """Generate a random UUID.
-
-    Args:
-        prefix: String to prefix the ID with.
-        max_chars: Maximum number of characters.
-
-    Returns:
-        Generated random UUID.
-    """
-    import uuid
-
-    gid = uuid.uuid4().hex
-    if max_chars:
-        gid = gid[:max_chars]
-
-    return f"{prefix}{gid}"
 
 
 # noinspection PyPep8Naming
@@ -190,17 +143,6 @@ class HashableNDArray:
         return self.__wrapped
 
 
-def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
-    import ruamel.yaml
-
-    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
-    yaml_writer.unicode_supplementary = True
-    yaml_writer.default_flow_style = False
-    yaml_writer.version = YAML_VERSION
-
-    yaml_writer.dump(obj, output)
-
-
 def dump_obj_as_yaml_to_file(
     filename: Union[Text, Path], obj: Any, should_preserve_key_order: bool = False
 ) -> None:
@@ -211,16 +153,9 @@ def dump_obj_as_yaml_to_file(
         obj: Object to dump.
         should_preserve_key_order: Whether to preserve key order in `obj`.
     """
-    io_utils.write_yaml(
+    rasa.shared.utils.io.write_yaml(
         obj, filename, should_preserve_key_order=should_preserve_key_order
     )
-
-
-def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
-    """Writes data (python dict) to a yaml string."""
-    str_io = StringIO()
-    _dump_yaml(obj, str_io)
-    return str_io.getvalue()
 
 
 def list_routes(app: Sanic):
@@ -263,20 +198,6 @@ def list_routes(app: Sanic):
     return output
 
 
-def cap_length(s: Text, char_limit: int = 20, append_ellipsis: bool = True) -> Text:
-    """Makes sure the string doesn't exceed the passed char limit.
-
-    Appends an ellipsis if the string is too long."""
-
-    if len(s) > char_limit:
-        if append_ellipsis:
-            return s[: char_limit - 3] + "..."
-        else:
-            return s[:char_limit]
-    else:
-        return s
-
-
 def extract_args(
     kwargs: Dict[Text, Any], keys_to_extract: Set[Text]
 ) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:
@@ -293,14 +214,6 @@ def extract_args(
             remaining[k] = v
 
     return extracted, remaining
-
-
-def all_subclasses(cls: Any) -> List[Any]:
-    """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [
-        g for s in cls.__subclasses__() for g in all_subclasses(s)
-    ]
 
 
 def is_limit_reached(num_messages: int, limit: int) -> bool:
@@ -323,7 +236,7 @@ def read_lines(
 
     line_filter = re.compile(line_pattern)
 
-    with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
+    with open(filename, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING) as f:
         num_messages = 0
         for line in f:
             m = line_filter.match(line)
@@ -345,7 +258,7 @@ def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
     """Convert `data` to string if it is a bytes-like object."""
 
     if isinstance(data, (bytes, bytearray)):
-        return data.decode(io_utils.DEFAULT_ENCODING)
+        return data.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
 
     return data
 
@@ -355,12 +268,9 @@ def get_file_hash(path: Text) -> Text:
     return md5(file_as_bytes(path)).hexdigest()
 
 
-def get_text_hash(text: Text, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text:
-    """Calculate the md5 hash for a text."""
-    return md5(text.encode(encoding)).hexdigest()
-
-
-def get_dict_hash(data: Dict, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text:
+def get_dict_hash(
+    data: Dict, encoding: Text = rasa.shared.utils.io.DEFAULT_ENCODING
+) -> Text:
     """Calculate the md5 hash of a dictionary."""
     return md5(json.dumps(data, sort_keys=True).encode(encoding)).hexdigest()
 
@@ -380,11 +290,6 @@ async def download_file_from_url(url: Text) -> Text:
             filename = io_utils.create_temporary_file(await resp.read(), mode="w+b")
 
     return filename
-
-
-def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Remove all keys that store a `None` value."""
-    return {k: v for k, v in obj.items() if v is not None}
 
 
 def pad_lists_to_size(

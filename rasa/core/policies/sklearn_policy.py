@@ -1,24 +1,34 @@
 import json
 import logging
-import os
-import pickle
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+from collections import defaultdict, OrderedDict
+import scipy.sparse
 
 import numpy as np
-import rasa.utils.io
+import rasa.utils.io as io_utils
+import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.core.domain import Domain
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer, TrackerFeaturizer
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.core.domain import Domain
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+)
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.data import DialogueTrainingData
-from rasa.utils.common import raise_warning
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
+import rasa.shared.utils.io
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
+from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
+from rasa.shared.nlu.training_data.features import Features
+from rasa.utils.tensorflow.constants import SENTENCE
+from rasa.utils.tensorflow.model_data import Data
 
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
@@ -32,16 +42,29 @@ if typing.TYPE_CHECKING:
 class SklearnPolicy(Policy):
     """Use an sklearn classifier to train a policy."""
 
+    DEFAULT_MAX_HISTORY = 5
+
+    @staticmethod
+    def _standard_featurizer(
+        max_history: int = DEFAULT_MAX_HISTORY,
+    ) -> MaxHistoryTrackerFeaturizer:
+        # Sklearn policy always uses MaxHistoryTrackerFeaturizer
+        return MaxHistoryTrackerFeaturizer(
+            state_featurizer=SingleStateFeaturizer(), max_history=5
+        )
+
     def __init__(
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
+        max_history: int = DEFAULT_MAX_HISTORY,
         model: Optional["sklearn.base.BaseEstimator"] = None,
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,
         scoring: Optional[Text or List or Dict or Callable] = "accuracy",
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
+        zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
         **kwargs: Any,
     ) -> None:
         """Create a new sklearn policy.
@@ -60,15 +83,27 @@ class SklearnPolicy(Policy):
             label_encoder: Encoder for the labels. Must implement an
                 *inverse_transform* method.
             shuffle: Whether to shuffle training data.
+            zero_state_features: Contains default feature values for attributes
         """
 
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
                 raise TypeError(
-                    "Passed featurizer of type {}, should be "
-                    "MaxHistoryTrackerFeaturizer."
-                    "".format(type(featurizer).__name__)
+                    f"Passed featurizer of type '{type(featurizer).__name__}', "
+                    f"should be MaxHistoryTrackerFeaturizer."
                 )
+            if not featurizer.max_history:
+                raise ValueError(
+                    "Passed featurizer without `max_history`, `max_history` should be "
+                    "set to a positive integer value."
+                )
+        else:
+            if not max_history:
+                raise ValueError(
+                    "max_history should be set to a positive integer value."
+                )
+            featurizer = self._standard_featurizer(max_history)
+
         super().__init__(featurizer, priority)
 
         self.model = model or self._default_model()
@@ -81,6 +116,12 @@ class SklearnPolicy(Policy):
         # attributes that need to be restored after loading
         self._pickle_params = ["model", "cv", "param_grid", "scoring", "label_encoder"]
         self._train_params = kwargs
+        self.zero_state_features = zero_state_features or defaultdict(list)
+
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{SklearnPolicy.__name__}' is deprecated and will be removed in "
+            "the future. It is recommended to use the 'TEDPolicy' instead."
+        )
 
     @staticmethod
     def _default_model() -> Any:
@@ -95,17 +136,74 @@ class SklearnPolicy(Policy):
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
 
-    def _extract_training_data(
-        self, training_data: DialogueTrainingData
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        # transform y from one-hot to num_classes
-        X, y = training_data.X, training_data.y.argmax(axis=-1)
-        if self.shuffle:
-            X, y = sklearn_shuffle(X, y)
-        return X, y
+    @staticmethod
+    def _fill_in_features_to_max_length(
+        features: List[np.ndarray], max_history: int
+    ) -> List[np.ndarray]:
+        """
+        Pad features with zeros to maximum length;
+        Args:
+            features: list of features for each dialog;
+                each feature has shape [dialog_history x shape_attribute]
+            max_history: maximum history of the dialogs
+        Returns:
+            padded features
+        """
+        feature_shape = features[0].shape[-1]
+        features = [
+            feature
+            if feature.shape[0] == max_history
+            else np.vstack(
+                [np.zeros((max_history - feature.shape[0], feature_shape)), feature]
+            )
+            for feature in features
+        ]
+        return features
 
-    def _preprocess_data(self, X) -> np.ndarray:
-        return X.reshape(X.shape[0], -1)
+    def _get_features_for_attribute(self, attribute_data: Dict[Text, List[np.ndarray]]):
+        """
+        Given a list of all features for one attribute, turn it into a numpy array;
+        shape_attribute = features[SENTENCE][0][0].shape[-1]
+            (Shape of features of one attribute)
+        Args:
+            attribute_data: all features in the attribute stored in a np.array;
+        Output:
+            2D np.ndarray with features for an attribute with
+                shape [num_dialogs x (max_history * shape_attribute)]
+        """
+        sentence_features = attribute_data[SENTENCE][0]
+        if isinstance(sentence_features[0], scipy.sparse.coo_matrix):
+            sentence_features = [feature.toarray() for feature in sentence_features]
+        # MaxHistoryFeaturizer is always used with SkLearn policy;
+        max_history = self.featurizer.max_history
+        features = self._fill_in_features_to_max_length(sentence_features, max_history)
+        features = [feature.reshape((1, -1)) for feature in features]
+        return np.vstack(features)
+
+    def _preprocess_data(self, data: Data) -> np.ndarray:
+        """
+        Turn data into np.ndarray for sklearn training; dialogue history features
+        are flattened.
+        Args:
+            data: training data containing all the features
+        Returns:
+            Training_data: shape [num_dialogs x (max_history * all_features)];
+            all_features - sum of number of features of
+            intent, action_name, entities, forms, slots.
+        """
+        if TEXT in data or ACTION_TEXT in data:
+            raise Exception(
+                f"{self.__name__} cannot be applied to text data. "
+                f"Try to use TEDPolicy instead. "
+            )
+
+        attribute_data = {
+            attribute: self._get_features_for_attribute(attribute_data)
+            for attribute, attribute_data in data.items()
+        }
+        # turning it into OrderedDict so that the order of features is the same
+        attribute_data = OrderedDict(attribute_data)
+        return np.concatenate(list(attribute_data.values()), axis=-1)
 
     def _search_and_score(self, model, X, y, param_grid) -> Tuple[Any, Any]:
         search = GridSearchCV(
@@ -117,29 +215,35 @@ class SklearnPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
+        tracker_state_features, label_ids = self.featurize_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
+        training_data, zero_state_features = model_data_utils.convert_to_data_format(
+            tracker_state_features
+        )
+        self.zero_state_features = zero_state_features
 
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
-
-        X, y = self._extract_training_data(training_data)
         self._train_params.update(kwargs)
         model = self.model_architecture(**self._train_params)
         score = None
-        # Note: clone is called throughout to avoid mutating default
-        # arguments.
-        self.label_encoder = clone(self.label_encoder).fit(y)
-        Xt = self._preprocess_data(X)
-        yt = self.label_encoder.transform(y)
+        # Note: clone is called throughout to avoid mutating default arguments.
+        self.label_encoder = clone(self.label_encoder).fit(label_ids)
+        X = self._preprocess_data(training_data)
+        y = self.label_encoder.transform(label_ids)
+
+        if self.shuffle:
+            X, y = sklearn_shuffle(X, y)
 
         if self.cv is None:
-            model = clone(model).fit(Xt, yt)
+            model = clone(model).fit(X, y)
         else:
             param_grid = self.param_grid or {}
-            model, score = self._search_and_score(model, Xt, yt, param_grid)
+            model, score = self._search_and_score(model, X, y, param_grid)
 
         self.model = model
         logger.info("Done fitting sklearn policy model")
@@ -163,53 +267,67 @@ class SklearnPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
-        X = self.featurizer.create_X([tracker], domain)
-        Xt = self._preprocess_data(X)
+        X = self.featurizer.create_state_features([tracker], domain, interpreter)
+        training_data, _ = model_data_utils.convert_to_data_format(
+            X, self.zero_state_features
+        )
+        Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba, domain)
 
-    def persist(self, path: Text) -> None:
+    def persist(self, path: Union[Text, Path]) -> None:
 
         if self.model:
             self.featurizer.persist(path)
 
             meta = {"priority": self.priority}
+            path = Path(path)
 
-            meta_file = os.path.join(path, "sklearn_policy.json")
-            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
+            meta_file = path / "sklearn_policy.json"
+            rasa.shared.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
-            filename = os.path.join(path, "sklearn_model.pkl")
+            filename = path / "sklearn_model.pkl"
             rasa.utils.io.pickle_dump(filename, self._state)
+
+            zero_features_filename = path / "zero_state_features.pkl"
+            io_utils.pickle_dump(zero_features_filename, self.zero_state_features)
+
         else:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Persist called without a trained model present. "
                 "Nothing to persist then!"
             )
 
     @classmethod
-    def load(cls, path: Text) -> Policy:
-        filename = os.path.join(path, "sklearn_model.pkl")
-        if not os.path.exists(path):
+    def load(cls, path: Union[Text, Path]) -> Policy:
+        filename = Path(path) / "sklearn_model.pkl"
+        zero_features_filename = Path(path) / "zero_state_features.pkl"
+        if not Path(path).exists():
             raise OSError(
-                "Failed to load dialogue model. Path {} "
-                "doesn't exist".format(os.path.abspath(filename))
+                f"Failed to load dialogue model. Path {filename.absolute()} "
+                f"doesn't exist."
             )
 
         featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (
-            "Loaded featurizer of type {}, should be "
-            "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__)
+            f"Loaded featurizer of type {type(featurizer).__name__}, should be "
+            f"MaxHistoryTrackerFeaturizer."
         )
 
-        meta_file = os.path.join(path, "sklearn_policy.json")
-        meta = json.loads(rasa.utils.io.read_file(meta_file))
+        meta_file = Path(path) / "sklearn_policy.json"
+        meta = json.loads(rasa.shared.utils.io.read_file(meta_file))
+        zero_state_features = io_utils.pickle_load(zero_features_filename)
 
-        policy = cls(featurizer=featurizer, priority=meta["priority"])
+        policy = cls(
+            featurizer=featurizer,
+            priority=meta["priority"],
+            zero_state_features=zero_state_features,
+        )
 
-        state = rasa.utils.io.pickle_load(filename)
+        state = io_utils.pickle_load(filename)
 
         vars(policy).update(state)
 

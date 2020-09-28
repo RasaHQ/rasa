@@ -6,7 +6,8 @@ import sys
 
 def test_cli_start(run: Callable[..., RunResult]):
     """
-    Checks that a call to ``rasa --help`` does not take longer than 7 seconds.
+    Checks that a call to ``rasa --help`` does not take longer than 7 seconds
+    (10 seconds on Windows).
     """
     import time
 
@@ -16,20 +17,22 @@ def test_cli_start(run: Callable[..., RunResult]):
 
     duration = end - start
 
-    assert duration <= 7
+    # it sometimes takes a bit more time to start it on Windows
+    assert duration <= 10 if sys.platform == "win32" else 7
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("--help")
 
     help_text = """usage: rasa [-h] [--version]
-            {init,run,shell,train,interactive,test,visualize,data,export,x}
+            {init,run,shell,train,interactive,telemetry,test,visualize,data,export,x}
             ..."""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 @pytest.mark.xfail(

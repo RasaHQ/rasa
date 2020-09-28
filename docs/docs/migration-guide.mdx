@@ -8,7 +8,6 @@ description: Information about changes between major versions of chatbot framewo
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-2-0"></a>
 
 ## Rasa 1.10 to Rasa 2.0
 
@@ -32,11 +31,12 @@ how you can migrate from one version to another.
 
 ### Training data files
 
-You can convert existing NLU and Stories training data files in the `Markdown` format
-to the new `YAML` format using following commands:
+You can convert existing NLU, Stories, and NLG (i.e. `responses.md`) training data
+files in the `Markdown` format to the new `YAML` format using following commands:
 
 ```bash
 rasa data convert nlu -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
+rasa data convert nlg -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
 rasa data convert core -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
 ```
 
@@ -60,7 +60,7 @@ deprecated:
 #### Migrating from the Mapping Policy
 
 If you previously used the [Mapping Policy](./policies.mdx#mapping-policy), you
-can follow the documentation on [FAQs](./rules.mdx#faqs--mapping-intents-to-actions) to convert your mapped
+can follow the documentation on [FAQs](./chitchat-faqs.mdx) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
 ```yaml-rasa
@@ -120,7 +120,7 @@ rules:
   - action: utter_please_rephrase
 ```
 
-Please see the [Fallback Actions](./fallback-handoff.mdx#fallbackactions) documentation for more
+Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
 #### Migrating from the Two-Stage-Fallback Policy
@@ -175,7 +175,7 @@ Note that the previous parameters `fallback_nlu_action_name` and
 `deny_suggestion_intent_name` are no longer configurable and have the fixed values
 `action_default_fallback` and `out_of_scope`.
 
-Please see the [Fallback Actions](./fallback-handoff.mdx#fallbackactions) documentation for more
+Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
 #### Form Policy
@@ -339,8 +339,6 @@ class RestaurantFormValidator(Action):
 Please see [Forms](./forms.mdx) if you have further customizations in your
 ``FormAction``.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-8"></a>
-
 ### Response Selectors
 
 * Response Selectors are now trained on retrieval intent labels by default instead
@@ -377,13 +375,21 @@ This means that the output in these files should look like -
 }
 ```
 
+* Retrieval actions with `respond_` prefix are now replaced with usual utterance actions with `utter_` prefix.
+If you were using retrieval actions before, rename all of them to start with `utter_` prefix. For example,
+`respond_chitchat` becomes `utter_chitchat`. Also, in order to keep the response templates more consistent,
+you should now add the `utter_` prefix to all response templates defined for retrieval intents. For example,
+a response template `chitchat/ask_name` becomes `utter_chitchat/ask_name`. Note that the NLU examples for this
+will still be under `chitchat/ask_name` intent. The example `responseselectorbot` should help clarify these changes further.
+
 * The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name`
 have been deprecated in favour of `intent_response_key` and `response_templates` respectively.
-Additionally a key `all_retrieval_intents` is added to the response selector output which will
-hold a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
+Additionally, two keys are added to the output -
+1. `all_retrieval_intents` - Holds a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
+2. `template_name` - Holds the name of the response template which is predicted by the response selector(`utter_faq/is_legit`)
 An example output looks like this -
 
-```json {3-4,10,11}
+```json {3-4,10,11,20}
 {
   "response_selector": {
     "all_retrieval_intents": [
@@ -403,6 +409,7 @@ An example output looks like this -
             "text": "I think so."
           }
         ]
+        "template_name": "utter_faq/is_legit"
       },
       "ranking": [
         {
@@ -426,6 +433,41 @@ response_selector_output.get("default")
                         .get("response")
                         .get("intent_response_key")
 ```
+
+### Core Featurization
+
+* `LabelTokenizerSingleStateFeaturizer` is deprecated and will be removed in the future.
+  Please use `SingleStateFeaturizer` with appropriate NLU pipeline.
+  To replicate `LabelTokenizerSingleStateFeaturizer` functionality,
+  add a `Tokenizer` with the option `intent_tokenization_flag: True` and `CountVectorsFeaturizer`
+  to the NLU pipeline. Please update your configuration file.
+
+  For example:
+  ```yaml-rasa {3-5}
+  language: en
+  pipeline:
+    - name: WhitespaceTokenizer
+      intent_tokenization_flag: True
+    - name: CountVectorsFeaturizer
+  ```
+
+  Please train both NLU and Core (using `rasa train`) to use a trained tokenizer and
+  featurizer for Core featurization.
+
+* `BinarySingleStateFeaturizer` is deprecated and will be removed in the future.
+  If you train both NLU and Core (using `rasa train`),
+  use `SingleStateFeaturizer` with NLU pipeline
+  where `intent_tokenization_flag` of a Tokenizer is set to `False`.
+
+  For example:
+  ```yaml-rasa {4}
+  language: en
+  pipeline:
+    - name: WhitespaceTokenizer
+      intent_tokenization_flag: False
+  ```
+
+  Alternatively, you can train a Core model without NLU using `rasa train core`.
 
 ## Rasa 1.7 to Rasa 1.8
 
@@ -461,7 +503,7 @@ model before trying to use it with this improved version.
   Take a look at [Tuning Your Model](./tuning-your-model.mdx) to decide on what components you should use
   in your configuration file.
 
-* The [Embedding Policy](./policies.mdx#embedding-policy) was renamed to [TED Policy](./policies.mdx#ted-policy). The functionality of the policy stayed the same.
+* The Embedding Policy was renamed to [TED Policy](./policies.mdx#ted-policy). The functionality of the policy stayed the same.
   Please update your configuration files to use `TEDPolicy` instead of `EmbeddingPolicy`.
 
 * Most of the model options for `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` got
@@ -492,7 +534,7 @@ model before trying to use it with this improved version.
   Old configuration options will be mapped to the new names, and a warning will be thrown.
   However, these will be deprecated in a future release.
 
-* The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier)
+* The Embedding Intent Classifier is now deprecated and will be replaced by [DIETClassifier](./components.mdx#dietclassifier)
   in the future.
   `DIETClassfier` performs intent classification as well as entity recognition.
   If you want to get the same model behavior as the current `EmbeddingIntentClassifier`, you can use
@@ -513,7 +555,7 @@ model before trying to use it with this improved version.
     # ... any other parameters
   ```
 
-  See [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) for more information about the new component.
+  See [DIETClassifier](./components.mdx#dietclassifier) for more information about the new component.
   Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, the
   behavior is unchanged from previous versions.
 
@@ -550,14 +592,14 @@ model before trying to use it with this improved version.
   ```
 
   `CRFEntityExtractor` featurizes user messages on its own, it does not depend on any featurizer.
-  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer). Thus,
+  We extracted the featurization from the component into the new featurizer [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer). Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
-  [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier).
+  [DIETClassifier](./components.mdx#dietclassifier).
   Specifying `CRFEntityExtractor` in the configuration maps to the above component definition, the behavior
   is unchanged from previous versions.
 
 * If your pipeline contains `CRFEntityExtractor` and `EmbeddingIntentClassifier` you can substitute both
-  components with [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier). You can use the following pipeline for that:
+  components with [DIETClassifier](./components.mdx#dietclassifier). You can use the following pipeline for that:
 
   ```yaml-rasa
   pipeline:
@@ -585,18 +627,14 @@ model before trying to use it with this improved version.
     # ... any other parameters
   ```
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-7"></a>
-
 ## Rasa 1.6 to Rasa 1.7
 
 ### General
 
 * By default, the `EmbeddingIntentClassifier`, `EmbeddingPolicy`, and `ResponseSelector` will
   now normalize the top 10 confidence results if the `loss_type` is `"softmax"` (which has been
-  default since 1.3, see [Rasa 1.2 to Rasa 1.3](./migration-guide.mdx#migration-to-rasa-1-3)). This is configurable via the `ranking_length`
+  default since 1.3, see [Rasa 1.2 to Rasa 1.3](./migration-guide.mdx#rasa-12-to-rasa-13)). This is configurable via the `ranking_length`
   configuration parameter; to turn off normalization to match the previous behavior, set `ranking_length: 0`.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-3"></a>
 
 ## Rasa 1.2 to Rasa 1.3
 
@@ -610,7 +648,7 @@ model before trying to use it with this improved version.
 ### General
 
 * Default parameters of `EmbeddingIntentClassifier` are changed. See
-  [Components](./components/intent-classifiers.mdx#embedding-intent-classifier) for details.
+  the Components page for details.
   Architecture implementation is changed as well, so **old trained models cannot be loaded**.
   Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./policies.mdx) for details.
   It uses transformer instead of lstm. **Old trained models cannot be loaded**.
@@ -625,7 +663,7 @@ model before trying to use it with this improved version.
 * Default `max_history` for `EmbeddingPolicy` is `None` which means it'll use
   the `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to
   some finite value in order to use `MaxHistoryTrackerFeaturizer`
-  for **faster training**. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for details.
+  for **faster training**. See [Featurizers](./policies.mdx#featurizers) for details.
   We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
   (e.g. `"batch_size": [32, 64]`)
 
@@ -644,7 +682,6 @@ model before trying to use it with this improved version.
 * `/` is reserved as a delimiter token to distinguish between retrieval intent and the corresponding response text
   identifier. Make sure you don't include `/` symbol in the name of your intents.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-0"></a>
 
 ## Rasa NLU 0.14.x and Rasa Core 0.13.x to Rasa 1.0
 

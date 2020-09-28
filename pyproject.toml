@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.0.0a4"
+version = "2.0.0rc2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -18,7 +18,7 @@ repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
 classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Programming Language :: Python :: 3.8", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
-include = [ "LICENSE.txt", "README.md", "rasa/core/schemas/*", "rasa/core/training/visualization.html", "rasa/nlu/schemas/*", "rasa/cli/default_config.yml", "rasa/importers/*", "rasa/utils/schemas.yml",]
+include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
 readme = "README.md"
 license = "Apache-2.0"
 [[tool.poetry.source]]
@@ -95,10 +95,10 @@ pika = "~1.1.0"
 jsonschema = "~3.2"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2021.0"
-rasa-sdk = "^2.0.0a4"
+rasa-sdk = "^2.0.0rc1"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
-sanic = "^19.12.2"
+sanic = ">=19.12.2,<21.0.0"
 sanic-cors = "^0.10.0b1"
 sanic-jwt = ">=1.3.2,<1.5.0"
 cloudpickle = ">=1.2,<1.5"
@@ -126,6 +126,7 @@ ujson = ">=1.35,<4.0"
 oauth2client = "4.1.3"
 regex = "~2020.6"
 joblib = "^0.15.1"
+sentry-sdk = "^0.17.4"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
@@ -148,7 +149,8 @@ coveralls = "^2.0.0"
 towncrier = "^19.2.0"
 toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
-pydoc-markdown = "3.3.0.post1"
+pydoc-markdown = "^3.5.0"
+pytest-timeout = "^1.4.2"
 mypy = "^0.782"
 pytype = "^2020.6.1"
 
@@ -168,7 +170,7 @@ optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
 version = "~2.3"
-markers = "sys_platform!='win32'"  # TODO: remove this marker once tensorflow-text supports windows
+markers = "sys_platform!='win32'"
 
 [tool.poetry.dependencies."github3.py"]
 version = "~1.3.0"
