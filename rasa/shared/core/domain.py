@@ -4,7 +4,18 @@ import json
 import logging
 import typing
 import os
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Union,
+    TYPE_CHECKING,
+)
 from pathlib import Path
 
 from ruamel.yaml import YAMLError
@@ -18,7 +29,7 @@ import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
