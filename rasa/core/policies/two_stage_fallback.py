@@ -9,12 +9,12 @@ from rasa.core.policies.policy import confidence_scores_for
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 from rasa.shared.core.constants import (
+    USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    USER_INTENT_OUT_OF_SCOPE,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
