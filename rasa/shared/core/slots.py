@@ -255,7 +255,7 @@ class UnfeaturizedSlot(Slot):
         rasa.shared.utils.io.raise_warning(
             f"{UnfeaturizedSlot.__name__} is deprecated "
             f"and will be removed in Rasa Open Source "
-            f"3.0. Please configure the 'unfeaturized' "
+            f"3.0. Please configure the 'influence_conversation' "
             f"flag instead.",
             docs=DOCS_URL_SLOTS,
             category=FutureWarning,

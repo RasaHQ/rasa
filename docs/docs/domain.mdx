@@ -83,9 +83,9 @@ as well as information gathered about the outside world (e.g. the result of a
 database query).
 
 Slots are defined in the `slots` section of your domain with their name and
-[type](./domain.mdx#slot-types). The slot type will determine the data type of the slot
+[type](domain.mdx#slot-types). The slot type will determine the data type of the slot
 and how the slot
-[influences the assistant's behavior](.domain.mdx#slots-and-conversation-behavior).
+[influences the assistant's behavior](domain.mdx#slots-and-conversation-behavior).
 The following example defines a slot with name `slot_name` and the type `text`.
 
 ```yaml
@@ -201,7 +201,7 @@ Make this a nice table instead.
 
   If `influence_conversation` is set to `true`, the assistant's behavior will change
   depending on whether the slot is set to `true` or `false`. An empty `bool` slot
-  is the same if the slot was set to `False`.
+  is the same as if the slot was set to `False`.
 
 #### Categorical Slot
 
@@ -386,7 +386,8 @@ stories:
 :::caution
 The slot type `unfeaturized` is deprecated. Please use the property
 `influence_conversation` as described
-[here](domain.mdx#slots-and-conversation-behavior) or the slot type [any](TODO) instead.
+[here](domain.mdx#slots-and-conversation-behavior) or the slot type
+[any](domain.mdx#any-slot) instead.
 
 :::
 

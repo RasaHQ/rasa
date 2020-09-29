@@ -545,7 +545,7 @@ class Domain:
         All unseen values found for the slot will be mapped to this default value
         for featurization.
         """
-        for slot in [s for s in self.slots if type(s) is CategoricalSlot]:
+        for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
 
     def add_requested_slot(self) -> None:
@@ -558,7 +558,10 @@ class Domain:
             s.name for s in self.slots
         ]:
             self.slots.append(
-                TextSlot(rasa.shared.core.constants.REQUESTED_SLOT, unfeaturized=True)
+                TextSlot(
+                    rasa.shared.core.constants.REQUESTED_SLOT,
+                    influence_conversation=False,
+                )
             )
 
     def add_knowledge_base_slots(self) -> None:
@@ -587,7 +590,7 @@ class Domain:
             ]
             for s in knowledge_base_slots:
                 if s not in slot_names:
-                    self.slots.append(TextSlot(s, unfeaturized=True))
+                    self.slots.append(TextSlot(s, influence_conversation=False))
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Look up which action index corresponds to this action name."""
