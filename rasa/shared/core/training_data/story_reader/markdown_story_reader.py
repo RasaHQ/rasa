@@ -28,11 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 class MarkdownStoryReader(StoryReader):
-    """Class that reads the core training data in a Markdown format
+    """Class that reads the core training data in a Markdown format"""
 
-    """
-
-    async def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
@@ -41,7 +39,7 @@ class MarkdownStoryReader(StoryReader):
             ) as f:
                 lines = f.readlines()
 
-            return await self._process_lines(lines)
+            return self._process_lines(lines)
         except ValueError as err:
             file_info = "Invalid story file format. Failed to parse '{}'".format(
                 os.path.abspath(filename)
@@ -52,7 +50,7 @@ class MarkdownStoryReader(StoryReader):
             err.args = err.args + (file_info,)
             raise
 
-    async def _process_lines(self, lines: List[Text]) -> List[StoryStep]:
+    def _process_lines(self, lines: List[Text]) -> List[StoryStep]:
         multiline_comment = False
 
         for idx, line in enumerate(lines):
@@ -95,9 +93,9 @@ class MarkdownStoryReader(StoryReader):
                     # reached a user message
                     user_messages = [el.strip() for el in line[1:].split(" OR ")]
                     if self.use_e2e:
-                        await self._add_e2e_messages(user_messages, line_num)
+                        self._add_e2e_messages(user_messages, line_num)
                     else:
-                        await self._add_user_messages(user_messages, line_num)
+                        self._add_user_messages(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning(
@@ -180,7 +178,7 @@ class MarkdownStoryReader(StoryReader):
             )
             return "", {}
 
-    async def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
+    def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "User message '{}' at invalid location. "
@@ -191,7 +189,7 @@ class MarkdownStoryReader(StoryReader):
             parsed_messages, self.unfold_or_utterances
         )
 
-    async def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
+    def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "End-to-end message '{}' at invalid "

@@ -6,16 +6,14 @@ title: Model Storage
 
 Rasa can load your model in three different ways:
 
-1. Fetch the model from a server (see [Fetching Models from a Server](./model-storage.mdx#server-fetch-from-server)), or
+1. Fetch the model from a server (see [Fetching Models from a Server](./model-storage.mdx#fetching-models-from-a-server)), or
 
-2. Fetch the model from a remote storage (see [Remote Storage](./model-storage.mdx#server-fetch-from-remote-storage)).
+2. Fetch the model from a remote storage (see [Remote Storage](./model-storage.mdx#fetching-models-from-remote-storage)).
 
 3. Load the model specified via `-m` from your local storage system.
 
 Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from your local
 storage system if no model server and no remote storage were configured.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-fetch-from-server"></a>
 
 ## Fetching Models from a Server
 
@@ -53,8 +51,6 @@ An example request Rasa might make to your model server looks like this:
 ```bash
 curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default@latest
 ```
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="server-fetch-from-remote-storage"></a>
 
 ## Fetching Models from Remote Storage
 

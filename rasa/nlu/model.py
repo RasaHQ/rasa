@@ -305,7 +305,7 @@ class Interpreter:
         """Create an interpreter based on a persisted model.
 
         Args:
-            skip_validation: If set to `True`, tries to check that all
+            skip_validation: If set to `True`, does not check that all
                 required packages for the components are installed
                 before loading them.
             model_dir: The path of the model to load

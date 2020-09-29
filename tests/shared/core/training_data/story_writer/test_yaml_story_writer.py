@@ -36,21 +36,19 @@ async def test_simple_story(
     original_md_reader = MarkdownStoryReader(
         default_domain, None, False, input_md_file, unfold_or_utterances=False
     )
-    original_md_story_steps = await original_md_reader.read_from_file(input_md_file)
+    original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
     assert not YAMLStoryWriter.stories_contain_loops(original_md_story_steps)
 
     original_yaml_reader = YAMLStoryReader(default_domain, None, False)
-    original_yaml_story_steps = await original_yaml_reader.read_from_file(
-        input_yaml_file
-    )
+    original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     target_story_filename = tmpdir / "test.yml"
     writer = YAMLStoryWriter()
     writer.dump(target_story_filename, original_md_story_steps)
 
     processed_yaml_reader = YAMLStoryReader(default_domain, None, False)
-    processed_yaml_story_steps = await processed_yaml_reader.read_from_file(
+    processed_yaml_story_steps = processed_yaml_reader.read_from_file(
         target_story_filename
     )
 
@@ -67,7 +65,7 @@ async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
     original_md_reader = MarkdownStoryReader(
         default_domain, None, False, input_md_file, unfold_or_utterances=False
     )
-    original_md_story_steps = await original_md_reader.read_from_file(input_md_file)
+    original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
     yaml_text = YAMLStoryWriter().dumps(original_md_story_steps)
 
@@ -78,7 +76,7 @@ async def test_forms_are_converted(default_domain: Domain):
     original_md_reader = MarkdownStoryReader(
         default_domain, None, False, unfold_or_utterances=False
     )
-    original_md_story_steps = await original_md_reader.read_from_file(
+    original_md_story_steps = original_md_reader.read_from_file(
         "data/test_stories/stories_form.md"
     )
 
@@ -134,3 +132,20 @@ def test_yaml_writer_avoids_dumping_not_existing_user_messages():
     """
         ).strip()
     )
+
+
+@pytest.mark.parametrize(
+    "input_yaml_file", ["data/test_yaml_stories/rules_with_stories_sorted.yaml",],
+)
+def test_yaml_writer_dumps_rules(
+    input_yaml_file: Text, tmpdir: Path, default_domain: Domain,
+):
+    original_yaml_reader = YAMLStoryReader(default_domain, None, False)
+    original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
+
+    dump = YAMLStoryWriter().dumps(original_yaml_story_steps)
+    # remove the version string
+    dump = "\n".join(dump.split("\n")[1:])
+
+    with open(input_yaml_file) as original_file:
+        assert dump == original_file.read()

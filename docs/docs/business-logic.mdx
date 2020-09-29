@@ -9,20 +9,21 @@ Conversational assistants often support user goals that involve collecting requi
 from the user before doing something for them. For example, a restaurant search bot would need to gather a few pieces of information
 about the user's preferences to find them a suitable restaurant:
 
-```yaml
-User: Help me find a restaurant
-    Bot: What cuisine?
-User: I'm looking for Tuscan food
-    Bot: How many people?
-User: 5
-    Bot: Do you want to sit outside?
-User: Yes
-    Bot: All done!
-    Bot: I am going to run a restaurant search using the following parameters:
-          - cuisine: Tuscan
-          - num_people: 5
-          - outdoor_seating: True
-```
+<Chat caption="Find a restaurant">
+<ChatUserText>Help me find a restaurant</ChatUserText>
+<ChatBotText>What cuisine?</ChatBotText>
+<ChatUserText>I'm looking for Tuscan food</ChatUserText>
+<ChatBotText>How many people?</ChatBotText>
+<ChatUserText>5</ChatUserText>
+<ChatBotText>Do you want to sit outside?</ChatBotText>
+<ChatUserText>Yes</ChatUserText>
+<ChatBotText>All done!</ChatBotText>
+<ChatBotText>I am going to run a restaurant search using the following parameters:</ChatBotText>
+<ChatBotText><p>- cuisine: Tuscan</p>
+<p>- num_people: 5</p>
+<p>- outdoor_seating: True</p></ChatBotText>
+</Chat>
+
 
 This page is a guide on handling the business logic of collecting user information to fulfill a request.
 In the example above, business logic includes needing to know the user's preferred cuisine, party size, and seating preference.
@@ -56,7 +57,7 @@ from the user:
 
 
 You define a form in the domain file (domain.yml) by specifying [slot mappings](forms.mdx#slot-mappings) for each
-piece of required information. Slot mappings define both which 
+piece of required information. Slot mappings define both which
 slots are required, and how each slot can be filled:
 
 ```yaml-rasa
@@ -67,7 +68,7 @@ forms:
           entity: cuisine
       num_people:
         - type: from_entity
-          entity: number 
+          entity: number
       outdoor_seating:
         - type: from_intent
           intent: affirm
@@ -77,8 +78,8 @@ forms:
           value: false
 ```
 
-For any slot filled `from_entity`, the entity needs to be added 
-to the domain. 
+For any slot filled `from_entity`, the entity needs to be added
+to the domain.
 
 ```
 entities:
@@ -87,7 +88,7 @@ entities:
 ```
 
 Entities like numbers
-can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
+can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklinghttpextractor). To use it, add  DucklingEntityExtractor
 to your NLU pipeline in `config.yml`.
 
 ```yaml-rasa
@@ -147,7 +148,7 @@ responses:
 
 ### 2. Updating the configuration
 
-A form's [happy path](glossary.mdx#happy-path) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](policies.mdx#rulepolicy)
+A form's [happy path](glossary.mdx#happy--unhappy-paths) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](policies.mdx#rule-policy)
 to your policies in your configuration file:
 
 ```yaml-rasa
@@ -157,14 +158,14 @@ policies:
 
 ### 3. Creating rules
 
-The form itself takes care of the logic around asking the user for all 
+The form itself takes care of the logic around asking the user for all
 the required information, so
 you need only two rules for a form's happy path:
 One to that defines when it starts, and one that defines what happens when it has been filled.
 For the restaurant search example, in real life the assistant would look up
-a restaurant based on the user's preferences. 
+a restaurant based on the user's preferences.
 In this case, the bot will utter a response with the details
-that would be used for a search. 
+that would be used for a search.
 
 
 ```yaml-rasa
@@ -308,4 +309,4 @@ example above, this is a summary of what you'll need to do:
 To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
 Because the DucklingEntityExtractor is being used to extract
 entities, you'll need to start Duckling in the background as well
-(see the [instructions for running Duckling](components.mdx#ducklingentityextractor)).
+(see the [instructions for running Duckling](components.mdx#ducklinghttpextractor)).
