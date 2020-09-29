@@ -102,6 +102,5 @@ export default {
   Container,
   Section,
   Text,
-  Code,
-  NextStepButton
-}
+  Code
+};
