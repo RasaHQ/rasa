@@ -4,12 +4,13 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Text
 
+import mock
 import pytest
 import uuid
 
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from mock import call, Mock
+from mock import Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -626,29 +627,34 @@ async def test_not_getting_trackers_when_skipping_visualization(
     get_trackers.assert_not_called()
 
 
-def test_retry_on_error(monkeypatch: MonkeyPatch):
-    class QuestionaryConfirmMock:
-        def __init__(self, tries: int) -> None:
-            self.tries = tries
+class QuestionaryConfirmMock:
+    def __init__(self, tries: int) -> None:
+        self.tries = tries
 
-        def __call__(self, text: Text) -> "QuestionaryConfirmMock":
-            return self
+    def __call__(self, text: Text) -> "QuestionaryConfirmMock":
+        return self
 
-        def ask(self) -> bool:
-            self.tries -= 1
-            if self.tries == 0:
-                return False
-            else:
-                return True
+    def ask(self) -> bool:
+        self.tries -= 1
+        if self.tries == 0:
+            return False
+        else:
+            return True
 
+
+def test_retry_on_error_success(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
 
     m = Mock(return_value=None)
     interactive._retry_on_error(m, "export_path", 1, a=2)
     m.assert_called_once_with("export_path", 1, a=2)
 
+
+def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
+    monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
+
     m = Mock(side_effect=PermissionError())
     with pytest.raises(PermissionError):
-        await interactive._retry_on_error(m, "export_path", 1, a=2)
-    c = call("export_path", 1, a=2)
+        interactive._retry_on_error(m, "export_path", 1, a=2)
+    c = mock.call("export_path", 1, a=2)
     m.assert_has_calls([c, c, c])
