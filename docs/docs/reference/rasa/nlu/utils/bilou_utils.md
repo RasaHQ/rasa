@@ -146,22 +146,25 @@ Creates BILOU tags for the given tokens and entities.
 #### ensure\_consistent\_bilou\_tagging
 
 ```python
-ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]
+ensure_consistent_bilou_tagging(predicted_tags: List[Text], predicted_confidences: List[float]) -> Tuple[List[Text], List[float]]
 ```
 
 Ensure predicted tags follow the BILOU tagging schema.
 
 We assume that starting B- tags are correct. Followed tags that belong to start
-tag but have a different entity type are updated.
+tag but have a different entity type are updated considering also the confidence
+values of those tags.
 For example, B-a I-b L-a is updated to B-a I-a L-a and B-a I-a O is changed to
 B-a L-a.
 
 **Arguments**:
 
 - `predicted_tags` - predicted tags
+- `predicted_confidences` - predicted confidences
   
 
 **Returns**:
 
   List of tags.
+  List of confidences.
 
