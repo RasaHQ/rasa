@@ -111,7 +111,7 @@ async def load_data_from_files(
 
         reader = _get_reader(story_file, domain, template_variables, use_e2e)
 
-        steps = await reader.read_from_file(story_file)
+        steps = reader.read_from_file(story_file)
         story_steps.extend(steps)
 
     if exclusion_percentage and exclusion_percentage != 100:

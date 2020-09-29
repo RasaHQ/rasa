@@ -21,6 +21,7 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
+    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -603,7 +604,9 @@ class TrainingData:
             example
             for example in self.training_examples
             if not example.get(ACTION_NAME)
+            and not example.get(ACTION_TEXT)
             and not (example.get(INTENT) and not example.get(TEXT))
+            and not (example.get(TEXT) and not example.get(INTENT))
         ]
 
 
