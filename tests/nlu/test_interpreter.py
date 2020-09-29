@@ -21,6 +21,12 @@ from tests.nlu import utilities
 async def test_interpreter_on_pipeline_templates(
     pipeline_template, component_builder, tmpdir
 ):
+    if pipeline_template == "pretrained_embeddings_convert":
+        # TODO
+        #   skip test as the ConveRT model is not publicly available anymore
+        #   (see https://github.com/RasaHQ/rasa/issues/6806)
+        return
+
     test_data = "data/examples/rasa/demo-rasa.json"
 
     config = utilities.base_test_conf(pipeline_template)
