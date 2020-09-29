@@ -148,7 +148,7 @@ class FormPolicy(MemoizationPolicy):
 
                 if tracker.active_loop.get(LOOP_REJECTED):
                     if self.state_is_unhappy(tracker, domain):
-                        tracker.update(LoopInterrupted(False))
+                        tracker.update(LoopInterrupted(True))
                         return result
 
                 result = self._prediction_result(

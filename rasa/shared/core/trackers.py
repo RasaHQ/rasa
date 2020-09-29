@@ -37,9 +37,9 @@ from rasa.shared.core.constants import (
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    LOOP_VALIDATE,
     LOOP_REJECTED,
     TRIGGER_MESSAGE,
+    LOOP_INTERRUPTED,
 )
 from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.shared.core.events import (  # pytype: disable=pyi-error
@@ -255,7 +255,7 @@ class DialogueStateTracker:
         if loop_name is not None:
             self.active_loop = {
                 LOOP_NAME: loop_name,
-                LOOP_VALIDATE: True,
+                LOOP_INTERRUPTED: False,
                 LOOP_REJECTED: False,
                 TRIGGER_MESSAGE: self.latest_message.parse_data,
             }
@@ -271,12 +271,12 @@ class DialogueStateTracker:
         )
         self.change_loop_to(form_name)
 
-    def interrupt_loop(self, validate: bool) -> None:
-        """Toggle loop validation.
+    def interrupt_loop(self, is_interrupted: bool) -> None:
+        """Interrupt loop and mark that we entered an unhappy path in the conversation.
         Args:
-            validate: `False` if the loop was run after an unhappy path.
+            is_interrupted: `True` if the loop was run after an unhappy path.
         """
-        self.active_loop["validate"] = validate
+        self.active_loop[LOOP_INTERRUPTED] = is_interrupted
 
     def set_form_validation(self, validate: bool) -> None:
         rasa.shared.utils.io.raise_warning(
@@ -285,7 +285,8 @@ class DialogueStateTracker:
             "instead.",
             category=DeprecationWarning,
         )
-        self.interrupt_loop(validate)
+        # `validate = True` means `is_interrupted = False`
+        self.interrupt_loop(not validate)
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected"""
@@ -299,7 +300,7 @@ class DialogueStateTracker:
         self.latest_action = action
         if self.active_loop_name:
             # reset form validation if some loop is active
-            self.active_loop[LOOP_VALIDATE] = True
+            self.active_loop[LOOP_INTERRUPTED] = False
 
         if action.get(ACTION_NAME) == self.active_loop_name:
             # reset loop rejection if it was predicted again

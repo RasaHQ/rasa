@@ -15,10 +15,10 @@ from typing import Union
 
 from rasa.shared.core.constants import (
     LOOP_NAME,
-    LOOP_VALIDATE,
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     IS_EXTERNAL,
+    LOOP_INTERRUPTED,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -1258,21 +1258,24 @@ class LoopInterrupted(Event):
 
     def __init__(
         self,
-        validate: bool,
+        is_interrupted: bool,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
-        self.validate = validate
         super().__init__(timestamp, metadata)
+        self.is_interrupted = is_interrupted
 
     def __str__(self) -> Text:
-        return f"{LoopInterrupted.__name__}({self.validate})"
+        return f"{LoopInterrupted.__name__}({self.is_interrupted})"
 
     def __hash__(self) -> int:
-        return hash(self.validate)
+        return hash(self.is_interrupted)
 
     def __eq__(self, other) -> bool:
-        return isinstance(other, LoopInterrupted)
+        return (
+            isinstance(other, LoopInterrupted)
+            and self.is_interrupted == other.is_interrupted
+        )
 
     def as_story_string(self) -> None:
         return None
@@ -1280,28 +1283,47 @@ class LoopInterrupted(Event):
     @classmethod
     def _from_parameters(cls, parameters) -> "LoopInterrupted":
         return LoopInterrupted(
-            parameters.get(LOOP_VALIDATE),
+            parameters.get(LOOP_INTERRUPTED, False),
             parameters.get("timestamp"),
             parameters.get("metadata"),
         )
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update({LOOP_VALIDATE: self.validate})
+        d.update({LOOP_INTERRUPTED: self.is_interrupted})
         return d
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker.set_form_validation(self.validate)
+        tracker.interrupt_loop(self.is_interrupted)
 
 
 class LegacyFormValidation(LoopInterrupted):
     """Legacy handler of old `FormValidation` events.
+
     The `LoopInterrupted` event used to be called `FormValidation`. This class is there
     to handle old legacy events which were stored with the old type name
     `form_validation`.
     """
 
     type_name = "form_validation"
+
+    def __init__(
+        self,
+        validate: bool,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        # `validate = True` is the same as `interrupted = False`
+        super().__init__(not validate, timestamp, metadata)
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict) -> "LoopInterrupted":
+        return LoopInterrupted(
+            # `validate = True` means `is_interrupted = False`
+            not parameters.get("validate", True),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()

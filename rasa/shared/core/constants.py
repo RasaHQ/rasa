@@ -51,7 +51,7 @@ SHOULD_NOT_BE_SET = "should_not_be_set"
 
 PREVIOUS_ACTION = "prev_action"
 ACTIVE_LOOP = "active_loop"
-LOOP_VALIDATE = "validate"
+LOOP_INTERRUPTED = "is_interrupted"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"
 

@@ -16,6 +16,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     LOOP_NAME,
     REQUESTED_SLOT,
+    LOOP_INTERRUPTED,
 )
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
@@ -1144,10 +1145,10 @@ def test_reading_of_trackers_with_legacy_form_validation_events():
     expected_events = [LegacyFormValidation(True), LegacyFormValidation(False)]
     actual_events = list(tracker.events)
     assert list(tracker.events) == expected_events
-    assert actual_events[0].validate
-    assert not actual_events[1].validate
+    assert not actual_events[0].is_interrupted
+    assert actual_events[1].is_interrupted
 
-    assert not tracker.active_loop.get("validate")
+    assert tracker.active_loop[LOOP_INTERRUPTED]
 
 
 def test_writing_trackers_with_legacy_for_validation_events():
@@ -1160,8 +1161,8 @@ def test_writing_trackers_with_legacy_for_validation_events():
     for event in events_as_dict:
         assert event["event"] == LoopInterrupted.type_name
 
-    assert events_as_dict[0]["validate"]
-    assert not events_as_dict[1]["validate"]
+    assert not events_as_dict[0][LOOP_INTERRUPTED]
+    assert events_as_dict[1][LOOP_INTERRUPTED]
 
 
 @pytest.mark.parametrize("validate", [True, False])
@@ -1171,4 +1172,4 @@ def test_set_form_validation_deprecation_warning(validate: bool):
     with pytest.warns(DeprecationWarning):
         tracker.set_form_validation(validate)
 
-    assert tracker.active_loop["validate"] == validate
+    assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)

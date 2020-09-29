@@ -601,7 +601,7 @@ class RulePolicy(MemoizationPolicy):
 
             if DO_NOT_VALIDATE_LOOP in unhappy_path_conditions:
                 logger.debug("Added `FormValidation(False)` event.")
-                tracker.update(LoopInterrupted(False))
+                tracker.update(LoopInterrupted(True))
 
         if predicted_action_name is not None:
             logger.debug(
