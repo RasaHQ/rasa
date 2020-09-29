@@ -647,7 +647,10 @@ class RasaModelData:
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
-                    final_data[key][sub_key].append(np.concatenate(np.array(f)))
+                    if RasaModelData._is_in_4d_format(f[0]):
+                        final_data[key][sub_key].append([__f for _f in f for __f in _f])
+                    else:
+                        final_data[key][sub_key].append(np.concatenate(np.array(f)))
 
         return final_data
 
@@ -919,6 +922,7 @@ class RasaModelData:
                 ],
                 dtype=array_of_array_of_dense[0][0].dtype,
             )
+
             for i, array_of_dense in enumerate(array_of_array_of_dense):
                 for j, dense in enumerate(array_of_dense):
                     data_padded[i, j, : dense.shape[0], :] = dense

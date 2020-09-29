@@ -40,75 +40,50 @@ async def model_data() -> RasaModelData:
                 "sequence": [
                     [
                         [
-                            np.array(
-                                [
-                                    np.random.rand(1, 14),
-                                    np.random.rand(5, 14),
-                                    np.random.rand(2, 14),
-                                    np.random.rand(7, 14),
-                                ]
-                            ),
-                            np.array(
-                                [
-                                    np.random.rand(1, 14),
-                                    np.random.rand(3, 14),
-                                ]
-                            ),
-                            np.array([np.random.rand(2, 14),]),
-                            np.array([np.random.rand(1, 14),]),
-                            np.array(
-                                [
-                                    np.random.rand(1, 14),
-                                    np.random.rand(4, 14),
-                                ]
-                            ),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
                         ],
                         [
-                            np.array([np.random.rand(2, 14),]),
-                            np.array(
-                                [
-                                    np.random.rand(1, 14),
-                                    np.random.rand(5, 14),
-                                    np.random.rand(7, 14),
-                                ]
-                            ),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
                         ],
                         [
-                            np.array(
-                                [
-                                    np.random.rand(1, 14),
-                                    np.random.rand(5, 14),
-                                ]
-                            ),
-                            np.array([np.random.rand(1, 14),]),
-                            np.array(
-                                [
-                                    np.random.rand(1, 14),
-                                    np.random.rand(5, 14),
-                                ]
-                            ),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
                         ],
-                        [np.array([np.random.rand(2, 14),]),],
+                        [scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),],
                         [
-                            np.array([np.random.rand(2, 14),]),
-                            np.array(
-                                [
-                                    np.random.rand(1, 14),
-                                    np.random.rand(5, 14),
-                                    np.random.rand(7, 14),
-                                ]
-                            ),
-                            np.array(
-                                [
-                                    np.random.rand(1, 14),
-                                    np.random.rand(5, 14),
-                                    np.random.rand(5, 14),
-                                    np.random.rand(7, 14),
-                                ]
-                            ),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
+                            scipy.sparse.csr_matrix(np.random.randint(5, size=(7, 10))),
                         ],
-                    ]
-                ],
+                    ],
+                    [
+                        [
+                            np.random.rand(5, 14),
+                            np.random.rand(2, 14),
+                            np.random.rand(3, 14),
+                            np.random.rand(1, 14),
+                            np.random.rand(3, 14),
+                        ],
+                        [np.random.rand(5, 14), np.random.rand(2, 14),],
+                        [
+                            np.random.rand(5, 14),
+                            np.random.rand(1, 14),
+                            np.random.rand(3, 14),
+                        ],
+                        [np.random.rand(3, 14),],
+                        [
+                            np.random.rand(3, 14),
+                            np.random.rand(1, 14),
+                            np.random.rand(7, 14),
+                        ],
+                    ],
+                ]
             },
             "dialogue": {
                 "sentence": [
@@ -168,6 +143,11 @@ def test_split_data_by_label(model_data: RasaModelData):
     for s in split_model_data:
         assert len(set(s.get("label", "ids")[0])) == 1
 
+    for key, attribute_data in split_model_data[0].items():
+        for sub_key, features in attribute_data.items():
+            assert len(features) == len(model_data.data[key][sub_key])
+            assert len(features[0]) == 2
+
 
 def test_split_data_by_none_label(model_data: RasaModelData):
     model_data.label_key = None
@@ -197,7 +177,10 @@ def test_train_val_split(model_data: RasaModelData):
             assert len(data) == len(test_model_data.get(key, sub_key))
             for i, v in enumerate(data):
                 if isinstance(v[0], list):
-                    assert v[0][0].dtype == train_model_data.get(key, sub_key)[i][0][0].dtype
+                    assert (
+                        v[0][0].dtype
+                        == train_model_data.get(key, sub_key)[i][0][0].dtype
+                    )
                 else:
                     assert v[0].dtype == train_model_data.get(key, sub_key)[i][0].dtype
 
@@ -252,17 +235,17 @@ def test_get_number_of_examples_raises_value_error(model_data: RasaModelData):
 
 def test_gen_batch(model_data: RasaModelData):
     iterator = model_data._gen_batch(2, shuffle=True, batch_strategy="balanced")
-    print(model_data.data["entities"]["tag_ids"][0])
+
     batch = next(iterator)
-    assert len(batch) == 7
+    assert len(batch) == 11
     assert len(batch[0]) == 2
 
     batch = next(iterator)
-    assert len(batch) == 7
+    assert len(batch) == 11
     assert len(batch[0]) == 2
 
     batch = next(iterator)
-    assert len(batch) == 7
+    assert len(batch) == 11
     assert len(batch[0]) == 1
 
     with pytest.raises(StopIteration):
@@ -270,8 +253,13 @@ def test_gen_batch(model_data: RasaModelData):
 
 
 def test_is_in_4d_format(model_data: RasaModelData):
-    assert RasaModelData._is_in_4d_format(model_data.data["action_text"]["sequence"][0]) == True
-    assert RasaModelData._is_in_4d_format(model_data.data["text"]["sentence"][0]) == False
+    assert (
+        RasaModelData._is_in_4d_format(model_data.data["action_text"]["sequence"][0])
+        == True
+    )
+    assert (
+        RasaModelData._is_in_4d_format(model_data.data["text"]["sentence"][0]) == False
+    )
 
 
 def test_balance_model_data(model_data: RasaModelData):
