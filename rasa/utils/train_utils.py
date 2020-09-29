@@ -80,7 +80,10 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
 
 def align_tokens(
-        tokens_in: List[Text], token_end: int, token_start: int, unk_token: str
+    tokens_in: List[Text],
+    token_end: int,
+    token_start: int,
+    unk_token: Optional[Text] = None,
 ) -> List[Token]:
     """Align sub-tokens of Language model with tokens return by the WhitespaceTokenizer.
 
@@ -95,7 +98,7 @@ def align_tokens(
     current_token_offset = token_start
 
     for index, string in enumerate(tokens_in):
-        string_len = len(string) if string != unk_token else 1
+        string_len = len(string) if unk_token is None or string != unk_token else 1
 
         if index == 0:
             if index == len(tokens_in) - 1:
