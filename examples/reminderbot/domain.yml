@@ -17,7 +17,8 @@ entities:
 - plant
 slots:
   PERSON:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
 responses:
   utter_what_can_do:
   - text: What can I do for you?
