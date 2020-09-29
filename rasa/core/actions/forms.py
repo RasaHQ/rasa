@@ -259,17 +259,15 @@ class FormAction(LoopAction):
         """
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
-        entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
-            slot_to_fill, domain
-        )
-
         slot_values = {}
         for slot in self.required_slots(domain):
             # look for other slots
             if slot != slot_to_fill:
                 # list is used to cover the case of list slot type
                 slot_mappings = self.get_mappings_for_slot(slot, domain)
-
+                entity_type_of_slot = self._get_entity_type_of_slot_to_fill(
+                    slot, domain
+                )
                 for slot_mapping in slot_mappings:
                     # check whether the slot should be filled by an entity in the input
                     should_fill_entity_slot = (
@@ -278,7 +276,7 @@ class FormAction(LoopAction):
                         and self.entity_is_desired(
                             slot_mapping,
                             slot,
-                            entity_type_of_slot_to_fill,
+                            entity_type_of_slot,
                             tracker,
                             domain,
                         )
