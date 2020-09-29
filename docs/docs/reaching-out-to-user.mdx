@@ -70,7 +70,7 @@ which includes both reminders and external events.
 
 To have an event from an external device change the course of an ongoing conversation, you can
 have the device post to the
-[`trigger_intent` endpoint](./http-api.mdx#operation/triggerConversationIntent) of your conversation.
+[`trigger_intent` endpoint](/pages/http-api#operation/triggerConversationIntent) of your conversation.
 The `trigger_intent` endpoint injects a user intent (possibly with entities) into your conversation.
 For Rasa, it is as if you entered a message that got classified with that specific intent and entities.
 The assistant will then predict and execute the next action as usual.
@@ -150,7 +150,7 @@ The response will use the value from the slot `plant` to warn about the specific
 ### Try it out
 
 To try out the dry plant notification example, you'll need to start either [Rasa X](https://rasa.com/docs/rasa-x/)
-or a [CallbackChannel](./connectors/your-own-website.mdx#callbackchannel).
+or a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
 
 :::caution
 External Events and Reminders don't work in request-response channels like the `rest` channel or `rasa shell`.
@@ -296,7 +296,7 @@ POST request to the `trigger_intent` endpoint. Reminders, however, send
 the request to the right conversation ID automatically after a certain amount of time using
 the name that you define in the `ReminderScheduled` event.
 
-To define a reaction to the reminder, you only need to write a [rule](#rules) that
+To define a reaction to the reminder, you only need to write a [rule](./rules.mdx) that
 tells the bot what action to take when it receives the reminder intent.
 
 In the call reminder example, you want to use the entities that come with the
@@ -428,7 +428,7 @@ intents:
 ### Try it Out
 
 To try out reminders you'll need to start either [Rasa X](https://rasa.com/docs/rasa-x/)
-or a [CallbackChannel](./connectors/your-own-website.mdx#callbackchannel).
+or a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
 You'll also need to start the action server to schedule, react to, and cancel your reminders.
 See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot) for details.
 

@@ -51,6 +51,7 @@ class StoryReader:
         self.use_e2e = use_e2e
         self.source_name = source_name
         self.unfold_or_utterances = unfold_or_utterances
+        self._is_parsing_conditions = False
 
     def read_from_file(self, filename: Text) -> List[StoryStep]:
         raise NotImplementedError
@@ -91,7 +92,10 @@ class StoryReader:
 
         for p in parsed_events:
             _map_legacy_event_names(p)
-            self.current_step_builder.add_event(p)
+            if self._is_parsing_conditions:
+                self.current_step_builder.add_event_as_condition(p)
+            else:
+                self.current_step_builder.add_event(p)
 
     def _add_checkpoint(
         self, name: Text, conditions: Optional[Dict[Text, Any]]
