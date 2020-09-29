@@ -42,6 +42,11 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         )
 
         reader = MarkdownStoryReader(unfold_or_utterances=False)
+
+        # check if source file is test story file
+        if reader.is_markdown_test_stories_file(source_path):
+            reader.use_e2e = True
+
         writer = YAMLStoryWriter()
 
         steps = reader.read_from_file(source_path)
