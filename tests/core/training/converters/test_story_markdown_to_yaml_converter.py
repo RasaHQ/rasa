@@ -82,7 +82,7 @@ async def test_test_stories(tmpdir: Path):
 
     training_data_folder = tmpdir / "data/core"
     os.makedirs(training_data_folder, exist_ok=True)
-    training_data_file = Path(training_data_folder / "stories.md")
+    training_data_file = Path(training_data_folder / "test_stories.md")
 
     simple_story_md = """
     ## ask product
@@ -95,13 +95,14 @@ async def test_test_stories(tmpdir: Path):
     with open(training_data_file, "w") as f:
         f.write(simple_story_md)
 
-    M.read_from_file(filename=training_data_file)
+    reader = MarkdownStoryReader()
 
-    assert M.use_e2e is True
+    reader.read_from_file(filename=training_data_file)
 
     await StoryMarkdownToYamlConverter().convert_and_write(
         training_data_file, converted_data_folder
     )
+    assert reader.use_e2e
 
     assert len(os.listdir(converted_data_folder)) == 1
 
