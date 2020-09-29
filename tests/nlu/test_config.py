@@ -58,10 +58,9 @@ def test_invalid_many_tokenizers_in_config():
     "_config",
     [
         {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyFeaturizer"}]},
-        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "ConveRTFeaturizer"}]},
         {
             "pipeline": [
-                {"name": "ConveRTTokenizer"},
+                {"name": "WhitespaceTokenizer"},
                 {"name": "LanguageModelFeaturizer"},
             ]
         },
