@@ -131,6 +131,50 @@ async def test_activate_and_immediate_deactivate():
     ]
 
 
+async def test_set_slot_from_trigger_intent():
+    form_name = "my form"
+    slot_name = "liked_animal"
+    slot_value = "dog"
+    events = [
+        ActiveLoop(form_name),
+        SlotSet(REQUESTED_SLOT, None),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "dummy",
+            {"name": "greet"},
+            entities=[{"entity": "animal", "value": slot_value, "role": "liked"}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
+
+    domain = f"""
+    forms:
+      {form_name}:
+        {slot_name}:
+        - type: from_entity
+          role: liked
+          entity: animal
+
+    slots:
+      {slot_name}:
+        type: text
+    """
+    domain = Domain.from_yaml(domain)
+
+    action = FormAction(form_name, None)
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.templates),
+        tracker,
+        domain,
+    )
+    assert events == [
+        SlotSet(slot_name, slot_value),
+        SlotSet(REQUESTED_SLOT, None),
+        ActiveLoop(None),
+    ]
+
+
 async def test_set_slot_and_deactivate():
     form_name = "my form"
     slot_name = "num_people"
