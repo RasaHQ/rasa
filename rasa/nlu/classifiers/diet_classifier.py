@@ -874,7 +874,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             tags = [tag_spec.ids_to_tags[p] for p in predictions[0]]
 
             if self.component_config[BILOU_FLAG]:
-                tags = bilou_utils.ensure_consistent_bilou_tagging(tags)
+                tags, confidences = bilou_utils.ensure_consistent_bilou_tagging(
+                    tags, confidences
+                )
 
             predicted_tags[tag_spec.tag_name] = tags
             confidence_values[tag_spec.tag_name] = confidences
