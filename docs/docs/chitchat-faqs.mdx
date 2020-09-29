@@ -11,26 +11,27 @@ no matter what has happened previously in the conversation.
 For example, in the following conversation, every question can be asked at any point in the conversation,
 with the answer being independent of anything the user has said previously.
 
-```yaml
-User: What's your name
-  Bot: My name is Sara!
-User: Which languages can I build assistants in?
-  Bot: You can use Rasa to build assistants in any language you want!
-User: What’s Rasa X?
-  Bot: Rasa X is a tool to learn from real conversations and improve your assistant.
-```
+<Chat caption="Chitchat">
+<ChatUserText>What's your name</ChatUserText>
+<ChatBotText>My name is Sara!</ChatBotText>
+<ChatUserText>Which languages can I build assistants in?</ChatUserText>
+<ChatBotText>You can use Rasa to build assistants in any language you want!</ChatBotText>
+<ChatUserText>What’s Rasa X?</ChatUserText>
+<ChatBotText>Rasa X is a tool to learn from real conversations and improve your assistant.</ChatBotText>
+</Chat>
 
 
-## Step-by-step Guide on Using Retrieval Actions for FAQs and Chitchat
+## Step-by-step Guide on Using Response Selector for FAQs and Chitchat
 
-To handle FAQs and chitchat you'll need a rule-based dialogue management policy (the [RulePolicy](#rulepolicy)) and an easy way
-to return the appropriate response for a question (the [ResponseSelector](#retrieval-actions-and-responseselector)).
+To handle FAQs and chitchat you'll need a rule-based dialogue management policy
+(the [RulePolicy](./policies.mdx#rule-policy)) and an easy way
+to return the appropriate response for a question (the [ResponseSelector](./components.mdx#responseselector)).
 
 ### 1. Updating the configuration
 
 For FAQs and chitchat, you always want the assistant to respond the same way every time
 the same type of question is asked. [Rules](rules.mdx) allow you to do exactly that.
-To use rules, the you need to add the [RulePolicy](#rule-policy) to your policies in your configuration file:
+To use rules, the you need to add the [RulePolicy](./policies.mdx#rule-policy) to your policies in your configuration file:
 
 ```yaml-rasa
 policies:
@@ -38,7 +39,7 @@ policies:
 - name: RulePolicy
 ```
 
-To use retrieval actions, include the ResponseSelector in your NLU pipeline in your configuration file.
+Next, include the ResponseSelector in your NLU pipeline in your configuration file.
 The ResponseSelector requires a featurizer and intent classifier to work, so
 it should come after these components in your pipeline, for example:
 
@@ -76,16 +77,15 @@ pipeline:
 
 
 
-### 2. Defining Retrieval Actions and the `ResponseSelector
+### 2. Defining Retrieval Intents and the ResponseSelector
 
 Consider an example where you have 20 different FAQs. Although each question is represented as an individual intent, all FAQ intents are handled the same way in the dialogue. For each FAQ intent, the assistant **retrieves** the proper response depending on which question has been asked.
 
-Instead of writing 20 rules, you can use [retrieval
-actions](retrieval-actions.mdx) to handle all FAQs with a single rule by grouping them together under a single [retrieval intent](glossary.mdx#retrieval-intent)
+Instead of writing 20 rules, you can use a single action, e.g. `utter_faq` to handle all FAQs with a single rule by grouping them together under a single [retrieval intent](glossary.mdx#retrieval-intent)
 called e.g. `faq`.
 
-The retrieval action uses the output of the
-[ResponseSelector](./components.mdx#response-selector) to return
+The single action uses the output of the
+[ResponseSelector](./components.mdx#responseselector) to return
 the correct response for the specific FAQ that the user asked.
 
 
@@ -93,7 +93,7 @@ the correct response for the specific FAQ that the user asked.
 
 You need to write only one rule for each retrieval intent. All intents
 grouped under that retrieval intent will then be handled the same way.
-The retrieval action starts with `respond_` and ends with the retrieval intent's name.
+The action name starts with `utter_` and ends with the retrieval intent's name.
 Write rules for responding to FAQs and chitchat:
 
 ```yaml-rasa
@@ -101,14 +101,14 @@ rules:
   - rule: respond to FAQs
     steps:
     - intent: faq
-    - action: respond_faq
+    - action: utter_faq
   - rule: respond to chitchat
     steps:
     - intent: chitchat
-    - action: respond_chitchat
+    - action: utter_chitchat
 ```
 
-The actions `respond_faq` and `respond_chitchat` will use the ResponseSelector`'s prediction to return the actual response message.
+The actions `utter_faq` and `utter_chitchat` will use the ResponseSelector`'s prediction to return the actual response message.
 
 ### 4. Updating the NLU Training Data
 
@@ -145,7 +145,7 @@ intents:
 
 Responses for the ResponseSelector follow the same naming convention as
 retrieval intents. Besides this, they can have all the characteristics of
-normal bot [response](domain.mdx#responses). For the FAQs and chitchat intents
+normal bot [response](domain.mdx#responses). For the chitchat intents
 listed above, our responses could look like:
 
 ```yaml-rasa
