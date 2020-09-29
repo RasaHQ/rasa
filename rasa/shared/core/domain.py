@@ -2,7 +2,6 @@ import copy
 import collections
 import json
 import logging
-import typing
 import os
 from typing import (
     Any,
@@ -14,6 +13,7 @@ from typing import (
     Text,
     Tuple,
     Union,
+    NoReturn,
     TYPE_CHECKING,
 )
 from pathlib import Path
@@ -597,7 +597,7 @@ class Domain:
         except ValueError:
             self.raise_action_not_found_exception(action_name)
 
-    def raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
+    def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
             f"Cannot access action '{action_name}', "
