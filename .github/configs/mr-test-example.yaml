@@ -20,12 +20,12 @@
 #
 ## Example: Use all available configurations for the "Carbon Bot" and "Sara" datasets
 ## and for the "Hermit" dataset use the "Sparse + DIET + ResponseSelector(T2T)" and
-## "Sparse + ConveRT + DIET + ResponseSelector(T2T)" configurations:
+## "BERT + DIET + ResponseSelector(T2T)" configurations:
 ## include:
 ##  - dataset: ["Carbon Bot", "Sara"]
 ##    config: ["all"]
 ##  - dataset: ["Hermit"]
-##    config: ["Sparse + DIET(seq) + ResponseSelector(t2t)", "Sparse + ConveRT + DIET(seq) + ResponseSelector(t2t)"]
+##    config: ["Sparse + DIET(seq) + ResponseSelector(t2t)", "BERT + DIET(seq) + ResponseSelector(t2t)"]
 
 include:
   - dataset: ["Carbon Bot"]
