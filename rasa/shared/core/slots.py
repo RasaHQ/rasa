@@ -19,7 +19,7 @@ class Slot:
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
-        unfeaturized: bool = True,
+        influence_conversation: bool = True,
     ) -> None:
         """Create a Slot.
 
@@ -30,15 +30,15 @@ class Slot:
                 initial_value. This is behavior is currently not implemented.
             auto_fill: `True` if the slot should be filled automatically by entities
                 with the same name.
-            unfeaturized: If `True` the slot will not be featurized and hence not affect
-                the predictions of dialogue polices.
+            influence_conversation: If `True` the slot will be featurized and hence
+                influence the predictions of the dialogue polices.
         """
         self.name = name
         self.value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
         self.auto_fill = auto_fill
-        self.unfeaturized = unfeaturized
+        self.influence_conversation = influence_conversation
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
@@ -47,7 +47,7 @@ class Slot:
             The number of features. `0` if the slot is unfeaturized. The dimensionality
             of the array returned by `as_feature` needs to correspond to this value.
         """
-        if self.unfeaturized:
+        if not self.influence_conversation:
             return 0
 
         return self._feature_dimensionality()
@@ -74,7 +74,7 @@ class Slot:
         return self._value_reset_delay
 
     def as_feature(self) -> List[float]:
-        if self.unfeaturized:
+        if not self.influence_conversation:
             return []
 
         return self._as_feature()
@@ -135,10 +135,10 @@ class FloatSlot(Slot):
         auto_fill: bool = True,
         max_value: float = 1.0,
         min_value: float = 0.0,
-        unfeaturized: bool = False,
+        influence_conversation: bool = False,
     ) -> None:
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, unfeaturized
+            name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -243,9 +243,9 @@ class UnfeaturizedSlot(Slot):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
-        unfeaturized: bool = True,
+        influence_conversation: bool = False,
     ) -> None:
-        if not unfeaturized:
+        if influence_conversation:
             raise ValueError(
                 f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
                 f"Please use a different slot type instead. See the "
@@ -262,7 +262,7 @@ class UnfeaturizedSlot(Slot):
         )
 
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, unfeaturized
+            name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
 
     def _as_feature(self) -> List[float]:
@@ -282,10 +282,10 @@ class CategoricalSlot(Slot):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
-        unfeaturized: bool = False,
+        influence_conversation: bool = False,
     ) -> None:
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, unfeaturized
+            name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
         self.values = [str(v).lower() for v in values] if values else []
 
@@ -350,15 +350,15 @@ class AnySlot(Slot):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
-        unfeaturized: bool = True,
+        influence_conversation: bool = False,
     ) -> None:
-        if not unfeaturized:
+        if influence_conversation:
             raise ValueError(
-                f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
+                f"An {AnySlot.__name__} cannot be featurized. "
                 f"Please use a different slot type instead. See the "
                 f"documentation for more information: {DOCS_URL_SLOTS}"
             )
 
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, unfeaturized
+            name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )

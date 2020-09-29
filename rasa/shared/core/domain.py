@@ -959,7 +959,7 @@ class Domain:
         Excludes slots which aren't featurized.
         """
 
-        return [s.name for s in self.slots if not s.unfeaturized]
+        return [s.name for s in self.slots if s.influence_conversation]
 
     @property
     def _actions_for_domain_warnings(self) -> List[Text]:
