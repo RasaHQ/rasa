@@ -71,11 +71,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             # clean tokens (remove special chars and empty tokens)
             split_token_strings = self._clean_tokens(split_token_strings)
 
-            # ConverRT models are removed from official github repo
-            # (https://github.com/RasaHQ/rasa/issues/6806),
-            # so here we pass a fake UNK token for pass the test for now
             tokens_out += train_utils.align_tokens(
-                split_token_strings, token_end, token_start, ""
+                split_token_strings, token_end, token_start
             )
 
         return tokens_out
