@@ -17,12 +17,12 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.core.constants import (
-    USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
+    USER_INTENT_REJECT_SUGGESTION,
 )
 from rasa.utils.endpoints import EndpointConfig
 
@@ -85,7 +85,7 @@ class TwoStageFallbackAction(LoopAction):
     ) -> bool:
         _user_clarified = _last_intent_name(tracker) not in [
             DEFAULT_NLU_FALLBACK_INTENT_NAME,
-            USER_INTENT_OUT_OF_SCOPE,
+            USER_INTENT_REJECT_SUGGESTION,
         ]
         return (
             _user_clarified
@@ -187,9 +187,9 @@ def _user_should_affirm(
 
 def _second_affirmation_failed(tracker: DialogueStateTracker) -> bool:
     return _last_n_intent_names(tracker, 3) == [
-        USER_INTENT_OUT_OF_SCOPE,
+        USER_INTENT_REJECT_SUGGESTION,
         DEFAULT_NLU_FALLBACK_INTENT_NAME,
-        USER_INTENT_OUT_OF_SCOPE,
+        USER_INTENT_REJECT_SUGGESTION,
     ]
 
 

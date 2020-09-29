@@ -330,6 +330,7 @@ entities:
 - cuisine
 intents:
 - greet
+- out_of_scope
 slots:
   cuisine:
     type: text
@@ -350,7 +351,7 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     # lists should be deduplicated and merged
-    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
+    assert domain.intents == sorted(["greet", "out_of_scope", *DEFAULT_INTENTS])
     assert domain.entities == ["cuisine"]
     assert isinstance(domain.slots[0], TextSlot)
     assert domain.slots[0].name == "cuisine"
@@ -366,44 +367,6 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     assert domain.session_config == SessionConfig(20, True)
-
-
-def test_merge_yaml_domains_test():
-    test_yaml_1 = """
-config:
-  store_entities_as_slots: true
-entities: []
-intents: []
-slots: {}
-responses:
-  utter_greet:
-  - text: hey there!"""
-
-    test_yaml_2 = """
-config:
-  store_entities_as_slots: false
-session_config:
-    session_expiration_time: 20
-    carry_over_slots: true
-entities:
-- cuisine
-intents:
-- greet
-- out_of_scope
-slots:
-  cuisine:
-    type: text
-responses:
-  utter_goodbye:
-  - text: bye!
-  utter_greet:
-  - text: hey you!"""
-
-    domain_1 = Domain.from_yaml(test_yaml_1)
-    domain_2 = Domain.from_yaml(test_yaml_2)
-    domain = domain_1.merge(domain_2)
-
-    print(domain.as_yaml())
 
 
 def test_merge_session_config_if_first_is_not_default():
