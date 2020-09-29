@@ -11,10 +11,10 @@ from rasa.utils.tensorflow.model_data import RasaModelData
 @pytest.fixture
 async def model_data() -> RasaModelData:
     return RasaModelData(
-        label_key="intent",
+        label_key="label",
         label_sub_key="ids",
         data={
-            "text_features": {
+            "text": {
                 "sentence": [
                     np.array(
                         [
@@ -36,7 +36,81 @@ async def model_data() -> RasaModelData:
                     ),
                 ]
             },
-            "intent_features": {
+            "action_text": {
+                "sequence": [
+                    [
+                        [
+                            np.array(
+                                [
+                                    np.random.rand(1, 14),
+                                    np.random.rand(5, 14),
+                                    np.random.rand(2, 14),
+                                    np.random.rand(7, 14),
+                                ]
+                            ),
+                            np.array(
+                                [
+                                    np.random.rand(1, 14),
+                                    np.random.rand(3, 14),
+                                ]
+                            ),
+                            np.array([np.random.rand(2, 14),]),
+                            np.array([np.random.rand(1, 14),]),
+                            np.array(
+                                [
+                                    np.random.rand(1, 14),
+                                    np.random.rand(4, 14),
+                                ]
+                            ),
+                        ],
+                        [
+                            np.array([np.random.rand(2, 14),]),
+                            np.array(
+                                [
+                                    np.random.rand(1, 14),
+                                    np.random.rand(5, 14),
+                                    np.random.rand(7, 14),
+                                ]
+                            ),
+                        ],
+                        [
+                            np.array(
+                                [
+                                    np.random.rand(1, 14),
+                                    np.random.rand(5, 14),
+                                ]
+                            ),
+                            np.array([np.random.rand(1, 14),]),
+                            np.array(
+                                [
+                                    np.random.rand(1, 14),
+                                    np.random.rand(5, 14),
+                                ]
+                            ),
+                        ],
+                        [np.array([np.random.rand(2, 14),]),],
+                        [
+                            np.array([np.random.rand(2, 14),]),
+                            np.array(
+                                [
+                                    np.random.rand(1, 14),
+                                    np.random.rand(5, 14),
+                                    np.random.rand(7, 14),
+                                ]
+                            ),
+                            np.array(
+                                [
+                                    np.random.rand(1, 14),
+                                    np.random.rand(5, 14),
+                                    np.random.rand(5, 14),
+                                    np.random.rand(7, 14),
+                                ]
+                            ),
+                        ],
+                    ]
+                ],
+            },
+            "dialogue": {
                 "sentence": [
                     np.array(
                         [
@@ -49,7 +123,7 @@ async def model_data() -> RasaModelData:
                     )
                 ]
             },
-            "intent": {"ids": [np.array([0, 1, 0, 1, 1])]},
+            "label": {"ids": [np.array([0, 1, 0, 1, 1])]},
             "entities": {
                 "tag_ids": [
                     np.array(
@@ -87,12 +161,12 @@ def test_shuffle_session_data(model_data: RasaModelData):
 
 def test_split_data_by_label(model_data: RasaModelData):
     split_model_data = model_data._split_by_label_ids(
-        model_data.data, model_data.get("intent", "ids")[0], np.array([0, 1])
+        model_data.data, model_data.get("label", "ids")[0], np.array([0, 1])
     )
 
     assert len(split_model_data) == 2
     for s in split_model_data:
-        assert len(set(s.get("intent", "ids")[0])) == 1
+        assert len(set(s.get("label", "ids")[0])) == 1
 
 
 def test_split_data_by_none_label(model_data: RasaModelData):
@@ -107,9 +181,9 @@ def test_split_data_by_none_label(model_data: RasaModelData):
     test_data = split_model_data[1]
 
     # train data should have 3 examples
-    assert len(train_data.get("intent", "ids")[0]) == 3
+    assert len(train_data.get("label", "ids")[0]) == 3
     # test data should have 2 examples
-    assert len(test_data.get("intent", "ids")[0]) == 2
+    assert len(test_data.get("label", "ids")[0]) == 2
 
 
 def test_train_val_split(model_data: RasaModelData):
@@ -122,17 +196,20 @@ def test_train_val_split(model_data: RasaModelData):
             assert len(data) == len(train_model_data.get(key, sub_key))
             assert len(data) == len(test_model_data.get(key, sub_key))
             for i, v in enumerate(data):
-                assert v[0].dtype == train_model_data.get(key, sub_key)[i][0].dtype
+                if isinstance(v[0], list):
+                    assert v[0][0].dtype == train_model_data.get(key, sub_key)[i][0][0].dtype
+                else:
+                    assert v[0].dtype == train_model_data.get(key, sub_key)[i][0].dtype
 
     for values in train_model_data.values():
         for data in values.values():
             for v in data:
-                assert v.shape[0] == 3
+                assert np.array(v).shape[0] == 3
 
     for values in test_model_data.values():
         for data in values.values():
             for v in data:
-                assert v.shape[0] == 2
+                assert np.array(v).shape[0] == 2
 
 
 @pytest.mark.parametrize("size", [0, 1, 5])
@@ -147,7 +224,7 @@ def test_session_data_for_ids(model_data: RasaModelData):
     for values in filtered_data.values():
         for data in values.values():
             for v in data:
-                assert v.shape[0] == 2
+                assert np.array(v).shape[0] == 2
 
     key = model_data.keys()[0]
     sub_key = model_data.keys(key)[0]
@@ -192,10 +269,15 @@ def test_gen_batch(model_data: RasaModelData):
         next(iterator)
 
 
+def test_is_in_4d_format(model_data: RasaModelData):
+    assert RasaModelData._is_in_4d_format(model_data.data["action_text"]["sequence"][0]) == True
+    assert RasaModelData._is_in_4d_format(model_data.data["text"]["sentence"][0]) == False
+
+
 def test_balance_model_data(model_data: RasaModelData):
     data = model_data._balanced_data(model_data.data, 2, False)
 
-    assert np.all(data["intent"]["ids"][0] == np.array([0, 1, 1, 0, 1]))
+    assert np.all(data["label"]["ids"][0] == np.array([0, 1, 1, 0, 1]))
 
 
 def test_not_balance_model_data(model_data: RasaModelData):
@@ -211,7 +293,7 @@ def test_not_balance_model_data(model_data: RasaModelData):
 
 
 def test_get_num_of_features(model_data: RasaModelData):
-    num_features = model_data.feature_dimension("text_features", "sentence")
+    num_features = model_data.feature_dimension("text", "sentence")
 
     assert num_features == 24
 
@@ -219,42 +301,40 @@ def test_get_num_of_features(model_data: RasaModelData):
 @pytest.mark.parametrize(
     "incoming_data, expected_shape",
     [
+        (np.random.rand(7, 12), (7, 12)),
+        (np.random.rand(7), (7,)),
         (
-            np.random.rand(7, 12),
-            (7, 12)
-        ),
-        (
-            np.random.rand(7),
-            (7,)
-        ),
-        (
-            np.array([
-                np.random.rand(1, 10),
-                np.random.rand(3, 10),
-                np.random.rand(7, 10),
-                np.random.rand(1, 10)
-            ]),
-            (4, 7, 10)
+            np.array(
+                [
+                    np.random.rand(1, 10),
+                    np.random.rand(3, 10),
+                    np.random.rand(7, 10),
+                    np.random.rand(1, 10),
+                ]
+            ),
+            (4, 7, 10),
         ),
         (
             [
-                np.array([
-                    np.random.rand(1, 10),
-                    np.random.rand(5, 10),
-                    np.random.rand(7, 10),
-                ]),
-                np.array([
-                    np.random.rand(1, 10),
-                    np.random.rand(3, 10),
-                    np.random.rand(3, 10),
-                    np.random.rand(7, 10),
-                ]),
-                np.array([
-                    np.random.rand(2, 10),
-                ])
+                np.array(
+                    [
+                        np.random.rand(1, 10),
+                        np.random.rand(5, 10),
+                        np.random.rand(7, 10),
+                    ]
+                ),
+                np.array(
+                    [
+                        np.random.rand(1, 10),
+                        np.random.rand(3, 10),
+                        np.random.rand(3, 10),
+                        np.random.rand(7, 10),
+                    ]
+                ),
+                np.array([np.random.rand(2, 10),]),
             ],
-            (3, 4, 7, 10)
-        )
+            (3, 4, 7, 10),
+        ),
     ],
 )
 def test_pad_dense_data(
@@ -270,40 +350,46 @@ def test_pad_dense_data(
     [
         (
             np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7, 12)))]),
-            [1, 7, 12]
+            [1, 7, 12],
         ),
         (
-            np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7, )))]),
-            [1, 1, 7]
+            np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7,)))]),
+            [1, 1, 7],
         ),
         (
-            np.array([
-                scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
-                scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
-                scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
-                scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10)))
-            ]),
-            (4, 7, 10)
+            np.array(
+                [
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                ]
+            ),
+            (4, 7, 10),
         ),
         (
             [
-                np.array([
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(5, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
-                ]),
-                np.array([
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
-                ]),
-                np.array([
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(2, 10))),
-                ])
+                np.array(
+                    [
+                        scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                        scipy.sparse.csr_matrix(np.random.randint(10, size=(5, 10))),
+                        scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
+                    ]
+                ),
+                np.array(
+                    [
+                        scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                        scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
+                        scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
+                        scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
+                    ]
+                ),
+                np.array(
+                    [scipy.sparse.csr_matrix(np.random.randint(10, size=(2, 10))),]
+                ),
             ],
-            (3, 4, 7, 10)
-        )
+            (3, 4, 7, 10),
+        ),
     ],
 )
 def test_scipy_matrix_to_values(

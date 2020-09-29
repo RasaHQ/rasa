@@ -350,14 +350,18 @@ class RasaModelData:
             # this operation can be performed only for labels
             # that contain several data points
             multi_values = [
-                f[counts > 1]
+                list(np.array(f)[counts > 1])
+                if RasaModelData._is_in_4d_format(f)
+                else f[counts > 1]
                 for attribute_data in self.data.values()
                 for features in attribute_data.values()
                 for f in features
             ]
             # collect data points that are unique for their label
             solo_values = [
-                f[counts == 1]
+                list(np.array(f)[counts == 1])
+                if RasaModelData._is_in_4d_format(f)
+                else f[counts == 1]
                 for attribute_data in self.data.values()
                 for features in attribute_data.values()
                 for f in features
@@ -425,9 +429,6 @@ class RasaModelData:
             The tf.data.Dataset.
         """
 
-        # TODO
-        #  ValueError: The two structures don't have the same sequence length. Input structure has length 24,
-        #  while shallow structure has length 28.
         shapes, types = self._get_shapes_types()
 
         return tf.data.Dataset.from_generator(
@@ -504,7 +505,7 @@ class RasaModelData:
 
         def append_shape(_features: Union[List[np.ndarray], np.ndarray]) -> None:
             if RasaModelData._is_in_4d_format(_features):
-                if isinstance(_features[0], scipy.sparse.spmatrix):
+                if isinstance(_features[0][0], scipy.sparse.spmatrix):
                     # scipy matrix is converted into indices, data, shape
                     shapes.append((None, None, _features[0][0].ndim + 1))
                     shapes.append((None,))
@@ -576,6 +577,8 @@ class RasaModelData:
         Returns:
             The balanced data.
         """
+        # TODO
+
         self._check_label_key()
 
         # skip balancing if labels are token based
@@ -726,7 +729,11 @@ class RasaModelData:
         for key, attribute_data in data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
-                    new_data[key][sub_key].append(f[ids])
+                    if RasaModelData._is_in_4d_format(f):
+                        _f = np.array(f)[ids]
+                        new_data[key][sub_key].append(list(_f))
+                    else:
+                        new_data[key][sub_key].append(f[ids])
         return new_data
 
     def _split_by_label_ids(
