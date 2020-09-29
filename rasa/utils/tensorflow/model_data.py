@@ -507,9 +507,9 @@ class RasaModelData:
             if RasaModelData._is_in_4d_format(_features):
                 if isinstance(_features[0][0], scipy.sparse.spmatrix):
                     # scipy matrix is converted into indices, data, shape
-                    shapes.append((None, None, _features[0][0].ndim + 1))
+                    shapes.append((None, _features[0][0].ndim + 2))
                     shapes.append((None,))
-                    shapes.append((_features[0][0].ndim + 1))
+                    shapes.append((_features[0][0].ndim + 2))
                 else:
                     shapes.append((None, None, None, _features[0][0].shape[-1]))
             else:
