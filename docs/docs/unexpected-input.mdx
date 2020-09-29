@@ -52,7 +52,8 @@ The response should differ for each slot. For example:
 </Chat>
 
 Since we want the `requested_slot` to influence the conversation,
-we need to make the `requested_slot` featurized, and assign it the categorical type:
+we need to set the property `influence_conversation` of the slot `requested_slot`
+to `true`, and assign it the categorical type:
 
 ```yaml-rasa
 slots:
@@ -64,11 +65,12 @@ slots:
       - outdoor_seating
       - preferences
       - feedback
+    influence_conversation: true
 ```
 
 This means that the dialogue model will pay attention to the value of the slot when making a prediction
-(read more about other [featurized slots](./domain.mdx#slots), whereas
-unfeaturized slots are only used for storing information.
+(read more about other [featurized slots](./domain.mdx#slots), whereas slots with
+the property `influence_conversation` set to `false` are only used for storing information.
 
 You can then write stories for specific responses to interruptions based on the value of `requested_slot`, for example:
 
