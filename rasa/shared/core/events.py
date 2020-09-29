@@ -299,8 +299,9 @@ class UserUttered(Event):
             )
 
     def __str__(self) -> Text:
-        return "UserUttered(text: {}, intent: {}, entities: {})".format(
-            self.text, self.intent, self.entities
+        return (
+            f"UserUttered(text: {self.text}, intent: {self.intent}, "
+            f"entities: {self.entities})"
         )
 
     @staticmethod
@@ -1249,11 +1250,11 @@ class LegacyForm(ActiveLoop):
         return d
 
 
-class FormValidation(Event):
+class LoopInterrupted(Event):
     """Event added by FormPolicy and RulePolicy to notify form action
        whether or not to validate the user input."""
 
-    type_name = "form_validation"
+    type_name = "loop_interrupted"
 
     def __init__(
         self,
@@ -1265,20 +1266,20 @@ class FormValidation(Event):
         super().__init__(timestamp, metadata)
 
     def __str__(self) -> Text:
-        return f"FormValidation({self.validate})"
+        return f"{LoopInterrupted.__name__}({self.validate})"
 
     def __hash__(self) -> int:
         return hash(self.validate)
 
     def __eq__(self, other) -> bool:
-        return isinstance(other, FormValidation)
+        return isinstance(other, LoopInterrupted)
 
     def as_story_string(self) -> None:
         return None
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "FormValidation":
-        return FormValidation(
+    def _from_parameters(cls, parameters) -> "LoopInterrupted":
+        return LoopInterrupted(
             parameters.get(LOOP_VALIDATE),
             parameters.get("timestamp"),
             parameters.get("metadata"),
@@ -1291,6 +1292,23 @@ class FormValidation(Event):
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.set_form_validation(self.validate)
+
+
+class LegacyFormValidation(LoopInterrupted):
+    """Legacy handler of old `FormValidation` events.
+    The `LoopInterrupted` event used to be called `FormValidation`. This class is there
+    to handle old legacy events which were stored with the old type name
+    `form_validation`.
+    """
+
+    type_name = "form_validation"
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
+        # event type.
+        d["event"] = LoopInterrupted.type_name
+        return d
 
 
 class ActionExecutionRejected(Event):

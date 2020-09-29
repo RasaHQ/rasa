@@ -26,7 +26,7 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,
     ActionExecutionRejected,
-    FormValidation,
+    LoopInterrupted,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -784,7 +784,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
     )
     assert_predicted_action(action_probabilities, domain, form_name)
     # check that RulePolicy added FormValidation False event based on the training rule
-    assert tracker.events[-1] == FormValidation(False)
+    assert tracker.events[-1] == LoopInterrupted(False)
 
 
 async def test_form_unhappy_path_no_validation_from_story():
@@ -854,7 +854,7 @@ async def test_form_unhappy_path_no_validation_from_story():
     # there is no rule for next action
     assert max(action_probabilities) == policy._core_fallback_threshold
     # check that RulePolicy added FormValidation False event based on the training story
-    assert tracker.events[-1] == FormValidation(False)
+    assert tracker.events[-1] == LoopInterrupted(False)
 
 
 async def test_form_unhappy_path_without_rule():
