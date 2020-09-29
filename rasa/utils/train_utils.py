@@ -98,6 +98,13 @@ def align_tokens(
     current_token_offset = token_start
 
     for index, string in enumerate(tokens_in):
+        # There is no absolute guarantee that the length of OOV token always be 1.
+        # But some documents (e.g.
+        # https://mccormickml.com/2019/05/14/BERT-word-embeddings-tutorial/#22-tokenization)
+        # show that it very likely to be 1 in most case.
+        # It seems that OOV tokens in most language (except for Chinese) are emoji characters.
+        # Chinese language has lots of characters, some rare characters may become OOV.
+        # This is not a perfect solution, but in practice it can solve most issues related to OOV
         string_len = len(string) if unk_token is None or string != unk_token else 1
 
         if index == 0:
