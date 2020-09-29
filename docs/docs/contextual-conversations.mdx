@@ -46,7 +46,7 @@ and each affects the conversation flow in its own way.
 In the concert bot example, the `likes_music` slot is a boolean slot. If it is true, the bot sends an intro message. If it is false, the bot sends a different message.
 You define a slot and its type in the domain:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 slots:
   likes_music:
     type: bool
@@ -58,7 +58,7 @@ slots:
 In the example above, the concert bot responds differently for users who like music
 and users who don't because of these two stories:
 
-```yaml-rasa
+```yaml-rasa title="stories.yml"
 stories:
   - story: User likes music
     steps:
@@ -147,16 +147,16 @@ action to take next.
 In the story below, the user asks for help three times in a row. The first two times,
 the bot sends the same message, but the third time, it hands them off to a human
 
-```yaml-rasa
+```yaml-rasa  title="stories.yml"
 stories:
   - story: user persists in asking for help
     steps:
-  - intent: help
-  - action: utter_help
-  - intent: help
-  - action: utter_help
-  - intent: help
-  - action: action_human_handoff
+    - intent: help
+    - action: utter_help
+    - intent: help
+    - action: utter_help
+    - intent: help
+    - action: action_human_handoff
 ```
 
 In order for the model to learn this pattern, it needs to know at least the previous
@@ -166,9 +166,9 @@ predict the human handoff action.
 
 
 You can set the `max_history` by passing it to your policy's settings
-in the policy configuration yaml file, for example:
+in your config file, for example:
 
-```
+```yaml-rasa title="config.yml"
 policies:
   - name: "TEDPolicy"
     max_history: 5
