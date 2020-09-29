@@ -35,7 +35,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
                 "LexicalSyntacticFeaturizer",
                 "CountVectorsFeaturizer",
                 "CRFEntityExtractor",
-                "DucklingHTTPExtractor",
+                "DucklingEntityExtractor",
                 "DIETClassifier",
                 "ResponseSelector",
                 "EntitySynonymMapper",
@@ -78,7 +78,12 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
 
     # first is language followed by list of components
     return [
-        ("en", as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier")),
+        (
+            "en",
+            as_pipeline(
+                "SpacyNLP", "SpacyTokenizer", "SpacyFeaturizer", "DIETClassifier"
+            ),
+        ),
         (
             "en",
             as_pipeline(
@@ -101,6 +106,11 @@ def test_all_components_are_in_at_least_one_test_pipeline():
     all_components = [c["name"] for _, p in all_pipelines for c in p]
 
     for cls in registry.component_classes:
+        if "convert" in cls.name.lower():
+            # TODO
+            #   skip ConveRTTokenizer and ConveRTFeaturizer as the ConveRT model is not publicly available anymore
+            #   (see https://github.com/RasaHQ/rasa/issues/6806)
+            continue
         assert (
             cls.name in all_components
         ), "`all_components` template is missing component."

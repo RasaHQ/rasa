@@ -8,7 +8,6 @@ description: Information about changes between major versions of chatbot framewo
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-2-0"></a>
 
 ## Rasa 1.10 to Rasa 2.0
 
@@ -61,7 +60,7 @@ deprecated:
 #### Migrating from the Mapping Policy
 
 If you previously used the [Mapping Policy](./policies.mdx#mapping-policy), you
-can follow the documentation on [FAQs](./rules.mdx#faqs--mapping-intents-to-actions) to convert your mapped
+can follow the documentation on [FAQs](./chitchat-faqs.mdx) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
 ```yaml-rasa
@@ -121,7 +120,7 @@ rules:
   - action: utter_please_rephrase
 ```
 
-Please see the [Fallback Actions](./fallback-handoff.mdx#fallbackactions) documentation for more
+Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
 #### Migrating from the Two-Stage-Fallback Policy
@@ -176,7 +175,7 @@ Note that the previous parameters `fallback_nlu_action_name` and
 `deny_suggestion_intent_name` are no longer configurable and have the fixed values
 `action_default_fallback` and `out_of_scope`.
 
-Please see the [Fallback Actions](./fallback-handoff.mdx#fallbackactions) documentation for more
+Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
 #### Form Policy
@@ -339,8 +338,6 @@ class RestaurantFormValidator(Action):
 
 Please see [Forms](./forms.mdx) if you have further customizations in your
 ``FormAction``.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-8"></a>
 
 ### Response Selectors
 
@@ -506,7 +503,7 @@ model before trying to use it with this improved version.
   Take a look at [Tuning Your Model](./tuning-your-model.mdx) to decide on what components you should use
   in your configuration file.
 
-* The [Embedding Policy](./policies.mdx#embedding-policy) was renamed to [TED Policy](./policies.mdx#ted-policy). The functionality of the policy stayed the same.
+* The Embedding Policy was renamed to [TED Policy](./policies.mdx#ted-policy). The functionality of the policy stayed the same.
   Please update your configuration files to use `TEDPolicy` instead of `EmbeddingPolicy`.
 
 * Most of the model options for `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` got
@@ -630,18 +627,14 @@ model before trying to use it with this improved version.
     # ... any other parameters
   ```
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-7"></a>
-
 ## Rasa 1.6 to Rasa 1.7
 
 ### General
 
 * By default, the `EmbeddingIntentClassifier`, `EmbeddingPolicy`, and `ResponseSelector` will
   now normalize the top 10 confidence results if the `loss_type` is `"softmax"` (which has been
-  default since 1.3, see [Rasa 1.2 to Rasa 1.3](./migration-guide.mdx#migration-to-rasa-1-3)). This is configurable via the `ranking_length`
+  default since 1.3, see [Rasa 1.2 to Rasa 1.3](./migration-guide.mdx#rasa-12-to-rasa-13)). This is configurable via the `ranking_length`
   configuration parameter; to turn off normalization to match the previous behavior, set `ranking_length: 0`.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-3"></a>
 
 ## Rasa 1.2 to Rasa 1.3
 
@@ -655,7 +648,7 @@ model before trying to use it with this improved version.
 ### General
 
 * Default parameters of `EmbeddingIntentClassifier` are changed. See
-  [Components](./components.mdx#embedding-intent-classifier) for details.
+  the Components page for details.
   Architecture implementation is changed as well, so **old trained models cannot be loaded**.
   Default parameters and architecture for `EmbeddingPolicy` are changed. See [Policies](./policies.mdx) for details.
   It uses transformer instead of lstm. **Old trained models cannot be loaded**.
@@ -670,7 +663,7 @@ model before trying to use it with this improved version.
 * Default `max_history` for `EmbeddingPolicy` is `None` which means it'll use
   the `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to
   some finite value in order to use `MaxHistoryTrackerFeaturizer`
-  for **faster training**. See [Featurization of Conversations](./policies.mdx#featurization-conversations) for details.
+  for **faster training**. See [Featurizers](./policies.mdx#featurizers) for details.
   We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
   (e.g. `"batch_size": [32, 64]`)
 
@@ -689,7 +682,6 @@ model before trying to use it with this improved version.
 * `/` is reserved as a delimiter token to distinguish between retrieval intent and the corresponding response text
   identifier. Make sure you don't include `/` symbol in the name of your intents.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="migration-to-rasa-1-0"></a>
 
 ## Rasa NLU 0.14.x and Rasa Core 0.13.x to Rasa 1.0
 

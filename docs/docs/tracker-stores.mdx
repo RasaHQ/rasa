@@ -168,7 +168,7 @@ abstract: Your assistant's conversations are stored within a tracker store.
 
   Now you can configure the tracker store in the `endpoints.yml` as described above,
   and start the container. The `dialect` parameter with this setup will be `oracle+cx_oracle`.
-  Read more about [Deploying Your Rasa Assistant](./how-to-deploy.mdx#deploying-your-rasa-assistant).
+  Read more about [Deploying Your Rasa Assistant](./how-to-deploy.mdx).
 
 
 ## RedisTrackerStore
@@ -348,7 +348,7 @@ abstract: Your assistant's conversations are stored within a tracker store.
      ```yaml-rasa title="endpoints.yml"
      tracker_store:
          type: dynamo
-         tablename: <name of the table to create, e.g. rasa>
+         table_name: <name of the table to create, e.g. rasa>
          region: <name of the region associated with the client>
      ```
 
@@ -363,7 +363,7 @@ abstract: Your assistant's conversations are stored within a tracker store.
 
 * **Parameters**
 
-  * `tablename` (default: `states`): name of the DynamoDB table
+  * `table_name` (default: `states`): name of the DynamoDB table
 
   * `region` (default: `us-east-1`): name of the region associated with the client
 
