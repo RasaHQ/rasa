@@ -166,9 +166,7 @@ class RasaModelData:
         return not self.data
 
     @staticmethod
-    def is_in_4d_format(
-        features: Union[np.ndarray, List[np.ndarray]]
-    ) -> bool:
+    def is_in_4d_format(features: Union[np.ndarray, List[np.ndarray]]) -> bool:
         """Checks if the given features have a 4D shape or not.
 
         4D features are lists of numpy arrays whereas low dimensional features are simply numpy arrays.
