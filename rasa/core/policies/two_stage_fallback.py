@@ -73,8 +73,6 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 threshold is not met.
             fallback_nlu_action_name: This action is executed if the user
                 denies the recognised intent for the second time.
-            deny_suggestion_intent_name: The name of the intent which is used
-                 to detect that the user denies the suggested intents.
         """
         super().__init__(
             priority,
