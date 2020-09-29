@@ -125,9 +125,13 @@ forms:
 Rules describe parts of conversations that should always follow the same path no matter what has been said previously in the conversation.
 
 We want our assistant to always respond to a certain intent with a specific action, so we use a rule to map that action to the intent.
+
 In the code block below, we have added a rule that triggers the
 `newsletter_form` whenever the user expresses the intent “subscribe”.
-
+We’ve also added a rule that triggers the `utter_subscribed` action once all the
+required information has been provided.
+The second rule only applies when the `newsletter_form` is active to begin with; once
+it is no longer active (`active_loop: null`), the form is complete.
 
 ```yaml-rasa live noResult name=rules
 rules:
@@ -136,6 +140,14 @@ rules:
    - intent: subscribe
    - action: newsletter_form
    - active_loop: newsletter_form
+
+ - rule: submit form
+   condition:
+   - active_loop: newsletter_form
+   steps:
+   - action: newsletter_form
+   - active_loop: null
+   - action: utter_subscribed
 ```
 
 [Learn more about rules and how to write them.](./rules.mdx)
@@ -170,7 +182,7 @@ You can download this project and continue building to create a more advanced as
 <!-- TODO: REMOVE THIS NOTE FOR THE 2.0 release -->
 
 *Your prototype was created using a Rasa Open Source 2.0 RC release.
-Please make sure you've [installed at least Rasa Open Source 2.0.0rc1](installation.mdx) to develop
+Please make sure you've [installed at least Rasa Open Source 2.0.0rc2](installation.mdx) to develop
 your project further.*
 
 <br/>

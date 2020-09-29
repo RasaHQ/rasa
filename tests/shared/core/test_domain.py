@@ -26,11 +26,33 @@ from rasa.shared.core.domain import (
     State,
     Domain,
 )
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import (
+    ActionExecuted,
+    SlotSet,
+)
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     DEFAULT_STORIES_FILE,
 )
+
+
+def test_slots_states_before_user_utterance(default_domain):
+    featurizer = MaxHistoryTrackerFeaturizer()
+    tracker = DialogueStateTracker.from_events(
+        "bla",
+        evts=[
+            SlotSet(default_domain.slots[0].name, "some_value"),
+            ActionExecuted("utter_default"),
+        ],
+        slots=default_domain.slots,
+    )
+    trackers_as_states, _ = featurizer.training_states_and_actions(
+        [tracker], default_domain
+    )
+    expected_states = [[{"slots": {"name": (1.0,)}}]]
+    assert trackers_as_states == expected_states
 
 
 async def test_create_train_data_no_history(default_domain):
@@ -344,6 +366,27 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     assert domain.session_config == SessionConfig(20, True)
+
+
+@pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
+def test_merge_yaml_domains_with_default_intents(default_intent: Text):
+    test_yaml_1 = """intents: []"""
+
+    # this domain contains an overridden default intent
+    test_yaml_2 = f"""intents:
+- greet
+- {default_intent}"""
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain = domain_1.merge(domain_2)
+
+    # check that the default intents were merged correctly
+    assert default_intent in domain.intents
+    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
+
+    # ensure that the default intent is contain the domain's dictionary dump
+    assert list(domain.as_dict()["intents"][1].keys())[0] == default_intent
 
 
 def test_merge_session_config_if_first_is_not_default():
