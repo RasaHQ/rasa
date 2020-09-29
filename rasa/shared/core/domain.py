@@ -289,9 +289,8 @@ class Domain:
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)
         for slot_name in sorted(slot_dict):
-            slot_class = Slot.resolve_by_type(slot_dict[slot_name].get("type"))
-            if "type" in slot_dict[slot_name]:
-                del slot_dict[slot_name]["type"]
+            slot_class = Slot.resolve_by_type(slot_dict[slot_name].pop("type", None))
+
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots

@@ -121,6 +121,7 @@ class Slot:
             "type": rasa.shared.utils.common.module_path_from_instance(self),
             "initial_value": self.initial_value,
             "auto_fill": self.auto_fill,
+            "influence_conversation": self.influence_conversation,
         }
 
 
@@ -135,7 +136,7 @@ class FloatSlot(Slot):
         auto_fill: bool = True,
         max_value: float = 1.0,
         min_value: float = 0.0,
-        influence_conversation: bool = False,
+        influence_conversation: bool = True,
     ) -> None:
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
@@ -282,7 +283,7 @@ class CategoricalSlot(Slot):
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
-        influence_conversation: bool = False,
+        influence_conversation: bool = True,
     ) -> None:
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
