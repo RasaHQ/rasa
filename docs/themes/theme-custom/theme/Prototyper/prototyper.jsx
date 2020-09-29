@@ -26,6 +26,8 @@ const Prototyper = ({
   const [hasTrained, setHasTrained] = React.useState(false);
   const [isTraining, setIsTraining] = React.useState(false);
 
+  const [chatState, setChatState] = React.useState("");
+
   // FIXME: once we can use `rasa-ui` outside of `rasa-x`, we can remove this
   const insertChatBlockScript = () => {
     if (ExecutionEnvironment.canUseDOM) {
@@ -40,12 +42,13 @@ const Prototyper = ({
     setTrackingId(isProductionBuild() ? uuidv4() : 'the-hash');
     insertChatBlockScript();
   }, []);
+
   // initialize the chatblock once we have a tracking id
   React.useEffect(() => {
     if (trackingId !== null) {
       updateChatBlock();
     }
-  }, [trackingId]);
+  }, [trackingId, chatState]);
 
   const onLiveCodeStart = (name, value) => {
     setTrainingData((prevTrainingData) => ({ ...prevTrainingData, [name]: value }));
@@ -53,6 +56,10 @@ const Prototyper = ({
 
   const onLiveCodeChange = (name, value) => {
     setTrainingData((prevTrainingData) => ({ ...prevTrainingData, [name]: value }));
+    if (chatState === "ready") {
+      setChatState("needs_to_be_retrained");
+    }
+
     if (!hasStarted) {
       // track the start here
       setHasStarted(true);
@@ -69,6 +76,8 @@ const Prototyper = ({
 
   const trainModel = () => {
     setIsTraining(true);
+    setChatState("training");
+
     // train the model, resetting the chatblock
     if (pollingIntervalId) {
       updateChatBlock();
@@ -104,13 +113,17 @@ const Prototyper = ({
         // FIXME: once we can use `rasa-ui` outside of `rasa-x`, we can remove this
         setTimeout(() => updateChatBlock(baseUrl, tracker), 500);
       } else {
-        window.ChatBlock.default.init({
+        const chatBlock = window.ChatBlock.default;
+
+        chatBlock.init({
           onSendMessage: (message) => {
             sendMessage(baseUrl, message);
           },
+          onTrainClick: trainModel,
           username: trackingId,
-          tracker,
+          tracker: tracker,
           selector: chatBlockSelector,
+          state: chatState,
         });
       }
     }
@@ -122,7 +135,10 @@ const Prototyper = ({
       header: 'jsonHeaders',
     })
       .then((response) => response.json())
-      .then((tracker) => updateChatBlock(baseUrl, tracker));
+      .then((tracker) => {
+        setChatState("ready");
+        updateChatBlock(baseUrl, tracker);
+      });
   };
 
   const sendMessage = (baseUrl, message) => {
@@ -137,6 +153,7 @@ const Prototyper = ({
   };
 
   const startFetchingTracker = (baseUrl) => {
+    setChatState("deploying");
     fetchTracker(baseUrl);
 
     const updateIntervalId = setInterval(() => {
@@ -148,7 +165,7 @@ const Prototyper = ({
 
   return (
     <ThemeContext.Provider value={{ onLiveCodeChange, onLiveCodeStart }}>
-      <PrototyperContext.Provider value={{ trainModel, downloadProject, hasTrained, isTraining }}>
+      <PrototyperContext.Provider value={{ trainModel, downloadProject, hasTrained, isTraining, chatState }}>
         {children}
       </PrototyperContext.Provider>
     </ThemeContext.Provider>
