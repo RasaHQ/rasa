@@ -4,6 +4,8 @@ sidebar_label: Building a Rasa Assistant in Docker
 title: Building a Rasa Assistant in Docker
 description: Learn how to build a Rasa assistant in Docker.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from '../variables.json';
 
@@ -99,7 +101,7 @@ Here's what's happening in that command:
   <li>rasa/rasa:{variables.release}-full: Use the Rasa image with the tag '{variables.release}-full'</li>
 
   <li><inlineCode>train</inlineCode>: Execute the <inlineCode>rasa train</inlineCode> command within the container. For more
-  information see <a href="/command-line-interface">Command Line Interface</a>.</li>
+  information see <a href={useBaseUrl("/command-line-interface")}>Command Line Interface</a>.</li>
 </ul>
 
 In this case, we've also passed values for the location of the domain file, training
