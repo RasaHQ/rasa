@@ -369,7 +369,7 @@ def _update_confidences(
 ):
     """Update the confidence values.
 
-    Set the confidence value of a tag to the average confidence value if the predicated
+    Set the confidence value of a tag to score value if the predicated
     tag changed.
 
     Args:
@@ -385,7 +385,7 @@ def _update_confidences(
     """
     for i in range(idx, last_idx + 1):
         predicted_confidences[i] = (
-            score
+            round(score, 2)
             if tag_without_prefix(predicted_tags[i]) != tag
             else predicted_confidences[i]
         )
