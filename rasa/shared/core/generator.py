@@ -26,6 +26,7 @@ from rasa.shared.core.training_data.structures import (
     StoryGraph,
     STORY_START,
     StoryStep,
+    RuleStep,
     GENERATED_CHECKPOINT_PREFIX,
 )
 from rasa.shared.utils.io import is_logging_disabled
@@ -251,12 +252,20 @@ class TrainingDataGenerator:
         Returns:
             The generated story trackers.
         """
-        steps = [step for step in self.story_graph.ordered_steps() if not step.is_rule]
+        steps = [
+            step
+            for step in self.story_graph.ordered_steps()
+            if not isinstance(step, RuleStep)
+        ]
 
         return self._generate(steps, is_rule_data=False)
 
     def _generate_rule_trackers(self) -> List[TrackerWithCachedStates]:
-        steps = [step for step in self.story_graph.ordered_steps() if step.is_rule]
+        steps = [
+            step
+            for step in self.story_graph.ordered_steps()
+            if isinstance(step, RuleStep)
+        ]
 
         return self._generate(steps, is_rule_data=True)
 
@@ -615,7 +624,7 @@ class TrainingDataGenerator:
                     event, (ActionReverted, UserUtteranceReverted, Restarted)
                 ):
                     end_trackers.append(tracker.copy(tracker.sender_id))
-                if step.is_rule:
+                if isinstance(step, RuleStep):
                     # The rules can specify that a form or a slot shouldn't be set,
                     # therefore we need to distinguish between not set
                     # and explicitly set to None
