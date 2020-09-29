@@ -381,8 +381,12 @@ def test_merge_yaml_domains_with_default_intents(default_intent: Text):
     domain_2 = Domain.from_yaml(test_yaml_2)
     domain = domain_1.merge(domain_2)
 
+    # check that the default intents were merged correctly
     assert default_intent in domain.intents
     assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
+
+    # ensure that the default intent is contain the domain's dictionary dump
+    assert list(domain.as_dict()["intents"][1].keys())[0] == default_intent
 
 
 def test_merge_session_config_if_first_is_not_default():
