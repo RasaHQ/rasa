@@ -12,3 +12,5 @@ which contain paths to file/directory.
 
 export DATASET="{{ $dataset.path }}"
 export CONFIG="{{ $dataset.language }}/{{ $config }}"
+echo "::add-mask::{{ $dataset.path }}"
+echo "::add-mask::{{ $dataset.language }}/{{ $config }}"
