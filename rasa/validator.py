@@ -15,7 +15,7 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, RESPONSE_IDENTIFIER_DELIMITER
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
@@ -130,7 +130,12 @@ class Validator:
 
     def _gather_utterance_actions(self) -> Set[Text]:
         """Return all utterances which are actions."""
-        return {
+
+        responses = {
+            response.split(RESPONSE_IDENTIFIER_DELIMITER)[0]
+            for response in self.intents.responses.keys()
+        }
+        return responses | {
             utterance
             for utterance in self.domain.templates.keys()
             if utterance in self.domain.action_names
