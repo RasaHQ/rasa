@@ -644,7 +644,7 @@ def test_retry_on_error(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
 
     m = Mock(return_value=None)
-    await interactive._retry_on_error(m, "export_path", 1, a=2)
+    interactive._retry_on_error(m, "export_path", 1, a=2)
     m.assert_called_once_with("export_path", 1, a=2)
 
     m = Mock(side_effect=PermissionError())
