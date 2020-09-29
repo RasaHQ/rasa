@@ -18,7 +18,7 @@ from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_RANKING_KEY
 from rasa.shared.core.constants import (
-    USER_INTENT_REJECT_SUGGESTION,
+    USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
 )
@@ -136,7 +136,7 @@ async def test_ask_rephrase_after_failed_affirmation():
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User denies suggested intents
-            UserUttered("hi", {"name": USER_INTENT_REJECT_SUGGESTION}),
+            UserUttered("hi", {"name": USER_INTENT_OUT_OF_SCOPE}),
         ],
     )
 
@@ -175,7 +175,7 @@ async def test_ask_rephrasing_successful():
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User denies suggested intents
-            UserUttered("hi", {"name": USER_INTENT_REJECT_SUGGESTION}),
+            UserUttered("hi", {"name": USER_INTENT_OUT_OF_SCOPE}),
             *_two_stage_clarification_request(),
             # Action asks user to rephrase
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -214,7 +214,7 @@ async def test_ask_affirm_after_rephrasing():
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User denies suggested intents
-            UserUttered("hi", {"name": USER_INTENT_REJECT_SUGGESTION}),
+            UserUttered("hi", {"name": USER_INTENT_OUT_OF_SCOPE}),
             # Action asks user to rephrase
             ActionExecuted(ACTION_TWO_STAGE_FALLBACK_NAME),
             BotUttered("please rephrase"),
@@ -247,7 +247,7 @@ async def test_2nd_affirm_successful():
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User denies suggested intents
-            UserUttered("hi", {"name": USER_INTENT_REJECT_SUGGESTION}),
+            UserUttered("hi", {"name": USER_INTENT_OUT_OF_SCOPE}),
             # Action asks user to rephrase
             *_two_stage_clarification_request(),
             # User rephrased with low confidence
@@ -282,7 +282,7 @@ async def test_2nd_affirm_successful():
 
 @pytest.mark.parametrize(
     "intent_which_lets_action_give_up",
-    [USER_INTENT_REJECT_SUGGESTION, DEFAULT_NLU_FALLBACK_INTENT_NAME],
+    [USER_INTENT_OUT_OF_SCOPE, DEFAULT_NLU_FALLBACK_INTENT_NAME],
 )
 async def test_2nd_affirmation_failed(intent_which_lets_action_give_up: Text):
     tracker = DialogueStateTracker.from_events(
@@ -295,7 +295,7 @@ async def test_2nd_affirmation_failed(intent_which_lets_action_give_up: Text):
             *_two_stage_clarification_request(),
             ActionExecuted(ACTION_LISTEN_NAME),
             # User denies suggested intents
-            UserUttered("hi", {"name": USER_INTENT_REJECT_SUGGESTION}),
+            UserUttered("hi", {"name": USER_INTENT_OUT_OF_SCOPE}),
             # Action asks user to rephrase
             *_two_stage_clarification_request(),
             # User rephrased with low confidence

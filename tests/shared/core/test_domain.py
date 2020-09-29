@@ -330,7 +330,6 @@ entities:
 - cuisine
 intents:
 - greet
-- out_of_scope
 slots:
   cuisine:
     type: text
@@ -351,7 +350,7 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     # lists should be deduplicated and merged
-    assert domain.intents == sorted(["greet", "out_of_scope", *DEFAULT_INTENTS])
+    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
     assert domain.entities == ["cuisine"]
     assert isinstance(domain.slots[0], TextSlot)
     assert domain.slots[0].name == "cuisine"
@@ -367,6 +366,23 @@ responses:
         "utter_goodbye": [{"text": "bye!"}],
     }
     assert domain.session_config == SessionConfig(20, True)
+
+
+@pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
+def test_merge_yaml_domains_with_default_intents(default_intent: Text):
+    test_yaml_1 = """intents: []"""
+
+    # this domain contains an overridden default intent
+    test_yaml_2 = f"""intents:
+- greet
+- {default_intent}"""
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain = domain_1.merge(domain_2)
+
+    assert default_intent in domain.intents
+    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
 
 
 def test_merge_session_config_if_first_is_not_default():

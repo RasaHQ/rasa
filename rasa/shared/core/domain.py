@@ -421,7 +421,7 @@ class Domain:
 
     def __init__(
         self,
-        intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
+        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
@@ -433,6 +433,9 @@ class Domain:
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
+        self.overriden_default_intents = self._collect_overridden_default_intents(
+            intents
+        )
         self.entities = entities
 
         self.forms: Dict[Text, Any] = {}
@@ -458,6 +461,24 @@ class Domain:
 
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
+
+    @staticmethod
+    def _collect_overridden_default_intents(
+        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
+    ) -> List[Text]:
+        """Collects the default intents overridden by the user.
+
+        Args:
+            intents: User-provided intents.
+
+        Returns:
+            User-defined intents that are default intents.
+        """
+        intent_names: Set[Text] = {
+            list(intent.keys())[0] if isinstance(intent, dict) else intent
+            for intent in intents
+        }
+        return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
 
     def _initialize_forms(self, forms: Union[Dict[Text, Any], List[Text]]) -> None:
         """Initialize the domain's `self.form` and `self.form_names` attributes.
@@ -847,7 +868,10 @@ class Domain:
         intents_for_file = []
 
         for intent_name, intent_props in intent_properties.items():
-            if intent_name in rasa.shared.core.constants.DEFAULT_INTENTS:
+            if (
+                intent_name not in self.overriden_default_intents
+                and intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
+            ):
                 # Default intents should be not dumped with the domain
                 continue
             use_entities = set(intent_props[USED_ENTITIES_KEY])

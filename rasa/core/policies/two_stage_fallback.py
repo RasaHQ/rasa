@@ -14,7 +14,7 @@ from rasa.shared.core.constants import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    USER_INTENT_REJECT_SUGGESTION,
+    USER_INTENT_OUT_OF_SCOPE,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
@@ -56,6 +56,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         core_threshold: float = 0.3,
         fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
+        deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
     ) -> None:
         """Create a new Two-stage Fallback policy.
 
@@ -73,6 +74,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 threshold is not met.
             fallback_nlu_action_name: This action is executed if the user
                 denies the recognised intent for the second time.
+            deny_suggestion_intent_name: The name of the intent which is used
+                 to detect that the user denies the suggested intents.
         """
         super().__init__(
             priority,
@@ -83,7 +86,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         )
 
         self.fallback_nlu_action_name = fallback_nlu_action_name
-        self.deny_suggestion_intent_name = USER_INTENT_REJECT_SUGGESTION
+        self.deny_suggestion_intent_name = deny_suggestion_intent_name
 
     @classmethod
     def validate_against_domain(
