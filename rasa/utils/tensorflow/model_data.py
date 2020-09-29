@@ -166,16 +166,20 @@ class RasaModelData:
         return not self.data
 
     @staticmethod
-    def _is_in_4d_format(
-        features: Union[np.ndarray, List[np.ndarray], List[List[np.ndarray]]]
+    def is_in_4d_format(
+        features: Union[np.ndarray, List[np.ndarray]]
     ) -> bool:
-        # TODO can we have a better check for this?
-        if isinstance(features, np.ndarray):
-            return False
+        """Checks if the given features have a 4D shape or not.
 
-        try:
-            features[0][0].shape
-        except Exception:
+        4D features are lists of numpy arrays whereas low dimensional features are simply numpy arrays.
+
+        Args:
+            features: The features
+
+        Returns:
+            True, if features is in 4D shape, False otherwise
+        """
+        if isinstance(features, np.ndarray):
             return False
 
         return True
@@ -198,7 +202,7 @@ class RasaModelData:
             return 0
 
         example_lengths = [
-            len(f) if self._is_in_4d_format(f) else f.shape[0]
+            len(f) if self.is_in_4d_format(f) else f.shape[0]
             for attribute_data in data.values()
             for features in attribute_data.values()
             for f in features
@@ -232,7 +236,7 @@ class RasaModelData:
         number_of_features = 0
         for features in self.data[key][sub_key]:
             if len(features) > 0:
-                if self._is_in_4d_format(features):
+                if self.is_in_4d_format(features):
                     number_of_features += features[0][0].shape[-1]
                 else:
                     number_of_features += features[0].shape[-1]
@@ -351,7 +355,7 @@ class RasaModelData:
             # that contain several data points
             multi_values = [
                 list(np.array(f)[counts > 1])
-                if RasaModelData._is_in_4d_format(f)
+                if RasaModelData.is_in_4d_format(f)
                 else f[counts > 1]
                 for attribute_data in self.data.values()
                 for features in attribute_data.values()
@@ -360,7 +364,7 @@ class RasaModelData:
             # collect data points that are unique for their label
             solo_values = [
                 list(np.array(f)[counts == 1])
-                if RasaModelData._is_in_4d_format(f)
+                if RasaModelData.is_in_4d_format(f)
                 else f[counts == 1]
                 for attribute_data in self.data.values()
                 for features in attribute_data.values()
@@ -397,7 +401,7 @@ class RasaModelData:
         for key, attribute_data in data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
-                    is_4d_tensor = self._is_in_4d_format(f)
+                    is_4d_tensor = self.is_in_4d_format(f)
                     if is_4d_tensor:
                         is_spare = (
                             True
@@ -504,7 +508,7 @@ class RasaModelData:
         shapes = []
 
         def append_shape(_features: Union[List[np.ndarray], np.ndarray]) -> None:
-            if RasaModelData._is_in_4d_format(_features):
+            if RasaModelData.is_in_4d_format(_features):
                 if isinstance(_features[0][0], scipy.sparse.spmatrix):
                     # scipy matrix is converted into indices, data, shape
                     shapes.append((None, _features[0][0].ndim + 2))
@@ -526,7 +530,7 @@ class RasaModelData:
                     shapes.append((None, None, _features[0].shape[-1]))
 
         def append_type(_features: Union[List[np.ndarray], np.ndarray]) -> None:
-            if RasaModelData._is_in_4d_format(_features) and isinstance(
+            if RasaModelData.is_in_4d_format(_features) and isinstance(
                 _features[0][0], scipy.sparse.spmatrix
             ):
                 # scipy matrix is converted into indices, data, shape
@@ -577,8 +581,6 @@ class RasaModelData:
         Returns:
             The balanced data.
         """
-        # TODO
-
         self._check_label_key()
 
         # skip balancing if labels are token based
@@ -647,7 +649,7 @@ class RasaModelData:
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
-                    if RasaModelData._is_in_4d_format(f[0]):
+                    if RasaModelData.is_in_4d_format(f[0]):
                         final_data[key][sub_key].append([__f for _f in f for __f in _f])
                     else:
                         final_data[key][sub_key].append(np.concatenate(np.array(f)))
@@ -732,7 +734,7 @@ class RasaModelData:
         for key, attribute_data in data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
-                    if RasaModelData._is_in_4d_format(f):
+                    if RasaModelData.is_in_4d_format(f):
                         _f = np.array(f)[ids]
                         new_data[key][sub_key].append(list(_f))
                     else:
@@ -897,7 +899,7 @@ class RasaModelData:
         Returns:
             The padded array.
         """
-        if RasaModelData._is_in_4d_format(array_of_dense):
+        if RasaModelData.is_in_4d_format(array_of_dense):
             # in case of dialogue data we may have 4 dimensions
             # batch size x dialogue history length x sequence length x number of features
             array_of_array_of_dense = array_of_dense
@@ -957,7 +959,7 @@ class RasaModelData:
         Returns:
             A list of dense numpy arrays representing the sparse data.
         """
-        if RasaModelData._is_in_4d_format(array_of_sparse):
+        if RasaModelData.is_in_4d_format(array_of_sparse):
             # we need to make sure that the matrices are coo_matrices otherwise the
             # transformation does not work (e.g. you cannot access x.row, x.col)
             array_of_array_of_sparse = array_of_sparse

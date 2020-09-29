@@ -254,11 +254,11 @@ def test_gen_batch(model_data: RasaModelData):
 
 def test_is_in_4d_format(model_data: RasaModelData):
     assert (
-        RasaModelData._is_in_4d_format(model_data.data["action_text"]["sequence"][0])
+        RasaModelData.is_in_4d_format(model_data.data["action_text"]["sequence"][0])
         == True
     )
     assert (
-        RasaModelData._is_in_4d_format(model_data.data["text"]["sentence"][0]) == False
+            RasaModelData.is_in_4d_format(model_data.data["text"]["sentence"][0]) == False
     )
 
 
