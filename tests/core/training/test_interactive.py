@@ -626,7 +626,7 @@ async def test_not_getting_trackers_when_skipping_visualization(
     get_trackers.assert_not_called()
 
 
-async def test_retry_on_error(monkeypatch: MonkeyPatch):
+def test_retry_on_error(monkeypatch: MonkeyPatch):
     class QuestionaryConfirmMock:
         def __init__(self, tries: int) -> None:
             self.tries = tries
