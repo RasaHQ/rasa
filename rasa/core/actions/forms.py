@@ -274,11 +274,7 @@ class FormAction(LoopAction):
                         slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
                         and self.intent_is_desired(slot_mapping, tracker)
                         and self.entity_is_desired(
-                            slot_mapping,
-                            slot,
-                            entity_type_of_slot,
-                            tracker,
-                            domain,
+                            slot_mapping, slot, entity_type_of_slot, tracker, domain,
                         )
                     )
                     # check whether the slot should be
