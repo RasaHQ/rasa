@@ -3,8 +3,8 @@ from copy import deepcopy
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
-from telegram import (
-    Bot,
+from telebot import TeleBot
+from telebot.types import (
     InlineKeyboardButton,
     Update,
     InlineKeyboardMarkup,
@@ -12,6 +12,7 @@ from telegram import (
     ReplyKeyboardMarkup,
 )
 from typing import Dict, Text, Any, List, Optional, Callable, Awaitable
+import ast
 
 from rasa.core.channels.channel import InputChannel, UserMessage, OutputChannel
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
@@ -20,7 +21,7 @@ from rasa.shared.core.constants import USER_INTENT_RESTART
 logger = logging.getLogger(__name__)
 
 
-class TelegramOutput(Bot, OutputChannel):
+class TelegramOutput(TeleBot, OutputChannel):
     """Output channel for Telegram"""
 
     # skipcq: PYL-W0236
@@ -204,11 +205,14 @@ class TelegramInput(InputChannel):
         async def message(request: Request) -> Any:
             if request.method == "POST":
 
-                if not out_channel.get_me()["username"] == self.verify:
+                request_dict = request.json
+                update = Update.de_json(request_dict)
+                #bot.process_new_updates([update])
+                if not out_channel.get_me().username == self.verify:
                     logger.debug("Invalid access token, check it matches Telegram")
                     return response.text("failed")
 
-                update = Update.de_json(request.json, out_channel)
+                #update = Update.de_json(request.json, out_channel)
                 if self._is_button(update):
                     msg = update.callback_query.message
                     text = update.callback_query.data
@@ -267,6 +271,6 @@ class TelegramInput(InputChannel):
 
     def get_output_channel(self) -> TelegramOutput:
         channel = TelegramOutput(self.access_token)
-        channel.setWebhook(self.webhook_url)
+        channel.set_webhook(url=self.webhook_url)
 
         return channel
