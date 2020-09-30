@@ -341,7 +341,7 @@ class CategoricalSlot(Slot):
 
 class AnySlot(Slot):
     """Slot which can be used to store any value. Users need to create a subclass of
-       `Slot` in case the information is supposed to get featurized."""
+    `Slot` in case the information is supposed to get featurized."""
 
     type_name = "any"
 

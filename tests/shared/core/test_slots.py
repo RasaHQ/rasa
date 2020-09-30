@@ -32,7 +32,6 @@ class SlotTestCollection:
     def invalid_value(self, request: SubRequest) -> Any:
         """Values, that should be handled gracefully but where the
         featurization is not defined."""
-
         raise NotImplementedError
 
     def test_featurization(self, value_feature_pair: Tuple[Any, List[float]]):

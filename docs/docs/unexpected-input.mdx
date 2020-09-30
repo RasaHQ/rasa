@@ -69,8 +69,7 @@ slots:
 ```
 
 This means that the dialogue model will pay attention to the value of the slot when making a prediction
-(read more about other [featurized slots](./domain.mdx#slots), whereas slots with
-the property `influence_conversation` set to `false` are only used for storing information.
+(read more about how [slots influence the assistant's behaviour](./domain.mdx#slots-and-conversation-behavior)).
 
 You can then write stories for specific responses to interruptions based on the value of `requested_slot`, for example:
 

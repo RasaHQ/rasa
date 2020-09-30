@@ -86,13 +86,11 @@ Slots are defined in the `slots` section of your domain with their name and
 [type](domain.mdx#slot-types). The slot type will determine the data type of the slot
 and how the slot
 [influences the assistant's behavior](domain.mdx#slots-and-conversation-behavior).
-The following example defines a slot with name `slot_name` and the type `text`.
+The following example defines a slot with name `slot_name` and type `text`.
 
 ```yaml
 slots:
-  # the name of the slot
   slot_name:
-    # the type of the slot
     type: text
 ```
 
@@ -102,9 +100,9 @@ Most of the time, you want slots to influence how the dialogue progresses.
 For example, if your user has provided their home city, you might
 have a slot called `home_city`. If the user asks for the
 weather, and you *don't* know their home city, you will have to ask
-them for it. A [text slot](domain.mdx#text-slot) only tells Rasa Core whether the slot
-has a value. The specific value of a `text` slot (e.g. Bangalore
-or New York or Hong Kong) doesn't make any difference.
+them for it. A [text slot](domain.mdx#text-slot) will influence the assistant's behavior
+depending on whether the slot has a value. The specific value of
+a `text` slot (e.g. Bangalore or New York or Hong Kong) doesn't make any difference.
 
 ```yaml
 slots:
@@ -115,7 +113,7 @@ slots:
     influence_conversation: true
 ```
 
-By default all slot types will influence the conversation except slots of the type
+By default all slot types will influence the conversation except slots of type
 `any`. Depending on the [slot type](./domain.mdx#slot-types), a set slot will cause
 different behavior of your assistant so be careful which type you choose.
 
@@ -133,12 +131,10 @@ slots:
     # this slot will not influence the predictions
     # of the dialogue policies
     influence_conversation: false
-
 ```
 
 ### Slot Types
 
-Make this a nice table instead.
 
 #### Text Slot
 
@@ -187,7 +183,7 @@ Make this a nice table instead.
 
 * **Use For**
 
-  Storing `True` or `False` values.
+  Storing `true` or `false` values.
 
 * **Example**
 
@@ -201,7 +197,7 @@ Make this a nice table instead.
 
   If `influence_conversation` is set to `true`, the assistant's behavior will change
   depending on whether the slot is set to `true` or `false`. An empty `bool` slot
-  is the same as if the slot was set to `False`.
+  is the same as if the slot was set to `false`.
 
 #### Categorical Slot
 
@@ -246,7 +242,7 @@ Make this a nice table instead.
 
 * **Use For**
 
-  Storing continuous numbers.
+  Storing real numbers.
 
 * **Example**
 
@@ -265,10 +261,11 @@ Make this a nice table instead.
 * **Description**
 
   If `influence_conversation` is set to `true`, the assistant's behavior will change
-  depending on the value of the slot. All values below `min_value` will be treated as
-  `min_value`, the same happens for values above `max_value`.
-  Hence, if `max_value` is set to `1`, there is no difference between the slot values
-  `2` and `3.5`.
+  depending on the value of the slot. If the value is between `min_value` and
+  `max_value`, the specific value of the number is used.
+  All values below `min_value` will be treated as `min_value`, and all values above
+  `max_value` will be treated as `max_value`. Hence, if `max_value` is set to `1`,
+  there is no difference between the slot values `2` and `3.5`.
 
 #### List Slot
 
@@ -314,7 +311,7 @@ Make this a nice table instead.
 
 * **Description**
 
-  Slots of type `any` are always ignored during conversations. If you want to store
+  Slots of type `any` are always ignored during conversations. The property `influence_conversation` cannot be set to `true` for this slot type. If you want to store
   a custom data structure which should influence the conversation, use a
   [custom slot type](domain.mdx#custom-slot-types).
 
