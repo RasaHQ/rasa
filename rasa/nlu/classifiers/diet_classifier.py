@@ -24,7 +24,11 @@ from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
-from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow.model_data import (
+    RasaModelData,
+    FeatureSignature,
+    FeatureArray,
+)
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -325,7 +329,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.model = model
 
         self._label_data: Optional[RasaModelData] = None
-        self._data_example: Optional[Dict[Text, List[np.ndarray]]] = None
+        self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
 
     @property
     def label_key(self) -> Optional[Text]:
@@ -507,7 +511,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _extract_labels_precomputed_features(
         self, label_examples: List[Message], attribute: Text = INTENT
-    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    ) -> Tuple[List[FeatureArray], List[FeatureArray]]:
         """Collects precomputed encodings."""
 
         features = defaultdict(list)
@@ -521,23 +525,31 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         sentence_features = []
         for feature_name, feature_value in features.items():
             if SEQUENCE in feature_name:
-                sequence_features.append(np.array(features[feature_name]))
+                sequence_features.append(
+                    FeatureArray(
+                        np.array(feature_value), is_sparse=(SPARSE in feature_name)
+                    )
+                )
             else:
-                sentence_features.append(np.array(features[feature_name]))
+                sentence_features.append(
+                    FeatureArray(
+                        np.array(feature_value), is_sparse=(SPARSE in feature_name)
+                    )
+                )
 
-        return (sequence_features, sentence_features)
+        return sequence_features, sentence_features
 
     @staticmethod
     def _compute_default_label_features(
         labels_example: List[Message],
-    ) -> List[np.ndarray]:
+    ) -> List[FeatureArray]:
         """Computes one-hot representation for the labels."""
 
         logger.debug("No label features found. Computing default label features.")
 
         eye_matrix = np.eye(len(labels_example), dtype=np.float32)
         # add sequence dimension to one-hot labels
-        return [np.array([np.expand_dims(a, 0) for a in eye_matrix])]
+        return [FeatureArray(np.array([np.expand_dims(a, 0) for a in eye_matrix]))]
 
     def _create_label_data(
         self,
@@ -590,16 +602,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(
-            LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
+            LABEL_KEY, LABEL_SUB_KEY, [FeatureArray(np.expand_dims(label_ids, -1))]
         )
 
         label_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
         return label_data
 
-    def _use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
+    def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
         all_label_features = self._label_data.get(LABEL, SENTENCE)[0]
-        return [np.array([all_label_features[label_id] for label_id in label_ids])]
+        return [
+            FeatureArray(
+                np.array([all_label_features[label_id] for label_id in label_ids])
+            )
+        ]
 
     def _create_model_data(
         self,
@@ -644,8 +660,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
         for key, attribute_features in features.items():
             for sub_key, _features in attribute_features.items():
-                sub_key = sub_key.replace(f"{SPARSE}_", "").replace(f"{DENSE}_", "")
-                model_data.add_features(key, sub_key, [np.array(_features)])
+                _sub_key = sub_key.replace(f"{SPARSE}_", "").replace(f"{DENSE}_", "")
+                model_data.add_features(
+                    key,
+                    _sub_key,
+                    [
+                        FeatureArray(
+                            np.array(_features),
+                            is_sparse=(SPARSE in sub_key),
+                        )
+                    ],
+                )
 
         if (
             label_attribute
@@ -660,7 +685,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         model_data.add_features(
-            LABEL_KEY, LABEL_SUB_KEY, [np.expand_dims(label_ids, -1)]
+            LABEL_KEY, LABEL_SUB_KEY, [FeatureArray(np.expand_dims(label_ids, -1))]
         )
 
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
@@ -1028,7 +1053,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         entity_tag_specs: List[EntityTagSpec],
         label_data: RasaModelData,
         meta: Dict[Text, Any],
-        data_example: Dict[Text, Dict[Text, List[np.ndarray]]],
+        data_example: Dict[Text, Dict[Text, List[FeatureArray]]],
         model_dir: Text,
     ) -> "RasaModel":
         file_name = meta.get("file")

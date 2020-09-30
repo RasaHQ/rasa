@@ -5,7 +5,7 @@ import pytest
 import scipy.sparse
 import numpy as np
 
-from rasa.utils.tensorflow.model_data import RasaModelData
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray
 
 
 @pytest.fixture
@@ -16,99 +16,175 @@ async def model_data() -> RasaModelData:
         data={
             "text": {
                 "sentence": [
-                    np.array(
-                        [
-                            np.random.rand(5, 14),
-                            np.random.rand(2, 14),
-                            np.random.rand(3, 14),
-                            np.random.rand(1, 14),
-                            np.random.rand(3, 14),
-                        ]
+                    FeatureArray(
+                        np.array(
+                            [
+                                np.random.rand(5, 14),
+                                np.random.rand(2, 14),
+                                np.random.rand(3, 14),
+                                np.random.rand(1, 14),
+                                np.random.rand(3, 14),
+                            ]
+                        ),
+                        has_4_dimensions=False,
+                        is_sparse=False,
                     ),
-                    np.array(
-                        [
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                        ]
+                    FeatureArray(
+                        np.array(
+                            [
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(5, size=(5, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(5, size=(2, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(5, size=(3, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(5, size=(1, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(5, size=(3, 10))
+                                ),
+                            ]
+                        ),
+                        has_4_dimensions=False,
+                        is_sparse=True,
                     ),
                 ]
             },
             "action_text": {
                 "sequence": [
-                    [
-                        [
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                        ],
-                        [
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
-                        ],
-                        [
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                        ],
-                        [scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),],
-                        [
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
-                            scipy.sparse.csr_matrix(np.random.randint(5, size=(7, 10))),
-                        ],
-                    ],
-                    [
-                        [
-                            np.random.rand(5, 14),
-                            np.random.rand(2, 14),
-                            np.random.rand(3, 14),
-                            np.random.rand(1, 14),
-                            np.random.rand(3, 14),
-                        ],
-                        [np.random.rand(5, 14), np.random.rand(2, 14),],
-                        [
-                            np.random.rand(5, 14),
-                            np.random.rand(1, 14),
-                            np.random.rand(3, 14),
-                        ],
-                        [np.random.rand(3, 14),],
-                        [
-                            np.random.rand(3, 14),
-                            np.random.rand(1, 14),
-                            np.random.rand(7, 14),
-                        ],
-                    ],
+                    FeatureArray(
+                        np.array(
+                            [
+                                [
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(5, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(2, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(3, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(1, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(3, 10))
+                                    ),
+                                ],
+                                [
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(5, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(2, 10))
+                                    ),
+                                ],
+                                [
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(5, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(1, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(3, 10))
+                                    ),
+                                ],
+                                [
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(3, 10))
+                                    ),
+                                ],
+                                [
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(3, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(1, 10))
+                                    ),
+                                    scipy.sparse.csr_matrix(
+                                        np.random.randint(5, size=(7, 10))
+                                    ),
+                                ],
+                            ]
+                        ),
+                        has_4_dimensions=True,
+                        is_sparse=True,
+                    ),
+                    FeatureArray(
+                        np.array(
+                            [
+                                [
+                                    np.random.rand(5, 14),
+                                    np.random.rand(2, 14),
+                                    np.random.rand(3, 14),
+                                    np.random.rand(1, 14),
+                                    np.random.rand(3, 14),
+                                ],
+                                [np.random.rand(5, 14), np.random.rand(2, 14),],
+                                [
+                                    np.random.rand(5, 14),
+                                    np.random.rand(1, 14),
+                                    np.random.rand(3, 14),
+                                ],
+                                [np.random.rand(3, 14),],
+                                [
+                                    np.random.rand(3, 14),
+                                    np.random.rand(1, 14),
+                                    np.random.rand(7, 14),
+                                ],
+                            ]
+                        ),
+                        has_4_dimensions=True,
+                        is_sparse=False,
+                    ),
                 ]
             },
             "dialogue": {
                 "sentence": [
-                    np.array(
-                        [
-                            np.random.randint(2, size=(5, 10)),
-                            np.random.randint(2, size=(2, 10)),
-                            np.random.randint(2, size=(3, 10)),
-                            np.random.randint(2, size=(1, 10)),
-                            np.random.randint(2, size=(3, 10)),
-                        ]
+                    FeatureArray(
+                        np.array(
+                            [
+                                np.random.randint(2, size=(5, 10)),
+                                np.random.randint(2, size=(2, 10)),
+                                np.random.randint(2, size=(3, 10)),
+                                np.random.randint(2, size=(1, 10)),
+                                np.random.randint(2, size=(3, 10)),
+                            ]
+                        ),
+                        has_4_dimensions=False,
+                        is_sparse=False,
                     )
                 ]
             },
-            "label": {"ids": [np.array([0, 1, 0, 1, 1])]},
+            "label": {
+                "ids": [
+                    FeatureArray(
+                        np.array([0, 1, 0, 1, 1]),
+                        has_4_dimensions=False,
+                        is_sparse=False,
+                    )
+                ]
+            },
             "entities": {
                 "tag_ids": [
-                    np.array(
-                        [
-                            np.array([[0], [1], [1], [0], [2]]),
-                            np.array([[2], [0]]),
-                            np.array([[0], [1], [1]]),
-                            np.array([[0], [1]]),
-                            np.array([[0], [0], [0]]),
-                        ]
+                    FeatureArray(
+                        np.array(
+                            [
+                                np.array([[0], [1], [1], [0], [2]]),
+                                np.array([[2], [0]]),
+                                np.array([[0], [1], [1]]),
+                                np.array([[0], [1]]),
+                                np.array([[0], [0], [0]]),
+                            ]
+                        ),
+                        has_4_dimensions=False,
+                        is_sparse=False,
                     )
                 ]
             },
@@ -253,8 +329,8 @@ def test_gen_batch(model_data: RasaModelData):
 
 
 def test_is_in_4d_format(model_data: RasaModelData):
-    assert RasaModelData.is_in_4d_format(model_data.data["action_text"]["sequence"][0])
-    assert not RasaModelData.is_in_4d_format(model_data.data["text"]["sentence"][0])
+    assert model_data.data["action_text"]["sequence"][0].has_4_dimensions
+    assert not model_data.data["text"]["sentence"][0].has_4_dimensions
 
 
 def test_balance_model_data(model_data: RasaModelData):
@@ -284,45 +360,51 @@ def test_get_num_of_features(model_data: RasaModelData):
 @pytest.mark.parametrize(
     "incoming_data, expected_shape",
     [
-        (np.random.rand(7, 12), (7, 12)),
-        (np.random.rand(7), (7,)),
+        (FeatureArray(np.random.rand(7, 12)), (7, 12)),
+        (FeatureArray(np.random.rand(7)), (7,)),
         (
-            np.array(
-                [
-                    np.random.rand(1, 10),
-                    np.random.rand(3, 10),
-                    np.random.rand(7, 10),
-                    np.random.rand(1, 10),
-                ]
+            FeatureArray(
+                np.array(
+                    [
+                        np.random.rand(1, 10),
+                        np.random.rand(3, 10),
+                        np.random.rand(7, 10),
+                        np.random.rand(1, 10),
+                    ]
+                ),
             ),
             (4, 7, 10),
         ),
         (
-            [
+            FeatureArray(
                 np.array(
                     [
-                        np.random.rand(1, 10),
-                        np.random.rand(5, 10),
-                        np.random.rand(7, 10),
+                        np.array(
+                            [
+                                np.random.rand(1, 10),
+                                np.random.rand(5, 10),
+                                np.random.rand(7, 10),
+                            ]
+                        ),
+                        np.array(
+                            [
+                                np.random.rand(1, 10),
+                                np.random.rand(3, 10),
+                                np.random.rand(3, 10),
+                                np.random.rand(7, 10),
+                            ]
+                        ),
+                        np.array([np.random.rand(2, 10),]),
                     ]
                 ),
-                np.array(
-                    [
-                        np.random.rand(1, 10),
-                        np.random.rand(3, 10),
-                        np.random.rand(3, 10),
-                        np.random.rand(7, 10),
-                    ]
-                ),
-                np.array([np.random.rand(2, 10),]),
-            ],
+                is_sparse=False,
+                has_4_dimensions=True,
+            ),
             (3, 4, 7, 10),
         ),
     ],
 )
-def test_pad_dense_data(
-    incoming_data: Union[List[np.ndarray], np.ndarray], expected_shape: np.ndarray
-):
+def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray):
     padded_data = RasaModelData._pad_dense_data(incoming_data)
 
     assert padded_data.shape == expected_shape
@@ -332,51 +414,84 @@ def test_pad_dense_data(
     "incoming_data, expected_shape",
     [
         (
-            np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7, 12)))]),
+            FeatureArray(
+                np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7, 12)))]),
+                is_sparse=True,
+            ),
             [1, 7, 12],
         ),
         (
-            np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7,)))]),
+            FeatureArray(
+                np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7,)))]),
+                is_sparse=True,
+            ),
             [1, 1, 7],
         ),
         (
-            np.array(
-                [
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
-                ]
-            ),
-            (4, 7, 10),
-        ),
-        (
-            [
-                np.array(
-                    [
-                        scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
-                        scipy.sparse.csr_matrix(np.random.randint(10, size=(5, 10))),
-                        scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
-                    ]
-                ),
+            FeatureArray(
                 np.array(
                     [
                         scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
                         scipy.sparse.csr_matrix(np.random.randint(10, size=(3, 10))),
-                        scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
                         scipy.sparse.csr_matrix(np.random.randint(10, size=(7, 10))),
+                        scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
                     ]
                 ),
+                is_sparse=True,
+            ),
+            (4, 7, 10),
+        ),
+        (
+            FeatureArray(
                 np.array(
-                    [scipy.sparse.csr_matrix(np.random.randint(10, size=(2, 10))),]
+                    [
+                        np.array(
+                            [
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(10, size=(1, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(10, size=(5, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(10, size=(7, 10))
+                                ),
+                            ]
+                        ),
+                        np.array(
+                            [
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(10, size=(1, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(10, size=(3, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(10, size=(1, 10))
+                                ),
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(10, size=(7, 10))
+                                ),
+                            ]
+                        ),
+                        np.array(
+                            [
+                                scipy.sparse.csr_matrix(
+                                    np.random.randint(10, size=(2, 10))
+                                ),
+                            ]
+                        ),
+                    ]
                 ),
-            ],
+                is_sparse=True,
+                has_4_dimensions=True,
+            ),
             (3, 4, 7, 10),
         ),
     ],
 )
 def test_scipy_matrix_to_values(
-    incoming_data: Union[List[np.ndarray], np.ndarray], expected_shape: np.ndarray
+    incoming_data: FeatureArray, expected_shape: np.ndarray
 ):
     indices, data, shape = RasaModelData._scipy_matrix_to_values(incoming_data)
 

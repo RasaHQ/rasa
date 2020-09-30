@@ -5,7 +5,7 @@ import numpy as np
 from collections import defaultdict, OrderedDict
 import scipy.sparse
 
-from rasa.utils.tensorflow.model_data import Data, Features_4D, Features_3D
+from rasa.utils.tensorflow.model_data import Data, FeatureArray
 from rasa.utils.tensorflow.constants import SEQUENCE
 
 if typing.TYPE_CHECKING:
@@ -96,7 +96,7 @@ def convert_to_data_format(
         List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
     ],
     zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
-) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
+) -> Tuple[Data, Optional[Dict[Text, List[FeatureArray]]]]:
     """Converts the input into "Data" format.
 
     Args:
@@ -158,7 +158,7 @@ def _features_for_attribute(
     state_to_tracker_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     zero_state_features: Dict[Text, List["Features"]],
-) -> Dict[Text, Union[List[Features_4D], List[Features_3D]]]:
+) -> Dict[Text, List[FeatureArray]]:
     """Create the features for the given attribute from the tracker features.
 
     Args:
@@ -192,16 +192,31 @@ def _features_for_attribute(
     # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():
         if key == SEQUENCE:
-            sparse_features[key] = values
+            sparse_features[key] = FeatureArray(
+                np.array(values),
+                is_sparse=True,
+                has_4_dimensions=True,
+                feature_dimension=values[0][0].shape[-1],
+            )
         else:
             features = [scipy.sparse.vstack(value) for value in values]
-            sparse_features[key] = np.array(features)
+            sparse_features[key] = FeatureArray(
+                np.array(features),
+                is_sparse=True,
+                feature_dimension=features[0].shape[-1],
+            )
     for key, values in _dense_features.items():
         if key == SEQUENCE:
-            dense_features[key] = values
+            dense_features[key] = FeatureArray(
+                np.array(values),
+                has_4_dimensions=True,
+                feature_dimension=values[0][0].shape[-1],
+            )
         else:
             features = [np.vstack(value) for value in values]
-            dense_features[key] = np.array(features)
+            dense_features[key] = FeatureArray(
+                np.array(features), feature_dimension=features[0].shape[-1],
+            )
 
     attribute_features = {MASK: [np.array(attribute_masks)]}
 
