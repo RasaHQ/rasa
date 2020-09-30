@@ -141,7 +141,7 @@ nlu:
 nlu:
 - regex: account_number
   examples: |
-    - \d{10:12}
+    - \d{10,12}
 ```
 
 - [Lookup tables](#lookup-tables)
@@ -265,7 +265,7 @@ for, see the section on [entity roles and groups](./nlu-training-data.mdx#entiti
 
 ### Synonyms
 
-[Synonyms](./nlu-training-data.mdx#synonyms) provide a way to normalize your training data by mapping an
+Synonyms provide a way to normalize your training data by mapping an
 extracted entity to a value other than the literal text extracted.
 Synonyms can be defined in the format:
 
@@ -288,6 +288,7 @@ nlu:
     - how much do I owe on my [credit account]{"entity": "account", "value": "credit"}
 ```
 
+Read more about synonyms on the [NLU Training Data page](./nlu-training-data.mdx#synonyms).
 
 ### Regular Expressions
 
@@ -300,20 +301,20 @@ The format for defining a regular expression is as follows:
 nlu:
 - regex: account_number
   examples: |
-    - \d{10:12}
+    - \d{10,12}
 ```
 
 Here `account_number` is the name of the regular expression. When used as as features for the `RegexFeaturizer` the name of the regular expression does not matter. When using the `RegexEntityExtractor`, the name of the regular expression should match the name of the entity you want to extract.
 
 
-Read more about when and how to use regular expressions with each component on the [NLU Training Data page](./nlu-training-data.mdx).
+Read more about when and how to use regular expressions with each component on the [NLU Training Data page](./nlu-training-data.mdx#regular-expressions).
 
 
 
 ### Lookup Tables
 
-Lookup tables provide a convenient way to supply a list of entity
-examples. The format is as follows:
+Lookup tables are lists of words used to generate
+case-insensitive regular expression patterns. The format is as follows:
 
 ```yaml-rasa
 nlu:
@@ -335,7 +336,7 @@ or with the [RegexEntityExtractor](components.mdx#regexentityextractor).
 The name of the lookup table is subject to the same constraints as the
 name of a regex feature.
 
-Read more about using lookup tables on the [NLU Training Data page](./nlu-training-data.mdx).
+Read more about using lookup tables on the [NLU Training Data page](./nlu-training-data.mdx#lookup-tables).
 
 ## Conversation Training Data
 
