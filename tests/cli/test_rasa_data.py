@@ -42,14 +42,8 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
     folder = Path("train_test_split")
     assert folder.exists()
 
-    nlu_files = [
-        folder / "test_data.yml",
-        folder / "training_data.yml",
-    ]
-    nlg_files = [
-        folder / "nlg_test_data.yml",
-        folder / "nlg_training_data.yml",
-    ]
+    nlu_files = [folder / "test_data.yml", folder / "training_data.yml"]
+    nlg_files = [folder / "nlg_test_data.yml", folder / "nlg_training_data.yml"]
     for yml_file in nlu_files:
         assert yml_file.exists(), f"{yml_file} file does not exist"
         nlu_data = read_yaml_file(yml_file)
@@ -154,7 +148,7 @@ def test_validate_files_exit_early():
 
 
 def test_rasa_data_convert_nlu_to_yaml(
-    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult],
 ):
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
@@ -203,7 +197,7 @@ def test_rasa_data_convert_nlu_to_yaml(
 
 
 def test_rasa_data_convert_stories_to_yaml(
-    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult],
 ):
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
@@ -251,9 +245,7 @@ def test_rasa_data_convert_stories_to_yaml(
     )
 
 
-def test_rasa_data_convert_nlg_to_yaml(
-    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
-):
+def test_rasa_data_convert_nlg_to_yaml(run_in_simple_project: Callable[..., RunResult]):
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
 
@@ -300,7 +292,7 @@ def test_rasa_data_convert_nlg_to_yaml(
 
 
 def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
-    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult]
 ):
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
