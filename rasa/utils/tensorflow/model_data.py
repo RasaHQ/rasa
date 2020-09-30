@@ -36,7 +36,9 @@ logger = logging.getLogger(__name__)
 #   [["numpy array containing dense features for every training example"]],
 #   [["numpy array containing sparse features for every training example"]]
 # ]}
-Data = Dict[Text, Dict[Text, Union[List[np.ndarray], List[List[np.ndarray]]]]]
+Features_4D = List[np.ndarray]
+Features_3D = np.ndarray
+Data = Dict[Text, Dict[Text, Union[List[Features_4D], List[Features_3D]]]]
 
 
 class FeatureSignature(NamedTuple):
@@ -76,7 +78,7 @@ class RasaModelData:
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
-    ) -> Union[Dict[Text, Union[List[np.ndarray], List[List[np.ndarray]]]], List[np.ndarray], List[List[np.ndarray]]]:
+    ) -> Union[Dict[Text, List[Features_3D]], Dict[Text, List[Features_4D]], List[Features_3D], List[Features_4D]]:
         """Get the data under the given keys.
 
         Args:
@@ -102,7 +104,7 @@ class RasaModelData:
         """
         return self.data.items()
 
-    def values(self) -> ValuesView[Dict[Text, Union[List[List[np.ndarray]], List[np.ndarray]]]]:
+    def values(self) -> ValuesView[Dict[Text, Union[List[Features_4D], List[Features_3D]]]]:
         """Return the values of the data attribute.
 
         Returns:
@@ -166,10 +168,10 @@ class RasaModelData:
         return not self.data
 
     @staticmethod
-    def is_in_4d_format(features: Union[np.ndarray, List[np.ndarray]]) -> bool:
+    def is_in_4d_format(features: Union[Features_4D, Features_3D]) -> bool:
         """Checks if the given features have a 4D shape or not.
 
-        4D features are lists of numpy arrays whereas low dimensional features are simply numpy arrays.
+        4D features are lists of numpy arrays whereas lower dimensional features are simply numpy arrays.
 
         Args:
             features: The features
@@ -259,7 +261,7 @@ class RasaModelData:
         self,
         key: Text,
         sub_key: Text,
-        features: Optional[Union[List[np.ndarray], List[List[np.ndarray]]]],
+        features: Optional[Union[List[Features_4D], List[Features_3D]]],
     ) -> None:
         """Add list of features to data under specified key.
 
@@ -855,7 +857,7 @@ class RasaModelData:
         return np.concatenate([feature_1, feature_2])
 
     @staticmethod
-    def _create_label_ids(label_ids: np.ndarray) -> np.ndarray:
+    def _create_label_ids(label_ids: Union[Features_4D, Features_3D]) -> np.ndarray:
         """Convert various size label_ids into single dim array.
 
         For multi-label y, map each distinct row to a string representation
@@ -865,9 +867,14 @@ class RasaModelData:
         Args:
             label_ids: The label ids.
 
+        Raises:
+            ValueError if dimensionality of label ids is not supported
+
         Returns:
             The single dim label array.
         """
+        if RasaModelData.is_in_4d_format(label_ids):
+            raise ValueError("Unsupported label_ids dimensions")
 
         if label_ids.ndim == 1:
             return label_ids
@@ -885,7 +892,7 @@ class RasaModelData:
 
     @staticmethod
     def _pad_dense_data(
-        array_of_dense: Union[np.ndarray, List[np.ndarray]]
+        array_of_dense: Union[Features_4D, Features_3D]
     ) -> np.ndarray:
         """Pad data of different lengths.
 
@@ -898,36 +905,7 @@ class RasaModelData:
             The padded array.
         """
         if RasaModelData.is_in_4d_format(array_of_dense):
-            # in case of dialogue data we may have 4 dimensions
-            # batch size x dialogue history length x sequence length x number of features
-            array_of_array_of_dense = array_of_dense
-            data_size = len(array_of_array_of_dense)
-            max_dialogue_len = max(
-                len(array_of_dense) for array_of_dense in array_of_array_of_dense
-            )
-            max_seq_len = max(
-                [
-                    x.shape[0]
-                    for array_of_dense in array_of_array_of_dense
-                    for x in array_of_dense
-                ]
-            )
-
-            data_padded = np.zeros(
-                [
-                    data_size,
-                    max_dialogue_len,
-                    max_seq_len,
-                    array_of_array_of_dense[0][0].shape[-1],
-                ],
-                dtype=array_of_array_of_dense[0][0].dtype,
-            )
-
-            for i, array_of_dense in enumerate(array_of_array_of_dense):
-                for j, dense in enumerate(array_of_dense):
-                    data_padded[i, j, : dense.shape[0], :] = dense
-
-            return data_padded.astype(np.float32)
+            return RasaModelData._pad_4d_dense_data(array_of_dense)
 
         if array_of_dense[0].ndim < 2:
             # data doesn't contain a sequence
@@ -946,8 +924,40 @@ class RasaModelData:
         return data_padded.astype(np.float32)
 
     @staticmethod
+    def _pad_4d_dense_data(array_of_array_of_dense: Features_4D) -> np.ndarray:
+        # in case of dialogue data we may have 4 dimensions
+        # batch size x dialogue history length x sequence length x number of features
+        data_size = len(array_of_array_of_dense)
+        max_dialogue_len = max(
+            len(array_of_dense) for array_of_dense in array_of_array_of_dense
+        )
+        max_seq_len = max(
+            [
+                x.shape[0]
+                for array_of_dense in array_of_array_of_dense
+                for x in array_of_dense
+            ]
+        )
+
+        data_padded = np.zeros(
+            [
+                data_size,
+                max_dialogue_len,
+                max_seq_len,
+                array_of_array_of_dense[0][0].shape[-1],
+            ],
+            dtype=array_of_array_of_dense[0][0].dtype,
+        )
+
+        for i, array_of_dense in enumerate(array_of_array_of_dense):
+            for j, dense in enumerate(array_of_dense):
+                data_padded[i, j, : dense.shape[0], :] = dense
+
+        return data_padded.astype(np.float32)
+
+    @staticmethod
     def _scipy_matrix_to_values(
-        array_of_sparse: Union[np.ndarray, List[np.ndarray]]
+        array_of_sparse: Union[Features_4D, Features_3D]
     ) -> List[np.ndarray]:
         """Convert a scipy matrix into indices, data, and shape.
 
@@ -958,65 +968,7 @@ class RasaModelData:
             A list of dense numpy arrays representing the sparse data.
         """
         if RasaModelData.is_in_4d_format(array_of_sparse):
-            # we need to make sure that the matrices are coo_matrices otherwise the
-            # transformation does not work (e.g. you cannot access x.row, x.col)
-            array_of_array_of_sparse = array_of_sparse
-            if not isinstance(array_of_array_of_sparse[0][0], scipy.sparse.coo_matrix):
-                array_of_array_of_sparse = [
-                    [x.tocoo() for x in array_of_sparse]
-                    for array_of_sparse in array_of_array_of_sparse
-                ]
-
-            max_dialogue_len = max(
-                [len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse]
-            )
-            max_seq_len = max(
-                [
-                    x.shape[0]
-                    for array_of_sparse in array_of_array_of_sparse
-                    for x in array_of_sparse
-                ]
-            )
-
-            # get the indices of values
-            indices = np.hstack(
-                [
-                    np.vstack(
-                        [
-                            i * np.ones_like(x.row),
-                            j * np.ones_like(x.row),
-                            x.row,
-                            x.col,
-                        ]
-                    )
-                    for i, array_of_sparse in enumerate(array_of_array_of_sparse)
-                    for j, x in enumerate(array_of_sparse)
-                ]
-            ).T
-
-            data = np.hstack(
-                [
-                    x.data
-                    for array_of_sparse in array_of_array_of_sparse
-                    for x in array_of_sparse
-                ]
-            )
-
-            number_of_features = array_of_array_of_sparse[0][0].shape[-1]
-            shape = np.array(
-                (
-                    len(array_of_sparse),
-                    max_dialogue_len,
-                    max_seq_len,
-                    number_of_features,
-                )
-            )
-
-            return [
-                indices.astype(np.int64),
-                data.astype(np.float32),
-                shape.astype(np.int64),
-            ]
+            return RasaModelData._4d_scipy_matrix_to_values(array_of_sparse)
 
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
@@ -1037,6 +989,69 @@ class RasaModelData:
 
         number_of_features = array_of_sparse[0].shape[-1]
         shape = np.array((len(array_of_sparse), max_seq_len, number_of_features))
+
+        return [
+            indices.astype(np.int64),
+            data.astype(np.float32),
+            shape.astype(np.int64),
+        ]
+
+    @staticmethod
+    def _4d_scipy_matrix_to_values(array_of_array_of_sparse: Features_4D):
+        # in case of dialogue data we may have 4 dimensions
+        # batch size x dialogue history length x sequence length x number of features
+
+        # we need to make sure that the matrices are coo_matrices otherwise the
+        # transformation does not work (e.g. you cannot access x.row, x.col)
+        if not isinstance(array_of_array_of_sparse[0][0], scipy.sparse.coo_matrix):
+            array_of_array_of_sparse = [
+                [x.tocoo() for x in array_of_sparse]
+                for array_of_sparse in array_of_array_of_sparse
+            ]
+
+        max_dialogue_len = max(
+            [len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse]
+        )
+        max_seq_len = max(
+            [
+                x.shape[0]
+                for array_of_sparse in array_of_array_of_sparse
+                for x in array_of_sparse
+            ]
+        )
+        # get the indices of values
+        indices = np.hstack(
+            [
+                np.vstack(
+                    [
+                        i * np.ones_like(x.row),
+                        j * np.ones_like(x.row),
+                        x.row,
+                        x.col,
+                    ]
+                )
+                for i, array_of_sparse in enumerate(array_of_array_of_sparse)
+                for j, x in enumerate(array_of_sparse)
+            ]
+        ).T
+
+        data = np.hstack(
+            [
+                x.data
+                for array_of_sparse in array_of_array_of_sparse
+                for x in array_of_sparse
+            ]
+        )
+
+        number_of_features = array_of_array_of_sparse[0][0].shape[-1]
+        shape = np.array(
+            (
+                len(array_of_array_of_sparse),
+                max_dialogue_len,
+                max_seq_len,
+                number_of_features,
+            )
+        )
 
         return [
             indices.astype(np.int64),
