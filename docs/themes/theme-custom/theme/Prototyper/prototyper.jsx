@@ -18,15 +18,15 @@ const Prototyper = ({
   chatBlockSelector,
   chatBlockScriptUrl,
 }) => {
-  const [trackingId, setTrackingId] = React.useState(null);
   const [hasStarted, setHasStarted] = React.useState(false);
+  const [trackingId, setTrackingId] = React.useState(null);
   const [projectDownloadUrl, setProjectDownloadUrl] = React.useState(null);
   const [trainingData, setTrainingData] = React.useState({});
   const [pollingIntervalId, setPollingIntervalId] = React.useState(null);
-  const [hasTrained, setHasTrained] = React.useState(false);
-  const [isTraining, setIsTraining] = React.useState(false);
 
-  const [chatState, setChatState] = React.useState("");
+  const [baseUrl, setBaseUrl] = React.useState("");
+  const [tracker, setTracker] = React.useState({});
+  const [chatState, setChatState] = React.useState("not_trained");
 
   // FIXME: once we can use `rasa-ui` outside of `rasa-x`, we can remove this
   const insertChatBlockScript = () => {
@@ -41,22 +41,30 @@ const Prototyper = ({
   React.useEffect(() => {
     setTrackingId(isProductionBuild() ? uuidv4() : 'the-hash');
     insertChatBlockScript();
+    updateChatBlock();
   }, []);
 
-  // initialize the chatblock once we have a tracking id
+  // update chat block when chatState changes
   React.useEffect(() => {
-    if (trackingId !== null) {
-      updateChatBlock();
+    updateChatBlock();
+  }, [chatState, trainingData]);
+
+  const clearPollingInterval = React.useCallback(() => {
+    if (pollingIntervalId) {
+      clearInterval(pollingIntervalId);
+      setPollingIntervalId(null);
     }
-  }, [trackingId, chatState]);
+  }, [pollingIntervalId, setPollingIntervalId]);
 
-  const onLiveCodeStart = (name, value) => {
-    setTrainingData((prevTrainingData) => ({ ...prevTrainingData, [name]: value }));
-  };
+  const onLiveCodeStart = React.useCallback((name, value) => {
+    setTrainingData((prevTrainingData) => ({...prevTrainingData, [name]: value}));
+  }, [setTrainingData]);
 
-  const onLiveCodeChange = (name, value) => {
+  const onLiveCodeChange = React.useCallback((name, value) => {
     setTrainingData((prevTrainingData) => ({ ...prevTrainingData, [name]: value }));
+
     if (chatState === "ready") {
+      clearPollingInterval();
       setChatState("needs_to_be_retrained");
     }
 
@@ -72,18 +80,11 @@ const Prototyper = ({
         }),
       });
     }
-  };
+  }, [setTrainingData, chatState, setChatState]);
 
-  const trainModel = () => {
-    setIsTraining(true);
+  const trainModel = (trainingData) => {
     setChatState("training");
-
-    // train the model, resetting the chatblock
-    if (pollingIntervalId) {
-      updateChatBlock();
-      clearInterval(pollingIntervalId);
-      setPollingIntervalId(null);
-    }
+    clearPollingInterval();
 
     fetch(trainModelApi, {
       method: 'POST',
@@ -92,13 +93,11 @@ const Prototyper = ({
     })
       .then((response) => response.json())
       .then((data) => {
-        setHasTrained(true);
         setProjectDownloadUrl(data.project_download_url);
         if (data.rasa_service_url) {
           startFetchingTracker(data.rasa_service_url);
         }
-      })
-      .finally(() => setIsTraining(false));
+      });
   };
 
   const downloadProject = () => {
@@ -107,27 +106,29 @@ const Prototyper = ({
     }
   };
 
-  const updateChatBlock = (baseUrl = '', tracker = {}) => {
-    if (ExecutionEnvironment.canUseDOM) {
-      if (!window.ChatBlock) {
-        // FIXME: once we can use `rasa-ui` outside of `rasa-x`, we can remove this
-        setTimeout(() => updateChatBlock(baseUrl, tracker), 500);
-      } else {
-        const chatBlock = window.ChatBlock.default;
-
-        chatBlock.init({
-          onSendMessage: (message) => {
-            sendMessage(baseUrl, message);
-          },
-          onTrainClick: trainModel,
-          username: trackingId,
-          tracker: tracker,
-          selector: chatBlockSelector,
-          state: chatState,
-        });
-      }
+  const updateChatBlock = React.useCallback(() => {
+    if (!ExecutionEnvironment.canUseDOM) {
+      return;
     }
-  };
+
+    if (!window.ChatBlock) {
+      setTimeout(() => updateChatBlock(baseUrl, tracker), 500);
+      return;
+    }
+
+    window.ChatBlock.default.init({
+      onSendMessage: (message) => {
+        sendMessage(baseUrl, message);
+      },
+      onTrainClick: () => {
+        trainModel(trainingData);
+      },
+      username: trackingId,
+      tracker: tracker,
+      selector: chatBlockSelector,
+      state: chatState,
+    });
+  }, [trainingData, chatState]);
 
   const fetchTracker = (baseUrl) => {
     fetch(`${baseUrl}/conversations/${trackingId}/tracker`, {
@@ -136,8 +137,9 @@ const Prototyper = ({
     })
       .then((response) => response.json())
       .then((tracker) => {
+        setBaseUrl(baseUrl);
+        setTracker(tracker);
         setChatState("ready");
-        updateChatBlock(baseUrl, tracker);
       });
   };
 
@@ -165,7 +167,7 @@ const Prototyper = ({
 
   return (
     <ThemeContext.Provider value={{ onLiveCodeChange, onLiveCodeStart }}>
-      <PrototyperContext.Provider value={{ trainModel, downloadProject, hasTrained, isTraining, chatState }}>
+      <PrototyperContext.Provider value={{ trainModel, downloadProject, chatState }}>
         {children}
       </PrototyperContext.Provider>
     </ThemeContext.Provider>
