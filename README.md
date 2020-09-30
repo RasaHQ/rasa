@@ -28,7 +28,7 @@ or voice assistants as:
 - Alexa Skills
 - Google Home Actions
 
-Rasa helps you build contextual assistants capable of having layered conversations with 
+Rasa also helps you build contextual assistants capable of having layered conversations with 
 lots of back-and-forth. In order for a human to have a meaningful exchange with a contextual 
 assistant, the assistant needs to be able to use context to build on things that were previously 
 discussed – Rasa enables you to build assistants that can do this in a scalable way.
