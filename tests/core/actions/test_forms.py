@@ -201,11 +201,14 @@ async def test_entity_type_determination():
     domain = Domain.from_yaml(domain)
 
     action = FormAction(form_name, None)
-    assert action._get_entity_type_of_slot_to_fill(None, domain) == None
+    assert action._get_entity_type_of_slot_to_fill(None, domain) is None
     assert (
-        action._get_entity_type_of_slot_to_fill(f"{slot_name_invalid}", domain) == None
+        action._get_entity_type_of_slot_to_fill(f"{slot_name_invalid}", domain) is None
     )
-    assert action._get_entity_type_of_slot_to_fill(f"{slot_name_valid}", domain) != None
+    assert (
+        action._get_entity_type_of_slot_to_fill(f"{slot_name_valid}", domain)
+        is not None
+    )
 
 
 async def test_set_slot_and_deactivate():
