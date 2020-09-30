@@ -2,15 +2,22 @@ import argparse
 import logging
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Text, Dict
 
+import rasa.shared.core.domain
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 import rasa.nlu.convert
-from rasa.shared.constants import DEFAULT_DATA_PATH
+from rasa.shared.constants import (
+    DEFAULT_DATA_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DOCS_URL_MIGRATION_GUIDE,
+)
 import rasa.shared.data
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
@@ -18,6 +25,12 @@ import rasa.shared.utils.cli
 import rasa.utils.common
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
+from rasa.shared.core.domain import Domain, InvalidDomain
+import rasa.shared.utils.io
+from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.fallback import FallbackPolicy
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+from rasa.core.policies.mapping_policy import MappingPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +101,35 @@ def _add_data_convert_parsers(
     convert_core_parser.set_defaults(func=_convert_core_data)
 
     arguments.set_convert_arguments(convert_core_parser, data_type="Rasa Core")
+
+    migrate_config_parser = convert_subparsers.add_parser(
+        "config",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Migrate model configuration between Rasa Open Source versions.",
+    )
+    migrate_config_parser.set_defaults(func=_migrate_model_config)
+    _add_migrate_config_arguments(migrate_config_parser)
+
+
+def _add_migrate_config_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-c",
+        "--config",
+        default=DEFAULT_CONFIG_PATH,
+        help="Path to the model configuration which should be migrated",
+    )
+    parser.add_argument(
+        "-d", "--domain", default=DEFAULT_DOMAIN_PATH, help="Path to the model domain"
+    )
+    parser.add_argument(
+        "-o",
+        "--out",
+        type=str,
+        default=os.path.join(DEFAULT_DATA_PATH, "rules.yml"),
+        help="Path to the file which should contain any rules which are created as "
+        "part of the migration. If the file doesn't exist, it will be created.",
+    )
 
 
 def _add_data_split_parsers(
@@ -346,3 +388,102 @@ async def _convert_file_to_yaml(
     rasa.shared.utils.cli.print_warning(f"Skipped file: '{source_file}'.")
 
     return False
+
+
+def _migrate_model_config(args: argparse.Namespace):
+    configuration_file = Path(args.config)
+    model_configuration = _get_configuration(configuration_file)
+
+    domain_file = Path(args.domain)
+    domain = _get_domain(domain_file)
+
+    rule_output_file = _get_rules_path(Path(args.out))
+
+    # TODO:
+    # 1. Migrate
+    # 2. Dump config
+    # 3. Dump rules
+    # 4. Add telemetry
+
+
+def _get_configuration(path: Path) -> Dict:
+    config = {}
+    try:
+        config = rasa.shared.utils.io.read_config_file(path)
+    except ValueError:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"'{path}' is not a path to a valid model configuration. "
+            f"Please provide a valid path."
+        )
+
+    policy_names = [p.get("name") for p in config.get("policies", [])]
+
+    _assert_no_form_policy_present(policy_names)
+    _assert_nlu_pipeline_given(config, policy_names)
+    _assert_two_stage_fallack_policy_is_migratable(config)
+    return config
+
+
+def _assert_no_form_policy_present(policy_names: List[Text]) -> None:
+    if FormPolicy.__name__ in policy_names:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"Your model configuration contains the '{FormPolicy.__name__}'. "
+            f"Forms have to be migrated manually before '{MappingPolicy.__name__}', "
+            f"'{FallbackPolicy.__name__}', or '{TwoStageFallbackPolicy.__name__}' "
+            f"can be migrated. Please see the migration guide for further details: "
+            f" {DOCS_URL_MIGRATION_GUIDE}"
+        )
+
+
+def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
+    if not config.get("pipeline") and any(
+        policy in policy_names
+        for policy in [FallbackPolicy.__name__, TwoStageFallbackPolicy.__name__]
+    ):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The model configuration has to include an NLU pipeline. This is required "
+            f"to migrate the fallback policies."
+        )
+
+
+def _assert_two_stage_fallack_policy_is_migratable(config: Dict,):
+    two_stage_fallback_config = next(
+        (
+            policy_config
+            for policy_config in config.get("policies", [])
+            if policy_config.get("name") == TwoStageFallbackPolicy.__name__
+        ),
+        None,
+    )
+    if (
+        two_stage_fallback_config
+        and two_stage_fallback_config.get("deny_suggestion_intent_name")
+        != USER_INTENT_OUT_OF_SCOPE
+    ):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The TwoStageFallback in Rasa Open Source 2.0 has to use the intent "
+            f"'{USER_INTENT_OUT_OF_SCOPE}' to recognize when users deny suggestions. "
+            f"Please change the parameter 'deny_suggestion_intent_name' to "
+            f"'{USER_INTENT_OUT_OF_SCOPE}' before migrating the model configuration. "
+        )
+
+
+def _get_domain(path: Path) -> Domain:
+    try:
+        return Domain.from_path(path)
+    except InvalidDomain as e:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"'{path}' is not a path to a valid domain file. "
+            f"Please provide a valid domain."
+        )
+
+
+def _get_rules_path(path: Text) -> Path:
+    rules_file = Path(path)
+
+    if rules_file.is_dir():
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"'{rules_file}' needs to be the path to a file."
+        )
+
+    return rules_file
