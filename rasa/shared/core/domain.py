@@ -110,7 +110,7 @@ class Domain:
         return cls([], [], [], {}, [], [])
 
     @classmethod
-    def load(cls, paths: Union[List[Text], Text]) -> "Domain":
+    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -127,7 +127,7 @@ class Domain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Union[Text]) -> "Domain":
+    def from_path(cls, path: Union[Text, Path]) -> "Domain":
         path = os.path.abspath(path)
 
         if os.path.isfile(path):

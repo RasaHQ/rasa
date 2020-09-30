@@ -375,6 +375,20 @@ def test_convert_config_with_missing_nlu_pipeline_config(
     assert result.ret == 1
 
 
+def test_convert_config_with_missing_nlu_pipeline_config_if_no_fallbacks(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {"policies": [{"name": "MappingPolicy"}]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 0
+
+
 def test_convert_config_with_form_policy_present(
     run_in_simple_project: Callable[..., RunResult], tmp_path: Path
 ):

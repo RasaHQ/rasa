@@ -402,6 +402,11 @@ def _migrate_model_config(args: argparse.Namespace):
 
 
 def _get_configuration(path: Path) -> Dict:
+    from rasa.core.policies.form_policy import FormPolicy
+    from rasa.core.policies.fallback import FallbackPolicy
+    from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+    from rasa.core.policies.mapping_policy import MappingPolicy
+
     config = {}
     try:
         config = rasa.shared.utils.io.read_config_file(path)
@@ -411,19 +416,23 @@ def _get_configuration(path: Path) -> Dict:
             f"Please provide a valid path."
         )
 
-    # TODO: Just check this if fallback policies are migrated
-    if not config.get("pipeline"):
+    policy_names = [p.get("name") for p in config.get("policies", [])]
+    if not config.get("pipeline") and any(
+        policy in policy_names
+        for policy in [FallbackPolicy.__name__, TwoStageFallbackPolicy.__name__]
+    ):
         rasa.shared.utils.cli.print_error_and_exit(
             f"The model configuration has to include an NLU pipeline. This is required "
             f"to migrate the fallback policies."
         )
 
-    if any(p.get("name") == "FormPolicy" for p in config.get("policies", [])):
+    if FormPolicy.__name__ in policy_names:
         rasa.shared.utils.cli.print_error_and_exit(
-            f"Your model configuration contains the 'FormPolicy'. Forms have to be "
-            f"migrated manually before 'MappingPolicy', 'FallbackPolicy', or "
-            f"'TwoStageFallbackPolicy' can be migrated. Please see the migration guide "
-            f"for further details: {DOCS_URL_MIGRATION_GUIDE}"
+            f"Your model configuration contains the '{FormPolicy.__name__}'. "
+            f"Forms have to be migrated manually before '{MappingPolicy.__name__}', "
+            f"'{FallbackPolicy.__name__}', or '{TwoStageFallbackPolicy.__name__}' "
+            f"can be migrated. Please see the migration guide for further details: "
+            f" {DOCS_URL_MIGRATION_GUIDE}"
         )
 
     return config
