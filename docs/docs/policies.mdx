@@ -367,7 +367,8 @@ policies:
    ```
 
    In the second `incomplete rule`, `action_that_sets_some_slot` is expected to set
-   `some_slot` but don't do it. There is 2 possible ways to fix this rule:
+   `some_slot` but does not do it.
+   There is several possible ways to fix this rule, for example:
 
    - if `some_slot` should not be set, you should explicitly set it to `null`
 
@@ -380,6 +381,7 @@ policies:
      - slot_was_set:
        - some_slot: null
    ```
+
    - if you want to deal with setting slot in a different rule or story,
    add `wait_for_user_input: false` in the the end of the rule
 
