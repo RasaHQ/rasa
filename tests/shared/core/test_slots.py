@@ -91,7 +91,7 @@ class SlotTestCollection:
             slot.name, **{k: v for k, v in persistence_info.items() if k != "type"}
         )
 
-        assert slot_type == type(slot)
+        assert isinstance(slot, slot_type)
         assert recreated.persistence_info() == persistence_info
 
 
