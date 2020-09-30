@@ -356,8 +356,10 @@ class AnySlot(Slot):
         if influence_conversation:
             raise ValueError(
                 f"An {AnySlot.__name__} cannot be featurized. "
-                f"Please use a different slot type instead. See the "
-                f"documentation for more information: {DOCS_URL_SLOTS}"
+                f"Please use a different slot type instead. If you need to featurize a "
+                f"data type which is not supported out of the box, implement "
+                f"a custom slot type by subclassing '{Slot.__name__}'. "
+                f"See the documentation for more information: {DOCS_URL_SLOTS}"
             )
 
         super().__init__(
