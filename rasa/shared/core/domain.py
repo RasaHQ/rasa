@@ -283,13 +283,13 @@ class Domain:
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
-        # it is super important to sort the slots here!!!
-        # otherwise state ordering is not consistent
         slots = []
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)
+        # Sort the slots so that the order of the slot states is consistent
         for slot_name in sorted(slot_dict):
-            slot_class = Slot.resolve_by_type(slot_dict[slot_name].pop("type", None))
+            slot_type = slot_dict[slot_name].pop("type", None)
+            slot_class = Slot.resolve_by_type(slot_type)
 
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
