@@ -76,7 +76,7 @@ class RasaModelData:
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
-    ) -> Union[Dict[Text, List[np.ndarray]], List[np.ndarray]]:
+    ) -> Union[Dict[Text, Union[List[np.ndarray], List[List[np.ndarray]]]], List[np.ndarray], List[List[np.ndarray]]]:
         """Get the data under the given keys.
 
         Args:
@@ -102,7 +102,7 @@ class RasaModelData:
         """
         return self.data.items()
 
-    def values(self) -> ValuesView[Dict[Text, List[np.ndarray]]]:
+    def values(self) -> ValuesView[Dict[Text, Union[List[List[np.ndarray]], List[np.ndarray]]]]:
         """Return the values of the data attribute.
 
         Returns:
@@ -200,7 +200,7 @@ class RasaModelData:
             return 0
 
         example_lengths = [
-            len(f) if self.is_in_4d_format(f) else f.shape[0]
+            len(f)
             for attribute_data in data.values()
             for features in attribute_data.values()
             for f in features
@@ -302,7 +302,7 @@ class RasaModelData:
         self.data[key][sub_key] = []
 
         for data in self.data[from_key][from_sub_key]:
-            if data.size > 0:
+            if len(data) > 0:
                 lengths = np.array([x.shape[0] for x in data])
                 self.data[key][sub_key].extend([lengths])
                 break
@@ -931,7 +931,7 @@ class RasaModelData:
 
         if array_of_dense[0].ndim < 2:
             # data doesn't contain a sequence
-            return array_of_dense.astype(np.float32)
+            return np.array(array_of_dense).astype(np.float32)
 
         data_size = len(array_of_dense)
         max_seq_len = max([x.shape[0] for x in array_of_dense])
