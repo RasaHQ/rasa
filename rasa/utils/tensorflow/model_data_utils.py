@@ -5,9 +5,8 @@ import numpy as np
 from collections import defaultdict, OrderedDict
 import scipy.sparse
 
-from rasa.utils.tensorflow.model_data import Data
+from rasa.utils.tensorflow.model_data import Data, Features_4D, Features_3D
 from rasa.utils.tensorflow.constants import SEQUENCE
-from rasa.utils.tensorflow.model_data import RasaModelData
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -159,7 +158,7 @@ def _features_for_attribute(
     state_to_tracker_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     zero_state_features: Dict[Text, List["Features"]],
-) -> Dict[Text, List[Union[List[np.ndarray], np.ndarray]]]:
+) -> Dict[Text, Union[List[Features_4D], List[Features_3D]]]:
     """Create the features for the given attribute from the tracker features.
 
     Args:

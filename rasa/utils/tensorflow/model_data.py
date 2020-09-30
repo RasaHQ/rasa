@@ -507,7 +507,7 @@ class RasaModelData:
         types = []
         shapes = []
 
-        def append_shape(_features: Union[List[np.ndarray], np.ndarray]) -> None:
+        def append_shape(_features: Union[Features_4D, Features_3D]) -> None:
             if RasaModelData.is_in_4d_format(_features):
                 if isinstance(_features[0][0], scipy.sparse.spmatrix):
                     # scipy matrix is converted into indices, data, shape
@@ -529,7 +529,7 @@ class RasaModelData:
                 else:
                     shapes.append((None, None, _features[0].shape[-1]))
 
-        def append_type(_features: Union[List[np.ndarray], np.ndarray]) -> None:
+        def append_type(_features: Union[Features_4D, Features_3D]) -> None:
             if RasaModelData.is_in_4d_format(_features) and isinstance(
                 _features[0][0], scipy.sparse.spmatrix
             ):
@@ -735,8 +735,7 @@ class RasaModelData:
             for sub_key, features in attribute_data.items():
                 for f in features:
                     if RasaModelData.is_in_4d_format(f):
-                        _f = np.array(f)[ids]
-                        new_data[key][sub_key].append(list(_f))
+                        new_data[key][sub_key].append(list(np.array(f)[ids]))
                     else:
                         new_data[key][sub_key].append(f[ids])
         return new_data
