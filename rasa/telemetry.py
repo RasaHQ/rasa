@@ -558,7 +558,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 def strip_sensitive_data_from_sentry_event(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
-) -> Dict[Text, Any]:
+) -> Optional[Dict[Text, Any]]:
     """Remove any sensitive data from the event (e.g. path names).
 
     Args:
@@ -573,6 +573,18 @@ def strip_sensitive_data_from_sentry_event(
     for value in event.get("exception", {}).get("values", []):
         for frame in value.get("stacktrace", {}).get("frames", []):
             frame["abs_path"] = ""
+
+            if "site-packages" in frame["filename"]:
+                # drop site-packages and following slash / backslash
+                frame["filename"] = frame["filename"].split("site-packages")[-1][1:]
+            if "dist-packages" in frame["filename"]:
+                # drop dist-packages and following slash / backslash
+                frame["filename"] = frame["filename"].split("dist-packages")[-1][1:]
+            # if the file path is absolute, we'll drop the whole event as this is
+            # very likely custom code. needs to happen after cleaning as
+            # site-packages / dist-packages paths are also absolute, but fine.
+            if os.path.isabs(frame["filename"]):
+                return None
     return event
 
 
