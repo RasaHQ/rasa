@@ -9,6 +9,7 @@ import numpy as np
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
+from rasa.core.constants import ACTION_FINGERPRINT_SLOTS
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -711,7 +712,7 @@ class MessageProcessor:
             return
 
         fp = self.policy_ensemble.action_fingerprints[action_name]
-        slots_seen_during_train = fp.get("slots", set())
+        slots_seen_during_train = fp.get(ACTION_FINGERPRINT_SLOTS, set())
         for e in events:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)

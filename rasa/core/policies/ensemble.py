@@ -13,6 +13,10 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.core.constants import (
+    ACTION_FINGERPRINT_SLOTS,
+    ACTION_FINGERPRINT_ACTIVE_LOOPS,
+)
 from rasa.shared.constants import (
     DOCS_URL_RULES,
     DOCS_URL_POLICIES,
@@ -29,6 +33,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.events import (
     SlotSet,
+    ActiveLoop,
     ActionExecuted,
     ActionExecutionRejected,
     Event,
@@ -41,8 +46,8 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
-from rasa.utils import common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -51,15 +56,14 @@ class PolicyEnsemble:
     versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
     def __init__(
-        self, policies: List[Policy], action_fingerprints: Optional[Dict] = None
+        self,
+        policies: List[Policy],
+        action_fingerprints: Optional[Dict[Any, Dict[Text, List]]] = None,
     ) -> None:
         self.policies = policies
         self.date_trained = None
 
-        if action_fingerprints:
-            self.action_fingerprints = action_fingerprints
-        else:
-            self.action_fingerprints = {}
+        self.action_fingerprints = action_fingerprints
 
         self._check_priorities()
         self._check_for_important_policies()
@@ -75,22 +79,6 @@ class PolicyEnsemble:
                 f"'{USER_INTENT_RESTART} and {USER_INTENT_BACK} will not trigger "
                 f"actions '{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'."
             )
-
-    @staticmethod
-    def _training_events_from_trackers(
-        training_trackers: List[DialogueStateTracker],
-    ) -> Dict[Text, Set[Event]]:
-        events_metadata = defaultdict(set)
-
-        for t in training_trackers:
-            tracker = t.init_copy()
-            for event in t.events:
-                tracker.update(event)
-                if not isinstance(event, ActionExecuted):
-                    action_name = tracker.latest_action_name
-                    events_metadata[action_name].add(event)
-
-        return events_metadata
 
     @staticmethod
     def check_domain_ensemble_compatibility(
@@ -193,7 +181,7 @@ class PolicyEnsemble:
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -209,8 +197,7 @@ class PolicyEnsemble:
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
 
-            training_events = self._training_events_from_trackers(training_trackers)
-            self.action_fingerprints = self._create_action_fingerprints(training_events)
+            self.action_fingerprints = create_action_fingerprints(training_trackers)
         else:
             logger.info("Skipped training, because there are no training samples.")
 
@@ -235,23 +222,6 @@ class PolicyEnsemble:
             else:
                 max_histories.append(None)
         return max_histories
-
-    @staticmethod
-    def _create_action_fingerprints(
-        training_events: Dict[Text, Set[Event]]
-    ) -> Optional[Dict[Any, Dict[Text, List]]]:
-        """Fingerprint each action using the events it created during train.
-
-        This allows us to emit warnings when the model is used
-        if an action does things it hasn't done during training."""
-        if not training_events:
-            return None
-
-        action_fingerprints = {}
-        for k, vs in training_events.items():
-            slots = list({v.key for v in vs if isinstance(v, SlotSet)})
-            action_fingerprints[k] = {"slots": slots}
-        return action_fingerprints
 
     def _add_package_version_info(self, metadata: Dict[Text, Any]) -> None:
         """Adds version info for self.versioned_packages to metadata."""
@@ -735,6 +705,64 @@ def _check_policy_for_forms_available(
             "forms from your domain or exclude the FormPolicy from your "
             "policy configuration."
         )
+
+
+def _training_events_from_trackers(
+    training_trackers: List[DialogueStateTracker],
+) -> Dict[Text, Set[Event]]:
+    """Creates a dictionary of action names and events that follow these actions.
+
+    Args:
+        training_trackers: the trackers used for training
+
+    Returns:
+        a dictionary of action names and events that follow these actions
+    """
+    events_metadata = defaultdict(set)
+
+    for t in training_trackers:
+        tracker = t.init_copy()
+        for event in t.events:
+            tracker.update(event)
+            if isinstance(event, ActionExecuted):
+                continue
+
+            action_name = tracker.latest_action_name
+            if action_name:
+                events_metadata[action_name].add(event)
+
+    return events_metadata
+
+
+def create_action_fingerprints(
+    trackers: List[DialogueStateTracker],
+) -> Dict[Text, Dict[Text, List[Text]]]:
+    """Fingerprint each action using the events it created during train.
+
+    This allows us to emit warnings when the model is used
+    if an action does things it hasn't done during training,
+    or if rules are incomplete.
+
+    Args:
+        trackers: the list of trackers
+
+    Returns:
+        a nested dictionary of action names and slots and active loops
+            that this action sets
+    """
+    training_events = _training_events_from_trackers(trackers)
+    if not training_events:
+        return {}
+
+    action_fingerprints = {}
+    for k, vs in training_events.items():
+        slots = list({v.key for v in vs if isinstance(v, SlotSet)})
+        active_loops = list({v.name for v in vs if isinstance(v, ActiveLoop)})
+        action_fingerprints[k] = {
+            ACTION_FINGERPRINT_SLOTS: slots,
+            ACTION_FINGERPRINT_ACTIVE_LOOPS: active_loops,
+        }
+    return action_fingerprints
 
 
 class InvalidPolicyConfig(Exception):
