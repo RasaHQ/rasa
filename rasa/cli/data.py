@@ -2,14 +2,20 @@ import argparse
 import logging
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Text, Dict
 
+import rasa.shared.core.domain
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 import rasa.nlu.convert
-from rasa.shared.constants import DEFAULT_DATA_PATH
+from rasa.shared.constants import (
+    DEFAULT_DATA_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DOCS_URL_MIGRATION_GUIDE,
+)
 import rasa.shared.data
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
@@ -18,6 +24,8 @@ import rasa.shared.utils.cli
 import rasa.utils.common
 from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
+from rasa.shared.core.domain import Domain, InvalidDomain
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +96,35 @@ def _add_data_convert_parsers(
     convert_core_parser.set_defaults(func=_convert_core_data)
 
     arguments.set_convert_arguments(convert_core_parser, data_type="Rasa Core")
+
+    migrate_config_parser = convert_subparsers.add_parser(
+        "config",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Migrate model configuration between Rasa Open Source versions.",
+    )
+    migrate_config_parser.set_defaults(func=_migrate_model_config)
+    _add_migrate_config_arguments(migrate_config_parser)
+
+
+def _add_migrate_config_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-c",
+        "--config",
+        default=DEFAULT_CONFIG_PATH,
+        help="Path to the model configuration which should be migrated",
+    )
+    parser.add_argument(
+        "-d", "--domain", default=DEFAULT_DOMAIN_PATH, help="Path to the model domain"
+    )
+    parser.add_argument(
+        "-o",
+        "--out",
+        type=str,
+        default=os.path.join(DEFAULT_DATA_PATH, "rules.yml"),
+        help="Path to the file which should contain any rules which are created as "
+        "part of the migration. If the file doesn't exist, it will be created.",
+    )
 
 
 def _add_data_split_parsers(
@@ -346,3 +383,68 @@ async def _convert_file_to_yaml(
     rasa.shared.utils.cli.print_warning(f"Skipped file: '{source_file}'.")
 
     return False
+
+
+def _migrate_model_config(args: argparse.Namespace):
+    configuration_file = Path(args.config)
+    model_configuration = _get_configuration(configuration_file)
+
+    domain_file = Path(args.domain)
+    domain = _get_domain(domain_file)
+
+    rule_output_file = _get_rules_path(Path(args.out))
+
+    # TODO:
+    # 1. Migrate
+    # 2. Dump config
+    # 3. Dump rules
+    # 4. Add telemetry
+
+
+def _get_configuration(path: Path) -> Dict:
+    config = {}
+    try:
+        config = rasa.shared.utils.io.read_config_file(path)
+    except ValueError:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"'{path}' is not a path to a valid model configuration. "
+            f"Please provide a valid path."
+        )
+
+    # TODO: Just check this if fallback policies are migrated
+    if not config.get("pipeline"):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The model configuration has to include an NLU pipeline. This is required "
+            f"to migrate the fallback policies."
+        )
+
+    if any(p.get("name") == "FormPolicy" for p in config.get("policies", [])):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"Your model configuration contains the 'FormPolicy'. Forms have to be "
+            f"migrated manually before 'MappingPolicy', 'FallbackPolicy', or "
+            f"'TwoStageFallbackPolicy' can be migrated. Please see the migration guide "
+            f"for further details: {DOCS_URL_MIGRATION_GUIDE}"
+        )
+
+    return config
+
+
+def _get_domain(path: Path) -> Domain:
+    try:
+        return Domain.from_path(path)
+    except InvalidDomain as e:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"'{path}' is not a path to a valid domain file. "
+            f"Please provide a valid domain."
+        )
+
+
+def _get_rules_path(path: Text) -> Path:
+    rules_file = Path(path)
+
+    if rules_file.is_dir():
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"'{rules_file}' needs to be the path to a file."
+        )
+
+    return rules_file

@@ -10,9 +10,10 @@ from typing import Callable, Text
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
+from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
-from rasa.shared.utils.io import read_yaml_file
+import rasa.shared.utils.io
 
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
@@ -46,7 +47,7 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
     nlg_files = [folder / "nlg_test_data.yml", folder / "nlg_training_data.yml"]
     for yml_file in nlu_files:
         assert yml_file.exists(), f"{yml_file} file does not exist"
-        nlu_data = read_yaml_file(yml_file)
+        nlu_data = rasa.shared.utils.io.read_yaml_file(yml_file)
         assert "version" in nlu_data
         assert nlu_data.get("nlu")
 
@@ -324,3 +325,82 @@ def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
     )
 
     assert len(os.listdir(converted_data_folder)) == 1
+
+
+def test_convert_config(
+    run: Callable[..., RunResult], tmp_path: Path, default_domain_path: Text
+):
+    deprecated_config = {
+        "policies": [{"name": "MappingPolicy"}],
+        "pipeline": {"name": "WhitespaceTokenizer"},
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    domain = Domain.empty()
+    domain_file = tmp_path / "domain.yml"
+    domain.persist(domain_file)
+
+    result = run(
+        "data",
+        "convert",
+        "config",
+        "--config",
+        str(config_file),
+        "--domain",
+        str(domain_file),
+    )
+
+    assert result.ret == 0
+    # TODO: Validate the actual migration 😀
+
+
+def test_convert_config_with_invalid_config(run: Callable[..., RunResult]):
+    result = run("data", "convert", "config", "--config", "invalid path")
+
+    assert result.ret == 1
+
+
+def test_convert_config_with_missing_nlu_pipeline_config(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {"policies": [{"name": "FallbackPolicy"}]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 1
+
+
+def test_convert_config_with_form_policy_present(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {
+        "policies": [{"name": "MappingPolicy"}, {"name": "FormPolicy"}],
+        "pipeline": {"name": "WhitespaceTokenizer"},
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 1
+
+
+def test_convert_config_with_invalid_domain_path(run: Callable[..., RunResult]):
+    result = run("data", "convert", "config", "--domain", "invalid path")
+
+    assert result.ret == 1
+
+
+def test_convert_config_with_default_rules_directory(
+    run: Callable[..., RunResult], tmp_path: Path
+):
+    result = run("data", "convert", "config", "--out", str(tmp_path))
+
+    assert result.ret == 1

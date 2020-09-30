@@ -127,7 +127,7 @@ class Domain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Text) -> "Domain":
+    def from_path(cls, path: Union[Text]) -> "Domain":
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
