@@ -356,7 +356,7 @@ class RulePolicy(MemoizationPolicy):
         featurized_slots = set(
             slot.name for slot in domain.slots if slot.has_features()
         )
-        print(featurized_slots)
+
         error_messages = []
         for tracker in rule_trackers:
             states = tracker.past_states(domain)
