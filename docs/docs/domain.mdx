@@ -17,6 +17,18 @@ As an example, the domain created by `rasa init` has the following yaml definiti
 ```yaml-rasa (docs/sources/rasa/cli/initial_project/domain.yml)
 ```
 
+## Multiple Domain Files
+
+The domain can be defined as a single YAML file or split across multiple files in a directory.
+When split across multiple files, the domain contents will be read and automatically merged together.
+
+Using the [command line interface](./command-line-interface.mdx#rasa-train),
+you can train a model with split domain files by running:
+
+```bash
+rasa train --domain path_to_domain_directory
+```
+
 ## Intents
 
 <!-- TODO: intro info about intents -->
