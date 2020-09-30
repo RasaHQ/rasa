@@ -6,90 +6,156 @@ description: Read more about how to format training data with Rasa NLU for open 
 abstract: NLU training data stores structured information about user messages.
 ---
 
-The goal of NLU (Natural Language Understanding) is to extract structured information from user messages. 
+The goal of NLU (Natural Language Understanding) is to extract structured information from user messages. This usually includes the user's [intent](glossary.mdx#intent) and any 
+[entities](glossary.mdx#entities) their message contains.
 
-## Training examples
+## Training Examples
 
 NLU training data consists of example user utterances categorized by
-**[intents](glossary.mdx#intent)**. Training examples can also include **[entities](glossary.mdx#entities)**. You can also
-add extra information such as **[regular expressions](#regular-expression-features)** and **[lookup tables](#lookup-tables)** to your
-training data to help the model identify intents and entities correctly.
+intent. 
+To make it easier to use your intents, give them names that relate to what the user wants to accomplish with that intent, keep them in lowercase and avoid spaces and special characters. 
 
 :::note
-`/` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
+The `/` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
 to use it in the name of your intents.
 
 :::
 
-:::note
-The common theme here is that training examples, regex features and lookup tables merely act as cues to the final NLU
-model by providing additional features to the machine learning algorithm during training. Therefore, it must not be
-assumed that having a single example would be enough for the model to robustly identify intents and/or entities
-across all variants of that example.
+Training examples can also include entities. You can
+add extra information such as **[regular expressions](#regular-expression-features)** and **[lookup tables](#lookup-tables)** to your
+training data to help the model identify intents and entities correctly. 
 
-:::
 
 ## Entities
 
-[Entities](glossary.mdx#entity) are structured pieces of information inside a user message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
+[Entities](glossary.mdx#entity) are structured pieces of information inside a user message. 
+For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
+
+When deciding which entities you need to extract, think about what information your assistant needs for its user goals. If the user will provide a piece of information as part of a user message, that might be an entity you want to extract. The user might provide additional pieces of information that you don't need for any user goal; you don't need to extract these as entities.
+
+
 
 ## Synonyms
 
-Synonyms map extracted entities to the same name, for example mapping “my savings account” to simply “savings”.
-However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms
-present so that Rasa can learn to pick them up.
+Synonyms map extracted entity to a value other than the literal text extracted. 
+See the [training data format](./training-data-format.mdx) documentation for details on how to annotate entities with synonyms in your training data.
 
+You should define synonyms when there are multiple ways users refer to the same
+thing. Think of the end goal of extracting an entity, and figure out from there which values should be considered equivalent. 
 
-## Regular Expression Features
+Let's say you had an entity `account` that you use to look up the user's balance. One of the possible account types is "credit". Your users also refer to their "credit" account as "credit
+account" and "credit card account".
 
-For example, the names of German streets often end in `strasse`. By adding this as a regex,
-we are telling the model to pay attention to words ending this way, and will quickly learn to
-associate that with a location entity.
+In this case, you could define "credit card account" and "credit account" as
+**synonyms** to "credit":
 
+```yaml-rasa
+nlu:
+- synonym: credit
+  examples: |
+    - credit card account
+    - credit account
+```
 
-Regular expressions can be used in two different ways:
+Then, if either of these phrases is extracted as an entity, it will be
+mapped to the **value** `credit`.
 
-1. They can be used to support the intent classification and entity extraction when using the [RegexFeaturizer](./components.mdx#regexfeaturizer) component in the pipeline.
-   Each of the regexes then provide the intent classifier or entity extractor with an extra binary feature, which says if the regex was found or not.
-
-2. They can be used to directly extract entities from a user messages when using the [RegexEntityExtractor](./components.mdx#regexentityextractor) component in the pipeline.
-
-For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular
-expression to ease detection of that entity (using the [RegexFeaturizer](./components.mdx#regexfeaturizer)) or to directly extract the entities from
-the user message (using the [RegexEntityExtractor](./components.mdx#regexentityextractor)).
-
-
-In case you are using the regular expressions for the [RegexFeaturizer](./components.mdx#regexfeaturizer) the name of the regular expression does
-not matter. If does not define the entity nor the intent, it is just a human readable description for you to remember
-what this regex is used for and is the title of the corresponding pattern feature.
-If you want to use the [RegexFeaturizer](./components.mdx#regexfeaturizer) you can also use the regex features to improve the intent
-classification performance, for example, by defining a greet clause:
-
-
-If you are using the regular expressions to directly extract entities using the [RegexEntityExtractor](./components.mdx#regexentityextractor),
-the name of the regular expression should match the name of the entity you want to extract.
-
-Try to create your regular expressions in a way that they match as few words as possible. E.g. using `hey[^\\s]*`
-instead of `hey.\*`, as the later one might match the whole message whereas the first one only matches a single word.
-
-When using the [RegexFeaturizer](./components.mdx#regexfeaturizer), the regex features for entity extraction are currently only supported by the
-`CRFEntityExtractor` and the `DIETClassifier` component! Hence, other entity extractors, like
-`MitieEntityExtractor` or `SpacyEntityExtractor` won't use the generated features and their
-presence will not improve entity recognition for these extractors. Currently, all intent classifiers make use of
-available regex features.
-
-:::note
-Regex features only define entities when used in combination with the [RegexEntityExtractor](./components.mdx#regexentityextractor).
-Otherwise they don't define entities nor intents! They simply provide patterns to help the classifier
-recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
-training data!
-
+:::note Needs Training Examples
+Synonym mapping only happens **after** entities have been extracted.
+That means that your training examples should include the synonym examples
+(`credit card account` and `credit account`) so that the model will learn to
+recognize these as entities and replace them with `credit`.
 :::
+
+## Regular Expressions
+
+You can use regular expressions to improve intent classification and
+entity extraction in combination with the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components in the pipeline.
+
+
+### Regular Expressions for Intent Classification
+
+You can use regular expressions to improve intent classification by including the `RegexFeaturizer` component in your pipeline. When using the `RegexFeaturizer`, a regex does not act as a rule for classifying an intent. It only provides a feature that the intent classifier will use
+to learn patterns for intent classification.
+Currently, all intent classifiers make use of available regex features.
+
+The name of a regex in this case is a human readable description. It can help you remember what a regex is used for, and it is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for greeting might look like this:
+
+```yaml-rasa
+nlu:
+- regex: greet
+  examples: |
+    - hey[^\\s]*
+```
+
+The intent being matched could be `greet`,`say_hi`, `hallo` or anything else.
+
+Try to create your regular expressions in a way that they match as few
+words as possible. E.g. using `hey[^\\s]*` instead of `hey.*`, as the
+later one might match the whole message whereas the first one only
+matches a single word.
+
+### Regular Expressions for Entity Extraction
+
+If your entity has a deterministic structure (like an account number), you can use regular expressions in one of two ways:
+
+1. As features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in the pipeline.
+
+  When used as as features for the `RegexFeaturizer` the
+  name of the regular expression does not matter.
+
+  Regex features for entity extraction
+  are currently only supported by the `CRFEntityExtractor` and the
+  `DIETClassifier` component. Other entity extractors, like
+  `MitieEntityExtractor` or `SpacyEntityExtractor`, won't use the generated
+  features and their presence will not improve entity recognition for
+  these extractors.
+
+2. For rule-based entity extraction using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) component in the pipeline.
+
+  When using the `RegexEntityExtractor`, the name of the regular expression should
+  match the name of the entity you want to extract.
+
+In both cases, the format for defining the regex is the same.
+For example, a regex for extracting a bank account number that is 10-12 digits long might look like this:
+
+```yaml-rasa
+nlu:
+- regex: account_number
+  examples: |
+    - \d{10:12}
+```
+
+
+:::note Combining with Regexes
+
+When using the `RegexFeaturizer`, a regular expression only provides a feature
+that helps the model learn an association between intents/entities and inputs
+that fit the regular expression. In order for the model to learn this association,
+you must provide example inputs that include that regular expression!
+:::
+
+
+
 
 ## Lookup Tables
 
 Lookup tables are lists of words used to generate
 case-insensitive regex patterns that are added to the regex features.
+
+:::note Combining with Regexes
+
+If you are using lookup tables in combination with the `RegexFeaturizer`,
+there must be a few examples of matches in your training data. Otherwise the
+model will not learn to use the lookup table match features.
+:::
+
+:::caution Keep your lookup tables clean
+
+You have to be careful when you add data to the lookup table. For example, if there
+are false positives or other noise in the table, this can hurt performance. Make
+sure your lookup tables contain clean data!
+:::
 
 
 ## Entities Roles and Groups
