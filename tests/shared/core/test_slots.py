@@ -80,6 +80,20 @@ class SlotTestCollection:
         assert slot.as_feature() is not None
         assert len(slot.as_feature()) == slot.feature_dimensionality()
 
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_serialization(self, influence_conversation: bool):
+        slot = self.create_slot(influence_conversation)
+
+        persistence_info = slot.persistence_info()
+
+        slot_type = Slot.resolve_by_type(persistence_info.get("type"))
+        recreated = slot_type(
+            slot.name, **{k: v for k, v in persistence_info.items() if k != "type"}
+        )
+
+        assert slot_type == type(slot)
+        assert recreated.persistence_info() == persistence_info
+
 
 class TestTextSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
