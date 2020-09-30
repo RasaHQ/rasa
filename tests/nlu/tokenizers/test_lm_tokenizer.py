@@ -15,10 +15,11 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 # TODO: need to fix this failing test
 @pytest.mark.xfail(strict=False)
 @pytest.mark.parametrize(
-    "model_name, texts, expected_tokens, expected_indices, expected_num_token_ids",
+    "model_name, model_weights, texts, expected_tokens, expected_indices, expected_num_token_ids",
     [
         (
             "bert",
+            None,
             [
                 "Good evening.",
                 "you're",
@@ -67,7 +68,31 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
             [4, 4, 5, 5, 13],
         ),
         (
+            "bert",
+            "bert-base-chinese",
+            [
+                "晚上好",  # normal & easy case
+                "没问题！",  # `！` is a Chinese punctuation
+                "去东畈村",  # `畈` is a OOV token for bert-base-chinese
+                "好的😃",  # include a emoji which is common in Chinese text-based chat
+            ],
+            [
+                ["晚", "上", "好"],
+                ["没", "问", "题", "！"],
+                ["去", "东", "畈", "村"],
+                ["好", "的", "😃"],
+            ],
+            [
+                [(0, 1), (1, 2), (2, 3)],
+                [(0, 1), (1, 2), (2, 3), (3, 4)],
+                [(0, 1), (1, 2), (2, 3), (3, 4)],
+                [(0, 1), (1, 2), (2, 3)],
+            ],
+            [3, 4, 4, 3],
+        ),
+        (
             "gpt",
+            None,
             [
                 "Good evening.",
                 "hello",
@@ -106,6 +131,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
         ),
         (
             "gpt2",
+            None,
             [
                 "Good evening.",
                 "hello",
@@ -158,6 +184,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
         ),
         (
             "xlnet",
+            None,
             [
                 "Good evening.",
                 "hello",
@@ -208,6 +235,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
         ),
         (
             "distilbert",
+            None,
             [
                 "Good evening.",
                 "you're",
@@ -257,6 +285,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
         ),
         (
             "roberta",
+            None,
             [
                 "Good evening.",
                 "hello",
@@ -310,10 +339,19 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
     ],
 )
 def test_lm_tokenizer_edge_cases(
-    model_name, texts, expected_tokens, expected_indices, expected_num_token_ids
+    model_name,
+    model_weights,
+    texts,
+    expected_tokens,
+    expected_indices,
+    expected_num_token_ids,
 ):
 
-    transformers_config = {"model_name": model_name}
+    if model_weights is None:
+        model_weights_config = {}
+    else:
+        model_weights_config = {"model_weights": model_weights}
+    transformers_config = {**{"model_name": model_name}, **model_weights_config}
 
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer()
