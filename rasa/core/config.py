@@ -52,11 +52,12 @@ def migrate_mapping_policy_to_rules(
     if not has_mapping_policy:
         return
 
-    triggered_action = None
+    has_one_triggered_action = False
     for intent, properties in domain.intent_properties.items():
         # remove triggers from intents, if any
         triggered_action = properties.pop("triggers", None)
         if triggered_action:
+            has_one_triggered_action = True
             rules.append(
                 {
                     "rule": f"Rule to map `{intent}` intent (automatic conversion)",
@@ -66,6 +67,6 @@ def migrate_mapping_policy_to_rules(
 
     # finally update the policies
     policies = [policy for policy in policies if policy.get("name") != "MappingPolicy"]
-    if triggered_action is not None and not has_rule_policy:
+    if has_one_triggered_action and not has_rule_policy:
         policies.append({"name": "RulePolicy"})
     config["policies"] = policies
