@@ -1403,13 +1403,10 @@ components:
       type: string
       description: Rasa response texts for retrieval intents in YAML format
       example:  >-
-        - intent: chitchat/ask_name
-          examples: |
-            - my name is Sara, Rasa's documentation bot!
-
-        - intent: chitchat/ask_weather
-          examples: |
-            - it's always sunny where I live
+        chitchat/ask_name:
+        - text: my name is Sara, Rasa's documentation bot!
+        chitchat/ask_weather:
+        - text: it's always sunny where I live
 
     StoriesTrainingData:
       type: string
