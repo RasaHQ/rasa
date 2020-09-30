@@ -4,12 +4,14 @@ sidebar_label: Building a Rasa Assistant in Docker
 title: Building a Rasa Assistant in Docker
 description: Learn how to build a Rasa assistant in Docker.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from '../variables.json';
 
 If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
 on your local machine. If you already have a model you're satisfied with, see
-[Deploying Your Rasa Assistant](../how-to-deploy.mdx#deploying-your-rasa-assistant) to learn how to deploy your model.
+[Deploying Your Rasa Assistant](../how-to-deploy.mdx) to learn how to deploy your model.
 
 ## Installing Docker
 
@@ -82,8 +84,6 @@ Docker interactively, and you are able to give input via the command line.
 For commands which require interactive input, like `rasa shell` and `rasa interactive`,
 you need to pass the `-it` flags.
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="model-training-docker"></a>
-
 ## Training a Model
 
 If you edit the NLU or Core training data or edit the `config.yml` file, you'll need to
@@ -101,7 +101,7 @@ Here's what's happening in that command:
   <li>rasa/rasa:{variables.release}-full: Use the Rasa image with the tag '{variables.release}-full'</li>
 
   <li><inlineCode>train</inlineCode>: Execute the <inlineCode>rasa train</inlineCode> command within the container. For more
-  information see <a href="/command-line-interface">Command Line Interface</a>.</li>
+  information see <a href={useBaseUrl("/command-line-interface")}>Command Line Interface</a>.</li>
 </ul>
 
 In this case, we've also passed values for the location of the domain file, training
@@ -109,8 +109,6 @@ data, and the models output directory to show how these can be customized.
 You can also leave these out, since we are passing the default values.
 
 ## Customizing your Model
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="choosing-a-tag"></a>
 
 ### Choosing a Tag
 
@@ -264,4 +262,4 @@ docker rm action-server
 Work on your bot until you have a minimum viable assistant that can handle your happy paths. After
 that, you'll want to deploy your model to get feedback from real test users. To do so, you can deploy the
 model you created with Rasa X via one of our [recommended deployment methods](../how-to-deploy.mdx#recommended-deployment-methods).
-Or, you can do a [Rasa-only deployment in Docker Compose](./deploying-in-docker-compose.mdx#deploying-rasa-in-docker-compose).
+Or, you can do a [Rasa-only deployment in Docker Compose](./deploying-in-docker-compose.mdx).

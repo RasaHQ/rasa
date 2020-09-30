@@ -17,6 +17,15 @@ ENTITY_ATTRIBUTE_CONFIDENCE_ROLE = (
     f"{ENTITY_ATTRIBUTE_CONFIDENCE}_{rasa.shared.nlu.constants.ENTITY_ATTRIBUTE_ROLE}"
 )
 
+EXTRACTOR = "extractor"
+
+PRETRAINED_EXTRACTORS = {
+    "DucklingEntityExtractor",
+    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
+    "SpacyEntityExtractor",
+}
+TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
+
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
 MESSAGE_ATTRIBUTES = [

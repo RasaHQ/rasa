@@ -79,7 +79,6 @@ module.exports = {
             'actions',
             'responses',
             'custom-actions',
-            'retrieval-actions',
             'forms',
             'default-actions',
           ],

@@ -3,16 +3,15 @@ id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
 abstract: Rasa Open Source lets you test dialogues end-to-end by running through
-  test conversations. In addition to full test conversations, you can
-  also test the dialogue management and the message processing (NLU)
-  separately.
+  test stories. You can also test the dialogue management and the message processing 
+  (NLU) separately.
 ---
 
-## Test Conversations
+## End-to-end Testing
 
-Testing your assistant requires you to write test conversations, which include
-the user messages and the conversation history. The format is the a modified version of the one
-used to specify stories in your training data.
+Testing your assistant requires you to write test stories, which include
+the user messages and the conversation history. The format is a modified version of [the one
+used to specify stories in your training data](./stories.mdx#format).
 
 Here are some examples:
 
@@ -63,7 +62,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml"
   stories:
-  - story: A test conversation with a form
+  - story: A test story with a form
     steps:
     - user: |
         hi
@@ -91,7 +90,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml"
   stories:
-  - story: A test conversation with unexpected input during a form
+  - story: A test story with unexpected input during a form
     steps:
     - user: |
         hi
@@ -104,6 +103,7 @@ Here are some examples:
     - active_loop: restaurant_form
     - user: |
         can you share your boss with me?
+      intent: chitchat
     - action: utter_chitchat
     - action: restaurant_form
     - active_loop: null
@@ -117,7 +117,7 @@ Here are some examples:
   </TabItem>
 </Tabs>
 
-By default Rasa Open Source saves test conversations to `tests/test_stories.yml`.
+By default Rasa Open Source saves test stories to `tests/test_stories.yml`.
 You can test your assistant against them by running:
 
 ```bash
@@ -129,9 +129,9 @@ starting with `test_`, e.g. `test_stories.yml`. Your story test
 file names should always start with `test_` for this detection to work.
 
 :::caution Testing Custom Actions
-[Custom Actions](./custom-actions.mdx) are **not executed as part of test conversations.** If your custom
-actions append any events to the conversation, this has to be reflected in your test conversation
-(e.g. by adding `slot_was_set` events to your test conversation).
+[Custom Actions](./custom-actions.mdx) are **not executed as part of test stories.** If your custom
+actions append any events to the conversation, this has to be reflected in your test story
+(e.g. by adding `slot_was_set` events to your test story).
 
 To test the code of your custom actions, you should write unit tests
 for them and include these tests in your CI/CD pipeline.
@@ -139,7 +139,7 @@ for them and include these tests in your CI/CD pipeline.
 :::
 
 If you have any questions or problems, please share them with us in the dedicated
-[testing section on our forum](https://forum.rasa.com/tags/testing) !
+[testing section on our forum](https://forum.rasa.com/tags/testing).
 
 ## Evaluating an NLU Model
 
@@ -150,7 +150,7 @@ check out this [tutorial](https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperpa
 
 
 A standard technique in machine learning is to keep some data separate as a test set.
-You can [split your NLU training data](./command-line-interface.mdx#create-a-train-test-split)
+You can [split your NLU training data](./command-line-interface.mdx#rasa-data-split)
 into train and test sets using:
 
 ```bash
@@ -192,7 +192,7 @@ The models are then evaluated on the test set and the f1-score for each exclusio
 runs three times (i.e. with 3 test sets in total) and then a graph is plotted using the means and standard deviations of
 the f1-scores.
 
-The f1-score graph, along with all train/test sets, the trained models, classification and error reports, 
+The f1-score graph, along with all train/test sets, the trained models, classification and error reports,
 will be saved into a folder called `nlu_comparison_results`.
 
 ### Intent Classification
@@ -237,7 +237,7 @@ multiple tokens.
 
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
-expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. 
+expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`.
 
 Our approach is more lenient
 when it comes to evaluation, as it rewards partial extraction and does not punish the splitting of entities.
@@ -289,7 +289,7 @@ your bot, you may not want to exclude some to use as a test set.
 
 Rasa Open Source has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
-full data set. 
+full data set.
 
 To do this, you first have to train models for your different
 configurations. Create two (or more) config files including the policies you want to

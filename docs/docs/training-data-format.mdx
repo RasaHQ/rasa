@@ -27,8 +27,8 @@ See the [documentation for the domain](domain.mdx) for information on how to for
 :::note Legacy Formats
 Looking for Rasa Open Source 1.x data formats? They are now deprecated, but
 you can still find the documentation for
-[markdown NLU data](https://legacy-docs-v1.rasa.com/rasa/nlu/training-data-format/) and
-[markdown stories](https://legacy-docs-v1.rasa.com/rasa/core/stories/).
+[markdown NLU data](https://legacy-docs-v1.rasa.com/nlu/training-data-format/) and
+[markdown stories](https://legacy-docs-v1.rasa.com/core/stories/).
 :::
 
 ### High-Level Structure
@@ -77,7 +77,7 @@ stories:
   - intent: greet
   - action: utter_greet
   - intent: faq
-  - action: respond_faq
+  - action: utter_faq
 
 rules:
 - rule: Greet user
@@ -99,7 +99,7 @@ stories:
   - user: |
       what language do you speak
     intent: faq/language
-  - action: respond_faq
+  - action: utter_faq
 ```
 They use the same format as the story training data.
 
@@ -135,7 +135,7 @@ nlu:
     - credit account
 ```
 
-- [Regular expressions](#regular-expression-features)
+- [Regular expressions](#regular-expressions)
 
 ```yaml-rasa
 nlu:
@@ -261,7 +261,7 @@ The full possible syntax for annotating an entity is:
 The keywords `role`, `group`, and `value` are optional in this notation.
 The `value` keyword refers to synonyms, which are explained in the
 following section. To understand what the labels `role` and `group` are
-for, see the section on [entity roles and groups](nlu-training-data.mdx#entities-roles-and-groups).
+for, see the section on [entity roles and groups](./nlu-training-data.mdx#entities-roles-and-groups).
 
 
 ### Synonyms
@@ -363,7 +363,7 @@ If your entity has a deterministic structure (like an account number), you can u
   match the name of the entity you want to extract.
 
 In both cases, the format for defining the regex is the same.
-For example, a regex for extracting a bank account number that is 10-12 digits long mightlook like this:
+For example, a regex for extracting a bank account number that is 10-12 digits long might look like this:
 
 ```yaml-rasa
 nlu:
@@ -462,7 +462,7 @@ stories:
 Each step can be one of the following:
 
   - A [user message](#user-messages), represented by **intent** and **entities**.
-  - An [or statement](#or), which includes two or more user messages under it
+  - An [or statement](#or-statement), which includes two or more user messages under it
   - A bot [action](#actions)
   - A [form](#forms)
   - A [slot was set](#slots) event
@@ -507,14 +507,14 @@ stories:
 It is important to include the entities here as well because the
 policies learn to predict the next action based on a *combination* of
 both the intent and entities (you can, however, change this behavior
-using the [`use_entities`](#use-entities) attribute).
+using the [`use_entities`](#entities) attribute).
 
 
 #### Actions
 
 All actions executed by the bot are specified with the `action:` key followed
 by the name of the action.
-While writing stories, you will encounter three types of actions:
+While writing stories, you will encounter two types of actions:
 
 
 1. [**Responses**](domain.mdx#responses): start with `utter_` and
@@ -528,18 +528,7 @@ stories:
   - action: utter_greet
 ```
 
-2. [**Retrieval actions**](retrieval-actions.mdx): start with `respond_`
-   and send a message selected by a retrieval model. e.g.
-
-```yaml-rasa {5}
-stories:
-- story: story with a retrieval action
-  steps:
-  - intent: faq
-  - action: respond_faq
-```
-
-3. [**Custom actions**](custom-actions.mdx): start with `action_`, run
+2. [**Custom actions**](custom-actions.mdx): start with `action_`, run
    arbitrary code and send any number of messages (or none).
 
 ```yaml-rasa {5}
@@ -556,7 +545,7 @@ stories:
 A [form](glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
-Once defined, the [happy path](glossary.mdx#happy-unhappy-paths)
+Once defined, the [happy path](glossary.mdx#happy--unhappy-paths)
 for a form should be specified as a [rule](forms.mdx), but interruptions of forms or
 other "unhappy paths" should be included in stories so that the model can
 generalize to unseen conversation sequences.
@@ -679,7 +668,7 @@ stories:
   steps:
   - checkpoint: greet_checkpoint
     # This checkpoint should only apply if slots are set to the specified value
-    slots:
+    slot_was_set:
     - context_scenario: holiday
     - holiday_name: thanksgiving
   - intent: greet

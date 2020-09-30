@@ -51,7 +51,7 @@ def convert_duckling_format_to_rasa(
     return extracted
 
 
-class DucklingHTTPExtractor(EntityExtractor):
+class DucklingEntityExtractor(EntityExtractor):
     """Searches for structured entites, e.g. dates, using a duckling server."""
 
     defaults = {
@@ -83,7 +83,7 @@ class DucklingHTTPExtractor(EntityExtractor):
     @classmethod
     def create(
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
-    ) -> "DucklingHTTPExtractor":
+    ) -> "DucklingEntityExtractor":
 
         return cls(component_config, config.language)
 
@@ -180,7 +180,7 @@ class DucklingHTTPExtractor(EntityExtractor):
             matches = self._duckling_parse(message.get(TEXT), reference_time)
             all_extracted = convert_duckling_format_to_rasa(matches)
             dimensions = self.component_config["dimensions"]
-            extracted = DucklingHTTPExtractor.filter_irrelevant_entities(
+            extracted = DucklingEntityExtractor.filter_irrelevant_entities(
                 all_extracted, dimensions
             )
         else:
@@ -190,7 +190,7 @@ class DucklingHTTPExtractor(EntityExtractor):
                 "`url` configuration in the config "
                 "file nor is `RASA_DUCKLING_HTTP_URL` "
                 "set as an environment variable. No entities will be extracted!",
-                docs=DOCS_URL_COMPONENTS + "#ducklinghttpextractor",
+                docs=DOCS_URL_COMPONENTS + "#DucklingEntityExtractor",
             )
 
         extracted = self.add_extractor_name(extracted)
@@ -202,9 +202,9 @@ class DucklingHTTPExtractor(EntityExtractor):
         meta: Dict[Text, Any],
         model_dir: Text = None,
         model_metadata: Optional[Metadata] = None,
-        cached_component: Optional["DucklingHTTPExtractor"] = None,
+        cached_component: Optional["DucklingEntityExtractor"] = None,
         **kwargs: Any,
-    ) -> "DucklingHTTPExtractor":
+    ) -> "DucklingEntityExtractor":
 
         language = model_metadata.get("language") if model_metadata else None
         return cls(meta, language)
