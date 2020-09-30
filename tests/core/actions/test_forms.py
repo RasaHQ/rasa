@@ -175,6 +175,39 @@ async def test_set_slot_from_trigger_intent():
     ]
 
 
+async def test_entity_type_determination():
+    form_name = "my form"
+    slot_name_invalid = "bad_slot"
+    slot_name_valid = "good_slot"
+
+    domain = f"""
+    forms:
+      {form_name}:
+        {slot_name_invalid}:
+        - type: from_entity
+          entity: foo
+        - type: from_entity
+          entity: bar
+        {slot_name_valid}:
+        - type: from_entity
+          entity: foo
+
+    slots:
+      {slot_name_invalid}:
+        type: text
+      {slot_name_valid}:
+        type: text
+    """
+    domain = Domain.from_yaml(domain)
+
+    action = FormAction(form_name, None)
+    assert action._get_entity_type_of_slot_to_fill(None, domain) == None
+    assert (
+        action._get_entity_type_of_slot_to_fill(f"{slot_name_invalid}", domain) == None
+    )
+    assert action._get_entity_type_of_slot_to_fill(f"{slot_name_valid}", domain) != None
+
+
 async def test_set_slot_and_deactivate():
     form_name = "my form"
     slot_name = "num_people"
