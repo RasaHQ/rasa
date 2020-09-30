@@ -3,13 +3,10 @@ import logging
 import os
 import sys
 import time
-import typing
 import multiprocessing
-from collections import deque
 from contextlib import contextmanager
 from typing import (
     Callable,
-    Deque,
     Dict,
     Optional,
     Text,
@@ -18,6 +15,7 @@ from typing import (
     List,
     Tuple,
     Generator,
+    TYPE_CHECKING
 )
 
 from pika.channel import Channel
@@ -29,7 +27,7 @@ import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.utils.io import DEFAULT_ENCODING
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from pika.adapters.blocking_connection import BlockingChannel
     from pika import SelectConnection, BlockingConnection, BasicProperties
     import pika
@@ -272,7 +270,7 @@ class PikaMessageProcessor:
             queues: Pika queues to declare and publish to
         """
         self.parameters: "Parameters" = parameters
-        self.queues: Union[List[Text], Tuple[Text]] = self._get_queues_from_args(queues)
+        self.queues: List[Text] = self._get_queues_from_args(queues)
         self.get_message: Callable[[], Message] = get_message
 
         self.pika_connection: Optional["SelectConnection"] = None
@@ -293,7 +291,7 @@ class PikaMessageProcessor:
     @staticmethod
     def _get_queues_from_args(
         queues_arg: Union[List[Text], Tuple[Text], Text, None]
-    ) -> Union[List[Text], Tuple[Text]]:
+    ) -> List[Text]:
         """Get queues for this event broker.
 
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
@@ -311,7 +309,7 @@ class PikaMessageProcessor:
             `ValueError` if no valid `queues` argument was found.
         """
         if queues_arg and isinstance(queues_arg, (list, tuple)):
-            return queues_arg
+            return list(queues_arg)
 
         if queues_arg and isinstance(queues_arg, str):
             logger.debug(
