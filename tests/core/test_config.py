@@ -1,19 +1,22 @@
 import glob
+from typing import Any, Dict, Text
+
 import pytest
 
 from tests.core.conftest import ExamplePolicy
-from rasa.core.config import load
+import rasa.core.config as core_config
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.featurizers.single_state_featurizer import BinarySingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.shared.core.domain import Domain
 
 
 @pytest.mark.parametrize("filename", glob.glob("data/test_config/example_config.yaml"))
 def test_load_config(filename):
-    loaded = load(filename)
+    loaded = core_config.load(filename)
     assert len(loaded) == 2
     assert isinstance(loaded[0], MemoizationPolicy)
     assert isinstance(loaded[1], ExamplePolicy)
@@ -69,3 +72,58 @@ def test_ensemble_from_dict():
                 check_memoization(policy)
         elif isinstance(policy, FallbackPolicy):
             check_fallback(policy)
+
+
+TEST_MIGRATED_MAPPING_POLICIES = [
+    # no changes, no MappingPolicy
+    (
+        {"policies": [{"name": "MemoizationPolicy"}]},
+        {"intents": ["greet", "leave"]},
+        {
+            "config": {"policies": [{"name": "MemoizationPolicy"}]},
+            "domain_intents": ["greet", "leave"],
+            "rules": [],
+        },
+    ),
+    # MappingPolicy but no rules
+    (
+        {"policies": [{"name": "MemoizationPolicy"}, {"name": "MappingPolicy"}]},
+        {"intents": ["greet", "leave"]},
+        {
+            "config": {"policies": [{"name": "MemoizationPolicy"}]},
+            "domain_intents": ["greet", "leave"],
+            "rules": [],
+        },
+    ),
+    # MappingPolicy + rules
+    (
+        {"policies": [{"name": "MemoizationPolicy"}, {"name": "MappingPolicy"}]},
+        {
+            "intents": [{"greet": {"triggers": "action_greet"}}, "leave"],
+            "actions": ["action_greet"],
+        },
+        {
+            "config": {"policies": [{"name": "MemoizationPolicy"}]},
+            "domain_intents": ["greet", "leave"],
+            "rules": [
+                {
+                    "rule": f"Rule to map `greet` intent (automatic conversion)",
+                    "steps": [{"intent": "greet"}, {"action": "action_greet"},],
+                }
+            ],
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize("config,domain_dict,expected", TEST_MIGRATED_MAPPING_POLICIES)
+def test_migrate_mapping_policy_to_rules(
+    config: Dict[Text, Any], domain_dict: Dict[Text, Any], expected: Dict[Text, Any],
+):
+    rules = []
+    domain = Domain.from_dict(domain_dict)
+    core_config.migrate_mapping_policy_to_rules(config, domain, rules)
+
+    assert config == expected["config"]
+    assert domain.cleaned_domain()["intents"] == expected["domain_intents"]
+    assert rules == expected["rules"]
