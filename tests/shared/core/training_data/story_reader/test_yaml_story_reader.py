@@ -13,7 +13,7 @@ from rasa.shared.core.events import ActionExecuted, UserUttered, SlotSet, Active
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
-from rasa.shared.core.training_data.structures import StoryStep
+from rasa.shared.core.training_data.structures import StoryStep, RuleStep
 
 
 @pytest.fixture()
@@ -161,8 +161,8 @@ async def test_read_rules_with_stories(default_domain: Domain):
 
     steps = await loading.load_data_from_files([yaml_file], default_domain)
 
-    ml_steps = [s for s in steps if not s.is_rule]
-    rule_steps = [s for s in steps if s.is_rule]
+    ml_steps = [s for s in steps if not isinstance(s, RuleStep)]
+    rule_steps = [s for s in steps if isinstance(s, RuleStep)]
 
     # this file contains three rules and three ML stories
     assert len(ml_steps) == 3
@@ -178,8 +178,8 @@ async def test_read_rules_with_stories(default_domain: Domain):
 
 
 def test_read_rules_without_stories(rule_steps_without_stories: List[StoryStep]):
-    ml_steps = [s for s in rule_steps_without_stories if not s.is_rule]
-    rule_steps = [s for s in rule_steps_without_stories if s.is_rule]
+    ml_steps = [s for s in rule_steps_without_stories if not isinstance(s, RuleStep)]
+    rule_steps = [s for s in rule_steps_without_stories if isinstance(s, RuleStep)]
 
     # this file contains five rules and no ML stories
     assert len(ml_steps) == 0
