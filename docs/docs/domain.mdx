@@ -109,7 +109,7 @@ For example, if your user should provide their home city, you might
 use a slot called `home_city` to store this information. If the user asks for the
 weather, and you *don't* know their home city, you will have to ask
 them for it. You could make `home_city` a `text` slot and set the
-`influence_conversation` property to `true`. A [text slot](domain.mdx#text-slot) will
+`influence_conversation` property to `true`. A [`text` slot](domain.mdx#text-slot) will
 influence the assistant's behavior depending on whether the slot has a value.
 The specific value of a `text` slot (e.g. *Bangalore* or *New York* or *Hong Kong*)
 doesn't make any difference.
@@ -314,8 +314,9 @@ slots:
 
 * **Description**
 
-  Slots of type `any` are always ignored during conversations. The property `influence_conversation` cannot be set to `true` for this slot type. If you want to store
-  a custom data structure which should influence the conversation, use a
+  Slots of type `any` are always ignored during conversations. The property
+  `influence_conversation` cannot be set to `true` for this slot type. If you want to
+  store a custom data structure which should influence the conversation, use a
   [custom slot type](domain.mdx#custom-slot-types).
 
 #### Custom Slot Types
@@ -387,7 +388,7 @@ stories:
 The slot type `unfeaturized` is deprecated. Please use the property
 `influence_conversation` as described
 [here](domain.mdx#slots-and-conversation-behavior) or the slot type
-[any](domain.mdx#any-slot) instead.
+[`any`](domain.mdx#any-slot) instead.
 
 :::
 
