@@ -882,6 +882,8 @@ class RasaModelData:
         if RasaModelData.is_in_4d_format(label_ids):
             raise ValueError("Unsupported label_ids dimensions")
 
+        label_ids = np.array(label_ids)
+
         if label_ids.ndim == 1:
             return label_ids
 
