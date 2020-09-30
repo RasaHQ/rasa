@@ -928,7 +928,7 @@ class Domain:
             if v != {} and v != [] and v is not None
         }
 
-    def persist_clean(self, filename: Text) -> None:
+    def persist_clean(self, filename: Union[Text, Path]) -> None:
         """Write cleaned domain to a file."""
 
         cleaned_domain_data = self.cleaned_domain()
