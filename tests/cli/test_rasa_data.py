@@ -406,6 +406,29 @@ def test_convert_config_with_form_policy_present(
     assert result.ret == 1
 
 
+def test_convert_config_with_customized_deny_suggestion_intent(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {
+        "policies": [
+            {"name": "MappingPolicy"},
+            {
+                "name": "TwoStageFallbackPolicy",
+                "deny_suggestion_intent_name": "something else",
+            },
+        ],
+        "pipeline": {"name": "WhitespaceTokenizer"},
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 1
+
+
 def test_convert_config_with_invalid_domain_path(run: Callable[..., RunResult]):
     result = run("data", "convert", "config", "--domain", "invalid path")
 

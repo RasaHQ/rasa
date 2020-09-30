@@ -17,6 +17,7 @@ from rasa.shared.constants import (
     DOCS_URL_MIGRATION_GUIDE,
 )
 import rasa.shared.data
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
@@ -26,6 +27,10 @@ from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
 from rasa.shared.core.domain import Domain, InvalidDomain
 import rasa.shared.utils.io
+from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.fallback import FallbackPolicy
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+from rasa.core.policies.mapping_policy import MappingPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -402,11 +407,6 @@ def _migrate_model_config(args: argparse.Namespace):
 
 
 def _get_configuration(path: Path) -> Dict:
-    from rasa.core.policies.form_policy import FormPolicy
-    from rasa.core.policies.fallback import FallbackPolicy
-    from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-    from rasa.core.policies.mapping_policy import MappingPolicy
-
     config = {}
     try:
         config = rasa.shared.utils.io.read_config_file(path)
@@ -417,15 +417,14 @@ def _get_configuration(path: Path) -> Dict:
         )
 
     policy_names = [p.get("name") for p in config.get("policies", [])]
-    if not config.get("pipeline") and any(
-        policy in policy_names
-        for policy in [FallbackPolicy.__name__, TwoStageFallbackPolicy.__name__]
-    ):
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"The model configuration has to include an NLU pipeline. This is required "
-            f"to migrate the fallback policies."
-        )
 
+    _assert_no_form_policy_present(policy_names)
+    _assert_nlu_pipeline_given(config, policy_names)
+    _assert_two_stage_fallack_policy_is_migratable(config)
+    return config
+
+
+def _assert_no_form_policy_present(policy_names: List[Text]) -> None:
     if FormPolicy.__name__ in policy_names:
         rasa.shared.utils.cli.print_error_and_exit(
             f"Your model configuration contains the '{FormPolicy.__name__}'. "
@@ -435,7 +434,38 @@ def _get_configuration(path: Path) -> Dict:
             f" {DOCS_URL_MIGRATION_GUIDE}"
         )
 
-    return config
+
+def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
+    if not config.get("pipeline") and any(
+        policy in policy_names
+        for policy in [FallbackPolicy.__name__, TwoStageFallbackPolicy.__name__]
+    ):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The model configuration has to include an NLU pipeline. This is required "
+            f"to migrate the fallback policies."
+        )
+
+
+def _assert_two_stage_fallack_policy_is_migratable(config: Dict,):
+    two_stage_fallback_config = next(
+        (
+            policy_config
+            for policy_config in config.get("policies", [])
+            if policy_config.get("name") == TwoStageFallbackPolicy.__name__
+        ),
+        None,
+    )
+    if (
+        two_stage_fallback_config
+        and two_stage_fallback_config.get("deny_suggestion_intent_name")
+        != USER_INTENT_OUT_OF_SCOPE
+    ):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The TwoStageFallback in Rasa Open Source 2.0 has to use the intent "
+            f"'{USER_INTENT_OUT_OF_SCOPE}' to recognize when users deny suggestions. "
+            f"Please change the parameter 'deny_suggestion_intent_name' to "
+            f"'{USER_INTENT_OUT_OF_SCOPE}' before migrating the model configuration. "
+        )
 
 
 def _get_domain(path: Path) -> Domain:
