@@ -18,6 +18,7 @@ from typing import (
 )
 from pathlib import Path
 
+from rasa_sdk.interfaces import ActionNotFoundException
 from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
@@ -599,7 +600,7 @@ class Domain:
 
     def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
-        raise NameError(
+        raise ActionNotFoundException(
             f"Cannot access action '{action_name}', "
             f"as that name is not a registered "
             f"action for this domain. "
