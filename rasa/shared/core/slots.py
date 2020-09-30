@@ -249,15 +249,15 @@ class UnfeaturizedSlot(Slot):
         if influence_conversation:
             raise ValueError(
                 f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
-                f"Please use a different slot type instead. See the "
+                f"Please use a different slot type for slot '{name}' instead. See the "
                 f"documentation for more information: {DOCS_URL_SLOTS}"
             )
 
         rasa.shared.utils.io.raise_warning(
             f"{UnfeaturizedSlot.__name__} is deprecated "
             f"and will be removed in Rasa Open Source "
-            f"3.0. Please configure the 'influence_conversation' "
-            f"flag instead.",
+            f"3.0. Please change the type and configure the 'influence_conversation' "
+            f"flag for slot '{name}' instead.",
             docs=DOCS_URL_SLOTS,
             category=FutureWarning,
         )
@@ -356,9 +356,9 @@ class AnySlot(Slot):
         if influence_conversation:
             raise ValueError(
                 f"An {AnySlot.__name__} cannot be featurized. "
-                f"Please use a different slot type instead. If you need to featurize a "
-                f"data type which is not supported out of the box, implement "
-                f"a custom slot type by subclassing '{Slot.__name__}'. "
+                f"Please use a different slot type for slot '{name}' instead. If you "
+                f"need to featurize a data type which is not supported out of the box, "
+                f"implement a custom slot type by subclassing '{Slot.__name__}'. "
                 f"See the documentation for more information: {DOCS_URL_SLOTS}"
             )
 
