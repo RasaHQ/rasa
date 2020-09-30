@@ -23,14 +23,15 @@ with the answer being independent of anything the user has said previously.
 
 ## Step-by-step Guide on Using Response Selector for FAQs and Chitchat
 
-To handle FAQs and chitchat you'll need a rule-based dialogue management policy (the [RulePolicy](#rulepolicy)) and an easy way
+To handle FAQs and chitchat you'll need a rule-based dialogue management policy
+(the [RulePolicy](./policies.mdx#rule-policy)) and an easy way
 to return the appropriate response for a question (the [ResponseSelector](./components.mdx#responseselector)).
 
 ### 1. Updating the configuration
 
 For FAQs and chitchat, you always want the assistant to respond the same way every time
 the same type of question is asked. [Rules](rules.mdx) allow you to do exactly that.
-To use rules, the you need to add the [RulePolicy](#rule-policy) to your policies in your configuration file:
+To use rules, the you need to add the [RulePolicy](./policies.mdx#rule-policy) to your policies in your configuration file:
 
 ```yaml-rasa
 policies:
@@ -84,7 +85,7 @@ Instead of writing 20 rules, you can use a single action, e.g. `utter_faq` to ha
 called e.g. `faq`.
 
 The single action uses the output of the
-[ResponseSelector](./components.mdx#response-selector) to return
+[ResponseSelector](./components.mdx#responseselector) to return
 the correct response for the specific FAQ that the user asked.
 
 
@@ -107,7 +108,7 @@ rules:
     - action: utter_chitchat
 ```
 
-The actions `utter_faq` and `utter_chitchat` will use the ResponseSelector`'s prediction to return the actual response message.
+The actions `utter_faq` and `utter_chitchat` will use the ResponseSelector's prediction to return the actual response message.
 
 ### 4. Updating the NLU Training Data
 
