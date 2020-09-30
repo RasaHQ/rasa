@@ -51,7 +51,7 @@ rasa run
 You can configure the Rasa Open Source server to regularly fetch
 a model from a server and deploy it.
 
-#### How to Configure Rasa Open Source
+### How to Configure Rasa Open Source
 
 You can configure the HTTP server to fetch models from another URL
 by adding it to your `endpoints.yml`:
@@ -73,7 +73,7 @@ models:
   wait_time_between_pulls: null  # fetches model only once
 ```
 
-#### How to Configure Your Server
+### How to Configure Your Server
 
 Rasa Open Source will send a `GET` request to the URL you specified in the
 `endpoints.yml`, e.g. `http://my-server.com/models/default` in the above examples.
