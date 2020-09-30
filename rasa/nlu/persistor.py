@@ -238,29 +238,34 @@ class AzurePersistor(Persistor):
     def __init__(
         self, azure_container: Text, azure_account_name: Text, azure_account_key: Text
     ) -> None:
-        from azure.storage import blob as azureblob
+        from azure.storage.blob import BlobServiceClient
 
         super().__init__()
 
-        self.blob_client = azureblob.BlockBlobService(
-            account_name=azure_account_name,
-            account_key=azure_account_key,
-            endpoint_suffix="core.windows.net",
+        self.blob_service = BlobServiceClient(
+            account_url=f"https://{azure_account_name}.blob.core.windows.net/",
+            credential=azure_account_key,
         )
 
         self._ensure_container_exists(azure_container)
         self.container_name = azure_container
 
     def _ensure_container_exists(self, container_name: Text) -> None:
+        from azure.core.exceptions import ResourceExistsError
 
-        exists = self.blob_client.exists(container_name)
-        if not exists:
-            self.blob_client.create_container(container_name)
+        try:
+            self.blob_service.create_container(container_name)
+        except ResourceExistsError:
+            # no need to create the container, it already exists
+            pass
+
+    def _container_client(self):
+        return self.blob_service.get_container_client(self.container_name)
 
     def list_models(self) -> List[Text]:
 
         try:
-            blob_iterator = self.blob_client.list_blobs(self.container_name)
+            blob_iterator = self._container_client().list_blobs()
             return [
                 self._model_dir_and_model_from_filename(b.name)[1]
                 for b in blob_iterator
@@ -272,11 +277,14 @@ class AzurePersistor(Persistor):
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to Azure."""
 
-        self.blob_client.create_blob_from_path(self.container_name, file_key, tar_path)
+        with open(tar_path, "rb") as data:
+            self._container_client().upload_blob(name=file_key, data=data)
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to Azure."""
 
-        self.blob_client.get_blob_to_path(
-            self.container_name, target_filename, target_filename
-        )
+        blob_client = self._container_client().get_blob_client(target_filename)
+
+        with open(target_filename, "wb") as blob:
+            download_stream = blob_client.download_blob()
+            blob.write(download_stream.readall())
