@@ -18,8 +18,6 @@ from typing import (
     TYPE_CHECKING
 )
 
-from pika.channel import Channel
-
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 from rasa.core.brokers.broker import EventBroker
@@ -28,9 +26,10 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.utils.io import DEFAULT_ENCODING
 
 if TYPE_CHECKING:
+    import pika
     from pika.adapters.blocking_connection import BlockingChannel
     from pika import SelectConnection, BlockingConnection, BasicProperties
-    import pika
+    from pika.channel import Channel
     from pika.connection import Parameters, Connection
 
 logger = logging.getLogger(__name__)
@@ -254,8 +253,7 @@ Message = Tuple[Text, MessageHeaders]
 
 
 class PikaMessageProcessor:
-    """A class that holds all the Pika connection details and processes Pika messages.
-    All the messages should be published to a `process_queue` provided."""
+    """A class that holds all the Pika connection details and processes Pika messages."""
 
     def __init__(
         self,
@@ -285,7 +283,7 @@ class PikaMessageProcessor:
             self.pika_connection.close()
 
     def close(self) -> None:
-        """Close the Pika connector."""
+        """Close the Pika connection."""
         self.__del__()
 
     @staticmethod
@@ -338,13 +336,13 @@ class PikaMessageProcessor:
 
         Args:
             headers: Message headers to add to the message properties of the
-            published message (key-value dictionary). The headers can be retrieved in
-            the consumer from the `headers` attribute of the message's
-            `BasicProperties`.
+                published message (key-value dictionary). The headers can be retrieved
+                in the consumer from the `headers` attribute of the message's
+                `BasicProperties`.
 
         Returns:
             `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
-            as the properties' `app_id` value, `delivery_mode`=2 and `headers` as the
+            as the properties' `app_id` value, `delivery_mode=2` and `headers` as the
             properties' headers.
         """
         from pika.spec import BasicProperties
@@ -366,7 +364,7 @@ class PikaMessageProcessor:
         """Indicates if Pika is connected and the channel is initialized.
 
         Returns:
-            A boolean value indicating if the connection is established
+            A boolean value indicating if the connection is established.
         """
         return self.pika_connection and self.pika_connection.is_open and self.channel
 
@@ -425,7 +423,7 @@ class PikaMessageProcessor:
         self.channel = channel
 
     def _publish(self, message: Message) -> None:
-        (body, headers) = message
+        body, headers = message
 
         self.channel.basic_publish(
             exchange=RABBITMQ_EXCHANGE,
@@ -436,7 +434,7 @@ class PikaMessageProcessor:
 
     def process_messages(self) -> None:
         """Start to process messages. This process is indefinite thus it should
-        be started in a separate thread or process.
+        be started in a separate process.
 
         This method also automatically establishes a connection and wait for
         the channel to get ready to process messages.
@@ -469,6 +467,7 @@ class PikaEventBroker(EventBroker):
 
     NUMBER_OF_MP_WORKERS = 1
     MP_CONTEXT = None
+
     if sys.platform == "darwin" and sys.version_info < (3, 8):
         # On macOS, Python 3.8 has switched the default start method to "spawn". To
         # quote the documentation: "The fork start method should be considered
@@ -492,7 +491,7 @@ class PikaEventBroker(EventBroker):
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
         **kwargs: Any,
-    ):
+    ) -> None:
         """Initialise RabbitMQ event broker.
 
         Args:
@@ -530,7 +529,7 @@ class PikaEventBroker(EventBroker):
             self.process.terminate()
 
     def close(self) -> None:
-        """Close the pika channel and connection."""
+        """Close the Pika connector."""
         self.__del__()
 
     @classmethod
