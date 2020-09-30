@@ -218,20 +218,20 @@ To give the bot a chance to figure out what the user wants, you will usually wan
 clarifying questions. The Two-Stage Fallback is made to handle low NLU confidence in multiple stages
 using the following sequence:
 
-- A user message is classified with low confidence
-  - The user is asked to confirm the intent
-- The user confirms or denies the intent
-  - If they confirm, the conversation continues as if the intent was classified
-    with high confidence from the beginning. No further fallback steps are taken.
-  - If they deny, the user is asked to rephrase their message.
-- The user rephrases their intent
-  - If the message is classified with high confidence, the conversation
-   continues as if the user had this intent from the beginning.
-  - If the rephrased user message still has low confidence, the user
-   is asked to confirm the intent.
-- The user confirms or denies the rephrased intent
-  - If they confirm, the conversation continues as if the user had this intent from the beginning.
-  - If they deny, an ultimate fallback action is triggered (e.g. a handoff to a human).
+1. A user message is classified with low confidence
+    - The user is asked to confirm the intent
+2. The user confirms or denies the intent
+    - If they confirm, the conversation continues as if the intent was classified
+      with high confidence from the beginning. No further fallback steps are taken.
+    - If they deny, the user is asked to rephrase their message.
+3. The user rephrases their intent
+    - If the message is classified with high confidence, the conversation
+      continues as if the user had this intent from the beginning.
+    - If the rephrased user message still has low confidence, the user
+      is asked to confirm the intent.
+4. The user confirms or denies the rephrased intent
+    - If they confirm, the conversation continues as if the user had this intent from the beginning.
+    - If they deny, an ultimate fallback action is triggered (e.g. a handoff to a human).
 
 The Two-Stage-Fallback can be enabled using the following steps:
 
