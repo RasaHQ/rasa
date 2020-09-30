@@ -78,7 +78,12 @@ class RasaModelData:
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
-    ) -> Union[Dict[Text, List[Features_3D]], Dict[Text, List[Features_4D]], List[Features_3D], List[Features_4D]]:
+    ) -> Union[
+        Dict[Text, List[Features_3D]],
+        Dict[Text, List[Features_4D]],
+        List[Features_3D],
+        List[Features_4D],
+    ]:
         """Get the data under the given keys.
 
         Args:
@@ -104,7 +109,9 @@ class RasaModelData:
         """
         return self.data.items()
 
-    def values(self) -> ValuesView[Dict[Text, Union[List[Features_4D], List[Features_3D]]]]:
+    def values(
+        self,
+    ) -> ValuesView[Dict[Text, Union[List[Features_4D], List[Features_3D]]]]:
         """Return the values of the data attribute.
 
         Returns:
@@ -890,9 +897,7 @@ class RasaModelData:
         raise ValueError("Unsupported label_ids dimensions")
 
     @staticmethod
-    def _pad_dense_data(
-        array_of_dense: Union[Features_4D, Features_3D]
-    ) -> np.ndarray:
+    def _pad_dense_data(array_of_dense: Union[Features_4D, Features_3D]) -> np.ndarray:
         """Pad data of different lengths.
 
         Sequential data is padded with zeros. Zeros are added to the end of data.
@@ -1022,12 +1027,7 @@ class RasaModelData:
         indices = np.hstack(
             [
                 np.vstack(
-                    [
-                        i * np.ones_like(x.row),
-                        j * np.ones_like(x.row),
-                        x.row,
-                        x.col,
-                    ]
+                    [i * np.ones_like(x.row), j * np.ones_like(x.row), x.row, x.col,]
                 )
                 for i, array_of_sparse in enumerate(array_of_array_of_sparse)
                 for j, x in enumerate(array_of_sparse)
