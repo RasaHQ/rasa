@@ -279,16 +279,9 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _check_slots_fingerprint(
-        fingerprint: Dict[Text, List[Text]],
-        state: State,
-        tracker: TrackerWithCachedStates,
+        fingerprint: Dict[Text, List[Text]], state: State,
     ) -> Set[Text]:
-        # leave only featurized slots
-        expected_slots = set(
-            slot_name
-            for slot_name in set(fingerprint.get(ACTION_FINGERPRINT_SLOTS))
-            if tracker.slots.get(slot_name).has_features()
-        )
+        expected_slots = set(fingerprint.get(ACTION_FINGERPRINT_SLOTS))
         current_slots = set(state.get(SLOTS, {}).keys())
         if expected_slots == current_slots:
             # all expected slots are satisfied
@@ -359,12 +352,18 @@ class RulePolicy(MemoizationPolicy):
         if not rule_fingerprints:
             return
 
+        # take into account only featurized slots
+        featurized_slots = set(
+            slot.name for slot in domain.slots if slot.has_features()
+        )
+        print(featurized_slots)
         error_messages = []
         for tracker in rule_trackers:
             states = tracker.past_states(domain)
+            # the last action is always action listen
             action_names = [
-                state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME) for state in states
-            ] + [ACTION_LISTEN_NAME]  # the last action is always action listen
+                state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME) for state in states[1:]
+            ] + [ACTION_LISTEN_NAME]
 
             for state, action_name in zip(states, action_names):
                 previous_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
@@ -380,9 +379,11 @@ class RulePolicy(MemoizationPolicy):
                     # for a previous action if current action is rule snippet action
                     continue
 
+                # leave only featurized slots
                 expected_slots = self._check_slots_fingerprint(
-                    fingerprint, state, tracker
-                )
+                    fingerprint, state
+                ).intersection(featurized_slots)
+
                 expected_active_loops = self._check_active_loops_fingerprint(
                     fingerprint, state
                 )
