@@ -96,13 +96,23 @@ slots:
 
 ### Slots and Conversation Behavior
 
-Most of the time, you want slots to influence how the dialogue progresses.
-For example, if your user has provided their home city, you might
-have a slot called `home_city`. If the user asks for the
+You can control whether or not a slot influences the conversation with the property
+`influence_conversation`. If you want to store information but don't want a slot to
+influence the conversation, set the `influence_conversation` property of your slot
+to `false`.
+By default all slot types will influence the conversation except slots of the type
+`any`. Depending on the [slot type](./domain.mdx#slot-types), a slot with the
+`influence_conversation` property set to `true` will cause different behavior of
+your assistant.
+
+For example, if your user should provide their home city, you might
+use a slot called `home_city` to store this information. If the user asks for the
 weather, and you *don't* know their home city, you will have to ask
-them for it. A [text slot](domain.mdx#text-slot) will influence the assistant's behavior
-depending on whether the slot has a value. The specific value of
-a `text` slot (e.g. Bangalore or New York or Hong Kong) doesn't make any difference.
+them for it. You could make `home_city` a `text` slot and set the
+`influence_conversation` property to `true`. A [text slot](domain.mdx#text-slot) will
+influence the assistant's behavior depending on whether the slot has a value.
+The specific value of a `text` slot (e.g. *Bangalore* or *New York* or *Hong Kong*)
+doesn't make any difference.
 
 ```yaml
 slots:
@@ -113,13 +123,6 @@ slots:
     influence_conversation: true
 ```
 
-By default all slot types will influence the conversation except slots of type
-`any`. Depending on the [slot type](./domain.mdx#slot-types), a set slot will cause
-different behavior of your assistant so be careful which type you choose.
-
-
-If you want to store information but don't want a slot to influence the conversation,
-set the `influence_conversation` property of your slot to `false`.
 The following example defines a slot `age` which will store information about the
 user's age, but which will *not* influence the flow of the conversation. This means
 that the assistant will ignore the value of the slot during the conversation.
