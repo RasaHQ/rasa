@@ -279,9 +279,12 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _check_slots_fingerprint(
-        fingerprint: Dict[Text, List[Text]], state: State,
+        fingerprint: Dict[Text, List[Text]], state: State, featurized_slots: Set[Text]
     ) -> Set[Text]:
-        expected_slots = set(fingerprint.get(ACTION_FINGERPRINT_SLOTS))
+        # leave only featurized slots
+        expected_slots = set(fingerprint.get(ACTION_FINGERPRINT_SLOTS)).intersection(
+            featurized_slots
+        )
         current_slots = set(state.get(SLOTS, {}).keys())
         if expected_slots == current_slots:
             # all expected slots are satisfied
@@ -379,11 +382,9 @@ class RulePolicy(MemoizationPolicy):
                     # for a previous action if current action is rule snippet action
                     continue
 
-                # leave only featurized slots
                 expected_slots = self._check_slots_fingerprint(
-                    fingerprint, state
-                ).intersection(featurized_slots)
-
+                    fingerprint, state, featurized_slots
+                )
                 expected_active_loops = self._check_active_loops_fingerprint(
                     fingerprint, state
                 )
