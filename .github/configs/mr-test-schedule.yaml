@@ -13,12 +13,10 @@
 ##########
 # - "BERT + DIET(bow) + ResponseSelector(bow)"
 # - "BERT + DIET(seq) + ResponseSelector(t2t)"
-# - "ConveRT + DIET(bow) + ResponseSelector(bow)"
-# - "ConveRT + DIET(seq) + ResponseSelector(t2t)"
+# - "Sparse + BERT + DIET(bow) + ResponseSelector(bow)"
+# - "Sparse + BERT + DIET(seq) + ResponseSelector(t2t)"
 # - "Spacy + DIET(bow) + ResponseSelector(bow)"
 # - "Spacy + DIET(seq) + ResponseSelector(t2t)"
-# - "Sparse + ConveRT + DIET(bow) + ResponseSelector(bow)"
-# - "Sparse + ConveRT + DIET(seq) + ResponseSelector(t2t)"
 # - "Sparse + DIET(bow) + ResponseSelector(bow)"
 # - "Sparse + DIET(seq) + ResponseSelector(t2t)"
 # - "Sparse + Spacy + DIET(bow) + ResponseSelector(bow)"
@@ -32,7 +30,7 @@
 #
 #include:
 #  - dataset: "Carbon Bot"
-#    config: "Sparse + EmbeddingIntent + ResponseSelector(bow)"
+#    config: "Sparse + DIET(bow) + ResponseSelector(bow)"
 ###
 # matrix
 ###
@@ -51,12 +49,10 @@ dataset:
 config:
   - "BERT + DIET(bow) + ResponseSelector(bow)"
   - "BERT + DIET(seq) + ResponseSelector(t2t)"
-  - "ConveRT + DIET(bow) + ResponseSelector(bow)"
-  - "ConveRT + DIET(seq) + ResponseSelector(t2t)"
+  - "Sparse + BERT + DIET(bow) + ResponseSelector(bow)"
+  - "Sparse + BERT + DIET(seq) + ResponseSelector(t2t)"
   - "Spacy + DIET(bow) + ResponseSelector(bow)"
   - "Spacy + DIET(seq) + ResponseSelector(t2t)"
-  - "Sparse + ConveRT + DIET(bow) + ResponseSelector(bow)"
-  - "Sparse + ConveRT + DIET(seq) + ResponseSelector(t2t)"
   - "Sparse + DIET(bow) + ResponseSelector(bow)"
   - "Sparse + DIET(seq) + ResponseSelector(t2t)"
   - "Sparse + Spacy + DIET(bow) + ResponseSelector(bow)"
