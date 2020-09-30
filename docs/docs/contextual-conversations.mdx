@@ -50,25 +50,25 @@ and users with previous experience because of stories like this:
 stories:
   - story: New user
     steps:
-  - intent: how_to_get_started
-  - action: utter_getstarted
-  - action: utter_first_bot_with_rasa
-  - intent: affirm
-  - action: action_set_onboarding
-  - slot_was_set:
-    - onboarding: true
-  - action: utter_built_bot_before
+    - intent: how_to_get_started
+    - action: utter_getstarted
+    - action: utter_first_bot_with_rasa
+    - intent: affirm
+    - action: action_set_onboarding
+    - slot_was_set:
+      - onboarding: true
+    - action: utter_built_bot_before
 
   - story: Not new user
     steps:
-  - intent: how_to_get_started
-  - action: utter_getstarted
-  - action: utter_first_bot_with_rasa
-  - intent: deny
-  - action: action_set_onboarding
-  - slot_was_set:
-    - onboarding: false
-  - action: utter_ask_which_product
+    - intent: how_to_get_started
+    - action: utter_getstarted
+    - action: utter_first_bot_with_rasa
+    - intent: deny
+    - action: action_set_onboarding
+    - slot_was_set:
+      - onboarding: false
+    - action: utter_ask_which_product
 ```
 
 These stories diverge based on the user's intent (`affirm` or `deny`). Based on
@@ -159,12 +159,12 @@ the bot sends the same message, but the third time, it hands them off to a human
 stories:
   - story: user persists in asking for help
     steps:
-  - intent: help
-  - action: utter_help
-  - intent: help
-  - action: utter_help
-  - intent: help
-  - action: action_human_handoff
+    - intent: help
+    - action: utter_help
+    - intent: help
+    - action: utter_help
+    - intent: help
+    - action: action_human_handoff
 ```
 
 In order for the model to learn this pattern, it needs to know at least the previous
