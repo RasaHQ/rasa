@@ -39,7 +39,7 @@ function Code({children}) {
 
 function Section({children, ...props}) {
   return (
-    <div className={clsx(styles.section)}>
+    <div className={clsx(styles.section, {[styles.sectionActive]: props.selectedValue === props.value})}>
       {React.Children.toArray(children).map(
         (child) => React.cloneElement(child, props)
       )}
@@ -85,9 +85,7 @@ function Container({children, values, defaultValue, ...props}) {
       </ul>
       <div className={clsx(styles.containerSections)}>
         {
-          React.Children.toArray(children).filter(
-            (child) => child.props.value === selectedValue
-          ).map(
+          React.Children.toArray(children).map(
             (child) => React.cloneElement(child,
               {values, selectedValue, setSelectedValue, ...props}
             )

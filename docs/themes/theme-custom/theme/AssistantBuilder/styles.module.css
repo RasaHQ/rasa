@@ -32,8 +32,12 @@
 }
 
 .section {
-  display: flex;
+  display: none;
   flex-direction: row;
+}
+
+.sectionActive {
+  display: flex;
 }
 
 .text {

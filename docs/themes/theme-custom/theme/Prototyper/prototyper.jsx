@@ -128,7 +128,7 @@ const Prototyper = ({
       selector: chatBlockSelector,
       state: chatState,
     });
-  }, [trainingData, chatState]);
+  }, [baseUrl, trainingData, chatState]);
 
   const fetchTracker = (baseUrl) => {
     fetch(`${baseUrl}/conversations/${trackingId}/tracker`, {
