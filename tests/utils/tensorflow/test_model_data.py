@@ -26,8 +26,7 @@ async def model_data() -> RasaModelData:
                                 np.random.rand(3, 14),
                             ]
                         ),
-                        has_4_dimensions=False,
-                        is_sparse=False,
+                        number_of_dimensions=3,
                     ),
                     FeatureArray(
                         np.array(
@@ -49,8 +48,7 @@ async def model_data() -> RasaModelData:
                                 ),
                             ]
                         ),
-                        has_4_dimensions=False,
-                        is_sparse=True,
+                        number_of_dimensions=3,
                     ),
                 ]
             },
@@ -113,8 +111,7 @@ async def model_data() -> RasaModelData:
                                 ],
                             ]
                         ),
-                        has_4_dimensions=True,
-                        is_sparse=True,
+                        number_of_dimensions=4,
                     ),
                     FeatureArray(
                         np.array(
@@ -140,8 +137,7 @@ async def model_data() -> RasaModelData:
                                 ],
                             ]
                         ),
-                        has_4_dimensions=True,
-                        is_sparse=False,
+                        number_of_dimensions=4,
                     ),
                 ]
             },
@@ -157,19 +153,12 @@ async def model_data() -> RasaModelData:
                                 np.random.randint(2, size=(3, 10)),
                             ]
                         ),
-                        has_4_dimensions=False,
-                        is_sparse=False,
+                        number_of_dimensions=3,
                     )
                 ]
             },
             "label": {
-                "ids": [
-                    FeatureArray(
-                        np.array([0, 1, 0, 1, 1]),
-                        has_4_dimensions=False,
-                        is_sparse=False,
-                    )
-                ]
+                "ids": [FeatureArray(np.array([0, 1, 0, 1, 1]), number_of_dimensions=2)]
             },
             "entities": {
                 "tag_ids": [
@@ -183,8 +172,7 @@ async def model_data() -> RasaModelData:
                                 np.array([[0], [0], [0]]),
                             ]
                         ),
-                        has_4_dimensions=False,
-                        is_sparse=False,
+                        number_of_dimensions=3,
                     )
                 ]
             },
@@ -329,14 +317,14 @@ def test_gen_batch(model_data: RasaModelData):
 
 
 def test_is_in_4d_format(model_data: RasaModelData):
-    assert model_data.data["action_text"]["sequence"][0].has_4_dimensions
-    assert not model_data.data["text"]["sentence"][0].has_4_dimensions
+    assert model_data.data["action_text"]["sequence"][0].number_of_dimensions == 4
+    assert model_data.data["text"]["sentence"][0].number_of_dimensions == 3
 
 
 def test_balance_model_data(model_data: RasaModelData):
     data = model_data._balanced_data(model_data.data, 2, False)
 
-    assert np.all(data["label"]["ids"][0] == np.array([0, 1, 1, 0, 1]))
+    assert np.all(np.array(data["label"]["ids"][0]) == np.array([0, 1, 1, 0, 1]))
 
 
 def test_not_balance_model_data(model_data: RasaModelData):
@@ -360,8 +348,8 @@ def test_get_num_of_features(model_data: RasaModelData):
 @pytest.mark.parametrize(
     "incoming_data, expected_shape",
     [
-        (FeatureArray(np.random.rand(7, 12)), (7, 12)),
-        (FeatureArray(np.random.rand(7)), (7,)),
+        (FeatureArray(np.random.rand(7, 12), number_of_dimensions=2), (7, 12)),
+        (FeatureArray(np.random.rand(7), number_of_dimensions=1), (7,)),
         (
             FeatureArray(
                 np.array(
@@ -372,6 +360,7 @@ def test_get_num_of_features(model_data: RasaModelData):
                         np.random.rand(1, 10),
                     ]
                 ),
+                number_of_dimensions=3,
             ),
             (4, 7, 10),
         ),
@@ -397,8 +386,7 @@ def test_get_num_of_features(model_data: RasaModelData):
                         np.array([np.random.rand(2, 10),]),
                     ]
                 ),
-                is_sparse=False,
-                has_4_dimensions=True,
+                number_of_dimensions=4,
             ),
             (3, 4, 7, 10),
         ),
@@ -416,14 +404,14 @@ def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray)
         (
             FeatureArray(
                 np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7, 12)))]),
-                is_sparse=True,
+                number_of_dimensions=3,
             ),
             [1, 7, 12],
         ),
         (
             FeatureArray(
                 np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7,)))]),
-                is_sparse=True,
+                number_of_dimensions=3,
             ),
             [1, 1, 7],
         ),
@@ -437,7 +425,7 @@ def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray)
                         scipy.sparse.csr_matrix(np.random.randint(10, size=(1, 10))),
                     ]
                 ),
-                is_sparse=True,
+                number_of_dimensions=3,
             ),
             (4, 7, 10),
         ),
@@ -483,8 +471,7 @@ def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray)
                         ),
                     ]
                 ),
-                is_sparse=True,
-                has_4_dimensions=True,
+                number_of_dimensions=4,
             ),
             (3, 4, 7, 10),
         ),

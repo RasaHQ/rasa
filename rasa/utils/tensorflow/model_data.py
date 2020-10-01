@@ -28,24 +28,23 @@ class FeatureArray(np.ndarray):
     # Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
 
     def __new__(
-        cls,
-        input_array: np.ndarray,
-        has_4_dimensions: bool = False,
-        is_sparse: bool = False,
+        cls, input_array: np.ndarray, number_of_dimensions: int,
     ):
         feature_array = np.asarray(input_array).view(cls)
 
-        # TODO feature dimension not correctly set
-        if input_array.ndim == 1:
+        if number_of_dimensions <= 2:
             feature_array.feature_dimension = input_array.shape[-1]
+            feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
+        elif number_of_dimensions == 3:
+            feature_array.feature_dimension = input_array[0].shape[-1]
+            feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
         else:
-            feature_array.feature_dimension = (
-                input_array[0].shape[-1]
-                if not has_4_dimensions
-                else input_array[0][0].shape[-1]
+            feature_array.feature_dimension = input_array[0][0].shape[-1]
+            feature_array.is_sparse = isinstance(
+                input_array[0][0], scipy.sparse.spmatrix
             )
-        feature_array.has_4_dimensions = has_4_dimensions
-        feature_array.is_sparse = is_sparse
+
+        feature_array.number_of_dimensions = number_of_dimensions
 
         return feature_array
 
@@ -54,12 +53,12 @@ class FeatureArray(np.ndarray):
             return
 
         self.feature_dimension = getattr(obj, "feature_dimension", None)
-        self.has_4_dimensions = getattr(obj, "has_4_dimensions", None)
+        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)
         self.is_sparse = getattr(obj, "is_sparse", None)
 
         default_attributes = {
             "feature_dimension": self.feature_dimension,
-            "has_4_dimensions": self.has_4_dimensions,
+            "number_of_dimensions": self.number_of_dimensions,
             "is_spare": self.is_sparse,
         }
         self.__dict__.update(default_attributes)
@@ -88,7 +87,7 @@ class FeatureSignature(NamedTuple):
 
     is_sparse: bool
     feature_dimension: Optional[int]
-    has_4_dimensions: bool
+    number_of_dimensions: bool
 
 
 # Mapping of attribute name and feature name to a list of numpy arrays representing
@@ -278,7 +277,7 @@ class RasaModelData:
         number_of_features = 0
         for features in self.data[key][sub_key]:
             if len(features) > 0:
-                if features.has_4_dimensions:
+                if features.number_of_dimensions == 4:
                     number_of_features += features[0][0].shape[-1]
                 else:
                     number_of_features += features[0].shape[-1]
@@ -345,7 +344,9 @@ class RasaModelData:
         for data in self.data[from_key][from_sub_key]:
             if len(data) > 0:
                 lengths = np.array([x.shape[0] for x in data])
-                self.data[key][sub_key].extend([FeatureArray(lengths)])
+                self.data[key][sub_key].extend(
+                    [FeatureArray(lengths, number_of_dimensions=1)]
+                )
                 break
 
     def split(
@@ -437,7 +438,7 @@ class RasaModelData:
             for sub_key, features in attribute_data.items():
                 for f in features:
                     feature_signature = FeatureSignature(
-                        f.is_sparse, f.feature_dimension, f.has_4_dimensions
+                        f.is_sparse, f.feature_dimension, f.number_of_dimensions
                     )
                     data_signature[key][sub_key].append(feature_signature)
 
@@ -531,7 +532,7 @@ class RasaModelData:
         shapes = []
 
         def append_shape(_features: FeatureArray) -> None:
-            if _features.has_4_dimensions:
+            if _features.number_of_dimensions == 4:
                 if isinstance(_features[0][0], scipy.sparse.spmatrix):
                     # scipy matrix is converted into indices, data, shape
                     shapes.append((None, _features[0][0].ndim + 2))
@@ -545,15 +546,15 @@ class RasaModelData:
                     shapes.append((None, _features[0].ndim + 1))
                     shapes.append((None,))
                     shapes.append((_features[0].ndim + 1))
-                elif _features[0].ndim == 0:
+                elif _features.number_of_dimensions == 1:
                     shapes.append((None,))
-                elif _features[0].ndim == 1:
+                elif _features.number_of_dimensions == 2:
                     shapes.append((None, _features[0].shape[-1]))
                 else:
                     shapes.append((None, None, _features[0].shape[-1]))
 
         def append_type(_features: FeatureArray) -> None:
-            if _features.has_4_dimensions and _features.is_sparse:
+            if _features.number_of_dimensions == 4 and _features.is_sparse:
                 # scipy matrix is converted into indices, data, shape
                 types.append(tf.int64)
                 types.append(tf.float32)
@@ -673,8 +674,7 @@ class RasaModelData:
                     final_data[key][sub_key].append(
                         FeatureArray(
                             np.concatenate(np.array(f)),
-                            is_sparse=f[0].is_sparse,
-                            has_4_dimensions=f[0].has_4_dimensions,
+                            number_of_dimensions=f[0].number_of_dimensions,
                         )
                     )
 
@@ -777,7 +777,7 @@ class RasaModelData:
 
         label_data = []
         for label_id in unique_label_ids:
-            matching_ids = label_ids == label_id
+            matching_ids = np.array(label_ids) == label_id
             label_data.append(
                 RasaModelData(
                     self.label_key,
@@ -919,7 +919,7 @@ class RasaModelData:
         Returns:
             The padded array.
         """
-        if array_of_dense.has_4_dimensions:
+        if array_of_dense.number_of_dimensions == 4:
             return RasaModelData._pad_4d_dense_data(array_of_dense)
 
         if array_of_dense[0].ndim < 2:
@@ -980,7 +980,7 @@ class RasaModelData:
         Returns:
             A list of dense numpy arrays representing the sparse data.
         """
-        if array_of_sparse.has_4_dimensions:
+        if array_of_sparse.number_of_dimensions == 4:
             return RasaModelData._4d_scipy_matrix_to_values(array_of_sparse)
 
         # we need to make sure that the matrices are coo_matrices otherwise the

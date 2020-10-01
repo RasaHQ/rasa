@@ -193,29 +193,20 @@ def _features_for_attribute(
     for key, values in _sparse_features.items():
         if key == SEQUENCE:
             sparse_features[key] = FeatureArray(
-                np.array(values),
-                is_sparse=True,
-                has_4_dimensions=True,
-                feature_dimension=values[0][0].shape[-1],
+                np.array(values), number_of_dimensions=4
             )
         else:
             features = [scipy.sparse.vstack(value) for value in values]
             sparse_features[key] = FeatureArray(
-                np.array(features),
-                is_sparse=True,
-                feature_dimension=features[0].shape[-1],
+                np.array(features), number_of_dimensions=3
             )
     for key, values in _dense_features.items():
         if key == SEQUENCE:
-            dense_features[key] = FeatureArray(
-                np.array(values),
-                has_4_dimensions=True,
-                feature_dimension=values[0][0].shape[-1],
-            )
+            dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
         else:
             features = [np.vstack(value) for value in values]
             dense_features[key] = FeatureArray(
-                np.array(features), feature_dimension=features[0].shape[-1],
+                np.array(features), number_of_dimensions=3
             )
 
     attribute_features = {MASK: [np.array(attribute_masks)]}

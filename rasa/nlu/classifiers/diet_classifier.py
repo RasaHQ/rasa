@@ -526,15 +526,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         for feature_name, feature_value in features.items():
             if SEQUENCE in feature_name:
                 sequence_features.append(
-                    FeatureArray(
-                        np.array(feature_value), is_sparse=(SPARSE in feature_name)
-                    )
+                    FeatureArray(np.array(feature_value), number_of_dimensions=2)
                 )
             else:
                 sentence_features.append(
-                    FeatureArray(
-                        np.array(feature_value), is_sparse=(SPARSE in feature_name)
-                    )
+                    FeatureArray(np.array(feature_value), number_of_dimensions=2)
                 )
 
         return sequence_features, sentence_features
@@ -549,7 +545,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         eye_matrix = np.eye(len(labels_example), dtype=np.float32)
         # add sequence dimension to one-hot labels
-        return [FeatureArray(np.array([np.expand_dims(a, 0) for a in eye_matrix]))]
+        return [
+            FeatureArray(
+                np.array([np.expand_dims(a, 0) for a in eye_matrix]),
+                number_of_dimensions=2,
+            )
+        ]
 
     def _create_label_data(
         self,
@@ -602,7 +603,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(
-            LABEL_KEY, LABEL_SUB_KEY, [FeatureArray(np.expand_dims(label_ids, -1))]
+            LABEL_KEY,
+            LABEL_SUB_KEY,
+            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
 
         label_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
@@ -613,7 +616,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         all_label_features = self._label_data.get(LABEL, SENTENCE)[0]
         return [
             FeatureArray(
-                np.array([all_label_features[label_id] for label_id in label_ids])
+                np.array([all_label_features[label_id] for label_id in label_ids]),
+                number_of_dimensions=2,
             )
         ]
 
@@ -664,12 +668,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 model_data.add_features(
                     key,
                     _sub_key,
-                    [
-                        FeatureArray(
-                            np.array(_features),
-                            is_sparse=(SPARSE in sub_key),
-                        )
-                    ],
+                    [FeatureArray(np.array(_features), number_of_dimensions=3)],
                 )
 
         if (
@@ -685,7 +684,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         model_data.add_features(
-            LABEL_KEY, LABEL_SUB_KEY, [FeatureArray(np.expand_dims(label_ids, -1))]
+            LABEL_KEY,
+            LABEL_SUB_KEY,
+            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
 
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)

@@ -268,7 +268,9 @@ class TEDPolicy(Policy):
 
         label_ids = np.arange(domain.num_actions)
         label_data.add_features(
-            LABEL_KEY, LABEL_SUB_KEY, [FeatureArray(np.expand_dims(label_ids, -1))]
+            LABEL_KEY,
+            LABEL_SUB_KEY,
+            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
 
         return label_data, encoded_all_labels
@@ -299,7 +301,11 @@ class TEDPolicy(Policy):
             label_ids = np.array(
                 [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
             )
-            model_data.add_features(LABEL_KEY, LABEL_SUB_KEY, [FeatureArray(label_ids)])
+            model_data.add_features(
+                LABEL_KEY,
+                LABEL_SUB_KEY,
+                [FeatureArray(label_ids, number_of_dimensions=2)],
+            )
 
             attribute_data, self.zero_state_features = convert_to_data_format(
                 tracker_state_features
