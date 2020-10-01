@@ -1,9 +1,13 @@
 import glob
-from typing import Dict
+from typing import Dict, Text, Optional
 
 import pytest
 
-from rasa.shared.core.constants import ACTION_DEFAULT_FALLBACK_NAME
+from rasa.shared.core.constants import (
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_TWO_STAGE_FALLBACK_NAME,
+)
+from rasa.shared.core.events import ActionExecuted
 from tests.core.conftest import ExamplePolicy
 import rasa.core.config
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -73,10 +77,10 @@ def test_ensemble_from_dict():
 
 
 @pytest.mark.parametrize(
-    "config, expected_config, nr_new_rules",
+    "config, expected_config, nr_new_rules, expected_triggered_action",
     [
         # Nothing to be migrated
-        ({"policies": []}, {"policies": []}, 0),
+        ({"policies": []}, {"policies": []}, 0, None),
         # Migrate `FallbackPolicy` with default config
         (
             {"policies": [{"name": "FallbackPolicy"}], "pipeline": []},
@@ -97,6 +101,7 @@ def test_ensemble_from_dict():
                 ],
             },
             1,
+            ACTION_DEFAULT_FALLBACK_NAME,
         ),
         # Migrate `FallbackPolicy` if it's fully configured
         (
@@ -129,6 +134,7 @@ def test_ensemble_from_dict():
                 ],
             },
             1,
+            "i_got_this",
         ),
         # Migrate if `FallbackClassifier` is already present.
         # Don't override already configured settings.
@@ -154,6 +160,7 @@ def test_ensemble_from_dict():
                 ],
             },
             1,
+            ACTION_DEFAULT_FALLBACK_NAME,
         ),
         # Migrate `FallbackPolicy` if `RulePolicy` is already configured
         # Don't override already configured settings
@@ -182,13 +189,81 @@ def test_ensemble_from_dict():
                 ],
             },
             1,
+            ACTION_DEFAULT_FALLBACK_NAME,
+        ),
+        # Migrate `TwoStageFallbackPolicy` with default config
+        (
+            {"policies": [{"name": "TwoStageFallbackPolicy"}], "pipeline": []},
+            {
+                "policies": [
+                    {
+                        "name": "RulePolicy",
+                        "core_fallback_threshold": 0.3,
+                        "core_fallback_action_name": ACTION_DEFAULT_FALLBACK_NAME,
+                    }
+                ],
+                "pipeline": [
+                    {
+                        "name": "FallbackClassifier",
+                        "threshold": 0.3,
+                        "ambiguity_threshold": 0.1,
+                    }
+                ],
+            },
+            1,
+            ACTION_TWO_STAGE_FALLBACK_NAME,
+        ),
+        # Migrate `TwoStageFallbackPolicy` with customized config
+        (
+            {
+                "policies": [
+                    {
+                        "name": "TwoStageFallbackPolicy",
+                        "nlu_threshold": 0.123,
+                        "ambiguity_threshold": 0.9123,
+                        "core_threshold": 0.421,
+                        "fallback_core_action_name": "my_core_fallback",
+                    }
+                ],
+                "pipeline": [],
+            },
+            {
+                "policies": [
+                    {
+                        "name": "RulePolicy",
+                        "core_fallback_threshold": 0.421,
+                        "core_fallback_action_name": "my_core_fallback",
+                    }
+                ],
+                "pipeline": [
+                    {
+                        "name": "FallbackClassifier",
+                        "threshold": 0.123,
+                        "ambiguity_threshold": 0.9123,
+                    }
+                ],
+            },
+            1,
+            ACTION_TWO_STAGE_FALLBACK_NAME,
         ),
     ],
 )
 def test_migrate_fallback_policy(
-    config: Dict, expected_config: Dict, nr_new_rules: int
+    config: Dict,
+    expected_config: Dict,
+    nr_new_rules: int,
+    expected_triggered_action: Optional[Text],
 ):
-    updated_config, added_rules = rasa.core.config.migrate_fallback_policy(config)
+    updated_config, added_rules = rasa.core.config.migrate_fallback_policies(config)
 
     assert updated_config == expected_config
     assert len(added_rules) == nr_new_rules
+
+    if nr_new_rules > 0:
+        assert any(
+            isinstance(event, ActionExecuted)
+            and event.action_name == expected_triggered_action
+            for event in added_rules[0].events
+        )
+
+    # TODO: Test that correct action is triggered in FAQ rule!

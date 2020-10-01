@@ -5,7 +5,11 @@ from typing import Optional, Text, List, Dict, Union, Tuple
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.shared.core.constants import ACTION_DEFAULT_FALLBACK_NAME, ACTION_LISTEN_NAME
+from rasa.shared.core.constants import (
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_LISTEN_NAME,
+    ACTION_TWO_STAGE_FALLBACK_NAME,
+)
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -37,11 +41,14 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
     return PolicyEnsemble.from_dict(config_data)
 
 
-def migrate_fallback_policy(config: Dict) -> Tuple[Dict, List[StoryStep]]:
+def migrate_fallback_policies(config: Dict) -> Tuple[Dict, List[StoryStep]]:
     from rasa.core.policies.fallback import FallbackPolicy
+    from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
     fallback_config = _get_config_for_name(
         FallbackPolicy.__name__, config.get("policies", [])
+    ) or _get_config_for_name(
+        TwoStageFallbackPolicy.__name__, config.get("policies", [])
     )
 
     if not fallback_config:
@@ -50,15 +57,19 @@ def migrate_fallback_policy(config: Dict) -> Tuple[Dict, List[StoryStep]]:
     _update_rule_policy_config(config, fallback_config)
     _update_fallback_config(config, fallback_config)
     config["policies"] = _drop_policy(
-        FallbackPolicy.__name__, config.get("policies", [])
+        fallback_config.get("name"), config.get("policies", [])
     )
 
-    fallback_action_name = fallback_config.get(
-        "fallback_action_name", ACTION_DEFAULT_FALLBACK_NAME
-    )
+    # The triggered action is hardcoded for the `TwoStageFallback`
+    fallback_action_name = ACTION_TWO_STAGE_FALLBACK_NAME
+    if fallback_config.get("name") == FallbackPolicy.__name__:
+        fallback_action_name = fallback_config.get(
+            "fallback_action_name", ACTION_DEFAULT_FALLBACK_NAME
+        )
+
     fallback_rule = _get_faq_rule(
         f"Rule to handle messages with low NLU confidence "
-        f"(automated conversion from '{FallbackPolicy.__name__}'",
+        f"(automated conversion from '{fallback_config.get('name')}'",
         DEFAULT_NLU_FALLBACK_INTENT_NAME,
         fallback_action_name,
     )
@@ -87,8 +98,8 @@ def _update_rule_policy_config(config: Dict, fallback_config: Dict) -> None:
 
     core_threshold = fallback_config.get("core_threshold", 0.3)
     fallback_action_name = fallback_config.get(
-        "fallback_action_name", ACTION_DEFAULT_FALLBACK_NAME
-    )
+        "fallback_core_action_name"
+    ) or fallback_config.get("fallback_action_name", ACTION_DEFAULT_FALLBACK_NAME)
 
     rule_policy_config.setdefault("core_fallback_threshold", core_threshold)
     rule_policy_config.setdefault("core_fallback_action_name", fallback_action_name)
