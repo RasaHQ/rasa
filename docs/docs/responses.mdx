@@ -165,11 +165,11 @@ Each button in the list of `buttons` should have two keys:
 * `payload`: The message sent from the user to the assistant when the button is clicked.
 
 :::note bypass nlu with buttons
-It's common to use buttons as a shortcut to bypass the ML-based NLU interpreter.
+It's common to use buttons as a shortcut to bypass the machine-learning-based NLU interpreter.
 Messages starting with `/` are sent straight to the
 `RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format.
 In the example above, if the user clicks a button, the user input
-will be directly classified as either the `/mood_great` or `/mood_sad` intent.
+will be directly classified as either the `mood_great` or `mood_sad` intent.
 :::
 
 :::caution Check your channel
@@ -193,7 +193,8 @@ You can add images to a response by providing a URL to the image under the `imag
 ### Custom Output Payloads
 
 You can send any arbitrary output to the output channel using the
-`custom` key.
+`custom` key. The output channel receives the object stored under the `custom` key
+as a JSON payload.
 
 Here's an example of how to send a
 [date picker](https://api.slack.com/reference/block-kit/block-elements#datepicker) to the
@@ -239,17 +240,17 @@ stories:
   - action: utter_greet
 ```
 
-When `utter_greet` action runs, it will send the message from
+When the `utter_greet` action runs, it will send the message from
 the response back to the user.
 
-:::note
+:::note Changing responses
 If you want to change the text, or any other part of the response,
 you need to retrain the assistant before these changes will be picked up.
 :::
 
 ### Calling Responses from Custom Actions
 
-You can call responses from your
+If you use Rasa SDK as your action server, you can call responses from your
 [Custom Actions](custom-actions.mdx) by using the `dispatcher`
 variable. In your custom action code, you can
 send a message based on the responses defined under `utter_greet` like this:
@@ -264,4 +265,19 @@ class ActionGreet(Action):
     def run(self, dispatcher, tracker, domain):
         dispatcher.utter_message(template="utter_greet")
         return []
+```
+
+If you use a
+[different custom action server](https://rasa.com/docs/action-server#other-action-servers),
+your server should return the following JSON for the `utter_greet` response:
+
+```json {5}
+{
+  "events":[],
+  "responses":[
+    {
+      "template":"utter_greet"
+    }
+  ]
+}
 ```
