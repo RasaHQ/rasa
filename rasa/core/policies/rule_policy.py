@@ -337,7 +337,7 @@ class RulePolicy(MemoizationPolicy):
                 f"- the action '{action_name}' in rule '{rule_name}' doesn't set an "
                 f"active_loop, that it sets in other rules: "
                 f"'{', '.join(fingerprint_active_loops)}'. Please update the rule with "
-                f"an appropriate active loop or if it is the last action add "
+                f"the appropriate 'active loop' property or if it is the last action add "
                 f"'wait_for_user_input: false' after this action."
             )
         return error_messages
