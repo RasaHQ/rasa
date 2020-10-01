@@ -182,6 +182,8 @@ class FeatureArray(np.ndarray):
         if self.number_of_dimensions == 4:
             return [(None, None, None, self.units)], [tf.float32]
 
+        return [], []
+        
 
 class FeatureSignature(NamedTuple):
     """Stores the shape, the type (sparse vs dense), and the number of dimensions of features."""
