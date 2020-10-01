@@ -506,7 +506,7 @@ def _assert_two_stage_fallack_policy_is_migratable(config: Dict):
         != ACTION_DEFAULT_FALLBACK_NAME
     ):
         rasa.shared.utils.cli.print_error_and_exit(
-            f"The TwoStageFallback in Rasa Open Source 2.0 has to use the action "
+            f"The Two-Stage Fallback in Rasa Open Source 2.0 has to use the action "
             f"'{ACTION_DEFAULT_FALLBACK_NAME}' for cases when the user denies the "
             f"suggestion multiple times. "
             f"Please change the parameter 'fallback_nlu_action_name' to "

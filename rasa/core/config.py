@@ -75,7 +75,7 @@ def migrate_fallback_policies(config: Dict) -> Tuple[Dict, Optional["StoryStep"]
     _update_fallback_config(new_config, fallback_config)
     new_config["policies"] = _drop_policy(fallback_config.get("name"), policies)
 
-    # The triggered action is hardcoded for the `TwoStageFallback`
+    # The triggered action is hardcoded for the Two-Stage Fallback`
     fallback_action_name = ACTION_TWO_STAGE_FALLBACK_NAME
     if fallback_config.get("name") == FallbackPolicy.__name__:
         fallback_action_name = fallback_config.get(
