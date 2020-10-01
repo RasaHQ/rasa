@@ -1,3 +1,4 @@
+from asyncio.events import AbstractEventLoop
 import os
 from multiprocessing.managers import DictProxy
 from pathlib import Path
@@ -7,6 +8,8 @@ import requests
 import time
 import uuid
 import urllib.parse
+import tempfile
+import deepdiff
 
 from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
 from contextlib import ExitStack
@@ -24,6 +27,8 @@ import rasa.constants
 import rasa.shared.constants
 import rasa.shared.utils.io
 import rasa.utils.io
+import rasa.shared.nlu.training_data.loading
+import rasa.shared.core.training_data.loading
 import rasa.server
 from rasa.core import utils
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -36,6 +41,7 @@ from rasa.core.channels import (
     SlackInput,
     CallbackInput,
 )
+from rasa.shared.core.domain import Domain
 from rasa.core.channels.slack import SlackBot
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain, SessionConfig
@@ -1539,3 +1545,117 @@ stories:
 
     # the last event is still the same as before
     assert tracker.events[-1].timestamp == conversation_events[-1].timestamp
+
+
+@pytest.mark.parametrize(
+    "input_format, output_format",
+    [
+        ("yml", "yml"),
+        ("yml", "json"),
+        ("yml", "md"),
+        ("json", "yml"),
+        ("json", "json"),
+        ("json", "md"),
+        ("md", "yml"),
+        ("md", "json"),
+        ("md", "md"),
+    ],
+)
+def test_convert_nlu_data(
+    rasa_app: SanicTestClient, input_format: Text, output_format: Text,
+):
+    gold = rasa.shared.nlu.training_data.loading.load_data(
+        f"data/examples/rasa/demo-rasa.{output_format}"
+    )
+    parser = (
+        rasa.shared.utils.io.read_json_file
+        if input_format == "json"
+        else rasa.shared.utils.io.read_file
+    )
+    _, response = rasa_app.post(
+        "/data/convert/nlu",
+        json={
+            "data": parser(f"data/examples/rasa/demo-rasa.{input_format}"),
+            "input_format": input_format,
+            "output_format": output_format,
+        },
+    )
+
+    assert response.status == 200
+
+    result = response.json.get("data")
+    writer = (
+        rasa.shared.utils.io.dump_obj_as_json_to_file
+        if type(result) is dict
+        else lambda result_path, result: rasa.shared.utils.io.write_text_file(
+            result, result_path
+        )
+    )
+    result_path = os.path.join(tempfile.mkdtemp(), f"out.{output_format}")
+    writer(result_path, result)
+    result_loaded = rasa.shared.nlu.training_data.loading.load_data(result_path)
+
+    assert not deepdiff.DeepDiff(result_loaded, gold, ignore_order=True)
+
+
+@pytest.mark.parametrize(
+    "input_format, output_format", [("yml", "yml"), ("md", "yml")],
+)
+def test_convert_core_data(
+    rasa_app: SanicTestClient,
+    event_loop: AbstractEventLoop,
+    input_format: Text,
+    output_format: Text,
+):
+    get_path = (
+        lambda format: f"data/test_multifile{'_yaml_' if format == 'yml' else '_'}stories/stories_part_2.{format}"
+    )
+    domain = Domain.from_dict(
+        {
+            "intents": [
+                "affirm",
+                "thank_you",
+                "goodbye",
+                "why",
+                "next_intent",
+                "change_bank_details",
+            ],
+        }
+    )
+    gold = event_loop.run_until_complete(
+        rasa.shared.core.training_data.loading.load_data_from_files(
+            [get_path(output_format)], domain
+        )
+    )
+    _, response = rasa_app.post(
+        "/data/convert/core",
+        json={
+            "data": rasa.shared.utils.io.read_file(get_path(input_format)),
+            "input_format": input_format,
+            "output_format": output_format,
+        },
+    )
+
+    assert response.status == 200
+
+    result = response.json.get("data")
+    result_path = os.path.join(tempfile.mkdtemp(), f"out.{output_format}")
+    rasa.shared.utils.io.write_text_file(result, result_path)
+    result_loaded = event_loop.run_until_complete(
+        rasa.shared.core.training_data.loading.load_data_from_files(
+            [result_path], domain
+        )
+    )
+
+    assert not deepdiff.DeepDiff(
+        result_loaded,
+        gold,
+        ignore_order=False,
+        exclude_regex_paths=[
+            r"root\[\d+\]\.id",
+            r"root\[\d+\]\.source_name",
+            r"root\[\d+\]\.events\[\d+\]\.timestamp",
+            r"root\[\d+\]\.(?:end|start)_checkpoints\[\d+\]\.name",
+        ],
+    )
+
