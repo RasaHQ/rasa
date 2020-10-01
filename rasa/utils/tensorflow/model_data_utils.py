@@ -209,7 +209,9 @@ def _features_for_attribute(
                 np.array(features), number_of_dimensions=3
             )
 
-    attribute_features = {MASK: [np.array(attribute_masks)]}
+    attribute_features = {
+        MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=3)]
+    }
 
     feature_types = set()
     feature_types.update(list(dense_features.keys()))

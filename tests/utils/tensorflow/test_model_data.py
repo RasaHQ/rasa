@@ -158,7 +158,7 @@ async def model_data() -> RasaModelData:
                 ]
             },
             "label": {
-                "ids": [FeatureArray(np.array([0, 1, 0, 1, 1]), number_of_dimensions=2)]
+                "ids": [FeatureArray(np.array([0, 1, 0, 1, 1]), number_of_dimensions=1)]
             },
             "entities": {
                 "tag_ids": [
@@ -411,7 +411,7 @@ def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray)
         (
             FeatureArray(
                 np.array([scipy.sparse.csr_matrix(np.random.randint(5, size=(7,)))]),
-                number_of_dimensions=3,
+                number_of_dimensions=2,
             ),
             [1, 1, 7],
         ),

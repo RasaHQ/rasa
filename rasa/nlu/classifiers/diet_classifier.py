@@ -526,11 +526,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         for feature_name, feature_value in features.items():
             if SEQUENCE in feature_name:
                 sequence_features.append(
-                    FeatureArray(np.array(feature_value), number_of_dimensions=2)
+                    FeatureArray(np.array(feature_value), number_of_dimensions=3)
                 )
             else:
                 sentence_features.append(
-                    FeatureArray(np.array(feature_value), number_of_dimensions=2)
+                    FeatureArray(np.array(feature_value), number_of_dimensions=3)
                 )
 
         return sequence_features, sentence_features
@@ -548,7 +548,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return [
             FeatureArray(
                 np.array([np.expand_dims(a, 0) for a in eye_matrix]),
-                number_of_dimensions=2,
+                number_of_dimensions=3,
             )
         ]
 

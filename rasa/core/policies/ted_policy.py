@@ -304,7 +304,7 @@ class TEDPolicy(Policy):
             model_data.add_features(
                 LABEL_KEY,
                 LABEL_SUB_KEY,
-                [FeatureArray(label_ids, number_of_dimensions=2)],
+                [FeatureArray(label_ids, number_of_dimensions=3)],
             )
 
             attribute_data, self.zero_state_features = convert_to_data_format(

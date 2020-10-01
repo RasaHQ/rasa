@@ -30,6 +30,8 @@ class FeatureArray(np.ndarray):
     def __new__(
         cls, input_array: np.ndarray, number_of_dimensions: int,
     ):
+        FeatureArray._validate_number_of_dimensions(number_of_dimensions, input_array)
+
         feature_array = np.asarray(input_array).view(cls)
 
         if number_of_dimensions <= 2:
@@ -38,10 +40,14 @@ class FeatureArray(np.ndarray):
         elif number_of_dimensions == 3:
             feature_array.feature_dimension = input_array[0].shape[-1]
             feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
-        else:
+        elif number_of_dimensions == 4:
             feature_array.feature_dimension = input_array[0][0].shape[-1]
             feature_array.is_sparse = isinstance(
                 input_array[0][0], scipy.sparse.spmatrix
+            )
+        else:
+            raise ValueError(
+                f"Number of dimensions '{number_of_dimensions}' currently not supported."
             )
 
         feature_array.number_of_dimensions = number_of_dimensions
@@ -63,6 +69,7 @@ class FeatureArray(np.ndarray):
         }
         self.__dict__.update(default_attributes)
 
+    # pytype: disable=attribute-error
     def __array_ufunc__(
         self, ufunc, method, *inputs, **kwargs
     ):  # this method is called whenever you use a ufunc
@@ -74,12 +81,58 @@ class FeatureArray(np.ndarray):
             "at": ufunc.at,
             "__call__": ufunc,
         }
-        # convert the inputs to np.ndarray to prevent recursion, call the function, then cast it back as ExampleTensor
+        # convert the inputs to np.ndarray to prevent recursion, call the function, then cast it back as FeatureArray
         output = FeatureArray(
-            f[method](*(i.view(np.ndarray) for i in inputs), **kwargs)
+            f[method](*(i.view(np.ndarray) for i in inputs), **kwargs),
+            number_of_dimensions=kwargs["number_of_dimensions"],
         )
         output.__dict__ = self.__dict__  # carry forward attributes
         return output
+
+    def __reduce__(self):
+        # Needed in order to pickle this object
+        pickled_state = super(FeatureArray, self).__reduce__()
+        new_state = pickled_state[2] + (
+            self.number_of_dimensions,
+            self.is_sparse,
+            self.feature_dimension,
+        )
+        return pickled_state[0], pickled_state[1], new_state
+
+    def __setstate__(self, state, **kwargs):
+        # Needed in order to load the object
+        self.number_of_dimensions = state[-3]
+        self.is_sparse = state[-2]
+        self.feature_dimension = state[-1]
+        super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
+
+    # pytype: enable=attribute-error
+
+    @staticmethod
+    def _validate_number_of_dimensions(
+        number_of_dimensions: int, input_array: np.ndarray
+    ) -> None:
+        _sub_array = input_array
+        dim = 0
+        for i in range(1, number_of_dimensions + 1):
+            _sub_array = _sub_array[0]
+            if isinstance(_sub_array, scipy.sparse.spmatrix):
+                dim = i
+                break
+
+        if isinstance(_sub_array, scipy.sparse.spmatrix):
+            if dim > 2:
+                raise ValueError(
+                    f"Given number of dimensions '{number_of_dimensions}' does not match dimensiona of given input "
+                    f"array: {input_array}."
+                )
+        elif not np.issubdtype(type(_sub_array), np.integer) and not isinstance(
+            _sub_array, (np.float32, np.float64)
+        ):
+            raise ValueError(
+                f"Given number of dimensions '{number_of_dimensions}' does not match dimensiona of given input "
+                f"array: {input_array}."
+            )
 
 
 class FeatureSignature(NamedTuple):
@@ -433,9 +486,7 @@ class RasaModelData:
             key: {
                 sub_key: [
                     FeatureSignature(
-                        f.is_sparse,
-                        f.feature_dimension,
-                        f.number_of_dimensions
+                        f.is_sparse, f.feature_dimension, f.number_of_dimensions
                     )
                     for f in features
                 ]
