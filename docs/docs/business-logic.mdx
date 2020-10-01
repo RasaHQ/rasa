@@ -102,21 +102,25 @@ filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
 `deny`, it'll be `false`.
 
 
-Since the form relies on certain [slots](domain.mdx#slots) being available,  you need to add these slots to the domain. Slots filled by
-forms are usually `unfeaturized`, since their value doesn't change
-the flow of the conversation.
+Since the form relies on certain [slots](domain.mdx#slots) being available, you need
+to add these slots to the domain. Slots filled by forms should usually not influence
+the conversation. Set `influence_conversation` to `false` to ignore their values during
+the conversation:
 
 ```yaml-rasa title="domain.yml"
 slots:
   cuisine:
-    type: unfeaturized
+    type: text
     auto_fill: false
+    influence_conversation: false
   num_people:
-    type: unfeaturized
+    type: float
     auto_fill: false
+    influence_conversation: false
   outdoor_seating:
-    type: unfeaturized
+    type: text
     auto_fill: false
+    influence_conversation: false
 ```
 
 #### Validating Slots
