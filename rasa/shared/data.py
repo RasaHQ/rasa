@@ -86,7 +86,9 @@ def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     return _copy_files_to_new_dir(core_files)
 
 
-def get_nlu_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
+def get_nlu_directory(
+    paths: Optional[Union[Text, List[Text]]],
+) -> Text:
     """Recursively collects all NLU training files from a list of paths.
 
     Args:
@@ -217,9 +219,9 @@ def is_story_file(file_path: Text) -> bool:
         MarkdownStoryReader,
     )
 
-    return YAMLStoryReader.is_yaml_story_file(
+    return YAMLStoryReader.is_stories_file(
         file_path
-    ) or MarkdownStoryReader.is_markdown_story_file(file_path)
+    ) or MarkdownStoryReader.is_stories_file(file_path)
 
 
 def is_test_stories_file(file_path: Text) -> bool:
@@ -238,9 +240,9 @@ def is_test_stories_file(file_path: Text) -> bool:
         MarkdownStoryReader,
     )
 
-    return YAMLStoryReader.is_yaml_test_stories_file(
+    return YAMLStoryReader.is_test_stories_file(
         file_path
-    ) or MarkdownStoryReader.is_markdown_test_stories_file(file_path)
+    ) or MarkdownStoryReader.is_test_stories_file(file_path)
 
 
 def is_config_file(file_path: Text) -> bool:

@@ -292,7 +292,7 @@ class MarkdownStoryReader(StoryReader):
         return utterance
 
     @staticmethod
-    def is_markdown_story_file(file_path: Union[Text, Path]) -> bool:
+    def is_stories_file(file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in Markdown format.
 
         Args:
@@ -328,7 +328,7 @@ class MarkdownStoryReader(StoryReader):
             return False
 
     @staticmethod
-    def is_markdown_test_stories_file(file_path: Union[Text, Path]) -> bool:
+    def is_test_stories_file(file_path: Union[Text, Path]) -> bool:
         """Checks if a file contains test stories.
 
         Args:
