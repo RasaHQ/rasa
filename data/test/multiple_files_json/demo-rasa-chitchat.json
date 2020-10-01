@@ -4,22 +4,22 @@
       {
         "text": "What's your name?",
         "intent": "chitchat/ask_name",
-        "entitites": []
+        "entities": []
       },
       {
         "text": "What can I call you?",
         "intent": "chitchat/ask_name",
-        "entitites": []
+        "entities": []
       },
       {
         "text": "How's the weather?",
         "intent": "chitchat/ask_weather",
-        "entitites": []
+        "entities": []
       },
       {
         "text": "Is it too hot outside?",
         "intent": "chitchat/ask_weather",
-        "entitites": []
+        "entities": []
       }
     ]
   }
