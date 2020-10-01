@@ -229,11 +229,12 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Any:
+def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
+        reader_type: Reader type to use. By default "safe" will be used
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
@@ -242,13 +243,7 @@ def read_yaml(content: Text) -> Any:
 
     replace_environment_variables()
 
-    # type is actually correct, they annotated it wrongly...we need "rt" since
-    # it will add meta information to the parsed output. this meta information
-    # will include e.g. at which line an object was parsed. this is very
-    # helpful when we validate files later on and want to point the user to the
-    # right line
-    # noinspection PyTypeChecker
-    yaml_parser = yaml.YAML(typ=["safe", "rt"])
+    yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
 

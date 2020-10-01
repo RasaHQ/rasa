@@ -131,7 +131,14 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
     log.setLevel(logging.CRITICAL)
 
     try:
-        source_data = rasa.shared.utils.io.read_yaml(yaml_file_content)
+        # we need "rt" since
+        # it will add meta information to the parsed output. this meta information
+        # will include e.g. at which line an object was parsed. this is very
+        # helpful when we validate files later on and want to point the user to the
+        # right line
+        source_data = rasa.shared.utils.io.read_yaml(
+            yaml_file_content, reader_type=["safe", "rt"]
+        )
     except YAMLError:
         raise YamlValidationException(
             "The provided yaml file is invalid. You can use "
