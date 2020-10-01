@@ -83,6 +83,7 @@ TEST_MIGRATED_MAPPING_POLICIES = [
             "config": {"policies": [{"name": "MemoizationPolicy"}]},
             "domain_intents": ["greet", "leave"],
             "rules": [],
+            "rules_count": 0,
         },
     ),
     # MappingPolicy but no rules
@@ -93,6 +94,7 @@ TEST_MIGRATED_MAPPING_POLICIES = [
             "config": {"policies": [{"name": "MemoizationPolicy"}]},
             "domain_intents": ["greet", "leave"],
             "rules": [],
+            "rules_count": 0,
         },
     ),
     # MappingPolicy + rules
@@ -113,6 +115,7 @@ TEST_MIGRATED_MAPPING_POLICIES = [
                     "steps": [{"intent": "greet"}, {"action": "action_greet"}],
                 }
             ],
+            "rules_count": 1,
         },
     ),
 ]
@@ -135,3 +138,4 @@ def test_migrate_mapping_policy_to_rules(
     assert config == expected_results["config"]
     assert domain.cleaned_domain()["intents"] == expected_results["domain_intents"]
     assert rules == expected_results["rules"]
+    assert len(rules) == expected_results["rules_count"]
