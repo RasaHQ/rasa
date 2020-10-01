@@ -109,7 +109,7 @@ async def test_test_stories(tmpdir: Path):
             "- story: ask product\n"
             "  steps:\n"
             "  - intent: faq\n"
-            "    user: |\n"
+            "    user: |-\n"
             "      what is Rasa X?\n"
             "    entities:\n"
             "    - product: Rasa X\n"
