@@ -416,16 +416,20 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
     (
         model_configuration,
         domain,
-        mapping_rules,
+        new_rules,
     ) = rasa.core.config.migrate_mapping_policy_to_rules(model_configuration, domain)
 
-    model_configuration, fallback_rules = rasa.core.config.migrate_fallback_policies(
+    model_configuration, fallback_rule = rasa.core.config.migrate_fallback_policies(
         model_configuration
     )
+    if fallback_rule:
+        new_rules.append(fallback_rule)
 
     rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
     domain.persist_clean(domain_file)
-    _dump_rules(rule_output_file, [*mapping_rules, *fallback_rules])
+
+    if new_rules:
+        _dump_rules(rule_output_file, new_rules)
 
 
 def _get_configuration(path: Path) -> Dict:
@@ -539,7 +543,7 @@ def _get_rules_path(path: Text) -> Path:
         rasa.shared.utils.cli.print_error_and_exit(
             f"'{rules_file}' needs to be the path to a file."
         )
-        
+
     elif rules_file.is_file():
         rasa.shared.utils.cli.print_info(
             f"Output file '{rules_file}' did not exist and will be created."
@@ -550,13 +554,16 @@ def _get_rules_path(path: Text) -> Path:
 
 
 def _dump_rules(path: Path, new_rules: List[StoryStep]) -> None:
-    if not new_rules:
-        return
-
     existing_rules = []
     if path.exists():
         rules_reader = YAMLStoryReader()
         existing_rules = rules_reader.read_from_file(path)
+
+    if existing_rules:
+        rasa.shared.utils.cli.print_info(
+            "Found existing rules in the output file '{path}'. The new rules will "
+            "be appended to the existing rules."
+        )
 
     rules_writer = YAMLStoryWriter()
     rules_writer.dump(path, existing_rules + new_rules)

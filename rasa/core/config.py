@@ -1,6 +1,5 @@
 import copy
 import os
-import typing
 from typing import Optional, Text, List, Dict, Union, Tuple, Any, TYPE_CHECKING
 
 import rasa.shared.utils.io
@@ -18,6 +17,9 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.fallback import FallbackPolicy
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 
 if TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
@@ -45,24 +47,28 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
     return PolicyEnsemble.from_dict(config_data)
 
 
-def migrate_fallback_policies(config: Dict) -> Tuple[Dict, List["StoryStep"]]:
-    from rasa.core.policies.fallback import FallbackPolicy
-    from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+def migrate_fallback_policies(config: Dict) -> Tuple[Dict, Optional["StoryStep"]]:
+    """Migrate the deprecated fallback policies to their `RulePolicy` counterpart.
+
+    Args:
+        config: The model configuration containing deprecated policies.
+
+    Returns:
+        The updated configuration and the required fallback rules.
+    """
+    new_config = copy.deepcopy(config)
+    policies = new_config.get("policies", [])
 
     fallback_config = _get_config_for_name(
-        FallbackPolicy.__name__, config.get("policies", [])
-    ) or _get_config_for_name(
-        TwoStageFallbackPolicy.__name__, config.get("policies", [])
-    )
+        FallbackPolicy.__name__, policies
+    ) or _get_config_for_name(TwoStageFallbackPolicy.__name__, policies)
 
     if not fallback_config:
-        return config, []
+        return config, None
 
-    _update_rule_policy_config(config, fallback_config)
-    _update_fallback_config(config, fallback_config)
-    config["policies"] = _drop_policy(
-        fallback_config.get("name"), config.get("policies", [])
-    )
+    _update_rule_policy_config_for_fallback(policies, fallback_config)
+    _update_fallback_config(new_config, fallback_config)
+    new_config["policies"] = _drop_policy(fallback_config.get("name"), policies)
 
     # The triggered action is hardcoded for the `TwoStageFallback`
     fallback_action_name = ACTION_TWO_STAGE_FALLBACK_NAME
@@ -78,25 +84,29 @@ def migrate_fallback_policies(config: Dict) -> Tuple[Dict, List["StoryStep"]]:
         fallback_action_name,
     )
 
-    return config, fallback_rule
+    return new_config, fallback_rule
 
 
-def _get_config_for_name(
-    component_name: Text, config_part: List[Dict]
-) -> Dict:
+def _get_config_for_name(component_name: Text, config_part: List[Dict]) -> Dict:
     return next(
         (config for config in config_part if config.get("name") == component_name), {}
     )
 
 
-def _update_rule_policy_config(config: Dict, fallback_config: Dict) -> None:
-    rule_policy_config = _get_config_for_name(
-        RulePolicy.__name__, config.get("policies", [])
-    )
+def _update_rule_policy_config_for_fallback(
+    policies: List[Dict], fallback_config: Dict
+) -> None:
+    """Update the `RulePolicy` configuration with the parameters for the fallback.
+
+    Args:
+        policies: The current list of configured policies.
+        fallback_config: The configuration of the deprecated fallback configuration.
+    """
+    rule_policy_config = _get_config_for_name(RulePolicy.__name__, policies)
 
     if not rule_policy_config:
         rule_policy_config = {"name": RulePolicy.__name__}
-        config["policies"].append(rule_policy_config)
+        policies.append(rule_policy_config)
 
     core_threshold = fallback_config.get("core_threshold", 0.3)
     fallback_action_name = fallback_config.get(
@@ -108,8 +118,6 @@ def _update_rule_policy_config(config: Dict, fallback_config: Dict) -> None:
 
 
 def _update_fallback_config(config: Dict, fallback_config: Dict) -> None:
-    from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
-
     fallback_classifier_config = _get_config_for_name(
         FallbackClassifier.__name__, config.get("pipeline", [])
     )
@@ -125,9 +133,7 @@ def _update_fallback_config(config: Dict, fallback_config: Dict) -> None:
     fallback_classifier_config.setdefault("ambiguity_threshold", ambiguity_threshold)
 
 
-def _get_faq_rule(
-    rule_name: Text, intent: Text, action_name: Text
-) -> List["StoryStep"]:
+def _get_faq_rule(rule_name: Text, intent: Text, action_name: Text) -> "StoryStep":
     faq_rule = f"""
        rules:
        - rule: {rule_name}
@@ -137,7 +143,7 @@ def _get_faq_rule(
     """
 
     story_reader = YAMLStoryReader()
-    return story_reader.read_from_string(faq_rule)
+    return story_reader.read_from_string(faq_rule)[0]
 
 
 def _drop_policy(policy_to_drop: Text, policies: List[Dict]) -> List[Dict]:
@@ -147,10 +153,18 @@ def _drop_policy(policy_to_drop: Text, policies: List[Dict]) -> List[Dict]:
 def migrate_mapping_policy_to_rules(
     config: Dict[Text, Any], domain: "Domain"
 ) -> Tuple[Dict[Text, Any], "Domain", List["StoryStep"]]:
-    """Migrate MappingPolicy to the new RulePolicy, by updating the config, 
-    domain and generating rules.
+    """Migrate `MappingPolicy` to its `RulePolicy` counterparts.
 
-    This function modifies the config, the domain and the rules in place.
+    This migration will update the config, domain and generate the required rules.
+
+    Args:
+        config: The model configuration containing deprecated policies.
+        domain: The domain which potentially includes intents with the `triggers`
+            property.
+
+    Returns:
+        The updated model configuration, the domain without trigger intents, and the
+        generated rules.
     """
     policies = config.get("policies", [])
     has_mapping_policy = False
@@ -179,7 +193,7 @@ def migrate_mapping_policy_to_rules(
                 intent,
                 triggered_action,
             )
-            new_rules.extend(trigger_rules)
+            new_rules.append(trigger_rule)
 
     # finally update the policies
     policies = _drop_policy(MappingPolicy.__name__, policies)
