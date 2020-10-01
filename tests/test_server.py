@@ -1096,6 +1096,7 @@ def test_list_routes(default_agent: Agent):
         "load_model",
         "unload_model",
         "get_domain",
+        "data_convert",
     }
 
 
@@ -1658,4 +1659,3 @@ def test_convert_core_data(
             r"root\[\d+\]\.(?:end|start)_checkpoints\[\d+\]\.name",
         ],
     )
-

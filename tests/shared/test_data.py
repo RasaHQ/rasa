@@ -288,6 +288,7 @@ def test_same_file_names_get_resolved(tmp_path):
                 "data/examples/rasa/demo-rasa-responses.md",
                 "data/examples/rasa/demo-rasa.json",
                 "data/examples/rasa/demo-rasa.md",
+                "data/examples/rasa/demo-rasa.yml",
             ],
         ),
         ("wit", ["data/examples/wit/demo-flights.json"]),

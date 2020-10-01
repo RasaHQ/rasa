@@ -1108,7 +1108,7 @@ def create_app(
 
     @app.post("/data/convert/<data_type>")
     @requires_auth(app, auth_token)
-    async def post_data_convert(request: Request, data_type: Text):
+    async def data_convert(request: Request, data_type: Text):
         """Converts Core/NLU training data between JSON/YAML/Markdown."""
         data, input_format, output_format, language = _parse_convert_request(
             request, data_type
