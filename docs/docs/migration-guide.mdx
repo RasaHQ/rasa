@@ -167,8 +167,8 @@ rules:
   # pipeline in case the intent confidence was below the specified threshold.
   - intent: nlu_fallback
   # The Fallback is now implemented as a form.
-  - action: two_stage_fallback
-  - active_loop: two_stage_fallback
+  - action: action_two_stage_fallback
+  - active_loop: action_two_stage_fallback
 ```
 
 Note that the previous parameters `fallback_nlu_action_name` and
