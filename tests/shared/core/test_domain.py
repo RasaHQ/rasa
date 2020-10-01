@@ -893,3 +893,39 @@ def test_add_default_intents(domain: Dict):
     domain = Domain.from_dict(domain)
 
     assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)
+
+
+def test_domain_deepcopy():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    new_domain = copy.deepcopy(domain)
+
+    assert isinstance(new_domain, Domain)
+
+    # equalities
+    assert new_domain.intent_properties == domain.intent_properties
+    assert new_domain.overriden_default_intents == domain.overriden_default_intents
+    assert new_domain.entities == domain.entities
+    assert new_domain.forms == domain.forms
+    assert new_domain.form_names == domain.form_names
+    assert new_domain.templates == domain.templates
+    assert new_domain.action_texts == domain.action_texts
+    assert new_domain.session_config == domain.session_config
+    assert new_domain._custom_actions == domain._custom_actions
+    assert new_domain.user_actions == domain.user_actions
+    assert new_domain.action_names == domain.action_names
+    assert new_domain.store_entities_as_slots == domain.store_entities_as_slots
+
+    # not the same objects
+    assert new_domain is not domain
+    assert new_domain.intent_properties is not domain.intent_properties
+    assert new_domain.overriden_default_intents is not domain.overriden_default_intents
+    assert new_domain.entities is not domain.entities
+    assert new_domain.forms is not domain.forms
+    assert new_domain.form_names is not domain.form_names
+    assert new_domain.slots is not domain.slots
+    assert new_domain.templates is not domain.templates
+    assert new_domain.action_texts is not domain.action_texts
+    assert new_domain.session_config is not domain.session_config
+    assert new_domain._custom_actions is not domain._custom_actions
+    assert new_domain.user_actions is not domain.user_actions
+    assert new_domain.action_names is not domain.action_names
