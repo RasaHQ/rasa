@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, Generator, Text
 
@@ -447,7 +448,7 @@ def test_sentry_strips_absolute_path_from_site_packages():
     assert stripped is not None
 
     stack_frames = stripped["exception"]["values"][0]["stacktrace"]["frames"]
-    assert stack_frames[0]["filename"] == "rasa/train.py"
+    assert stack_frames[0]["filename"] == "site_packages/rasa/train.py"
 
 
 def test_sentry_strips_absolute_path_from_dist_packages():
@@ -460,4 +461,4 @@ def test_sentry_strips_absolute_path_from_dist_packages():
     assert stripped is not None
 
     stack_frames = stripped["exception"]["values"][0]["stacktrace"]["frames"]
-    assert stack_frames[0]["filename"] == "rasa\\train.py"
+    assert stack_frames[0]["filename"] == f"dist-packages{os.path.sep}rasa\\train.py"

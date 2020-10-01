@@ -581,7 +581,7 @@ def strip_sensitive_data_from_sentry_event(
                 frame["filename"] = os.path.join("site-packages", relative_name)
             elif "dist-packages" in frame["filename"]:
                 # drop dist-packages and following slash / backslash
-                relative_name = frame["filename"].split("site-packages")[-1][1:]
+                relative_name = frame["filename"].split("dist-packages")[-1][1:]
                 frame["filename"] = os.path.join("dist-packages", relative_name)
             elif os.path.isabs(frame["filename"]):
                 # if the file path is absolute, we'll drop the whole event as this is
