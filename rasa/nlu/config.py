@@ -4,6 +4,7 @@ import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union
 
+from rasa.shared.exceptions import RasaOpenSourceException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import (
@@ -16,7 +17,7 @@ from rasa.shared.utils.io import json_to_string
 logger = logging.getLogger(__name__)
 
 
-class InvalidConfigError(ValueError):
+class InvalidConfigError(ValueError, RasaOpenSourceException):
     """Raised if an invalid configuration is encountered."""
 
     def __init__(self, message: Text) -> None:

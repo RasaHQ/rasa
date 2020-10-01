@@ -18,11 +18,11 @@ from typing import (
 )
 from pathlib import Path
 
-from rasa_sdk.interfaces import ActionNotFoundException
 from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
 import rasa.shared.core.constants
+from rasa.shared.exceptions import RasaOpenSourceException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -70,7 +70,7 @@ State = Dict[Text, SubState]
 logger = logging.getLogger(__name__)
 
 
-class InvalidDomain(Exception):
+class InvalidDomain(RasaOpenSourceException):
     """Exception that can be raised when domain is not valid."""
 
     def __init__(self, message) -> None:
@@ -78,10 +78,11 @@ class InvalidDomain(Exception):
         super(InvalidDomain, self).__init__()
 
     def __str__(self) -> Text:
-        # return message in error colours
-        return rasa.shared.utils.io.wrap_with_color(
-            self.message, color=rasa.shared.utils.io.bcolors.FAIL
-        )
+        return self.message
+
+
+class ActionNotFoundException(ValueError, RasaOpenSourceException):
+    """Raised when an action name could not be found."""
 
 
 class SessionConfig(NamedTuple):
@@ -155,6 +156,7 @@ class Domain:
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
         except rasa.shared.utils.validation.InvalidYamlFileError as e:
+            e.filename = original_filename
             raise InvalidDomain(str(e))
 
         data = rasa.shared.utils.io.read_yaml(yaml)

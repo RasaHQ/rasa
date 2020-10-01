@@ -10,6 +10,8 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Text, Optional, Type, Union, List, Dict
 
+from ruamel.yaml.scanner import ScannerError
+
 import rasa.shared
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
@@ -17,7 +19,9 @@ from rasa.shared.constants import (
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
 from ruamel import yaml as yaml
-from ruamel.yaml import RoundTripRepresenter
+from ruamel.yaml import RoundTripRepresenter, YAMLError
+
+from rasa.shared.exceptions import InvalidYAMLFileException
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -241,7 +245,7 @@ def read_yaml(content: Text) -> Any:
 
     replace_environment_variables()
 
-    yaml_parser = yaml.YAML(typ="safe")
+    yaml_parser = yaml.YAML(typ=["safe", "rt"])
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
 
@@ -423,17 +427,23 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
     Args:
         filename: The path to the file which should be read.
     """
-    content = read_yaml(read_file(filename))
+    try:
+        content = read_yaml(read_file(filename))
+    except YAMLError as e:
+        raise InvalidYAMLFileException(filename, e)
 
     if content is None:
         return {}
     elif isinstance(content, dict):
         return content
     else:
-        raise ValueError(
-            "Tried to load invalid config file '{}'. "
-            "Expected a key value mapping but found {}"
-            ".".format(filename, type(content))
+        raise InvalidYAMLFileException(
+            filename,
+            ValueError(
+                "Tried to load configuration file '{}'. "
+                "Expected a key value mapping but found a {}"
+                ".".format(filename, type(content).__name__)
+            ),
         )
 
 

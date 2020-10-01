@@ -127,9 +127,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
         for file in args.config:
             try:
                 validation_utils.validate_yaml_schema(
-                    rasa.shared.utils.io.read_file(file),
-                    CONFIG_SCHEMA_FILE,
-                    show_validation_errors=False,
+                    rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE,
                 )
                 config_files.append(file)
             except validation_utils.InvalidYamlFileError:
