@@ -60,6 +60,7 @@ class FallbackClassifier(IntentClassifier):
             return
 
         message.data[INTENT] = _fallback_intent()
+        message.data.setdefault(INTENT_RANKING_KEY, [])
         message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent())
 
     def _should_fallback(self, message: Message) -> bool:
