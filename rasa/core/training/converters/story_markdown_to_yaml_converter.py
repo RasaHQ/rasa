@@ -23,7 +23,9 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         Returns:
             `True` if the given file can be converted, `False` otherwise
         """
-        return MarkdownStoryReader.is_stories_file(source_path)
+        return MarkdownStoryReader.is_stories_file(
+            source_path
+        ) or MarkdownStoryReader.is_test_stories_file(source_path)
 
     @classmethod
     async def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
@@ -41,11 +43,11 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
             source_path, output_path
         )
 
-        reader = MarkdownStoryReader(unfold_or_utterances=False)
-
         # check if source file is test story file
-        if reader.is_test_stories_file(source_path):
-            reader.use_e2e = True
+        if MarkdownStoryReader.is_test_stories_file(source_path):
+            reader = MarkdownStoryReader(unfold_or_utterances=False, use_e2e=True)
+        else:
+            reader = MarkdownStoryReader(unfold_or_utterances=False)
 
         writer = YAMLStoryWriter()
 
