@@ -5,12 +5,12 @@ from pathlib import Path
 from unittest.mock import Mock
 import pytest
 from collections import namedtuple
-from typing import Callable, Text
+from typing import Callable, Text, Dict, List
 
 from _pytest.monkeypatch import MonkeyPatch
-from _pytest.pytester import RunResult
+from _pytest.pytester import RunResult, Testdir
 from rasa.cli import data
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DEFAULT_DATA_PATH
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
@@ -332,7 +332,7 @@ def test_convert_config(
     run: Callable[..., RunResult], tmp_path: Path, default_domain_path: Text
 ):
     deprecated_config = {
-        "policies": [{"name": "MappingPolicy"}],
+        "policies": [{"name": "MappingPolicy"}, {"name": "FallbackPolicy"}],
         "pipeline": [{"name": "WhitespaceTokenizer"}],
     }
     config_file = tmp_path / "config.yml"
@@ -367,22 +367,77 @@ def test_convert_config(
     new_rules = rasa.shared.utils.io.read_yaml_file(rules_file)
 
     assert new_config == {
-        "policies": [{"name": "RulePolicy"}],
-        "pipeline": [{"name": "WhitespaceTokenizer"}],
+        "policies": [
+            {
+                "name": "RulePolicy",
+                "core_fallback_action_name": "action_default_fallback",
+                "core_fallback_threshold": 0.3,
+            }
+        ],
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {
+                "name": "FallbackClassifier",
+                "ambiguity_threshold": 0.1,
+                "threshold": 0.3,
+            },
+        ],
     }
     assert new_domain["intents"] == ["greet", "leave"]
     assert new_rules == {
         "rules": [
             {
-                "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
+                "rule": "Rule to map `greet` intent to `action_greet` "
+                "(automatic conversion)",
                 "steps": [{"intent": "greet"}, {"action": "action_greet"}],
-            }
+            },
+            {
+                "rule": "Rule to handle messages with low NLU confidence "
+                "(automated conversion from 'FallbackPolicy'",
+                "steps": [
+                    {"intent": "nlu_fallback"},
+                    {"action": "action_default_fallback"},
+                ],
+            },
         ],
         "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
     }
 
 
-def test_convert_config_with_invalid_config(run: Callable[..., RunResult]):
+def test_convert_config_with_output_file_containing_data(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path, testdir: Testdir
+):
+    deprecated_config = {
+        "policies": [{"name": "FallbackPolicy"}],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    output_file = testdir.tmpdir / DEFAULT_DATA_PATH / "rules.yml"
+    # the default project already contains rules training data
+    assert output_file.exists()
+    existing_rules = rasa.shared.utils.io.read_yaml_file(output_file)["rules"]
+    assert existing_rules
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 0
+
+    new_rules = rasa.shared.utils.io.read_yaml_file(output_file)["rules"]
+    expected_new_rule = {
+        "rule": "Rule to handle messages with low NLU confidence "
+        "(automated conversion from 'FallbackPolicy'",
+        "steps": [{"intent": "nlu_fallback"}, {"action": "action_default_fallback"}],
+    }
+
+    assert expected_new_rule in new_rules
+    assert all(existing in new_rules for existing in existing_rules)
+
+
+def test_convert_config_with_invalid_config_path(run: Callable[..., RunResult]):
     result = run("data", "convert", "config", "--config", "invalid path")
 
     assert result.ret == 1
@@ -416,12 +471,21 @@ def test_convert_config_with_missing_nlu_pipeline_config_if_no_fallbacks(
     assert result.ret == 0
 
 
-def test_convert_config_with_form_policy_present(
-    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+@pytest.mark.parametrize(
+    "policy_config",
+    [
+        [{"name": "MappingPolicy"}, {"name": "FormPolicy"}],
+        [{"name": "FallbackPolicy"}, {"name": "TwoStageFallbackPolicy"}],
+    ],
+)
+def test_convert_config_with_invalid_policy_config(
+    run_in_simple_project: Callable[..., RunResult],
+    tmp_path: Path,
+    policy_config: List[Dict],
 ):
     deprecated_config = {
-        "policies": [{"name": "MappingPolicy"}, {"name": "FormPolicy"}],
-        "pipeline": {"name": "WhitespaceTokenizer"},
+        "policies": policy_config,
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
     }
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
@@ -433,18 +497,24 @@ def test_convert_config_with_form_policy_present(
     assert result.ret == 1
 
 
-def test_convert_config_with_customized_deny_suggestion_intent(
-    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+@pytest.mark.parametrize(
+    "two_stage_config",
+    [
+        {"deny_suggestion_intent_name": "something else"},
+        {"fallback_nlu_action_name": "something else"},
+    ],
+)
+def test_convert_config_with_two_stage_fallback_policy(
+    run_in_simple_project: Callable[..., RunResult],
+    tmp_path: Path,
+    two_stage_config: Dict,
 ):
     deprecated_config = {
         "policies": [
             {"name": "MappingPolicy"},
-            {
-                "name": "TwoStageFallbackPolicy",
-                "deny_suggestion_intent_name": "something else",
-            },
+            {"name": "TwoStageFallbackPolicy", **two_stage_config},
         ],
-        "pipeline": {"name": "WhitespaceTokenizer"},
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
     }
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.write_yaml(deprecated_config, config_file)

@@ -17,10 +17,17 @@ from rasa.shared.constants import (
     DOCS_URL_MIGRATION_GUIDE,
 )
 import rasa.shared.data
-from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.shared.core.constants import (
+    USER_INTENT_OUT_OF_SCOPE,
+    ACTION_DEFAULT_FALLBACK_NAME,
+)
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
+from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
@@ -394,7 +401,7 @@ async def _convert_file_to_yaml(
     return False
 
 
-def _migrate_model_config(args: argparse.Namespace):
+def _migrate_model_config(args: argparse.Namespace) -> None:
     configuration_file = Path(args.config)
     model_configuration = _get_configuration(configuration_file)
 
@@ -404,7 +411,6 @@ def _migrate_model_config(args: argparse.Namespace):
     rule_output_file = _get_rules_path(Path(args.out))
 
     # TODO:
-    # 1. Migrate FallbackPolicy
     # 2. Add telemetry
     # 3. Auto backup file?
     (
@@ -417,13 +423,9 @@ def _migrate_model_config(args: argparse.Namespace):
         model_configuration
     )
 
-    rules_to_dump = [*mapping_rules, *fallback_rules]
-
-    # dump config, domain, rules
-    rules_writer = YAMLStoryWriter()
-    rules_writer.dump(rule_output_file, rules_to_dump)
     rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
     domain.persist_clean(domain_file)
+    _dump_rules(rule_output_file, [*mapping_rules, *fallback_rules])
 
 
 def _get_configuration(path: Path) -> Dict:
@@ -441,6 +443,8 @@ def _get_configuration(path: Path) -> Dict:
     _assert_no_form_policy_present(policy_names)
     _assert_nlu_pipeline_given(config, policy_names)
     _assert_two_stage_fallack_policy_is_migratable(config)
+    _assert_only_one_fallback_policy_present(policy_names)
+
     return config
 
 
@@ -461,8 +465,8 @@ def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
         for policy in [FallbackPolicy.__name__, TwoStageFallbackPolicy.__name__]
     ):
         rasa.shared.utils.cli.print_error_and_exit(
-            f"The model configuration has to include an NLU pipeline. This is required "
-            f"to migrate the fallback policies."
+            "The model configuration has to include an NLU pipeline. This is required "
+            "to migrate the fallback policies."
         )
 
 
@@ -475,9 +479,13 @@ def _assert_two_stage_fallack_policy_is_migratable(config: Dict):
         ),
         None,
     )
+    if not two_stage_fallback_config:
+        return
+
     if (
-        two_stage_fallback_config
-        and two_stage_fallback_config.get("deny_suggestion_intent_name")
+        two_stage_fallback_config.get(
+            "deny_suggestion_intent_name", USER_INTENT_OUT_OF_SCOPE
+        )
         != USER_INTENT_OUT_OF_SCOPE
     ):
         rasa.shared.utils.cli.print_error_and_exit(
@@ -487,11 +495,37 @@ def _assert_two_stage_fallack_policy_is_migratable(config: Dict):
             f"'{USER_INTENT_OUT_OF_SCOPE}' before migrating the model configuration. "
         )
 
+    if (
+        two_stage_fallback_config.get(
+            "fallback_nlu_action_name", ACTION_DEFAULT_FALLBACK_NAME
+        )
+        != ACTION_DEFAULT_FALLBACK_NAME
+    ):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The TwoStageFallback in Rasa Open Source 2.0 has to use the action "
+            f"'{ACTION_DEFAULT_FALLBACK_NAME}' for cases when the user denies the "
+            f"suggestion multiple times. "
+            f"Please change the parameter 'fallback_nlu_action_name' to "
+            f"'{ACTION_DEFAULT_FALLBACK_NAME}' before migrating the model "
+            f"configuration. "
+        )
+
+
+def _assert_only_one_fallback_policy_present(policies: List[Text]) -> None:
+    if (
+        FallbackPolicy.__name__ in policies
+        and TwoStageFallbackPolicy.__name__ in policies
+    ):
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Your policy configuration contains two configured policies for handling "
+            "fallbacks. Please decide for one."
+        )
+
 
 def _get_domain(path: Path) -> Domain:
     try:
         return Domain.from_path(path)
-    except InvalidDomain as e:
+    except InvalidDomain:
         rasa.shared.utils.cli.print_error_and_exit(
             f"'{path}' is not a path to a valid domain file. "
             f"Please provide a valid domain."
@@ -505,5 +539,23 @@ def _get_rules_path(path: Text) -> Path:
         rasa.shared.utils.cli.print_error_and_exit(
             f"'{rules_file}' needs to be the path to a file."
         )
+    elif rules_file.is_file():
+        rasa.shared.utils.cli.print_info(
+            f"Output file '{rules_file}' did not exist and will be created."
+        )
+        rasa.shared.utils.io.create_directory_for_file(rules_file)
 
     return rules_file
+
+
+def _dump_rules(path: Path, new_rules: List[StoryStep]) -> None:
+    if not new_rules:
+        return
+
+    existing_rules = []
+    if path.exists():
+        rules_reader = YAMLStoryReader()
+        existing_rules = rules_reader.read_from_file(path)
+
+    rules_writer = YAMLStoryWriter()
+    rules_writer.dump(path, existing_rules + new_rules)
