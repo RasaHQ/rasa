@@ -491,8 +491,9 @@ conversation just before each action was taken.
 
 Every event in a trackers history creates a new state (e.g. running a bot
 action, receiving a user message, setting slots). Featurizing a single state
-of the tracker has a couple steps:
+of the tracker has two steps:
 
+<!-- TODO: below bullet points are not appearing - showing as one block of text instead --->
 1. **Tracker provides a bag of active features**:
 
        * features indicating intents and entities, if this is the first
@@ -516,7 +517,7 @@ of the tracker has a couple steps:
 
     `SingleStateFeaturizer` uses the Rasa NLU pipeline to convert the intent and
     bot action names or bot utterances into numeric vectors.
-    Please see [NLU Model Configuration](./model-configuration.mdx)
+    See our [NLU Model Configuration](./model-configuration.mdx) documentation
     for the details on how to configure Rasa NLU pipeline.
 
     Entities, slots and active loops are featurized as one-hot encodings
@@ -525,7 +526,7 @@ of the tracker has a couple steps:
 :::note
 If the domain defines the possible `actions`,
 `[ActionGreet, ActionGoodbye]`,
-`4` additional default actions are added:
+4 additional default actions are added:
 `[ActionListen(), ActionRestart(),
 ActionDefaultFallback(), ActionDeactivateForm()]`.
 Therefore, label `0` indicates default action listen, label `1`
