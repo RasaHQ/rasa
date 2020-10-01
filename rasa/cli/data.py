@@ -441,11 +441,27 @@ def _get_configuration(path: Path) -> Dict:
     policy_names = [p.get("name") for p in config.get("policies", [])]
 
     _assert_no_form_policy_present(policy_names)
+    _assert_config_needs_migration(policy_names)
     _assert_nlu_pipeline_given(config, policy_names)
     _assert_two_stage_fallack_policy_is_migratable(config)
     _assert_only_one_fallback_policy_present(policy_names)
 
     return config
+
+
+def _assert_config_needs_migration(policies: List[Text]) -> None:
+    migratable_policies = {
+        MappingPolicy.__name__,
+        FallbackPolicy.__name__,
+        TwoStageFallbackPolicy.__name__,
+    }
+
+    if not migratable_policies.intersection((set(policies))):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"No policies were found which need migration. This command can migrate "
+            f"'{MappingPolicy.__name__}', '{FallbackPolicy.__name__}' and "
+            f"'{TwoStageFallbackPolicy.__name__}'."
+        )
 
 
 def _assert_no_form_policy_present(policy_names: List[Text]) -> None:

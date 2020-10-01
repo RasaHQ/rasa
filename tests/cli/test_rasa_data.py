@@ -404,6 +404,14 @@ def test_convert_config(
     }
 
 
+def test_convert_config_if_nothing_to_migrate(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    result = run_in_simple_project("data", "convert", "config")
+
+    assert result.ret == 1
+
+
 def test_convert_config_with_output_file_containing_data(
     run_in_simple_project: Callable[..., RunResult], tmp_path: Path, testdir: Testdir
 ):
