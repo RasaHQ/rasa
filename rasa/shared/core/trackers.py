@@ -835,14 +835,16 @@ def create_action_fingerprints(
 
     # take into account only featurized slots
     featurized_slots = {slot.name for slot in domain.slots if slot.has_features()}
-    action_fingerprints = {}
+    action_fingerprints = defaultdict(dict)
     for k, vs in events_after_actions.items():
         slots = list(
             {v.key for v in vs if isinstance(v, SlotSet)}.intersection(featurized_slots)
         )
         active_loops = list({v.name for v in vs if isinstance(v, ActiveLoop)})
-        action_fingerprints[k] = {
-            SLOTS: slots,
-            ACTIVE_LOOP: active_loops,
-        }
+
+        if slots:
+            action_fingerprints[k][SLOTS] = slots
+        if active_loops:
+            action_fingerprints[k][ACTIVE_LOOP] = active_loops
+
     return action_fingerprints

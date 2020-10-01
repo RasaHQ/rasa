@@ -279,7 +279,7 @@ class RulePolicy(MemoizationPolicy):
         fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
         # leave only featurized slots
-        expected_slots = set(fingerprint.get(SLOTS))
+        expected_slots = set(fingerprint.get(SLOTS, {}))
         current_slots = set(state.get(SLOTS, {}).keys())
         if expected_slots == current_slots:
             # all expected slots are satisfied
@@ -291,7 +291,7 @@ class RulePolicy(MemoizationPolicy):
     def _check_active_loops_fingerprint(
         fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
-        expected_active_loops = set(fingerprint.get(ACTIVE_LOOP))
+        expected_active_loops = set(fingerprint.get(ACTIVE_LOOP, {}))
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         current_active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
