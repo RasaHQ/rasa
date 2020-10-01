@@ -38,8 +38,8 @@ from rasa.shared.core.slots import (
     BooleanSlot,
     ListSlot,
     TextSlot,
-    DataSlot,
     Slot,
+    AnySlot,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -720,7 +720,7 @@ def test_tracker_without_slots(key, value, caplog):
         (BooleanSlot, True, False),
         (ListSlot, [1, 2, 3], [4, 5, 6]),
         (TextSlot, "some string", "another string"),
-        (DataSlot, {"a": "nice dict"}, {"b": "better dict"}),
+        (AnySlot, {"a": "nice dict"}, {"b": "better dict"}),
     ],
 )
 def test_tracker_does_not_modify_slots(
