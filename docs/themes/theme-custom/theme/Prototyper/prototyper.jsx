@@ -44,10 +44,10 @@ const Prototyper = ({
     updateChatBlock();
   }, []);
 
-  // update chat block when chatState changes
+  // update chat block when chatState or tracker changes
   React.useEffect(() => {
     updateChatBlock();
-  }, [chatState, trainingData]);
+  }, [chatState, tracker, trainingData]);
 
   const clearPollingInterval = React.useCallback(() => {
     if (pollingIntervalId) {
@@ -66,6 +66,7 @@ const Prototyper = ({
     if (chatState === "ready") {
       clearPollingInterval();
       setChatState("needs_to_be_retrained");
+      updateChatBlock();
     }
 
     if (!hasStarted) {
@@ -106,7 +107,7 @@ const Prototyper = ({
     }
   };
 
-  const updateChatBlock = React.useCallback(() => {
+  const updateChatBlock = () => {
     if (!ExecutionEnvironment.canUseDOM) {
       return;
     }
@@ -128,7 +129,7 @@ const Prototyper = ({
       selector: chatBlockSelector,
       state: chatState,
     });
-  }, [baseUrl, trainingData, chatState]);
+  };
 
   const fetchTracker = (baseUrl) => {
     fetch(`${baseUrl}/conversations/${trackingId}/tracker`, {
@@ -151,7 +152,9 @@ const Prototyper = ({
         sender: trackingId,
         message: message,
       }),
-    }).then(() => fetchTracker(baseUrl));
+    }).then(() => {
+      fetchTracker(baseUrl);
+    });
   };
 
   const startFetchingTracker = (baseUrl) => {
