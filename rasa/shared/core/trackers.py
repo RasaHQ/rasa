@@ -813,7 +813,7 @@ def _find_events_after_actions(
 
 
 def create_action_fingerprints(
-    trackers: List[DialogueStateTracker],
+    trackers: List[DialogueStateTracker], domain: Domain,
 ) -> Dict[Text, Dict[Text, List[Text]]]:
     """Fingerprint each action using the events it created during train.
 
@@ -823,6 +823,7 @@ def create_action_fingerprints(
 
     Args:
         trackers: the list of trackers
+        domain: the domain
 
     Returns:
         a nested dictionary of action names and slots and active loops
@@ -832,9 +833,13 @@ def create_action_fingerprints(
     if not events_after_actions:
         return {}
 
+    # take into account only featurized slots
+    featurized_slots = {slot.name for slot in domain.slots if slot.has_features()}
     action_fingerprints = {}
     for k, vs in events_after_actions.items():
-        slots = list({v.key for v in vs if isinstance(v, SlotSet)})
+        slots = list(
+            {v.key for v in vs if isinstance(v, SlotSet)}.intersection(featurized_slots)
+        )
         active_loops = list({v.name for v in vs if isinstance(v, ActiveLoop)})
         action_fingerprints[k] = {
             SLOTS: slots,

@@ -276,10 +276,10 @@ class RulePolicy(MemoizationPolicy):
 
     @staticmethod
     def _check_slots_fingerprint(
-        fingerprint: Dict[Text, List[Text]], state: State, featurized_slots: Set[Text]
+        fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
         # leave only featurized slots
-        expected_slots = set(fingerprint.get(SLOTS)).intersection(featurized_slots)
+        expected_slots = set(fingerprint.get(SLOTS))
         current_slots = set(state.get(SLOTS, {}).keys())
         if expected_slots == current_slots:
             # all expected slots are satisfied
@@ -342,14 +342,9 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         logger.debug("Started checking if some rules are incomplete.")
         # we need to use only fingerprints from rules
-        rule_fingerprints = create_action_fingerprints(rule_trackers)
+        rule_fingerprints = create_action_fingerprints(rule_trackers, domain)
         if not rule_fingerprints:
             return
-
-        # take into account only featurized slots
-        featurized_slots = set(
-            slot.name for slot in domain.slots if slot.has_features()
-        )
 
         error_messages = []
         for tracker in rule_trackers:
@@ -373,9 +368,7 @@ class RulePolicy(MemoizationPolicy):
                     # for a previous action if current action is rule snippet action
                     continue
 
-                expected_slots = self._check_slots_fingerprint(
-                    fingerprint, state, featurized_slots
-                )
+                expected_slots = self._check_slots_fingerprint(fingerprint, state)
                 expected_active_loops = self._check_active_loops_fingerprint(
                     fingerprint, state
                 )

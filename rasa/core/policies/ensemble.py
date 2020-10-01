@@ -187,7 +187,9 @@ class PolicyEnsemble:
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
 
-            self.action_fingerprints = create_action_fingerprints(training_trackers)
+            self.action_fingerprints = create_action_fingerprints(
+                training_trackers, domain
+            )
         else:
             logger.info("Skipped training, because there are no training samples.")
 
