@@ -110,7 +110,7 @@ TEST_MIGRATED_MAPPING_POLICIES = [
             "rules": [
                 {
                     "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
-                    "steps": [{"intent": "greet"}, {"action": "action_greet"},],
+                    "steps": [{"intent": "greet"}, {"action": "action_greet"}],
                 }
             ],
         },
@@ -128,7 +128,9 @@ def test_migrate_mapping_policy_to_rules(
 ):
     rules = []
     domain = Domain.from_dict(domain_dict)
-    core_config.migrate_mapping_policy_to_rules(config, domain, rules)
+    config, domain, rules = core_config.migrate_mapping_policy_to_rules(
+        config, domain, rules
+    )
 
     assert config == expected_results["config"]
     assert domain.cleaned_domain()["intents"] == expected_results["domain_intents"]

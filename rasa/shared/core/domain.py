@@ -462,6 +462,17 @@ class Domain:
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
+    def __deepcopy__(self, memo: Optional[Dict[int, Any]]) -> "Domain":
+        """
+        This dunder method makes it possible to use deepcopy directly
+        on a `Domain` instance.
+
+        See https://docs.python.org/3/library/copy.html#copy.deepcopy
+        for more implementation
+        """
+        domain_dict = self.as_dict()
+        return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
+
     @staticmethod
     def _collect_overridden_default_intents(
         intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]

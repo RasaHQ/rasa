@@ -405,7 +405,13 @@ def _migrate_model_config(args: argparse.Namespace):
     # 1. Migrate FallbackPolicy
     # 2. Add telemetry
     # 3. Auto backup file?
-    rasa.core.config.migrate_mapping_policy_to_rules(model_configuration, domain, rules)
+    (
+        model_configuration,
+        domain,
+        rules,
+    ) = rasa.core.config.migrate_mapping_policy_to_rules(
+        model_configuration, domain, rules
+    )
 
     # dump config, domain, rules
     rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)

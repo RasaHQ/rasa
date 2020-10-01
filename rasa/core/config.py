@@ -1,6 +1,7 @@
+import copy
 import os
 import typing
-from typing import Any, Optional, Text, List, Dict, Union
+from typing import Any, Optional, Text, List, Dict, Tuple, Union
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -34,7 +35,7 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
 
 def migrate_mapping_policy_to_rules(
     config: Dict[Text, Any], domain: "Domain", rules: List[Dict[Text, Any]]
-):
+) -> Tuple[Dict[Text, Any], "Domain", List[Dict[Text, Any]]]:
     """
     Migrate MappingPolicy to the new RulePolicy,
     by updating the config, domain and generating rules.
@@ -52,21 +53,25 @@ def migrate_mapping_policy_to_rules(
             has_rule_policy = True
 
     if not has_mapping_policy:
-        return
+        return config, domain, rules
+
+    new_config = copy.deepcopy(config)
+    new_rules = copy.deepcopy(rules)
+    new_domain = copy.deepcopy(domain)
 
     has_one_triggered_action = False
-    for intent, properties in domain.intent_properties.items():
+    for intent, properties in new_domain.intent_properties.items():
         # remove triggers from intents, if any
         triggered_action = properties.pop("triggers", None)
         if triggered_action:
             has_one_triggered_action = True
-            rules.append(
+            new_rules.append(
                 {
                     "rule": (
                         f"Rule to map `{intent}` intent to "
                         f"`{triggered_action}` (automatic conversion)"
                     ),
-                    "steps": [{"intent": intent}, {"action": triggered_action},],
+                    "steps": [{"intent": intent}, {"action": triggered_action}],
                 }
             )
 
@@ -76,4 +81,6 @@ def migrate_mapping_policy_to_rules(
     ]
     if has_one_triggered_action and not has_rule_policy:
         policies.append({"name": RulePolicy.__name__})
-    config["policies"] = policies
+    new_config["policies"] = policies
+
+    return new_config, new_domain, new_rules
