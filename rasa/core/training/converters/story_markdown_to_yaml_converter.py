@@ -39,15 +39,17 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
             KEY_ACTIVE_LOOP,
         )
 
-        output_core_path = cls.generate_path_for_converted_training_data_file(
-            source_path, output_path
-        )
-
-        # check if source file is test story file
+        # check if source file is test stories file
         if MarkdownStoryReader.is_test_stories_file(source_path):
             reader = MarkdownStoryReader(unfold_or_utterances=False, use_e2e=True)
+            output_core_path = cls.generate_path_for_converted_test_data_file(
+                source_path, output_path
+            )
         else:
             reader = MarkdownStoryReader(unfold_or_utterances=False)
+            output_core_path = cls.generate_path_for_converted_training_data_file(
+                source_path, output_path
+            )
 
         writer = YAMLStoryWriter()
 
