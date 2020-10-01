@@ -4,6 +4,8 @@ from typing import Any, Optional, Text, List, Dict, Union
 
 import rasa.shared.utils.io
 import rasa.utils.io
+from rasa.core.policies.mapping_policy import MappingPolicy
+from rasa.core.policies.rule_policy import RulePolicy
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
@@ -44,9 +46,9 @@ def migrate_mapping_policy_to_rules(
     has_rule_policy = False
 
     for policy in policies:
-        if policy.get("name") == "MappingPolicy":
+        if policy.get("name") == MappingPolicy.__name__:
             has_mapping_policy = True
-        if policy.get("name") == "RulePolicy":
+        if policy.get("name") == RulePolicy.__name__:
             has_rule_policy = True
 
     if not has_mapping_policy:
@@ -61,12 +63,17 @@ def migrate_mapping_policy_to_rules(
             rules.append(
                 {
                     "rule": f"Rule to map `{intent}` intent (automatic conversion)",
-                    "steps": [{"intent": intent}, {"action": triggered_action},],
+                    "steps": [
+                        {"intent": intent},
+                        {"action": triggered_action},
+                    ],
                 }
             )
 
     # finally update the policies
-    policies = [policy for policy in policies if policy.get("name") != "MappingPolicy"]
+    policies = [
+        policy for policy in policies if policy.get("name") != MappingPolicy.__name__
+    ]
     if has_one_triggered_action and not has_rule_policy:
-        policies.append({"name": "RulePolicy"})
+        policies.append({"name": RulePolicy.__name__})
     config["policies"] = policies
