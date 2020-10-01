@@ -10,87 +10,80 @@ plays a role in what should happen next. For example, if a user asks "How many?"
 it's not clear from the message alone what the user is asking about. In the context of the assistant saying,
 "You've got mail!", the response could be "You have five letters in your mailbox". In
 the context of a conversation about outstanding bills, the response could be, "You have
-three overdue bills". The assistant needs to know the previous action to choose the next action. 
+three overdue bills". The assistant needs to know the previous action to choose the next action.
 
 To create a context-aware conversational assistant, you need to define
 how the conversation history affects the next response.
-For example, if a user asks Sara, the Rasa bot, how to get started using Rasa,
-Sara gives the user
-different information based on whether they've built an AI assistant before or not:
 
-A conversation with a new user:
-```yaml
-User: How can I get started with Rasa?
-    Sara: To determine how I can help you best, I'm going to ask you a few questions.
-    Sara: Let's go. Are you new to Rasa?
-User: yes
-    Sara: And have you built a contextual assistant or a bot before?
-```
+For example, if a user asks the example concert bot how to get started,
+the bot responds differently based on whether or not they like music:
 
-A conversation with a returning user:
-```yaml
-User: How can I get started with Rasa?
-    Sara: To determine how I can help you best, I'm going to ask you a few questions.
-    Sara: Let's go. Are you new to Rasa?
-User: no
-    Sara: Ok, which product would you like to know more about? Rasa Open Source or Rasa X?
-```
+A conversation with a user who likes music:
+<Chat caption="User likes music">
+<ChatUserText>How can I get started ?</ChatUserText>
+<ChatBotText>I can help you find concerts and venues. Do you like music?</ChatBotText>
+<ChatUserText>yes</ChatUserText>
+<ChatBotText>Awesome! You can ask me things like "Find me some concerts" or "What's a good venue"</ChatBotText>
+</Chat>
+
+A conversation with a user who doesn't like music:
+<Chat caption="User doesn't like music">
+<ChatUserText>How can I get started ?</ChatUserText>
+<ChatBotText>I can help you find concerts and venues. Do you like music?</ChatBotText>
+<ChatUserText>no</ChatUserText>
+<ChatBotText>Oh no!</ChatBotText>
+</Chat>
 
 ## Step-by-step Guide on Creating Contextual Conversation Patterns
 
-### 1. Creating Stories
-
-[Stories](./stories.mdx) are examples of how conversations should go. 
-In the example above, Sara responds differently for new users
-and users with previous experience because of stories like this:
-
-
-```yaml-rasa
-stories:
-  - story: New user
-    steps:
-  - intent: how_to_get_started
-  - action: utter_getstarted
-  - action: utter_first_bot_with_rasa
-  - intent: affirm
-  - action: action_set_onboarding
-  - slot_was_set:
-    - onboarding: true
-  - action: utter_built_bot_before
-
-  - story: Not new user
-    steps:
-  - intent: how_to_get_started
-  - action: utter_getstarted
-  - action: utter_first_bot_with_rasa
-  - intent: deny
-  - action: action_set_onboarding
-  - slot_was_set:
-    - onboarding: false
-  - action: utter_ask_which_product
-```
-
-These stories diverge based on the user's intent (`affirm` or `deny`). Based on
-the user's intent, an action sets a slot that further directs
-the conversation.
-
-### 2. Defining Slots
+### 1. Defining Slots
 
 [Slots](domain.mdx#slots) are your assistant's memory. Slots store pieces of information that your
 assistant needs to refer to later and can direct the flow of the conversation
 based on `slot_was_set` events. There are different [types of slots](domain.mdx#slot-types),
 and each affects the conversation flow in its own way.
 
-In the getting started example, the `onboarding` slot is a boolean slot. If it is true, the
-user is treated as a new user and the bot sends onboarding messages. If it is false, the bot sends different messages
-aimed at returning users.
+In the concert bot example, the `likes_music` slot is a boolean slot. If it is true, the bot sends an intro message. If it is false, the bot sends a different message.
 You define a slot and its type in the domain:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 slots:
-  onboarding:
+  likes_music:
     type: bool
 ```
+
+### 2. Creating Stories
+
+[Stories](./stories.mdx) are examples of how conversations should go.
+In the example above, the concert bot responds differently for users who like music
+and users who don't because of these two stories:
+
+```yaml-rasa title="stories.yml"
+stories:
+  - story: User likes music
+    steps:
+    - intent: how_to_get_started
+    - action: utter_get_started
+    - intent: affirm
+    - action: action_set_music_preference
+    - slot_was_set:
+      - likes_music: True
+    - action: utter_awesome
+
+  - story: User doesn't like music
+    steps:
+    - intent: how_to_get_started
+    - action: utter_get_started
+    - intent: deny
+    - action: action_set_music_preference
+    - slot_was_set:
+      - likes_music: False
+    - action: utter_goodbye
+```
+
+These stories diverge based on the user's intent (`affirm` or `deny`). Based on
+the user's intent, a custom action sets a slot that further directs
+the conversation.
 
 ### 3. Configuring the TEDPolicy
 
@@ -149,21 +142,21 @@ you improve your bot and make it more contextual.
 Usually, only a certain amount of context is relevant to your assistant.
 [`max_history`](policies.mdx#max-history) is a hyperparameter for Rasa dialogue management policies
 that controls how many steps in a dialogue the model looks at to decide which
-action to take next. 
+action to take next.
 
 In the story below, the user asks for help three times in a row. The first two times,
 the bot sends the same message, but the third time, it hands them off to a human
 
-```yaml-rasa
+```yaml-rasa  title="stories.yml"
 stories:
   - story: user persists in asking for help
     steps:
-  - intent: help      
-  - action: utter_help
-  - intent: help
-  - action: utter_help
-  - intent: help
-  - action: action_human_handoff
+    - intent: help
+    - action: utter_help
+    - intent: help
+    - action: utter_help
+    - intent: help
+    - action: action_human_handoff
 ```
 
 In order for the model to learn this pattern, it needs to know at least the previous
@@ -173,9 +166,9 @@ predict the human handoff action.
 
 
 You can set the `max_history` by passing it to your policy's settings
-in the policy configuration yaml file, for example:
+in your config file, for example:
 
-```
+```yaml-rasa title="config.yml"
 policies:
   - name: "TEDPolicy"
     max_history: 5
@@ -184,7 +177,7 @@ policies:
 You want to make sure `max_history` is set high enough
 to account for the most context your assistant will need to make an accurate
 prediction about what to do next.
-For more details see the docs on [conversation featurization](policies.mdx#conversationfeaturization).
+For more details see the docs on [featurizers](policies.mdx#featurizers).
 
 ## Summary
 
