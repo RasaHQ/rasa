@@ -367,7 +367,7 @@ slots and active loops set by actions are defined consistently for all rules.
    ```
 
    In the second `incomplete rule`, `action_search_venues` should set
-   `some_slot` but does not do it.
+   the `venues` slot because it is set in `complete rule`, but this event is missing.
    There is several possible ways to fix this rule, for example:
 
    - if `some_slot` should not be set, you should explicitly set it to `null`
