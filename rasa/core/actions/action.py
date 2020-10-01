@@ -682,7 +682,8 @@ class ActionRevertFallbackEvents(Action):
     This reverts user messages and bot utterances done during a fallback
     of the `TwoStageFallbackPolicy`. By doing so it is not necessary to
     write custom stories for the different paths, but only of the happy
-    path.
+    path. This is deprecated and can be removed once the
+    `TwoStageFallbackPolicy` is removed.
     """
 
     def name(self) -> Text:
