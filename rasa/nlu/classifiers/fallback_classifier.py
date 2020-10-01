@@ -2,7 +2,10 @@ import logging
 from typing import Any, List, Type, Text, Dict, Union, Tuple, Optional
 
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
+from rasa.core.constants import (
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+)
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
 from rasa.shared.nlu.training_data.message import Message
@@ -28,7 +31,7 @@ class FallbackClassifier(IntentClassifier):
         THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_THRESHOLD,
         # If the confidence scores for the top two intent predictions are closer than
         # `AMBIGUITY_THRESHOLD_KEY`, then `FALLBACK_INTENT_NAME ` is predicted.
-        AMBIGUITY_THRESHOLD_KEY: 0.1,
+        AMBIGUITY_THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
     }
 
     @classmethod
@@ -57,6 +60,7 @@ class FallbackClassifier(IntentClassifier):
             return
 
         message.data[INTENT] = _fallback_intent()
+        message.data.setdefault(INTENT_RANKING_KEY, [])
         message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent())
 
     def _should_fallback(self, message: Message) -> bool:

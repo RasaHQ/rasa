@@ -18,7 +18,7 @@ from rasa.shared.core.trackers import (
     is_prev_action_listen_in_state,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import FORM_POLICY_PRIORITY
+from rasa.core.constants import FORM_POLICY_PRIORITY, DEFAULT_CORE_FALLBACK_THRESHOLD
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
@@ -96,7 +96,7 @@ class RulePolicy(MemoizationPolicy):
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
-        core_fallback_threshold: float = 0.3,
+        core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
         core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
