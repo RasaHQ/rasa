@@ -465,7 +465,7 @@ paths:
         required: true
         description: >-
           The training data can either be in YAML format or a JSON
-          which contains Rasa training data in Markdown format for each required key.
+          which contains Rasa training data in YAML format for each required key.
         content:
           application/json:
             schema:
@@ -512,7 +512,7 @@ paths:
       requestBody:
         required: true
         content:
-          text/markdown:
+          text/yml:
             schema:
               $ref: '#/components/schemas/StoriesTrainingData'
       responses:
@@ -549,7 +549,7 @@ paths:
       requestBody:
         required: true
         content:
-          text/markdown:
+          text/yml:
             schema:
               $ref: '#/components/schemas/NLUTrainingData'
       responses:
@@ -880,16 +880,19 @@ components:
     200Story:
       description: Success
       content:
-        text/markdown:
+        text/yml:
           example: >-
-            ## story_00055028
-
-            * greet: hello
-             - utter_ask_howcanhelp
-            * inform: I'm looking for a [moderately priced](price:moderate)
-            [Indian](cuisine) restaurant for [two](people) people
-             - utter_on_it
-             - utter_ask_location
+            - story: story_00055028
+              steps:
+              - user: |
+                  hello
+                intent: greet
+              - action: utter_ask_howcanhelp
+              - user: |
+                  I'm looking for a [moderately priced]{"entity": "price", "value": "moderate"} [Indian]{"entity": "cuisine"} restaurant for [two]({"entity": "people"}) people
+                intent: inform
+              - action: utter_on_it
+              - action: utter_ask_location
     400BadRequest:
       description: Bad Request
       content:
@@ -1359,117 +1362,87 @@ components:
 
     NLUTrainingData:
       type: string
-      description: Rasa NLU training data in markdown format
+      description: Rasa NLU training data in YAML format
       example:  >-
-        ## intent:greet
+        - intent: greet
+          examples: |
+            - hey
+            - hello
+            - hi
 
-        - hey
+        - intent: goodbye
+          examples: |
+            - bye
+            - goodbye
+            - have a nice day
+            - see you
 
-        - hello
+        - intent: affirm
+          examples: |
+            - yes
+            - indeed
 
-        - hi
+        - intent: deny
+          examples: |
+            - no
+            - never
 
-        ## intent:goodbye
+        - intent: mood_great
+          examples: |
+            - perfect
+            - very good
+            - great
 
-        - bye
-
-        - goodbye
-
-        - have a nice day
-
-        - see you
-
-        ## intent:affirm
-
-        - yes
-
-        - indeed
-
-        ## intent:deny
-
-        - no
-
-        - never
-
-        ## intent:mood_great
-
-        - perfect
-
-        - very good
-
-        - great
-
-        ## intent:mood_unhappy
-
-        - sad
-
-        - not good
-
-        - unhappy
+        - intent: mood_unhappy
+          examples: |
+            - sad
+            - not good
+            - unhappy
 
     RetrievalIntentsTrainingData:
       type: string
-      description: Rasa response texts for retrieval intents in markdown format
+      description: Rasa response texts for retrieval intents in YAML format
       example:  >-
-        ## ask name
-        * chitchat/ask_name
-            - my name is Sara, Rasa's documentation bot!
-
-        ## ask weather
-        * chitchat/ask_weather
-            - it's always sunny where I live
+        chitchat/ask_name:
+        - text: my name is Sara, Rasa's documentation bot!
+        chitchat/ask_weather:
+        - text: it's always sunny where I live
 
     StoriesTrainingData:
       type: string
-      description: Rasa Core stories in markdown format
+      description: Rasa Core stories in YAML format
       example: >-
-        ## happy path
+        - story: happy path
+          steps:
+          - intent: greet
+          - action: utter_greet
+          - intent: mood_great
+          - action: utter_happy
 
-        * greet
+        - story: sad path 1
+          steps:
+          - intent: greet
+          - action: utter_greet
+          - intent: mood_unhappy
+          - action: utter_cheer_up
+          - action: utter_did_that_help
+          - intent: affirm
+          - action: utter_happy
 
-          - utter_greet
+        - story: sad path 2
+          steps:
+          - intent: greet
+          - action: utter_greet
+          - intent: mood_unhappy
+          - action: utter_cheer_up
+          - action: utter_did_that_help
+          - intent: deny
+          - action: utter_goodbye
 
-        * mood_great
-
-          - utter_happy
-
-        ## sad path 1
-
-        * greet
-
-          - utter_greet
-
-        * mood_unhappy
-
-          - utter_cheer_up
-
-          - utter_did_that_help
-
-        * affirm
-
-          - utter_happy
-
-        ## sad path 2
-
-        * greet
-
-          - utter_greet
-
-        * mood_unhappy
-
-          - utter_cheer_up
-
-          - utter_did_that_help
-
-        * deny
-
-          - utter_goodbye
-
-        ## say goodbye
-
-        * goodbye
-
-          - utter_goodbye
+        - story: say goodbye
+          steps:
+          - intent: goodbye
+          - action: utter_goodbye
 
     DomainFile:
       type: string
