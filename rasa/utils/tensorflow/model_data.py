@@ -215,7 +215,7 @@ class RasaModelData:
         """
         return self.data.items()
 
-    def values(self,) -> ValuesView[Dict[Text, List[FeatureArray]]]:
+    def values(self) -> ValuesView[Dict[Text, List[FeatureArray]]]:
         """Return the values of the data attribute.
 
         Returns:
