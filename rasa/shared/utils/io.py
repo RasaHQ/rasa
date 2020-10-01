@@ -1,27 +1,24 @@
+from collections import OrderedDict
 import errno
 import glob
-import json
-import os
-import re
-import warnings
-from collections import OrderedDict
 from hashlib import md5
 from io import StringIO
+import json
+import os
 from pathlib import Path
-from typing import Any, Text, Optional, Type, Union, List, Dict
+import re
+from typing import Any, Dict, List, Optional, Text, Type, Union
+import warnings
 
-from ruamel.yaml.scanner import ScannerError
+from ruamel import yaml as yaml
+from ruamel.yaml import RoundTripRepresenter, YAMLError
 
-import rasa.shared
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
-from ruamel import yaml as yaml
-from ruamel.yaml import RoundTripRepresenter, YAMLError
-
-from rasa.shared.exceptions import InvalidYAMLFileException
+from rasa.shared.exceptions import YamlSyntaxException
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -245,6 +242,12 @@ def read_yaml(content: Text) -> Any:
 
     replace_environment_variables()
 
+    # type is actually correct, they annotated it wrongly...we need "rt" since
+    # it will add meta information to the parsed output. this meta information
+    # will include e.g. at which line an object was parsed. this is very
+    # helpful when we validate files later on and want to point the user to the
+    # right line
+    # noinspection PyTypeChecker
     yaml_parser = yaml.YAML(typ=["safe", "rt"])
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
@@ -430,14 +433,14 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
     try:
         content = read_yaml(read_file(filename))
     except YAMLError as e:
-        raise InvalidYAMLFileException(filename, e)
+        raise YamlSyntaxException(filename, e)
 
     if content is None:
         return {}
     elif isinstance(content, dict):
         return content
     else:
-        raise InvalidYAMLFileException(
+        raise YamlSyntaxException(
             filename,
             ValueError(
                 "Tried to load configuration file '{}'. "

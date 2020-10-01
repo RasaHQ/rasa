@@ -4,7 +4,7 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
-from rasa.shared.exceptions import RasaOpenSourceException
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MissingDependencyException(RasaOpenSourceException):
+class MissingDependencyException(RasaException):
     """Raised if a python package dependency is needed, but not installed."""
 
 
@@ -114,7 +114,7 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
         raise InvalidConfigError(
             f"The pipeline configuration contains more than one tokenizer, "
             f"which is not possible at this time. You can only use one tokenizer. "
-            f"The pipeline contained the following tokenizers: {tokenizer_names}. "
+            f"The pipeline contains the following tokenizers: {tokenizer_names}. "
         )
 
 
@@ -301,7 +301,7 @@ class MissingArgumentError(ValueError):
         return self.message
 
 
-class UnsupportedLanguageError(RasaOpenSourceException):
+class UnsupportedLanguageError(RasaException):
     """Raised when a component is created but the language is not supported.
 
     Attributes:

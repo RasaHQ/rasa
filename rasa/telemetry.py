@@ -28,7 +28,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.shared.constants import DOCS_URL_TELEMETRY
-from rasa.shared.exceptions import RasaOpenSourceException
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
@@ -616,7 +616,7 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=get_telemetry_id() or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt, RasaOpenSourceException],
+        ignore_errors=[KeyboardInterrupt, RasaException],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",

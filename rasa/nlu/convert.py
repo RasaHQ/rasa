@@ -35,11 +35,3 @@ def convert_training_data(
 
 def main(args: argparse.Namespace):
     convert_training_data(args.data, args.out, args.format, args.language)
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.nlu.convert` directly is "
-        "no longer supported. "
-        "Please use `rasa data` instead."
-    )

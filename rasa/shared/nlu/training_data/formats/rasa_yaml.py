@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
 
 import rasa.shared.data
-from rasa.shared.exceptions import RasaOpenSourceException
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
@@ -60,7 +60,7 @@ class RasaYAMLReader(TrainingDataReader):
         If the string is not in the right format, an exception will be raised."""
         try:
             validation.validate_yaml_schema(string, NLU_SCHEMA_FILE)
-        except validation.InvalidYamlFileError as e:
+        except validation.YamlValidationException as e:
             e.filename = self.filename
             raise e
 

@@ -130,7 +130,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
                     rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE,
                 )
                 config_files.append(file)
-            except validation_utils.InvalidYamlFileError:
+            except validation_utils.YamlValidationException:
                 logger.debug(
                     f"Ignoring file '{file}' as it is not a valid config file."
                 )

@@ -22,7 +22,7 @@ from rasa.cli import (
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
-from rasa.shared.exceptions import RasaOpenSourceException
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_error
 import rasa.telemetry
 from rasa.utils.common import set_log_and_warnings_filters, set_log_level
@@ -121,7 +121,7 @@ def main() -> None:
             logger.error("No command specified.")
             arg_parser.print_help()
             sys.exit(1)
-    except RasaOpenSourceException as e:
+    except RasaException as e:
         # these are exceptions we expect to happen (e.g. invalid training data format)
         # it doesn't make sense to print a stacktrace for these if we are not in
         # debug mode

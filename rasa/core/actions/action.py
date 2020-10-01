@@ -35,7 +35,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
 )
-from rasa.shared.exceptions import RasaOpenSourceException
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
 from rasa.shared.core.events import (
     UserUtteranceReverted,
@@ -662,7 +662,7 @@ class RemoteAction(Action):
         return self._name
 
 
-class ActionExecutionRejection(RasaOpenSourceException):
+class ActionExecutionRejection(RasaException):
     """Raising this exception will allow other policies
     to predict a different action"""
 

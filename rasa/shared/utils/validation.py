@@ -8,7 +8,7 @@ from pykwalify.errors import SchemaError
 from ruamel.yaml.constructor import DuplicateKeyError
 
 import rasa.shared
-from rasa.shared.exceptions import RasaOpenSourceException
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 KEY_TRAINING_DATA_FORMAT_VERSION = "version"
 
 
-class InvalidYamlFileError(ValueError, RasaOpenSourceException):
-    """Raised if an invalid yaml file was provided."""
+class YamlValidationException(ValueError, RasaException):
+    """Raised if a yaml file does not correspond to the expected schema."""
 
     def __init__(
         self,
@@ -46,7 +46,7 @@ class InvalidYamlFileError(ValueError, RasaOpenSourceException):
         self.filename = filename
         self.validation_errors = validation_errors
         self.content = content
-        super(InvalidYamlFileError, self).__init__()
+        super(YamlValidationException, self).__init__()
 
     def __str__(self) -> Text:
         msg = ""
@@ -110,8 +110,7 @@ class InvalidYamlFileError(ValueError, RasaOpenSourceException):
                 return self._line_number_for_path(current[int(head)], tail) or this_line
             else:
                 return this_line
-        else:
-            return self._line_number_for_path(current, tail) or this_line
+        return self._line_number_for_path(current, tail) or this_line
 
 
 def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
@@ -134,13 +133,13 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
     try:
         source_data = rasa.shared.utils.io.read_yaml(yaml_file_content)
     except YAMLError:
-        raise InvalidYamlFileError(
+        raise YamlValidationException(
             "The provided yaml file is invalid. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
             "of your file."
         )
     except DuplicateKeyError as e:
-        raise InvalidYamlFileError(
+        raise YamlValidationException(
             "The provided yaml file contains a duplicated key: '{}'. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
             "of your file.".format(str(e))
@@ -163,9 +162,9 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
     try:
         c.validate(raise_exception=True)
     except SchemaError:
-        raise InvalidYamlFileError(
+        raise YamlValidationException(
             "Please make sure the file is correct and all "
-            "mandatory parameters are specified. Please take a look at the errors "
+            "mandatory parameters are specified. Here are the errors "
             "found during validation",
             c.errors,
             content=source_data,

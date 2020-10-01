@@ -42,7 +42,7 @@ from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.shared.exceptions import RasaOpenSourceException
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -98,7 +98,7 @@ component_classes = [
 registered_components = {c.name: c for c in component_classes}
 
 
-class ComponentNotFoundException(ModuleNotFoundError, RasaOpenSourceException):
+class ComponentNotFoundException(ModuleNotFoundError, RasaException):
     """Raised if a module referenced by name can not be imported."""
 
     pass
@@ -149,7 +149,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 f"Failed to load the component "
                 f"'{component_name}'. "
                 f"{exception_message} Either your "
-                f"pipeline configuration contain an error "
+                f"pipeline configuration contains an error "
                 f"or the module you are trying to import "
                 f"is broken (e.g. the module is trying "
                 f"to import a package that is not "

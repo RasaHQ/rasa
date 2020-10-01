@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Union
 
 import rasa.core
-from rasa.shared.exceptions import RasaOpenSourceException
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -746,7 +746,7 @@ def _check_policy_for_forms_available(
         )
 
 
-class InvalidPolicyConfig(RasaOpenSourceException):
+class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
 
     pass

@@ -2,14 +2,10 @@ from typing import Text
 
 
 class RasaException(Exception):
-    """Base exception class for all errors raised by Rasa."""
+    """Base exception class for all errors raised by Rasa Open Source."""
 
 
-class RasaOpenSourceException(RasaException):
-    """Basic exception for errors raised by Rasa Open Source."""
-
-
-class RasaCoreException(RasaOpenSourceException):
+class RasaCoreException(RasaException):
     """Basic exception for errors raised by Rasa Core."""
 
 
@@ -17,7 +13,7 @@ class RasaXTermsError(RasaException):
     """Error in case the user didn't accept the Rasa X terms."""
 
 
-class InvalidYAMLFileException(RasaOpenSourceException):
+class YamlSyntaxException(RasaException):
     """Raised when a YAML file can not be parsed properly due to a syntax error."""
 
     def __init__(self, filename: Text, underlying_yaml_exception: Exception):
