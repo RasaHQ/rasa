@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import shutil
 from pathlib import Path
 from typing import List, Text, Dict
 
@@ -410,8 +411,6 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
 
     rule_output_file = _get_rules_path(Path(args.out))
 
-    # TODO:
-    # 3. Auto backup file?
     (
         model_configuration,
         domain,
@@ -421,10 +420,15 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
         model_configuration
     )
 
-    rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
-    domain.persist_clean(domain_file)
+    if mapping_rules:
+        _backup(domain_file)
+        domain.persist_clean(domain_file)
+
     new_rules = [*mapping_rules, *fallback_rules]
-    _dump_rules(rule_output_file, new_rules)
+    if new_rules:
+        _backup(configuration_file)
+        rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
+        _dump_rules(rule_output_file, new_rules)
 
     telemetry.track_data_convert("yaml", "config")
 
@@ -579,6 +583,12 @@ def _dump_rules(path: Path, new_rules: List[StoryStep]) -> None:
     if path.exists():
         rules_reader = YAMLStoryReader()
         existing_rules = rules_reader.read_from_file(path)
+        _backup(path)
 
     rules_writer = YAMLStoryWriter()
     rules_writer.dump(path, existing_rules + new_rules)
+
+
+def _backup(path: Path) -> None:
+    backup_file = path.parent / f"{path.name}.bak"
+    shutil.copy(path, backup_file)
