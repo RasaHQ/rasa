@@ -470,7 +470,7 @@ You can alter this behavior with the `--augmentation` flag,
 which allows you to set the `augmentation_factor`.
 The `augmentation_factor` determines how many augmented stories are
 subsampled during training. The augmented stories are subsampled before training
-since their number can quickly become very large, and we want to limit it.
+since their number can quickly become very large, and you want to limit it.
 The number of sampled stories is `augmentation_factor` x10.
 By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
 
@@ -481,7 +481,7 @@ ignore all augmented stories.
 
 ### Featurizers
 
-In order to apply machine learning algorithms to conversational AI, we need
+In order to apply machine learning algorithms to conversational AI, you need
 to build up vector representations of conversations.
 
 Each story corresponds to a tracker which consists of the states of the
