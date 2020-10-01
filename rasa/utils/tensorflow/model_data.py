@@ -87,7 +87,7 @@ class FeatureSignature(NamedTuple):
 
     is_sparse: bool
     feature_dimension: Optional[int]
-    number_of_dimensions: bool
+    number_of_dimensions: int
 
 
 # Mapping of attribute name and feature name to a list of numpy arrays representing
@@ -277,10 +277,7 @@ class RasaModelData:
         number_of_features = 0
         for features in self.data[key][sub_key]:
             if len(features) > 0:
-                if features.number_of_dimensions == 4:
-                    number_of_features += features[0][0].shape[-1]
-                else:
-                    number_of_features += features[0].shape[-1]
+                number_of_features += features.feature_dimension
 
         return number_of_features
 
@@ -432,17 +429,20 @@ class RasaModelData:
         if not data:
             data = self.data
 
-        data_signature = defaultdict(lambda: defaultdict(list))
-
-        for key, attribute_data in data.items():
-            for sub_key, features in attribute_data.items():
-                for f in features:
-                    feature_signature = FeatureSignature(
-                        f.is_sparse, f.feature_dimension, f.number_of_dimensions
+        return {
+            key: {
+                sub_key: [
+                    FeatureSignature(
+                        f.is_sparse,
+                        f.feature_dimension,
+                        f.number_of_dimensions
                     )
-                    data_signature[key][sub_key].append(feature_signature)
-
-        return data_signature
+                    for f in features
+                ]
+                for sub_key, features in attribute_data.items()
+            }
+            for key, attribute_data in data.items()
+        }
 
     def as_tf_dataset(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
@@ -533,7 +533,7 @@ class RasaModelData:
 
         def append_shape(_features: FeatureArray) -> None:
             if _features.number_of_dimensions == 4:
-                if isinstance(_features[0][0], scipy.sparse.spmatrix):
+                if _features.is_sparse:
                     # scipy matrix is converted into indices, data, shape
                     shapes.append((None, _features[0][0].ndim + 2))
                     shapes.append((None,))
@@ -541,7 +541,7 @@ class RasaModelData:
                 else:
                     shapes.append((None, None, None, _features[0][0].shape[-1]))
             else:
-                if isinstance(_features[0], scipy.sparse.spmatrix):
+                if _features.is_sparse:
                     # scipy matrix is converted into indices, data, shape
                     shapes.append((None, _features[0].ndim + 1))
                     shapes.append((None,))
