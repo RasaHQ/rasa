@@ -1,24 +1,28 @@
+import copy
 import os
 import typing
-from typing import Optional, Text, List, Dict, Union, Tuple
+from typing import Optional, Text, List, Dict, Union, Tuple, Any
 
 import rasa.shared.utils.io
-import rasa.utils.io
-from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_LISTEN_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
 )
-from rasa.shared.core.events import ActionExecuted, UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
+import rasa.utils.io
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
-from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+
+import rasa.shared.utils.io
+import rasa.utils.io
+from rasa.core.policies.mapping_policy import MappingPolicy
+from rasa.core.policies.rule_policy import RulePolicy
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
+    from rasa.shared.core.domain import Domain
+    from rasa.shared.core.training_data.structures import StoryStep
 
 
 def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
@@ -41,7 +45,7 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
     return PolicyEnsemble.from_dict(config_data)
 
 
-def migrate_fallback_policies(config: Dict) -> Tuple[Dict, List[StoryStep]]:
+def migrate_fallback_policies(config: Dict) -> Tuple[Dict, List["StoryStep"]]:
     from rasa.core.policies.fallback import FallbackPolicy
     from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
@@ -86,8 +90,6 @@ def _get_config_for_name(
 
 
 def _update_rule_policy_config(config: Dict, fallback_config: Dict) -> None:
-    from rasa.core.policies.rule_policy import RulePolicy
-
     rule_policy_config = _get_config_for_name(
         RulePolicy.__name__, config.get("policies", [])
     )
@@ -123,7 +125,9 @@ def _update_fallback_config(config: Dict, fallback_config: Dict) -> None:
     fallback_classifier_config.setdefault("ambiguity_threshold", ambiguity_threshold)
 
 
-def _get_faq_rule(rule_name: Text, intent: Text, action_name: Text) -> List[StoryStep]:
+def _get_faq_rule(
+    rule_name: Text, intent: Text, action_name: Text
+) -> List["StoryStep"]:
     faq_rule = f"""
        rules:
        - rule: {rule_name}
@@ -138,3 +142,56 @@ def _get_faq_rule(rule_name: Text, intent: Text, action_name: Text) -> List[Stor
 
 def _drop_policy(policy_to_drop: Text, policies: List[Dict]) -> List[Dict]:
     return [policy for policy in policies if policy.get("name") != policy_to_drop]
+
+
+def migrate_mapping_policy_to_rules(
+    config: Dict[Text, Any], domain: "Domain", rules: List[Dict[Text, Any]]
+) -> Tuple[Dict[Text, Any], "Domain", List[Dict[Text, Any]]]:
+    """
+    Migrate MappingPolicy to the new RulePolicy,
+    by updating the config, domain and generating rules.
+
+    This function modifies the config, the domain and the rules in place.
+    """
+    policies = config.get("policies", [])
+    has_mapping_policy = False
+    has_rule_policy = False
+
+    for policy in policies:
+        if policy.get("name") == MappingPolicy.__name__:
+            has_mapping_policy = True
+        if policy.get("name") == RulePolicy.__name__:
+            has_rule_policy = True
+
+    if not has_mapping_policy:
+        return config, domain, rules
+
+    new_config = copy.deepcopy(config)
+    new_rules = copy.deepcopy(rules)
+    new_domain = copy.deepcopy(domain)
+
+    has_one_triggered_action = False
+    for intent, properties in new_domain.intent_properties.items():
+        # remove triggers from intents, if any
+        triggered_action = properties.pop("triggers", None)
+        if triggered_action:
+            has_one_triggered_action = True
+            new_rules.append(
+                {
+                    "rule": (
+                        f"Rule to map `{intent}` intent to "
+                        f"`{triggered_action}` (automatic conversion)"
+                    ),
+                    "steps": [{"intent": intent}, {"action": triggered_action}],
+                }
+            )
+
+    # finally update the policies
+    policies = [
+        policy for policy in policies if policy.get("name") != MappingPolicy.__name__
+    ]
+    if has_one_triggered_action and not has_rule_policy:
+        policies.append({"name": RulePolicy.__name__})
+    new_config["policies"] = policies
+
+    return new_config, new_domain, new_rules

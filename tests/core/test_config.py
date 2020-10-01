@@ -1,5 +1,5 @@
 import glob
-from typing import Dict, Text, Optional
+from typing import Dict, Text, Optional, Any
 
 import pytest
 
@@ -14,6 +14,7 @@ from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.shared.core.domain import Domain
 
 
 @pytest.mark.parametrize("filename", glob.glob("data/test_config/example_config.yaml"))
@@ -266,4 +267,69 @@ def test_migrate_fallback_policy(
             for event in added_rules[0].events
         )
 
-    # TODO: Test that correct action is triggered in FAQ rule!
+
+TEST_MIGRATED_MAPPING_POLICIES = [
+    # no changes, no MappingPolicy
+    (
+        {"policies": [{"name": "MemoizationPolicy"}]},
+        {"intents": ["greet", "leave"]},
+        {
+            "config": {"policies": [{"name": "MemoizationPolicy"}]},
+            "domain_intents": ["greet", "leave"],
+            "rules": [],
+            "rules_count": 0,
+        },
+    ),
+    # MappingPolicy but no rules
+    (
+        {"policies": [{"name": "MemoizationPolicy"}, {"name": "MappingPolicy"}]},
+        {"intents": ["greet", "leave"]},
+        {
+            "config": {"policies": [{"name": "MemoizationPolicy"}]},
+            "domain_intents": ["greet", "leave"],
+            "rules": [],
+            "rules_count": 0,
+        },
+    ),
+    # MappingPolicy + rules
+    (
+        {"policies": [{"name": "MemoizationPolicy"}, {"name": "MappingPolicy"}]},
+        {
+            "intents": [{"greet": {"triggers": "action_greet"}}, "leave"],
+            "actions": ["action_greet"],
+        },
+        {
+            "config": {
+                "policies": [{"name": "MemoizationPolicy"}, {"name": "RulePolicy"}]
+            },
+            "domain_intents": ["greet", "leave"],
+            "rules": [
+                {
+                    "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
+                    "steps": [{"intent": "greet"}, {"action": "action_greet"}],
+                }
+            ],
+            "rules_count": 1,
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "config,domain_dict,expected_results", TEST_MIGRATED_MAPPING_POLICIES
+)
+def test_migrate_mapping_policy_to_rules(
+    config: Dict[Text, Any],
+    domain_dict: Dict[Text, Any],
+    expected_results: Dict[Text, Any],
+):
+    rules = []
+    domain = Domain.from_dict(domain_dict)
+    config, domain, rules = rasa.core.config.migrate_mapping_policy_to_rules(
+        config, domain, rules
+    )
+
+    assert config == expected_results["config"]
+    assert domain.cleaned_domain()["intents"] == expected_results["domain_intents"]
+    assert rules == expected_results["rules"]
+    assert len(rules) == expected_results["rules_count"]

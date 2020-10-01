@@ -27,6 +27,7 @@ from rasa.utils.converter import TrainingDataConverter
 from rasa.validator import Validator
 from rasa.shared.core.domain import Domain, InvalidDomain
 import rasa.shared.utils.io
+import rasa.core.config
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
@@ -398,12 +399,24 @@ def _migrate_model_config(args: argparse.Namespace):
     domain = _get_domain(domain_file)
 
     rule_output_file = _get_rules_path(Path(args.out))
+    rules = []
 
     # TODO:
-    # 1. Migrate
-    # 2. Dump config
-    # 3. Dump rules
-    # 4. Add telemetry
+    # 1. Migrate FallbackPolicy
+    # 2. Add telemetry
+    # 3. Auto backup file?
+    (
+        model_configuration,
+        domain,
+        rules,
+    ) = rasa.core.config.migrate_mapping_policy_to_rules(
+        model_configuration, domain, rules
+    )
+
+    # dump config, domain, rules
+    rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
+    domain.persist_clean(domain_file)
+    rasa.shared.utils.io.write_yaml({"rules": rules}, rule_output_file)
 
 
 def _get_configuration(path: Path) -> Dict:
@@ -446,7 +459,7 @@ def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
         )
 
 
-def _assert_two_stage_fallack_policy_is_migratable(config: Dict,):
+def _assert_two_stage_fallack_policy_is_migratable(config: Dict):
     two_stage_fallback_config = next(
         (
             policy_config

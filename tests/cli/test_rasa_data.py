@@ -332,14 +332,21 @@ def test_convert_config(
 ):
     deprecated_config = {
         "policies": [{"name": "MappingPolicy"}],
-        "pipeline": {"name": "WhitespaceTokenizer"},
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
     }
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
 
-    domain = Domain.empty()
+    domain = Domain.from_dict(
+        {
+            "intents": [{"greet": {"triggers": "action_greet"}}, "leave"],
+            "actions": ["action_greet"],
+        },
+    )
     domain_file = tmp_path / "domain.yml"
     domain.persist(domain_file)
+
+    rules_file = tmp_path / "rules.yml"
 
     result = run(
         "data",
@@ -349,10 +356,28 @@ def test_convert_config(
         str(config_file),
         "--domain",
         str(domain_file),
+        "--out",
+        str(rules_file),
     )
 
     assert result.ret == 0
-    # TODO: Validate the actual migration 😀
+    new_config = rasa.shared.utils.io.read_yaml_file(config_file)
+    new_domain = rasa.shared.utils.io.read_yaml_file(domain_file)
+    new_rules = rasa.shared.utils.io.read_yaml_file(rules_file)
+
+    assert new_config == {
+        "policies": [{"name": "RulePolicy"}],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    assert new_domain["intents"] == ["greet", "leave"]
+    assert new_rules == {
+        "rules": [
+            {
+                "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
+                "steps": [{"intent": "greet"}, {"action": "action_greet"},],
+            }
+        ]
+    }
 
 
 def test_convert_config_with_invalid_config(run: Callable[..., RunResult]):
