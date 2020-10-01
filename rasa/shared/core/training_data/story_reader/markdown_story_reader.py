@@ -199,8 +199,7 @@ class MarkdownStoryReader(StoryReader):
 
         parsed_messages = []
         for m in e2e_messages:
-            message = self.parse_e2e_message(m)
-            parsed = self._parse_message_e2e(message, line_num)
+            parsed = self._parse_message(m, line_num)
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
@@ -241,43 +240,25 @@ class MarkdownStoryReader(StoryReader):
 
         return example
 
-    def _parse_message_e2e(self, message: Message, line_num: int) -> UserUttered:
-
-        message_text = message.get("text")
-        intent = {INTENT_NAME_KEY: message.get("intent")}
-        entities = message.get("entities")
-
-        parsed_data = {
-            "text": message_text,
-            "intent": intent,
-            "intent_ranking": [{INTENT_NAME_KEY: message.get("intent")}],
-            "entities": entities,
-        }
-
-        utterance = UserUttered(message_text, intent, entities, parsed_data)
-
-        intent_name = utterance.intent.get(INTENT_NAME_KEY)
-
-        if self.domain and intent_name not in self.domain.intents:
-            rasa.shared.utils.io.raise_warning(
-                f"Found unknown intent '{intent_name}' on line {line_num}. "
-                "Please, make sure that all intents are "
-                "listed in your domain yaml.",
-                UserWarning,
-                docs=DOCS_URL_DOMAINS,
-            )
-        return utterance
-
     def _parse_message(self, message: Text, line_num: int) -> UserUttered:
-        parse_data = RegexInterpreter().synchronous_parse(message)
 
-        text = None
         if self.use_e2e:
-            text = parse_data.get("text")
+            parsed = self.parse_e2e_message(message)
+            text = parsed.get("text")
+            intent = {INTENT_NAME_KEY: parsed.get("intent")}
+            entities = parsed.get("entities")
+            parse_data = {
+                "text": text,
+                "intent": intent,
+                "intent_ranking": [{INTENT_NAME_KEY: parsed.get("intent")}],
+                "entities": entities,
+            }
+        else:
+            parse_data = RegexInterpreter().synchronous_parse(message)
+            text = None
+            intent = parse_data.get("intent")
 
-        utterance = UserUttered(
-            text, parse_data.get("intent"), parse_data.get("entities"), parse_data
-        )
+        utterance = UserUttered(text, intent, parse_data.get("entities"), parse_data)
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
