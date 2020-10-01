@@ -544,7 +544,7 @@ def _get_rules_path(path: Text) -> Path:
             f"'{rules_file}' needs to be the path to a file."
         )
 
-    elif rules_file.is_file():
+    if not rules_file.is_file():
         rasa.shared.utils.cli.print_info(
             f"Output file '{rules_file}' did not exist and will be created."
         )
