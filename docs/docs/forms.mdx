@@ -29,15 +29,18 @@ need to define [Slot Mappings](./forms.mdx#slot-mappings) for each slot which yo
 form should fill.
 You can specify one or more slot mappings for each slot to be filled.
 
-The following example of a form `your_form` will fill only one slot
-`age` from an extracted entity `age`.
+The following example form `restaurant_form` will fill the slot
+`cuisine` from an extracted entity `cuisine` and slot `num_people` from entity `number`.
 
 ```yaml-rasa
 forms:
-  your_form:
-    age:
-    - type: from_entity
-      entity: age
+  restaurant_form:
+    cuisine:
+      - type: from_entity
+        entity: cuisine
+    num_people:
+      - type: from_entity
+        entity: number
 ```
 
 Once the form action gets called for the first time, the form gets activated and will
@@ -57,14 +60,14 @@ triggering a form, you can for example use the following rule:
 rules:
 - rule: Activate form
   steps:
-  - intent: intent_which_activates_form
-  - action: your_form
-  - active_loop: your_form
+  - intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
 ```
 
 :::note
-The `active_loop: your_form` step indicates that the form should be activated after
-`your_form` was run.
+The `active_loop: restaurant_form` step indicates that the form should be activated after
+`restaurant_form` was run.
 :::
 
 ### Deactivating a Form
@@ -81,15 +84,16 @@ rules:
 - rule: Submit form
   condition:
   # Condition that form is active.
-  - active_loop: your_form
+  - active_loop: restaurant_form
   steps:
   # Form is deactivated
-  - action: your_form
+  - action: restaurant_form
   - active_loop: null
-  - slot_was_set: 
+  - slot_was_set:
     - requested_slot: null
-  # The action we want to run when the form is submitted.
-  - action: utter_all_slots_filled
+  # The actions we want to run when the form is submitted.
+  - action: utter_submit
+  - action: utter_slots_values
 ```
 
 Users might want to break out of a form early. Please see
@@ -126,6 +130,40 @@ forms:
       intent: intent_name
       not_intent: excluded_intent
 ```
+
+In `from_entity` mapping, when an extracted entity uniquely maps onto a slot,
+the slot will be filled even if this slot wasn't requested by the form.
+The extracted entity will be ignored if the mapping is not unique.
+
+```yaml-rasa
+forms:
+  your_form:
+    departure_city:
+      - type: from_entity
+        entity: city
+        role: from
+      - type: from_entity
+        entity: city
+    arrival_city:
+      - type: from_entity
+        entity: city
+        role: to
+      - type: from_entity
+        entity: city
+    arrival_date:
+      - type: from_entity
+        entity: date
+```
+
+In the example above, an entity `date` uniquely sets the slot `arrival_date`,
+an entity `city` with a role `from` uniquely sets the slot `departure_city` and
+an entity `city` with a role `to` uniquely sets the slot `arrival_city`,
+therefore they can be used to fit corresponding slots
+even if these slots were not requested.
+However, entity `city` without a role can fill both `departure_city` and `arrival_city`
+slots, depending which one is requested, so if an entity `city` is extracted when
+slot `arrival_date` is requested, it'll be ignored by the form.
+
 
 #### from_text
 
@@ -201,14 +239,14 @@ rules:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
-  - active_loop: your_form
+  - active_loop: restaurant_form
   steps:
   # This unhappy path handles the case of an intent `chitchat`.
   - intent: chitchat
   - action: utter_chitchat
   # Return to form after handling the `chitchat` intent
-  - action: your_form
-  - active_loop: your_form
+  - action: restaurant_form
+  - active_loop: restaurant_form
 ```
 
 In some situations, users may change their mind in the middle of the form action
@@ -223,7 +261,7 @@ rules:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
-  - active_loop: your_form
+  - active_loop: restaurant_form
   steps:
   - intent: stop
   - action: utter_ask_continue
@@ -232,10 +270,10 @@ rules:
   - active_loop: null
 ```
 
-It is **strongly** recommended that you build these rules or stories using 
-[interactive learning](./writing-stories.mdx#using-interactive-learning). 
+It is **strongly** recommended that you build these rules or stories using
+[interactive learning](./writing-stories.mdx#using-interactive-learning).
 If you write these rules / stories by hand you will likely miss important
-things. 
+things.
 
 ## Advanced Usage
 
@@ -256,7 +294,7 @@ section of your domain:
 
 ```yaml-rasa
 actions:
-- validate_your_form
+- validate_restaurant_form
 ```
 
 When the form is executed it will run your custom action. In your custom action
@@ -284,9 +322,9 @@ from rasa_sdk import Action
 from rasa_sdk.events import SlotSet
 
 
-class ValidateSlots(Action):
+class ValidateRestaurantForm(Action):
     def name(self) -> Text:
-        return "validate_your_form"
+        return "validate_restaurant_form"
 
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
@@ -331,9 +369,9 @@ from rasa_sdk import Action
 from rasa_sdk.events import SlotSet
 
 
-class ValidateSlots(Action):
+class ValidateRestaurantForm(Action):
     def name(self) -> Text:
-        return "validate_your_form"
+        return "validate_restaurant_form"
 
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
@@ -354,7 +392,7 @@ which should be extracted next. If all desired slots are filled, set `requested_
 to `None`.
 
 The following example shows the implementation of a custom action which requests
-the three slots `last_name`, `first_name`, and `city`.
+the three slots `cuisine`, `num_people`, and `outdoor_seating`.
 
 ```python
 from typing import Dict, Text, List
@@ -366,14 +404,14 @@ from rasa_sdk import Action
 from rasa_sdk.events import SlotSet
 
 
-class ValidateSlots(Action):
+class ValidateRestaurantForm(Action):
     def name(self) -> Text:
-        return "validate_your_form"
+        return "validate_restaurant_form"
 
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        required_slots = ["last name", "first_name", "city"]
+        required_slots = ["cuisine", "num_people", "outdoor_seating"]
 
         for slot_name in required_slots:
             if tracker.slots.get(slot_name) is None:
@@ -396,7 +434,7 @@ The response to this `explain` intent depends on where we are in the story.
 In the restaurant case, your stories would look something like this:
 
 ```yaml-rasa
-stories: 
+stories:
 - story: explain cuisine slot
   steps:
   - intent: request_restaurant
@@ -404,7 +442,7 @@ stories:
   - active_loop: restaurant
   - slot_was_set:
     - requested_slot: cuisine
-  - intent: explain 
+  - intent: explain
   - action: utter_explain_cuisine
   - action: restaurant_form
   - active_loop: null
@@ -418,13 +456,13 @@ stories:
     - requested_slot: cuisine
   - slot_was_set:
     - requested_slot: num_people
-  - intent: explain 
+  - intent: explain
   - action: utter_explain_num_people
   - action: restaurant_form
   - active_loop: null
 ```
 
-Again, it is **strongly** recommended that you use 
+Again, it is **strongly** recommended that you use
 [interactive learning](./writing-stories.mdx#using-interactive-learning) to build these stories.
 
 ### Using a Custom Action to Ask For the Next Slot
@@ -446,12 +484,12 @@ from rasa_sdk import Action
 
 class AskForSlotAction(Action):
     def name(self) -> Text:
-        return "action_ask_age"
+        return "action_ask_cuisine"
 
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        dispatcher.utter_message(text="How old are you?")
+        dispatcher.utter_message(text="What cuisine?")
         return []
 ```
 

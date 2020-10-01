@@ -21,7 +21,7 @@ from rasa.shared.core.training_data import loading
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
 )
-from rasa.shared.core.training_data.structures import Story
+from rasa.shared.core.training_data.structures import Story, RuleStep
 
 
 async def test_persist_and_read_test_story_graph(
@@ -236,7 +236,7 @@ async def test_persist_form_story():
 async def test_read_stories_with_multiline_comments(tmpdir, default_domain: Domain):
     reader = MarkdownStoryReader(default_domain)
 
-    story_steps = await reader.read_from_file(
+    story_steps = reader.read_from_file(
         "data/test_stories/stories_with_multiline_comments.md"
     )
 
@@ -259,8 +259,8 @@ async def test_read_stories_with_rules(default_domain: Domain):
     # this file contains three rules and two ML stories
     assert len(story_steps) == 5
 
-    ml_steps = [s for s in story_steps if not s.is_rule]
-    rule_steps = [s for s in story_steps if s.is_rule]
+    ml_steps = [s for s in story_steps if not isinstance(s, RuleStep)]
+    rule_steps = [s for s in story_steps if isinstance(s, RuleStep)]
 
     assert len(ml_steps) == 2
     assert len(rule_steps) == 3
@@ -280,8 +280,8 @@ async def test_read_rules_without_stories(default_domain: Domain):
     # this file contains three rules and two ML stories
     assert len(story_steps) == 3
 
-    ml_steps = [s for s in story_steps if not s.is_rule]
-    rule_steps = [s for s in story_steps if s.is_rule]
+    ml_steps = [s for s in story_steps if not isinstance(s, RuleStep)]
+    rule_steps = [s for s in story_steps if isinstance(s, RuleStep)]
 
     assert len(ml_steps) == 0
     assert len(rule_steps) == 3

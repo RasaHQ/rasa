@@ -13,7 +13,7 @@ assistant on your local machine.
 - **data/rules.yml** contains rule based behaviour
 - **data/responses.yml** contains the response templates for retrieval intents
 - **config.yml** contains the model configuration
-- **domain.yml** contains the domain of the assistant  
+- **domain.yml** contains the domain of the assistant
 - **credentials.yml** contains credentials for the different channels
 
 ## How to use this example?
@@ -35,7 +35,7 @@ different channels. To do so execute the following steps:
     desired channel.
     All available channels are listed in the `credentials.yml` file.
     For more information on the different channels read our
-    [documentation](http://x-docs.rasa.com/docs/rasa/user-guide/messaging-and-voice-channels/)
+    [documentation](http://x-docs.rasa.com/docs/rasa/messaging-and-voice-channels)
 
     If you don't want to use any channel, you can chat with your bot
     on the command line, using the following command:
@@ -44,7 +44,7 @@ different channels. To do so execute the following steps:
     ```
 
 For more information about the individual commands, please check out our
-[documentation](http://rasa.com/docs/rasa/user-guide/command-line-interface/).
+[documentation](http://rasa.com/docs/rasa/command-line-interface).
 
 ## Encountered any issues?
 Let us know about it by posting on [Rasa Community Forum](https://forum.rasa.com)!

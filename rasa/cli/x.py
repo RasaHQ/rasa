@@ -12,6 +12,7 @@ from typing import Iterable, List, Optional, Text, Tuple
 import aiohttp
 import ruamel.yaml as yaml
 
+from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import x as arguments
 import rasa.cli.utils
@@ -301,8 +302,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         rasa.shared.utils.cli.print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
-            "directory (see http://rasa.com/docs/rasa/user-guide/"
-            "rasa-tutorial/#create-a-new-project)."
+            "directory (see https://rasa.com/docs/rasa/command-line-interface#rasa-init)."
         )
 
     _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
@@ -436,6 +436,8 @@ def run_locally(args: argparse.Namespace):
     process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
 
     config_path = _get_config_path(args)
+
+    telemetry.track_rasa_x_local()
 
     # noinspection PyBroadException
     try:

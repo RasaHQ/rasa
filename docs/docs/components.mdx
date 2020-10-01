@@ -56,7 +56,7 @@ word vectors in your pipeline.
   ```
 
   For more information where to get that file from, head over to
-  [installing MITIE](./installation.mdx#install-mitie).
+  [installing MITIE](./installation.mdx#dependencies-for-mitie).
 
 
   You can also pre-train your own word vectors from a language corpus using MITIE. To do so:
@@ -67,8 +67,8 @@ word vectors in your pipeline.
      This can take several hours/days depending on your dataset and your workstation.
      You'll need something like 128GB of RAM for wordrep to run – yes, that's a lot: try to extend your swap.
 
-  3. Set the path of your new `total_word_feature_extractor.dat` as the `model` parameter in your
-     [configuration](./tuning-your-model.mdx#section-mitie-pipeline).
+  3. Set the path of your new `total_word_feature_extractor.dat` as the `model` parameter to the `MitieNLP` component in your
+     [configuration](./model-configuration.mdx) file.
 
   For a full example of how to train MITIE word vectors, check out
   [this blogpost](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html)
@@ -127,7 +127,7 @@ word vectors in your pipeline.
   ```
 
   For more information on how to download the spaCy models, head over to
-  [installing SpaCy](./installation.mdx#install-spacy).
+  [installing SpaCy](./installation.mdx#dependencies-for-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
   load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
@@ -166,7 +166,7 @@ word vectors in your pipeline.
   component for downstream NLU models.
 
   :::note
-  To use `HFTransformersNLP` component, install Rasa Open Source with `pip install rasa[transformers]`.
+  To use `HFTransformersNLP` component, install Rasa Open Source with `pip3 install rasa[transformers]`.
 
   :::
 
@@ -298,7 +298,7 @@ word vectors in your pipeline.
     language. It will only work for the Chinese language.
 
     :::note
-    To use `JiebaTokenizer` you need to install Jieba with `pip install jieba`.
+    To use `JiebaTokenizer` you need to install Jieba with `pip3 install jieba`.
 
     :::
 
@@ -436,7 +436,7 @@ word vectors in your pipeline.
     :::
 
     :::note
-    To use `ConveRTTokenizer`, install Rasa Open Source with `pip install rasa[convert]`.
+    To use `ConveRTTokenizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
 
     :::
 
@@ -453,6 +453,8 @@ word vectors in your pipeline.
       "intent_split_symbol": "_"
       # Regular expression to detect tokens
       "token_pattern": None
+      # Remote URL of hosted model
+      "model_url": TF_HUB_MODULE_URL
     ```
 
 
@@ -659,7 +661,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   :::
 
   :::note
-  To use `ConveRTTokenizer`, install Rasa Open Source with `pip install rasa[convert]`.
+  To use `ConveRTTokenizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
 
   :::
 
@@ -690,7 +692,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
+  [HFTransformersNLP](./components.mdx#hftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
 
 
 
@@ -703,7 +705,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 * **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
-  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#lhftransformersnlp) component to compute vector
+  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component to compute vector
   representations of input text.
 
   :::note
@@ -716,7 +718,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  Include [HFTransformersNLP](./components.mdx#lhftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
+  Include [HFTransformersNLP](./components.mdx#hftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
   [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
 
   ```yaml-rasa
@@ -1552,7 +1554,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
     `ambiguity_threshold`.
 
     You can use the `FallbackClassifier` to implement a
-    [Fallback Action](./fallback-handoff.mdx#fallbackactions) which handles message with uncertain
+    [Fallback Action](./fallback-handoff.mdx#fallbacks) which handles message with uncertain
     NLU predictions.
 
     ```yaml-rasa
@@ -1852,8 +1854,6 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   :::
 
 
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="ducklinghttpextractor"></a>
-
 ### DucklingHTTPExtractor
 
 
@@ -1956,6 +1956,49 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   You can find the detailed description of the [DIETClassifier](./components.mdx#dietclassifier) under the section
   Intent Classifiers.
 
+
+### RegexEntityExtractor
+
+* **Short**
+
+  Extracts entities using the lookup tables and/or regexes defined in the training data
+
+
+* **Outputs**
+
+  `entities`
+
+
+* **Requires**
+
+  Nothing
+
+
+* **Description**
+
+  This component extract entities using the lookup tables and regexes defined in the training data.
+  The component checks if the user message contains an entry of one of the lookup tables or matches one of the
+  regexes. If a match is found, the value is extracted as entity.
+
+  This component only uses those regex features that have a name equal to one of the entities defined in the
+  training data. Make sure to annotate at least one example per entity.
+
+
+* **Configuration**
+
+  Make the entity extractor case sensitive by adding the `case_sensitive: True` option, the default being
+  `case_sensitive: False`.
+
+  ```yaml-rasa
+      pipeline:
+      - name: RegexEntityExtractor
+        # text will be processed with case insensitive as default
+        "case_sensitive": False
+        # use lookup tables to extract entities
+        "use_lookup_tables": True
+        # use regexes to extract entities
+        "use_regexes": True
+  ```
 
 
 ### EntitySynonymMapper
@@ -2422,6 +2465,10 @@ Selectors predict a bot response from a set of candidate responses.
   It embeds user inputs and response labels into the same space and follows the exact same
   neural network architecture and optimization as the [DIETClassifier](./components.mdx#dietclassifier).
 
+  To use this component, your training data should contain [retrieval intents](./glossary.mdx#retrieval-intent). To define these,
+  checkout [documentation on NLU training examples](./training-data-format.mdx#training-examples) and
+  [documentation on defining response utterances for retrieval intents](./responses.mdx#defining-responses-for-retrieval-intents).
+
   :::note
   If during prediction time a message contains **only** words unseen during training
   and no Out-Of-Vocabulary preprocessor was used, an empty response `None` is predicted with confidence
@@ -2491,7 +2538,7 @@ Selectors predict a bot response from a set of candidate responses.
 
   See this [example assistant](https://github.com/RasaHQ/rasa/tree/master/examples/responseselectorbot) to understand
   how you can use the `ResponseSelector` component in your assistant. Additionally, you will find this tutorial on
-  [handling FAQs](./chitchat-faqs.mdx#handling-faqs-using-a-response-selector) using a `ResponseSelector` useful as well.
+  [handling FAQs](./chitchat-faqs.mdx) using a `ResponseSelector` useful as well.
 
 
 The above configuration parameters are the ones you should configure to fit your model to your data.

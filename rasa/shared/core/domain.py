@@ -2,9 +2,20 @@ import copy
 import collections
 import json
 import logging
-import typing
 import os
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Union,
+    NoReturn,
+    TYPE_CHECKING,
+)
 from pathlib import Path
 
 from ruamel.yaml import YAMLError
@@ -18,7 +29,7 @@ import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
@@ -328,7 +339,7 @@ class Domain:
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
                 f"Please resolve that ambiguity.",
-                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}#ignoring-entities-for-certain-intents",
+                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}",
             )
 
         properties[USED_ENTITIES_KEY] = used_entities
@@ -410,7 +421,7 @@ class Domain:
 
     def __init__(
         self,
-        intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
+        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
@@ -422,6 +433,9 @@ class Domain:
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
+        self.overriden_default_intents = self._collect_overridden_default_intents(
+            intents
+        )
         self.entities = entities
 
         self.forms: Dict[Text, Any] = {}
@@ -447,6 +461,24 @@ class Domain:
 
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
+
+    @staticmethod
+    def _collect_overridden_default_intents(
+        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
+    ) -> List[Text]:
+        """Collects the default intents overridden by the user.
+
+        Args:
+            intents: User-provided intents.
+
+        Returns:
+            User-defined intents that are default intents.
+        """
+        intent_names: Set[Text] = {
+            list(intent.keys())[0] if isinstance(intent, dict) else intent
+            for intent in intents
+        }
+        return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
 
     def _initialize_forms(self, forms: Union[Dict[Text, Any], List[Text]]) -> None:
         """Initialize the domain's `self.form` and `self.form_names` attributes.
@@ -565,7 +597,7 @@ class Domain:
         except ValueError:
             self.raise_action_not_found_exception(action_name)
 
-    def raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
+    def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
             f"Cannot access action '{action_name}', "
@@ -634,6 +666,8 @@ class Domain:
         Returns:
             a dictionary containing intent, text and set entities
         """
+        # proceed with values only if the user of a bot have done something
+        # at the previous step i.e., when the state is not empty.
         latest_message = tracker.latest_message
         if not latest_message or latest_message.is_empty():
             return {}
@@ -663,12 +697,6 @@ class Domain:
         Returns:
             a dictionary mapping slot names to their featurization
         """
-
-        # proceed with values only if the user of a bot have done something
-        # at the previous step i.e., when the state is not empty.
-        if tracker.latest_message == UserUttered.empty() or not tracker.latest_action:
-            return {}
-
         slots = {}
         for slot_name, slot in tracker.slots.items():
             if slot is not None and slot.as_feature():
@@ -840,7 +868,10 @@ class Domain:
         intents_for_file = []
 
         for intent_name, intent_props in intent_properties.items():
-            if intent_name in rasa.shared.core.constants.DEFAULT_INTENTS:
+            if (
+                intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
+                and intent_name not in self.overriden_default_intents
+            ):
                 # Default intents should be not dumped with the domain
                 continue
             use_entities = set(intent_props[USED_ENTITIES_KEY])
@@ -1135,7 +1166,7 @@ class Domain:
                     f"response action in the domain file, but there is "
                     f"no matching response defined. Please "
                     f"check your domain.",
-                    docs=rasa.shared.constants.DOCS_URL_DOMAINS + "#responses",
+                    docs=rasa.shared.constants.DOCS_URL_RESPONSES,
                 )
 
     def is_empty(self) -> bool:

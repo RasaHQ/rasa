@@ -1,7 +1,6 @@
 import copy
 import logging
 import os
-import sys
 from enum import Enum
 from typing import Text, Dict, Any, List, Set, Optional
 
@@ -112,12 +111,7 @@ def _auto_configure(
             f"Values will be provided from the default configuration."
         )
 
-    if sys.platform == "win32":
-        filename = "default_config_other_language.yml"
-    elif config.get("language") == "en":
-        filename = "default_config_en.yml"
-    else:
-        filename = "default_config_other_language.yml"
+    filename = "default_config.yml"
 
     default_config_file = pkg_resources.resource_filename(__name__, filename)
     default_config = rasa.shared.utils.io.read_config_file(default_config_file)

@@ -3,14 +3,11 @@ id: tracker-stores
 sidebar_label: Tracker Stores
 title: Tracker Stores
 description: All conversations are stored within a tracker store. Read how Rasa Open Source provides implementations for different store types out of the box.
+abstract: Your assistant's conversations are stored within a tracker store.
+  Rasa Open Source provides implementations for different store types out of the box,
+  or you can create your own custom one.
 ---
-<!-- this file is version specific, do not use `@site/...` syntax -->
-import variables from './variables.json';
 
-All conversations are stored within a tracker store.
-Rasa Open Source provides implementations for different store types out of the box.
-If you want to use another store, you can also build a custom tracker store by
-extending the `TrackerStore` class.
 
 ## InMemoryTrackerStore (default)
 
@@ -49,7 +46,7 @@ extending the `TrackerStore` class.
 
   1. Add required configuration to your `endpoints.yml`:
 
-     ```yaml-rasa
+     ```yaml-rasa title="endpoints.yml"
      tracker_store:
          type: SQL
          dialect: "postgresql"  # the dialect used to interact with the db
@@ -70,7 +67,7 @@ extending the `TrackerStore` class.
 
   3. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
 
-     ```yaml-rasa
+     ```yaml-rasa title="docker-compose.yml"
      postgres:
        image: postgres:latest
      ```
@@ -78,7 +75,7 @@ extending the `TrackerStore` class.
      To route requests to the new service, make sure that the `url` in your `endpoints.yml`
      references the service name:
 
-     ```yaml-rasa {4}
+     ```yaml-rasa {4} title="endpoints.yml"
        tracker_store:
            type: SQL
            dialect: "postgresql"  # the dialect used to interact with the db
@@ -142,34 +139,36 @@ extending the `TrackerStore` class.
   rename it to `oracle.rpm` and store it in the directory from where you'll be building the docker image.
   Copy the following into a file called `Dockerfile`:
 
-<pre><code parentName="pre" className="language-bash">
-{`FROM rasa/rasa:${variables.release}-full
+  ```bash
+  FROM rasa/rasa:${variables.release}-full
 
-# Switch to root user to install packages
-USER root
+  # Switch to root user to install packages
+  USER root
 
-RUN apt-get update -qq && apt-get install -y --no-install-recommends alien libaio1 && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+  RUN apt-get update -qq && apt-get install -y --no-install-recommends alien libaio1 && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Copy in oracle instaclient
-# [https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html)
-COPY oracle.rpm oracle.rpm
+  # Copy in oracle instaclient
+  # [https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html)
+  COPY oracle.rpm oracle.rpm
 
-# Install the Python wrapper library for the Oracle drivers
-RUN pip install cx-Oracle
+  # Install the Python wrapper library for the Oracle drivers
+  RUN pip install cx-Oracle
 
-# Install Oracle client libraries
-RUN alien -i oracle.rpm
+  # Install Oracle client libraries
+  RUN alien -i oracle.rpm
 
-USER 1001`}</code></pre>
+  USER 1001
+  ```
 
   Then build the docker image:
 
-<pre><code parentName="pre" className="language-bash">
-{`docker build . -t rasa-oracle:${variables.release}-oracle-full`}</code></pre>
+  ```bash
+  docker build . -t rasa-oracle:${variables.release}-oracle-full
+  ```
 
   Now you can configure the tracker store in the `endpoints.yml` as described above,
   and start the container. The `dialect` parameter with this setup will be `oracle+cx_oracle`.
-  Read more about [Deploying Your Rasa Assistant](./how-to-deploy.mdx#deploying-your-rasa-assistant).
+  Read more about [Deploying Your Rasa Assistant](./how-to-deploy.mdx).
 
 
 ## RedisTrackerStore
@@ -190,7 +189,7 @@ USER 1001`}</code></pre>
 
   2. Add required configuration to your `endpoints.yml`:
 
-     ```yaml-rasa
+     ```yaml-rasa title="endpoints.yml"
      tracker_store:
          type: redis
          url: <url of the redis instance, e.g. localhost>
@@ -209,7 +208,7 @@ USER 1001`}</code></pre>
 
   4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
 
-     ```yaml-rasa
+     ```yaml-rasa title="docker-compose.yml"
      redis:
        image: redis:latest
      ```
@@ -217,7 +216,7 @@ USER 1001`}</code></pre>
      To route requests to the new service, make sure that the `url` in your `endpoints.yml`
      references the service name:
 
-     ```yaml-rasa {3}
+     ```yaml-rasa {3} title="endpoints.yml"
       tracker_store:
           type: redis
           url: <url of the redis instance, e.g. localhost>
@@ -259,9 +258,9 @@ USER 1001`}</code></pre>
 
   1. Start your MongoDB instance.
 
-  2. Add required configuration to your `endpoints.yml`
+  2. Add required configuration to your `endpoints.yml`:
 
-     ```yaml-rasa
+     ```yaml-rasa title="endpoints.yml"
      tracker_store:
          type: mongod
          url: <url to your mongo instance, e.g. mongodb://localhost:27017>
@@ -272,10 +271,10 @@ USER 1001`}</code></pre>
      ```
 
      You can also add more advanced configurations (like enabling ssl) by appending
-     a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true
+     a parameter to the url field, e.g. `mongodb://localhost:27017/?ssl=true`.
 
   3. To start the Rasa server using your configured MongoDB instance,
-     add the `--endpoints` flag, e.g.:
+     add the `--endpoints` flag, for example:
 
      ```bash
      rasa run -m models --endpoints endpoints.yml
@@ -283,7 +282,7 @@ USER 1001`}</code></pre>
 
   4. If deploying your model in Docker Compose, add the service to your `docker-compose.yml`:
 
-     ```yaml-rasa
+     ```yaml-rasa title="docker-compose.yml"
      mongo:
        image: mongo
        environment:
@@ -301,7 +300,7 @@ USER 1001`}</code></pre>
      To route requests to this database, make sure to set the `url` in your `endpoints.yml` as the service name,
      and specify the user and password:
 
-     ```yaml-rasa {3,5,6}
+     ```yaml-rasa {3,5,6} title="endpoints.yml"
       tracker_store:
           type: mongod
           url: mongodb://mongo:27017
@@ -346,10 +345,10 @@ USER 1001`}</code></pre>
 
   2. Add required configuration to your `endpoints.yml`:
 
-     ```yaml-rasa
+     ```yaml-rasa title="endpoints.yml"
      tracker_store:
          type: dynamo
-         tablename: <name of the table to create, e.g. rasa>
+         table_name: <name of the table to create, e.g. rasa>
          region: <name of the region associated with the client>
      ```
 
@@ -364,30 +363,25 @@ USER 1001`}</code></pre>
 
 * **Parameters**
 
-  * `tablename` (default: `states`): name of the DynamoDB table
+  * `table_name` (default: `states`): name of the DynamoDB table
 
   * `region` (default: `us-east-1`): name of the region associated with the client
 
 
 ## Custom Tracker Store
 
+If you require a tracker store which is not available out of the box, you can implement your own.
+This is done by extending the base class `TrackerStore`.
 
-* **Description**
+To write a custom tracker store, extend the `TrackerStore` base class. Your constructor has to
+provide a parameter `host`.
 
-  If you require a tracker store which is not available out of the box, you can implement your own.
-  This is done by extending the base class `TrackerStore`.
+* **Configuration**
 
-  - SKIPPED CLASS DOCUMENTATION -
-
-* **Steps**
-
-  1. Extend the `TrackerStore` base class. Note that your constructor has to
-     provide a parameter `url`.
-
-  2. In your `endpoints.yml` put in the module path to your custom tracker store
+     In your `endpoints.yml` put in the module path to your custom tracker store
      and the parameters you require:
 
-     ```yaml-rasa
+     ```yaml-rasa title="endpoints.yml"
      tracker_store:
        type: path.to.your.module.Class
        url: localhost
@@ -395,17 +389,12 @@ USER 1001`}</code></pre>
        another_parameter: another value
      ```
 
-  3. If you are deploying in Docker Compose, you have two options to add this store to Rasa Open Source:
-
-       * extending the Rasa image to include the module
-
-       * mounting the module as volume
+    If you are deploying in Docker Compose, you have two options to add this store to Rasa Open Source:
+    extending the Rasa image to include the module, or mounting the module as volume.
 
      Make sure to add the corresponding service as well. For example, mounting it as a volume would look like so:
 
-     `docker-compose.yml`:
-
-     ```yaml {5,6,7}
+     ```yaml {5,6,7} title="docker-compose.yml"
      rasa:
        <existing rasa service configuration>
        volumes:
@@ -415,9 +404,7 @@ USER 1001`}</code></pre>
        image: custom-image:tag
      ```
 
-     `endpoints.yml`:
-
-     ```yaml-rasa {3}
+     ```yaml-rasa {3} title="endpoints.yml"
      tracker_store:
        type: path.to.your.module.Class
        url: custom-tracker-store

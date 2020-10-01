@@ -118,14 +118,12 @@ class InputChannel:
     @classmethod
     def raise_missing_credentials_exception(cls) -> NoReturn:
         raise Exception(
-            "To use the {} input channel, you need to "
-            "pass a credentials file using '--credentials'. "
-            "The argument should be a file path pointing to "
-            "a yml file containing the {} authentication "
-            "information. Details in the docs: "
-            "{}/user-guide/messaging-and-voice-channels/".format(
-                cls.name(), cls.name(), DOCS_BASE_URL
-            )
+            f"To use the {cls.name()} input channel, you need to "
+            f"pass a credentials file using '--credentials'. "
+            f"The argument should be a file path pointing to "
+            f"a yml file containing the {cls.name()} authentication "
+            f"information. Details in the docs: "
+            f"{DOCS_BASE_URL}/messaging-and-voice-channels/"
         )
 
     def get_output_channel(self) -> Optional["OutputChannel"]:

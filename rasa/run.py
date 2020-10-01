@@ -42,10 +42,9 @@ def run(
     if not connector and not credentials:
         connector = "rest"
         print_warning(
-            "No chat connector configured, falling back to the "
-            "REST input channel. To connect your bot to another channel, "
-            "read the docs here: {}/user-guide/"
-            "messaging-and-voice-channels".format(DOCS_BASE_URL)
+            f"No chat connector configured, falling back to the "
+            f"REST input channel. To connect your bot to another channel, "
+            f"read the docs here: {DOCS_BASE_URL}/messaging-and-voice-channels"
         )
 
     kwargs = rasa.shared.utils.common.minimal_kwargs(

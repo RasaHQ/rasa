@@ -4,7 +4,12 @@ import re
 
 import pytest
 
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+import rasa.shared.utils.validation
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    CORE_SCHEMA_FILE,
+)
+from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
+from rasa.shared.constants import DOMAIN_SCHEMA_FILE
 
 
 DOCS_BASE_DIR = Path("docs/")
@@ -35,10 +40,14 @@ def test_docs_training_data(mdx_file_path: Path):
 
         start_index = match.span()[0]
         line_number = mdx_content.count("\n", 0, start_index) + 1
-        try:
-            RasaYAMLReader.validate(codeblock)
-        except ValueError:
-            lines_with_errors.append(str(line_number))
+
+        # the responses schema is automatically checked in validate_yaml_schema, don't need to add it here
+        schemas_to_try = [NLU_SCHEMA_FILE, CORE_SCHEMA_FILE, DOMAIN_SCHEMA_FILE]
+        for schema in schemas_to_try:
+            try:
+                rasa.shared.utils.validation.validate_yaml_schema(codeblock, schema)
+            except ValueError:
+                lines_with_errors.append(str(line_number))
 
     if lines_with_errors:
         raise AssertionError(

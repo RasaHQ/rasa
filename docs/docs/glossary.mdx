@@ -21,6 +21,12 @@ description: Glossary for all Rasa-related terms
 
   Enforces the conditions and processes that must be fulfilled due to business requirements. For example, requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based policies like forms, and by custom actions.
 
+## Chitchat
+
+  Chitchat is a conversation pattern where the user says something that isn't directly related to their goal.
+  This can include things like greetings, asking how you are etc.
+  Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa Open Source.
+
 ## CMS
 
   Can be used to store bot responses externally instead of including them directly in the domain. Content Management Systems decouple responses from training data, which can provide greater flexibility when making updates
@@ -32,6 +38,12 @@ description: Glossary for all Rasa-related terms
 ## Conversation Tests
 
   Modified story format that includes the full text of the user message in addition to the intent label. Test conversations are saved to a test set file (conversation_tests.md), which is used to evaluate the model’s predictions across the entire conversation.
+
+## [Component](./components.mdx)
+
+  An element in the an assistant's [NLU pipeline](./tuning-your-model.mdx#how-to-choose-a-pipeline) in the [Model Configuration](./model-configuration.mdx).
+
+  Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
 
 ## [Custom Action](./actions.mdx#custom-actions)
 
@@ -55,9 +67,15 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Keywords that can be extracted from a user message. For example: a telephone number, a person's name, a location, the name of a product
 
-## [Event](./events.mdx)
+## [Event](https://rasa.com/docs/action-server/events)
 
   Something that happens in a conversation. For instance, a `UserUttered` event represents a user entering a message, and an `ActionExecuted` event represents the assistant executing an action. All conversations in Rasa are represented as a sequence of events.
+
+## FAQs
+
+  Frequently asked questions (FAQs) are common questions that your users ask. In the context of building an assistant,
+  this typically means the user sends a message and the assistant send a response without needing to consider the context of the conversation.
+  Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa Open Source.
 
 ## [Form](./forms.mdx)
 
@@ -99,10 +117,14 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.
   
+## NLU
+
+  Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.  
+
 ## NLU Inbox
 
   The area within Rasa X where new user messages are collected for review and annotation. Only messages not already represented in the training data will appear in the NLU Inbox.
-  
+
 ## [Pipeline](./tuning-your-model.mdx)
 
   The list of NLU components (see “Rasa NLU Component”) that defines a Rasa assistant’s NLU system. A user message is processed by each component one by one, before returning the final structured output.
@@ -117,9 +139,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
 ## Rasa NLU
 
-  Natural Language Understanding (NLU) parses human language into a structured format.
-
-  Rasa NLU is the part of Rasa Open Source that performs intent classification and entity extraction.
+  Rasa NLU is the part of Rasa that performs Natural Language Understanding ([NLU](#nlu)), including intent classification and entity extraction.
 
 ## Rasa NLU Component
 
@@ -141,7 +161,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Special training data to specify rule-like behavior, where a specific conditions always predict a specific next action. Examples include
   answering FAQs, filling [Forms](./forms.mdx), or handling
-  [Fallbacks](./fallback-handoff.mdx#fallbackactions).
+  [Fallbacks](./fallback-handoff.mdx#fallbacks).
 
 ## Share Your Bot
   Rasa X feature that generates a link to a chat UI for test users. **Share your bot** allows test users to talk to an assistant while it’s still in development. 

@@ -3,6 +3,7 @@ import logging
 import typing
 from typing import List, Text, Optional
 
+from rasa import telemetry
 from rasa.cli import SubParsersAction
 import rasa.core.utils
 import rasa.shared.utils.cli
@@ -69,7 +70,7 @@ def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
     return TrackerStore.create(endpoints.tracker_store)
 
 
-def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"]:
+def _get_event_broker(endpoints: "AvailableEndpoints") -> "EventBroker":
     """Get `EventBroker` from `endpoints`.
 
     Prints an error and exits if no event broker could be loaded.
@@ -81,16 +82,17 @@ def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"
         Initialized event broker.
 
     """
-    if not endpoints.event_broker:
+    from rasa.core.brokers.broker import EventBroker
+
+    broker = EventBroker.create(endpoints.event_broker)
+
+    if not broker:
         rasa.shared.utils.cli.print_error_and_exit(
             f"Could not find an `event_broker` section in the supplied "
             f"endpoints file. Instructions on how to configure an event broker "
             f"can be found here: {DOCS_URL_EVENT_BROKERS}. Exiting."
         )
-
-    from rasa.core.brokers.broker import EventBroker
-
-    return EventBroker.create(endpoints.event_broker)
+    return broker
 
 
 def _get_requested_conversation_ids(
@@ -191,6 +193,7 @@ def export_trackers(args: argparse.Namespace) -> None:
 
     try:
         published_events = exporter.publish_events()
+        telemetry.track_tracker_export(published_events, tracker_store, event_broker)
         rasa.shared.utils.cli.print_success(
             f"Done! Successfully published {published_events} events 🎉"
         )
