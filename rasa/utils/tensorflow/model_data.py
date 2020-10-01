@@ -35,13 +35,13 @@ class FeatureArray(np.ndarray):
         feature_array = np.asarray(input_array).view(cls)
 
         if number_of_dimensions <= 2:
-            feature_array.feature_dimension = input_array.shape[-1]
+            feature_array.units = input_array.shape[-1]
             feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
         elif number_of_dimensions == 3:
-            feature_array.feature_dimension = input_array[0].shape[-1]
+            feature_array.units = input_array[0].shape[-1]
             feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
         elif number_of_dimensions == 4:
-            feature_array.feature_dimension = input_array[0][0].shape[-1]
+            feature_array.units = input_array[0][0].shape[-1]
             feature_array.is_sparse = isinstance(
                 input_array[0][0], scipy.sparse.spmatrix
             )
@@ -58,12 +58,12 @@ class FeatureArray(np.ndarray):
         if obj is None:
             return
 
-        self.feature_dimension = getattr(obj, "feature_dimension", None)
+        self.units = getattr(obj, "units", None)
         self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)
         self.is_sparse = getattr(obj, "is_sparse", None)
 
         default_attributes = {
-            "feature_dimension": self.feature_dimension,
+            "units": self.units,
             "number_of_dimensions": self.number_of_dimensions,
             "is_spare": self.is_sparse,
         }
@@ -95,7 +95,7 @@ class FeatureArray(np.ndarray):
         new_state = pickled_state[2] + (
             self.number_of_dimensions,
             self.is_sparse,
-            self.feature_dimension,
+            self.units,
         )
         return pickled_state[0], pickled_state[1], new_state
 
@@ -103,7 +103,7 @@ class FeatureArray(np.ndarray):
         # Needed in order to load the object
         self.number_of_dimensions = state[-3]
         self.is_sparse = state[-2]
-        self.feature_dimension = state[-1]
+        self.units = state[-1]
         super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
 
     # pytype: enable=attribute-error
@@ -139,7 +139,7 @@ class FeatureSignature(NamedTuple):
     """Stores the shape and the type (sparse vs dense) of features."""
 
     is_sparse: bool
-    feature_dimension: Optional[int]
+    units: Optional[int]
     number_of_dimensions: int
 
 
@@ -327,12 +327,12 @@ class RasaModelData:
         if key not in self.data or sub_key not in self.data[key]:
             return 0
 
-        number_of_features = 0
+        units = 0
         for features in self.data[key][sub_key]:
             if len(features) > 0:
-                number_of_features += features.feature_dimension
+                units += features.units
 
-        return number_of_features
+        return units
 
     def add_data(self, data: Data, key_prefix: Optional[Text] = None) -> None:
         """Add incoming data to data.
@@ -486,7 +486,7 @@ class RasaModelData:
             key: {
                 sub_key: [
                     FeatureSignature(
-                        f.is_sparse, f.feature_dimension, f.number_of_dimensions
+                        f.is_sparse, f.units, f.number_of_dimensions
                     )
                     for f in features
                 ]
