@@ -53,9 +53,8 @@ class SupportedData(Enum):
 
     @staticmethod
     def trackers_for_policy(
-        policy: Union["Policy", Type["Policy"]],
-        trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
-    ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
+        policy: Union["Policy", Type["Policy"]], trackers: List[DialogueStateTracker],
+    ) -> List[DialogueStateTracker]:
         """Return trackers for a given policy.
 
         Args:
