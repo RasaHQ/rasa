@@ -110,6 +110,87 @@ paths:
           $ref: '#/components/responses/409Conflict'
 
 
+  /data/convert/{data_type}:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: convertTrainingData
+      tags:
+      - Data
+      summary: Convert training data
+      description: >-
+        Convert Core data (stories and rules) from Markdown to
+        YAML, or NLU data from Markdown or JSON (Rasa, LUIS,
+        Wit.ai, Dialogflow) to Markdown, YAML or Rasa JSON.
+      parameters:
+      - name: data_type
+        in: path
+        required: true
+        description: Type of training data
+        schema:
+          type: string
+          enum:
+            - nlu
+            - core
+      - name: data
+        in: query
+        required: true
+        description: >-
+          The input data as a string (if it is YAML or
+          Markdown), or in a recognized JSON format
+        example:
+          rasa_nlu_data:
+            common_examples:
+              - text: hey
+                intent: greet
+              - text: hello
+                intent: greet
+              - text: good afternoon
+                intent: goodbye
+              - text: cu
+                intent: goodbye
+        schema:
+          oneOf:
+            - type: string
+              description: Markdown/YAML input content
+            - type: object
+              description: JSON input content
+      - name: input_format
+        in: query
+        required: true
+        description: >-
+          Whether the input data is in YAML, JSON or Markdown
+        schema:
+          $ref: '#/components/schemas/DataFormat'
+      - name: output_format
+        in: query
+        required: true
+        description: >-
+          Whether to convert the input data into YAML, JSON
+          or Markdown
+        schema:
+          $ref: '#/components/schemas/DataFormat'
+      - name: language
+        in: query
+        schema:
+          type: string
+          default: en
+      responses:
+        200:
+          $ref: '#/components/responses/200Convert'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+
   /conversations/{conversation_id}/tracker:
     get:
       security:
@@ -881,6 +962,30 @@ components:
 
   responses:
 
+    200Convert:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                oneOf:
+                  - type: string
+                    description: Markdown/YAML output content
+                  - type: object
+                    description: JSON output content
+          example:
+            data: >-
+              nlu:
+                - intent: greet
+                  examples: |
+                    - hey
+                    - hello
+                - intent: goodbye
+                  examples: |
+                    - good afternoon
+                    - cu
     200Tracker:
       description: Success
       content:
@@ -981,6 +1086,13 @@ components:
 
 
   schemas:
+
+    DataFormat:
+      type: string
+      enum:
+        - yaml
+        - json
+        - md
 
     ModelRequest:
       type: object
