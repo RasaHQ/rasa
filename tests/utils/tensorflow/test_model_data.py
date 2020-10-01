@@ -340,7 +340,7 @@ def test_not_balance_model_data(model_data: RasaModelData):
 
 
 def test_get_num_of_features(model_data: RasaModelData):
-    num_features = model_data.feature_dimension("text", "sentence")
+    num_features = model_data.number_of_units("text", "sentence")
 
     assert num_features == 24
 

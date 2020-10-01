@@ -496,10 +496,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Checks if features have same dimensionality if hidden layers are shared."""
 
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
-            num_text_sentence_features = model_data.feature_dimension(TEXT, SENTENCE)
-            num_label_sentence_features = model_data.feature_dimension(LABEL, SENTENCE)
-            num_text_sequence_features = model_data.feature_dimension(TEXT, SEQUENCE)
-            num_label_sequence_features = model_data.feature_dimension(LABEL, SEQUENCE)
+            num_text_sentence_features = model_data.number_of_units(TEXT, SENTENCE)
+            num_label_sentence_features = model_data.number_of_units(LABEL, SENTENCE)
+            num_text_sequence_features = model_data.number_of_units(TEXT, SEQUENCE)
+            num_label_sequence_features = model_data.number_of_units(LABEL, SEQUENCE)
 
             if (0 < num_text_sentence_features != num_label_sentence_features > 0) or (
                 0 < num_text_sequence_features != num_label_sequence_features > 0
@@ -664,10 +664,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
         for key, attribute_features in features.items():
             for sub_key, _features in attribute_features.items():
-                _sub_key = sub_key.replace(f"{SPARSE}_", "").replace(f"{DENSE}_", "")
+                sub_key = sub_key.replace(f"{SPARSE}_", "").replace(f"{DENSE}_", "")
                 model_data.add_features(
                     key,
-                    _sub_key,
+                    sub_key,
                     [FeatureArray(np.array(_features), number_of_dimensions=3)],
                 )
 
