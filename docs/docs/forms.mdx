@@ -254,13 +254,19 @@ the form and reset the requested slot. An example story of such conversation cou
 look as follows:
 
 ```yaml-rasa
-rules:
-- rule: Example of an unhappy path
+- rule: Example of an unhappy path: ask if the form should continue
   condition:
   # Condition that form is active.
   - active_loop: restaurant_form
   steps:
   - intent: stop
+  - action: utter_ask_continue
+
+- rule: Example of an unhappy path: stop the form
+  condition:
+  # Condition that form is active.
+  - active_loop: restaurant_form
+  steps:
   - action: utter_ask_continue
   - intent: stop
   - action: action_deactivate_loop
