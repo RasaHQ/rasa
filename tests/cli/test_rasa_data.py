@@ -10,6 +10,11 @@ from typing import Callable, Text, Dict, List
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult, Testdir
 from rasa.cli import data
+from rasa.core.constants import (
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+)
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DEFAULT_DATA_PATH
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -371,15 +376,15 @@ def test_convert_config(
             {
                 "name": "RulePolicy",
                 "core_fallback_action_name": "action_default_fallback",
-                "core_fallback_threshold": 0.3,
+                "core_fallback_threshold": DEFAULT_CORE_FALLBACK_THRESHOLD,
             }
         ],
         "pipeline": [
             {"name": "WhitespaceTokenizer"},
             {
                 "name": "FallbackClassifier",
-                "ambiguity_threshold": 0.1,
-                "threshold": 0.3,
+                "ambiguity_threshold": DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+                "threshold": DEFAULT_NLU_FALLBACK_THRESHOLD,
             },
         ],
     }
