@@ -3,6 +3,11 @@ import os
 from typing import Optional, Text, List, Dict, Union, Tuple, Any, TYPE_CHECKING
 
 import rasa.shared.utils.io
+from rasa.core.constants import (
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+)
 from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
@@ -108,7 +113,9 @@ def _update_rule_policy_config_for_fallback(
         rule_policy_config = {"name": RulePolicy.__name__}
         policies.append(rule_policy_config)
 
-    core_threshold = fallback_config.get("core_threshold", 0.3)
+    core_threshold = fallback_config.get(
+        "core_threshold", DEFAULT_CORE_FALLBACK_THRESHOLD
+    )
     fallback_action_name = fallback_config.get(
         "fallback_core_action_name"
     ) or fallback_config.get("fallback_action_name", ACTION_DEFAULT_FALLBACK_NAME)
@@ -126,8 +133,10 @@ def _update_fallback_config(config: Dict, fallback_config: Dict) -> None:
         fallback_classifier_config = {"name": FallbackClassifier.__name__}
         config["pipeline"].append(fallback_classifier_config)
 
-    nlu_threshold = fallback_config.get("nlu_threshold", 0.3)
-    ambiguity_threshold = fallback_config.get("ambiguity_threshold", 0.1)
+    nlu_threshold = fallback_config.get("nlu_threshold", DEFAULT_NLU_FALLBACK_THRESHOLD)
+    ambiguity_threshold = fallback_config.get(
+        "ambiguity_threshold", DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD
+    )
 
     fallback_classifier_config.setdefault("threshold", nlu_threshold)
     fallback_classifier_config.setdefault("ambiguity_threshold", ambiguity_threshold)

@@ -4,6 +4,11 @@ from typing import Dict, Text, Optional, Any
 import pytest
 
 import rasa.core.config
+from rasa.core.constants import (
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+)
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
@@ -41,15 +46,15 @@ def test_load_config(filename):
                 "policies": [
                     {
                         "name": "RulePolicy",
-                        "core_fallback_threshold": 0.3,
+                        "core_fallback_threshold": DEFAULT_CORE_FALLBACK_THRESHOLD,
                         "core_fallback_action_name": ACTION_DEFAULT_FALLBACK_NAME,
                     }
                 ],
                 "pipeline": [
                     {
                         "name": "FallbackClassifier",
-                        "threshold": 0.3,
-                        "ambiguity_threshold": 0.1,
+                        "threshold": DEFAULT_NLU_FALLBACK_THRESHOLD,
+                        "ambiguity_threshold": DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
                     }
                 ],
             },
@@ -98,7 +103,7 @@ def test_load_config(filename):
                 "policies": [
                     {
                         "name": "RulePolicy",
-                        "core_fallback_threshold": 0.3,
+                        "core_fallback_threshold": DEFAULT_CORE_FALLBACK_THRESHOLD,
                         "core_fallback_action_name": ACTION_DEFAULT_FALLBACK_NAME,
                     }
                 ],
@@ -106,7 +111,7 @@ def test_load_config(filename):
                     {
                         "name": "FallbackClassifier",
                         "threshold": 0.4,
-                        "ambiguity_threshold": 0.1,
+                        "ambiguity_threshold": DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
                     }
                 ],
             },
@@ -133,8 +138,8 @@ def test_load_config(filename):
                 "pipeline": [
                     {
                         "name": "FallbackClassifier",
-                        "threshold": 0.3,
-                        "ambiguity_threshold": 0.1,
+                        "threshold": DEFAULT_NLU_FALLBACK_THRESHOLD,
+                        "ambiguity_threshold": DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
                     }
                 ],
             },
@@ -147,15 +152,15 @@ def test_load_config(filename):
                 "policies": [
                     {
                         "name": "RulePolicy",
-                        "core_fallback_threshold": 0.3,
+                        "core_fallback_threshold": DEFAULT_CORE_FALLBACK_THRESHOLD,
                         "core_fallback_action_name": ACTION_DEFAULT_FALLBACK_NAME,
                     }
                 ],
                 "pipeline": [
                     {
                         "name": "FallbackClassifier",
-                        "threshold": 0.3,
-                        "ambiguity_threshold": 0.1,
+                        "threshold": DEFAULT_NLU_FALLBACK_THRESHOLD,
+                        "ambiguity_threshold": DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
                     }
                 ],
             },
