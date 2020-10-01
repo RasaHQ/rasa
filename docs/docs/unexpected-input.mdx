@@ -17,7 +17,7 @@ This page is a guide on methods for handling unexpected input that is still with
 Depending on what kind of unexpected
 input you're trying to handle, some or all of the methods describe may be applicable for you. This guide
 is not about disambiguating user input or handling out-of-scope questions; for these cases see
-the guide on [fallback and human handoff](fallback-handoff.mdx)
+the guide on [fallback and human handoff](fallback-handoff.mdx).
 
 
 ## User Interjections
@@ -55,7 +55,7 @@ Since we want the `requested_slot` to influence the conversation,
 we need to set the property `influence_conversation` of the slot `requested_slot`
 to `true`, and assign it the categorical type:
 
-```yaml-rasa
+```yaml-rasa  title="domain.yml"
 slots:
   requested_slot:
     type: categorical
@@ -73,7 +73,7 @@ This means that the dialogue model will pay attention to the value of the slot w
 
 You can then write stories for specific responses to interruptions based on the value of `requested_slot`, for example:
 
-```yaml-rasa
+```yaml-rasa title="stories.yml"
 stories:
 - story: cuisine interruption
   steps:

@@ -668,7 +668,7 @@ stories:
   steps:
   - checkpoint: greet_checkpoint
     # This checkpoint should only apply if slots are set to the specified value
-    slots:
+    slot_was_set:
     - context_scenario: holiday
     - holiday_name: thanksgiving
   - intent: greet
