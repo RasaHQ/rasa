@@ -320,7 +320,7 @@ class RulePolicy(MemoizationPolicy):
                 f"slots, that it sets in other rules: "
                 f"'{', '.join(fingerprint_slots)}'. Please update the rule with "
                 f"an appropriate slot or if it is the last action add "
-                f"`wait_for_user_input: false` after this action."
+                f"'wait_for_user_input: false' after this action."
             )
         if action_name and fingerprint_active_loops:
             # substitute `SHOULD_NOT_BE_SET` with `null` so that users
