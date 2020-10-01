@@ -398,7 +398,7 @@ def _migrate_model_config(args: argparse.Namespace):
     domain_file = Path(args.domain)
     domain = _get_domain(domain_file)
 
-    rule_output_file = _get_rules_path(Path(args.out))
+    rule_output_file = _get_rules_path(args.out)
     rules = []
 
     # TODO:
