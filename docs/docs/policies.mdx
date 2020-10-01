@@ -358,7 +358,7 @@ slots and active loops set by actions are defined consistently for all rules.
      - intent: search_venues
      - action: action_search_venues
      - slot_was_set:
-       - some_slot: "some value"
+       - venues: Concert on Big Arena
 
    - rule: incomplete rule
      steps:
@@ -370,27 +370,32 @@ slots and active loops set by actions are defined consistently for all rules.
    the `venues` slot because it is set in `complete rule`, but this event is missing.
    There is several possible ways to fix this rule, for example:
 
-   - if `some_slot` should not be set, you should explicitly set it to `null`
+   - if you want to cover the case when `action_search_venues` could not find
+   anything and therefore `venues` should not be set,
+   you should explicitly set the value of the slot to `null`.
+   Then in the following story `RulePolicy` will predict `utter_venues_not_found`
+   only if the slot `venues` is not set.
 
    ```yaml-rasa
    rules:
    - rule: fixes incomplete rule
      steps:
-     - intent: do_something
-     - action: action_that_sets_some_slot
+     - intent: search_venues
+     - action: action_search_venues
      - slot_was_set:
-       - some_slot: null
+       - venues: null
+     - utter_venues_not_found
    ```
 
    - if you want to deal with setting slot in a different rule or story,
-   add `wait_for_user_input: false` in the the end of the rule
+   you should add `wait_for_user_input: false` in the the end of the rule snippet.
 
    ```yaml-rasa
    rules:
    - rule: incomplete rule
      steps:
-     - intent: do_something
-     - action: action_that_sets_some_slot
+     - intent: search_venues
+     - action: action_search_venues
      wait_for_user_input: false
    ```
 
