@@ -373,7 +373,7 @@ def test_convert_config(
     assert new_rules == {
         "rules": [
             {
-                "rule": "Rule to map `greet` intent (automatic conversion)",
+                "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
                 "steps": [{"intent": "greet"}, {"action": "action_greet"},],
             }
         ]
