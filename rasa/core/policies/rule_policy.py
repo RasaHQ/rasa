@@ -317,10 +317,10 @@ class RulePolicy(MemoizationPolicy):
         if action_name and fingerprint_slots:
             error_messages.append(
                 f"- the action '{action_name}' in rule '{rule_name}' does not set all"
-                f"slots, that it sets in other rules: "
+                f"the slots, that it sets in other rules: "
                 f"'{', '.join(fingerprint_slots)}'. Please update the rule with "
-                f"an appropriate slot or if it is the last action add "
-                f"'wait_for_user_input: false' after this action."
+                f"an appropriate slot or if it is the last action "
+                f"add 'wait_for_user_input: false' after this action."
             )
         if action_name and fingerprint_active_loops:
             # substitute `SHOULD_NOT_BE_SET` with `null` so that users
@@ -334,15 +334,15 @@ class RulePolicy(MemoizationPolicy):
             fingerprint_active_loops.add(action_name)
 
             error_messages.append(
-                f"- the form '{action_name}' in rule '{rule_name}' doesn't set the "
-                f"'active_loop', that it sets in other rules: "
+                f"- the form '{action_name}' in rule '{rule_name}' does not set "
+                f"the 'active_loop', that it sets in other rules: "
                 f"'{', '.join(fingerprint_active_loops)}'. Please update the rule with "
-                f"the appropriate 'active loop' property or if it is the last action add "
-                f"'wait_for_user_input: false' after this action."
+                f"the appropriate 'active loop' property or if it is the last action "
+                f"add 'wait_for_user_input: false' after this action."
             )
         return error_messages
 
-    def _check_rule_action_fingerprints(
+    def _check_for_incomplete_rules(
         self, rule_trackers: List[TrackerWithCachedStates], domain: Domain,
     ) -> None:
         import rasa.core.policies.ensemble
@@ -534,7 +534,7 @@ class RulePolicy(MemoizationPolicy):
         if self._restrict_rules:
             self._check_rule_restriction(rule_trackers)
         if self._check_for_contradictions:
-            self._check_rule_action_fingerprints(rule_trackers, domain)
+            self._check_for_incomplete_rules(rule_trackers, domain)
 
         (
             rule_trackers_as_states,
