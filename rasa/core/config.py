@@ -62,11 +62,11 @@ def migrate_mapping_policy_to_rules(
             has_one_triggered_action = True
             rules.append(
                 {
-                    "rule": f"Rule to map `{intent}` intent (automatic conversion)",
-                    "steps": [
-                        {"intent": intent},
-                        {"action": triggered_action},
-                    ],
+                    "rule": (
+                        f"Rule to map `{intent}` intent to "
+                        f"`{triggered_action}` (automatic conversion)"
+                    ),
+                    "steps": [{"intent": intent}, {"action": triggered_action},],
                 }
             )
 
