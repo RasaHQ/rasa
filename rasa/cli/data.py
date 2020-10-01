@@ -411,7 +411,6 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
     rule_output_file = _get_rules_path(Path(args.out))
 
     # TODO:
-    # 2. Add telemetry
     # 3. Auto backup file?
     (
         model_configuration,
@@ -426,6 +425,8 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
     domain.persist_clean(domain_file)
     new_rules = [*mapping_rules, *fallback_rules]
     _dump_rules(rule_output_file, new_rules)
+
+    telemetry.track_data_convert("yaml", "config")
 
     rasa.shared.utils.cli.print_success(
         f"Finished migrating your policy configuration 🎉.\n"
