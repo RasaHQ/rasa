@@ -32,8 +32,8 @@ mapping:
     type: "map"
     allowempty: True
   forms:
-    type: "any"
-    required: False
+    type: "map"
+    allowempty: True
   config:
     type: "map"
     allowempty: True
