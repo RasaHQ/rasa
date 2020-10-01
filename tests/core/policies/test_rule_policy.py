@@ -190,7 +190,6 @@ slots:
 
 def test_incomplete_rules_due_to_loops():
     some_form = "some_form"
-    some_slot = "some_slot"
     domain = Domain.from_yaml(
         f"""
 intents:
