@@ -403,6 +403,13 @@ async def _convert_file_to_yaml(
 
 
 def _migrate_model_config(args: argparse.Namespace) -> None:
+    """Migrates old "rule-like" policies to the new `RulePolicy`.
+
+    Updates the config, domain, and generates the required rules.
+
+    Args:
+        args: The commandline args with the required paths.
+    """
     configuration_file = Path(args.config)
     model_configuration = _get_configuration(configuration_file)
 
