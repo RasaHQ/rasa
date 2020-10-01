@@ -72,7 +72,7 @@ class FeatureArray(np.ndarray):
     # pytype: disable=attribute-error
     def __array_ufunc__(
         self, ufunc, method, *inputs, **kwargs
-    ):  # this method is called whenever you use a ufunc
+    ):
         f = {
             "reduce": ufunc.reduce,
             "accumulate": ufunc.accumulate,
@@ -105,7 +105,6 @@ class FeatureArray(np.ndarray):
         self.is_sparse = state[-2]
         self.units = state[-1]
         super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
-
     # pytype: enable=attribute-error
 
     @staticmethod
@@ -136,7 +135,7 @@ class FeatureArray(np.ndarray):
 
 
 class FeatureSignature(NamedTuple):
-    """Stores the shape and the type (sparse vs dense) of features."""
+    """Stores the shape, the type (sparse vs dense), and the number of dimensions of features."""
 
     is_sparse: bool
     units: Optional[int]
@@ -149,11 +148,6 @@ class FeatureSignature(NamedTuple):
 # "text" -> { "sentence": [
 #   "numpy array containing dense features for every training example",
 #   "numpy array containing sparse features for every training example"
-# ]}
-# In case of e2e data, we also deal with 4d tensors, e.g.
-# "action_text" -> { "sequence": [
-#   [["numpy array containing dense features for every training example"]],
-#   [["numpy array containing sparse features for every training example"]]
 # ]}
 Data = Dict[Text, Dict[Text, List[FeatureArray]]]
 
