@@ -56,12 +56,6 @@ class Slot:
         """See the docstring for `feature_dimensionality`."""
         return 1
 
-    def add_default_value(self) -> None:
-        """Add a default value to a slots user-defined values"""
-        raise NotImplementedError(
-            "Each slot type needs to specify its own" "default value to add, if any"
-        )
-
     def has_features(self) -> bool:
         """Indicate if the slot creates any features."""
         return self.feature_dimensionality() != 0
