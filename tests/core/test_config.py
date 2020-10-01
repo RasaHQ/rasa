@@ -103,11 +103,13 @@ TEST_MIGRATED_MAPPING_POLICIES = [
             "actions": ["action_greet"],
         },
         {
-            "config": {"policies": [{"name": "MemoizationPolicy"}]},
+            "config": {
+                "policies": [{"name": "MemoizationPolicy"}, {"name": "RulePolicy"}]
+            },
             "domain_intents": ["greet", "leave"],
             "rules": [
                 {
-                    "rule": "Rule to map `greet` intent (automatic conversion)",
+                    "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
                     "steps": [{"intent": "greet"}, {"action": "action_greet"},],
                 }
             ],
@@ -116,14 +118,18 @@ TEST_MIGRATED_MAPPING_POLICIES = [
 ]
 
 
-@pytest.mark.parametrize("config,domain_dict,expected", TEST_MIGRATED_MAPPING_POLICIES)
+@pytest.mark.parametrize(
+    "config,domain_dict,expected_results", TEST_MIGRATED_MAPPING_POLICIES
+)
 def test_migrate_mapping_policy_to_rules(
-    config: Dict[Text, Any], domain_dict: Dict[Text, Any], expected: Dict[Text, Any],
+    config: Dict[Text, Any],
+    domain_dict: Dict[Text, Any],
+    expected_results: Dict[Text, Any],
 ):
     rules = []
     domain = Domain.from_dict(domain_dict)
     core_config.migrate_mapping_policy_to_rules(config, domain, rules)
 
-    assert config == expected["config"]
-    assert domain.cleaned_domain()["intents"] == expected["domain_intents"]
-    assert rules == expected["rules"]
+    assert config == expected_results["config"]
+    assert domain.cleaned_domain()["intents"] == expected_results["domain_intents"]
+    assert rules == expected_results["rules"]
