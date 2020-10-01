@@ -334,7 +334,7 @@ class RulePolicy(MemoizationPolicy):
             fingerprint_active_loops.add(action_name)
 
             error_messages.append(
-                f"- the action '{action_name}' in rule '{rule_name}' doesn't set an "
+                f"- the form '{action_name}' in rule '{rule_name}' doesn't set the "
                 f"'active_loop', that it sets in other rules: "
                 f"'{', '.join(fingerprint_active_loops)}'. Please update the rule with "
                 f"the appropriate 'active loop' property or if it is the last action add "
