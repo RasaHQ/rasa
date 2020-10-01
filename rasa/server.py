@@ -1151,7 +1151,9 @@ def _parse_convert_request(request: Request, data_type: Text):
     data = rjs.get("data")
     input_format = rjs.get("input_format")
     output_format = rjs.get("output_format")
-    supported_formats = ["md", "json", "yaml" , "yml"] if data_type == "nlu" else ["yaml", "yml"]
+    supported_formats = (
+        ["md", "json", "yaml", "yml"] if data_type == "nlu" else ["yaml", "yml"]
+    )
 
     if not data or not input_format or not output_format:
         raise ErrorResponse(
@@ -1183,7 +1185,7 @@ async def _convert_nlu_training_data(
         from rasa.nlu.convert import convert_training_data
 
         convert_training_data(
-            in_path, out_path, Path(out_path).suffix.replace('.', ''), language,
+            in_path, out_path, Path(out_path).suffix.replace(".", ""), language,
         )
 
 
