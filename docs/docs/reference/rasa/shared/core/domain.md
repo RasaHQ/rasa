@@ -262,7 +262,7 @@ Generate domain warnings from intents, entities, actions and slots.
 
 Returns a dictionary with entries for `intent_warnings`,
 `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
-of type `UnfeaturizedSlot` from domain warnings.
+from domain warnings in case they are not featurized.
 
 #### check\_missing\_templates
 

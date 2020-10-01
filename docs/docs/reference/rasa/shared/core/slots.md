@@ -9,6 +9,25 @@ title: rasa.shared.core.slots
 class Slot()
 ```
 
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = True) -> None
+```
+
+Create a Slot.
+
+**Arguments**:
+
+- `name` - The name of the slot.
+- `initial_value` - The initial value of the slot.
+- `value_reset_delay` - After how many turns the slot should be reset to the
+  initial_value. This is behavior is currently not implemented.
+- `auto_fill` - `True` if the slot should be filled automatically by entities
+  with the same name.
+- `influence_conversation` - If `True` the slot will be featurized and hence
+  influence the predictions of the dialogue polices.
+
 #### feature\_dimensionality
 
 ```python
@@ -17,16 +36,10 @@ class Slot()
 
 How many features this single slot creates.
 
-The dimensionality of the array returned by `as_feature` needs
-to correspond to this value.
+**Returns**:
 
-#### add\_default\_value
-
-```python
- | add_default_value() -> None
-```
-
-Add a default value to a slots user-defined values
+  The number of features. `0` if the slot is unfeaturized. The dimensionality
+  of the array returned by `as_feature` needs to correspond to this value.
 
 #### has\_features
 
@@ -62,4 +75,13 @@ bool_from_any(x: Any) -> bool
 ```
 
 Converts bool/float/int/str to bool or raises error
+
+## AnySlot Objects
+
+```python
+class AnySlot(Slot)
+```
+
+Slot which can be used to store any value. Users need to create a subclass of
+`Slot` in case the information is supposed to get featurized.
 
