@@ -62,7 +62,7 @@ class YAMLStoryWriter:
         self,
         target: Union[Text, Path, yaml.StringIO],
         story_steps: List[StoryStep],
-        append: bool,
+        append: bool = False,
     ) -> None:
         """Writes Story steps into a target file/stream.
 
