@@ -1,9 +1,7 @@
 from pathlib import Path
 from typing import Text
 
-from rasa.shared.constants import (
-    TEST_STORIES_FILE_PREFIX,
-)
+from rasa.shared.constants import TEST_STORIES_FILE_PREFIX
 
 
 class TrainingDataConverter:
