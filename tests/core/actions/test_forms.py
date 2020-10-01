@@ -150,7 +150,8 @@ async def test_set_slot_and_deactivate():
         - type: from_text
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: text
+        influence_conversation: false
     """
     domain = Domain.from_yaml(domain)
 
@@ -281,9 +282,9 @@ async def test_validate_slots(
     domain = f"""
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
       num_tables:
-        type: unfeaturized
+        type: any
     forms:
       {form_name}:
         {slot_name}:
@@ -914,13 +915,7 @@ def test_invalid_slot_mapping():
             {"some_other_slot": "some_value"},
         ),
         (
-            [
-                {
-                    "type": "from_entity",
-                    "intent": "some_intent",
-                    "entity": "some_entity",
-                }
-            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
             [
                 {
                     "type": "from_entity",
@@ -936,13 +931,7 @@ def test_invalid_slot_mapping():
         ),
         (
             [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
-            [
-                {
-                    "type": "from_entity",
-                    "intent": "some_intent",
-                    "entity": "some_entity",
-                }
-            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
             [{"entity": "some_entity", "value": "some_value"}],
             "some_intent",
             # other slot should not be extracted because slot mapping is not unique
