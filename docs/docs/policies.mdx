@@ -400,9 +400,18 @@ This controls how much dialogue history the model looks at to decide which
 action to take next.
 
 You can set the `max_history` by passing it to your policy
-in the policy configuration yaml file.
+in the policy configuration in your `config.yml`.
 The default value is `None`, which means that the complete dialogue history since session
 restart is taken in the account.
+
+```yaml-rasa title="config.yml" {3}
+policies:
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 200
+    batch_size: 50
+    max_training_samples: 300
+```
 
 :::note
 `RulePolicy` doesn't have max history parameter, it always consider the full length
