@@ -418,14 +418,20 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
         domain,
         mapping_rules,
     ) = rasa.core.config.migrate_mapping_policy_to_rules(model_configuration, domain)
-
     (model_configuration, fallback_rules) = rasa.core.config.migrate_fallback_policies(
         model_configuration
     )
 
     rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
     domain.persist_clean(domain_file)
-    _dump_rules(rule_output_file, [*mapping_rules, *fallback_rules])
+    new_rules = [*mapping_rules, *fallback_rules]
+    _dump_rules(rule_output_file, new_rules)
+
+    rasa.shared.utils.cli.print_success(
+        f"Finished migrating your policy configuration 🎉.\n"
+        f"The migration generated {len(new_rules)} which were added to "
+        f"'{rule_output_file}'"
+    )
 
 
 def _get_configuration(path: Path) -> Dict:

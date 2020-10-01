@@ -4,6 +4,7 @@ import typing
 from typing import Optional, Text, List, Dict, Union, Tuple, Any
 
 import rasa.shared.utils.io
+import rasa.shared.utils.cli
 from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
@@ -57,6 +58,8 @@ def migrate_fallback_policies(config: Dict) -> Tuple[Dict, List["StoryStep"]]:
 
     if not fallback_config:
         return config, []
+
+    rasa.shared.utils.cli.print_info(f"Migrating the '{fallback_config.get('name')}'.")
 
     _update_rule_policy_config(config, fallback_config)
     _update_fallback_config(config, fallback_config)
@@ -166,6 +169,7 @@ def migrate_mapping_policy_to_rules(
     if not has_mapping_policy:
         return config, domain, []
 
+    rasa.shared.utils.cli.print_info(f"Migrating the '{MappingPolicy.__name__}'.")
     new_config = copy.deepcopy(config)
     new_domain = copy.deepcopy(domain)
 
