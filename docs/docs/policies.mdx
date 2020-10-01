@@ -446,9 +446,9 @@ slot. Slot information is always available for every featurizer.
 ### Data Augmentation
 
 When you train a model, by default Rasa Core will create
-longer stories by randomly gluing together
+longer stories by randomly combining
 the ones in your stories files.
-This is because if you have stories like:
+Take the stories below as an example:
 
 ```yaml-rasa
 stories:
@@ -463,11 +463,11 @@ stories:
 ```
 
 You actually want to teach your policy to **ignore** the dialogue history
-when it isn't relevant and just respond with the same action no matter
+when it isn't relevant and to respond with the same action no matter
 what happened before.
 
-You can alter this behavior with the `--augmentation` flag.
-Which allows you to set the `augmentation_factor`.
+You can alter this behavior with the `--augmentation` flag,
+which allows you to set the `augmentation_factor`.
 The `augmentation_factor` determines how many augmented stories are
 subsampled during training. The augmented stories are subsampled before training
 since their number can quickly become very large, and we want to limit it.
