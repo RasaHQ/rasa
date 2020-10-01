@@ -264,7 +264,7 @@ def test_migrate_fallback_policy(
     assert updated_config == expected_config
     assert len(added_rules) == nr_new_rules
 
-    if nr_new_rules > 0:
+    if nr_new_rules:
         assert any(
             isinstance(event, ActionExecuted)
             and event.action_name == expected_triggered_action

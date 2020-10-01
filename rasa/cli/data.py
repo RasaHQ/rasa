@@ -419,7 +419,7 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
         mapping_rules,
     ) = rasa.core.config.migrate_mapping_policy_to_rules(model_configuration, domain)
 
-    (model_configuration, fallback_rules) = rasa.core.config.migrate_fallback_policies(
+    model_configuration, fallback_rules = rasa.core.config.migrate_fallback_policies(
         model_configuration
     )
 
@@ -466,7 +466,7 @@ def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
     ):
         rasa.shared.utils.cli.print_error_and_exit(
             "The model configuration has to include an NLU pipeline. This is required "
-            "to migrate the fallback policies."
+            "in order to migrate the fallback policies."
         )
 
 
@@ -518,7 +518,7 @@ def _assert_only_one_fallback_policy_present(policies: List[Text]) -> None:
     ):
         rasa.shared.utils.cli.print_error_and_exit(
             "Your policy configuration contains two configured policies for handling "
-            "fallbacks. Please decide for one."
+            "fallbacks. Please decide on one."
         )
 
 
@@ -539,6 +539,7 @@ def _get_rules_path(path: Text) -> Path:
         rasa.shared.utils.cli.print_error_and_exit(
             f"'{rules_file}' needs to be the path to a file."
         )
+        
     elif rules_file.is_file():
         rasa.shared.utils.cli.print_info(
             f"Output file '{rules_file}' did not exist and will be created."

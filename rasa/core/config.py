@@ -1,7 +1,7 @@
 import copy
 import os
 import typing
-from typing import Optional, Text, List, Dict, Union, Tuple, Any
+from typing import Optional, Text, List, Dict, Union, Tuple, Any, TYPE_CHECKING
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import (
@@ -19,7 +19,7 @@ import rasa.utils.io
 from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.training_data.structures import StoryStep
@@ -83,7 +83,7 @@ def migrate_fallback_policies(config: Dict) -> Tuple[Dict, List["StoryStep"]]:
 
 def _get_config_for_name(
     component_name: Text, config_part: List[Dict]
-) -> Optional[Dict]:
+) -> Dict:
     return next(
         (config for config in config_part if config.get("name") == component_name), {}
     )
@@ -134,7 +134,7 @@ def _get_faq_rule(
          steps:
          - intent: {intent}
          - action: {action_name}
-       """
+    """
 
     story_reader = YAMLStoryReader()
     return story_reader.read_from_string(faq_rule)
@@ -147,9 +147,8 @@ def _drop_policy(policy_to_drop: Text, policies: List[Dict]) -> List[Dict]:
 def migrate_mapping_policy_to_rules(
     config: Dict[Text, Any], domain: "Domain"
 ) -> Tuple[Dict[Text, Any], "Domain", List["StoryStep"]]:
-    """
-    Migrate MappingPolicy to the new RulePolicy,
-    by updating the config, domain and generating rules.
+    """Migrate MappingPolicy to the new RulePolicy, by updating the config, 
+    domain and generating rules.
 
     This function modifies the config, the domain and the rules in place.
     """
@@ -180,7 +179,7 @@ def migrate_mapping_policy_to_rules(
                 intent,
                 triggered_action,
             )
-            new_rules.append(*trigger_rule)
+            new_rules.extend(trigger_rules)
 
     # finally update the policies
     policies = _drop_policy(MappingPolicy.__name__, policies)
