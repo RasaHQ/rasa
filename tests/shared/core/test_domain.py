@@ -9,7 +9,7 @@ import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.constants import (
     DEFAULT_INTENTS,
     SLOT_LISTED_ITEMS,
@@ -27,10 +27,7 @@ from rasa.shared.core.domain import (
     Domain,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.events import (
-    ActionExecuted,
-    SlotSet,
-)
+from rasa.shared.core.events import ActionExecuted, SlotSet
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
@@ -368,6 +365,27 @@ responses:
     assert domain.session_config == SessionConfig(20, True)
 
 
+@pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
+def test_merge_yaml_domains_with_default_intents(default_intent: Text):
+    test_yaml_1 = """intents: []"""
+
+    # this domain contains an overridden default intent
+    test_yaml_2 = f"""intents:
+- greet
+- {default_intent}"""
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain = domain_1.merge(domain_2)
+
+    # check that the default intents were merged correctly
+    assert default_intent in domain.intents
+    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
+
+    # ensure that the default intent is contain the domain's dictionary dump
+    assert list(domain.as_dict()["intents"][1].keys())[0] == default_intent
+
+
 def test_merge_session_config_if_first_is_not_default():
     yaml1 = """
 session_config:
@@ -617,7 +635,9 @@ def test_unfeaturized_slot_in_domain_warnings():
     domain = Domain.empty()
 
     # add one unfeaturized and one text slot
-    unfeaturized_slot = UnfeaturizedSlot("unfeaturized_slot", "value1")
+    unfeaturized_slot = TextSlot(
+        "unfeaturized_slot", "value1", influence_conversation=False
+    )
     text_slot = TextSlot("text_slot", "value2")
     domain.slots.extend([unfeaturized_slot, text_slot])
 
