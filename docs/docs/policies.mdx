@@ -348,7 +348,7 @@ policies:
    further information.
 * `check_for_contradictions` (default: `true`):
    Before training, the RulePolicy will perform a check to make sure that
-   actions always set slots and active loops that they set in other rules.
+slots and active loops set by actions are defined consistently for all rules. 
    The following snippet is an example for an incomplete rule:
 
    ```yaml-rasa
