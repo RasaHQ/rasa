@@ -20,9 +20,6 @@ logger = logging.getLogger(__name__)
 class InvalidConfigError(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
 
-    def __init__(self, message: Text) -> None:
-        super().__init__(message)
-
 
 def load(
     config: Optional[Union[Text, Dict]] = None, **kwargs: Any
@@ -35,12 +32,7 @@ def load(
         config = DEFAULT_CONFIG_PATH
 
     if config is not None:
-        try:
-            file_config = rasa.shared.utils.io.read_config_file(config)
-        except yaml.parser.ParserError as e:
-            raise InvalidConfigError(
-                f"Failed to read configuration file '{config}'. Error: {e}"
-            )
+        file_config = rasa.shared.utils.io.read_config_file(config)
 
     return _load_from_dict(file_config, **kwargs)
 
