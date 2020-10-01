@@ -23,10 +23,13 @@ responses:
   - text: "See you!"
 ```
 
-If you use [retrieval actions](./retrieval-actions.mdx), make sure you define the responses 
-for each retrieval action in your domain file, like in the following example:
+If you use [retrieval intents](./glossary.mdx#retrieval-intent), make sure you define the responses 
+for each retrieval intent in your domain file, like in the following example:
 
-```yaml-rasa
+```yaml-rasa {5-6,8-9}
+intents:
+  - chitchat
+
 responses:
   utter_chitchat/ask_name:
   - text: Oh yeah, I am called the retrieval bot.
@@ -36,11 +39,10 @@ responses:
 ```
 
 :::note
-Notice the special format of each retrieval action's name. The name starts with `utter_`, 
+Notice the special format of response names for retrieval intents. Each name starts with `utter_`, 
 followed by the retrieval intent's name (here `chitchat`) and finally a suffix specifying 
-the different response keys (here `ask_name` and `ask_weather`). See 
-[Retrieval Actions](./retrieval-actions.mdx) and examples of 
-[retrieval intents](./training-data-format.mdx#training-examples) to learn more.
+the different response keys (here `ask_name` and `ask_weather`). See [the documentation for NLU 
+training examples](./training-data-format.mdx#training-examples) to learn more.
 :::
 
 ### Using Variables in Responses
@@ -118,7 +120,9 @@ responses:
 ```
 
 :::note
-Make sure the value of the `channel` key matches the channel name used in your `credentials.yml` file.
+Make sure the value of the `channel` key matches the value returned by the `name()` method of your 
+input channel. If you are using a built-in channel, this value will also match the channel name used
+in your `credentials.yml` file.
 :::
 
 When your assistant looks for suitable response variations under a given response name, it will first 
