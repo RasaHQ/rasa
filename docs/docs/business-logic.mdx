@@ -59,20 +59,20 @@ slots are required, and how each slot can be filled:
 
 ```yaml-rasa title="domain.yml"
 forms:
-  - restaurant_form:
-      cuisine:
-        - type: from_entity
-          entity: cuisine
-      num_people:
-        - type: from_entity
-          entity: number
-      outdoor_seating:
-        - type: from_intent
-          intent: affirm
-          value: true
-        - type: from_intent
-          intent: deny
-          value: false
+  restaurant_form:
+    cuisine:
+      - type: from_entity
+        entity: cuisine
+    num_people:
+      - type: from_entity
+        entity: number
+    outdoor_seating:
+      - type: from_intent
+        intent: affirm
+        value: true
+      - type: from_intent
+        intent: deny
+        value: false
 ```
 
 For any slot filled `from_entity`, the entity needs to be added
