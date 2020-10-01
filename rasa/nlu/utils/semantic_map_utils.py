@@ -1,6 +1,6 @@
 
 from typing import Text, Set, Optional, Dict, List
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, coo_matrix
 import json
 import numpy as np
 import re
@@ -45,6 +45,9 @@ class SemanticFingerprint:
     col_indices = [(a - 1) % self.width for a in self.activations]
 
     return csr_matrix((data, (row_indices, col_indices)), shape=(self.height, self.width), dtype=np.float32)
+
+  def as_coo_row_vector(self, boost: Optional[float] = None) -> coo_matrix:
+    return self.as_csr_matrix(boost).reshape((1, -1)).tocoo()
 
   def as_dense_vector(self, boost: Optional[float] = None) -> np.array:
     return np.reshape(self.as_csr_matrix(boost).todense(), (self.height * self.width, ))
