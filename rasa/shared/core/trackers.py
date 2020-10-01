@@ -1,6 +1,6 @@
 import copy
 import logging
-from collections import deque
+from collections import deque, defaultdict
 from enum import Enum
 from typing import (
     Dict,
@@ -16,6 +16,7 @@ from typing import (
     Union,
     FrozenSet,
     Tuple,
+    Set,
 )
 
 import typing
@@ -40,6 +41,7 @@ from rasa.shared.core.constants import (
     LOOP_VALIDATE,
     LOOP_REJECTED,
     TRIGGER_MESSAGE,
+    SLOTS,
 )
 from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.shared.core.events import (  # pytype: disable=pyi-error
@@ -781,3 +783,61 @@ def is_prev_action_listen_in_state(state: State) -> bool:
     """
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME
+
+
+def _find_events_after_actions(
+    trackers: List[DialogueStateTracker],
+) -> Dict[Text, Set[Event]]:
+    """Creates a dictionary of action names and events that follow these actions.
+
+    Args:
+        trackers: the list of trackers
+
+    Returns:
+        a dictionary of action names and events that follow these actions
+    """
+    events_after_actions = defaultdict(set)
+
+    for t in trackers:
+        tracker = t.init_copy()
+        for event in t.events:
+            tracker.update(event)
+            if isinstance(event, ActionExecuted):
+                continue
+
+            action_name = tracker.latest_action_name
+            if action_name:
+                events_after_actions[action_name].add(event)
+
+    return events_after_actions
+
+
+def create_action_fingerprints(
+    trackers: List[DialogueStateTracker],
+) -> Dict[Text, Dict[Text, List[Text]]]:
+    """Fingerprint each action using the events it created during train.
+
+    This allows us to emit warnings when the model is used
+    if an action does things it hasn't done during training,
+    or if rules are incomplete.
+
+    Args:
+        trackers: the list of trackers
+
+    Returns:
+        a nested dictionary of action names and slots and active loops
+            that this action sets
+    """
+    events_after_actions = _find_events_after_actions(trackers)
+    if not events_after_actions:
+        return {}
+
+    action_fingerprints = {}
+    for k, vs in events_after_actions.items():
+        slots = list({v.key for v in vs if isinstance(v, SlotSet)})
+        active_loops = list({v.name for v in vs if isinstance(v, ActiveLoop)})
+        action_fingerprints[k] = {
+            SLOTS: slots,
+            ACTIVE_LOOP: active_loops,
+        }
+    return action_fingerprints

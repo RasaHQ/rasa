@@ -32,9 +32,6 @@ FORM_POLICY_PRIORITY = 5
 
 DIALOGUE = "dialogue"
 
-ACTION_FINGERPRINT_SLOTS = "slots"
-ACTION_FINGERPRINT_ACTIVE_LOOPS = "active_loops"
-
 # RabbitMQ message property header added to events published using `rasa export`
 RASA_EXPORT_PROCESS_ID_HEADER_NAME = "rasa-export-process-id"
 

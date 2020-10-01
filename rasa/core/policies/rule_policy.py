@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
+from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
 from tqdm import tqdm
 import numpy as np
@@ -12,14 +12,11 @@ from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData
-from rasa.core.constants import (
-    ACTION_FINGERPRINT_SLOTS,
-    ACTION_FINGERPRINT_ACTIVE_LOOPS,
-)
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     get_active_loop_name,
     is_prev_action_listen_in_state,
+    create_action_fingerprints,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import FORM_POLICY_PRIORITY
@@ -282,9 +279,7 @@ class RulePolicy(MemoizationPolicy):
         fingerprint: Dict[Text, List[Text]], state: State, featurized_slots: Set[Text]
     ) -> Set[Text]:
         # leave only featurized slots
-        expected_slots = set(fingerprint.get(ACTION_FINGERPRINT_SLOTS)).intersection(
-            featurized_slots
-        )
+        expected_slots = set(fingerprint.get(SLOTS)).intersection(featurized_slots)
         current_slots = set(state.get(SLOTS, {}).keys())
         if expected_slots == current_slots:
             # all expected slots are satisfied
@@ -296,7 +291,7 @@ class RulePolicy(MemoizationPolicy):
     def _check_active_loops_fingerprint(
         fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
-        expected_active_loops = set(fingerprint.get(ACTION_FINGERPRINT_ACTIVE_LOOPS))
+        expected_active_loops = set(fingerprint.get(ACTIVE_LOOP))
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         current_active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
@@ -345,13 +340,9 @@ class RulePolicy(MemoizationPolicy):
     def _check_for_incomplete_rules(
         self, rule_trackers: List[TrackerWithCachedStates], domain: Domain,
     ) -> None:
-        import rasa.core.policies.ensemble
-
         logger.debug("Started checking if some rules are incomplete.")
         # we need to use only fingerprints from rules
-        rule_fingerprints = rasa.core.policies.ensemble.create_action_fingerprints(
-            rule_trackers
-        )
+        rule_fingerprints = create_action_fingerprints(rule_trackers)
         if not rule_fingerprints:
             return
 

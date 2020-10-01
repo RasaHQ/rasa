@@ -6,17 +6,13 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Union
+from typing import Text, Optional, Any, List, Dict, Tuple, NamedTuple, Union
 
 import rasa.core
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.core.constants import (
-    ACTION_FINGERPRINT_SLOTS,
-    ACTION_FINGERPRINT_ACTIVE_LOOPS,
-)
 from rasa.shared.constants import (
     DOCS_URL_RULES,
     DOCS_URL_POLICIES,
@@ -31,13 +27,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
-from rasa.shared.core.events import (
-    SlotSet,
-    ActiveLoop,
-    ActionExecuted,
-    ActionExecutionRejected,
-    Event,
-)
+from rasa.shared.core.events import ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -45,7 +35,7 @@ from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, create_action_fingerprints
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
 
@@ -705,64 +695,6 @@ def _check_policy_for_forms_available(
             "forms from your domain or exclude the FormPolicy from your "
             "policy configuration."
         )
-
-
-def _training_events_from_trackers(
-    training_trackers: List[DialogueStateTracker],
-) -> Dict[Text, Set[Event]]:
-    """Creates a dictionary of action names and events that follow these actions.
-
-    Args:
-        training_trackers: the trackers used for training
-
-    Returns:
-        a dictionary of action names and events that follow these actions
-    """
-    events_metadata = defaultdict(set)
-
-    for t in training_trackers:
-        tracker = t.init_copy()
-        for event in t.events:
-            tracker.update(event)
-            if isinstance(event, ActionExecuted):
-                continue
-
-            action_name = tracker.latest_action_name
-            if action_name:
-                events_metadata[action_name].add(event)
-
-    return events_metadata
-
-
-def create_action_fingerprints(
-    trackers: List[DialogueStateTracker],
-) -> Dict[Text, Dict[Text, List[Text]]]:
-    """Fingerprint each action using the events it created during train.
-
-    This allows us to emit warnings when the model is used
-    if an action does things it hasn't done during training,
-    or if rules are incomplete.
-
-    Args:
-        trackers: the list of trackers
-
-    Returns:
-        a nested dictionary of action names and slots and active loops
-            that this action sets
-    """
-    training_events = _training_events_from_trackers(trackers)
-    if not training_events:
-        return {}
-
-    action_fingerprints = {}
-    for k, vs in training_events.items():
-        slots = list({v.key for v in vs if isinstance(v, SlotSet)})
-        active_loops = list({v.name for v in vs if isinstance(v, ActiveLoop)})
-        action_fingerprints[k] = {
-            ACTION_FINGERPRINT_SLOTS: slots,
-            ACTION_FINGERPRINT_ACTIVE_LOOPS: active_loops,
-        }
-    return action_fingerprints
 
 
 class InvalidPolicyConfig(Exception):
