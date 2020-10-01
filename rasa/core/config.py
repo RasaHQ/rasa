@@ -145,8 +145,8 @@ def _drop_policy(policy_to_drop: Text, policies: List[Dict]) -> List[Dict]:
 
 
 def migrate_mapping_policy_to_rules(
-    config: Dict[Text, Any], domain: "Domain", rules: List[Dict[Text, Any]]
-) -> Tuple[Dict[Text, Any], "Domain", List[Dict[Text, Any]]]:
+    config: Dict[Text, Any], domain: "Domain"
+) -> Tuple[Dict[Text, Any], "Domain", List["StoryStep"]]:
     """
     Migrate MappingPolicy to the new RulePolicy,
     by updating the config, domain and generating rules.
@@ -164,33 +164,28 @@ def migrate_mapping_policy_to_rules(
             has_rule_policy = True
 
     if not has_mapping_policy:
-        return config, domain, rules
+        return config, domain, []
 
     new_config = copy.deepcopy(config)
-    new_rules = copy.deepcopy(rules)
     new_domain = copy.deepcopy(domain)
 
-    has_one_triggered_action = False
+    new_rules = []
     for intent, properties in new_domain.intent_properties.items():
         # remove triggers from intents, if any
         triggered_action = properties.pop("triggers", None)
         if triggered_action:
-            has_one_triggered_action = True
-            new_rules.append(
-                {
-                    "rule": (
-                        f"Rule to map `{intent}` intent to "
-                        f"`{triggered_action}` (automatic conversion)"
-                    ),
-                    "steps": [{"intent": intent}, {"action": triggered_action}],
-                }
+            trigger_rule = _get_faq_rule(
+                f"Rule to map `{intent}` intent to "
+                f"`{triggered_action}` (automatic conversion)",
+                intent,
+                triggered_action,
             )
+            new_rules.append(*trigger_rule)
 
     # finally update the policies
-    policies = [
-        policy for policy in policies if policy.get("name") != MappingPolicy.__name__
-    ]
-    if has_one_triggered_action and not has_rule_policy:
+    policies = _drop_policy(MappingPolicy.__name__, policies)
+
+    if new_rules and not has_rule_policy:
         policies.append({"name": RulePolicy.__name__})
     new_config["policies"] = policies
 

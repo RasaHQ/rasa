@@ -10,6 +10,7 @@ from typing import Callable, Text
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
@@ -341,7 +342,7 @@ def test_convert_config(
         {
             "intents": [{"greet": {"triggers": "action_greet"}}, "leave"],
             "actions": ["action_greet"],
-        },
+        }
     )
     domain_file = tmp_path / "domain.yml"
     domain.persist(domain_file)
@@ -374,9 +375,10 @@ def test_convert_config(
         "rules": [
             {
                 "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
-                "steps": [{"intent": "greet"}, {"action": "action_greet"},],
+                "steps": [{"intent": "greet"}, {"action": "action_greet"}],
             }
-        ]
+        ],
+        "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
     }
 
 

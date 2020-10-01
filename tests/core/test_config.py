@@ -3,18 +3,22 @@ from typing import Dict, Text, Optional, Any
 
 import pytest
 
+import rasa.core.config
+from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.core.policies.fallback import FallbackPolicy
+from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
 )
-from rasa.shared.core.events import ActionExecuted
-from tests.core.conftest import ExamplePolicy
-import rasa.core.config
-from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+import rasa.shared.utils.io
+from tests.core.conftest import ExamplePolicy
 
 
 @pytest.mark.parametrize("filename", glob.glob("data/test_config/example_config.yaml"))
@@ -323,13 +327,18 @@ def test_migrate_mapping_policy_to_rules(
     domain_dict: Dict[Text, Any],
     expected_results: Dict[Text, Any],
 ):
-    rules = []
     domain = Domain.from_dict(domain_dict)
+
     config, domain, rules = rasa.core.config.migrate_mapping_policy_to_rules(
-        config, domain, rules
+        config, domain
     )
 
     assert config == expected_results["config"]
     assert domain.cleaned_domain()["intents"] == expected_results["domain_intents"]
-    assert rules == expected_results["rules"]
+
     assert len(rules) == expected_results["rules_count"]
+    rule_writer = YAMLStoryWriter()
+    assert (
+        rasa.shared.utils.io.read_yaml(rule_writer.dumps(rules)).get("rules", [])
+        == expected_results["rules"]
+    )

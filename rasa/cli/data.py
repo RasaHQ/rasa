@@ -18,6 +18,9 @@ from rasa.shared.constants import (
 )
 import rasa.shared.data
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
@@ -399,7 +402,6 @@ def _migrate_model_config(args: argparse.Namespace):
     domain = _get_domain(domain_file)
 
     rule_output_file = _get_rules_path(Path(args.out))
-    rules = []
 
     # TODO:
     # 1. Migrate FallbackPolicy
@@ -408,15 +410,20 @@ def _migrate_model_config(args: argparse.Namespace):
     (
         model_configuration,
         domain,
-        rules,
-    ) = rasa.core.config.migrate_mapping_policy_to_rules(
-        model_configuration, domain, rules
+        mapping_rules,
+    ) = rasa.core.config.migrate_mapping_policy_to_rules(model_configuration, domain)
+
+    (model_configuration, fallback_rules) = rasa.core.config.migrate_fallback_policies(
+        model_configuration
     )
 
+    rules_to_dump = [*mapping_rules, *fallback_rules]
+
     # dump config, domain, rules
+    rules_writer = YAMLStoryWriter()
+    rules_writer.dump(rule_output_file, rules_to_dump)
     rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
     domain.persist_clean(domain_file)
-    rasa.shared.utils.io.write_yaml({"rules": rules}, rule_output_file)
 
 
 def _get_configuration(path: Path) -> Dict:
