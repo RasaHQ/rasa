@@ -448,7 +448,7 @@ def test_sentry_strips_absolute_path_from_site_packages():
     assert stripped is not None
 
     stack_frames = stripped["exception"]["values"][0]["stacktrace"]["frames"]
-    assert stack_frames[0]["filename"] == "site_packages/rasa/train.py"
+    assert stack_frames[0]["filename"] == "site-packages/rasa/train.py"
 
 
 def test_sentry_strips_absolute_path_from_dist_packages():
