@@ -27,7 +27,7 @@ def run_cmdline(
         try:
             message = input().strip()
         except (EOFError, KeyboardInterrupt):
-            print_info(f"Wrapping up command line chat...")
+            print_info("Wrapping up command line chat...")
             break
 
         if message.startswith(INTENT_MESSAGE_PREFIX):

@@ -70,7 +70,7 @@ def validate_requirements(component_names: List[Text]) -> None:
             f"{d} (needed for {', '.join(cs)})"
             for d, cs in dependency_component_map.items()
         ]
-        missing = f"\n  - ".join(missing_lines)
+        missing = "\n  - ".join(missing_lines)
         raise MissingDependencyException(
             f"Not all required importable packages are installed to use "
             f"the configured NLU pipeline. "

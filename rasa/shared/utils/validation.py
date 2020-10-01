@@ -53,7 +53,7 @@ class InvalidYamlFileError(ValueError, RasaOpenSourceException):
         if self.filename:
             msg += f"Failed to validate '{self.filename}'. "
         else:
-            msg += f"Failed to validate yaml. "
+            msg += "Failed to validate yaml. "
         msg += self.message
         if self.validation_errors:
             unique_errors = {}
