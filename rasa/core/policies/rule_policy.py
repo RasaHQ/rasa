@@ -402,7 +402,7 @@ class RulePolicy(MemoizationPolicy):
             raise InvalidRule(
                 f"\nIncomplete rules found🚨\n\n{error_messages}\n"
                 f"Please note that if some slots or active loops should not be set "
-                f"during prediction you need explicitly set them to 'null' in the "
+                f"during prediction you need to explicitly set them to 'null' in the "
                 f"rules."
             )
 
