@@ -317,7 +317,7 @@ stories:
   - intent: card_lost
   - action: check_transactions
   - slot_was_set:
-  	 - reviewed_transactions: ["starbucks"]
+    - reviewed_transactions: ["starbucks"]
   - action: utter_ask_fraudulent_transactions
   - intent: inform
   - action: action_update_transactions
@@ -357,7 +357,7 @@ stories:
   - active_loop: spending_history_form
   - active_loop: null
   - slot_was_set:
-   	- reviewed_transactions: ["starbucks"]
+    - reviewed_transactions: ["starbucks"]
   - action: utter_ask_fraudulent_transactions
 
 - story: Customer reviews transactions and gets a new card
@@ -366,7 +366,7 @@ stories:
   - intent: inform
   - action: action_update_transactions
   - slot_was_set:
-  	- reviewed_transactions: ["target", "starbucks"]
+    - reviewed_transactions: ["target", "starbucks"]
   - intent: affirm
   - action: utter_confirm_transaction_dispute
   - action: utter_replace_card
