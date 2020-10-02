@@ -4,6 +4,7 @@ import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union
 
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import (
@@ -16,11 +17,8 @@ from rasa.shared.utils.io import json_to_string
 logger = logging.getLogger(__name__)
 
 
-class InvalidConfigError(ValueError):
+class InvalidConfigError(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
-
-    def __init__(self, message: Text) -> None:
-        super().__init__(message)
 
 
 def load(
@@ -34,12 +32,7 @@ def load(
         config = DEFAULT_CONFIG_PATH
 
     if config is not None:
-        try:
-            file_config = rasa.shared.utils.io.read_config_file(config)
-        except yaml.parser.ParserError as e:
-            raise InvalidConfigError(
-                f"Failed to read configuration file '{config}'. Error: {e}"
-            )
+        file_config = rasa.shared.utils.io.read_config_file(config)
 
     return _load_from_dict(file_config, **kwargs)
 

@@ -1219,7 +1219,7 @@ def _model_output_directory(save_to_default_model_directory: bool) -> Text:
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
     try:
-        RasaYAMLReader.validate(yaml_text)
+        RasaYAMLReader().validate(yaml_text)
     except Exception as e:
         raise ErrorResponse(
             400,

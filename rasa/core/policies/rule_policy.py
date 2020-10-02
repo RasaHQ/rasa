@@ -6,6 +6,7 @@ import numpy as np
 import json
 
 from rasa.shared.constants import DOCS_URL_RULES
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.core.events import LoopInterrupted, UserUttered, ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
@@ -60,20 +61,17 @@ DO_NOT_VALIDATE_LOOP = "do_not_validate_loop"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
 
-class InvalidRule(Exception):
+class InvalidRule(RasaException):
     """Exception that can be raised when rules are not valid."""
 
     def __init__(self, message: Text) -> None:
         super().__init__()
-        self.message = message + (
-            f"\nYou can find more information about the usage of "
-            f"rules at {DOCS_URL_RULES}. "
-        )
+        self.message = message
 
     def __str__(self) -> Text:
-        # return message in error colours
-        return rasa.shared.utils.io.wrap_with_color(
-            self.message, color=rasa.shared.utils.io.bcolors.FAIL
+        return self.message + (
+            f"\nYou can find more information about the usage of "
+            f"rules at {DOCS_URL_RULES}. "
         )
 
 
@@ -493,7 +491,7 @@ class RulePolicy(MemoizationPolicy):
         if error_messages:
             error_messages = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nContradicting rules or stories found🚨\n\n{error_messages}\n"
+                f"\nContradicting rules or stories found 🚨\n\n{error_messages}\n"
                 f"Please update your stories and rules so that they don't contradict "
                 f"each other."
             )
