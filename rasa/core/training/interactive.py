@@ -30,9 +30,9 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     LOOP_NAME,
     ACTIVE_LOOP,
-    LOOP_VALIDATE,
     LOOP_REJECTED,
     REQUESTED_SLOT,
+    LOOP_INTERRUPTED,
 )
 from rasa.core import run, train, utils
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
@@ -1062,10 +1062,13 @@ async def _confirm_form_validation(
         await send_event(
             endpoint,
             conversation_id,
-            {"event": "form_validation", LOOP_VALIDATE: False},
+            {
+                "event": rasa.shared.core.events.LoopInterrupted.type_name,
+                LOOP_INTERRUPTED: True,
+            },
         )
 
-    elif not tracker.get(ACTIVE_LOOP, {}).get(LOOP_VALIDATE):
+    elif tracker.get(ACTIVE_LOOP, {}).get(LOOP_INTERRUPTED):
         # handle contradiction with learned behaviour
         warning_question = questionary.confirm(
             "ERROR: FormPolicy predicted no form validation "
@@ -1079,7 +1082,12 @@ async def _confirm_form_validation(
         await _ask_questions(warning_question, conversation_id, endpoint)
         # notify form action to validate an input
         await send_event(
-            endpoint, conversation_id, {"event": "form_validation", LOOP_VALIDATE: True}
+            endpoint,
+            conversation_id,
+            {
+                "event": rasa.shared.core.events.LoopInterrupted.type_name,
+                LOOP_INTERRUPTED: False,
+            },
         )
 
 
