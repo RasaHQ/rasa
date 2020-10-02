@@ -6,7 +6,7 @@ title: rasa.nlu.model
 ## InvalidModelError Objects
 
 ```python
-class InvalidModelError(Exception)
+class InvalidModelError(RasaException)
 ```
 
 Raised when a model failed to load.
@@ -18,7 +18,7 @@ Raised when a model failed to load.
 ## UnsupportedModelError Objects
 
 ```python
-class UnsupportedModelError(Exception)
+class UnsupportedModelError(RasaException)
 ```
 
 Raised when a model is too old to be loaded.

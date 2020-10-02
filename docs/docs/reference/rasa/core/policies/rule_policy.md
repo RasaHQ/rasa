@@ -6,7 +6,7 @@ title: rasa.core.policies.rule_policy
 ## InvalidRule Objects
 
 ```python
-class InvalidRule(Exception)
+class InvalidRule(RasaException)
 ```
 
 Exception that can be raised when rules are not valid.

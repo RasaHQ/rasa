@@ -6,10 +6,18 @@ title: rasa.shared.core.domain
 ## InvalidDomain Objects
 
 ```python
-class InvalidDomain(Exception)
+class InvalidDomain(RasaException)
 ```
 
 Exception that can be raised when domain is not valid.
+
+## ActionNotFoundException Objects
+
+```python
+class ActionNotFoundException(ValueError,  RasaException)
+```
+
+Raised when an action name could not be found.
 
 ## Domain Objects
 

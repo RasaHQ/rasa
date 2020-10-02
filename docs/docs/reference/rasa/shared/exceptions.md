@@ -9,7 +9,7 @@ title: rasa.shared.exceptions
 class RasaException(Exception)
 ```
 
-Base exception class for all errors raised by Rasa.
+Base exception class for all errors raised by Rasa Open Source.
 
 ## RasaCoreException Objects
 
@@ -26,4 +26,12 @@ class RasaXTermsError(RasaException)
 ```
 
 Error in case the user didn&#x27;t accept the Rasa X terms.
+
+## YamlSyntaxException Objects
+
+```python
+class YamlSyntaxException(RasaException)
+```
+
+Raised when a YAML file can not be parsed properly due to a syntax error.
 

@@ -265,7 +265,7 @@ Action endpoint.
 ## ActionExecutionRejection Objects
 
 ```python
-class ActionExecutionRejection(Exception)
+class ActionExecutionRejection(RasaException)
 ```
 
 Raising this exception will allow other policies

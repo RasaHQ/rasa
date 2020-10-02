@@ -76,7 +76,7 @@ Triggers fallback if `action_listen` is predicted after a user utterance.
 ## InvalidPolicyConfig Objects
 
 ```python
-class InvalidPolicyConfig(Exception)
+class InvalidPolicyConfig(RasaException)
 ```
 
 Exception that can be raised when policy config is not valid.

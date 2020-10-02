@@ -6,7 +6,7 @@ title: rasa.core.featurizers.tracker_featurizers
 ## InvalidStory Objects
 
 ```python
-class InvalidStory(Exception)
+class InvalidStory(RasaException)
 ```
 
 Exception that can be raised if story cannot be featurized.

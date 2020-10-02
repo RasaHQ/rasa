@@ -6,7 +6,7 @@ title: rasa.nlu.config
 ## InvalidConfigError Objects
 
 ```python
-class InvalidConfigError(ValueError)
+class InvalidConfigError(ValueError,  RasaException)
 ```
 
 Raised if an invalid configuration is encountered.

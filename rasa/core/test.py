@@ -876,11 +876,3 @@ async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
     )
     failed_stories = story_eval_store.failed_stories
     return number_of_stories - len(failed_stories)
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.core.test` directly is no longer supported. Please use "
-        "`rasa test` to test a combined Core and NLU model or `rasa test core` "
-        "to test a Core model."
-    )

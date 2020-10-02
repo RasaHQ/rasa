@@ -9,6 +9,14 @@ and preconfigured templates.
 Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope.
 
+## ComponentNotFoundException Objects
+
+```python
+class ComponentNotFoundException(ModuleNotFoundError,  RasaException)
+```
+
+Raised if a module referenced by name can not be imported.
+
 #### get\_component\_class
 
 ```python

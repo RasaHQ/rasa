@@ -14,7 +14,6 @@ Reads YAML training data and creates a TrainingData object.
 #### validate
 
 ```python
- | @staticmethod
  | validate(string: Text) -> None
 ```
 

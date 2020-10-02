@@ -100,7 +100,7 @@ Enable yaml loader to process the environment variables in the yaml.
 #### read\_yaml
 
 ```python
-read_yaml(content: Text) -> Any
+read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any
 ```
 
 Parses yaml from a text.
@@ -108,6 +108,7 @@ Parses yaml from a text.
 **Arguments**:
 
 - `content` - A text containing yaml content.
+- `reader_type` - Reader type to use. By default &quot;safe&quot; will be used
   
 
 **Raises**:

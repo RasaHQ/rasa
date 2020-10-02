@@ -3,6 +3,14 @@ sidebar_label: rasa.nlu.components
 title: rasa.nlu.components
 ---
 
+## MissingDependencyException Objects
+
+```python
+class MissingDependencyException(RasaException)
+```
+
+Raised if a python package dependency is needed, but not installed.
+
 #### find\_unavailable\_packages
 
 ```python
@@ -126,7 +134,7 @@ Raised when not all parameters can be filled from the context / config.
 ## UnsupportedLanguageError Objects
 
 ```python
-class UnsupportedLanguageError(Exception)
+class UnsupportedLanguageError(RasaException)
 ```
 
 Raised when a component is created but the language is not supported.
