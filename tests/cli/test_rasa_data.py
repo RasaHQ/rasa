@@ -404,7 +404,6 @@ def test_convert_config(
                     {"action": "action_default_fallback"},
                 ],
             },
-            test_convert_config,
         ],
         "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
     }
