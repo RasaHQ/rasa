@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Union
 
 import rasa.core
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -380,7 +381,6 @@ class PolicyEnsemble:
         parsed_policies = []
 
         for policy in policies:
-            policy_name = policy.pop("name")
             if policy.get("featurizer"):
                 featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
                     policy
@@ -401,6 +401,7 @@ class PolicyEnsemble:
                 # override policy's featurizer with real featurizer class
                 policy["featurizer"] = featurizer_func(**featurizer_config)
 
+            policy_name = policy.pop("name")
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
                 try:
@@ -424,7 +425,11 @@ class PolicyEnsemble:
     def get_featurizer_from_dict(cls, policy) -> Tuple[Any, Any]:
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
-            raise InvalidPolicyConfig("policy can have only 1 featurizer")
+            raise InvalidPolicyConfig(
+                f"Every policy can only have 1 featurizer "
+                f"but '{policy.get('name')}' "
+                f"uses {len(policy['featurizer'])} featurizers."
+            )
         featurizer_config = policy["featurizer"][0]
         featurizer_name = featurizer_config.pop("name")
         featurizer_func = registry.featurizer_from_module_path(featurizer_name)
@@ -435,7 +440,11 @@ class PolicyEnsemble:
     def get_state_featurizer_from_dict(cls, featurizer_config) -> Tuple[Any, Any]:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
-            raise InvalidPolicyConfig("featurizer can have only 1 state featurizer")
+            raise InvalidPolicyConfig(
+                f"Every featurizer can only have 1 state "
+                f"featurizer but one of the featurizers uses "
+                f"{len(featurizer_config['state_featurizer'])}."
+            )
         state_featurizer_config = featurizer_config["state_featurizer"][0]
         state_featurizer_name = state_featurizer_config.pop("name")
         state_featurizer_func = registry.state_featurizer_from_module_path(
@@ -737,7 +746,7 @@ def _check_policy_for_forms_available(
         )
 
 
-class InvalidPolicyConfig(Exception):
+class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
 
     pass
