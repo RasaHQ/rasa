@@ -134,12 +134,11 @@ async def test_train_persist_load_with_different_settings_non_windows(
 ):
     pipeline = [
         {
-            "name": "ConveRTTokenizer",
+            "name": "WhitespaceTokenizer",
             "intent_tokenization_flag": True,
             "intent_split_symbol": "+",
         },
         {"name": "CountVectorsFeaturizer"},
-        {"name": "ConveRTFeaturizer"},
         {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
     ]
     await _train_persist_load_with_different_settings(

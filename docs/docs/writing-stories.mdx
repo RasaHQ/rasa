@@ -84,15 +84,16 @@ stories:
 
 Here are some tips for managing the conversation flow in your stories:
 
-### When to Use Featurized Slots
+### When to Use Slots to Influence Conversations
 
-Slots act as your bot’s memory. When you define a slot, you can define its [slot type](domain.mdx#slot-types)
-as either `unfeaturized` or one of the featurized slot types.
-An unfeaturized slot can only store information, but a featurized slot can affect the
-dialogue flow based on the information stored in it.
+Slots act as your bot’s memory. When you define a slot, you can define whether a
+[slot](domain.mdx#slots) should influence the conversation or not.
+Slots with the property `influence_conversation` set to `false` can only store
+information. Slots with the property `influence_conversation` set to `true` can affect
+the dialogue flow based on the information stored in it.
 
-Because they affect the dialogue flow, you need to include any featurized slots set by
-[custom actions](./actions.mdx) in your stories.
+Slots which influence the conversation need to be added to your stories or rules. This also
+applies for the case if the slot was set by a [custom action](./actions.mdx).
 For example, you can use a boolean slot set by a custom action to control the dialogue
 flow based on its value using the following stories:
 
@@ -116,10 +117,10 @@ stories:
    - action: utter_ask_upgrade
 ```
 
-In cases where you don't want a slot to affect the conversation flow, you should use
-an unfeaturized slot. You do not need to include `slot_was_set` events for unfeaturized
-slots in your stories.
-
+In cases where you don't want a slot to affect the conversation flow, you should
+set the slot's property `influence_conversation` to `false`. You do not need to
+include `slot_was_set` events for slots in your stories which do not influence the
+conversation.
 
 ### Implementing Branching Logic
 
