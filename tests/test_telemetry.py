@@ -448,13 +448,12 @@ def test_sentry_strips_absolute_path_from_site_packages():
     assert stripped is not None
 
     stack_frames = stripped["exception"]["values"][0]["stacktrace"]["frames"]
-    assert stack_frames[0]["filename"] == "site-packages/rasa/train.py"
+    assert stack_frames[0]["filename"] == f"site-packages{os.path.sep}rasa/train.py"
 
 
 def test_sentry_strips_absolute_path_from_dist_packages():
     event = _create_exception_event_in_file(
         "C:\\Users\\tmbo\\AppData\\Roaming\\Python\\Python35\\dist-packages\\rasa\\train.py"
-        ""
     )
     stripped = telemetry.strip_sensitive_data_from_sentry_event(event)
 
