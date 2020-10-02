@@ -4,17 +4,15 @@ sidebar_label: Domain
 title: Domain
 ---
 
-<!-- TODO: make sure all available options are documented for each parameter. -->
-
 The `Domain` defines the universe in which your assistant operates.
-It specifies the `intents`, `entities`, `slots`, `responses` and `actions`
+It specifies the `intents`, `entities`, `slots`, `responses`, `forms`, and `actions`
 your bot should know about. It also defines a `session_config` to configure
 conversation sessions.
 
-As an example, the domain created by `rasa init` has the following yaml definition:
-<!-- TODO: use an example with all of the pieces! e.g. formbot? -->
+As an example, here the domain of the 
+[concertbot](https://github.com/RasaHQ/rasa/tree/master/examples/concertbot):
 
-```yaml-rasa (docs/sources/rasa/cli/initial_project/domain.yml)
+```yaml-rasa (docs/sources/examples/concertbot/domain.yml)
 ```
 
 ## Multiple Domain Files
@@ -31,7 +29,8 @@ rasa train --domain path_to_domain_directory
 
 ## Intents
 
-<!-- TODO: intro info about intents -->
+The `intents` key in your domain file lists all intents 
+used in your NLU and conversation training data. 
 
 ### Ignoring entities for certain intents
 
@@ -61,8 +60,9 @@ intents:
 
 This means that excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
-an intent where you don't care about the entities being picked up. If you list
-your intents as normal without this parameter, the entities will be
+an intent where you don't care about the entities being picked up. 
+
+If you list your intents as normal without this parameter, the entities will be
 featurized as normal.
 
 :::note
@@ -81,10 +81,10 @@ For example:
 
 ```yaml-rasa
 entities:
-   - PERSON          # entity extracted by SpacyEntityExtractor
-   - time            # entity extracted by DucklingEntityExtractor
-   - membership_type # custom entity extracted by CRFEntityExtractor
-   - priority        # custom entity extracted by CRFEntityExtractor
+   - PERSON           # entity extracted by SpacyEntityExtractor
+   - time             # entity extracted by DucklingEntityExtractor
+   - membership_type  # custom entity extracted by DIETClassifier
+   - priority         # custom entity extracted by DIETClassifier
 ```
 
 ## Slots
@@ -396,7 +396,7 @@ stories:
 
 #### Unfeaturized Slot
 
-:::caution
+:::caution deprecated
 The slot type `unfeaturized` is deprecated. Please use the property
 `influence_conversation` as described
 [here](domain.mdx#slots-and-conversation-behavior) or the slot type
@@ -427,7 +427,8 @@ The slot type `unfeaturized` is deprecated. Please use the property
 ### Slot Auto-fill
 
 If your NLU model picks up an entity, and your domain contains a
-slot with the same name, the slot will be set automatically. For example:
+slot with the same name as the entity type, the slot will be set automatically
+with the entity value. For example:
 
 ```yaml-rasa
 stories:
@@ -467,9 +468,16 @@ slots:
 ## Responses
 
 Responses are actions that simply send a message to a user without running any custom code or
-returning events. These responses can be defined directly in the domain file and can include
-rich content such as buttons and attachments. For more information on responses,
+returning events. These responses can be defined directly in the domain file under the `responses` key 
+and can include rich content such as buttons and attachments. For more information on responses and how to define them,
 see [Responses](./responses.mdx).
+
+
+## Forms
+
+Forms are a special type of action meant to help your assistant collect information from a user.
+Define forms under the `forms` key in your domain file.
+For more information on form and how to define them, see [Forms](./forms.mdx).
 
 
 ## Actions
@@ -527,4 +535,26 @@ for instance be used to initialize the tracker with slots from an external API
 call, or to start the conversation with a bot message. The docs on
 [Customizing the session start action](./default-actions.mdx#customization) shows you how to do that.
 
+:::
+
+## Config 
+
+The `config` key in the domain file keeps track of one parameter, `store_entities_as_slots`.
+When an entity is recognized by the NLU model, if the entity type matches a slot name,
+this value defines whether the entity value should be placed in that slot.
+By default, entities will auto-fill slots of the same name. 
+
+You can turn off all slot auto-filling by changing the `store_entities_as_slots` parameter: 
+
+```yaml-rasa title="domain.yml"
+config:
+  store_entities_as_slots: false
+```
+
+You can also turn off this behavior for a specific slot by using the [`auto_fill`](./domain.mdx#slot-auto-fill)
+parameter in that slot's definition. 
+
+:::note looking for config.yml?
+If you're looking for information on the `config.yml` file, check out the docs on
+[Model Configuration](./model-configuration.mdx).
 :::

@@ -310,8 +310,7 @@ longer stories into smaller conversational blocks that handle sub-tasks.
 
 A happy path story for handling a lost credit card might look like:
 
-<!-- TODO replace with yaml-rasa once list slots are allowed -->
-```yaml
+```yaml-rasa
 stories:
 - story: Customer loses a credit card, reviews transactions, and gets a new card
   steps:
@@ -348,8 +347,7 @@ if there's anything else the bot can help them with.
 
 We can separate out this long story into several smaller stories as:
 
-<!-- TODO replace with yaml-rasa once list slots are allowed -->
-```yaml
+```yaml-rasa
 stories:
 - story: Customer loses a credit card
   steps:

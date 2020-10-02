@@ -13,7 +13,6 @@ module.exports = {
           items: [
             'prototype-an-assistant',
             'installation',
-            // 'cheatsheet',
             'migrate-from',
           ],
         },
