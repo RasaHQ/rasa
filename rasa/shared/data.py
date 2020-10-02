@@ -86,9 +86,7 @@ def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     return _copy_files_to_new_dir(core_files)
 
 
-def get_nlu_directory(
-    paths: Optional[Union[Text, List[Text]]],
-) -> Text:
+def get_nlu_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
     """Recursively collects all NLU training files from a list of paths.
 
     Args:

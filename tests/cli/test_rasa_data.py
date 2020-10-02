@@ -257,17 +257,11 @@ def test_rasa_data_convert_test_stories_to_yaml(
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
 
-    converted_single_file_folder = "converted_single_file"
-    os.mkdir(converted_single_file_folder)
-
     simple_test_story_md = """
     ## happy path
     * greet: hi how are you?
         - utter_greet
     """
-
-    with open("tests/stories.md", "w") as f:
-        f.write(simple_test_story_md)
 
     with open("tests/test_stories.md", "w") as f:
         f.write(simple_test_story_md)
@@ -284,22 +278,7 @@ def test_rasa_data_convert_test_stories_to_yaml(
         converted_data_folder,
     )
 
-    run_in_simple_project(
-        "data",
-        "convert",
-        "core",
-        "-f",
-        "yaml",
-        "--data",
-        "tests/test_stories.md",
-        "--out",
-        converted_single_file_folder,
-    )
-
-    assert filecmp.cmp(
-        Path(converted_data_folder) / "test_stories_converted.yml",
-        Path(converted_single_file_folder) / "test_stories_converted.yml",
-    )
+    assert (Path(converted_data_folder) / "test_stories_converted.yml").exists()
 
 
 def test_rasa_data_convert_nlg_to_yaml(
