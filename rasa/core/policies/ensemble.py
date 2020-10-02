@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Text, Optional, Any, List, Dict, Tuple, NamedTuple, Union
 
 import rasa.core
+import rasa.core.training
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -187,7 +188,7 @@ class PolicyEnsemble:
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
 
-            self.action_fingerprints = domain.create_action_fingerprints(
+            self.action_fingerprints = rasa.core.training.create_action_fingerprints(
                 training_trackers
             )
         else:

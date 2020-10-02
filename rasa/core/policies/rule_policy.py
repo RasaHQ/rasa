@@ -39,6 +39,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
+import rasa.core.training
 
 
 if TYPE_CHECKING:
@@ -340,7 +341,9 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         logger.debug("Started checking if some rules are incomplete.")
         # we need to use only fingerprints from rules
-        rule_fingerprints = domain.create_action_fingerprints(rule_trackers)
+        rule_fingerprints = rasa.core.training.create_action_fingerprints(
+            rule_trackers, domain
+        )
         if not rule_fingerprints:
             return
 

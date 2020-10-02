@@ -534,7 +534,7 @@ class MessageProcessor:
         """Check whether the maximum number of predictions has been met.
 
         Args:
-            num_predictes_actions: Number of predicted actions.
+            num_predicted_actions: Number of predicted actions.
             should_predict_another_action: Whether the last executed action allows
             for more actions to be predicted or not.
 
