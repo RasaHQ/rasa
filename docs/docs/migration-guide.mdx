@@ -95,8 +95,15 @@ rules:
   - action: action_is_bot
 ```
 
-After removing the triggers from your domain file, you can finally replace the
-Mapping Policy with the [Rule Policy](./policies.mdx#rule-policy) in your model configuration:
+And you can safely remove any trigger from your domain:
+
+```yaml-rasa title="domain.yml"
+intents:
+ - ask_is_bot
+```
+
+Finally, you can replace the Mapping Policy with the
+[Rule Policy](./policies.mdx#rule-policy) in your model configuration:
 
 ```yaml-rasa title="config.yml"
 policies:
