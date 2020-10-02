@@ -732,7 +732,6 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
     )
 
     answers = questions.ask()
-
     if not answers:
         raise Abort()
 

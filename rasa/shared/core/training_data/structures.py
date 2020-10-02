@@ -347,13 +347,6 @@ class Story:
         else:
             return story_content
 
-    def as_story_yaml(self):
-        from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
-            YAMLStoryWriter,
-        )
-
-        return YAMLStoryWriter().dumps(self.story_steps, append=True)
-
     def dump_to_file(
         self, filename: Text, flat: bool = False, e2e: bool = False
     ) -> None:

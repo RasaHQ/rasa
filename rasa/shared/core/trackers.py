@@ -590,13 +590,17 @@ class DialogueStateTracker:
         Returns:
             The dumped tracker as a string.
         """
+        from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+            YAMLStoryWriter,
+        )
+
         # TODO: we need to revisit all usages of this, the caller needs to specify
         #       the format. this likely points to areas where we are not properly
         #       handling markdown vs yaml
         story = self.as_story(include_source)
 
         if story_format == RASA_YAML:
-            return story.as_story_yaml()
+            return YAMLStoryWriter().dumps(story.story_steps, append=True)
 
         return story.as_story_string(flat=True, e2e=e2e)
 

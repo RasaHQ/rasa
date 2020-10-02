@@ -76,7 +76,7 @@ class YAMLStoryWriter:
 
     def stories_to_yaml(
         self, story_steps: List[StoryStep], append: bool
-    ) -> Dict[Text, Any]:
+    ) -> Union[Dict[Text, Any], List[Any]]:
         """Converts a sequence of story steps into yaml format.
 
         Args:
