@@ -63,7 +63,7 @@ If you previously used the [Mapping Policy](./policies.mdx#mapping-policy), you
 can follow the documentation on [FAQs](./chitchat-faqs.mdx) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 intents:
  - ask_is_bot:
      triggers: action_is_bot
@@ -79,8 +79,8 @@ rules:
   - action: action_is_bot
 ```
 
-You can then replace the Mapping Policy with the
-[Rule Policy](./policies.mdx#rule-policy) in your model configuration:
+After removing the triggers from your domain file, you can finally replace the
+Mapping Policy with the [Rule Policy](./policies.mdx#rule-policy) in your model configuration:
 
 ```yaml-rasa title="config.yml"
 policies:
