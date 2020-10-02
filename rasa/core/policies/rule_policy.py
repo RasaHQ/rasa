@@ -7,7 +7,7 @@ import json
 
 from rasa.shared.constants import DOCS_URL_RULES
 import rasa.shared.utils.io
-from rasa.shared.core.events import FormValidation, UserUttered, ActionExecuted
+from rasa.shared.core.events import LoopInterrupted, UserUttered, ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -727,7 +727,7 @@ class RulePolicy(MemoizationPolicy):
 
             if DO_NOT_VALIDATE_LOOP in unhappy_path_conditions:
                 logger.debug("Added `FormValidation(False)` event.")
-                tracker.update(FormValidation(False))
+                tracker.update(LoopInterrupted(True))
 
         if predicted_action_name is not None:
             logger.debug(
