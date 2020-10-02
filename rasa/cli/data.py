@@ -460,7 +460,7 @@ def _get_configuration(path: Path) -> Dict:
     _assert_no_form_policy_present(policy_names)
     _assert_config_needs_migration(policy_names)
     _assert_nlu_pipeline_given(config, policy_names)
-    _assert_two_stage_fallack_policy_is_migratable(config)
+    _assert_two_stage_fallback_policy_is_migratable(config)
     _assert_only_one_fallback_policy_present(policy_names)
 
     return config
@@ -503,7 +503,7 @@ def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
         )
 
 
-def _assert_two_stage_fallack_policy_is_migratable(config: Dict) -> None:
+def _assert_two_stage_fallback_policy_is_migratable(config: Dict) -> None:
     two_stage_fallback_config = next(
         (
             policy_config
