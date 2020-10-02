@@ -462,12 +462,17 @@ class Domain:
         self._check_domain_sanity()
 
     def __deepcopy__(self, memo: Optional[Dict[int, Any]]) -> "Domain":
-        """
-        This dunder method makes it possible to use deepcopy directly
-        on a `Domain` instance.
+        """Enables making a deep copy of the `Domain` using `copy.deepcopy`.
 
         See https://docs.python.org/3/library/copy.html#copy.deepcopy
-        for more implementation
+        for more implementation.
+
+        Args:
+            memo: Optional dictionary of objects already copied during the current
+            copying pass.
+
+        Returns:
+            A deep copy of the current domain.
         """
         domain_dict = self.as_dict()
         return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
