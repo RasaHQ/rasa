@@ -44,3 +44,43 @@ you need to supply a ``credentials.yml`` with the following content:
      access_token: "490161424:AAGlRxinBRtKGb21_rlOEMtDFZMXBl6EC0o"
      verify: "your_bot"
      webhook_url: "https://your_url.com/webhooks/telegram/webhook"
+
+In addition to standard `text:` utterances, this channel also supports the following components from the `Telegram API <https://core.telegram.org/bots/api/>`_
+
+- button
+  - button_type: inline | vertical | reply
+- custom payloads:
+  - photo
+  - audio
+  - document
+  - sticker
+  - video
+  - video_note
+  - animation
+  - voice
+  - media
+  - latitude, longitude
+  - latitude, longitude, "title, address
+  - phone_number
+  - game_short_name
+  - action
+
+Examples:
+
+.. code-block:: yaml
+
+  utter_ask_transfer_form_confirm:
+  - buttons:
+    - payload: /affirm
+      title: Yes
+    - payload: /deny
+      title: No, cancel the transaction
+    button_type: vertical
+    text: Would you like to transfer {currency}{amount_of_money} to {PERSON}?
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+
+.. code-block:: yaml
+
+  - text: Here's my giraffe sticker!
+    custom:
+      sticker: "https://github.com/TelegramBots/book/raw/master/src/docs/sticker-fred.webp"
