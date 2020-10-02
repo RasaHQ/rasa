@@ -9,7 +9,11 @@ from rasa.core.channels import OutputChannel
 from rasa.shared.core.domain import Domain
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, LOOP_VALIDATE, REQUESTED_SLOT
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    REQUESTED_SLOT,
+    LOOP_INTERRUPTED,
+)
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.events import Event, SlotSet, ActionExecuted
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -286,7 +290,7 @@ class FormAction(LoopAction):
                     # check whether the slot should be
                     # filled from trigger intent mapping
                     should_fill_trigger_slot = (
-                        tracker.active_loop.get("name") != self.name()
+                        tracker.active_loop_name != self.name()
                         and slot_mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
                         and self.intent_is_desired(slot_mapping, tracker)
                     )
@@ -580,7 +584,7 @@ class FormAction(LoopAction):
         # no active_loop means that it is called during activation
         need_validation = not tracker.active_loop or (
             tracker.latest_action_name == ACTION_LISTEN_NAME
-            and tracker.active_loop.get(LOOP_VALIDATE, True)
+            and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
         )
         if need_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")
