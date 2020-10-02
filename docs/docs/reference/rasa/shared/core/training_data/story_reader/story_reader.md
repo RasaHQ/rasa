@@ -32,6 +32,42 @@ Constructor for the StoryReader.
   Default value is `True`, which preserves the expected behavior
   of the reader.
 
+#### is\_test\_stories\_file
+
+```python
+ | @staticmethod
+ | is_test_stories_file(filename: Text) -> bool
+```
+
+Checks if the specified file is a test story file.
+
+**Arguments**:
+
+- `filename` - File to check.
+  
+
+**Returns**:
+
+  `True` if specified file is a test story file, `False` otherwise.
+
+#### is\_stories\_file
+
+```python
+ | @staticmethod
+ | is_stories_file(filename: Text) -> bool
+```
+
+Checks if the specified file is a story file.
+
+**Arguments**:
+
+- `filename` - File to check.
+  
+
+**Returns**:
+
+  `True` if specified file is a story file, `False` otherwise.
+
 ## StoryParseError Objects
 
 ```python

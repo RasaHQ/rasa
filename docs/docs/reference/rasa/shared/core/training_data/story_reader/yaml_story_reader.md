@@ -80,11 +80,11 @@ Read stories from parsed YAML.
 
   The parsed stories or rules.
 
-#### is\_yaml\_story\_file
+#### is\_stories\_file
 
 ```python
  | @classmethod
- | is_yaml_story_file(cls, file_path: Text) -> bool
+ | is_stories_file(cls, file_path: Text) -> bool
 ```
 
 Check if file contains Core training data or rule data in YAML format.
@@ -117,11 +117,11 @@ Check if all keys are contained in the parsed dictionary from a yaml file.
 
   `True` if all the keys are contained in the file, `False` otherwise.
 
-#### is\_yaml\_test\_stories\_file
+#### is\_test\_stories\_file
 
 ```python
  | @classmethod
- | is_yaml_test_stories_file(cls, file_path: Union[Text, Path]) -> bool
+ | is_test_stories_file(cls, file_path: Union[Text, Path]) -> bool
 ```
 
 Checks if a file is a test conversations file.

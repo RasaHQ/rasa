@@ -31,11 +31,11 @@ Parses an md list item line based on the current section type.
 Matches expressions of the form `&lt;intent&gt;:&lt;example&gt;`. For the
 syntax of `&lt;example&gt;` see the Rasa docs on NLU training data.
 
-#### is\_markdown\_story\_file
+#### is\_stories\_file
 
 ```python
  | @staticmethod
- | is_markdown_story_file(file_path: Union[Text, Path]) -> bool
+ | is_stories_file(file_path: Union[Text, Path]) -> bool
 ```
 
 Check if file contains Core training data or rule data in Markdown format.
@@ -50,11 +50,11 @@ Check if file contains Core training data or rule data in Markdown format.
   `True` in case the file is a Core Markdown training data or rule data file,
   `False` otherwise.
 
-#### is\_markdown\_test\_stories\_file
+#### is\_test\_stories\_file
 
 ```python
  | @staticmethod
- | is_markdown_test_stories_file(file_path: Union[Text, Path]) -> bool
+ | is_test_stories_file(file_path: Union[Text, Path]) -> bool
 ```
 
 Checks if a file contains test stories.
