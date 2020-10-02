@@ -42,8 +42,14 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         # check if source file is test stories file
         if MarkdownStoryReader.is_test_stories_file(source_path):
             reader = MarkdownStoryReader(unfold_or_utterances=False, use_e2e=True)
+            output_core_path = cls._generate_path_for_converted_test_data_file(
+                source_path, output_path
+            )
         else:
             reader = MarkdownStoryReader(unfold_or_utterances=False)
+            output_core_path = cls.generate_path_for_converted_training_data_file(
+                source_path, output_path
+            )
 
         steps = reader.read_from_file(source_path)
 
@@ -57,10 +63,6 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
                 f"for which you can find the documentation here: "
                 f"{rasa.shared.constants.DOCS_URL_RULES}."
             )
-
-        output_core_path = cls._generate_path_for_converted_test_data_file(
-            source_path, output_path
-        )
 
         writer = YAMLStoryWriter()
         writer.dump(output_core_path, steps)
