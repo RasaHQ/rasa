@@ -424,13 +424,14 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
         new_rules,
     ) = rasa.core.config.migrate_mapping_policy_to_rules(model_configuration, domain)
 
+    model_configuration, fallback_rule = rasa.core.config.migrate_fallback_policies(
+        model_configuration
+    )
+
     if new_rules:
         _backup(domain_file)
         domain.persist_clean(domain_file)
 
-    model_configuration, fallback_rule = rasa.core.config.migrate_fallback_policies(
-        model_configuration
-    )
     if fallback_rule:
         new_rules.append(fallback_rule)
 
@@ -441,11 +442,7 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
 
     telemetry.track_data_convert("yaml", "config")
 
-    rasa.shared.utils.cli.print_success(
-        f"Finished migrating your policy configuration 🎉.\n"
-        f"The migration generated {len(new_rules)} which were added to "
-        f"'{rule_output_file}'"
-    )
+    _print_success_message(new_rules, rule_output_file)
 
 
 def _get_configuration(path: Path) -> Dict:
@@ -605,3 +602,17 @@ def _dump_rules(path: Path, new_rules: List[StoryStep]) -> None:
 def _backup(path: Path) -> None:
     backup_file = path.parent / f"{path.name}.bak"
     shutil.copy(path, backup_file)
+
+
+def _print_success_message(new_rules: List[StoryStep], output_file: Path) -> None:
+    if len(new_rules) > 1:
+        suffix = "rule"
+        verb = "was"
+    else:
+        suffix = "rules"
+        verb = "were"
+    rasa.shared.utils.cli.print_success(
+        f"Finished migrating your policy configuration 🎉.\n"
+        f"The migration generated {len(new_rules)} {suffix} which {verb} added to "
+        f"'{output_file}'."
+    )
