@@ -329,14 +329,26 @@ Legacy handler of old `Form` events.
 The `ActiveLoop` event used to be called `Form`. This class is there to handle old
 legacy events which were stored with the old type name `form`.
 
-## FormValidation Objects
+## LoopInterrupted Objects
 
 ```python
-class FormValidation(Event)
+class LoopInterrupted(Event)
 ```
 
 Event added by FormPolicy and RulePolicy to notify form action
 whether or not to validate the user input.
+
+## LegacyFormValidation Objects
+
+```python
+class LegacyFormValidation(LoopInterrupted)
+```
+
+Legacy handler of old `FormValidation` events.
+
+The `LoopInterrupted` event used to be called `FormValidation`. This class is there
+to handle old legacy events which were stored with the old type name
+`form_validation`.
 
 ## ActionExecutionRejected Objects
 

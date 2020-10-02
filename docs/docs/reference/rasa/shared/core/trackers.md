@@ -94,13 +94,17 @@ Set the currently active loop.
 
 - `loop_name` - The name of loop which should be marked as active.
 
-#### set\_form\_validation
+#### interrupt\_loop
 
 ```python
- | set_form_validation(validate: bool) -> None
+ | interrupt_loop(is_interrupted: bool) -> None
 ```
 
-Toggle form validation
+Interrupt loop and mark that we entered an unhappy path in the conversation.
+
+**Arguments**:
+
+- `is_interrupted` - `True` if the loop was run after an unhappy path.
 
 #### reject\_action
 
