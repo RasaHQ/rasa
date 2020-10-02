@@ -410,10 +410,9 @@ class PolicyEnsemble:
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
-                    "Module for policy '{}' could not "
-                    "be loaded. Please make sure the "
-                    "name is a valid policy."
-                    "".format(policy_name)
+                    f"Module for policy '{policy_name}' could not "
+                    f"be loaded. Please make sure the "
+                    f"name is a valid policy."
                 )
 
         cls._assert_rule_policy_not_used_with_other_rule_like_policy(parsed_policies)
