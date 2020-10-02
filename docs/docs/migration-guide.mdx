@@ -106,10 +106,10 @@ The new configuration would then look like:
 
 ```yaml-rasa
 policies:
-# Other policies
-- name: RulePolicy
-  core_fallback_threshold: 0.3
-  core_fallback_action_name: "action_default_fallback"
+  # Other policies
+  - name: RulePolicy
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "action_default_fallback"
 
 pipeline:
   # Other components
@@ -123,10 +123,10 @@ in case of low NLU confidence:
 
 ```yaml-rasa
 rules:
-- rule: Ask the user to rephrase whenever they send a message with low NLU confidence
-  steps:
-  - intent: nlu_fallback
-  - action: utter_please_rephrase
+  - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
+    steps:
+    - intent: nlu_fallback
+    - action: utter_please_rephrase
 ```
 
 Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
@@ -153,10 +153,10 @@ The new configuration would then look like:
 
 ```yaml-rasa
 policies:
-# Other policies
-- name: RulePolicy
-  core_fallback_threshold: 0.3
-  core_fallback_action_name: "action_default_fallback"
+  # Other policies
+  - name: RulePolicy
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "action_default_fallback"
 
 pipeline:
   # Other components
@@ -170,14 +170,14 @@ messages with low NLU confidence.
 
 ```yaml-rasa
 rules:
-- rule: Implementation of the TwoStageFallbackPolicy
-  steps:
-  # This intent is automatically triggered by the `FallbackClassifier` in the NLU
-  # pipeline in case the intent confidence was below the specified threshold.
-  - intent: nlu_fallback
-  # The Fallback is now implemented as a form.
-  - action: action_two_stage_fallback
-  - active_loop: action_two_stage_fallback
+  - rule: Implementation of the TwoStageFallbackPolicy
+    steps:
+    # This intent is automatically triggered by the `FallbackClassifier` in the NLU
+    # pipeline in case the intent confidence was below the specified threshold.
+    - intent: nlu_fallback
+    # The Fallback is now implemented as a form.
+    - action: action_two_stage_fallback
+    - active_loop: action_two_stage_fallback
 ```
 
 Note that the previous parameters `fallback_nlu_action_name` and
@@ -256,9 +256,9 @@ model configuration:
 
 ```yaml-rasa
 policies:
-# Other policies
-# ...
-- name: RulePolicy
+  # Other policies
+  # ...
+  - name: RulePolicy
 ```
 
 Then you need to define the form and the required slots in the domain as described in
@@ -279,17 +279,17 @@ form.
 
 ```yaml-rasa
 rules:
-- rule: Submit form
-  condition:
-  # Condition that form is active.
-  - active_loop: restaurant_form
-  steps:
-  - action: restaurant_form
-  - active_loop: null
-  - slot_was_set:
-    - requested_slot: null
-  # The action we want to run when the form is submitted.
-  - action: utter_submit
+  - rule: Submit form
+    condition:
+    # Condition that form is active.
+    - active_loop: restaurant_form
+    steps:
+    - action: restaurant_form
+    - active_loop: null
+    - slot_was_set:
+      - requested_slot: null
+    # The action we want to run when the form is submitted.
+    - action: utter_submit
 ```
 
 The last step is to implement a custom action to validate the form slots. Start by
@@ -297,9 +297,9 @@ adding the custom action to your domain:
 
 ```yaml-rasa
 actions:
-# Other actions
-# ...
-- validate_restaurant_form
+  # Other actions
+  # ...
+  - validate_restaurant_form
 ```
 
 Then add a custom action which validates the `cuisine` slot:
