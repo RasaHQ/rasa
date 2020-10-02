@@ -516,6 +516,7 @@ class RulePolicy(MemoizationPolicy):
         rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
         if self._restrict_rules:
             self._check_rule_restriction(rule_trackers)
+
         if self._check_for_contradictions:
             self._check_for_incomplete_rules(rule_trackers, domain)
 
