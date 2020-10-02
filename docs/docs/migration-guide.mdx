@@ -469,6 +469,44 @@ response_selector_output.get("default")
 
   Alternatively, you can train a Core model without NLU using `rasa train core`.
 
+### Unfeaturized Slots
+
+[Slots](domain.mdx#slots) of type [`unfeaturized`](domain.mdx#unfeaturized-slot) are
+deprecated and will be removed in Rasa Open Source 3.0. To ignore slot values during
+a conversation, set the `influence_conversation` property of the slot to `false`.
+
+The following snippet is an example of a deprecated `unfeaturized` slot usage:
+
+```yaml-rasa
+slots:
+  username:
+    type: unfeaturized
+```
+
+With Rasa Open Source 2.0 you can now specify the expected data type `text` and
+define that the slot should be ignored during the conversation.
+
+```yaml-rasa
+slots:
+  username:
+    type: text
+    # Set `influence_conversation` to `false`
+    # to ignore the slot value during the conversation.
+    influence_conversation: false
+```
+
+If you don't require the slot to have a specific data type, you can use the new slot
+type [`any`](domain.mdx#any-slot). This slot type is always ignored during a conversation
+and does not make any assumptions regarding the data type of the slot value.
+
+```yaml-rasa
+slots:
+  username:
+    type: any
+```
+
+Please see the updated [slots documentation](domain.mdx#slots) for more information.
+
 ## Rasa 1.7 to Rasa 1.8
 
 :::caution

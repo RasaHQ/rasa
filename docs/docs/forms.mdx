@@ -424,9 +424,12 @@ class ValidateRestaurantForm(Action):
 
 ### The requested_slot slot
 
-The slot `requested_slot` is automatically added to the domain as an
-unfeaturized slot. If you want to make it featurized, you need to add it
-to your domain file as a categorical slot. You might want to do this if you
+The slot `requested_slot` is automatically added to the domain as a
+slot of type [`text`](domain.mdx#text-slot). The value of the `requested_slot` will be
+ignored during conversations. If you want to change this behavior, you need to add
+the `requested_slot`  to your domain file as a categorical slot with
+`influence_conversation` set to `true`.
+You might want to do this if you
 want to handle your unhappy paths differently, depending on what slot is
 currently being asked from the user. For example, if your users respond
 to one of the bot's questions with another question, like *why do you need to know that?*
