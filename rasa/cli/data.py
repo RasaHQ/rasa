@@ -591,8 +591,8 @@ def _dump_rules(path: Path, new_rules: List[StoryStep]) -> None:
 
     if existing_rules:
         rasa.shared.utils.cli.print_info(
-            "Found existing rules in the output file '{path}'. The new rules will "
-            "be appended to the existing rules."
+            f"Found existing rules in the output file '{path}'. The new rules will "
+            f"be appended to the existing rules."
         )
 
     rules_writer = YAMLStoryWriter()

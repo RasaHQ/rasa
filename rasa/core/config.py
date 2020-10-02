@@ -14,7 +14,10 @@ from rasa.shared.core.constants import (
     ACTION_TWO_STAGE_FALLBACK_NAME,
 )
 import rasa.utils.io
-from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import (
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
@@ -87,7 +90,7 @@ def migrate_fallback_policies(config: Dict) -> Tuple[Dict, Optional["StoryStep"]
 
     fallback_rule = _get_faq_rule(
         f"Rule to handle messages with low NLU confidence "
-        f"(automated conversion from '{fallback_config.get('name')}'",
+        f"(automated conversion from '{fallback_config.get('name')}')",
         DEFAULT_NLU_FALLBACK_INTENT_NAME,
         fallback_action_name,
     )
@@ -147,6 +150,8 @@ def _update_fallback_config(config: Dict, fallback_config: Dict) -> None:
 
 def _get_faq_rule(rule_name: Text, intent: Text, action_name: Text) -> "StoryStep":
     faq_rule = f"""
+       version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
        rules:
        - rule: {rule_name}
          steps:
