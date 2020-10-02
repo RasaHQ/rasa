@@ -188,7 +188,7 @@ Write to the configuration if telemetry tracking should be enabled or disabled.
 #### strip\_sensitive\_data\_from\_sentry\_event
 
 ```python
-strip_sensitive_data_from_sentry_event(event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
+strip_sensitive_data_from_sentry_event(event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
 ```
 
 Remove any sensitive data from the event (e.g. path names).
@@ -201,7 +201,8 @@ Remove any sensitive data from the event (e.g. path names).
 
 **Returns**:
 
-  the event without any sensitive / PII data.
+  the event without any sensitive / PII data or `None` if the event should
+  be discarded.
 
 #### initialize\_error\_reporting
 
