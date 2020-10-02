@@ -65,10 +65,16 @@ class TelegramOutput(TeleBot, OutputChannel):
             reply_markup = InlineKeyboardMarkup()
             reply_markup.row_width = len(buttons)
             for idx, button in enumerate(buttons):
-                reply_markup.add(InlineKeyboardButton(button["title"], callback_data=button["payload"]))
+                reply_markup.add(
+                    InlineKeyboardButton(
+                        button["title"], callback_data=button["payload"]
+                    )
+                )
 
         elif button_type == "vertical":
-            reply_markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+            reply_markup = ReplyKeyboardMarkup(
+                resize_keyboard=True, one_time_keyboard=True
+            )
             for idx, button in enumerate(buttons):
                 if isinstance(button, list):
                     reply_markup.add(KeyboardButton(s["title"]) for s in button)
@@ -76,7 +82,9 @@ class TelegramOutput(TeleBot, OutputChannel):
                     reply_markup.add(KeyboardButton(button["title"]))
 
         elif button_type == "reply":
-            reply_markup = ReplyKeyboardMarkup(resize_keyboard=False, one_time_keyboard=True)
+            reply_markup = ReplyKeyboardMarkup(
+                resize_keyboard=False, one_time_keyboard=True
+            )
             for idx, button in enumerate(buttons):
                 if isinstance(button, list):
                     reply_markup.add(KeyboardButton(s["title"]) for s in button)
@@ -203,12 +211,10 @@ class TelegramInput(InputChannel):
 
                 request_dict = request.json
                 update = Update.de_json(request_dict)
-                #bot.process_new_updates([update])
                 if not out_channel.get_me().username == self.verify:
                     logger.debug("Invalid access token, check it matches Telegram")
                     return response.text("failed")
 
-                #update = Update.de_json(request.json, out_channel)
                 if self._is_button(update):
                     msg = update.callback_query.message
                     text = update.callback_query.data
