@@ -17,6 +17,18 @@ As an example, the domain created by `rasa init` has the following yaml definiti
 ```yaml-rasa (docs/sources/rasa/cli/initial_project/domain.yml)
 ```
 
+## Multiple Domain Files
+
+The domain can be defined as a single YAML file or split across multiple files in a directory.
+When split across multiple files, the domain contents will be read and automatically merged together.
+
+Using the [command line interface](./command-line-interface.mdx#rasa-train),
+you can train a model with split domain files by running:
+
+```bash
+rasa train --domain path_to_domain_directory
+```
+
 ## Intents
 
 <!-- TODO: intro info about intents -->
@@ -82,40 +94,72 @@ which can be used to store information the user provided (e.g their home city)
 as well as information gathered about the outside world (e.g. the result of a
 database query).
 
-Most of the time, you want slots to influence how the dialogue progresses.
-There are different slot types for different behaviors.
+Slots are defined in the `slots` section of your domain with their name and
+[type](domain.mdx#slot-types). The slot type will determine the data type of the slot
+and how the slot
+[influences the assistant's behavior](domain.mdx#slots-and-conversation-behavior).
+The following example defines a slot with name `slot_name` and type `text`.
 
-For example, if your user has provided their home city, you might
-have a `text` slot called `home_city`. If the user asks for the
+```yaml
+slots:
+  slot_name:
+    type: text
+```
+
+### Slots and Conversation Behavior
+
+You can control whether or not a slot influences the conversation with the property
+`influence_conversation`. If you want to store information but don't want a slot to
+influence the conversation, set the `influence_conversation` property of your slot
+to `false`.
+By default all slot types will influence the conversation except slots of the type
+`any`. Depending on the [slot type](./domain.mdx#slot-types), a slot with the
+`influence_conversation` property set to `true` will cause different behavior of
+your assistant.
+
+For example, if your user should provide their home city, you might
+use a slot called `home_city` to store this information. If the user asks for the
 weather, and you *don't* know their home city, you will have to ask
-them for it. A `text` slot only tells Rasa Core whether the slot
-has a value. The specific value of a `text` slot (e.g. Bangalore
-or New York or Hong Kong) doesn't make any difference.
+them for it. You could make `home_city` a `text` slot and set the
+`influence_conversation` property to `true`. A [`text` slot](domain.mdx#text-slot) will
+influence the assistant's behavior depending on whether the slot has a value.
+The specific value of a `text` slot (e.g. *Bangalore* or *New York* or *Hong Kong*)
+doesn't make any difference.
 
-If you just want to store some data, but don't want it to affect the flow
-of the conversation, use an `unfeaturized` slot.
-If the value itself is important, use the [slot type](./domain.mdx#slot-types) that
-fits the type of behavior you want in your stories.
+```yaml
+slots:
+  # this slot will influence the conversation depending on
+  # whether the slot is set or not
+  home_city:
+    type: text
+    influence_conversation: true
+```
 
-Define your slot in your domain according to its slot type, following one
-of the examples below.
+The following example defines a slot `age` which will store information about the
+user's age, but which will *not* influence the flow of the conversation. This means
+that the assistant will ignore the value of the slot during the conversation.
+
+```yaml
+slots:
+  age:
+    type: text
+    # this slot will not influence the predictions
+    # of the dialogue policies
+    influence_conversation: false
+```
 
 ### Slot Types
 
-Make this a nice table instead.
 
 #### Text Slot
 
-* **Option**
+* **Type**
 
   `text`
 
 * **Use For**
 
-  User preferences where you only care whether or not they've
-  been specified.
-
-
+  Storing text values.
 
 * **Example**
 
@@ -125,26 +169,36 @@ Make this a nice table instead.
         type: text
   ```
 
-
-
 * **Description**
 
-  Results in the feature of the slot being set to `1` if any value is set.
-  Otherwise the feature will be set to `0` (no value is set).
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on whether the slot is set or not. Different texts do not influence the
+  conversation any further. This means the following two stories are equal:
 
+  ```yaml-rasa
+  stories:
+  - story: French cuisine
+    steps:
+    - intent: inform
+    - slot_was_set:
+      - cuisine: french
+
+  - story: Vietnamese cuisine
+    steps:
+    - intent: inform
+    - slot_was_set:
+      - cuisine: vietnamese
+  ```
 
 #### Boolean Slot
 
-
-* **Option**
+* **Type**
 
   `bool`
 
 * **Use For**
 
-  True or False
-
-
+  Storing `true` or `false` values.
 
 * **Example**
 
@@ -154,26 +208,21 @@ Make this a nice table instead.
         type: bool
   ```
 
-
-
 * **Description**
 
-  Sets two boolean features. The first feature is `1` if the slot is set
-  and `0` otherwise. The second feature is `1` if the slot value is
-  `"true"`, `"1"`, or a variation of these, and `0` otherwise.
-
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on whether the slot is set to `true` or `false`. An empty `bool` slot
+  is the same as if the slot was set to `false`.
 
 #### Categorical Slot
 
-* **Option**
+* **Type**
 
   `categorical`
 
 * **Use For**
 
-  Slots which can take one of N values
-
-
+  Storing slots which can take one of N values.
 
 * **Example**
 
@@ -187,30 +236,28 @@ Make this a nice table instead.
         - high
   ```
 
-
-
 * **Description**
 
-  Creates a one-hot encoding describing which of the `values` matched.
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on the concrete value of the slot. This means the assistant's behavior is
+  different depending on whether the slot in the above example has the value `low`,
+  `medium`, or `high`.
+
   A default value `__other__` is automatically added to the user-defined
-  values. All values encountered which are not explicitly defined in the
-  domain are mapped to `__other__` for featurization. The value
+  values. All values encountered which are not explicitly defined in the slot's `values`
+  are mapped to `__other__`.
   `__other__` should not be used as a user-defined value; if it is, it
   will still behave as the default to which all unseen values are mapped.
 
-
 #### Float Slot
 
-
-* **Option**
+* **Type**
 
   `float`
 
 * **Use For**
 
-  Continuous values
-
-
+  Storing real numbers.
 
 * **Example**
 
@@ -222,35 +269,28 @@ Make this a nice table instead.
       max_value:  100.0
   ```
 
-
-
 * **Defaults**
 
   `max_value=1.0`, `min_value=0.0`
 
-
-
 * **Description**
 
-  All values below `min_value` will be treated as `min_value`, the same
-  happens for values above `max_value`. Hence, if `max_value` is set to
-  `1`, there is no difference between the slot values `2` and `3.5` in
-  terms of featurization (e.g. both values will influence the dialogue in
-  the same way and the model can not learn to differentiate between them).
-
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on the value of the slot. If the value is between `min_value` and
+  `max_value`, the specific value of the number is used.
+  All values below `min_value` will be treated as `min_value`, and all values above
+  `max_value` will be treated as `max_value`. Hence, if `max_value` is set to `1`,
+  there is no difference between the slot values `2` and `3.5`.
 
 #### List Slot
 
-
-* **Option**
+* **Type**
 
   `list`
 
 * **Use For**
 
-  Lists of values
-
-
+  Storing lists of values.
 
 * **Example**
 
@@ -260,44 +300,36 @@ Make this a nice table instead.
       type: list
   ```
 
-
-
 * **Description**
 
-  The feature of this slot is set to `1` if a value with a list is set,
-  where the list is not empty. If no value is set, or the empty list is the
-  set value, the feature will be `0`. The **length of the list stored in
+  If `influence_conversation` is set to `true`, the assistant's behavior will change
+  depending on whether the list is empty or not. The **length of the list stored in
   the slot does not influence the dialogue**.
 
+#### Any Slot
 
-#### Unfeaturized Slot
+* **Type**
 
-* **Option**
-
-  `unfeaturized`
+  `any`
 
 * **Use For**
 
-  Data you want to store which shouldn't influence the dialogue flow
-
-
+  Storing arbitrary values (they can be of any type, such as dictionaries or lists).
 
 * **Example**
 
   ```yaml-rasa
   slots:
-    internal_user_id:
-      type: unfeaturized
+    shopping_items:
+      type: any
   ```
-
-
 
 * **Description**
 
-  There will not be any featurization of this slot, hence its value does
-  not influence the dialogue flow and is ignored when predicting the next
-  action the bot should run.
-
+  Slots of type `any` are always ignored during conversations. The property
+  `influence_conversation` cannot be set to `true` for this slot type. If you want to
+  store a custom data structure which should influence the conversation, use a
+  [custom slot type](domain.mdx#custom-slot-types).
 
 #### Custom Slot Types
 
@@ -362,6 +394,36 @@ stories:
   - action: action_explain_table_limit
 ```
 
+#### Unfeaturized Slot
+
+:::caution
+The slot type `unfeaturized` is deprecated. Please use the property
+`influence_conversation` as described
+[here](domain.mdx#slots-and-conversation-behavior) or the slot type
+[`any`](domain.mdx#any-slot) instead.
+
+:::
+
+* **Type**
+
+  `unfeaturized`
+
+* **Use For**
+
+  Data you want to store which shouldn't influence the dialogue flow.
+
+* **Example**
+
+  ```yaml-rasa
+  slots:
+    internal_user_id:
+      type: unfeaturized
+  ```
+
+* **Description**
+
+  Slots of this type will never influence the conversation.
+
 ### Slot Auto-fill
 
 If your NLU model picks up an entity, and your domain contains a
@@ -407,7 +469,7 @@ slots:
 Responses are actions that simply send a message to a user without running any custom code or
 returning events. These responses can be defined directly in the domain file and can include
 rich content such as buttons and attachments. For more information on responses,
-see [Responses](./responses.mdx)
+see [Responses](./responses.mdx).
 
 
 ## Actions
