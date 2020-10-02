@@ -18,7 +18,8 @@ entities:
 
 slots:
   some_slot:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   detailed_faq:
     type: bool
 
