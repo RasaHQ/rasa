@@ -278,7 +278,6 @@ class RulePolicy(MemoizationPolicy):
     def _check_slots_fingerprint(
         fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
-        # leave only featurized slots
         expected_slots = set(fingerprint.get(SLOTS, {}))
         current_slots = set(state.get(SLOTS, {}).keys())
         if expected_slots == current_slots:
