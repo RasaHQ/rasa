@@ -398,12 +398,13 @@ def test_convert_config(
             },
             {
                 "rule": "Rule to handle messages with low NLU confidence "
-                "(automated conversion from 'FallbackPolicy'",
+                "(automated conversion from 'FallbackPolicy')",
                 "steps": [
                     {"intent": "nlu_fallback"},
                     {"action": "action_default_fallback"},
                 ],
             },
+            test_convert_config,
         ],
         "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
     }
@@ -451,7 +452,7 @@ def test_convert_config_with_output_file_containing_data(
     new_rules = rasa.shared.utils.io.read_yaml_file(output_file)["rules"]
     expected_new_rule = {
         "rule": "Rule to handle messages with low NLU confidence "
-        "(automated conversion from 'FallbackPolicy'",
+        "(automated conversion from 'FallbackPolicy')",
         "steps": [{"intent": "nlu_fallback"}, {"action": "action_default_fallback"}],
     }
 
