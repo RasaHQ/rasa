@@ -5,6 +5,7 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
@@ -31,7 +32,7 @@ from rasa.nlu.utils import write_json_to_file
 logger = logging.getLogger(__name__)
 
 
-class InvalidModelError(Exception):
+class InvalidModelError(RasaException):
     """Raised when a model failed to load.
 
     Attributes:
@@ -46,7 +47,7 @@ class InvalidModelError(Exception):
         return self.message
 
 
-class UnsupportedModelError(Exception):
+class UnsupportedModelError(RasaException):
     """Raised when a model is too old to be loaded.
 
     Attributes:

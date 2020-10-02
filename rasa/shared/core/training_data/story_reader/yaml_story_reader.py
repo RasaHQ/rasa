@@ -129,7 +129,7 @@ class YAMLStoryReader(StoryReader):
             KEY_STORIES: StoryParser,
             KEY_RULES: RuleParser,
         }.items():
-            data = parsed_content.get(key, [])
+            data = parsed_content.get(key) or []
             parser = parser_class.from_reader(self)
             parser.parse_data(data)
             self.story_steps.extend(parser.get_steps())

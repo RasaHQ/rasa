@@ -290,11 +290,3 @@ async def load_agent_on_start(
 
     logger.info("Rasa server is up and running.")
     return app.agent
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.core.run` directly is no longer supported. "
-        "Please use `rasa run` to start a Rasa server or `rasa shell` to chat with "
-        "your bot on the command line."
-    )
