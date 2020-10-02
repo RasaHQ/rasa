@@ -28,6 +28,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.shared.constants import DOCS_URL_TELEMETRY
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
@@ -575,7 +576,11 @@ def strip_sensitive_data_from_sentry_event(
         for frame in value.get("stacktrace", {}).get("frames", []):
             frame["abs_path"] = ""
 
-            if "site-packages" in frame["filename"]:
+            if "rasa_sdk/executor.py" in frame["filename"]:
+                # this looks a lot like an exception in the SDK and hence custom code
+                # no need for us to deal with that
+                return None
+            elif "site-packages" in frame["filename"]:
                 # drop site-packages and following slash / backslash
                 relative_name = frame["filename"].split("site-packages")[-1][1:]
                 frame["filename"] = os.path.join("site-packages", relative_name)
@@ -625,7 +630,7 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=get_telemetry_id() or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt],
+        ignore_errors=[KeyboardInterrupt, RasaException],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
