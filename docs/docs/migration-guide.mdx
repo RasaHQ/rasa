@@ -79,6 +79,15 @@ rules:
   - action: action_is_bot
 ```
 
+You can then replace the Mapping Policy with the
+[Rule Policy](./policies.mdx#rule-policy) in your `config.yml` file:
+
+```yaml-rasa
+policies:
+  # Other policies
+  - name: RulePolicy
+```
+
 #### Migrating from the Fallback Policy
 
 If you previously used the [Fallback Policy](./policies.mdx#fallback-policy), the following model
