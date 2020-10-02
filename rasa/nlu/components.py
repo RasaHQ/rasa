@@ -151,10 +151,12 @@ def validate_required_components(pipeline: List["Component"]) -> None:
             if not _required_component_in_pipeline(required_component, pipeline[:i]):
                 missing_components.append(required_component.name)
 
+        missing_components_str = ", ".join(f"'{c}'" for c in missing_components)
+
         if missing_components:
             raise InvalidConfigError(
                 f"The pipeline configuration contains errors. The component "
-                f"'{component.name}' requires '{missing_components}' to be "
+                f"'{component.name}' requires {missing_components_str} to be "
                 f"placed before it in the pipeline. Please "
                 f"add the required components to the pipeline."
             )
