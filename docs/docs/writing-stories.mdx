@@ -501,4 +501,71 @@ and you can use any user conversation as a starting point.
 See [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot)
 in the Rasa X docs.
 
-<!-- TODO info about using interactive learning locally, can come from old docs -->
+### Command-line Interactive Learning
+
+The CLI command `rasa interactive` will start interactive learning on the command line.
+If your bot has custom actions, make sure to also 
+[run your action server](https://rasa.com/docs/action-server/running-action-server) in a separate terminal window.
+
+In interactive mode, you will be asked to confirm every intent and action prediction
+before the bot proceeds. Here's an example:
+
+```text
+? Next user input:  hello
+
+? Is the NLU classification for 'hello' with intent 'hello' correct?  Yes
+
+------
+Chat History
+
+ #    Bot                        You
+────────────────────────────────────────────
+ 1    action_listen
+────────────────────────────────────────────
+ 2                                    hello
+                         intent: hello 1.00
+------
+
+? The bot wants to run 'utter_greet', correct?  (Y/n)
+
+```
+
+You'll be able to see the conversation history and slot values at each step of the conversation.
+
+If you type ||y|| to approve a prediction, the bot will continue. If you type ||n||, you will
+be given the chance to correct the prediction before continuing: 
+
+```text
+? What is the next action of the bot?  (Use arrow keys)
+ » <create new action>
+   1.00 utter_greet
+   0.00 ...
+   0.00 action_back
+   0.00 action_deactivate_loop
+   0.00 action_default_ask_affirmation
+   0.00 action_default_ask_rephrase
+   0.00 action_default_fallback
+   0.00 action_listen
+   0.00 action_restart
+   0.00 action_revert_fallback_events
+   0.00 action_session_start
+   0.00 action_two_stage_fallback
+   0.00 utter_cheer_up
+   0.00 utter_did_that_help
+   0.00 utter_goodbye
+   0.00 utter_happy
+   0.00 utter_iamabot
+```
+
+At any point, you can use ||Ctrl-C|| to access the menu, allowing you to create more stories and export the 
+data from the stories you've created so far. 
+
+```text
+? Do you want to stop?  (Use arrow keys)
+ » Continue
+   Undo Last
+   Fork
+   Start Fresh
+   Export & Quit
+```
+
