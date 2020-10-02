@@ -90,4 +90,4 @@ class TrainingDataConverter:
     @classmethod
     def test_prefix(cls) -> Text:
         """Returns prefix that should be appended to the converted test data file if missing."""
-        return "test_"
+        return TEST_STORIES_FILE_PREFIX
