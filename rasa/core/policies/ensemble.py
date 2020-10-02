@@ -35,7 +35,7 @@ from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.shared.core.trackers import DialogueStateTracker, create_action_fingerprints
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
 
