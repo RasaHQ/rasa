@@ -12,7 +12,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
     ActiveLoop,
-    FormValidation,
+    LoopInterrupted,
     SlotSet,
     LegacyForm,
 )
@@ -133,7 +133,7 @@ async def test_persist_legacy_form_story():
         ActionExecuted("action_listen"),
         # out of form input but continue with the form
         UserUttered(intent={"name": "affirm"}),
-        FormValidation(False),
+        LoopInterrupted(True),
         ActionExecuted("some_form"),
         ActionExecuted("action_listen"),
         # out of form input
@@ -143,7 +143,7 @@ async def test_persist_legacy_form_story():
         ActionExecuted("action_listen"),
         # form input
         UserUttered(intent={"name": "inform"}),
-        FormValidation(True),
+        LoopInterrupted(False),
         ActionExecuted("some_form"),
         ActionExecuted("action_listen"),
         ActiveLoop(None),
@@ -208,7 +208,7 @@ async def test_persist_form_story():
         ActionExecuted("action_listen"),
         # out of form input but continue with the form
         UserUttered(intent={"name": "affirm"}),
-        FormValidation(False),
+        LoopInterrupted(True),
         ActionExecuted("some_form"),
         ActionExecuted("action_listen"),
         # out of form input
@@ -218,7 +218,7 @@ async def test_persist_form_story():
         ActionExecuted("action_listen"),
         # form input
         UserUttered(intent={"name": "inform"}),
-        FormValidation(True),
+        LoopInterrupted(False),
         ActionExecuted("some_form"),
         ActionExecuted("action_listen"),
         ActiveLoop(None),
