@@ -567,7 +567,8 @@ def strip_sensitive_data_from_sentry_event(
         _unused_hint: some hinting information sent alongside of the event
 
     Returns:
-        the event without any sensitive / PII data.
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
     """
     # removes any paths from stack traces (avoids e.g. sending
     # a users home directory name if package is installed there)
@@ -578,6 +579,19 @@ def strip_sensitive_data_from_sentry_event(
             if "rasa_sdk/executor.py" in frame["filename"]:
                 # this looks a lot like an exception in the SDK and hence custom code
                 # no need for us to deal with that
+                return None
+            elif "site-packages" in frame["filename"]:
+                # drop site-packages and following slash / backslash
+                relative_name = frame["filename"].split("site-packages")[-1][1:]
+                frame["filename"] = os.path.join("site-packages", relative_name)
+            elif "dist-packages" in frame["filename"]:
+                # drop dist-packages and following slash / backslash
+                relative_name = frame["filename"].split("dist-packages")[-1][1:]
+                frame["filename"] = os.path.join("dist-packages", relative_name)
+            elif os.path.isabs(frame["filename"]):
+                # if the file path is absolute, we'll drop the whole event as this is
+                # very likely custom code. needs to happen after cleaning as
+                # site-packages / dist-packages paths are also absolute, but fine.
                 return None
     return event
 
