@@ -161,14 +161,8 @@ def create_action_fingerprints(
         a nested dictionary of action names and slots and active loops
             that this action sets
     """
-    from rasa.shared.core.events import (
-        SlotSet,
-        ActiveLoop,
-    )
-    from rasa.shared.core.constants import (
-        SLOTS,
-        ACTIVE_LOOP,
-    )
+    from rasa.shared.core.events import SlotSet, ActiveLoop
+    from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP
 
     events_after_actions = _find_events_after_actions(trackers)
     if not events_after_actions:
