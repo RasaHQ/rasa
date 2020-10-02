@@ -310,7 +310,7 @@ class RulePolicy(MemoizationPolicy):
         error_messages = []
         if action_name and fingerprint_slots:
             error_messages.append(
-                f"- the action '{action_name}' in rule '{rule_name}' does not set all"
+                f"- the action '{action_name}' in rule '{rule_name}' does not set all "
                 f"the slots, that it sets in other rules: "
                 f"'{', '.join(fingerprint_slots)}'. Please update the rule with "
                 f"an appropriate slot or if it is the last action "
