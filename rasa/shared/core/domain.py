@@ -1273,18 +1273,28 @@ class Domain:
         # take into account only featurized slots
         featurized_slots = {slot.name for slot in self.slots if slot.has_features()}
         action_fingerprints = collections.defaultdict(dict)
-        for k, vs in events_after_actions.items():
+        for action_name, events_after_action in events_after_actions.items():
             slots = list(
-                {v.key for v in vs if isinstance(v, SlotSet)}.intersection(
-                    featurized_slots
+                set(
+                    event.key
+                    for event in events_after_action
+                    if isinstance(event, SlotSet)
+                ).intersection(featurized_slots)
+            )
+            active_loops = list(
+                set(
+                    event.name
+                    for event in events_after_action
+                    if isinstance(event, ActiveLoop)
                 )
             )
-            active_loops = list({v.name for v in vs if isinstance(v, ActiveLoop)})
 
             if slots:
-                action_fingerprints[k][rasa.shared.core.constants.SLOTS] = slots
+                action_fingerprints[action_name][
+                    rasa.shared.core.constants.SLOTS
+                ] = slots
             if active_loops:
-                action_fingerprints[k][
+                action_fingerprints[action_name][
                     rasa.shared.core.constants.ACTIVE_LOOP
                 ] = active_loops
 
