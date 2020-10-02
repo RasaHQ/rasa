@@ -277,7 +277,7 @@ class RestaurantForm(FormAction):
 Start the migration by adding the [RulePolicy](./policies.mdx#rule-policy) to your
 model configuration:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
   # Other policies
   # ...
@@ -287,7 +287,7 @@ policies:
 Then you need to define the form and the required slots in the domain as described in
 [Forms](./forms.mdx#defining-a-form):
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 forms:
   restaurant_form:
     cuisine:
@@ -300,7 +300,7 @@ You don't have to add a rule for activating the form as this is already covered 
 existing stories. However, you have to add a story for handle the submission of the
 form.
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
   - rule: Submit form
     condition:
@@ -318,7 +318,7 @@ rules:
 The last step is to implement a custom action to validate the form slots. Start by
 adding the custom action to your domain:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 actions:
   # Other actions
   # ...
