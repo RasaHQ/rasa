@@ -10,8 +10,7 @@ MDX_DOCS_FILES = list((DOCS_BASE_DIR / "docs").glob("**/*.mdx"))
 # we're matching anchors with href containing strings, but not starting
 # with "http". This also exclude local href already configured using `useBaseUrl()`
 ANCHOR_RE = re.compile(
-    r"<(a|Button)[^>]*href=\"(?P<href>(?!http).+?)\"[^>]*>",
-    re.DOTALL,
+    r"<(a|Button)[^>]*href=\"(?P<href>(?!http).+?)\"[^>]*>", re.DOTALL,
 )
 
 
