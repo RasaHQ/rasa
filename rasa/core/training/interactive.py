@@ -794,12 +794,18 @@ def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        YAMLStoryReader,
+    )
 
     sub_conversations = _split_conversation_at_restarts(events)
 
     io_utils.create_path(export_story_path)
 
-    guessed_format = loading.guess_format(export_story_path)
+    if YAMLStoryReader.is_yaml_story_file(export_story_path):
+        story_format = RASA_YAML
+    else:
+        story_format = MARKDOWN
 
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
@@ -821,7 +827,10 @@ def _write_stories_to_file(
             ):
                 i += 1
                 f.write(
-                    "\n" + tracker.export_stories(SAVE_IN_E2E, False, guessed_format)
+                    "\n"
+                    + tracker.export_stories(
+                        e2e=SAVE_IN_E2E, include_source=False, story_format=story_format
+                    )
                 )
 
 
