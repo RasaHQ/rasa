@@ -551,7 +551,7 @@ def test_warning_for_form_migration(
     assert result.ret == 0
 
     output = "\n".join(result.outlines)
-    assert "you have to migrate it manually" in output
+    assert "you have to migrate the 'FormPolicy' manually" in output
 
 
 @pytest.mark.parametrize(
