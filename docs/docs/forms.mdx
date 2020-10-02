@@ -310,6 +310,7 @@ which validates that the slot named `slot1` is valid.
 from typing import Text, List, Any
 
 from rasa_sdk import Tracker
+from rasa_sdk.events import SlotSet
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.forms import FormValidationAction
 from rasa_sdk.types import DomainDict
@@ -325,8 +326,8 @@ class ValidateRestaurantForm(FormValidationAction):
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: DomainDict,
-    ) -> bool:
-        return slot_value == "correct_value"
+    ) -> List[EventType]:
+        return [SlotSet("slot1", "value")]
 ```
 
 ### Custom Slot Mappings
