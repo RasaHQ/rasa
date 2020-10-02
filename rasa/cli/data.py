@@ -457,11 +457,13 @@ def _get_configuration(path: Path) -> Dict:
 
     policy_names = [p.get("name") for p in config.get("policies", [])]
 
-    _assert_no_form_policy_present(policy_names)
     _assert_config_needs_migration(policy_names)
     _assert_nlu_pipeline_given(config, policy_names)
     _assert_two_stage_fallback_policy_is_migratable(config)
     _assert_only_one_fallback_policy_present(policy_names)
+
+    if FormPolicy.__name__ in policy_names:
+        _warn_about_manual_forms_migration()
 
     return config
 
@@ -481,15 +483,14 @@ def _assert_config_needs_migration(policies: List[Text]) -> None:
         )
 
 
-def _assert_no_form_policy_present(policy_names: List[Text]) -> None:
-    if FormPolicy.__name__ in policy_names:
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"Your model configuration contains the '{FormPolicy.__name__}'. "
-            f"Forms have to be migrated manually before '{MappingPolicy.__name__}', "
-            f"'{FallbackPolicy.__name__}', or '{TwoStageFallbackPolicy.__name__}' "
-            f"can be migrated. Please see the migration guide for further details: "
-            f" {DOCS_URL_MIGRATION_GUIDE}"
-        )
+def _warn_about_manual_forms_migration() -> None:
+    rasa.shared.utils.cli.print_warning(
+        f"Your model configuration contains the '{FormPolicy.__name__}'. "
+        f"Note that this command does not migrate the '{FormPolicy.__name__}' and "
+        f"you have to migrate the '{FormPolicy.__name__}' manually. "
+        f"Please see the migration guide for further details: "
+        f"{DOCS_URL_MIGRATION_GUIDE}"
+    )
 
 
 def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:

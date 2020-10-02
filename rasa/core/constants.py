@@ -32,6 +32,11 @@ FALLBACK_POLICY_PRIORITY = 4
 # it is the highest to prioritize form to the rest of the policies
 FORM_POLICY_PRIORITY = 5
 
+# The priority of the `RulePolicy` is higher than the priorities for `FallbackPolicy`,
+# `TwoStageFallbackPolicy` and `FormPolicy` to make it possible to use the
+# `RulePolicy` in conjunction with these deprecated policies.
+RULE_POLICY_PRIORITY = 6
+
 DIALOGUE = "dialogue"
 
 # RabbitMQ message property header added to events published using `rasa export`

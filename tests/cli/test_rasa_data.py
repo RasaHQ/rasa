@@ -506,13 +506,9 @@ def test_convert_config_with_missing_nlu_pipeline_config_if_no_fallbacks(
     "policy_config, expected_error_message",
     [
         (
-            [{"name": "MappingPolicy"}, {"name": "FormPolicy"}],
-            "Forms have to be migrated manually",
-        ),
-        (
             [{"name": "FallbackPolicy"}, {"name": "TwoStageFallbackPolicy"}],
             "two configured policies for handling fallbacks",
-        ),
+        )
     ],
 )
 def test_convert_config_with_invalid_policy_config(
@@ -536,6 +532,26 @@ def test_convert_config_with_invalid_policy_config(
 
     output = "\n".join(result.outlines)
     assert expected_error_message in output
+
+
+def test_warning_for_form_migration(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {
+        "policies": [{"name": "FallbackPolicy"}, {"name": "FormPolicy"}],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 0
+
+    output = "\n".join(result.outlines)
+    assert "you have to migrate it manually" in output
 
 
 @pytest.mark.parametrize(
