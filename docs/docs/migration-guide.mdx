@@ -57,7 +57,23 @@ deprecated:
 - [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy)
 - [Form Policy](./policies.mdx#form-policy)
 
-#### Migrating from the Mapping Policy
+:::tip Automatic migration
+Rasa Open Source can take care of automatically migrating the Mapping Policy,
+the Fallback Policy and the Two-Stage-Fallback Policy for you. To do so, run the
+following command:
+
+```bash
+rasa data convert config
+```
+
+This command will take care of updating your `config.yml`, `domain.yml` and `rules.yml`, while
+making backups of your pre-existing files using the `.bak` suffix.
+
+You can follow the steps below if you wish to do this migration manually.
+Please note that you would still need to [migrate the Form Policy](#migrating-from-the-form-policy) manually.
+:::
+
+#### Manually migrating from the Mapping Policy
 
 If you previously used the [Mapping Policy](./policies.mdx#mapping-policy), you
 can follow the documentation on [FAQs](./chitchat-faqs.mdx) to convert your mapped
@@ -88,7 +104,7 @@ policies:
   - name: RulePolicy
 ```
 
-#### Migrating from the Fallback Policy
+#### Manually migrating from the Fallback Policy
 
 If you previously used the [Fallback Policy](./policies.mdx#fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
@@ -132,7 +148,7 @@ rules:
 Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
-#### Migrating from the Two-Stage-Fallback Policy
+#### Manually migrating from the Two-Stage-Fallback Policy
 
 If you previously used the
 [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy), the following model
@@ -187,7 +203,7 @@ Note that the previous parameters `fallback_nlu_action_name` and
 Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
-#### Form Policy
+#### Migrating from the Form Policy
 
 As of Rasa Open Source 2.0 the logic for [Forms](./forms.mdx) has been moved from the
 Rasa SDK to Rasa Open Source to simplify implementations of custom action libraries.
