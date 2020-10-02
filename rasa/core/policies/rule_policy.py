@@ -16,7 +16,6 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     get_active_loop_name,
     is_prev_action_listen_in_state,
-    create_action_fingerprints,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import FORM_POLICY_PRIORITY
@@ -342,7 +341,7 @@ class RulePolicy(MemoizationPolicy):
     ) -> None:
         logger.debug("Started checking if some rules are incomplete.")
         # we need to use only fingerprints from rules
-        rule_fingerprints = create_action_fingerprints(rule_trackers, domain)
+        rule_fingerprints = domain.create_action_fingerprints(rule_trackers)
         if not rule_fingerprints:
             return
 
