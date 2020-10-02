@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import shutil
 from pathlib import Path
 from typing import List, Text, Dict
 
@@ -402,6 +403,13 @@ async def _convert_file_to_yaml(
 
 
 def _migrate_model_config(args: argparse.Namespace) -> None:
+    """Migrates old "rule-like" policies to the new `RulePolicy`.
+
+    Updates the config, domain, and generates the required rules.
+
+    Args:
+        args: The commandline args with the required paths.
+    """
     configuration_file = Path(args.config)
     model_configuration = _get_configuration(configuration_file)
 
@@ -410,9 +418,6 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
 
     rule_output_file = _get_rules_path(args.out)
 
-    # TODO:
-    # 2. Add telemetry
-    # 3. Auto backup file?
     (
         model_configuration,
         domain,
@@ -422,14 +427,22 @@ def _migrate_model_config(args: argparse.Namespace) -> None:
     model_configuration, fallback_rule = rasa.core.config.migrate_fallback_policies(
         model_configuration
     )
+
+    if new_rules:
+        _backup(domain_file)
+        domain.persist_clean(domain_file)
+
     if fallback_rule:
         new_rules.append(fallback_rule)
 
-    rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
-    domain.persist_clean(domain_file)
-
     if new_rules:
+        _backup(configuration_file)
+        rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
         _dump_rules(rule_output_file, new_rules)
+
+    telemetry.track_data_convert("yaml", "config")
+
+    _print_success_message(new_rules, rule_output_file)
 
 
 def _get_configuration(path: Path) -> Dict:
@@ -445,11 +458,27 @@ def _get_configuration(path: Path) -> Dict:
     policy_names = [p.get("name") for p in config.get("policies", [])]
 
     _assert_no_form_policy_present(policy_names)
+    _assert_config_needs_migration(policy_names)
     _assert_nlu_pipeline_given(config, policy_names)
     _assert_two_stage_fallack_policy_is_migratable(config)
     _assert_only_one_fallback_policy_present(policy_names)
 
     return config
+
+
+def _assert_config_needs_migration(policies: List[Text]) -> None:
+    migratable_policies = {
+        MappingPolicy.__name__,
+        FallbackPolicy.__name__,
+        TwoStageFallbackPolicy.__name__,
+    }
+
+    if not migratable_policies.intersection((set(policies))):
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"No policies were found which need migration. This command can migrate "
+            f"'{MappingPolicy.__name__}', '{FallbackPolicy.__name__}' and "
+            f"'{TwoStageFallbackPolicy.__name__}'."
+        )
 
 
 def _assert_no_form_policy_present(policy_names: List[Text]) -> None:
@@ -558,6 +587,7 @@ def _dump_rules(path: Path, new_rules: List[StoryStep]) -> None:
     if path.exists():
         rules_reader = YAMLStoryReader()
         existing_rules = rules_reader.read_from_file(path)
+        _backup(path)
 
     if existing_rules:
         rasa.shared.utils.cli.print_info(
@@ -567,3 +597,22 @@ def _dump_rules(path: Path, new_rules: List[StoryStep]) -> None:
 
     rules_writer = YAMLStoryWriter()
     rules_writer.dump(path, existing_rules + new_rules)
+
+
+def _backup(path: Path) -> None:
+    backup_file = path.parent / f"{path.name}.bak"
+    shutil.copy(path, backup_file)
+
+
+def _print_success_message(new_rules: List[StoryStep], output_file: Path) -> None:
+    if len(new_rules) > 1:
+        suffix = "rule"
+        verb = "was"
+    else:
+        suffix = "rules"
+        verb = "were"
+    rasa.shared.utils.cli.print_success(
+        f"Finished migrating your policy configuration 🎉.\n"
+        f"The migration generated {len(new_rules)} {suffix} which {verb} added to "
+        f"'{output_file}'."
+    )

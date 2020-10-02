@@ -408,6 +408,20 @@ def test_convert_config(
         "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
     }
 
+    domain_backup = tmp_path / "domain.yml.bak"
+    assert domain_backup.exists()
+
+    config_backup = tmp_path / "config.yml.bak"
+    assert config_backup.exists()
+
+
+def test_convert_config_if_nothing_to_migrate(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    result = run_in_simple_project("data", "convert", "config")
+
+    assert result.ret == 1
+
 
 def test_convert_config_with_output_file_containing_data(
     run_in_simple_project: Callable[..., RunResult], tmp_path: Path, testdir: Testdir
@@ -440,6 +454,9 @@ def test_convert_config_with_output_file_containing_data(
 
     assert expected_new_rule in new_rules
     assert all(existing in new_rules for existing in existing_rules)
+
+    backup_file = testdir.tmpdir / DEFAULT_DATA_PATH / "rules.yml.bak"
+    assert backup_file.exists()
 
 
 def test_convert_config_with_invalid_config_path(run: Callable[..., RunResult]):

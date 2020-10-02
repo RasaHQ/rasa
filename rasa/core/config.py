@@ -3,6 +3,7 @@ import os
 from typing import Optional, Text, List, Dict, Union, Tuple, Any, TYPE_CHECKING
 
 import rasa.shared.utils.io
+import rasa.shared.utils.cli
 from rasa.core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_CORE_FALLBACK_THRESHOLD,
@@ -70,6 +71,8 @@ def migrate_fallback_policies(config: Dict) -> Tuple[Dict, Optional["StoryStep"]
 
     if not fallback_config:
         return config, None
+
+    rasa.shared.utils.cli.print_info(f"Migrating the '{fallback_config.get('name')}'.")
 
     _update_rule_policy_config_for_fallback(policies, fallback_config)
     _update_fallback_config(new_config, fallback_config)
@@ -188,6 +191,7 @@ def migrate_mapping_policy_to_rules(
     if not has_mapping_policy:
         return config, domain, []
 
+    rasa.shared.utils.cli.print_info(f"Migrating the '{MappingPolicy.__name__}'.")
     new_config = copy.deepcopy(config)
     new_domain = copy.deepcopy(domain)
 
