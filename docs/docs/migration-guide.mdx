@@ -71,7 +71,7 @@ intents:
 
 This becomes the following rule:
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
 - rule: Rule to map `ask_is_bot` intent
   steps:
@@ -80,9 +80,9 @@ rules:
 ```
 
 You can then replace the Mapping Policy with the
-[Rule Policy](./policies.mdx#rule-policy) in your `config.yml` file:
+[Rule Policy](./policies.mdx#rule-policy) in your model configuration:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
   # Other policies
   - name: RulePolicy
@@ -93,7 +93,7 @@ policies:
 If you previously used the [Fallback Policy](./policies.mdx#fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
   - name: "FallbackPolicy"
     nlu_threshold: 0.4
@@ -104,7 +104,7 @@ policies:
 
 The new configuration would then look like:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
   # Other policies
   - name: RulePolicy
@@ -121,7 +121,7 @@ pipeline:
 In addition, you need to add a [Rule](./rules.mdx) to specify which action to run
 in case of low NLU confidence:
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
   - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
     steps:
@@ -138,7 +138,7 @@ If you previously used the
 [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
   - name: TwoStageFallbackPolicy
     nlu_threshold: 0.4
@@ -151,7 +151,7 @@ policies:
 
 The new configuration would then look like:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
   # Other policies
   - name: RulePolicy
@@ -168,7 +168,7 @@ pipeline:
 In addition you need to add a [Rule](./rules.mdx) to activate the Two-Stage Fallback for
 messages with low NLU confidence.
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
   - rule: Implementation of the TwoStageFallbackPolicy
     steps:
