@@ -611,7 +611,7 @@ def _print_success_message(new_rules: List[StoryStep], output_file: Path) -> Non
     else:
         suffix = "rules"
         verb = "were"
-        
+
     rasa.shared.utils.cli.print_success(
         f"Finished migrating your policy configuration 🎉.\n"
         f"The migration generated {len(new_rules)} {suffix} which {verb} added to "
