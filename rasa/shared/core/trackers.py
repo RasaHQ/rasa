@@ -40,7 +40,6 @@ from rasa.shared.core.constants import (
     LOOP_VALIDATE,
     LOOP_REJECTED,
     TRIGGER_MESSAGE,
-    SLOTS,
 )
 from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.shared.core.events import (  # pytype: disable=pyi-error
