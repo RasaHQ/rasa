@@ -1224,7 +1224,7 @@ class Domain:
 
     @staticmethod
     def _find_events_after_actions(
-        trackers: List[DialogueStateTracker],
+        trackers: List["DialogueStateTracker"],
     ) -> Dict[Text, Set[Event]]:
         """Creates a dictionary of action names and events that follow these actions.
 
@@ -1250,7 +1250,7 @@ class Domain:
         return events_after_actions
 
     def create_action_fingerprints(
-        self, trackers: List[DialogueStateTracker]
+        self, trackers: List["DialogueStateTracker"]
     ) -> Dict[Text, Dict[Text, List[Text]]]:
         """Fingerprint each action using the events it created during train.
 
