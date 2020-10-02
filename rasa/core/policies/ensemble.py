@@ -189,7 +189,7 @@ class PolicyEnsemble:
                 )
 
             self.action_fingerprints = rasa.core.training.create_action_fingerprints(
-                training_trackers
+                training_trackers, domain
             )
         else:
             logger.info("Skipped training, because there are no training samples.")
