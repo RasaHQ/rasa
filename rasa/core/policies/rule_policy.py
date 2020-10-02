@@ -277,7 +277,6 @@ class RulePolicy(MemoizationPolicy):
     def _check_slots_fingerprint(
         fingerprint: Dict[Text, List[Text]], state: State
     ) -> Set[Text]:
-        # leave only featurized slots
         expected_slots = set(fingerprint.get(SLOTS, {}))
         current_slots = set(state.get(SLOTS, {}).keys())
         if expected_slots == current_slots:
@@ -310,7 +309,7 @@ class RulePolicy(MemoizationPolicy):
         error_messages = []
         if action_name and fingerprint_slots:
             error_messages.append(
-                f"- the action '{action_name}' in rule '{rule_name}' does not set all"
+                f"- the action '{action_name}' in rule '{rule_name}' does not set all "
                 f"the slots, that it sets in other rules: "
                 f"'{', '.join(fingerprint_slots)}'. Please update the rule with "
                 f"an appropriate slot or if it is the last action "
@@ -516,6 +515,7 @@ class RulePolicy(MemoizationPolicy):
         rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
         if self._restrict_rules:
             self._check_rule_restriction(rule_trackers)
+
         if self._check_for_contradictions:
             self._check_for_incomplete_rules(rule_trackers, domain)
 
