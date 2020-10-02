@@ -422,6 +422,9 @@ def test_convert_config_if_nothing_to_migrate(
 
     assert result.ret == 1
 
+    output = "\n".join(result.outlines)
+    assert "No policies were found which need migration" in output
+
 
 def test_convert_config_with_output_file_containing_data(
     run_in_simple_project: Callable[..., RunResult], tmp_path: Path, testdir: Testdir
@@ -464,6 +467,9 @@ def test_convert_config_with_invalid_config_path(run: Callable[..., RunResult]):
 
     assert result.ret == 1
 
+    output = "\n".join(result.outlines)
+    assert "Please provide a valid path" in output
+
 
 def test_convert_config_with_missing_nlu_pipeline_config(
     run_in_simple_project: Callable[..., RunResult], tmp_path: Path
@@ -477,6 +483,9 @@ def test_convert_config_with_missing_nlu_pipeline_config(
     )
 
     assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert "The model configuration has to include an NLU pipeline" in output
 
 
 def test_convert_config_with_missing_nlu_pipeline_config_if_no_fallbacks(
@@ -494,16 +503,23 @@ def test_convert_config_with_missing_nlu_pipeline_config_if_no_fallbacks(
 
 
 @pytest.mark.parametrize(
-    "policy_config",
+    "policy_config, expected_error_message",
     [
-        [{"name": "MappingPolicy"}, {"name": "FormPolicy"}],
-        [{"name": "FallbackPolicy"}, {"name": "TwoStageFallbackPolicy"}],
+        (
+            [{"name": "MappingPolicy"}, {"name": "FormPolicy"}],
+            "Forms have to be migrated manually",
+        ),
+        (
+            [{"name": "FallbackPolicy"}, {"name": "TwoStageFallbackPolicy"}],
+            "two configured policies for handling fallbacks",
+        ),
     ],
 )
 def test_convert_config_with_invalid_policy_config(
     run_in_simple_project: Callable[..., RunResult],
     tmp_path: Path,
     policy_config: List[Dict],
+    expected_error_message: Text,
 ):
     deprecated_config = {
         "policies": policy_config,
@@ -518,18 +534,28 @@ def test_convert_config_with_invalid_policy_config(
 
     assert result.ret == 1
 
+    output = "\n".join(result.outlines)
+    assert expected_error_message in output
+
 
 @pytest.mark.parametrize(
-    "two_stage_config",
+    "two_stage_config, expected_error_message",
     [
-        {"deny_suggestion_intent_name": "something else"},
-        {"fallback_nlu_action_name": "something else"},
+        (
+            {"deny_suggestion_intent_name": "something else"},
+            "has to use the intent 'out_of_scope'",
+        ),
+        (
+            {"fallback_nlu_action_name": "something else"},
+            "has to use the action 'action_default_fallback",
+        ),
     ],
 )
 def test_convert_config_with_two_stage_fallback_policy(
     run_in_simple_project: Callable[..., RunResult],
     tmp_path: Path,
     two_stage_config: Dict,
+    expected_error_message: Text,
 ):
     deprecated_config = {
         "policies": [
@@ -547,16 +573,40 @@ def test_convert_config_with_two_stage_fallback_policy(
 
     assert result.ret == 1
 
+    output = "\n".join(result.outlines)
+    assert expected_error_message in output
+
 
 def test_convert_config_with_invalid_domain_path(run: Callable[..., RunResult]):
     result = run("data", "convert", "config", "--domain", "invalid path")
 
     assert result.ret == 1
 
+    output = "\n".join(result.outlines)
+    assert "path to a valid model configuration" in output
+
 
 def test_convert_config_with_default_rules_directory(
-    run: Callable[..., RunResult], tmp_path: Path
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
 ):
-    result = run("data", "convert", "config", "--out", str(tmp_path))
+    deprecated_config = {
+        "policies": [{"name": "FallbackPolicy"}],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data",
+        "convert",
+        "config",
+        "--config",
+        str(config_file),
+        "--out",
+        str(tmp_path),
+    )
 
     assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert "needs to be the path to a file" in output
