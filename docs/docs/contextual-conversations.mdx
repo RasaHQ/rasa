@@ -19,6 +19,7 @@ For example, if a user asks the example concert bot how to get started,
 the bot responds differently based on whether or not they like music:
 
 A conversation with a user who likes music:
+
 <Chat caption="User likes music">
 <ChatUserText>How can I get started ?</ChatUserText>
 <ChatBotText>I can help you find concerts and venues. Do you like music?</ChatBotText>
@@ -27,6 +28,7 @@ A conversation with a user who likes music:
 </Chat>
 
 A conversation with a user who doesn't like music:
+
 <Chat caption="User doesn't like music">
 <ChatUserText>How can I get started ?</ChatUserText>
 <ChatBotText>I can help you find concerts and venues. Do you like music?</ChatBotText>
@@ -91,8 +93,8 @@ In addition to adding stories to account for context,
 machine learning policies can help your model generalize
 to unseen conversation paths. **It is important
 to understand that using machine-learning policies does not mean letting go of control over your
-assistant.** If a rule based policy is able to make a prediction, that prediction will
-always have a higher priority (read more [here](./policies.mdx#action-selection)) and predict the next action.
+assistant.** If a rule-based policy is able to make a prediction, that prediction will
+always have a higher [policy priority](./policies.mdx#policy-priority) and will predict the next action.
 
 The [TEDPolicy](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) is made to handle
 unexpected user behaviors. For example,
