@@ -79,6 +79,27 @@ Get intent properties for a domain from what is provided by a domain file.
 
   The intent properties to be stored in the domain.
 
+#### \_\_deepcopy\_\_
+
+```python
+ | __deepcopy__(memo: Optional[Dict[int, Any]]) -> "Domain"
+```
+
+Enables making a deep copy of the `Domain` using `copy.deepcopy`.
+
+See https://docs.python.org/3/library/copy.html#copy.deepcopy
+for more implementation.
+
+**Arguments**:
+
+- `memo` - Optional dictionary of objects already copied during the current
+  copying pass.
+  
+
+**Returns**:
+
+  A deep copy of the current domain.
+
 #### user\_actions\_and\_forms
 
 ```python
@@ -247,7 +268,7 @@ to make the domain easier readable.
 #### persist\_clean
 
 ```python
- | persist_clean(filename: Text) -> None
+ | persist_clean(filename: Union[Text, Path]) -> None
 ```
 
 Write cleaned domain to a file.

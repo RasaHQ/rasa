@@ -28,7 +28,7 @@ If the user denies, an ultimate fallback action is triggered
 #### \_\_init\_\_
 
 ```python
- | __init__(priority: int = FALLBACK_POLICY_PRIORITY, nlu_threshold: float = 0.3, ambiguity_threshold: float = 0.1, core_threshold: float = 0.3, fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE) -> None
+ | __init__(priority: int = FALLBACK_POLICY_PRIORITY, nlu_threshold: float = DEFAULT_NLU_FALLBACK_THRESHOLD, ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD, core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE) -> None
 ```
 
 Create a new Two-stage Fallback policy.

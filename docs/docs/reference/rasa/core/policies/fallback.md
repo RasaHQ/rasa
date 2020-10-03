@@ -18,7 +18,7 @@ prediction.
 #### \_\_init\_\_
 
 ```python
- | __init__(priority: int = FALLBACK_POLICY_PRIORITY, nlu_threshold: float = 0.3, ambiguity_threshold: float = 0.1, core_threshold: float = 0.3, fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME) -> None
+ | __init__(priority: int = FALLBACK_POLICY_PRIORITY, nlu_threshold: float = DEFAULT_NLU_FALLBACK_THRESHOLD, ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD, core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME) -> None
 ```
 
 Create a new Fallback policy.

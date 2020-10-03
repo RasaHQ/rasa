@@ -35,7 +35,7 @@ The type of data supported by this policy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = FORM_POLICY_PRIORITY, lookup: Optional[Dict] = None, core_fallback_threshold: float = 0.3, core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, enable_fallback_prediction: bool = True, restrict_rules: bool = True, check_for_contradictions: bool = True) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = RULE_POLICY_PRIORITY, lookup: Optional[Dict] = None, core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, enable_fallback_prediction: bool = True, restrict_rules: bool = True, check_for_contradictions: bool = True) -> None
 ```
 
 Create a `RulePolicy` object.

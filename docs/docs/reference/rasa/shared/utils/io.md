@@ -214,7 +214,7 @@ be removed.
 #### read\_config\_file
 
 ```python
-read_config_file(filename: Text) -> Dict[Text, Any]
+read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]
 ```
 
 Parses a yaml configuration file. Content needs to be a dictionary
