@@ -411,13 +411,12 @@ class PolicyEnsemble:
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
-                    "Module for policy '{}' could not "
-                    "be loaded. Please make sure the "
-                    "name is a valid policy."
-                    "".format(policy_name)
+                    f"Module for policy '{policy_name}' could not "
+                    f"be loaded. Please make sure the "
+                    f"name is a valid policy."
                 )
 
-        cls._assert_rule_policy_not_used_with_other_rule_like_policy(parsed_policies)
+        cls._check_if_rule_policy_used_with_rule_like_policies(parsed_policies)
 
         return parsed_policies
 
@@ -454,7 +453,7 @@ class PolicyEnsemble:
         return state_featurizer_func, state_featurizer_config
 
     @staticmethod
-    def _assert_rule_policy_not_used_with_other_rule_like_policy(
+    def _check_if_rule_policy_used_with_rule_like_policies(
         policies: List[Policy],
     ) -> None:
         if not any(isinstance(policy, RulePolicy) for policy in policies):
@@ -475,13 +474,15 @@ class PolicyEnsemble:
             isinstance(policy, policies_not_be_used_with_rule_policy)
             for policy in policies
         ):
-            raise InvalidPolicyConfig(
-                f"It is not possible to use the RulePolicy with "
+            rasa.shared.utils.io.raise_warning(
+                f"It is not recommended to use the '{RulePolicy.__name__}' with "
                 f"other policies which implement rule-like "
-                f"behavior. Either re-implement the desired "
-                f"behavior as rules or remove the RulePolicy from"
-                f"your policy configuration. Please see the Rasa Open Source 2.0 "
-                f"migration guide ({DOCS_URL_MIGRATION_GUIDE}) for more information."
+                f"behavior. It is highly recommended to migrate all deprecated "
+                f"policies to use the '{RulePolicy.__name__}'. Note that the "
+                f"'{RulePolicy.__name__}' will supersede the predictions of the "
+                f"deprecated policies if the confidence levels of the predictions are "
+                f"equal.",
+                docs=DOCS_URL_MIGRATION_GUIDE,
             )
 
 

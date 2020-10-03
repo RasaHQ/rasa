@@ -419,7 +419,7 @@ def raise_deprecation_warning(
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
-def read_config_file(filename: Text) -> Dict[Text, Any]:
+def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary
 
     Args:
@@ -438,9 +438,8 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
         raise YamlSyntaxException(
             filename,
             ValueError(
-                "Tried to load configuration file '{}'. "
-                "Expected a key value mapping but found a {}"
-                ".".format(filename, type(content).__name__)
+                f"Tried to load configuration file '{filename}'. "
+                f"Expected a key value mapping but found a {type(content).__name__}"
             ),
         )
 

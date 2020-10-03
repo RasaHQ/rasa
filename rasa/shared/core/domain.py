@@ -105,7 +105,7 @@ class Domain:
         return cls([], [], [], {}, [], [])
 
     @classmethod
-    def load(cls, paths: Union[List[Text], Text]) -> "Domain":
+    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -122,7 +122,7 @@ class Domain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Text) -> "Domain":
+    def from_path(cls, path: Union[Text, Path]) -> "Domain":
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
@@ -456,6 +456,22 @@ class Domain:
 
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
+
+    def __deepcopy__(self, memo: Optional[Dict[int, Any]]) -> "Domain":
+        """Enables making a deep copy of the `Domain` using `copy.deepcopy`.
+
+        See https://docs.python.org/3/library/copy.html#copy.deepcopy
+        for more implementation.
+
+        Args:
+            memo: Optional dictionary of objects already copied during the current
+            copying pass.
+
+        Returns:
+            A deep copy of the current domain.
+        """
+        domain_dict = self.as_dict()
+        return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
 
     @staticmethod
     def _collect_overridden_default_intents(
@@ -926,7 +942,7 @@ class Domain:
             if v != {} and v != [] and v is not None
         }
 
-    def persist_clean(self, filename: Text) -> None:
+    def persist_clean(self, filename: Union[Text, Path]) -> None:
         """Write cleaned domain to a file."""
 
         cleaned_domain_data = self.cleaned_domain()
