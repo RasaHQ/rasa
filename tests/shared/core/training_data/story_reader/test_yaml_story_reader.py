@@ -107,7 +107,7 @@ async def test_can_read_test_story_with_entities_without_value(default_domain: D
     ],
 )
 async def test_is_yaml_file(file: Text, is_yaml_file: bool):
-    assert YAMLStoryReader.is_yaml_story_file(file) == is_yaml_file
+    assert YAMLStoryReader.is_stories_file(file) == is_yaml_file
 
 
 async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
@@ -304,24 +304,24 @@ async def test_active_loop_is_parsed(default_domain: Domain):
 def test_is_test_story_file(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
     rasa.shared.utils.io.write_yaml({"stories": []}, path)
-    assert YAMLStoryReader.is_yaml_test_stories_file(path)
+    assert YAMLStoryReader.is_test_stories_file(path)
 
 
 def test_is_not_test_story_file_if_it_doesnt_contain_stories(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
     rasa.shared.utils.io.write_yaml({"nlu": []}, path)
-    assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+    assert not YAMLStoryReader.is_test_stories_file(path)
 
 
 def test_is_not_test_story_file_if_empty(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+    assert not YAMLStoryReader.is_test_stories_file(path)
 
 
 def test_is_not_test_story_file_without_test_prefix(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.shared.utils.io.write_yaml({"stories": []}, path)
-    assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+    assert not YAMLStoryReader.is_test_stories_file(path)
 
 
 def test_end_to_end_story_with_shortcut_intent():

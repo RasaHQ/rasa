@@ -63,11 +63,3 @@ async def visualize(
     import webbrowser
 
     webbrowser.open(full_output_path)
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.core.visualize` directly is "
-        "no longer supported. "
-        "Please use `rasa visualize` instead."
-    )

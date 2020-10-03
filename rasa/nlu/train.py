@@ -121,11 +121,3 @@ async def train(
         persisted_path = None
 
     return trainer, interpreter, persisted_path
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.nlu.train` directly is no longer supported. Please use "
-        "`rasa train` to train a combined Core and NLU model or `rasa train nlu` "
-        "to train an NLU model."
-    )

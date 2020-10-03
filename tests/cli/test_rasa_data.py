@@ -252,7 +252,39 @@ def test_rasa_data_convert_stories_to_yaml(
     )
 
 
-def test_rasa_data_convert_nlg_to_yaml(run_in_simple_project: Callable[..., RunResult]):
+def test_rasa_data_convert_test_stories_to_yaml(
+    run_in_simple_project: Callable[..., RunResult]
+):
+    converted_data_folder = "converted_data"
+    os.mkdir(converted_data_folder)
+
+    simple_test_story_md = """
+    ## happy path
+    * greet: hi how are you?
+        - utter_greet
+    """
+
+    with open("tests/test_stories.md", "w") as f:
+        f.write(simple_test_story_md)
+
+    run_in_simple_project(
+        "data",
+        "convert",
+        "core",
+        "-f",
+        "yaml",
+        "--data",
+        "tests",
+        "--out",
+        converted_data_folder,
+    )
+
+    assert (Path(converted_data_folder) / "test_stories_converted.yml").exists()
+
+
+def test_rasa_data_convert_nlg_to_yaml(
+    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
+):
     converted_data_folder = "converted_data"
     os.mkdir(converted_data_folder)
 

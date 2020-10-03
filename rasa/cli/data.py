@@ -449,7 +449,7 @@ def _get_configuration(path: Path) -> Dict:
     config = {}
     try:
         config = rasa.shared.utils.io.read_config_file(path)
-    except ValueError:
+    except Exception:
         rasa.shared.utils.cli.print_error_and_exit(
             f"'{path}' is not a path to a valid model configuration. "
             f"Please provide a valid path."

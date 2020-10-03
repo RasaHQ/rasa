@@ -22,6 +22,7 @@ from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
 import rasa.shared.core.constants
+from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -69,18 +70,12 @@ State = Dict[Text, SubState]
 logger = logging.getLogger(__name__)
 
 
-class InvalidDomain(Exception):
+class InvalidDomain(RasaException):
     """Exception that can be raised when domain is not valid."""
 
-    def __init__(self, message) -> None:
-        self.message = message
-        super(InvalidDomain, self).__init__()
 
-    def __str__(self) -> Text:
-        # return message in error colours
-        return rasa.shared.utils.io.wrap_with_color(
-            self.message, color=rasa.shared.utils.io.bcolors.FAIL
-        )
+class ActionNotFoundException(ValueError, RasaException):
+    """Raised when an action name could not be found."""
 
 
 class SessionConfig(NamedTuple):
@@ -153,7 +148,8 @@ class Domain:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
-        except rasa.shared.utils.validation.InvalidYamlFileError as e:
+        except rasa.shared.utils.validation.YamlValidationException as e:
+            e.filename = original_filename
             raise InvalidDomain(str(e))
 
         data = rasa.shared.utils.io.read_yaml(yaml)
@@ -617,7 +613,7 @@ class Domain:
 
     def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
-        raise NameError(
+        raise ActionNotFoundException(
             f"Cannot access action '{action_name}', "
             f"as that name is not a registered "
             f"action for this domain. "
