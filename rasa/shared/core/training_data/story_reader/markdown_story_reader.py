@@ -186,7 +186,7 @@ class MarkdownStoryReader(StoryReader):
             )
         parsed_messages = [self._parse_message(m, line_num) for m in messages]
         self.current_step_builder.add_user_messages(
-            parsed_messages, self.unfold_or_utterances
+            parsed_messages, self.unfold_utterances
         )
 
     def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
@@ -204,7 +204,7 @@ class MarkdownStoryReader(StoryReader):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     @staticmethod
-    def parse_e2e_message(line: Text) -> Message:
+    def parse_e2e_message(line: Text, unfold_utterances: bool = True) -> Message:
         """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>`. For the
@@ -231,6 +231,11 @@ class MarkdownStoryReader(StoryReader):
         intent = match.group(2)
         message = match.group(4)
         example = entities_parser.parse_training_example(message, intent)
+        if not unfold_utterances:
+            # In case this is a simple conversion from Markdown we should copy over
+            # the original text and not parse the entities
+            example.data[rasa.shared.nlu.constants.TEXT] = message
+            example.data[rasa.shared.nlu.constants.ENTITIES] = []
 
         # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
         # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
@@ -243,7 +248,7 @@ class MarkdownStoryReader(StoryReader):
     def _parse_message(self, message: Text, line_num: int) -> UserUttered:
 
         if self.use_e2e:
-            parsed = self.parse_e2e_message(message)
+            parsed = self.parse_e2e_message(message, self.unfold_utterances)
             text = parsed.get("text")
             intent = {INTENT_NAME_KEY: parsed.get("intent")}
             entities = parsed.get("entities")
