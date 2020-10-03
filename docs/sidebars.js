@@ -102,7 +102,7 @@ module.exports = {
         {
           type: 'category',
           label: 'Architecture', // name still confusing with architecture page elsewhere
-          items: ['tracker-stores', 'event-brokers', 'model-storage', 'lock-stores', 'nlg'],
+          items: ['arch-overview', 'tracker-stores', 'event-brokers', 'model-storage', 'lock-stores', 'nlg'],
         },
       ],
     },
