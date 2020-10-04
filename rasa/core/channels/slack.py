@@ -8,6 +8,8 @@ from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
+
+from aiohttp import ClientSession
 from slack import WebClient
 
 logger = logging.getLogger(__name__)
@@ -23,7 +25,7 @@ class SlackBot(OutputChannel):
     def __init__(self, token: Text, slack_channel: Optional[Text] = None) -> None:
 
         self.slack_channel = slack_channel
-        self.client = WebClient(token, run_async=True)
+        self.client = WebClient(token, run_async=True, session=ClientSession(trust_env=True))
         super().__init__()
 
     @staticmethod
