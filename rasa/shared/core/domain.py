@@ -22,6 +22,7 @@ from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
 import rasa.shared.core.constants
+from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -69,18 +70,12 @@ State = Dict[Text, SubState]
 logger = logging.getLogger(__name__)
 
 
-class InvalidDomain(Exception):
+class InvalidDomain(RasaException):
     """Exception that can be raised when domain is not valid."""
 
-    def __init__(self, message) -> None:
-        self.message = message
-        super(InvalidDomain, self).__init__()
 
-    def __str__(self) -> Text:
-        # return message in error colours
-        return rasa.shared.utils.io.wrap_with_color(
-            self.message, color=rasa.shared.utils.io.bcolors.FAIL
-        )
+class ActionNotFoundException(ValueError, RasaException):
+    """Raised when an action name could not be found."""
 
 
 class SessionConfig(NamedTuple):
@@ -110,7 +105,7 @@ class Domain:
         return cls([], [], [], {}, [], [])
 
     @classmethod
-    def load(cls, paths: Union[List[Text], Text]) -> "Domain":
+    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -127,7 +122,7 @@ class Domain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Text) -> "Domain":
+    def from_path(cls, path: Union[Text, Path]) -> "Domain":
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
@@ -153,7 +148,8 @@ class Domain:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
-        except rasa.shared.utils.validation.InvalidYamlFileError as e:
+        except rasa.shared.utils.validation.YamlValidationException as e:
+            e.filename = original_filename
             raise InvalidDomain(str(e))
 
         data = rasa.shared.utils.io.read_yaml(yaml)
@@ -461,6 +457,22 @@ class Domain:
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
+    def __deepcopy__(self, memo: Optional[Dict[int, Any]]) -> "Domain":
+        """Enables making a deep copy of the `Domain` using `copy.deepcopy`.
+
+        See https://docs.python.org/3/library/copy.html#copy.deepcopy
+        for more implementation.
+
+        Args:
+            memo: Optional dictionary of objects already copied during the current
+            copying pass.
+
+        Returns:
+            A deep copy of the current domain.
+        """
+        domain_dict = self.as_dict()
+        return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
+
     @staticmethod
     def _collect_overridden_default_intents(
         intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
@@ -601,7 +613,7 @@ class Domain:
 
     def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
-        raise NameError(
+        raise ActionNotFoundException(
             f"Cannot access action '{action_name}', "
             f"as that name is not a registered "
             f"action for this domain. "
@@ -930,7 +942,7 @@ class Domain:
             if v != {} and v != [] and v is not None
         }
 
-    def persist_clean(self, filename: Text) -> None:
+    def persist_clean(self, filename: Union[Text, Path]) -> None:
         """Write cleaned domain to a file."""
 
         cleaned_domain_data = self.cleaned_domain()

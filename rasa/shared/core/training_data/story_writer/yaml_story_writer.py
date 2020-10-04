@@ -7,6 +7,7 @@ from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
 
 import rasa.shared.utils.io
+import rasa.shared.core.constants
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.events import (
     UserUttered,
