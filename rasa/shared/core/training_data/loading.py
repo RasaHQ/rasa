@@ -42,9 +42,9 @@ def _guess_reader(
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
 ) -> StoryReader:
-    if YAMLStoryReader.is_yaml_story_file(filename):
+    if YAMLStoryReader.is_stories_file(filename):
         return YAMLStoryReader(domain, template_variables, use_e2e, filename)
-    elif MarkdownStoryReader.is_markdown_story_file(filename):
+    elif MarkdownStoryReader.is_stories_file(filename):
         return MarkdownStoryReader(domain, template_variables, use_e2e, filename)
     raise ValueError(
         f"Failed to find a reader class for the story file `{filename}`. "
