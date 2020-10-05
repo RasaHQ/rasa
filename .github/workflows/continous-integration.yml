@@ -99,6 +99,15 @@ jobs:
     - name: Lint Code 🎎
       run: make lint
 
+    - name: Checkout target branch to be able to diff
+      if: github.event_name == 'pull_request'
+      run: |
+        git fetch --depth=1 origin ${{ github.base_ref }}
+
+    - name: Check Docstring conventions 📃
+      if: github.event_name == 'pull_request'
+      run: make lint-docs branch=origin/${{ github.base_ref }}
+
     - name: Check Types 📚
       run: make types
 
