@@ -195,6 +195,7 @@
               "items": [
                 "reference/rasa/core/training/interactive",
                 "reference/rasa/core/training/story_conflict",
+                "reference/rasa/core/training/training",
                 {
                   "items": [
                     "reference/rasa/core/training/converters/story_markdown_to_yaml_converter"

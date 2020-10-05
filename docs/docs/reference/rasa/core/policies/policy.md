@@ -15,7 +15,7 @@ Enumeration of a policy&#x27;s supported training data type.
 
 ```python
  | @staticmethod
- | trackers_for_policy(policy: Union["Policy", Type["Policy"]], trackers: List[DialogueStateTracker]) -> List[DialogueStateTracker]
+ | trackers_for_policy(policy: Union["Policy", Type["Policy"]], trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
 ```
 
 Return trackers for a given policy.
