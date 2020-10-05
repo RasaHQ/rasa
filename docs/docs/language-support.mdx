@@ -5,25 +5,21 @@ title: Language Support
 abstract: You can use Rasa to build assistants in any language you want.
 ---
 
-Rasa's ``supervised_embeddings`` pipeline can be used on training data in **any language**.
-This pipeline creates word embeddings from scratch with the data you provide.
+Your Rasa assistant can be used on training data in **any language**.
+If there are no word embeddings for your language, you can train your featurizers
+from scratch with the data you provide.
 
 In addition, we also support pre-trained word embeddings such as spaCy. For information on
 what pipeline is best for your use case, check out [choosing a pipeline](./tuning-your-model.mdx#how-to-choose-a-pipeline).
 
 ## Training a Model in Any Language
 
-Rasa's ``supervised_embeddings`` pipeline can be used to train models in any language, because
-it uses your own training data to create custom word embeddings. This means that the vector
-representation of any specific word will depend on its relationship with the other words in your
-training data. This customization also means that the pipeline is great for use cases that hinge
-on domain-specific data, such as those that require picking up on specific product names.
+The following pipeline can be used to train models in any language:
+```yaml-rasa (docs/sources/data/configs_for_docs/default_config.yml)
+```
 
-To train a Rasa model in your preferred language, define the
-``supervised_embeddings`` pipeline as your pipeline in your ``config.yml`` or other configuration file
-via the instructions [here](./tuning-your-model.mdx#supervised-embeddings).
-
-After you define the ``supervised_embeddings`` processing pipeline and generate some [NLU training data](./training-data-format.mdx)
+To train a Rasa model in your preferred language, define the pipeline in your ``config.yml``.
+After you define the pipeline and generate some [NLU training data](./training-data-format.mdx)
 in your chosen language, train the model by running the command:
 
 ```bash
