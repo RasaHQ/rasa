@@ -6,9 +6,10 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Union
+from typing import Text, Optional, Any, List, Dict, Tuple, NamedTuple, Union
 
 import rasa.core
+import rasa.core.training.training
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -28,12 +29,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
-from rasa.shared.core.events import (
-    SlotSet,
-    ActionExecuted,
-    ActionExecutionRejected,
-    Event,
-)
+from rasa.shared.core.events import ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -42,8 +38,8 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
-from rasa.utils import common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -52,15 +48,14 @@ class PolicyEnsemble:
     versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
     def __init__(
-        self, policies: List[Policy], action_fingerprints: Optional[Dict] = None
+        self,
+        policies: List[Policy],
+        action_fingerprints: Optional[Dict[Any, Dict[Text, List]]] = None,
     ) -> None:
         self.policies = policies
         self.date_trained = None
 
-        if action_fingerprints:
-            self.action_fingerprints = action_fingerprints
-        else:
-            self.action_fingerprints = {}
+        self.action_fingerprints = action_fingerprints
 
         self._check_priorities()
         self._check_for_important_policies()
@@ -76,22 +71,6 @@ class PolicyEnsemble:
                 f"'{USER_INTENT_RESTART} and {USER_INTENT_BACK} will not trigger "
                 f"actions '{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'."
             )
-
-    @staticmethod
-    def _training_events_from_trackers(
-        training_trackers: List[DialogueStateTracker],
-    ) -> Dict[Text, Set[Event]]:
-        events_metadata = defaultdict(set)
-
-        for t in training_trackers:
-            tracker = t.init_copy()
-            for event in t.events:
-                tracker.update(event)
-                if not isinstance(event, ActionExecuted):
-                    action_name = tracker.latest_action_name
-                    events_metadata[action_name].add(event)
-
-        return events_metadata
 
     @staticmethod
     def check_domain_ensemble_compatibility(
@@ -194,7 +173,7 @@ class PolicyEnsemble:
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -210,8 +189,9 @@ class PolicyEnsemble:
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
 
-            training_events = self._training_events_from_trackers(training_trackers)
-            self.action_fingerprints = self._create_action_fingerprints(training_events)
+            self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
+                training_trackers, domain
+            )
         else:
             logger.info("Skipped training, because there are no training samples.")
 
@@ -236,23 +216,6 @@ class PolicyEnsemble:
             else:
                 max_histories.append(None)
         return max_histories
-
-    @staticmethod
-    def _create_action_fingerprints(
-        training_events: Dict[Text, Set[Event]]
-    ) -> Optional[Dict[Any, Dict[Text, List]]]:
-        """Fingerprint each action using the events it created during train.
-
-        This allows us to emit warnings when the model is used
-        if an action does things it hasn't done during training."""
-        if not training_events:
-            return None
-
-        action_fingerprints = {}
-        for k, vs in training_events.items():
-            slots = list({v.key for v in vs if isinstance(v, SlotSet)})
-            action_fingerprints[k] = {"slots": slots}
-        return action_fingerprints
 
     def _add_package_version_info(self, metadata: Dict[Text, Any]) -> None:
         """Adds version info for self.versioned_packages to metadata."""
