@@ -304,7 +304,7 @@ the process of validating extracted slots. In this case, you need to write funct
 named `validate_{slot_name}` for every extracted slot.
 
 The following example shows the implementation of a custom action
-which validates that the slot named `slot1` is valid.
+which validates that the slot named `cuisine` is valid.
 
 ```python
 from typing import Text, List, Any
@@ -320,14 +320,28 @@ class ValidateRestaurantForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
 
-    def validate_slot1(
+    @staticmethod
+    def cuisine_db() -> List[Text]:
+        """Database of supported cuisines"""
+
+        return ["caribbean", "chinese", "french"]
+
+    def validate_cuisine(
         self,
         slot_value: Any,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: DomainDict,
-    ) -> List[EventType]:
-        return [SlotSet("slot1", "value")]
+    ) -> Dict[Text, Any]:
+        """Validate cuisine value."""
+
+        if slot_value.lower() in self.cuisine_db():
+            # validation succeeded, set the value of the "cuisine" slot to value
+            return { "cuisine": slot_value }
+        else:
+            # validation failed, set this slot to None, meaning the
+            # user will be asked for the slot again
+            return { "cuisine": None }
 ```
 
 ### Custom Slot Mappings
