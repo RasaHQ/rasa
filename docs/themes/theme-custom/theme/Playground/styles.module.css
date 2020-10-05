@@ -31,6 +31,6 @@
   border-radius: 0 0 8px 0;
 }
 
-.playgroundEditorAssistantBuilder .mdx-codeblock > div {
-  padding: 20px;
+.playgroundEditorAssistantBuilder pre, .playgroundEditorAssistantBuilder textarea {
+  padding: 28px 24px !important;
 }

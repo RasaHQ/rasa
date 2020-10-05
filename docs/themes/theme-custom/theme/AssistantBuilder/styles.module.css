@@ -2,6 +2,7 @@
   border: 1px solid var(--global-border-color);
   border-radius: 10px;
   margin-top: 40px !important;
+  word-break: normal;
 }
 
 .containerTabs {
@@ -25,11 +26,11 @@
 }
 
 .containerSections {
-
+  hyphens: none;
 }
 
 .containerSections p {
-  margin-bottom: 20px;
+  margin-bottom: 27px;
 }
 
 .section {
@@ -44,7 +45,7 @@
 .text {
   flex: 1;
   font-size: 85%;
-  height: 650px;
+  height: 700px;
   display: flex;
   flex-direction: column;
 }
@@ -64,7 +65,7 @@
   flex: 1;
   display: flex;
   font-size: 17px;
-  line-height: 22px;
+  line-height: 27px;
 }
 
 .code > div {
