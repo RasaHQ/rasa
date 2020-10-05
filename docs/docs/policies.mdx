@@ -170,7 +170,7 @@ If you want to fine-tune your model, start by modifying the following parameters
 Default `max_history` for this policy is `None`, which means it'll use the
 [`FullDialogueTrackerFeaturizer`](#1-full-dialogue). We recommend to set `max_history` to a finite value in order to
 use [`MaxHistoryTrackerFeaturizer`](#2-max-history) for **faster training**.
-See [Featurizers](./policies.mdx#featurizers) for
+See [Featurizers](#featurizers) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
 
@@ -589,7 +589,7 @@ policies:
 
 :::caution
 The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
-its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+its behavior using the [Rule Policy](#rule-policy). If you previously used
 the `MappingPolicy`, see the
 [migration guide](./migration-guide.mdx#manually-migrating-from-the-mapping-policy).
 :::
@@ -598,7 +598,7 @@ the `MappingPolicy`, see the
 
 :::caution
 The `FallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) how to implement
-its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+its behavior using the [Rule Policy](#rule-policy). If you previously used
 the `FallbackPolicy`, see the
 [migration guide](./migration-guide.mdx#manually-migrating-from-the-fallback-policy).
 :::
@@ -607,7 +607,7 @@ the `FallbackPolicy`, see the
 
 :::caution
 The `TwoStageFallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) how to implement
-its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+its behavior using the [Rule Policy](#rule-policy). If you previously used
 the `TwoStageFallbackPolicy`, see the
 [migration guide](./migration-guide.mdx#manually-migrating-from-the-two-stage-fallback-policy).
 :::
@@ -616,7 +616,7 @@ the `TwoStageFallbackPolicy`, see the
 
 :::caution
 The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
-its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
+its behavior using the [Rule Policy](#rule-policy). If you previously used
 the `FormPolicy`, see the
 [migration guide](./migration-guide.mdx#migrating-from-the-form-policy).
 :::
