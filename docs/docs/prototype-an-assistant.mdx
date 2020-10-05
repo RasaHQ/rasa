@@ -47,7 +47,7 @@ Intents and training examples make up the assistant’s NLU data, which is used 
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
 
-```yaml-rasa live noResult name=nlu
+```yaml-rasa live noResult assistantBuilder name=nlu
 nlu:
 - intent: greet
   examples: |
@@ -89,7 +89,7 @@ options for each of them. If a response has multiple text options, one of them w
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
 
-```yaml-rasa live noResult name=responses
+```yaml-rasa live noResult assistantBuilder name=responses
 responses:
    utter_greet:
        - text: |
@@ -124,7 +124,7 @@ In the code block below, we have added a simple story where the user and assista
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
 
-```yaml-rasa live noResult name=stories
+```yaml-rasa live noResult assistantBuilder name=stories
 stories:
  - story: greet and subscribe
    steps:
@@ -151,7 +151,7 @@ You can do this in Rasa using a form. In the code block below, we added the
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
 
-```yaml-rasa live noResult name=forms
+```yaml-rasa live noResult assistantBuilder name=forms
 forms:
   newsletter_form:
     email:
@@ -180,7 +180,7 @@ it is no longer active (`active_loop: null`), the form is complete.
 </AssistantBuilder.Text>
 <AssistantBuilder.Code>
 
-```yaml-rasa live noResult name=rules
+```yaml-rasa live noResult assistantBuilder name=rules
 rules:
  - rule: activate subscribe form
    steps:

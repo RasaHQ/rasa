@@ -26,3 +26,11 @@
 .playgroundEditor {
   flex: 1;
 }
+
+.playgroundEditorAssistantBuilder {
+  border-radius: 0 0 8px 0;
+}
+
+.playgroundEditorAssistantBuilder .mdx-codeblock > div {
+  padding: 20px;
+}
