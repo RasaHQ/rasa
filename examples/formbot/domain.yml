@@ -20,22 +20,28 @@ entities:
 
 slots:
   cuisine:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
     auto_fill: false
   num_people:
-    type: unfeaturized
+    type: float
+    influence_conversation: false
     auto_fill: false
   outdoor_seating:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
     auto_fill: false
   preferences:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
     auto_fill: false
   feedback:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
     auto_fill: false
   requested_slot:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
 
 responses:
   utter_ask_cuisine:

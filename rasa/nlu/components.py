@@ -1,8 +1,10 @@
+from collections import defaultdict
 import itertools
 import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -13,6 +15,10 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
+
+
+class MissingDependencyException(RasaException):
+    """Raised if a python package dependency is needed, but not installed."""
 
 
 def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
@@ -46,21 +52,32 @@ def validate_requirements(component_names: List[Text]) -> None:
     from rasa.nlu import registry
 
     # Validate that all required packages are installed
-    failed_imports = set()
+    failed_imports = {}
     for component_name in component_names:
         component_class = registry.get_component_class(component_name)
-        failed_imports.update(
-            find_unavailable_packages(component_class.required_packages())
+        unavailable_packages = find_unavailable_packages(
+            component_class.required_packages()
         )
+        if unavailable_packages:
+            failed_imports[component_name] = unavailable_packages
     if failed_imports:  # pragma: no cover
-        # if available, use the development file to figure out the correct
-        # version numbers for each requirement
-        raise Exception(
-            f"Not all required importable packages are installed. "
+        dependency_component_map = defaultdict(list)
+        for component, missing_dependencies in failed_imports.items():
+            for dependency in missing_dependencies:
+                dependency_component_map[dependency].append(component)
+
+        missing_lines = [
+            f"{d} (needed for {', '.join(cs)})"
+            for d, cs in dependency_component_map.items()
+        ]
+        missing = "\n  - ".join(missing_lines)
+        raise MissingDependencyException(
+            f"Not all required importable packages are installed to use "
+            f"the configured NLU pipeline. "
             f"To use this pipeline, you need to install the "
-            f"missing dependencies. "
-            f"Please install the package(s) that contain the module(s): "
-            f"{', '.join(failed_imports)}"
+            f"missing modules: \n"
+            f"  - {missing}\n"
+            f"Please install the packages that contain the missing modules."
         )
 
 
@@ -75,9 +92,7 @@ def validate_empty_pipeline(pipeline: List["Component"]) -> None:
         raise InvalidConfigError(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
-            "the configuration using the 'pipeline' key. "
-            "The 'backend' configuration key is "
-            "NOT supported anymore."
+            "the configuration using the 'pipeline' key."
         )
 
 
@@ -97,8 +112,9 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
 
     if len(tokenizer_names) > 1:
         raise InvalidConfigError(
-            f"More than one tokenizer is used: {tokenizer_names}. "
-            f"You can use only one tokenizer."
+            f"The pipeline configuration contains more than one tokenizer, "
+            f"which is not possible at this time. You can only use one tokenizer. "
+            f"The pipeline contains the following tokenizers: {tokenizer_names}. "
         )
 
 
@@ -135,10 +151,14 @@ def validate_required_components(pipeline: List["Component"]) -> None:
             if not _required_component_in_pipeline(required_component, pipeline[:i]):
                 missing_components.append(required_component.name)
 
+        missing_components_str = ", ".join(f"'{c}'" for c in missing_components)
+
         if missing_components:
             raise InvalidConfigError(
-                f"'{component.name}' requires {missing_components}. "
-                f"Add required components to the pipeline."
+                f"The pipeline configuration contains errors. The component "
+                f"'{component.name}' requires {missing_components_str} to be "
+                f"placed before it in the pipeline. Please "
+                f"add the required components to the pipeline."
             )
 
 
@@ -283,7 +303,7 @@ class MissingArgumentError(ValueError):
         return self.message
 
 
-class UnsupportedLanguageError(Exception):
+class UnsupportedLanguageError(RasaException):
     """Raised when a component is created but the language is not supported.
 
     Attributes:

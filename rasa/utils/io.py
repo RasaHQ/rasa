@@ -9,7 +9,7 @@ import zipfile
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Dict, Union, List, Type, Callable, TYPE_CHECKING
+from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING
 
 import rasa.shared.constants
 import rasa.shared.utils.io

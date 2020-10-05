@@ -56,6 +56,30 @@ class StoryReader:
     def read_from_file(self, filename: Text) -> List[StoryStep]:
         raise NotImplementedError
 
+    @staticmethod
+    def is_test_stories_file(filename: Text) -> bool:
+        """Checks if the specified file is a test story file.
+
+        Args:
+            filename: File to check.
+
+        Returns:
+            `True` if specified file is a test story file, `False` otherwise.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def is_stories_file(filename: Text) -> bool:
+        """Checks if the specified file is a story file.
+
+        Args:
+            filename: File to check.
+
+        Returns:
+            `True` if specified file is a story file, `False` otherwise.
+        """
+        raise NotImplementedError
+
     def _add_current_stories_to_result(self):
         if self.current_step_builder:
             self.current_step_builder.flush()

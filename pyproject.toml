@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.0.0rc2"
+version = "2.0.0rc4"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -116,10 +116,10 @@ psycopg2-binary = "~2.8.2"
 PyJWT = "~1.7"
 python-dateutil = "~2.8"
 tensorflow = "~2.3"
-tensorflow_hub = "~0.8"
+tensorflow_hub = "~0.9"
 tensorflow-addons = ">= 0.10, <= 0.12"
 tensorflow-estimator = "~2.3"
-tensorflow-probability = "~0.10"
+tensorflow-probability = "~0.11"
 setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
 ujson = ">=1.35,<4.0"

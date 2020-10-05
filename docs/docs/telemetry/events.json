@@ -186,7 +186,7 @@
         },
         "type": {
           "type": "string",
-          "description": "Type of data, either 'nlu', 'core' or 'nlg'."
+          "description": "Type of data, either 'nlu', 'core', 'config' or 'nlg'."
         }
       },
       "additionalProperties": false,
