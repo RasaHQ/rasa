@@ -667,8 +667,11 @@ class FormAction(LoopAction):
         domain: "Domain",
         events_so_far: List[Event],
     ) -> bool:
-        # custom validation functions can decide to terminate the loop early by
-        # setting the requested slot to `None` or setting `ActiveLoop(None)`
+        # Custom validation actions can decide to terminate the loop early by
+        # setting the requested slot to `None` or setting `ActiveLoop(None)`.
+        # We explicitly check only the last occurrences for each possible termination
+        # event instead of doing `return event in events_so_far` to make it possible
+        # to override termination events which were returned earlier.
         return next(
             (
                 event
