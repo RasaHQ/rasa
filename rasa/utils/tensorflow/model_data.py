@@ -63,6 +63,11 @@ class FeatureArray(np.ndarray):
 
         return feature_array
 
+    def __init__(self, input_array: Any, number_of_dimensions: int, **kwargs):
+        # Needed in order to avoid 'Invalid keyword argument number_of_dimensions to function FeatureArray.__init__ '
+        super().__init__(**kwargs)
+        self.number_of_dimensions = number_of_dimensions
+
     def __array_finalize__(self, obj: Any) -> None:
         if obj is None:
             return
@@ -152,7 +157,7 @@ class FeatureArray(np.ndarray):
                 f"array: {input_array}."
             )
 
-    def get_shape_type_info(self) -> Tuple[List[Tuple], List[Tuple]]:
+    def get_shape_type_info(self) -> Tuple[List, List]:
         """Returns the shape and type information needed to convert this feature array into tensors.
 
         Returns:
@@ -183,7 +188,7 @@ class FeatureArray(np.ndarray):
             return [(None, None, None, self.units)], [tf.float32]
 
         return [], []
-        
+
 
 class FeatureSignature(NamedTuple):
     """Stores the shape, the type (sparse vs dense), and the number of dimensions of features."""

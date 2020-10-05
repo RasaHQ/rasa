@@ -96,7 +96,7 @@ def convert_to_data_format(
         List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
     ],
     zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
-) -> Tuple[Data, Optional[Dict[Text, List[FeatureArray]]]]:
+) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
     """Converts the input into "Data" format.
 
     Args:
@@ -186,8 +186,8 @@ def _features_for_attribute(
         tracker_features, zero_state_features[attribute]
     )
 
-    sparse_features = defaultdict(list)
-    dense_features = defaultdict(list)
+    sparse_features = defaultdict()
+    dense_features = defaultdict()
 
     # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():
