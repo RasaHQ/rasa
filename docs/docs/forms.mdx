@@ -301,7 +301,7 @@ When the form is executed it will run your custom action.
 
 This custom action can extend `FormValidationAction` class to simplify
 the process of validating extracted slots. In this case, you need to write functions
-named `validate_{slot_name}` for every extracted slot.
+named `validate_<slot_name>` for every extracted slot.
 
 The following example shows the implementation of a custom action
 which validates that the slot named `cuisine` is valid.
@@ -337,12 +337,15 @@ class ValidateRestaurantForm(FormValidationAction):
 
         if slot_value.lower() in self.cuisine_db():
             # validation succeeded, set the value of the "cuisine" slot to value
-            return { "cuisine": slot_value }
+            return {"cuisine": slot_value}
         else:
-            # validation failed, set this slot to None, meaning the
+            # validation failed, set this slot to None so that the
             # user will be asked for the slot again
-            return { "cuisine": None }
+            return {"cuisine": None}
 ```
+
+You can also extend `Action` class and retrieve extracted slots with `tracker.slots_to_validate`
+to fully customize the validation process.
 
 ### Custom Slot Mappings
 

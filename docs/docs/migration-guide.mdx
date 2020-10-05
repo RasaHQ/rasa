@@ -344,16 +344,16 @@ class RestaurantFormValidator(FormValidationAction):
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: DomainDict,
-    ) -> EventType:
+    ) -> Dict[Text, Any]:
         """Validate cuisine value."""
 
         if slot_value.lower() in self.cuisine_db():
             # validation succeeded, set the value of the "cuisine" slot to value
-            return { "cuisine": slot_value }
+            return {"cuisine": slot_value}
         else:
             # validation failed, set this slot to None, meaning the
             # user will be asked for the slot again
-            return { "cuisine": None }
+            return {"cuisine": None}
 ```
 
 Please see [Forms](./forms.mdx) if you have further customizations in your
