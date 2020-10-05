@@ -830,3 +830,21 @@ def test_current_state_without_events(default_domain: Domain):
 
     # `events` key should not be in there
     assert state and "events" not in state
+
+
+@pytest.mark.parametrize("initial_value", [True, False])
+def test_tracker_store_with_full_conversation_retrieval(initial_value: bool):
+    import rasa.core.tracker_store as tracker_store_module
+
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+    tracker_store.load_events_from_previous_conversation_sessions = initial_value
+
+    with tracker_store_module.tracker_store_with_full_conversation_retrieval(
+        tracker_store
+    ):
+        assert tracker_store.load_events_from_previous_conversation_sessions
+
+    # the initial value is restored after leaving the context manager
+    assert (
+        tracker_store.load_events_from_previous_conversation_sessions == initial_value
+    )

@@ -2,7 +2,7 @@ import logging
 import os
 import time
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -14,6 +14,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+import rasa.core.utils
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -41,10 +42,13 @@ from rasa.shared.constants import (
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.tracker_store import TrackerStore
+import rasa.core.tracker_store
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
+
+if TYPE_CHECKING:
+    from rasa.core.tracker_store import TrackerStore
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +61,7 @@ class MessageProcessor:
         interpreter: NaturalLanguageInterpreter,
         policy_ensemble: PolicyEnsemble,
         domain: Domain,
-        tracker_store: TrackerStore,
+        tracker_store: "TrackerStore",
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
@@ -212,9 +216,36 @@ class MessageProcessor:
             conversation.
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
+
         return self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
+
+    def get_tracker_for_all_conversation_sessions(
+        self, conversation_id: Text,
+    ) -> Optional[DialogueStateTracker]:
+        """Get the tracker for a conversation.
+
+        In contrast to `get_tracker_with_session_start` this does not add any
+        `action_session_start` or `session_start` events at the beginning of a
+        conversation.
+
+        Args:
+            conversation_id: The ID of the conversation for which the history should be
+                retrieved.
+
+        Returns:
+            Tracker for the conversation. Creates an empty tracker in case it's a new
+            conversation.
+        """
+        conversation_id = conversation_id or DEFAULT_SENDER_ID
+
+        with rasa.core.tracker_store.tracker_store_with_full_conversation_retrieval(
+            self.tracker_store
+        ):
+            return self.tracker_store.get_or_create_tracker(
+                conversation_id, append_action_listen=False
+            )
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True

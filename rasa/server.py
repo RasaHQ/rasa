@@ -238,6 +238,26 @@ async def get_tracker(
     return tracker  # pytype: disable=bad-return-type
 
 
+def get_tracker_for_all_conversation_sessions(
+    processor: "MessageProcessor", conversation_id: Text
+) -> DialogueStateTracker:
+    """Retrieves tracker from `processor` containing all historical conversation
+    sessions.
+
+    This retrieval does not update the conversation session.
+
+    Args:
+
+    Returns:
+        The tracker for `conversation_id`.
+    """
+    tracker = processor.get_tracker_for_all_conversation_sessions(conversation_id)
+    _validate_tracker(tracker, conversation_id)
+
+    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
+    return tracker  # pytype: disable=bad-return-type
+
+
 def _validate_tracker(
     tracker: Optional[DialogueStateTracker], conversation_id: Text
 ) -> None:
@@ -586,7 +606,9 @@ def create_app(
         """Get an end-to-end story corresponding to this conversation."""
 
         # retrieve tracker and set to requested state
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
+        tracker = get_tracker_for_all_conversation_sessions(
+            app.agent.create_processor(), conversation_id
+        )
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 

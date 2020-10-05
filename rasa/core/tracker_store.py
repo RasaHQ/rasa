@@ -18,6 +18,7 @@ from typing import (
     Text,
     Union,
     TYPE_CHECKING,
+    Generator,
 )
 
 from boto3.dynamodb.conditions import Key
@@ -40,9 +41,7 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
-import rasa.cli.utils as rasa_cli_utils
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.utils import common as common_utils
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
 
@@ -1115,3 +1114,21 @@ def _load_from_module_name_in_endpoint_config(
             f"Using `InMemoryTrackerStore` instead."
         )
         return InMemoryTrackerStore(domain)
+
+
+@contextlib.contextmanager
+def tracker_store_with_full_conversation_retrieval(
+    tracker_store: "TrackerStore",
+) -> Generator[None, None, None]:
+    """Context manager that ensures `tracker_store` fetches all tracker sessions.
+
+    Args:
+        tracker_store: Tracker store to modify.
+    """
+    previous_value = tracker_store.load_events_from_previous_conversation_sessions
+    tracker_store.load_events_from_previous_conversation_sessions = True
+
+    try:
+        yield
+    finally:
+        tracker_store.load_events_from_previous_conversation_sessions = previous_value
