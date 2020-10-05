@@ -487,25 +487,24 @@ Every event in a trackers history creates a new state (e.g. running a bot
 action, receiving a user message, setting slots). Featurizing a single state
 of the tracker has two steps:
 
-<!-- TODO: below bullet points are not appearing - showing as one block of text instead --->
 1. **Tracker provides a bag of active features**:
 
-       * features indicating intents and entities, if this is the first
-         state in a turn, e.g. it's the first action we will take after
-         parsing the user's message. (e.g.
-         `[intent_restaurant_search, entity_cuisine]` )
+    * features indicating intents and entities, if this is the first
+     state in a turn, e.g. it's the first action we will take after
+     parsing the user's message. (e.g.
+     `[intent_restaurant_search, entity_cuisine]` )
 
-       * features indicating which slots are currently defined, e.g.
-         `slot_location` if the user previously mentioned the area
-         they're searching for restaurants.
+    * features indicating which slots are currently defined, e.g.
+     `slot_location` if the user previously mentioned the area
+     they're searching for restaurants.
 
-       * features indicating the results of any API calls stored in
-         slots, e.g. `slot_matches`
+    * features indicating the results of any API calls stored in
+     slots, e.g. `slot_matches`
 
-       * features indicating what the last bot action or bot utterance was (e.g.
-         `prev_action_listen`)
+    * features indicating what the last bot action or bot utterance was (e.g.
+     `prev_action_listen`)
 
-       * features indicating if any loop is active and which one
+    * features indicating if any loop is active and which one
 
 2. **Convert all the features into numeric vectors**:
 
