@@ -98,8 +98,7 @@ following steps:
 5. Calculate the similarity between the dialogue embedding and embedded system actions.
    This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
-It is recommended to use `LabelTokenizerSingleStateFeaturizer`
-(see [Featurization](./policies.mdx#featurizers) for details).
+It is recommended to use `SingleStateFeaturizer` (see [Featurization](#featurizers) for details).
 
 ```yaml-rasa title="config.yml"
 policies:
@@ -108,7 +107,7 @@ policies:
     - name: MaxHistoryTrackerFeaturizer
       max_history: 5
       state_featurizer:
-        - name: LabelTokenizerSingleStateFeaturizer
+        - name: SingleStateFeaturizer
 ```
 
 **Configuration:**
