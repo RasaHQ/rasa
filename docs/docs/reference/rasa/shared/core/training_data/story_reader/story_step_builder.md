@@ -12,7 +12,7 @@ class StoryStepBuilder()
 #### add\_user\_messages
 
 ```python
- | add_user_messages(messages: List[UserUttered], unfold_or_utterances: bool = True) -> None
+ | add_user_messages(messages: List[UserUttered], is_used_for_conversion: bool = False) -> None
 ```
 
 Adds next story steps with the user&#x27;s utterances.
@@ -20,10 +20,10 @@ Adds next story steps with the user&#x27;s utterances.
 **Arguments**:
 
 - `messages` - User utterances.
-- `unfold_or_utterances` - Identifies if the user utterance is a part of
+- `is_used_for_conversion` - Identifies if the user utterance is a part of
   OR statement. This parameter is used only to simplify the conversation
   from MD story files. Don&#x27;t use it other ways, because it ends up
   in a invalid story that cannot be user for real training.
-  Default value is `True`, which preserves the expected behavior
+  Default value is `False`, which preserves the expected behavior
   of the reader.
 
