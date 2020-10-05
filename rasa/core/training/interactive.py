@@ -55,6 +55,8 @@ from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
 )
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.core.training_data.story_writer.markdown_story_writer import MarkdownStoryWriter
 from rasa.core.utils import AvailableEndpoints
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
@@ -707,8 +709,8 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                [".md"],
-                "Please provide a valid export path for the stories, e.g. 'stories.md'.",
+                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS + rasa.shared.data.YAML_FILE_EXTENSIONS,
+                "Please provide a valid export path for the stories, e.g. 'stories.yml'.",
             ),
         ),
         export_nlu=questionary.text(
@@ -716,8 +718,8 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
             validate=io_utils.file_type_validator(
-                [".md", ".json"],
-                "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
+                list(rasa.shared.data.TRAINING_DATA_EXTENSIONS),
+                "Please provide a valid export path for the NLU data, e.g. 'nlu.yml'.",
             ),
         ),
         export_domain=questionary.text(
@@ -793,10 +795,18 @@ def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        YAMLStoryReader,
+    )
 
     sub_conversations = _split_conversation_at_restarts(events)
 
     io_utils.create_path(export_story_path)
+
+    if YAMLStoryReader.is_stories_file(export_story_path):
+        writer = YAMLStoryWriter()
+    else:
+        writer = MarkdownStoryWriter()
 
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
@@ -817,7 +827,12 @@ def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
+                f.write(
+                    "\n"
+                    + tracker.export_stories(
+                        writer=writer, e2e=SAVE_IN_E2E
+                    )
+                )
 
 
 def _filter_messages(msgs: List[Message]) -> List[Message]:

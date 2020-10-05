@@ -46,20 +46,24 @@ from rasa.shared.core.training_data.structures import (
 class YAMLStoryWriter:
     """Writes Core training data into a file in a YAML format. """
 
-    def dumps(self, story_steps: List[StoryStep]) -> Text:
-        """Turns Story steps into a string.
+    def dumps(self, story_steps: List[StoryStep], flat: bool = False, **kwargs: Dict) -> Text:
+        """Turns Story steps into an YAML string.
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
+            flat: Specify if result should not contain caption and checkpoints.
         Returns:
             String with story steps in the YAML format.
         """
         stream = yaml.StringIO()
-        self.dump(stream, story_steps)
+        self.dump(stream, story_steps, flat)
         return stream.getvalue()
 
     def dump(
-        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep]
+        self,
+        target: Union[Text, Path, yaml.StringIO],
+        story_steps: List[StoryStep],
+        flat: bool = False,
     ) -> None:
         """Writes Story steps into a target file/stream.
 
@@ -68,10 +72,14 @@ class YAMLStoryWriter:
             story_steps: Original story steps to be converted to the YAML.
         """
         result = self.stories_to_yaml(story_steps)
+        if flat and KEY_STORIES in result:
+            result = result[KEY_STORIES]
 
         rasa.shared.utils.io.write_yaml(result, target, True)
 
-    def stories_to_yaml(self, story_steps: List[StoryStep]) -> Dict[Text, Any]:
+    def stories_to_yaml(
+        self, story_steps: List[StoryStep]
+    ) -> Dict[Text, Any]:
         """Converts a sequence of story steps into yaml format.
 
         Args:

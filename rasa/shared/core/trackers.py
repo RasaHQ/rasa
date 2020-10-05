@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
+from rasa.shared.nlu.training_data.loading import RASA_YAML
 from rasa.shared.core import events  # pytype: disable=pyi-error
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -594,17 +595,21 @@ class DialogueStateTracker:
         )
         return Story.from_events(self.applied_events(), story_name)
 
-    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
+    def export_stories(
+        self, writer: Any, e2e: bool = False, include_source: bool = False
+    ) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns:
             The dumped tracker as a string.
         """
+
         # TODO: we need to revisit all usages of this, the caller needs to specify
         #       the format. this likely points to areas where we are not properly
         #       handling markdown vs yaml
         story = self.as_story(include_source)
-        return story.as_story_string(flat=True, e2e=e2e)
+
+        return writer.dumps(story.story_steps, flat=True, e2e=e2e)
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
         """Dump the tracker as a story to a file."""
