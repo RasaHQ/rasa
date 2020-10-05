@@ -803,7 +803,6 @@ class Domain:
 
     def persist_specification(self, model_path: Text) -> None:
         """Persist the domain specification to storage."""
-
         domain_spec_path = os.path.join(model_path, "domain.json")
         rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
@@ -813,17 +812,16 @@ class Domain:
     @classmethod
     def load_specification(cls, path: Text) -> Dict[Text, Any]:
         """Load a domains specification from a dumped model directory."""
-
         metadata_path = os.path.join(path, "domain.json")
-        specification = json.loads(rasa.shared.utils.io.read_file(metadata_path))
-        return specification
+
+        return json.loads(rasa.shared.utils.io.read_file(metadata_path))
 
     def compare_with_specification(self, path: Text) -> bool:
         """Compare the domain spec of the current and the loaded domain.
 
         Throws exception if the loaded domain specification is different
-        to the current domain are different."""
-
+        to the current domain are different.
+        """
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
 
@@ -845,7 +843,6 @@ class Domain:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
-
         return {
             "config": {"store_entities_as_slots": self.store_entities_as_slots},
             SESSION_CONFIG_KEY: {
@@ -937,13 +934,11 @@ class Domain:
 
     def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
-
         as_yaml = self.as_yaml(clean_before_dump=False)
         rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
     def persist_clean(self, filename: Union[Text, Path]) -> None:
         """Write cleaned domain to a file."""
-
         as_yaml = self.as_yaml(clean_before_dump=True)
         rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
