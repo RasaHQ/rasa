@@ -7,7 +7,7 @@ import sys
 def test_cli_start(run: Callable[..., RunResult]):
     """
     Checks that a call to ``rasa --help`` does not take longer than 7 seconds
-    (10 seconds on Windows).
+    (20 seconds on Windows).
     """
     import time
 
@@ -18,7 +18,7 @@ def test_cli_start(run: Callable[..., RunResult]):
     duration = end - start
 
     # it sometimes takes a bit more time to start it on Windows
-    assert duration <= 10 if sys.platform == "win32" else 7
+    assert duration <= 20 if sys.platform == "win32" else 7
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):
