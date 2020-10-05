@@ -326,6 +326,8 @@ def _collect_action_executed_predictions(
     else:
         action, policy, confidence = processor.predict_next_action(partial_tracker)
         predicted = action.name()
+        event.policy = policy
+        event.confidence = confidence
 
         if policy and predicted != gold and FormPolicy.__name__ in policy:
             # FormPolicy predicted wrong action
@@ -334,6 +336,8 @@ def _collect_action_executed_predictions(
             # try again
             action, policy, confidence = processor.predict_next_action(partial_tracker)
             predicted = action.name()
+            event.policy = policy
+            event.confidence = confidence
 
     action_executed_eval_store.add_to_store(
         action_predictions=predicted, action_targets=gold
