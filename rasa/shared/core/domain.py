@@ -944,9 +944,9 @@ class Domain:
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
-            domain_data = self.cleaned_domain()
+            domain_data: Dict[Text, Any] = self.cleaned_domain()
         else:
-            domain_data = self.as_dict()
+            domain_data: Dict[Text, Any] = self.as_dict()
 
         domain_data[
             KEY_TRAINING_DATA_FORMAT_VERSION
