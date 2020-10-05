@@ -585,11 +585,11 @@ class FormAction(LoopAction):
             - form validation was not cancelled
         """
         # no active_loop means that it is called during activation
-        need_validation = not tracker.active_loop or (
+        needs_validation = not tracker.active_loop or (
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
         )
-        if need_validation:
+        if needs_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")
             return await self.validate(tracker, domain, output_channel, nlg)
 
