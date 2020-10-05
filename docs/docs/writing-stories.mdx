@@ -43,7 +43,7 @@ Rules can be useful when implementing:
   Rules are an easy way to map intents to responses, specifying fixed answers to these messages.
 
 * [Fallback behavior](./fallback-handoff.mdx):
-  In combination with the [FallbackClassifier](./components#fallbackclassifier),
+  In combination with the [FallbackClassifier](./components.mdx#fallbackclassifier),
   you can write rules to respond to low-confidence user messages with a certain fallback behavior.
 
 * [Forms](./forms.mdx): Both activating and submitting a form will often follow a fixed path.
@@ -84,15 +84,16 @@ stories:
 
 Here are some tips for managing the conversation flow in your stories:
 
-### When to Use Featurized Slots
+### When to Use Slots to Influence Conversations
 
-Slots act as your bot’s memory. When you define a slot, you can define its [slot type](domain#slot-type)
-as either `unfeaturized` or one of the featurized slot types.
-An unfeaturized slot can only store information, but a featurized slot can affect the
-dialogue flow based on the information stored in it.
+Slots act as your bot’s memory. When you define a slot, you can define whether a
+[slot](domain.mdx#slots) should influence the conversation or not.
+Slots with the property `influence_conversation` set to `false` can only store
+information. Slots with the property `influence_conversation` set to `true` can affect
+the dialogue flow based on the information stored in it.
 
-Because they affect the dialogue flow, you need to include any featurized slots set by
-[custom actions](./actions.mdx) in your stories.
+Slots which influence the conversation need to be added to your stories or rules. This also
+applies for the case if the slot was set by a [custom action](./actions.mdx).
 For example, you can use a boolean slot set by a custom action to control the dialogue
 flow based on its value using the following stories:
 
@@ -116,10 +117,10 @@ stories:
    - action: utter_ask_upgrade
 ```
 
-In cases where you don't want a slot to affect the conversation flow, you should use
-an unfeaturized slot. You do not need to include `slot_was_set` events for unfeaturized
-slots in your stories.
-
+In cases where you don't want a slot to affect the conversation flow, you should
+set the slot's property `influence_conversation` to `false`. You do not need to
+include `slot_was_set` events for slots in your stories which do not influence the
+conversation.
 
 ### Implementing Branching Logic
 
@@ -400,18 +401,18 @@ using [rules](./rules.mdx) instead of through [stories](./stories.mdx).
 
 Consider this conversation scenario:
 
-```
-User: "Hi, I want to pay my credit card bill"
-Bot: "Can do! Which of these credit accounts do you want to make a payment towards?
-      - Credit Account A
-      - Credit Account B"
-User: "Credit account B"
-Bot: "How much do you want to pay?"
-User: "What's my account balance?"
-Bot: "Your current account balance is $1532.00"
-Bot: "How much do you want to pay?"
-User: "I want to pay the minimum balance"
-```
+<Chat caption="A single-turn interjection">
+<ChatUserText>Hi, I want to pay my credit card bill</ChatUserText>
+<ChatBotText>Can do! Which of these credit accounts do you want to make a payment towards?</ChatBotText>
+<ChatBotText><p>- Credit Account A</p>
+<p>- Credit Account B</p></ChatBotText>
+<ChatUserText>Credit account B</ChatUserText>
+<ChatBotText>How much do you want to pay?</ChatBotText>
+<ChatUserText>What's my account balance?</ChatUserText>
+<ChatBotText>Your current account balance is $1532.00</ChatBotText>
+<ChatBotText>How much do you want to pay?</ChatBotText>
+<ChatUserText>I want to pay the minimum balance</ChatUserText>
+</Chat>
 
 In this example, the user is in the middle of paying their credit card bill, asks for
 their account balance, and is then guided back into the credit card payment form.
@@ -441,22 +442,20 @@ is maintained.
 For example, if you want to switch context upon a user ask and then return to the
 original flow after that ask is complete:
 
-```yaml
-User: "Hi, I want to pay my credit card bill"
-  Bot: "Can do! Which of these credit accounts do you want to make a payment towards?"
-        - "Credit Account A"
-        - "Credit Account B"
-User: "Credit account B"
-  Bot: "How much do you want to pay?"
-User: "Actually, I want to make a transfer"
-  Bot: "No problem!"
-  Bot: "Who would you like to transfer money to?"
-User: "I want to send $500 to Katy Parrow"
-  Bot: "Can you confirm that you would like to send $500 to Katy Parrow?"
-User: "Yes"
-  Bot: "Successfully transferred $500 to Katy Parrow."
-  Bot: "Would you like to pay your credit card bill now?"
-```
+<Chat caption="A contextual interjection">
+<ChatUserText>Hi, I want to pay my credit card bill</ChatUserText>
+<ChatBotText>Can do! Which of these credit accounts do you want to make a payment towards?</ChatBotText>
+<ChatBotText><p>- Credit Account A</p>
+<p>- Credit Account B</p></ChatBotText>
+<ChatUserText>Credit account B</ChatUserText>
+<ChatBotText>How much do you want to pay?</ChatBotText>
+<ChatUserText>Actually, I want to make a transfer</ChatUserText>
+<ChatBotText>No problem!</ChatBotText>
+<ChatBotText>Who would you like to transfer money to?</ChatBotText>
+<ChatUserText>I want to send $500 to Katy Parrow</ChatUserText>
+<ChatBotText>Successfully transferred $500 to Katy Parrow.</ChatBotText>
+<ChatBotText>Would you like to pay your credit card bill now?</ChatBotText>
+</Chat>
 
 You will need to create a story that describes this context-switching interaction:
 
@@ -498,7 +497,7 @@ it makes. One advantage of machine learning-based dialogue is that when
 your bot doesn't know how to do something yet, you can just teach it!
 
 In Rasa Open Source, you can run interactive learning in the command line with
-[`rasa interactive`](./command-line-interface.mdx#interactive-learning).
+[`rasa interactive`](./command-line-interface.mdx#rasa-interactive).
 [Rasa X](http://rasa.com/docs/rasa-x) provides a UI for interactive learning,
 and you can use any user conversation as a starting point.
 See [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot)

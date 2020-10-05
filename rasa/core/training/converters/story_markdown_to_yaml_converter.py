@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from rasa.shared.constants import DOCS_URL_RULES
+import rasa.shared.constants
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
 )
@@ -23,7 +23,9 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
         Returns:
             `True` if the given file can be converted, `False` otherwise
         """
-        return MarkdownStoryReader.is_markdown_story_file(source_path)
+        return MarkdownStoryReader.is_stories_file(
+            source_path
+        ) or MarkdownStoryReader.is_test_stories_file(source_path)
 
     @classmethod
     async def convert_and_write(cls, source_path: Path, output_path: Path) -> None:
@@ -37,14 +39,19 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
             KEY_ACTIVE_LOOP,
         )
 
-        output_core_path = cls.generate_path_for_converted_training_data_file(
-            source_path, output_path
-        )
+        # check if source file is test stories file
+        if MarkdownStoryReader.is_test_stories_file(source_path):
+            reader = MarkdownStoryReader(unfold_or_utterances=False, use_e2e=True)
+            output_core_path = cls._generate_path_for_converted_test_data_file(
+                source_path, output_path
+            )
+        else:
+            reader = MarkdownStoryReader(unfold_or_utterances=False)
+            output_core_path = cls.generate_path_for_converted_training_data_file(
+                source_path, output_path
+            )
 
-        reader = MarkdownStoryReader(unfold_or_utterances=False)
-        writer = YAMLStoryWriter()
-
-        steps = await reader.read_from_file(source_path)
+        steps = reader.read_from_file(source_path)
 
         if YAMLStoryWriter.stories_contain_loops(steps):
             print_warning(
@@ -53,9 +60,48 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
                 f"Please note that in order for these stories to work you still "
                 f"need the 'FormPolicy' to be active. However the 'FormPolicy' is "
                 f"deprecated, please consider switching to the new 'RulePolicy', "
-                f"for which you can find the documentation here: {DOCS_URL_RULES}."
+                f"for which you can find the documentation here: "
+                f"{rasa.shared.constants.DOCS_URL_RULES}."
             )
 
+        writer = YAMLStoryWriter()
         writer.dump(output_core_path, steps)
 
         print_success(f"Converted Core file: '{source_path}' >> '{output_core_path}'.")
+
+    @classmethod
+    def _generate_path_for_converted_test_data_file(
+        cls, source_file_path: Path, output_directory: Path
+    ) -> Path:
+        """Generates path for a test data file converted to YAML format.
+
+        Args:
+            source_file_path: Path to the original file.
+            output_directory: Path to the target directory.
+
+        Returns:
+            Path to the target converted training data file.
+        """
+        if cls._has_test_prefix(source_file_path):
+            return (
+                output_directory
+                / f"{source_file_path.stem}{cls.converted_file_suffix()}"
+            )
+        return (
+            output_directory / f"{rasa.shared.constants.TEST_STORIES_FILE_PREFIX}"
+            f"{source_file_path.stem}{cls.converted_file_suffix()}"
+        )
+
+    @classmethod
+    def _has_test_prefix(cls, source_file_path: Path) -> bool:
+        """Checks if test data file has test prefix.
+
+        Args:
+            source_file_path: Path to the original file.
+
+        Returns:
+            `True` if the filename starts with the prefix, `False` otherwise.
+        """
+        return Path(source_file_path).name.startswith(
+            rasa.shared.constants.TEST_STORIES_FILE_PREFIX
+        )

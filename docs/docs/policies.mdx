@@ -52,7 +52,7 @@ and Rule Policies might both predict with confidence 1), the priority of the
 policies is considered. Rasa policies have default priorities that are set to ensure the
 expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
 
-5. `RulePolicy`
+6. `RulePolicy`
 
 3. `MemoizationPolicy` and `AugmentedMemoizationPolicy`
 
@@ -98,7 +98,7 @@ following steps:
   This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
 It is recommended to use `state_featurizer=LabelTokenizerSingleStateFeaturizer(...)`
-(see [Featurization of Conversations](./policies.mdx#featurization-conversations) for details).
+(see [Featurizers](./policies.mdx#featurizers) for details).
 
 **Configuration:**
 
@@ -152,7 +152,7 @@ be trained only for `1` epoch.
 Default `max_history` for this policy is `None`, which means it'll use the
 `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to a finite value in order to
 use `MaxHistoryTrackerFeaturizer` for **faster training**.
-See [Featurization of Conversations](./policies.mdx#featurization-conversations) for
+See [Featurizers](./policies.mdx#featurizers) for
 details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
 (e.g. `"batch_size": [32, 64]`)
 
@@ -338,13 +338,13 @@ policies:
 ```
 
 * `core_fallback_threshold` (default: `0.3`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
    further information.
 * `core_fallback_action_name` (default: `action_default_fallback`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
    further information.
 * `enable_fallback_prediction` (default: `true`): Please see the
-   [fallback documentation](fallback-handoff.mdx#handling-low-core-confidence) for
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
    further information.
 * `check_for_contradictions` (default: `true`): After training, the RulePolicy will
    perform a check to make sure that there are no rules that contradict with each other, or with any stories.
@@ -448,8 +448,6 @@ The memoization based policies are not affected by augmentation
 ignore all augmented stories.
 
 ### Featurizers
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="featurization-conversations"></a>
 
 In order to apply machine learning algorithms to conversational AI, we need
 to build up vector representations of conversations.
@@ -561,25 +559,25 @@ policies:
 The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `MappingPolicy`, see the
-[migration guide](./migration-guide.mdx#migrating-from-the-mapping-policy).
+[migration guide](./migration-guide.mdx#manually-migrating-from-the-mapping-policy).
 :::
 
 ### Fallback Policy
 
 :::caution
-The `FallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+The `FallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `FallbackPolicy`, see the
-[migration guide](./migration-guide.mdx#migrating-from-the-fallback-policy).
+[migration guide](./migration-guide.mdx#manually-migrating-from-the-fallback-policy).
 :::
 
 ### Two-Stage Fallback Policy
 
 :::caution
-The `TwoStageFallbackPolicy` is deprecated. Please see [Fallback Actions](./fallback-handoff.mdx#fallbackactions) how to implement
+The `TwoStageFallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `TwoStageFallbackPolicy`, see the
-[migration guide](./migration-guide.mdx#migrating-from-the-two-stage-fallback-policy).
+[migration guide](./migration-guide.mdx#manually-migrating-from-the-two-stage-fallback-policy).
 :::
 
 ### Form Policy
@@ -588,5 +586,5 @@ the `TwoStageFallbackPolicy`, see the
 The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) how to implement
 its behavior using the [Rule Policy](./policies.mdx#rule-policy). If you previously used
 the `FormPolicy`, see the
-[migration guide](./migration-guide.mdx#form-policy).
+[migration guide](./migration-guide.mdx#migrating-from-the-form-policy).
 :::

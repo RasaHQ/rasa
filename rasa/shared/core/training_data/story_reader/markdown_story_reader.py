@@ -28,11 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 class MarkdownStoryReader(StoryReader):
-    """Class that reads the core training data in a Markdown format
+    """Class that reads the core training data in a Markdown format"""
 
-    """
-
-    async def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
@@ -41,7 +39,7 @@ class MarkdownStoryReader(StoryReader):
             ) as f:
                 lines = f.readlines()
 
-            return await self._process_lines(lines)
+            return self._process_lines(lines)
         except ValueError as err:
             file_info = "Invalid story file format. Failed to parse '{}'".format(
                 os.path.abspath(filename)
@@ -52,7 +50,7 @@ class MarkdownStoryReader(StoryReader):
             err.args = err.args + (file_info,)
             raise
 
-    async def _process_lines(self, lines: List[Text]) -> List[StoryStep]:
+    def _process_lines(self, lines: List[Text]) -> List[StoryStep]:
         multiline_comment = False
 
         for idx, line in enumerate(lines):
@@ -95,9 +93,9 @@ class MarkdownStoryReader(StoryReader):
                     # reached a user message
                     user_messages = [el.strip() for el in line[1:].split(" OR ")]
                     if self.use_e2e:
-                        await self._add_e2e_messages(user_messages, line_num)
+                        self._add_e2e_messages(user_messages, line_num)
                     else:
-                        await self._add_user_messages(user_messages, line_num)
+                        self._add_user_messages(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning(
@@ -180,7 +178,7 @@ class MarkdownStoryReader(StoryReader):
             )
             return "", {}
 
-    async def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
+    def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "User message '{}' at invalid location. "
@@ -191,7 +189,7 @@ class MarkdownStoryReader(StoryReader):
             parsed_messages, self.unfold_or_utterances
         )
 
-    async def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
+    def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "End-to-end message '{}' at invalid "
@@ -201,8 +199,7 @@ class MarkdownStoryReader(StoryReader):
 
         parsed_messages = []
         for m in e2e_messages:
-            message = self.parse_e2e_message(m)
-            parsed = self._parse_message(message.get(TEXT), line_num)
+            parsed = self._parse_message(m, line_num)
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
@@ -244,15 +241,24 @@ class MarkdownStoryReader(StoryReader):
         return example
 
     def _parse_message(self, message: Text, line_num: int) -> UserUttered:
-        parse_data = RegexInterpreter().synchronous_parse(message)
 
-        text = None
         if self.use_e2e:
-            text = parse_data.get("text")
+            parsed = self.parse_e2e_message(message)
+            text = parsed.get("text")
+            intent = {INTENT_NAME_KEY: parsed.get("intent")}
+            entities = parsed.get("entities")
+            parse_data = {
+                "text": text,
+                "intent": intent,
+                "intent_ranking": [{INTENT_NAME_KEY: parsed.get("intent")}],
+                "entities": entities,
+            }
+        else:
+            parse_data = RegexInterpreter().synchronous_parse(message)
+            text = None
+            intent = parse_data.get("intent")
 
-        utterance = UserUttered(
-            text, parse_data.get("intent"), parse_data.get("entities"), parse_data
-        )
+        utterance = UserUttered(text, intent, parse_data.get("entities"), parse_data)
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
@@ -267,7 +273,7 @@ class MarkdownStoryReader(StoryReader):
         return utterance
 
     @staticmethod
-    def is_markdown_story_file(file_path: Union[Text, Path]) -> bool:
+    def is_stories_file(file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in Markdown format.
 
         Args:
@@ -303,7 +309,7 @@ class MarkdownStoryReader(StoryReader):
             return False
 
     @staticmethod
-    def is_markdown_test_stories_file(file_path: Union[Text, Path]) -> bool:
+    def is_test_stories_file(file_path: Union[Text, Path]) -> bool:
         """Checks if a file contains test stories.
 
         Args:

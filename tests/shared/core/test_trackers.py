@@ -16,6 +16,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     LOOP_NAME,
     REQUESTED_SLOT,
+    LOOP_INTERRUPTED,
 )
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
@@ -32,14 +33,16 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     BotUttered,
     LegacyForm,
+    LegacyFormValidation,
+    LoopInterrupted,
 )
 from rasa.shared.core.slots import (
     FloatSlot,
     BooleanSlot,
     ListSlot,
     TextSlot,
-    DataSlot,
     Slot,
+    AnySlot,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -265,7 +268,8 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
                 {"value": "greet", "entity": "entity_name"},
                 {"value": "bye", "entity": "entity_name", "group": "group"},
             ],
-            ["greet", "bye"],
+            # bye has group set, so it should not be extracted
+            ["greet"],
         ),
     ],
 )
@@ -719,7 +723,7 @@ def test_tracker_without_slots(key, value, caplog):
         (BooleanSlot, True, False),
         (ListSlot, [1, 2, 3], [4, 5, 6]),
         (TextSlot, "some string", "another string"),
-        (DataSlot, {"a": "nice dict"}, {"b": "better dict"}),
+        (AnySlot, {"a": "nice dict"}, {"b": "better dict"}),
     ],
 )
 def test_tracker_does_not_modify_slots(
@@ -1127,3 +1131,45 @@ def test_change_form_to_deprecation_warning():
         tracker.change_form_to(new_form)
 
     assert tracker.active_loop_name == new_form
+
+
+def test_reading_of_trackers_with_legacy_form_validation_events():
+    tracker = DialogueStateTracker.from_dict(
+        "sender",
+        events_as_dict=[
+            {"event": LegacyFormValidation.type_name, "name": None, "validate": True},
+            {"event": LegacyFormValidation.type_name, "name": None, "validate": False},
+        ],
+    )
+
+    expected_events = [LegacyFormValidation(True), LegacyFormValidation(False)]
+    actual_events = list(tracker.events)
+    assert list(tracker.events) == expected_events
+    assert not actual_events[0].is_interrupted
+    assert actual_events[1].is_interrupted
+
+    assert tracker.active_loop[LOOP_INTERRUPTED]
+
+
+def test_writing_trackers_with_legacy_for_validation_events():
+    tracker = DialogueStateTracker.from_events(
+        "sender", evts=[LegacyFormValidation(True), LegacyFormValidation(False)]
+    )
+
+    events_as_dict = [event.as_dict() for event in tracker.events]
+
+    for event in events_as_dict:
+        assert event["event"] == LoopInterrupted.type_name
+
+    assert not events_as_dict[0][LOOP_INTERRUPTED]
+    assert events_as_dict[1][LOOP_INTERRUPTED]
+
+
+@pytest.mark.parametrize("validate", [True, False])
+def test_set_form_validation_deprecation_warning(validate: bool):
+    tracker = DialogueStateTracker.from_events("conversation", evts=[])
+
+    with pytest.warns(DeprecationWarning):
+        tracker.set_form_validation(validate)
+
+    assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)

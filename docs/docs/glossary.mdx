@@ -23,6 +23,12 @@ description: Glossary for all Rasa-related terms
 
   A Content Management System (CMS) can be used to store bot responses externally instead of directly including it as part of the domain.  This provides more flexibility in changing them as they are not tightly-coupled with the training data.
 
+## [Component](./components.mdx)
+
+  An element in the an assistant's [NLU pipeline](./tuning-your-model.mdx#how-to-choose-a-pipeline) in the [Model Configuration](./model-configuration.mdx).
+
+  Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
+
 ## [Custom Action](./actions.mdx#custom-actions)
 
   An action written by a Rasa developer that can run arbitrary code mainly to interact with the outside world.
@@ -45,7 +51,7 @@ description: Glossary for all Rasa-related terms
 
 ## [Event](https://rasa.com/docs/action-server/events)
 
-  All conversations in Rasa are represented as a sequence of events. For instance, a `UserUttered` represents a user entering a message, and an `ActionExecuted` represents the assistant executing an action. You can learn more about them [here](https://rasa.com/docs/action-server/events).
+  All conversations in Rasa are represented as a sequence of events. For instance, a `UserUttered` represents a user entering a message, and an `ActionExecuted` represents the assistant executing an action.
 
 ## FAQs
 
@@ -87,11 +93,9 @@ description: Glossary for all Rasa-related terms
 
   Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.
 
-## Rasa NLU
+## NLU
 
   Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.
-
-  Rasa NLU is the part of Rasa that performs intent classification and entity extraction.
 
 ## [Pipeline](./tuning-your-model.mdx)
 
@@ -105,17 +109,19 @@ description: Glossary for all Rasa-related terms
 
   The dialogue engine that decides on what to do next in a conversation based on the context.
 
-## Rasa NLU Component
+## Rasa NLU
 
-  An element in the Rasa NLU pipeline (see “Pipeline”).
+  Rasa NLU is the part of Rasa that performs Natural Language Understanding ([NLU](#nlu)), including intent classification and entity extraction.
 
-  Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
+## [Response / Template / Utterance](./responses.mdx)
+
+  A message that an assistant sends to a user. This can include text, buttons, images, and other content.
 
 ## [Rules](./rules.mdx)
 
   Special training data to specify rule-like behavior of the assistant, such as
   answering FAQs, filling [Forms](./forms.mdx), or handling
-  [Fallbacks](./fallback-handoff.mdx#fallbackactions).
+  [Fallbacks](./fallback-handoff.mdx#fallbacks).
 
 ## [Slot](./domain.mdx#slots)
 
@@ -124,10 +130,6 @@ description: Glossary for all Rasa-related terms
 ## [Story](./stories.mdx)
 
   A conversation between a user and a bot annotated with the intent / entities of the users' messages as well as the sequence of actions to be performed by the bot
-
-## [Template / Response / Utterance](./responses.mdx)
-
-  A message template that is used to respond to a user. This can include text, buttons, images, and other attachments.
 
 ## User Goal
 

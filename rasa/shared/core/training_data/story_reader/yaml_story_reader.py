@@ -70,7 +70,7 @@ class YAMLStoryReader(StoryReader):
             reader.unfold_or_utterances,
         )
 
-    async def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
         """Read stories or rules from file.
 
         Args:
@@ -81,17 +81,28 @@ class YAMLStoryReader(StoryReader):
         """
         self.source_name = filename
 
-        try:
-            file_content = rasa.shared.utils.io.read_file(
+        return self.read_from_string(
+            rasa.shared.utils.io.read_file(
                 filename, rasa.shared.utils.io.DEFAULT_ENCODING
             )
-            rasa.shared.utils.validation.validate_yaml_schema(
-                file_content, CORE_SCHEMA_FILE
-            )
-            yaml_content = rasa.shared.utils.io.read_yaml(file_content)
+        )
+
+    def read_from_string(self, string: Text) -> List[StoryStep]:
+        """Read stories or rules from a string.
+
+        Args:
+            string: Unprocessed YAML file content.
+
+        Returns:
+            `StoryStep`s read from `string`.
+        """
+        try:
+            rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+            yaml_content = rasa.shared.utils.io.read_yaml(string)
         except (ValueError, ParserError) as e:
             rasa.shared.utils.io.raise_warning(
-                f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
+                f"Failed to read YAML from '{self.source_name}', "
+                f"it will be skipped. Error: {e}"
             )
             return []
 
@@ -118,7 +129,7 @@ class YAMLStoryReader(StoryReader):
             KEY_STORIES: StoryParser,
             KEY_RULES: RuleParser,
         }.items():
-            data = parsed_content.get(key, [])
+            data = parsed_content.get(key) or []
             parser = parser_class.from_reader(self)
             parser.parse_data(data)
             self.story_steps.extend(parser.get_steps())
@@ -126,7 +137,7 @@ class YAMLStoryReader(StoryReader):
         return self.story_steps
 
     @classmethod
-    def is_yaml_story_file(cls, file_path: Text) -> bool:
+    def is_stories_file(cls, file_path: Text) -> bool:
         """Check if file contains Core training data or rule data in YAML format.
 
         Args:
@@ -174,7 +185,7 @@ class YAMLStoryReader(StoryReader):
         return Path(file_path).name.startswith(TEST_STORIES_FILE_PREFIX)
 
     @classmethod
-    def is_yaml_test_stories_file(cls, file_path: Union[Text, Path]) -> bool:
+    def is_test_stories_file(cls, file_path: Union[Text, Path]) -> bool:
         """Checks if a file is a test conversations file.
 
         Args:
@@ -184,7 +195,7 @@ class YAMLStoryReader(StoryReader):
             `True` if it's a conversation test file, otherwise `False`.
         """
 
-        return cls._has_test_prefix(file_path) and cls.is_yaml_story_file(file_path)
+        return cls._has_test_prefix(file_path) and cls.is_stories_file(file_path)
 
     def get_steps(self) -> List[StoryStep]:
         self._add_current_stories_to_result()
@@ -477,8 +488,10 @@ class RuleParser(YAMLStoryReader):
     def _parse_rule_conditions(
         self, conditions: List[Union[Text, Dict[Text, Any]]]
     ) -> None:
+        self._is_parsing_conditions = True
         for condition in conditions:
             self._parse_step(condition)
+        self._is_parsing_conditions = False
 
     def _close_part(self, item: Dict[Text, Any]) -> None:
         if item.get(KEY_WAIT_FOR_USER_INPUT_AFTER_RULE) is False:

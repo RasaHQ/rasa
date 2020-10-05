@@ -28,6 +28,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.shared.constants import DOCS_URL_TELEMETRY
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
@@ -118,13 +119,16 @@ def _default_telemetry_configuration(is_enabled: bool) -> Dict[Text, Any]:
 
 def _write_default_telemetry_configuration(
     is_enabled: bool = TELEMETRY_ENABLED_BY_DEFAULT,
-) -> None:
-    if is_enabled and os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE) is None:
-        print_telemetry_reporting_info()
-
+) -> bool:
     new_config = _default_telemetry_configuration(is_enabled)
 
-    rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, new_config)
+    success = rasa_utils.write_global_config_value(
+        CONFIG_FILE_TELEMETRY_KEY, new_config
+    )
+
+    if is_enabled and success:
+        print_telemetry_reporting_info()
+    return success
 
 
 def _is_telemetry_enabled_in_configuration() -> bool:
@@ -145,8 +149,9 @@ def _is_telemetry_enabled_in_configuration() -> bool:
         logger.debug(f"Could not read telemetry settings from configuration file: {e}")
 
         # seems like there is no config, we'll create on and enable telemetry
-        _write_default_telemetry_configuration()
-        return TELEMETRY_ENABLED_BY_DEFAULT
+        success = _write_default_telemetry_configuration()
+        # if writing the configuration failed, telemetry will be disabled
+        return TELEMETRY_ENABLED_BY_DEFAULT and success
 
 
 def is_telemetry_enabled() -> bool:
@@ -554,7 +559,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 def strip_sensitive_data_from_sentry_event(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
-) -> Dict[Text, Any]:
+) -> Optional[Dict[Text, Any]]:
     """Remove any sensitive data from the event (e.g. path names).
 
     Args:
@@ -562,13 +567,32 @@ def strip_sensitive_data_from_sentry_event(
         _unused_hint: some hinting information sent alongside of the event
 
     Returns:
-        the event without any sensitive / PII data.
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
     """
     # removes any paths from stack traces (avoids e.g. sending
     # a users home directory name if package is installed there)
     for value in event.get("exception", {}).get("values", []):
         for frame in value.get("stacktrace", {}).get("frames", []):
             frame["abs_path"] = ""
+
+            if "rasa_sdk/executor.py" in frame["filename"]:
+                # this looks a lot like an exception in the SDK and hence custom code
+                # no need for us to deal with that
+                return None
+            elif "site-packages" in frame["filename"]:
+                # drop site-packages and following slash / backslash
+                relative_name = frame["filename"].split("site-packages")[-1][1:]
+                frame["filename"] = os.path.join("site-packages", relative_name)
+            elif "dist-packages" in frame["filename"]:
+                # drop dist-packages and following slash / backslash
+                relative_name = frame["filename"].split("dist-packages")[-1][1:]
+                frame["filename"] = os.path.join("dist-packages", relative_name)
+            elif os.path.isabs(frame["filename"]):
+                # if the file path is absolute, we'll drop the whole event as this is
+                # very likely custom code. needs to happen after cleaning as
+                # site-packages / dist-packages paths are also absolute, but fine.
+                return None
     return event
 
 
@@ -606,7 +630,7 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=get_telemetry_id() or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt],
+        ignore_errors=[KeyboardInterrupt, RasaException],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",

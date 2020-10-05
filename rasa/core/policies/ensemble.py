@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple, Union
 
 import rasa.core
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -380,7 +381,6 @@ class PolicyEnsemble:
         parsed_policies = []
 
         for policy in policies:
-            policy_name = policy.pop("name")
             if policy.get("featurizer"):
                 featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
                     policy
@@ -401,6 +401,7 @@ class PolicyEnsemble:
                 # override policy's featurizer with real featurizer class
                 policy["featurizer"] = featurizer_func(**featurizer_config)
 
+            policy_name = policy.pop("name")
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
                 try:
@@ -410,13 +411,12 @@ class PolicyEnsemble:
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
-                    "Module for policy '{}' could not "
-                    "be loaded. Please make sure the "
-                    "name is a valid policy."
-                    "".format(policy_name)
+                    f"Module for policy '{policy_name}' could not "
+                    f"be loaded. Please make sure the "
+                    f"name is a valid policy."
                 )
 
-        cls._assert_rule_policy_not_used_with_other_rule_like_policy(parsed_policies)
+        cls._check_if_rule_policy_used_with_rule_like_policies(parsed_policies)
 
         return parsed_policies
 
@@ -424,7 +424,11 @@ class PolicyEnsemble:
     def get_featurizer_from_dict(cls, policy) -> Tuple[Any, Any]:
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
-            raise InvalidPolicyConfig("policy can have only 1 featurizer")
+            raise InvalidPolicyConfig(
+                f"Every policy can only have 1 featurizer "
+                f"but '{policy.get('name')}' "
+                f"uses {len(policy['featurizer'])} featurizers."
+            )
         featurizer_config = policy["featurizer"][0]
         featurizer_name = featurizer_config.pop("name")
         featurizer_func = registry.featurizer_from_module_path(featurizer_name)
@@ -435,7 +439,11 @@ class PolicyEnsemble:
     def get_state_featurizer_from_dict(cls, featurizer_config) -> Tuple[Any, Any]:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
-            raise InvalidPolicyConfig("featurizer can have only 1 state featurizer")
+            raise InvalidPolicyConfig(
+                f"Every featurizer can only have 1 state "
+                f"featurizer but one of the featurizers uses "
+                f"{len(featurizer_config['state_featurizer'])}."
+            )
         state_featurizer_config = featurizer_config["state_featurizer"][0]
         state_featurizer_name = state_featurizer_config.pop("name")
         state_featurizer_func = registry.state_featurizer_from_module_path(
@@ -445,7 +453,7 @@ class PolicyEnsemble:
         return state_featurizer_func, state_featurizer_config
 
     @staticmethod
-    def _assert_rule_policy_not_used_with_other_rule_like_policy(
+    def _check_if_rule_policy_used_with_rule_like_policies(
         policies: List[Policy],
     ) -> None:
         if not any(isinstance(policy, RulePolicy) for policy in policies):
@@ -466,13 +474,15 @@ class PolicyEnsemble:
             isinstance(policy, policies_not_be_used_with_rule_policy)
             for policy in policies
         ):
-            raise InvalidPolicyConfig(
-                f"It is not possible to use the RulePolicy with "
+            rasa.shared.utils.io.raise_warning(
+                f"It is not recommended to use the '{RulePolicy.__name__}' with "
                 f"other policies which implement rule-like "
-                f"behavior. Either re-implement the desired "
-                f"behavior as rules or remove the RulePolicy from"
-                f"your policy configuration. Please see the Rasa Open Source 2.0 "
-                f"migration guide ({DOCS_URL_MIGRATION_GUIDE}) for more information."
+                f"behavior. It is highly recommended to migrate all deprecated "
+                f"policies to use the '{RulePolicy.__name__}'. Note that the "
+                f"'{RulePolicy.__name__}' will supersede the predictions of the "
+                f"deprecated policies if the confidence levels of the predictions are "
+                f"equal.",
+                docs=DOCS_URL_MIGRATION_GUIDE,
             )
 
 
@@ -737,7 +747,7 @@ def _check_policy_for_forms_available(
         )
 
 
-class InvalidPolicyConfig(Exception):
+class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
 
     pass
