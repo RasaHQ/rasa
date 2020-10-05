@@ -1,0 +1,1 @@
+Debug logs from ``matplotlib`` libraries are now hidden by default and are configurable with the ``LOG_LEVEL_LIBRARIES`` environment variable. 
