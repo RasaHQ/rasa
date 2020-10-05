@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Set, Text, Optional
 
 import rasa.core.training.story_conflict
+import rasa.shared.nlu.constants
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DOCS_URL_DOMAINS,
@@ -15,7 +16,6 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.constants import TEXT, RESPONSE_IDENTIFIER_DELIMITER
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
@@ -80,7 +80,7 @@ class Validator:
 
         duplication_hash = defaultdict(set)
         for example in self.intents.intent_examples:
-            text = example.get(TEXT)
+            text = example.get(rasa.shared.nlu.constants.TEXT)
             duplication_hash[text].add(example.get("intent"))
 
         for text, intents in duplication_hash.items():
@@ -132,7 +132,7 @@ class Validator:
         """Return all utterances which are actions."""
 
         responses = {
-            response.split(RESPONSE_IDENTIFIER_DELIMITER)[0]
+            response.split(rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER)[0]
             for response in self.intents.responses.keys()
         }
         return responses | {
