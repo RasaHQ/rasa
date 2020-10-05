@@ -14,6 +14,8 @@ import rasa.model
 import rasa.core
 import rasa.shared.importers.autoconfig as autoconfig
 from rasa.core.interpreter import RasaNLUInterpreter
+from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
 
 from rasa.train import train_core, train_nlu, train
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
@@ -162,6 +164,43 @@ def test_train_nlu_wrong_format_error_message(
 
     captured = capsys.readouterr()
     assert "Please verify the data format" in captured.out
+
+
+def test_train_nlu_with_responses_or_domain_warns(
+    tmp_path: Text, monkeypatch: MonkeyPatch,
+):
+    (tmp_path / "training").mkdir()
+    (tmp_path / "models").mkdir()
+
+    data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
+    domain_path = "data/test_nlu_no_responses/domain_with_only_responses.yml"
+
+    with pytest.warns(None) as records:
+        train_nlu(
+            "data/test_config/config_defaults.yml",
+            data_path,
+            output=str(tmp_path / "models"),
+        )
+
+    assert any(
+        "You either need to add a response phrase or correct the intent"
+        in record.message.args[0]
+        for record in records
+    )
+
+    with pytest.warns(None) as records:
+        train_nlu(
+            "data/test_config/config_defaults.yml",
+            data_path,
+            output=str(tmp_path / "models"),
+            domain=domain_path,
+        )
+
+    assert not any(
+        "You either need to add a response phrase or correct the intent"
+        in record.message.args[0]
+        for record in records
+    )
 
 
 def test_train_nlu_no_nlu_file_error_message(

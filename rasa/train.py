@@ -434,6 +434,7 @@ def train_nlu(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
+    domain: Optional[Union[Domain, Text]] = None,
 ) -> Optional[Text]:
     """Trains an NLU model.
 
@@ -448,6 +449,7 @@ def train_nlu(
                                    with the model.
         additional_arguments: Additional training parameters which will be passed to
                               the `train` method of each component.
+        domain: Path to the optional domain file/Domain object.
 
 
     Returns:
@@ -465,6 +467,7 @@ def train_nlu(
             fixed_model_name,
             persist_nlu_training_data,
             additional_arguments,
+            domain=domain,
         )
     )
 
@@ -477,6 +480,7 @@ async def _train_nlu_async(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
+    domain: Optional[Union[Domain, Text]] = None,
 ):
     if not nlu_data:
         print_error(
@@ -487,7 +491,7 @@ async def _train_nlu_async(
 
     # training NLU only hence the training files still have to be selected
     file_importer = TrainingDataImporter.load_nlu_importer_from_config(
-        config, training_data_paths=[nlu_data]
+        config, domain, training_data_paths=[nlu_data]
     )
 
     training_data = await file_importer.get_nlu_data()
