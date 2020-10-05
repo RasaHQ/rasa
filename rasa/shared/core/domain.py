@@ -2,23 +2,35 @@ import copy
 import collections
 import json
 import logging
-import typing
 import os
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Union,
+    NoReturn,
+    TYPE_CHECKING,
+)
 from pathlib import Path
 
 from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
 import rasa.shared.core.constants
+from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
+from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
@@ -58,18 +70,12 @@ State = Dict[Text, SubState]
 logger = logging.getLogger(__name__)
 
 
-class InvalidDomain(Exception):
+class InvalidDomain(RasaException):
     """Exception that can be raised when domain is not valid."""
 
-    def __init__(self, message) -> None:
-        self.message = message
-        super(InvalidDomain, self).__init__()
 
-    def __str__(self) -> Text:
-        # return message in error colours
-        return rasa.shared.utils.io.wrap_with_color(
-            self.message, color=rasa.shared.utils.io.bcolors.FAIL
-        )
+class ActionNotFoundException(ValueError, RasaException):
+    """Raised when an action name could not be found."""
 
 
 class SessionConfig(NamedTuple):
@@ -99,7 +105,7 @@ class Domain:
         return cls([], [], [], {}, [], [])
 
     @classmethod
-    def load(cls, paths: Union[List[Text], Text]) -> "Domain":
+    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -116,7 +122,7 @@ class Domain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Text) -> "Domain":
+    def from_path(cls, path: Union[Text, Path]) -> "Domain":
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
@@ -142,7 +148,8 @@ class Domain:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
-        except rasa.shared.utils.validation.InvalidYamlFileError as e:
+        except rasa.shared.utils.validation.YamlValidationException as e:
+            e.filename = original_filename
             raise InvalidDomain(str(e))
 
         data = rasa.shared.utils.io.read_yaml(yaml)
@@ -272,15 +279,14 @@ class Domain:
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
-        # it is super important to sort the slots here!!!
-        # otherwise state ordering is not consistent
         slots = []
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)
+        # Sort the slots so that the order of the slot states is consistent
         for slot_name in sorted(slot_dict):
-            slot_class = Slot.resolve_by_type(slot_dict[slot_name].get("type"))
-            if "type" in slot_dict[slot_name]:
-                del slot_dict[slot_name]["type"]
+            slot_type = slot_dict[slot_name].pop("type", None)
+            slot_class = Slot.resolve_by_type(slot_type)
+
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
@@ -410,7 +416,7 @@ class Domain:
 
     def __init__(
         self,
-        intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
+        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
@@ -422,6 +428,9 @@ class Domain:
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents, entities)
+        self.overriden_default_intents = self._collect_overridden_default_intents(
+            intents
+        )
         self.entities = entities
 
         self.forms: Dict[Text, Any] = {}
@@ -447,6 +456,40 @@ class Domain:
 
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
+
+    def __deepcopy__(self, memo: Optional[Dict[int, Any]]) -> "Domain":
+        """Enables making a deep copy of the `Domain` using `copy.deepcopy`.
+
+        See https://docs.python.org/3/library/copy.html#copy.deepcopy
+        for more implementation.
+
+        Args:
+            memo: Optional dictionary of objects already copied during the current
+            copying pass.
+
+        Returns:
+            A deep copy of the current domain.
+        """
+        domain_dict = self.as_dict()
+        return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
+
+    @staticmethod
+    def _collect_overridden_default_intents(
+        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
+    ) -> List[Text]:
+        """Collects the default intents overridden by the user.
+
+        Args:
+            intents: User-provided intents.
+
+        Returns:
+            User-defined intents that are default intents.
+        """
+        intent_names: Set[Text] = {
+            list(intent.keys())[0] if isinstance(intent, dict) else intent
+            for intent in intents
+        }
+        return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
 
     def _initialize_forms(self, forms: Union[Dict[Text, Any], List[Text]]) -> None:
         """Initialize the domain's `self.form` and `self.form_names` attributes.
@@ -513,7 +556,7 @@ class Domain:
         All unseen values found for the slot will be mapped to this default value
         for featurization.
         """
-        for slot in [s for s in self.slots if type(s) is CategoricalSlot]:
+        for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
 
     def add_requested_slot(self) -> None:
@@ -526,7 +569,10 @@ class Domain:
             s.name for s in self.slots
         ]:
             self.slots.append(
-                UnfeaturizedSlot(rasa.shared.core.constants.REQUESTED_SLOT)
+                TextSlot(
+                    rasa.shared.core.constants.REQUESTED_SLOT,
+                    influence_conversation=False,
+                )
             )
 
     def add_knowledge_base_slots(self) -> None:
@@ -555,7 +601,7 @@ class Domain:
             ]
             for s in knowledge_base_slots:
                 if s not in slot_names:
-                    self.slots.append(UnfeaturizedSlot(s))
+                    self.slots.append(TextSlot(s, influence_conversation=False))
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Look up which action index corresponds to this action name."""
@@ -565,9 +611,9 @@ class Domain:
         except ValueError:
             self.raise_action_not_found_exception(action_name)
 
-    def raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
+    def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
-        raise NameError(
+        raise ActionNotFoundException(
             f"Cannot access action '{action_name}', "
             f"as that name is not a registered "
             f"action for this domain. "
@@ -836,7 +882,10 @@ class Domain:
         intents_for_file = []
 
         for intent_name, intent_props in intent_properties.items():
-            if intent_name in rasa.shared.core.constants.DEFAULT_INTENTS:
+            if (
+                intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
+                and intent_name not in self.overriden_default_intents
+            ):
                 # Default intents should be not dumped with the domain
                 continue
             use_entities = set(intent_props[USED_ENTITIES_KEY])
@@ -893,7 +942,7 @@ class Domain:
             if v != {} and v != [] and v is not None
         }
 
-    def persist_clean(self, filename: Text) -> None:
+    def persist_clean(self, filename: Union[Text, Path]) -> None:
         """Write cleaned domain to a file."""
 
         cleaned_domain_data = self.cleaned_domain()
@@ -921,10 +970,10 @@ class Domain:
     def _slots_for_domain_warnings(self) -> List[Text]:
         """Fetch names of slots that are used in domain warnings.
 
-        Excludes slots of type `UnfeaturizedSlot`.
+        Excludes slots which aren't featurized.
         """
 
-        return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
+        return [s.name for s in self.slots if s.influence_conversation]
 
     @property
     def _actions_for_domain_warnings(self) -> List[Text]:
@@ -998,7 +1047,7 @@ class Domain:
 
         Returns a dictionary with entries for `intent_warnings`,
         `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
-        of type `UnfeaturizedSlot` from domain warnings.
+        from domain warnings in case they are not featurized.
         """
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)

@@ -162,6 +162,13 @@ module.exports = {
       },
     }],
     ['@docusaurus/plugin-content-pages', {}],
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        sizes: [160, 226, 320, 452, 640, 906, 1280, 1810, 2560],
+        quality: 70,
+      },
+    ],
     ['@docusaurus/plugin-sitemap',
       {
         cacheTime: 600 * 1000, // 600 sec - cache purge period

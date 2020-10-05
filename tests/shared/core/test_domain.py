@@ -9,7 +9,7 @@ import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.slots import TextSlot, UnfeaturizedSlot
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.constants import (
     DEFAULT_INTENTS,
     SLOT_LISTED_ITEMS,
@@ -27,10 +27,7 @@ from rasa.shared.core.domain import (
     Domain,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.events import (
-    ActionExecuted,
-    SlotSet,
-)
+from rasa.shared.core.events import ActionExecuted, SlotSet
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
@@ -368,6 +365,27 @@ responses:
     assert domain.session_config == SessionConfig(20, True)
 
 
+@pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
+def test_merge_yaml_domains_with_default_intents(default_intent: Text):
+    test_yaml_1 = """intents: []"""
+
+    # this domain contains an overridden default intent
+    test_yaml_2 = f"""intents:
+- greet
+- {default_intent}"""
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain = domain_1.merge(domain_2)
+
+    # check that the default intents were merged correctly
+    assert default_intent in domain.intents
+    assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
+
+    # ensure that the default intent is contain the domain's dictionary dump
+    assert list(domain.as_dict()["intents"][1].keys())[0] == default_intent
+
+
 def test_merge_session_config_if_first_is_not_default():
     yaml1 = """
 session_config:
@@ -617,7 +635,9 @@ def test_unfeaturized_slot_in_domain_warnings():
     domain = Domain.empty()
 
     # add one unfeaturized and one text slot
-    unfeaturized_slot = UnfeaturizedSlot("unfeaturized_slot", "value1")
+    unfeaturized_slot = TextSlot(
+        "unfeaturized_slot", "value1", influence_conversation=False
+    )
     text_slot = TextSlot("text_slot", "value2")
     domain.slots.extend([unfeaturized_slot, text_slot])
 
@@ -872,3 +892,39 @@ def test_add_default_intents(domain: Dict):
     domain = Domain.from_dict(domain)
 
     assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)
+
+
+def test_domain_deepcopy():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    new_domain = copy.deepcopy(domain)
+
+    assert isinstance(new_domain, Domain)
+
+    # equalities
+    assert new_domain.intent_properties == domain.intent_properties
+    assert new_domain.overriden_default_intents == domain.overriden_default_intents
+    assert new_domain.entities == domain.entities
+    assert new_domain.forms == domain.forms
+    assert new_domain.form_names == domain.form_names
+    assert new_domain.templates == domain.templates
+    assert new_domain.action_texts == domain.action_texts
+    assert new_domain.session_config == domain.session_config
+    assert new_domain._custom_actions == domain._custom_actions
+    assert new_domain.user_actions == domain.user_actions
+    assert new_domain.action_names == domain.action_names
+    assert new_domain.store_entities_as_slots == domain.store_entities_as_slots
+
+    # not the same objects
+    assert new_domain is not domain
+    assert new_domain.intent_properties is not domain.intent_properties
+    assert new_domain.overriden_default_intents is not domain.overriden_default_intents
+    assert new_domain.entities is not domain.entities
+    assert new_domain.forms is not domain.forms
+    assert new_domain.form_names is not domain.form_names
+    assert new_domain.slots is not domain.slots
+    assert new_domain.templates is not domain.templates
+    assert new_domain.action_texts is not domain.action_texts
+    assert new_domain.session_config is not domain.session_config
+    assert new_domain._custom_actions is not domain._custom_actions
+    assert new_domain.user_actions is not domain.user_actions
+    assert new_domain.action_names is not domain.action_names

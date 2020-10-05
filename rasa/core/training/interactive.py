@@ -30,9 +30,9 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     LOOP_NAME,
     ACTIVE_LOOP,
-    LOOP_VALIDATE,
     LOOP_REJECTED,
     REQUESTED_SLOT,
+    LOOP_INTERRUPTED,
 )
 from rasa.core import run, train, utils
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
@@ -580,6 +580,21 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strings
 
 
+def _retry_on_error(
+    func: Callable, export_path: Text, *args: Any, **kwargs: Any
+) -> None:
+    while True:
+        try:
+            return func(export_path, *args, **kwargs)
+        except OSError as e:
+            answer = questionary.confirm(
+                f"Failed to export '{export_path}': {e}. Please make sure 'rasa' "
+                f"has read and write access to this file. Would you like to retry?"
+            ).ask()
+            if not answer:
+                raise e
+
+
 async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     """Write stories and nlu data to file."""
 
@@ -591,9 +606,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    _write_stories_to_file(story_path, events, domain)
-    _write_nlu_to_file(nlu_path, events)
-    _write_domain_to_file(domain_path, events, domain)
+    _retry_on_error(_write_stories_to_file, story_path, events, domain)
+    _retry_on_error(_write_nlu_to_file, nlu_path, events)
+    _retry_on_error(_write_domain_to_file, domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -1047,10 +1062,13 @@ async def _confirm_form_validation(
         await send_event(
             endpoint,
             conversation_id,
-            {"event": "form_validation", LOOP_VALIDATE: False},
+            {
+                "event": rasa.shared.core.events.LoopInterrupted.type_name,
+                LOOP_INTERRUPTED: True,
+            },
         )
 
-    elif not tracker.get(ACTIVE_LOOP, {}).get(LOOP_VALIDATE):
+    elif tracker.get(ACTIVE_LOOP, {}).get(LOOP_INTERRUPTED):
         # handle contradiction with learned behaviour
         warning_question = questionary.confirm(
             "ERROR: FormPolicy predicted no form validation "
@@ -1064,7 +1082,12 @@ async def _confirm_form_validation(
         await _ask_questions(warning_question, conversation_id, endpoint)
         # notify form action to validate an input
         await send_event(
-            endpoint, conversation_id, {"event": "form_validation", LOOP_VALIDATE: True}
+            endpoint,
+            conversation_id,
+            {
+                "event": rasa.shared.core.events.LoopInterrupted.type_name,
+                LOOP_INTERRUPTED: False,
+            },
         )
 
 
