@@ -176,10 +176,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Pa
             component_builder=component_builder,
         )
 
-    assert (
-        "'DIETClassifier' requires ['Featurizer']. "
-        "Add required components to the pipeline." in str(e.value)
-    )
+    assert "'DIETClassifier' requires 'Featurizer'" in str(e.value)
 
 
 def as_pipeline(*components):

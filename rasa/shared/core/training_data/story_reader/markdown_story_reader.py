@@ -199,8 +199,7 @@ class MarkdownStoryReader(StoryReader):
 
         parsed_messages = []
         for m in e2e_messages:
-            message = self.parse_e2e_message(m)
-            parsed = self._parse_message(message.get(TEXT), line_num)
+            parsed = self._parse_message(m, line_num)
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
@@ -242,15 +241,24 @@ class MarkdownStoryReader(StoryReader):
         return example
 
     def _parse_message(self, message: Text, line_num: int) -> UserUttered:
-        parse_data = RegexInterpreter().synchronous_parse(message)
 
-        text = None
         if self.use_e2e:
-            text = parse_data.get("text")
+            parsed = self.parse_e2e_message(message)
+            text = parsed.get("text")
+            intent = {INTENT_NAME_KEY: parsed.get("intent")}
+            entities = parsed.get("entities")
+            parse_data = {
+                "text": text,
+                "intent": intent,
+                "intent_ranking": [{INTENT_NAME_KEY: parsed.get("intent")}],
+                "entities": entities,
+            }
+        else:
+            parse_data = RegexInterpreter().synchronous_parse(message)
+            text = None
+            intent = parse_data.get("intent")
 
-        utterance = UserUttered(
-            text, parse_data.get("intent"), parse_data.get("entities"), parse_data
-        )
+        utterance = UserUttered(text, intent, parse_data.get("entities"), parse_data)
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
@@ -265,7 +273,7 @@ class MarkdownStoryReader(StoryReader):
         return utterance
 
     @staticmethod
-    def is_markdown_story_file(file_path: Union[Text, Path]) -> bool:
+    def is_stories_file(file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in Markdown format.
 
         Args:
@@ -301,7 +309,7 @@ class MarkdownStoryReader(StoryReader):
             return False
 
     @staticmethod
-    def is_markdown_test_stories_file(file_path: Union[Text, Path]) -> bool:
+    def is_test_stories_file(file_path: Union[Text, Path]) -> bool:
         """Checks if a file contains test stories.
 
         Args:
