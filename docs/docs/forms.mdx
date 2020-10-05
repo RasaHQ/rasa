@@ -301,7 +301,7 @@ When the form is executed it will run your custom action. In your custom action
 you can either
 
 - validate already extracted slots. You can retrieve them from the tracker by running
-  `tracker.form_slots_to_validate`.
+  `tracker.slots_to_validate`.
 - use [Custom Slot Mappings](./forms.mdx#slot-mappings) to extract slot values .
 
 After validating the extracted slots, return `SlotSet` events for them. If you want
@@ -329,7 +329,7 @@ class ValidateRestaurantForm(Action):
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.form_slots_to_validate()
+        extracted_slots: Dict[Text, Any] = tracker.slots_to_validate()
 
         validation_events = []
 

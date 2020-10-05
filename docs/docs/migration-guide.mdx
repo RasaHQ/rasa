@@ -335,7 +335,7 @@ class RestaurantFormValidator(Action):
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.form_slots_to_validate()
+        extracted_slots: Dict[Text, Any] = tracker.slots_to_validate()
 
         cuisine_slot_value = extracted_slots.get("cuisine")
         validated_slot_event = self.validate_cuisine(
