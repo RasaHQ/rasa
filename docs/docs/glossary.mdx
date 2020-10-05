@@ -9,35 +9,35 @@ description: Glossary for all Rasa-related terms
 
   A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).
   
-## [Action Server](https://rasa.com/docs/action-server)
+## [Action Server](./action-server.mdx)
 
-  The component that runs custom action code. The action server is started by the Rasa SDK, and the action server runs in a separate container when a Rasa assistant is deployed.
-
+  The server that runs custom action code, separate from Rasa Open Source. Rasa maintains the Rasa SDK in Python for implementing custom actions, although it's also possible to write custom actions in other languages. 
+  
 ## Annotation
 
   Adding labels to messages and conversations so that they can be used to train a model.
   
 ## [Business Logic](./business-logic.mdx)
 
-  Enforces the conditions and processes that must be fulfilled due to business requirements. For example, requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based policies like forms, and by custom actions.
+  Conditions that need to be fulfilled due to business requirements. For example, requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based actions like [forms](./forms.mdx).
 
-## Chitchat
+## [Chitchat](./chitchat-faqs.mdx)
 
-  Chitchat is a conversation pattern where the user says something that isn't directly related to their goal.
+  A conversation pattern where the user says something that isn't directly related to their goal.
   This can include things like greetings, asking how you are etc.
   Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa Open Source.
 
 ## CMS
 
-  Can be used to store bot responses externally instead of including them directly in the domain. Content Management Systems decouple responses from training data, which can provide greater flexibility when making updates
+  Can be used to store bot responses externally instead of including them directly in the domain. Content Management Systems decouple response text from training data.
   
-## Conversation-Driven Development (CDD)
+## [Conversation-Driven Development (CDD)](./conversation-driven-development.mdx)
 
-  The process of using real user messages and conversations to influence the design of an assistant and train the model, combined with engineering best practices. There are 6 steps that make up CDD: Share, Review, Annotate, Fix, Track, and Test.
+  The process of using user messages and conversation data to influence the design of an assistant and train the model, combined with engineering best practices. There are 6 steps that make up CDD: Share, Review, Annotate, Fix, Track, and Test.
   
-## Conversation Tests
+## [Conversation Tests](./testing-your-assistant.mdx)
 
-  Modified story format that includes the full text of the user message in addition to the intent label. Test conversations are saved to a test set file (conversation_tests.md), which is used to evaluate the model’s predictions across the entire conversation.
+  Modified story format that includes the full text of the user message in addition to the intent label. Test conversations are saved to a test set file (conversation_tests.md), which is used to evaluate the model’s predictions across an entire conversation.
 
 ## [Component](./components.mdx)
 
@@ -63,13 +63,13 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   It includes a list of all the intents, entities, slots, actions, and forms that the assistant knows about.
 
-## [Entity](./domain.mdx#entities)
+## [Entity](./training-data-format.mdx#entities)
 
   Keywords that can be extracted from a user message. For example: a telephone number, a person's name, a location, the name of a product
 
 ## [Event](https://rasa.com/docs/action-server/events)
 
-  Something that happens in a conversation. For instance, a `UserUttered` event represents a user entering a message, and an `ActionExecuted` event represents the assistant executing an action. All conversations in Rasa Open Source are represented as a sequence of events.
+  Something that happens in a conversation. For instance, a `UserUttered` event represents a user entering a message, and an `ActionExecuted` event represents the assistant executing an action. All conversations in Rasa are represented as a sequence of events.
 
 ## FAQs
 
@@ -81,7 +81,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   A type of custom action that asks the user for multiple pieces of information.
 
-  For example, if you need a city, a cuisine, and a price range to recommend a restaurant, you can create a restaurant form to collect the information. You can describe business logic inside a form, like offering the customer a different set of menu options if they mention a food allergy.
+  For example, if you need a city, a cuisine, and a price range to recommend a restaurant, you can create a restaurant form to collect the information. You can describe [business logic](#business-logic) inside a form, like offering the customer a different set of menu options if they mention a food allergy.
 
 ## Happy / Unhappy Paths
 
@@ -127,11 +127,11 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
 ## [Pipeline](./tuning-your-model.mdx)
 
-  The list of [NLU components](./components.mdx) that defines a Rasa assistant’s NLU system. A user message is processed by each component one by one, before returning the final structured output.
+  The list of NLU components (see [NLU Component](#nlu-component)) that defines a Rasa assistant’s NLU system. A user message is processed by each component one by one, before returning the final structured output.
 
 ## [Policy](./policies.mdx)
 
-  Rasa Open Source components that predict the dialogue system’s next action. Policies make decisions about how the conversation flow should proceed. A typical configuration includes multiple policies, and the policy with the highest confidence decides the next action to be taken in the conversation.
+  Rasa Open Source components that predict the dialogue system’s next actionPolicies make decisions about how the conversation flow should proceed. A typical configuration includes multiple policies, and the policy with the highest confidence decides the next action to be taken in the conversation.
 
 ## Rasa Core
 
@@ -139,19 +139,19 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
 ## Rasa NLU
 
-  Rasa NLU is the part of Rasa that performs Natural Language Understanding ([NLU](#nlu)), including intent classification and entity extraction.
+  Rasa NLU is the part of Rasa Open Source that performs Natural Language Understanding ([NLU](#nlu)), including intent classification and entity extraction.
 
-## NLU Component
+## [NLU Component](./components.mdx)
 
-  An element in the Rasa NLU pipeline (see “Pipeline”) that processes incoming messages. Components perform tasks ranging from entity extraction to intent classification to pre-processing.
+  An element in the Rasa NLU pipeline (see [Pipeline](#pipeline)) that processes incoming messages. Components perform tasks ranging from entity extraction to intent classification to pre-processing.
   
 ## Rasa X
 
-  A tool for conversation-driven development. Rasa X helps teams share and test an assistant built with Rasa Open Source, annotate user messages, and view conversations.
+  A tool for [conversation-driven development](./conversation-driven-development.mdx). Rasa X helps teams share and test an assistant built with Rasa Open Source, annotate user messages, and view conversations.
   
 ## Retrieval Intent
 
-  A special type of intent that can be divided into smaller sub-intents, where each sub-intent has a fixed response. For example, an FAQ retrieval intent has sub-intents that represent each individual FAQ the assistant knows how to answer. The answer to each of these FAQs is always the same, no matter what happens before or after in the conversation.
+  A special type of intent that can be divided into smaller sub-intents. For example, an FAQ retrieval intent has sub-intents that represent each individual question the assistant knows how to answer.
   
 ## REST Channel
 
@@ -159,7 +159,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
 ## [Rules](./rules.mdx)
 
-  Special training data to specify rule-like behavior, where a specific conditions always predict a specific next action. Examples include
+  Special training data to specify rule-like behavior, where a specific condition always predicts a specific next action. Examples include
   answering FAQs, filling [Forms](./forms.mdx), or handling
   [Fallbacks](./fallback-handoff.mdx#fallbacks).
 
@@ -178,7 +178,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Chat interface within Rasa X that allows bot developers to talk to, test, and correct their assistant. Can be enabled in strict Interactive Learning mode, which requires each prediction to be confirmed before the conversation can proceed.
 
-## [TED Policy](./policies.mdx)
+## [TED Policy](./policies.mdx#ted-policy)
 
   Transformer Embedding Dialogue Policy. TED is the default machine learning-based dialogue policy used by Rasa Open Source. TED complements rule-based policies by handling previously unseen situations, where no rule exists to determine the next action. 
   
@@ -186,15 +186,15 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   A message template used to respond to a user. Can include text, buttons, images, and other attachments.
 
-## Tracker
+## [Tracker](./tracker-stores.mdx)
 
   Rasa Open Source component that maintains the state of the dialogue, which is represented as a JSON object listing the events from the current session.
 
 ## User Goal
 
-  The overall goal that a user wants to achieve in a conversation, e.g. looking up the answer to a question, booking an appointment, or purchasing an insurance policy.
+  The overall goal that a user wants to achieve, e.g. looking up the answer to a question, booking an appointment, or purchasing an insurance policy.
 
-  Note: Some tools refer to the user goal as the “intent,” but in Rasa terminology, an intent is associated with each individual user message.
+  Some tools refer to the user goal as the “intent,” but in Rasa terminology, an intent is associated with each individual user message.
 
 ## Word embedding / Word vector
 
