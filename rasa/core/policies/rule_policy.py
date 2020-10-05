@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING, Union
+from typing import List, Dict, Text, Optional, Any, Set, TYPE_CHECKING
 
 from tqdm import tqdm
 import numpy as np
@@ -19,7 +19,7 @@ from rasa.shared.core.trackers import (
     is_prev_action_listen_in_state,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import FORM_POLICY_PRIORITY
+from rasa.core.constants import DEFAULT_CORE_FALLBACK_THRESHOLD, RULE_POLICY_PRIORITY
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
@@ -33,10 +33,14 @@ from rasa.shared.core.constants import (
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     LOOP_REJECTED,
+    LOOP_NAME,
+    SLOTS,
+    ACTIVE_LOOP,
 )
 from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
+import rasa.core.training.training
 
 
 if TYPE_CHECKING:
@@ -92,9 +96,9 @@ class RulePolicy(MemoizationPolicy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = FORM_POLICY_PRIORITY,
+        priority: int = RULE_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
-        core_fallback_threshold: float = 0.3,
+        core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
         core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         enable_fallback_prediction: bool = True,
         restrict_rules: bool = True,
@@ -268,6 +272,125 @@ class RulePolicy(MemoizationPolicy):
                 f"Please use stories for these cases."
             )
 
+    @staticmethod
+    def _check_slots_fingerprint(
+        fingerprint: Dict[Text, List[Text]], state: State
+    ) -> Set[Text]:
+        expected_slots = set(fingerprint.get(SLOTS, {}))
+        current_slots = set(state.get(SLOTS, {}).keys())
+        if expected_slots == current_slots:
+            # all expected slots are satisfied
+            return set()
+
+        return expected_slots
+
+    @staticmethod
+    def _check_active_loops_fingerprint(
+        fingerprint: Dict[Text, List[Text]], state: State
+    ) -> Set[Text]:
+        expected_active_loops = set(fingerprint.get(ACTIVE_LOOP, {}))
+        # we don't use tracker.active_loop_name
+        # because we need to keep should_not_be_set
+        current_active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+        if current_active_loop in expected_active_loops:
+            # one of expected active loops is set
+            return set()
+
+        return expected_active_loops
+
+    @staticmethod
+    def _error_messages_from_fingerprints(
+        action_name: Text,
+        fingerprint_slots: Set[Text],
+        fingerprint_active_loops: Set[Text],
+        rule_name: Text,
+    ) -> List[Text]:
+        error_messages = []
+        if action_name and fingerprint_slots:
+            error_messages.append(
+                f"- the action '{action_name}' in rule '{rule_name}' does not set all "
+                f"the slots, that it sets in other rules: "
+                f"'{', '.join(fingerprint_slots)}'. Please update the rule with "
+                f"an appropriate slot or if it is the last action "
+                f"add 'wait_for_user_input: false' after this action."
+            )
+        if action_name and fingerprint_active_loops:
+            # substitute `SHOULD_NOT_BE_SET` with `null` so that users
+            # know what to put in their rules
+            fingerprint_active_loops = set(
+                "null" if active_loop == SHOULD_NOT_BE_SET else active_loop
+                for active_loop in fingerprint_active_loops
+            )
+            # add action_name to active loop so that users
+            # know what to put in their rules
+            fingerprint_active_loops.add(action_name)
+
+            error_messages.append(
+                f"- the form '{action_name}' in rule '{rule_name}' does not set "
+                f"the 'active_loop', that it sets in other rules: "
+                f"'{', '.join(fingerprint_active_loops)}'. Please update the rule with "
+                f"the appropriate 'active loop' property or if it is the last action "
+                f"add 'wait_for_user_input: false' after this action."
+            )
+        return error_messages
+
+    def _check_for_incomplete_rules(
+        self, rule_trackers: List[TrackerWithCachedStates], domain: Domain,
+    ) -> None:
+        logger.debug("Started checking if some rules are incomplete.")
+        # we need to use only fingerprints from rules
+        rule_fingerprints = rasa.core.training.training.create_action_fingerprints(
+            rule_trackers, domain
+        )
+        if not rule_fingerprints:
+            return
+
+        error_messages = []
+        for tracker in rule_trackers:
+            states = tracker.past_states(domain)
+            # the last action is always action listen
+            action_names = [
+                state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME) for state in states[1:]
+            ] + [ACTION_LISTEN_NAME]
+
+            for state, action_name in zip(states, action_names):
+                previous_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+                fingerprint = rule_fingerprints.get(previous_action_name)
+                if (
+                    not previous_action_name
+                    or not fingerprint
+                    or action_name == RULE_SNIPPET_ACTION_NAME
+                    or previous_action_name == RULE_SNIPPET_ACTION_NAME
+                ):
+                    # do not check fingerprints for rule snippet action
+                    # and don't raise if fingerprints are not satisfied
+                    # for a previous action if current action is rule snippet action
+                    continue
+
+                expected_slots = self._check_slots_fingerprint(fingerprint, state)
+                expected_active_loops = self._check_active_loops_fingerprint(
+                    fingerprint, state
+                )
+                error_messages.extend(
+                    self._error_messages_from_fingerprints(
+                        previous_action_name,
+                        expected_slots,
+                        expected_active_loops,
+                        tracker.sender_id,
+                    )
+                )
+
+        if error_messages:
+            error_messages = "\n".join(error_messages)
+            raise InvalidRule(
+                f"\nIncomplete rules found🚨\n\n{error_messages}\n"
+                f"Please note that if some slots or active loops should not be set "
+                f"during prediction you need to explicitly set them to 'null' in the "
+                f"rules."
+            )
+
+        logger.debug("Found no incompletions in rules.")
+
     def _predict_next_action(
         self,
         tracker: TrackerWithCachedStates,
@@ -393,6 +516,9 @@ class RulePolicy(MemoizationPolicy):
         rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
         if self._restrict_rules:
             self._check_rule_restriction(rule_trackers)
+
+        if self._check_for_contradictions:
+            self._check_for_incomplete_rules(rule_trackers, domain)
 
         (
             rule_trackers_as_states,

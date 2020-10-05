@@ -52,7 +52,7 @@ and Rule Policies might both predict with confidence 1), the priority of the
 policies is considered. Rasa policies have default priorities that are set to ensure the
 expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
 
-5. `RulePolicy`
+6. `RulePolicy`
 
 3. `MemoizationPolicy` and `AugmentedMemoizationPolicy`
 
@@ -346,8 +346,61 @@ policies:
 * `enable_fallback_prediction` (default: `true`): Please see the
    [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
    further information.
-* `check_for_contradictions` (default: `true`): After training, the RulePolicy will
-   perform a check to make sure that there are no rules that contradict with each other, or with any stories.
+* `check_for_contradictions` (default: `true`):
+   Before training, the RulePolicy will perform a check to make sure that
+slots and active loops set by actions are defined consistently for all rules. 
+   The following snippet is an example of an incomplete rule:
+
+   ```yaml-rasa
+   rules:
+   - rule: complete rule
+     steps:
+     - intent: search_venues
+     - action: action_search_venues
+     - slot_was_set:
+       - venues: [{"name": "Big Arena", "reviews": 4.5}]
+
+   - rule: incomplete rule
+     steps:
+     - intent: search_venues
+     - action: action_search_venues
+   ```
+
+   In the second `incomplete rule`, `action_search_venues` should set
+   the `venues` slot because it is set in `complete rule`, but this event is missing.
+   There is several possible ways to fix this rule, for example:
+
+   - if you want to cover the case when `action_search_venues` could not find
+   anything and therefore `venues` should not be set,
+   you should explicitly set the value of the slot to `null`.
+   Then in the following story `RulePolicy` will predict `utter_venues_not_found`
+   only if the slot `venues` is not set.
+
+   ```yaml-rasa
+   rules:
+   - rule: fixes incomplete rule
+     steps:
+     - intent: search_venues
+     - action: action_search_venues
+     - slot_was_set:
+       - venues: null
+     - action: utter_venues_not_found
+   ```
+
+   - if you want to deal with setting slot in a different rule or story,
+   you should add `wait_for_user_input: false` in the the end of the rule snippet.
+
+   ```yaml-rasa
+   rules:
+   - rule: incomplete rule
+     steps:
+     - intent: search_venues
+     - action: action_search_venues
+     wait_for_user_input: false
+   ```
+
+   After training, the RulePolicy will perform a check to make sure that
+   there are no rules that contradict with each other, or with any stories.
    The following snippet is an example for two contradicting rules:
 
     ```yaml-rasa
