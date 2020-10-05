@@ -29,6 +29,8 @@ import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot
+from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -143,7 +145,6 @@ class Domain:
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
-
         try:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
@@ -860,14 +861,6 @@ class Domain:
             KEY_E2E_ACTIONS: self.action_texts,
         }
 
-    def persist(self, filename: Union[Text, Path]) -> None:
-        """Write domain to a file."""
-
-        domain_data = self.as_dict()
-        rasa.shared.utils.io.write_yaml(
-            domain_data, filename, should_preserve_key_order=True
-        )
-
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
 
@@ -942,13 +935,17 @@ class Domain:
             if v != {} and v != [] and v is not None
         }
 
+    def persist(self, filename: Union[Text, Path]) -> None:
+        """Write domain to a file."""
+
+        as_yaml = self.as_yaml(clean_before_dump=False)
+        rasa.shared.utils.io.write_text_file(as_yaml, filename)
+
     def persist_clean(self, filename: Union[Text, Path]) -> None:
         """Write cleaned domain to a file."""
 
-        cleaned_domain_data = self.cleaned_domain()
-        rasa.shared.utils.io.write_yaml(
-            cleaned_domain_data, filename, should_preserve_key_order=True
-        )
+        as_yaml = self.as_yaml(clean_before_dump=True)
+        rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
@@ -956,7 +953,13 @@ class Domain:
         else:
             domain_data = self.as_dict()
 
-        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(domain_data)
+        domain_data[
+            KEY_TRAINING_DATA_FORMAT_VERSION
+        ] = f"{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
+            domain_data, should_preserve_key_order=True
+        )
 
     def intent_config(self, intent_name: Text) -> Dict[Text, Any]:
         """Return the configuration for an intent."""

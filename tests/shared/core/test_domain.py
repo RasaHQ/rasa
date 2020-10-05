@@ -283,8 +283,6 @@ def test_domain_to_dict():
 
 def test_domain_to_yaml():
     test_yaml = f"""
-%YAML 1.2
----
 actions:
 - action_save_world
 config:
@@ -299,13 +297,19 @@ responses:
 session_config:
   carry_over_slots_to_new_session: true
   session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
+slots: {{}}
+version: '2.0'
+"""
 
-    domain = Domain.from_yaml(test_yaml)
+    with pytest.warns(None) as record:
+        domain = Domain.from_yaml(test_yaml)
+        actual_yaml = domain.as_yaml()
 
-    actual_yaml = domain.as_yaml()
+    assert not record
 
-    assert actual_yaml.strip() == test_yaml.strip()
+    expected = rasa.shared.utils.io.read_yaml(test_yaml)
+    actual = rasa.shared.utils.io.read_yaml(actual_yaml)
+    assert actual == expected
 
 
 def test_merge_yaml_domains():
