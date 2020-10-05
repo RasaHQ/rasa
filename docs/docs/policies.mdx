@@ -19,7 +19,7 @@ policies:
   - name: MemoizationPolicy
   - name: TEDPolicy
     max_history: 5
-    epochs: 100
+    epochs: 200
   - name: RulePolicy
 ```
 :::tip Starting from scratch?
@@ -98,18 +98,6 @@ following steps:
 5. Calculate the similarity between the dialogue embedding and embedded system actions.
    This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
 
-It is recommended to use `SingleStateFeaturizer` (see [Featurization](#featurizers) for details).
-
-```yaml-rasa title="config.yml"
-policies:
-  - name: "TEDPolicy"
-    featurizer:
-    - name: MaxHistoryTrackerFeaturizer
-      max_history: 5
-      state_featurizer:
-        - name: SingleStateFeaturizer
-```
-
 **Configuration:**
 
 You can pass configuration parameters to the `TEDPolicy` using the `config.yml` file.
@@ -120,12 +108,30 @@ If you want to fine-tune your model, start by modifying the following parameters
   One `epoch` is equals to one forward pass and one backward pass of all the training examples.
   Sometimes the model needs more epochs to properly learn.
   Sometimes more epochs don't influence the performance.
-  The lower the number of epochs the faster the model is trained. Here is how the config would look like:
+  The lower the number of epochs the faster the model is trained.
+  Here is how the config would look like:
 
   ```yaml-rasa title="config.yml"
   policies:
   - name: TEDPolicy
-    epochs: 50
+    epochs: 200
+  ```
+
+* `max_history`:
+  This parameter controls how much dialogue history the model looks at to decide which
+  action to take next. Default `max_history` for this policy is `None`,
+  which means that the complete dialogue history since session restart is taken in the
+  account. If you want to limit the model to see only certain number of previous
+  dialogue turns, you can set `max_history` to a finite value.
+  Please note that you should pick `max_history` carefully, so that the model has enough
+  previous dialogue turns to create a correct prediction.
+  See [Featurizers](#featurizers) for details.
+  Here is how the config would look like:
+
+  ```yaml-rasa title="config.yml"
+  policies:
+  - name: TEDPolicy
+    max_history: 8
   ```
 
 * `hidden_layers_sizes`:
@@ -165,17 +171,6 @@ If you want to fine-tune your model, start by modifying the following parameters
   set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
   to learn.
 
-
-:::tip speeding up training
-Default `max_history` for this policy is `None`, which means it'll use the
-[`FullDialogueTrackerFeaturizer`](#1-full-dialogue). We recommend to set `max_history` to a finite value in order to
-use [`MaxHistoryTrackerFeaturizer`](#2-max-history) for **faster training**.
-See [Featurizers](#featurizers) for
-details. We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
-(e.g. `"batch_size": [32, 64]`)
-
-:::
-
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -201,7 +196,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | max_relative_position           | None             | Maximum position for relative embeddings.                    |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| batch_size                      | [8, 32]          | Initial and final value for batch sizes.                     |
+| batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
 |                                 |                  | Batch size will be linearly increased for each epoch.        |
 |                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
 +---------------------------------+------------------+--------------------------------------------------------------+
@@ -573,11 +568,8 @@ last two lines show how to use a custom policy class and pass arguments to it.
 ```yaml-rasa {9-10}
 policies:
   - name: "TEDPolicy"
-    featurizer:
-    - name: MaxHistoryTrackerFeaturizer
-      max_history: 5
-      state_featurizer:
-        - name: BinarySingleStateFeaturizer
+    max_history: 5
+    epochs: 200
   - name: "RulePolicy"
   - name: "path.to.your.policy.class"
     arg1: "..."
