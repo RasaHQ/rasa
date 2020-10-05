@@ -366,7 +366,9 @@ def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     write_text_file(json.dumps(obj, indent=2), filename)
 
 
-def dump_obj_as_yaml_to_string(obj: Dict, should_preserve_key_order: False) -> Text:
+def dump_obj_as_yaml_to_string(
+    obj: Dict, should_preserve_key_order: bool = False
+) -> Text:
     """Writes data (python dict) to a yaml string.
 
     Args:
