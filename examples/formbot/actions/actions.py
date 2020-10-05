@@ -28,7 +28,7 @@ class ValidateRestaurantForm(Action):
         return "validate_restaurant_form"
 
     async def run(self, dispatcher, tracker, domain) -> List[EventType]:
-        extracted_slots = tracker.form_slots_to_validate()
+        extracted_slots = tracker.slots_to_validate()
         validation_events = []
 
         for slot_name, slot_value in extracted_slots.items():
