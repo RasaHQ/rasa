@@ -61,6 +61,7 @@ from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
+    from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 
 logger = logging.getLogger(__name__)
 
@@ -596,7 +597,11 @@ class DialogueStateTracker:
         return Story.from_events(self.applied_events(), story_name)
 
     def export_stories(
-        self, writer: Any, e2e: bool = False, include_source: bool = False
+        self,
+        writer: "StoryWriter",
+        e2e: bool = False,
+        include_source: bool = False,
+        should_append_stories: bool = False,
     ) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
@@ -609,7 +614,9 @@ class DialogueStateTracker:
         #       handling markdown vs yaml
         story = self.as_story(include_source)
 
-        return writer.dumps(story.story_steps, flat=True, e2e=e2e)
+        return writer.dumps(
+            story.story_steps, is_appendable=should_append_stories, is_test_story=e2e
+        )
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
         """Dump the tracker as a story to a file."""

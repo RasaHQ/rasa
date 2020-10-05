@@ -23,6 +23,7 @@ import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.cli.utils
+import rasa.shared.data
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
 from rasa.shared.core.constants import (
@@ -55,8 +56,6 @@ from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
 )
-from rasa.shared.core.training_data.story_writer.yaml_story_writer import YAMLStoryWriter
-from rasa.shared.core.training_data.story_writer.markdown_story_writer import MarkdownStoryWriter
 from rasa.core.utils import AvailableEndpoints
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
@@ -709,7 +708,8 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS + rasa.shared.data.YAML_FILE_EXTENSIONS,
+                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS
+                + rasa.shared.data.YAML_FILE_EXTENSIONS,
                 "Please provide a valid export path for the stories, e.g. 'stories.yml'.",
             ),
         ),
@@ -798,18 +798,26 @@ def _write_stories_to_file(
     from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
         YAMLStoryReader,
     )
+    from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+        YAMLStoryWriter,
+    )
+    from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
+        MarkdownStoryWriter,
+    )
 
     sub_conversations = _split_conversation_at_restarts(events)
 
     io_utils.create_path(export_story_path)
 
-    if YAMLStoryReader.is_stories_file(export_story_path):
+    if rasa.shared.data.is_likely_yaml_file(export_story_path):
         writer = YAMLStoryWriter()
     else:
         writer = MarkdownStoryWriter()
 
+    should_append_stories = False
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
+        should_append_stories = True
     else:
         append_write = "w"  # make a new file if not
 
@@ -830,7 +838,9 @@ def _write_stories_to_file(
                 f.write(
                     "\n"
                     + tracker.export_stories(
-                        writer=writer, e2e=SAVE_IN_E2E
+                        writer=writer,
+                        should_append_stories=should_append_stories,
+                        e2e=SAVE_IN_E2E,
                     )
                 )
 
