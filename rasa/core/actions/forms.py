@@ -15,7 +15,7 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
 )
 from rasa.shared.constants import UTTER_PREFIX
-from rasa.shared.core.events import Event, SlotSet, ActionExecuted
+from rasa.shared.core.events import Event, SlotSet, ActionExecuted, ActiveLoop
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
@@ -469,8 +469,10 @@ class FormAction(LoopAction):
         """Request the next slot and utter template if needed, else return `None`."""
         request_slot_events = []
 
-        # If this is not `None` it means that the custom action specified a next slot
-        # to request
+        if await self.is_done(output_channel, nlg, tracker, domain, events_so_far):
+            # The custom action for slot validation decided to stop the form early
+            return [SlotSet(REQUESTED_SLOT, None)]
+
         slot_to_request = next(
             (
                 event.value
@@ -479,6 +481,7 @@ class FormAction(LoopAction):
             ),
             None,
         )
+
         temp_tracker = self._temporary_tracker(tracker, events_so_far, domain)
 
         if not slot_to_request:
@@ -664,7 +667,25 @@ class FormAction(LoopAction):
         domain: "Domain",
         events_so_far: List[Event],
     ) -> bool:
-        return SlotSet(REQUESTED_SLOT, None) in events_so_far
+        # custom validation functions can decide to terminate the loop early by
+        # setting the requested slot to `None` or setting `ActiveLoop(None)`
+        return next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+            ),
+            None,
+        ) == SlotSet(REQUESTED_SLOT, None) or next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, ActiveLoop)
+            ),
+            None,
+        ) == ActiveLoop(
+            None
+        )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
         logger.debug(f"Deactivating the form '{self.name()}'")
