@@ -120,7 +120,7 @@ If you want to fine-tune your model, start by modifying the following parameters
 * `max_history`:
   This parameter controls how much dialogue history the model looks at to decide which
   action to take next. Default `max_history` for this policy is `None`,
-  which means that the complete dialogue history since session restart is taken in the
+  which means that the complete dialogue history since session restart is taken into
   account. If you want to limit the model to see only certain number of previous
   dialogue turns, you can set `max_history` to a finite value.
   Please note that you should pick `max_history` carefully, so that the model has enough
