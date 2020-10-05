@@ -1,9 +1,9 @@
 ---
-id: installation
 sidebar_label: Installation
 title: Installation
 description: Install Rasa Open Source on premises to enable local and customizable Natural Lanaguage Understanding and Dialogue Management.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import { Button } from '@theme/Button';
@@ -33,7 +33,7 @@ rasa init
 You can explore Rasa Open Source online using our prototyper without any installation.
 At the end of the tutorial you can download the resulting assistant, install Rasa on
 your machine and continue development locally.
-<a className="button button--outline button button" href="prototype-an-assistant">Prototype an Assistant</a>
+<a className="button button--outline button button" href={useBaseUrl("/prototype-an-assistant")}>Prototype an Assistant</a>
 :::
 
 ## Step-by-step Installation Guide
@@ -184,7 +184,7 @@ You can read more about how that data is pulled out and what it is used for in t
 Next step: Start prototyping your first assistant online and download it afterwards
 
 
-<Button as="a" href="prototype-an-assistant">Prototype an Assistant</Button>
+<Button as="a" href={useBaseUrl("/prototype-an-assistant")}>Prototype an Assistant</Button>
 
 ## Building from Source
 
@@ -254,11 +254,11 @@ tell it where to find this file (in this example it was saved in the
 To upgrade your installed version of Rasa Open Source to the latest version from PyPI:
 
 ```bash
-pip install --upgrade rasa
+pip3 install --upgrade rasa
 ```
 
 To download a specific version, specify the version number:
 
 ```bash
-pip install rasa==1.8.3
+pip3 install rasa==1.8.3
 ```

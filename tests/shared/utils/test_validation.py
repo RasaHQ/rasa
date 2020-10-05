@@ -40,7 +40,7 @@ def test_validate_yaml_schema(file, schema):
     ],
 )
 def test_validate_yaml_schema_raise_exception(file, schema):
-    with pytest.raises(validation_utils.InvalidYamlFileError):
+    with pytest.raises(validation_utils.YamlValidationException):
         validation_utils.validate_yaml_schema(
             rasa.shared.utils.io.read_file(file), schema
         )

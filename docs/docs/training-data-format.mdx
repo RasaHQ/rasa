@@ -235,7 +235,10 @@ name of your intents.
 
 ### Entities
 
-[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
+[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message.
+For entity extraction to work, you need to either specify training data to train an ML model or you need
+to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities
+using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
 
 Entities are annotated in training examples with minimally the entity's name.
 In addition to the entity name, you can annotate an entity with synonyms, roles, or groups.
@@ -363,7 +366,7 @@ If your entity has a deterministic structure (like an account number), you can u
   match the name of the entity you want to extract.
 
 In both cases, the format for defining the regex is the same.
-For example, a regex for extracting a bank account number that is 10-12 digits long mightlook like this:
+For example, a regex for extracting a bank account number that is 10-12 digits long might look like this:
 
 ```yaml-rasa
 nlu:
@@ -427,9 +430,9 @@ sure your lookup tables contain clean data!
 
 Stories and rules are both representations of conversations between a user
 and a conversational assistant. They are used to train the dialogue management
-model. [**Stories**](stories.mdx) are used to train a machine learning model
+model. [Stories](stories.mdx) are used to train a machine learning model
 to identify patterns in conversations and generalize to unseen conversation paths.
-**[Rules](rules.mdx)** describe small pieces of conversations that should always
+[Rules](rules.mdx) describe small pieces of conversations that should always
 follow the same path and are used to train the
 [RulePolicy](policies.mdx#rule-policy).
 
@@ -517,7 +520,7 @@ by the name of the action.
 While writing stories, you will encounter two types of actions:
 
 
-1. [**Responses**](domain.mdx#responses): start with `utter_` and
+1. [Responses](domain.mdx#responses): start with `utter_` and
    send a specific message to the user. e.g.
 
 ```yaml-rasa {5}
@@ -528,7 +531,7 @@ stories:
   - action: utter_greet
 ```
 
-2. [**Custom actions**](custom-actions.mdx): start with `action_`, run
+2. [Custom actions](custom-actions.mdx): start with `action_`, run
    arbitrary code and send any number of messages (or none).
 
 ```yaml-rasa {5}
@@ -668,7 +671,7 @@ stories:
   steps:
   - checkpoint: greet_checkpoint
     # This checkpoint should only apply if slots are set to the specified value
-    slots:
+    slot_was_set:
     - context_scenario: holiday
     - holiday_name: thanksgiving
   - intent: greet
@@ -730,7 +733,7 @@ rules:
   - action: utter_greet
 ```
 
-Read more about writing rules [here](rules.mdx#writing-a-rule).
+For more information about writing rules, see [Rules](rules.mdx#writing-a-rule).
 
 ## Test Conversations
 

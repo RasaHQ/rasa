@@ -38,3 +38,21 @@ nlu:
       - compare reviews
       - show me a comparison of the reviews
 
+  - intent: how_to_get_started
+    examples: |
+      - how do I get started
+      - what can I do
+      - start
+
+  - intent: affirm
+    examples: |
+      - yes
+      - yeah
+      - yep
+
+  - intent: deny
+    examples: |
+      - nope
+      - no
+      - absolutely not
+  

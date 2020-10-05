@@ -1,23 +1,24 @@
+from collections import OrderedDict
 import errno
 import glob
-import json
-import os
-import re
-import warnings
-from collections import OrderedDict
 from hashlib import md5
 from io import StringIO
+import json
+import os
 from pathlib import Path
-from typing import Any, Text, Optional, Type, Union, List, Dict
+import re
+from typing import Any, Dict, List, Optional, Text, Type, Union
+import warnings
 
-import rasa.shared
+from ruamel import yaml as yaml
+from ruamel.yaml import RoundTripRepresenter, YAMLError
+
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
-from ruamel import yaml as yaml
-from ruamel.yaml import RoundTripRepresenter
+from rasa.shared.exceptions import YamlSyntaxException
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -228,11 +229,12 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Any:
+def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
+        reader_type: Reader type to use. By default "safe" will be used
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
@@ -241,7 +243,7 @@ def read_yaml(content: Text) -> Any:
 
     replace_environment_variables()
 
-    yaml_parser = yaml.YAML(typ="safe")
+    yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
 
@@ -417,23 +419,28 @@ def raise_deprecation_warning(
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
-def read_config_file(filename: Text) -> Dict[Text, Any]:
+def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary
 
     Args:
         filename: The path to the file which should be read.
     """
-    content = read_yaml(read_file(filename))
+    try:
+        content = read_yaml(read_file(filename))
+    except YAMLError as e:
+        raise YamlSyntaxException(filename, e)
 
     if content is None:
         return {}
     elif isinstance(content, dict):
         return content
     else:
-        raise ValueError(
-            "Tried to load invalid config file '{}'. "
-            "Expected a key value mapping but found {}"
-            ".".format(filename, type(content))
+        raise YamlSyntaxException(
+            filename,
+            ValueError(
+                f"Tried to load configuration file '{filename}'. "
+                f"Expected a key value mapping but found a {type(content).__name__}"
+            ),
         )
 
 
