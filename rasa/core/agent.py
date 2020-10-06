@@ -175,7 +175,7 @@ async def _update_model_from_server(
             logger.debug(f"No new model found at URL {model_server.url}")
     finally:
         if not loaded:
-            os.rmdir(model_directory)
+            shutil.rmtree(model_directory)
 
 
 async def _pull_model_and_fingerprint(
