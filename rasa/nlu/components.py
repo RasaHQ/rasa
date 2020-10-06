@@ -386,7 +386,7 @@ class Component(metaclass=ComponentMetaclass):
     # Defines what language(s) this component can handle.
     # This attribute is designed for instance method: `can_handle_language`.
     # Default value is None. if both `support_language_list` and
-    # `not_supported_language_list` are None, which means it can handle
+    # `not_supported_language_list` are None, it means it can handle
     # all languages. Also, only one of `support_language_list` and
     # `not_supported_language_list` can be set to not None.
     # This is an important feature for backwards compatibility of components.
@@ -395,7 +395,7 @@ class Component(metaclass=ComponentMetaclass):
     # Defines what language(s) this component can NOT handle.
     # This attribute is designed for instance method: `can_handle_language`.
     # Default value is None. if both `support_language_list` and
-    # `not_supported_language_list` are None, which means it can handle
+    # `not_supported_language_list` are None, it means it can handle
     # all languages. Also, only one of `support_language_list` and
     # `not_supported_language_list` can be set to not None.
     # This is an important feature for backwards compatibility of components.
