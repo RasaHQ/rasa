@@ -349,7 +349,7 @@ policies:
 * `check_for_contradictions` (default: `true`):
    Before training, the RulePolicy will perform a check to make sure that
    slots and active loops set by actions are defined consistently for all rules.
-   The following snippet is an example of an incomplete rule:
+   The following snippet contains an example of an incomplete rule:
 
    ```yaml-rasa
    rules:
@@ -374,7 +374,7 @@ policies:
    a venue and the `venues` slot should not be set,
    you should explicitly set the value of the slot to `null`.
    The following story `RulePolicy` will predict `utter_venues_not_found`
-   only if the slot `venues` is not set.
+   only if the slot `venues` is not set:
 
    ```yaml-rasa
    rules:
@@ -387,8 +387,8 @@ policies:
      - action: utter_venues_not_found
    ```
 
-   If you want to deal with slot setting in a different rule or story,
-   you should add `wait_for_user_input: false` to the end of the rule snippet.
+   If you want the slot setting to be handled by a different rule or story,
+   you should add `wait_for_user_input: false` to the end of the rule snippet:
 
    ```yaml-rasa
    rules:
