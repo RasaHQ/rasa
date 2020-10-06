@@ -150,7 +150,8 @@ async def test_set_slot_and_deactivate():
         - type: from_text
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: text
+        influence_conversation: false
     """
     domain = Domain.from_yaml(domain)
 
@@ -262,6 +263,34 @@ async def test_action_rejection():
                 SlotSet("num_people", "hi"),
             ],
         ),
+        # Validate function decides that no more slots should be requested
+        (
+            [
+                {"event": "slot", "name": "num_people", "value": None},
+                {"event": "slot", "name": REQUESTED_SLOT, "value": None},
+            ],
+            [
+                SlotSet("num_people", None),
+                SlotSet(REQUESTED_SLOT, None),
+                SlotSet("num_tables", 5),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
+        # Validate function deactivates loop
+        (
+            [
+                {"event": "slot", "name": "num_people", "value": None},
+                {"event": "active_loop", "name": None},
+            ],
+            [
+                SlotSet("num_people", None),
+                ActiveLoop(None),
+                SlotSet("num_tables", 5),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
     ],
 )
 async def test_validate_slots(
@@ -281,9 +310,9 @@ async def test_validate_slots(
     domain = f"""
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
       num_tables:
-        type: unfeaturized
+        type: any
     forms:
       {form_name}:
         {slot_name}:
@@ -914,13 +943,7 @@ def test_invalid_slot_mapping():
             {"some_other_slot": "some_value"},
         ),
         (
-            [
-                {
-                    "type": "from_entity",
-                    "intent": "some_intent",
-                    "entity": "some_entity",
-                }
-            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
             [
                 {
                     "type": "from_entity",
@@ -936,13 +959,7 @@ def test_invalid_slot_mapping():
         ),
         (
             [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
-            [
-                {
-                    "type": "from_entity",
-                    "intent": "some_intent",
-                    "entity": "some_entity",
-                }
-            ],
+            [{"type": "from_entity", "intent": "some_intent", "entity": "some_entity"}],
             [{"entity": "some_entity", "value": "some_value"}],
             "some_intent",
             # other slot should not be extracted because slot mapping is not unique

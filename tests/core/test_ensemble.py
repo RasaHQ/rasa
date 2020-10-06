@@ -434,5 +434,5 @@ def test_mutual_exclusion_of_rule_policy_and_old_rule_like_policies(
     policies: List[Text],
 ):
     policy_config = [{"name": policy_name} for policy_name in policies]
-    with pytest.raises(InvalidPolicyConfig):
+    with pytest.warns(UserWarning):
         PolicyEnsemble.from_dict({"policies": policy_config})
