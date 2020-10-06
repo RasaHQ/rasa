@@ -115,40 +115,26 @@ def _load_domain_and_policy_ensemble(
 
 def _load_and_set_updated_model(
     agent: "Agent", model_directory: Text, fingerprint: Text
-) -> bool:
+) -> None:
     """Load the persisted model into memory and set the model on the agent.
 
     Args:
         agent: Instance of `Agent` to update with the new model.
         model_directory: Rasa model directory.
         fingerprint: Fingerprint of the supplied model at `model_directory`.
-
-    Returns:
-        `True` if the model was loaded correctly.
     """
     logger.debug(f"Found new model with fingerprint {fingerprint}. Loading...")
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    try:
-        interpreter = _load_interpreter(agent, nlu_path)
-        domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
+    interpreter = _load_interpreter(agent, nlu_path)
+    domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
 
-        agent.update_model(
-            domain, policy_ensemble, fingerprint, interpreter, model_directory
-        )
+    agent.update_model(
+        domain, policy_ensemble, fingerprint, interpreter, model_directory
+    )
 
-        logger.debug("Finished updating agent to new model.")
-
-        return True
-    except Exception as e:  # skipcq: PYL-W0703
-        # TODO: this exception shouldn't be that broad, we need to be more specific
-        logger.exception(
-            f"Failed to update model. The previous model will stay loaded instead. "
-            f"Error: {e}"
-        )
-
-        return False
+    logger.debug("Finished updating agent to new model.")
 
 
 async def _update_model_from_server(
@@ -160,7 +146,7 @@ async def _update_model_from_server(
         raise aiohttp.InvalidURL(model_server.url)
 
     model_directory = tempfile.mkdtemp()
-    loaded = False
+    remove_dir = True
 
     try:
         new_fingerprint = await _pull_model_and_fingerprint(
@@ -168,13 +154,18 @@ async def _update_model_from_server(
         )
 
         if new_fingerprint:
-            loaded = _load_and_set_updated_model(
-                agent, model_directory, new_fingerprint
-            )
+            _load_and_set_updated_model(agent, model_directory, new_fingerprint)
+            remove_dir = False
         else:
             logger.debug(f"No new model found at URL {model_server.url}")
+    except Exception:  # skipcq: PYL-W0703
+        # TODO: Make this exception more specific, possibly print different log
+        # for each one.
+        logger.exception(
+            "Failed to update model. The previous model will stay loaded instead."
+        )
     finally:
-        if not loaded:
+        if remove_dir:
             shutil.rmtree(model_directory)
 
 
