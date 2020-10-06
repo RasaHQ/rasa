@@ -99,3 +99,69 @@ async def test_example_component(component_builder, tmp_path):
     loaded = Interpreter.load(persisted_path, component_builder)
 
     assert loaded.parse("test") is not None
+
+
+@pytest.mark.parametrize(
+    "supported_language_list, not_supported_language_list, language, expected",
+    [
+        # in following comments:
+        # AVL stands for any available setting
+
+        # for language is `None`
+        (None, None, None, True),
+        # (None, None)
+        (None, None, "en", True),
+        # (AVL, None)
+        (["en"], None, "en", True),
+        (["en"], None, "zh", False),
+        # (AVL, [])
+        (["en"], [], "en", True),
+        (["en"], [], "zh", False),
+        # (None, AVL)
+        (None, ["en"], "en", False),
+        (None, ["en"], "zh", True),
+        # ([], AVL)
+        ([], ["en"], "en", False),
+        ([], ["en"], "zh", True),
+    ],
+)
+def test_can_handle_language_logically_correctness(supported_language_list, not_supported_language_list, language, expected):
+    from rasa.nlu.components import Component
+
+    SampleComponent = type("SampleComponent", (Component, ), {
+        "supported_language_list": supported_language_list,
+        "not_supported_language_list": not_supported_language_list
+    }
+    )
+
+    assert SampleComponent.can_handle_language(language) == expected
+
+
+@pytest.mark.parametrize(
+    "supported_language_list, not_supported_language_list, expected_exec_msg",
+    [
+        # in following comments:
+        # AVL stands for any available setting
+
+        # (None, [])
+        (None, [], "Empty language list"),
+        # ([], None)
+        ([], None, "Empty language list"),
+        # ([], [])
+        ([], [], "Empty language list"),
+        # (AVL, AVL)
+        (["en"], ["zh"], "Only one of")
+    ],
+)
+def test_can_handle_language_guard_clause(supported_language_list, not_supported_language_list, expected_exec_msg):
+    from rasa.nlu.components import Component
+
+    SampleComponent = type("SampleComponent", (Component, ), {
+        "supported_language_list": supported_language_list,
+        "not_supported_language_list": not_supported_language_list
+    }
+    )
+
+    with pytest.raises(Exception) as excinfo:
+        SampleComponent.can_handle_language("random_string")
+    assert expected_exec_msg in str(excinfo.value)
