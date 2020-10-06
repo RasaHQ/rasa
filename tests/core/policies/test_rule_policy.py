@@ -222,8 +222,8 @@ slots:
         ],
         is_rule_tracker=True,
     )
-    potentially_ncomplete_rule = TrackerWithCachedStates.from_events(
-        "potentially_ncomplete_rule",
+    potentially_incomplete_rule = TrackerWithCachedStates.from_events(
+        "potentially_incomplete_rule",
         domain=domain,
         slots=domain.slots,
         evts=[
@@ -236,7 +236,7 @@ slots:
         is_rule_tracker=True,
     )
     policy.train(
-        [complete_rule, potentially_ncomplete_rule], domain, RegexInterpreter()
+        [complete_rule, potentially_incomplete_rule], domain, RegexInterpreter()
     )
 
 
