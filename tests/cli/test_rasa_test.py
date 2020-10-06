@@ -26,7 +26,10 @@ def test_test_core_with_no_model(run_in_simple_project: Callable[..., RunResult]
 
     output = run_in_simple_project("test", "core")
 
-    assert "No model provided. Please make sure to specify the model to test with" in output.outlines[7]
+    assert (
+        "No model provided. Please make sure to specify the model to test with"
+        in output.outlines[7]
+    )
 
 
 def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
