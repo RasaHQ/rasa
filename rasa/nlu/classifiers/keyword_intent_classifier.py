@@ -46,7 +46,7 @@ class KeywordIntentClassifier(IntentClassifier):
     ) -> None:
 
         duplicate_examples = set()
-        for ex in training_data.training_examples:
+        for ex in training_data.intent_examples:
             if (
                 ex.get(TEXT) in self.intent_keyword_map.keys()
                 and ex.get(INTENT) != self.intent_keyword_map[ex.get(TEXT)]

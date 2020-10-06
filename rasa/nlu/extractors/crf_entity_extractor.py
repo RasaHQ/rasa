@@ -173,7 +173,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         # filter out pre-trained entity examples
         entity_examples = self.filter_trainable_entities(
-            training_data.training_examples
+            training_data.entity_examples
         )
 
         dataset = [self._convert_to_crf_tokens(example) for example in entity_examples]
