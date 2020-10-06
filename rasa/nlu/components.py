@@ -666,7 +666,7 @@ class Component(metaclass=ComponentMetaclass):
         # check language supporting settings
         if cls.supported_language_list and cls.not_supported_language_list:
             # When user set both language supporting settings to not None, it will lead to ambiguity.
-            raise Exception(
+            raise RasaException(
                 "Only one of `supported_language_list` and `not_supported_language_list` can be set to not None"
             )
 
@@ -686,7 +686,7 @@ class Component(metaclass=ComponentMetaclass):
         if not supported_language_list and not not_supported_language_list:
             # One of language settings must be valid (not None and not a empty list),
             # There are three combinations of settings are not valid: (None, []), ([], None) and ([], [])
-            raise Exception("Empty lists for both `supported_language_list` and `not_supported language_list` is not a valid setting. If you meant to allow all languages for the component use `None` for both of them.")
+            raise RasaException("Empty lists for both `supported_language_list` and `not_supported language_list` is not a valid setting. If you meant to allow all languages for the component use `None` for both of them.")
 
         if supported_language_list:
             return language in supported_language_list
