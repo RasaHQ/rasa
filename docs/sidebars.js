@@ -96,7 +96,7 @@ module.exports = {
             'connectors/cisco-webex-teams',
             'connectors/rocketchat',
             'connectors/mattermost',
-            'connectors/custom-connectors'
+            'connectors/custom-connectors',
           ],
         },
         {
