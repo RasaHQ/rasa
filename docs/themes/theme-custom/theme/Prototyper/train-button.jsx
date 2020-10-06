@@ -1,20 +1,20 @@
 import React from 'react';
 
-import Button from './button';
+import RasaButton from '../RasaButton';
 import PrototyperContext from './context';
 
 const TrainButton = (props) => {
   const prototyperContext = React.useContext(PrototyperContext);
 
   return (
-    <Button
+    <RasaButton
       onClick={prototyperContext.trainModel}
       disabled={!!prototyperContext.isTraining}
-      loading={!!prototyperContext.isTraining}
+      isLoading={!!prototyperContext.isTraining}
       {...props}
     >
       Train
-    </Button>
+    </RasaButton>
   );
 };
 

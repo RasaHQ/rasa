@@ -1,6 +1,7 @@
 module.exports = {
   default: [
     'introduction',
+    'prototype-an-assistant',
     {
       type: 'category',
       label: 'Building Assistants',
@@ -11,7 +12,6 @@ module.exports = {
           label: 'Getting Started',
           collapsed: true,
           items: [
-            'prototype-an-assistant',
             'installation',
             // 'cheatsheet',
             'migrate-from',
