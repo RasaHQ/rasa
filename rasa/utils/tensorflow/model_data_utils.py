@@ -186,8 +186,8 @@ def _features_for_attribute(
         tracker_features, zero_state_features[attribute]
     )
 
-    sparse_features = defaultdict()
-    dense_features = defaultdict()
+    sparse_features = {}
+    dense_features = {}
 
     # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():

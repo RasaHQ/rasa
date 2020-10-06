@@ -157,7 +157,7 @@ class FeatureArray(np.ndarray):
                 f"array: {input_array}."
             )
 
-    def get_shape_type_info(self) -> Tuple[List, List]:
+    def get_shape_type_info(self) -> Tuple[List[Union[int, Tuple[None], Tuple[None, int], Tuple[None, None, int], Tuple[None, None, None, int]]], List[int]]:
         """Returns the shape and type information needed to convert this feature array into tensors.
 
         Returns:
