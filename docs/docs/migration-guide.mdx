@@ -215,7 +215,7 @@ information.
 As of Rasa Open Source 2.0 the logic for [Forms](./forms.mdx) has been moved from the
 Rasa SDK to Rasa Open Source to simplify implementations of custom action libraries.
 This means that you no longer need to use the `FormAction` when implementing custom
-actions with the Python SDK. Instead you can use a regular `Action` to validate and
+actions with the Python SDK. Instead you can `FormValidationAction` to validate and
 request slots.
 
 It is now recommended to move the slot mappings from your custom action to the
@@ -328,20 +328,9 @@ actions:
 Then add a custom action which validates the `cuisine` slot:
 
 ```python
-class RestaurantFormValidator(Action):
+class RestaurantFormValidator(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
-
-    def run(
-        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
-    ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.slots_to_validate()
-
-        cuisine_slot_value = extracted_slots.get("cuisine")
-        validated_slot_event = self.validate_cuisine(
-            cuisine_slot_value, dispatcher, tracker, domain
-        )
-        return [validated_slot_event]
 
     @staticmethod
     def cuisine_db() -> List[Text]:
@@ -351,21 +340,20 @@ class RestaurantFormValidator(Action):
 
     def validate_cuisine(
         self,
-        value: Text,
+        slot_value: Any,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> EventType:
+        domain: DomainDict,
+    ) -> Dict[Text, Any]:
         """Validate cuisine value."""
 
-        if value.lower() in self.cuisine_db():
+        if slot_value.lower() in self.cuisine_db():
             # validation succeeded, set the value of the "cuisine" slot to value
-            return SlotSet("cuisine", value)
+            return {"cuisine": slot_value}
         else:
-            dispatcher.utter_message(template="utter_wrong_cuisine")
             # validation failed, set this slot to None, meaning the
             # user will be asked for the slot again
-            return SlotSet("cuisine", None)
+            return {"cuisine": None}
 ```
 
 Please see [Forms](./forms.mdx) if you have further customizations in your
