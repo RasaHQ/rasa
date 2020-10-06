@@ -275,6 +275,7 @@ def test_build_from_action():
         (Message({INTENT: "intent"}), True),
         (Message({ACTION_TEXT: "action text", ACTION_NAME: ""}), True),
         (Message({ACTION_NAME: "action"}), True),
+        (Message({TEXT: "text"}), True),
     ],
 )
 def test_is_e2e_message(
