@@ -47,6 +47,6 @@ class TrainingDataConverter:
 
     @classmethod
     def converted_file_suffix(cls) -> Text:
-        """Returns suffix that should be appended to the converted training data file.
-        """
+        """Returns suffix that should be appended to the converted
+        training data file."""
         return "_converted.yml"

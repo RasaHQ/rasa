@@ -3,14 +3,11 @@ id: how-to-deploy
 sidebar_label: Deploying Your Assistant
 title: Deploying Your Rasa Assistant
 description: How to deploy your Rasa Assistant with Docker Compose or Kubernetes/Openshift
+abstract: This page explains when and how to deploy an assistant built with Rasa.
+  It will allow you to make your assistant available to users and set you up with a production-ready environment.
 ---
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from './variables.json';
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="deploying-your-rasa-assistant"></a>
-
-This page explains when and how to deploy an assistant built with Rasa.
-It will allow you to make your assistant available to users and set you up with a production-ready environment.
 
 ## When to Deploy Your Assistant
 
@@ -22,8 +19,6 @@ with test users via the [share your assistant feature in
 Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot).
 Then, when you're ready to make your assistant available via one or more [Messaging and Voice Channels](./messaging-and-voice-channels.mdx),
 you can easily add them to your existing deployment set up.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-deployment-methods"></a>
 
 ## Recommended Deployment Methods
 
@@ -42,6 +37,8 @@ cluster on your machine with sensible defaults, getting you up and running in on
 
   ```bash
   curl -s get-rasa-x.rasa.com | sudo bash
+  ```
+
 * Custom: See [Customizing the Script](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#server-quick-install)
   and the [Server Quick-Install docs](https://rasa.com/docs/rasa-x/installation-and-setup/install/quick-install-script) docs.
 
@@ -55,8 +52,6 @@ However, you can also customize the Helm charts if you have specific requirement
 
 * Custom: Read the above, as well as the [Advanced Configuration](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#helm-chart)
   documentation, and customize the [open source Helm charts](https://github.com/RasaHQ/rasa-x-helm) to your needs.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="rasa-only-deployment"></a>
 
 ## Alternative Deployment Methods
 
@@ -74,16 +69,14 @@ for doing so, as well as manual instructions for any custom setups.
 It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your
 Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.
 
-* [Building a Rasa Assistant Locally](./prototype-an-assistant)
+* [Building a Rasa Assistant Locally](./prototype-an-assistant.mdx)
 
-* [Building a Rasa Assistant in Docker](./docker/building-in-docker)
+* [Building a Rasa Assistant in Docker](./docker/building-in-docker.mdx)
 
-* [Deploying a Rasa Open Source Assistant in Docker Compose](./docker/deploying-in-docker-compose)
+* [Deploying a Rasa Open Source Assistant in Docker Compose](./docker/deploying-in-docker-compose.mdx)
 
 
 ## Deploying Your Action Server
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="building-an-action-server-image"></a>
 
 ### Building an Action Server Image
 
@@ -102,7 +95,8 @@ The following steps assume that you already created a GitHub repository and you 
 To create a workflow for building and pushing a Docker image into a DockerHub registry:
 
 1. Add GitHub Secrets with your DockerHub login name and password.
-   [Here](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository) you can find details on how to create encrypted secrets for a repository.
+   You can find details on how to create encrypted secrets for a repository
+   in the [Github docs](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository)
 
    The example uses the following secrets:
    - `DOCKER_HUB_LOGIN` - a login name for DockerHub
@@ -254,4 +248,4 @@ your deployment:
 
 * [Docker Compose](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#connecting-a-custom-action-server)
 
-* [Rasa Open Source Only](./docker/deploying-in-docker-compose#running-multiple-services)
+* [Rasa Open Source Only](./docker/deploying-in-docker-compose.mdx#using-docker-compose-to-run-multiple-services)

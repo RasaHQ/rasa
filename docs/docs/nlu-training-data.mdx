@@ -57,7 +57,7 @@ Regular expressions can be used in two different ways:
 
 For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular
 expression to ease detection of that entity (using the [RegexFeaturizer](./components.mdx#regexfeaturizer)) or to directly extract the entities from
-the user message (using the [RegexEntityExtractor](./components.mdx#regexentityextractor)). 
+the user message (using the [RegexEntityExtractor](./components.mdx#regexentityextractor)).
 
 
 In case you are using the regular expressions for the [RegexFeaturizer](./components.mdx#regexfeaturizer) the name of the regular expression does
@@ -94,7 +94,7 @@ training data!
 This feature is experimental.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
-If you have feedback (positive or negative) please share it with us on the [forum](https://forum.rasa.com).
+If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
 
 :::
 
@@ -168,3 +168,42 @@ For example, you should not only have example like `fly FROM x TO y`, but also i
 
 To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
 [Forms](forms.mdx) or use [Custom Actions](custom-actions.mdx) to extract the corresponding entity directly from the tracker.
+
+
+### BILOU Entity Tagging
+
+The [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor)
+have the option `BILOU_flag`, which refers to a tagging schema that can be
+used by the machine learning model when processing entities.
+`BILOU` is short for Beginning, Inside, Last, Outside, and Unit-length.
+
+For example, the training example
+
+```
+[Alex]{"entity": "person"} is going with [Marty A. Rick]{"entity": "person"} to [Los Angeles]{"entity": "location"}.
+```
+
+is first split into a list of tokens. Then the machine learning model applies the tagging schema
+as shown below depending on the value of the option `BILOU_flag`:
+
+| token   | `BILOU_flag = true`  | `BILOU_flag = false`  |
+|---------|----------------------|-----------------------|
+| alex    | U-person             | person                |
+| is      | O                    | O                     |
+| going   | O                    | O                     |
+| with    | O                    | O                     |
+| marty   | B-person             | person                |
+| a       | I-person             | person                |
+| rick    | L-person             | person                |
+| to      | O                    | O                     |
+| los     | B-location           | location              |
+| angeles | L-location           | location              |
+
+The BILOU tagging schema is richer compared to the normal tagging schema. It may help to improve the
+performance of the machine learning model when predicting entities.
+
+:::note inconsistent BILOU tags
+When the option `BILOU_flag` is set to `True`, the model may predict inconsistent BILOU tags, e.g.
+`B-person I-location L-person`. Rasa Open Source uses some heuristics to clean up the inconsistent BILOU tags.
+For example, `B-person I-location L-person` would be changed into `B-person I-person L-person`.
+:::

@@ -3,8 +3,8 @@ id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
 abstract: Rasa Open Source lets you test dialogues end-to-end by running through
-  test conversations. In addition to full test conversations, you can
-  also test the dialogue management and the message processing (NLU)
+  test conversations. In addition, you can
+  also test the dialogue management and the natural language understanding(NLU) model
   separately.
 ---
 
@@ -62,7 +62,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml" {5,9,14,20}
   stories:
-  - story: A test conversation with a form
+  - story: A test story with a form
     steps:
     - user: |
         hi
@@ -90,7 +90,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml" {5,9,14,21}
   stories:
-  - story: A test conversation with unexpected input during a form
+  - story: A test story with unexpected input during a form
     steps:
     - user: |
         hi
@@ -266,7 +266,7 @@ multiple tokens.
 
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
-expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. 
+expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`.
 
 Our approach is more lenient when it comes to evaluation, as it rewards
 partial extraction and does not penalize the splitting of entities.
