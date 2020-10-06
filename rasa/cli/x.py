@@ -429,7 +429,7 @@ def run_locally(args: argparse.Namespace):
         from rasa.nlu.components import MissingDependencyException
 
         raise MissingDependencyException(
-            f"Rasa X does not seem to be installed, but is needed for this CLI command."
+            f"Rasa X does not seem to be installed, but it is needed for this CLI command."
             f"You can find more information on how to install Rasa X in local mode"
             f"in the documentation: "
             f"{DOCS_BASE_URL_RASA_X}/installation-and-setup/install/local-mode"
