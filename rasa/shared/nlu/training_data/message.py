@@ -321,7 +321,14 @@ class Message:
 
         return combined_features
 
-    def is_e2e_message(self) -> bool:
+    def is_core_message(self) -> bool:
+        """Checks whether the message is a core message or not.
+
+        E.g. a core message is created from a story, not from the NLU data.
+
+        Returns:
+            True, if message is a core message, false otherwise.
+        """
         return (
             self.data.get(ACTION_NAME) is not None
             or self.data.get(ACTION_TEXT)

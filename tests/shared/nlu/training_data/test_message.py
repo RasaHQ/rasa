@@ -269,7 +269,7 @@ def test_build_from_action():
 
 
 @pytest.mark.parametrize(
-    "message, e2e_message",
+    "message, core_message",
     [
         (Message({INTENT: "intent", TEXT: "text"}), False),
         (Message({RESPONSE: "response", TEXT: "text"}), False),
@@ -279,7 +279,7 @@ def test_build_from_action():
         (Message({TEXT: "text"}), True),
     ],
 )
-def test_is_e2e_message(
-    message: Message, e2e_message: bool,
+def test_is_core_message(
+    message: Message, core_message: bool,
 ):
-    assert e2e_message == message.is_e2e_message()
+    assert core_message == message.is_core_message()

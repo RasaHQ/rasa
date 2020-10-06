@@ -12,7 +12,6 @@ import tensorflow_addons as tfa
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
 
 import rasa.shared.utils.io
-import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -35,8 +34,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
-    ACTION_TEXT,
-    ACTION_NAME,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -621,7 +618,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         for example in training_data:
             # Do not train on e2e examples
-            if example.is_e2e_message():
+            if example.is_core_message():
                 continue
 
             if label_attribute is None or example.get(label_attribute):
