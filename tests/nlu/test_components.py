@@ -145,11 +145,11 @@ def test_can_handle_language_logically_correctness(
     [
         # in following comments: VAL stands for any valid setting
         # (None, [])
-        (None, [], "Empty language list"),
+        (None, [], "Empty lists for both"),
         # ([], None)
-        ([], None, "Empty language list"),
+        ([], None, "Empty lists for both"),
         # ([], [])
-        ([], [], "Empty language list"),
+        ([], [], "Empty lists for both"),
         # (VAL, VAL)
         (["en"], ["zh"], "Only one of"),
     ],
@@ -158,6 +158,7 @@ def test_can_handle_language_guard_clause(
     supported_language_list, not_supported_language_list, expected_exec_msg
 ):
     from rasa.nlu.components import Component
+    from rasa.shared.exceptions import RasaException
 
     SampleComponent = type(
         "SampleComponent",
@@ -168,6 +169,6 @@ def test_can_handle_language_guard_clause(
         },
     )
 
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(RasaException) as excinfo:
         SampleComponent.can_handle_language("random_string")
     assert expected_exec_msg in str(excinfo.value)
