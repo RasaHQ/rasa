@@ -106,7 +106,7 @@ async def test_example_component(component_builder, tmp_path):
     [
         # in following comments:
         # AVL stands for any available setting
-
+        #
         # for language is `None`
         (None, None, None, True),
         # (None, None)
@@ -125,13 +125,18 @@ async def test_example_component(component_builder, tmp_path):
         ([], ["en"], "zh", True),
     ],
 )
-def test_can_handle_language_logically_correctness(supported_language_list, not_supported_language_list, language, expected):
+def test_can_handle_language_logically_correctness(
+    supported_language_list, not_supported_language_list, language, expected
+):
     from rasa.nlu.components import Component
 
-    SampleComponent = type("SampleComponent", (Component, ), {
-        "supported_language_list": supported_language_list,
-        "not_supported_language_list": not_supported_language_list
-    }
+    SampleComponent = type(
+        "SampleComponent",
+        (Component,),
+        {
+            "supported_language_list": supported_language_list,
+            "not_supported_language_list": not_supported_language_list,
+        },
     )
 
     assert SampleComponent.can_handle_language(language) == expected
@@ -142,7 +147,6 @@ def test_can_handle_language_logically_correctness(supported_language_list, not_
     [
         # in following comments:
         # AVL stands for any available setting
-
         # (None, [])
         (None, [], "Empty language list"),
         # ([], None)
@@ -150,16 +154,21 @@ def test_can_handle_language_logically_correctness(supported_language_list, not_
         # ([], [])
         ([], [], "Empty language list"),
         # (AVL, AVL)
-        (["en"], ["zh"], "Only one of")
+        (["en"], ["zh"], "Only one of"),
     ],
 )
-def test_can_handle_language_guard_clause(supported_language_list, not_supported_language_list, expected_exec_msg):
+def test_can_handle_language_guard_clause(
+    supported_language_list, not_supported_language_list, expected_exec_msg
+):
     from rasa.nlu.components import Component
 
-    SampleComponent = type("SampleComponent", (Component, ), {
-        "supported_language_list": supported_language_list,
-        "not_supported_language_list": not_supported_language_list
-    }
+    SampleComponent = type(
+        "SampleComponent",
+        (Component,),
+        {
+            "supported_language_list": supported_language_list,
+            "not_supported_language_list": not_supported_language_list,
+        },
     )
 
     with pytest.raises(Exception) as excinfo:
