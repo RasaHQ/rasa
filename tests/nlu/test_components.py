@@ -104,23 +104,21 @@ async def test_example_component(component_builder, tmp_path):
 @pytest.mark.parametrize(
     "supported_language_list, not_supported_language_list, language, expected",
     [
-        # in following comments:
-        # AVL stands for any available setting
-        #
+        # in following comments: VAL stands for any valid setting
         # for language is `None`
         (None, None, None, True),
         # (None, None)
         (None, None, "en", True),
-        # (AVL, None)
+        # (VAL, None)
         (["en"], None, "en", True),
         (["en"], None, "zh", False),
-        # (AVL, [])
+        # (VAL, [])
         (["en"], [], "en", True),
         (["en"], [], "zh", False),
-        # (None, AVL)
+        # (None, VAL)
         (None, ["en"], "en", False),
         (None, ["en"], "zh", True),
-        # ([], AVL)
+        # ([], VAL)
         ([], ["en"], "en", False),
         ([], ["en"], "zh", True),
     ],
@@ -145,15 +143,14 @@ def test_can_handle_language_logically_correctness(
 @pytest.mark.parametrize(
     "supported_language_list, not_supported_language_list, expected_exec_msg",
     [
-        # in following comments:
-        # AVL stands for any available setting
+        # in following comments: VAL stands for any valid setting
         # (None, [])
         (None, [], "Empty language list"),
         # ([], None)
         ([], None, "Empty language list"),
         # ([], [])
         ([], [], "Empty language list"),
-        # (AVL, AVL)
+        # (VAL, VAL)
         (["en"], ["zh"], "Only one of"),
     ],
 )
