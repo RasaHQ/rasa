@@ -241,14 +241,6 @@ Compare the domain spec of the current and the loaded domain.
 Throws exception if the loaded domain specification is different
 to the current domain are different.
 
-#### persist
-
-```python
- | persist(filename: Union[Text, Path]) -> None
-```
-
-Write domain to a file.
-
 #### cleaned\_domain
 
 ```python
@@ -264,6 +256,14 @@ to make the domain easier readable.
 **Returns**:
 
   A cleaned dictionary version of the domain.
+
+#### persist
+
+```python
+ | persist(filename: Union[Text, Path]) -> None
+```
+
+Write domain to a file.
 
 #### persist\_clean
 

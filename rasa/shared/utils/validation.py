@@ -104,7 +104,7 @@ class YamlValidationException(ValueError, RasaException):
             head, tail = path, ""
 
         if head:
-            if isinstance(current, dict):
+            if isinstance(current, dict) and head in current:
                 return self._line_number_for_path(current[head], tail) or this_line
             elif isinstance(current, list) and head.isdigit():
                 return self._line_number_for_path(current[int(head)], tail) or this_line

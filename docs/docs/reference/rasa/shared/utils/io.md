@@ -186,10 +186,20 @@ Dump an object as a json string to a file.
 #### dump\_obj\_as\_yaml\_to\_string
 
 ```python
-dump_obj_as_yaml_to_string(obj: Dict) -> Text
+dump_obj_as_yaml_to_string(obj: Any, should_preserve_key_order: bool = False) -> Text
 ```
 
 Writes data (python dict) to a yaml string.
+
+**Arguments**:
+
+- `obj` - The object to dump. Has to be serializable.
+- `should_preserve_key_order` - Whether to force preserve key order in `data`.
+  
+
+**Returns**:
+
+  The object converted to a YAML string.
 
 #### create\_directory
 

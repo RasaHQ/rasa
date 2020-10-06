@@ -605,6 +605,7 @@ def initialize_error_reporting() -> None:
     exception and its stacktrace is logged and only if the exception origins
     from the `rasa` package. """
     import sentry_sdk
+    from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
@@ -616,6 +617,8 @@ def initialize_error_reporting() -> None:
 
     if not key:
         return
+
+    telemetry_id = get_telemetry_id()
 
     # this is a very defensive configuration, avoiding as many integrations as
     # possible. it also submits very little data (exception with error message
@@ -629,7 +632,7 @@ def initialize_error_reporting() -> None:
             AtexitIntegration(lambda _, __: None),
         ],
         send_default_pii=False,  # activate PII filter
-        server_name=get_telemetry_id() or "UNKNOWN",
+        server_name=telemetry_id or "UNKNOWN",
         ignore_errors=[KeyboardInterrupt, RasaException],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
@@ -637,6 +640,10 @@ def initialize_error_reporting() -> None:
         default_integrations=False,
         environment="development" if in_continuous_integration() else "production",
     )
+
+    if telemetry_id:
+        with configure_scope() as scope:
+            scope.set_user({"id": telemetry_id})
 
 
 @async_generator.asynccontextmanager
