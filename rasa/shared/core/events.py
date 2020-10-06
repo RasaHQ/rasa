@@ -15,10 +15,10 @@ from typing import Union
 
 from rasa.shared.core.constants import (
     LOOP_NAME,
-    LOOP_VALIDATE,
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     IS_EXTERNAL,
+    LOOP_INTERRUPTED,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -299,8 +299,9 @@ class UserUttered(Event):
             )
 
     def __str__(self) -> Text:
-        return "UserUttered(text: {}, intent: {}, entities: {})".format(
-            self.text, self.intent, self.entities
+        return (
+            f"UserUttered(text: {self.text}, intent: {self.intent}, "
+            f"entities: {self.entities})"
         )
 
     @staticmethod
@@ -1249,9 +1250,60 @@ class LegacyForm(ActiveLoop):
         return d
 
 
-class FormValidation(Event):
+class LoopInterrupted(Event):
     """Event added by FormPolicy and RulePolicy to notify form action
        whether or not to validate the user input."""
+
+    type_name = "loop_interrupted"
+
+    def __init__(
+        self,
+        is_interrupted: bool,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        super().__init__(timestamp, metadata)
+        self.is_interrupted = is_interrupted
+
+    def __str__(self) -> Text:
+        return f"{LoopInterrupted.__name__}({self.is_interrupted})"
+
+    def __hash__(self) -> int:
+        return hash(self.is_interrupted)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, LoopInterrupted)
+            and self.is_interrupted == other.is_interrupted
+        )
+
+    def as_story_string(self) -> None:
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters) -> "LoopInterrupted":
+        return LoopInterrupted(
+            parameters.get(LOOP_INTERRUPTED, False),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        d.update({LOOP_INTERRUPTED: self.is_interrupted})
+        return d
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        tracker.interrupt_loop(self.is_interrupted)
+
+
+class LegacyFormValidation(LoopInterrupted):
+    """Legacy handler of old `FormValidation` events.
+
+    The `LoopInterrupted` event used to be called `FormValidation`. This class is there
+    to handle old legacy events which were stored with the old type name
+    `form_validation`.
+    """
 
     type_name = "form_validation"
 
@@ -1261,36 +1313,24 @@ class FormValidation(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
-        self.validate = validate
-        super().__init__(timestamp, metadata)
-
-    def __str__(self) -> Text:
-        return f"FormValidation({self.validate})"
-
-    def __hash__(self) -> int:
-        return hash(self.validate)
-
-    def __eq__(self, other) -> bool:
-        return isinstance(other, FormValidation)
-
-    def as_story_string(self) -> None:
-        return None
+        # `validate = True` is the same as `interrupted = False`
+        super().__init__(not validate, timestamp, metadata)
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "FormValidation":
-        return FormValidation(
-            parameters.get(LOOP_VALIDATE),
+    def _from_parameters(cls, parameters: Dict) -> "LoopInterrupted":
+        return LoopInterrupted(
+            # `validate = True` means `is_interrupted = False`
+            not parameters.get("validate", True),
             parameters.get("timestamp"),
             parameters.get("metadata"),
         )
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update({LOOP_VALIDATE: self.validate})
+        # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
+        # event type.
+        d["event"] = LoopInterrupted.type_name
         return d
-
-    def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker.set_form_validation(self.validate)
 
 
 class ActionExecutionRejected(Event):

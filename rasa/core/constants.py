@@ -4,9 +4,11 @@ DEFAULT_SERVER_FORMAT = "{}://localhost:{}"
 
 DEFAULT_SERVER_URL = DEFAULT_SERVER_FORMAT.format("http", DEFAULT_SERVER_PORT)
 
-DEFAULT_NLU_FALLBACK_THRESHOLD = 0.0
+DEFAULT_NLU_FALLBACK_THRESHOLD = 0.3
 
-DEFAULT_CORE_FALLBACK_THRESHOLD = 0.0
+DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD = 0.1
+
+DEFAULT_CORE_FALLBACK_THRESHOLD = 0.3
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
@@ -29,6 +31,10 @@ FALLBACK_POLICY_PRIORITY = 4
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
 FORM_POLICY_PRIORITY = 5
+# The priority of the `RulePolicy` is higher than the priorities for `FallbackPolicy`,
+# `TwoStageFallbackPolicy` and `FormPolicy` to make it possible to use the
+# `RulePolicy` in conjunction with these deprecated policies.
+RULE_POLICY_PRIORITY = 6
 
 DIALOGUE = "dialogue"
 

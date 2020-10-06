@@ -67,7 +67,7 @@ class YAMLStoryReader(StoryReader):
             reader.template_variables,
             reader.use_e2e,
             reader.source_name,
-            reader.unfold_or_utterances,
+            reader.is_used_for_conversion,
         )
 
     def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
@@ -129,7 +129,7 @@ class YAMLStoryReader(StoryReader):
             KEY_STORIES: StoryParser,
             KEY_RULES: RuleParser,
         }.items():
-            data = parsed_content.get(key, [])
+            data = parsed_content.get(key) or []
             parser = parser_class.from_reader(self)
             parser.parse_data(data)
             self.story_steps.extend(parser.get_steps())
@@ -137,7 +137,7 @@ class YAMLStoryReader(StoryReader):
         return self.story_steps
 
     @classmethod
-    def is_yaml_story_file(cls, file_path: Text) -> bool:
+    def is_stories_file(cls, file_path: Text) -> bool:
         """Check if file contains Core training data or rule data in YAML format.
 
         Args:
@@ -185,7 +185,7 @@ class YAMLStoryReader(StoryReader):
         return Path(file_path).name.startswith(TEST_STORIES_FILE_PREFIX)
 
     @classmethod
-    def is_yaml_test_stories_file(cls, file_path: Union[Text, Path]) -> bool:
+    def is_test_stories_file(cls, file_path: Union[Text, Path]) -> bool:
         """Checks if a file is a test conversations file.
 
         Args:
@@ -195,7 +195,7 @@ class YAMLStoryReader(StoryReader):
             `True` if it's a conversation test file, otherwise `False`.
         """
 
-        return cls._has_test_prefix(file_path) and cls.is_yaml_story_file(file_path)
+        return cls._has_test_prefix(file_path) and cls.is_stories_file(file_path)
 
     def get_steps(self) -> List[StoryStep]:
         self._add_current_stories_to_result()
