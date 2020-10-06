@@ -59,4 +59,4 @@ class MarkdownStoryWriter(StoryWriter):
         story_content = ""
         for step in story_steps:
             story_content += step.as_story_string(is_appendable, is_test_story)
-        return story_content
+        return story_content.lstrip()

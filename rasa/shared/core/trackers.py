@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 from collections import deque
 from enum import Enum
 from typing import (
@@ -624,8 +625,10 @@ class DialogueStateTracker:
             YAMLStoryWriter,
         )
 
+        append = not os.path.exists(export_path)
+
         rasa.shared.utils.io.write_text_file(
-            self.export_stories(YAMLStoryWriter()) + "\n", export_path, append=True
+            self.export_stories(YAMLStoryWriter()) + "\n", export_path, append=append
         )
 
     def get_last_event_for(
