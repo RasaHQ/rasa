@@ -6,7 +6,7 @@ abstract: One thing you can count on when building a conversational assistant is
   will say unexpected things. This page is a guide on handling unexpected input.
 ---
 
-Unexpected input is a deviation from the [happy path](glossary.mdx#happy_unhappy_paths)
+Unexpected input is a deviation from the [happy path](glossary.mdx#happy--unhappy-paths)
 that you have defined.  For example:
 
 - A user walks away in the middle of a conversation about their subscription, then comes back
@@ -17,7 +17,7 @@ This page is a guide on methods for handling unexpected input that is still with
 Depending on what kind of unexpected
 input you're trying to handle, some or all of the methods describe may be applicable for you. This guide
 is not about disambiguating user input or handling out-of-scope questions; for these cases see
-the guide on [fallback and human handoff](fallback-handoff.mdx)
+the guide on [fallback and human handoff](fallback-handoff.mdx).
 
 
 ## User Interjections
@@ -25,7 +25,7 @@ the guide on [fallback and human handoff](fallback-handoff.mdx)
 There are two kinds of unexpected input: generic interjections, and contextual interjections.
 Generic interjections are interruptions that should always get the same response regardless of the
 conversation context. If you already have a rule defining the response to an intent, you don't
-need to do anything else to handle it as an interruption.  [FAQs and chitchat](#chitchat-faqs) are common generic interjections.
+need to do anything else to handle it as an interruption.  [FAQs and chitchat](./chitchat-faqs.mdx) are common generic interjections.
 A contextual interjection is one whose response depends on the conversation context.
 For example, if a user asks "Why do you need that?", the answer will depend on what the bot just
 asked for.
@@ -39,56 +39,59 @@ One common case of contextual interjections is during slot filling for [form](fo
 asks “Why do you need to know that?” or "Can you explain that?".
 The response should differ for each slot. For example:
 
-```yaml
-User: I want to talk to sales
-  Bot: Sure, we can book a sales call! Let's get to know each other first.
-  Bot: What's your job?
-User: Why do you need to know that?
-  Bot: Your job function helps us in understanding how we can talk to you best.
-  Bot: Do you still want to talk to sales?
-```
+<Chat caption="A contextual interjection">
+<ChatUserText>Hi</ChatUserText>
+<ChatBotText>Hello! I am restaurant search assistant! How can I help?</ChatBotText>
+<ChatUserText>I'm looking for a restaurant</ChatUserText>
+<ChatBotText>What cuisine?</ChatBotText>
+<ChatUserText>French</ChatUserText>
+<ChatBotText>How many people?</ChatBotText>
+<ChatUserText>Why do you need to know that?</ChatUserText>
+<ChatBotText>I need to know how many people are in your party to ensure the restaurant can accomodate you.</ChatBotText>
+<ChatBotText>How many people?</ChatBotText>
+</Chat>
 
 Since we want the `requested_slot` to influence the conversation,
-we need to make the `requested_slot` featurized, and assign it the categorical type:
+we need to set the property `influence_conversation` of the slot `requested_slot`
+to `true`, and assign it the categorical type:
 
-```yaml-rasa
+```yaml-rasa  title="domain.yml"
 slots:
   requested_slot:
     type: categorical
     values:
-      - business_email
-      - company
-      - person_name
-      - use_case
-      - budget
-      - job_function
+      - cuisine
+      - num_people
+      - outdoor_seating
+      - preferences
+      - feedback
+    influence_conversation: true
 ```
 
 This means that the dialogue model will pay attention to the value of the slot when making a prediction
-(read more about other [featurized slots](./domain.mdx#slots), whereas
-unfeaturized slots are only used for storing information.
+(read more about how [slots influence the assistant's behaviour](./domain.mdx#slots-and-conversation-behavior)).
 
 You can then write stories for specific responses to interruptions based on the value of `requested_slot`, for example:
 
-```
+```yaml-rasa title="stories.yml"
 stories:
-- story: email interruption
+- story: cuisine interruption
   steps:
-  - active_loop: sales_form
+  - active_loop: restaurant_form
   - slot_was_set:
-    - requested_slot: email
-  - intent: ask_why_needed
-  - action: utter_why_email
-  - action: sales_form
+    - requested_slot: cuisine
+  - intent: explain
+  - action: utter_explain_cuisine
+  - action: restaurant_form
 
-- story: company interruption
+- story: number of people interruption
   steps:
-  - active_loop: sales_form
+  - active_loop: restaurant_form
   - slot_was_set:
-    - requested_slot: company
-  - intent: ask_why_needed
-  - action: utter_why_company
-  - action: sales_form
+    - requested_slot: num_people
+  - intent: explain
+  - action: utter_explain_num_people
+  - action: restaurant_form
 ```
 
 
@@ -97,13 +100,8 @@ stories:
 How you handle unexpected input depends on whether the response should be
 context sensitive or not.
 
-For reverting user utterances:
-  - [ ] Add the RulePolicy to config.yml.
-  - [ ] Define a custom action that returns `UserUtteranceReverted`
-  - [ ] Define a rule for the intent that should be reverted.
-
 For generic interjections:
-  - [ ] Define rules for single-turn interactions with actions that return `UserUtteranceReverted`
+  - [ ] Define rules for single-turn interactions
   - [ ] Use the ResponseSelector for [FAQ and chitchat interruptions](chitchat-faqs.mdx)
 
 For contextual interjections:

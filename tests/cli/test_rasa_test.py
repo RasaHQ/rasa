@@ -37,6 +37,31 @@ def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
     assert os.path.exists("results/intent_confusion_matrix.png")
 
 
+def test_test_with_no_user_utterance(
+    run_in_simple_project_with_model: Callable[..., RunResult]
+):
+    write_yaml(
+        {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}],},
+        "config.yml",
+    )
+
+    simple_test_story_yaml = """
+stories:
+- story: happy path 1
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_great
+  - action: utter_happy
+"""
+    with open("tests/test_story_no_utterance.yaml", "w") as f:
+        f.write(simple_test_story_yaml)
+
+    run_in_simple_project_with_model("test", "--fail-on-prediction-errors")
+    assert os.path.exists("results")
+    assert not os.path.exists("results/failed_test_stories.yml")
+
+
 def test_test_no_plot(run_in_simple_project: Callable[..., RunResult]):
     run_in_simple_project("test", "--no-plot")
 

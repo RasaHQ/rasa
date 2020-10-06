@@ -879,7 +879,9 @@ def create_app(
 
         data_path = os.path.abspath(test_data)
 
-        if not os.path.exists(eval_agent.model_directory):
+        if not eval_agent.model_directory or not os.path.exists(
+            eval_agent.model_directory
+        ):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory
@@ -1217,7 +1219,7 @@ def _model_output_directory(save_to_default_model_directory: bool) -> Text:
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
     try:
-        RasaYAMLReader.validate(yaml_text)
+        RasaYAMLReader().validate(yaml_text)
     except Exception as e:
         raise ErrorResponse(
             400,
