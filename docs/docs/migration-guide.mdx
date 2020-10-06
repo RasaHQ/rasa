@@ -29,6 +29,18 @@ how you can migrate from one version to another.
   component in your `policies` configuration (`config.yml`) you can replace it
   with `TEDPolicy`. It accepts the same configuration parameters.
 
+* [Conversation sessions](domain.mdx#session-configuration) are now enabled by default
+  if your [Domain](domain.mdx) does not contain a session configuration. Previously a
+  missing session configuration was treated as if conversation sessions were disabled.
+  You can explicitly disable conversation sessions using the following snippet:
+
+  ```yaml-rasa title="domain.yml"
+  session_config:
+    # A session expiration time of `0`
+    # disables conversation sessions
+    session_expiration_time: 0
+  ```
+
 ### Training data files
 
 You can convert existing NLU, Stories, and NLG (i.e. `responses.md`) training data
