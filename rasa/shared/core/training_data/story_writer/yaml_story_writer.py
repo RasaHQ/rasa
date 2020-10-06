@@ -9,14 +9,15 @@ from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarStri
 import rasa.shared.utils.io
 import rasa.shared.core.constants
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.core.events import (
+from rasa.shared.core.events import (  # pytype: disable=pyi-error
     UserUttered,
     ActionExecuted,
     SlotSet,
     ActiveLoop,
     Event,
 )
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (  # pytype: disable=pyi-error
     KEY_STORIES,
     KEY_STORY_NAME,
     KEY_USER_INTENT,
@@ -35,6 +36,8 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_RULE_CONDITION,
     KEY_RULE_NAME,
 )
+
+from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 from rasa.shared.core.training_data.structures import (
     StoryStep,
     Checkpoint,
@@ -43,31 +46,44 @@ from rasa.shared.core.training_data.structures import (
 )
 
 
-class YAMLStoryWriter:
+class YAMLStoryWriter(StoryWriter):
     """Writes Core training data into a file in a YAML format. """
 
-    def dumps(self, story_steps: List[StoryStep]) -> Text:
-        """Turns Story steps into a string.
+    def dumps(
+        self, story_steps: List[StoryStep], is_appendable: bool = False, **kwargs: Any
+    ) -> Text:
+        """Turns Story steps into an YAML string.
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
+            is_appendable: Specify if result should not contain
+                           high level keys/definitions and can be appended to
+                           the existing story file.
         Returns:
             String with story steps in the YAML format.
         """
         stream = yaml.StringIO()
-        self.dump(stream, story_steps)
+        self.dump(stream, story_steps, is_appendable)
         return stream.getvalue()
 
     def dump(
-        self, target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep]
+        self,
+        target: Union[Text, Path, yaml.StringIO],
+        story_steps: List[StoryStep],
+        is_appendable: bool = False,
     ) -> None:
         """Writes Story steps into a target file/stream.
 
         Args:
             target: name of the target file/stream to write the YAML to.
             story_steps: Original story steps to be converted to the YAML.
+            is_appendable: Specify if result should not contain
+                           high level keys/definitions and can be appended to
+                           the existing story file.
         """
         result = self.stories_to_yaml(story_steps)
+        if is_appendable and KEY_STORIES in result:
+            result = result[KEY_STORIES]
 
         rasa.shared.utils.io.write_yaml(result, target, True)
 
