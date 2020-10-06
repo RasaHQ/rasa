@@ -21,6 +21,9 @@ from rasa.shared.core.training_data import loading
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
 )
+from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
+    MarkdownStoryWriter,
+)
 from rasa.shared.core.training_data.structures import Story, RuleStep
 
 
@@ -48,9 +51,11 @@ async def test_persist_and_read_test_story_graph(
         remove_duplicates=False,
     )
 
-    existing_stories = {t.export_stories() for t in existing_trackers}
+    existing_stories = {
+        t.export_stories(MarkdownStoryWriter()) for t in existing_trackers
+    }
     for t in recovered_trackers:
-        story_str = t.export_stories()
+        story_str = t.export_stories(MarkdownStoryWriter())
         assert story_str in existing_stories
         existing_stories.discard(story_str)
 
@@ -76,9 +81,11 @@ async def test_persist_and_read_test_story(tmp_path: Path, default_domain: Domai
         tracker_limit=1000,
         remove_duplicates=False,
     )
-    existing_stories = {t.export_stories() for t in existing_trackers}
+    existing_stories = {
+        t.export_stories(MarkdownStoryWriter()) for t in existing_trackers
+    }
     for t in recovered_trackers:
-        story_str = t.export_stories()
+        story_str = t.export_stories(MarkdownStoryWriter())
         assert story_str in existing_stories
         existing_stories.discard(story_str)
 
@@ -155,7 +162,7 @@ async def test_persist_legacy_form_story():
 
     story = story.replace(f"- {LegacyForm.type_name}", f"- {ActiveLoop.type_name}")
 
-    assert story in tracker.export_stories()
+    assert story in tracker.export_stories(MarkdownStoryWriter())
 
 
 async def test_persist_form_story():
@@ -230,7 +237,7 @@ async def test_persist_form_story():
     for event in events:
         tracker.update(event)
 
-    assert story in tracker.export_stories()
+    assert story in tracker.export_stories(MarkdownStoryWriter())
 
 
 async def test_read_stories_with_multiline_comments(tmpdir, default_domain: Domain):
