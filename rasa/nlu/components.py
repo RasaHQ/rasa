@@ -670,10 +670,22 @@ class Component(metaclass=ComponentMetaclass):
                 "Only one of `supported_language_list` and `not_supported_language_list` can be set to not None"
             )
 
-        if cls.supported_language_list:
-            return language in cls.supported_language_list
+        # convert to `list` for membership test
+        supported_language_list = cls.supported_language_list if cls.supported_language_list is not None else []
+        not_supported_language_list = cls.not_supported_language_list if cls.not_supported_language_list is not None else []
+
+        # check if user provided a available setting
+        if not supported_language_list and not not_supported_language_list:
+            # One of language settings must be available (not None and not a empty list),
+            # There are three combinations of settings are not available: (None, []), ([], None) and ([], [])
+            raise Exception(
+                "Empty language list is not a available setting"
+            )
+
+        if supported_language_list:
+            return language in supported_language_list
         else:
-            return language not in cls.not_supported_language_list
+            return language not in not_supported_language_list
 
 
 C = typing.TypeVar("C", bound=Component)
