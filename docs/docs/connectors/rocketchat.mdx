@@ -25,24 +25,16 @@ description: Build a Rasa Chat Bot on Rocketchat
    **Trigger Words** section with `@yourbotname` so that the bot
    doesn't trigger on everything that is said.
 
-6. Set your **URLs** section to the Rasa URL where you have your
-   webhook running in Core or your public address with
-   `/webhooks/rocketchat/webhook`, e.g.
-   `http://test.example.com/webhooks/rocketchat/webhook`.
+6. In the **URLs** section, set the URL to 
+   `http://<host>:<port>/webhooks/rocketchat/webhook`, replacing
+   the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
 
 For more information on the Rocket.Chat Webhooks, see the
 [Rocket.Chat Guide](https://rocket.chat/docs/administrator-guides/integrations/).
 
 ## Running on RocketChat
 
-If you want to connect to the Rocket.Chat input channel using the run
-script, e.g. using:
-
-```bash
-rasa run
-```
-
-you need to supply a `credentials.yml` with the following content:
+Add the RocketChat credentials to your `credentials.yml`:
 
 ```yaml-rasa
 rocketchat:
@@ -50,3 +42,7 @@ rocketchat:
   password: "YOUR_PASSWORD"
   server_url: "https://demo.rocket.chat"
 ```
+
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available for RocketChat to send messages to.
