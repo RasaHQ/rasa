@@ -5,7 +5,7 @@ from rasa.core.utils import get_dict_hash
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.character_tokenizer import CharacterTokenizer
-from rasa.nlu.components import Component
+from rasa.nlu.components import Component, UnsupportedLanguageError
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -88,7 +88,13 @@ class HFTransformersNLP(Component):
     def create(
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
     ) -> "Component":
-        return cls(component_config, language=config.language)
+        # Check language supporting
+        language = config.language
+        if not cls.can_handle_language(language):
+            # check failed
+            raise UnsupportedLanguageError(cls.name, language)
+
+        return cls(component_config, language=language)
 
     def _load_model_metadata(self) -> None:
 
