@@ -576,7 +576,7 @@ def strip_sensitive_data_from_sentry_event(
         for frame in value.get("stacktrace", {}).get("frames", []):
             frame["abs_path"] = ""
 
-            if "rasa_sdk/executor.py" in frame["filename"]:
+            if f"rasa_sdk{os.path.sep}executor.py" in frame["filename"]:
                 # this looks a lot like an exception in the SDK and hence custom code
                 # no need for us to deal with that
                 return None
