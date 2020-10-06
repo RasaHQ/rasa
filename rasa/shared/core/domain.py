@@ -569,7 +569,7 @@ class Domain:
 
         These templates have a `/` symbol in their name. Use that to filter them from the rest.
         """
-        return "/" in template[0]
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
 
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
