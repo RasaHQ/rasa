@@ -1,7 +1,7 @@
 import * as React from 'react';
 import clsx from 'clsx';
 
-import Button from "../Button";
+import RasaButton from "../RasaButton";
 import styles from './styles.module.css';
 
 function Text({values, selectedValue, setSelectedValue, children, ...props}) {
@@ -49,9 +49,9 @@ function Section({children, ...props}) {
 
 function NextStepButton(props) {
   return (
-    <Button {...props}>
+    <RasaButton {...props}>
       Next step >>
-    </Button>
+    </RasaButton>
   )
 }
 
