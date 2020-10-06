@@ -34,7 +34,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    NO_ENTITY_TAG,
+    NO_ENTITY_TAG, ACTION_TEXT, ACTION_NAME,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -618,6 +618,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = []
 
         for example in training_data:
+            # Do not train on e2e examples
+            if example.is_e2e_message():
+                continue
+
             if label_attribute is None or example.get(label_attribute):
                 text_features = self._extract_features(example, TEXT)
                 for feature_key, feature_value in text_features.items():

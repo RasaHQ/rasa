@@ -321,6 +321,14 @@ class Message:
 
         return combined_features
 
+    def is_e2e_message(self) -> bool:
+        return (
+            self.data.get(ACTION_NAME) is not None
+            or self.data.get(ACTION_TEXT)
+            or ((self.data.get(INTENT) or self.data.get(RESPONSE)) and not self.data.get(TEXT))
+            or (self.data.get(TEXT) and not (self.data.get(INTENT) or self.data.get(RESPONSE)))
+        )
+
 
 def ordered(obj: Any) -> Any:
     if isinstance(obj, dict):
