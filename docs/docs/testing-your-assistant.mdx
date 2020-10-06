@@ -139,9 +139,9 @@ for them and include these tests in your [CI/CD pipeline](./setting-up-ci-cd.mdx
 
 ## Evaluating an NLU Model
 
-In addition to end-to-end testing, you can also test the message processing model(NLU) separately.
+In addition to end-to-end testing, you can also test the natural language understanding(NLU) model separately.
 Once your assistant is deployed in the real world, it will be processing messages that it hasn't seen
-in the training data. Hence, you should always set aside some part of your training data for testing.
+in the training data. To simulate this, you should always set aside some part of your data for testing.
 You can [split your NLU data](./command-line-interface.mdx#create-a-train-test-split)
 into train and test sets using:
 
@@ -193,8 +193,10 @@ This performs several steps:
 3. Train models for each configuration on remaining training data.
 4. Evaluate each model on the global test split.
 
-The above process is repeated with different percentages of training data excluded in step 2 above.
-Additionally, the whole process is repeated three times for each configuration specified.
+The above process is repeated with different percentages of training data in step 2
+to give you an idea of how each pipeline will behave if you increase the amount of training data.
+Since training is not completely deterministic, the whole process is repeated
+three times for each configuration specified.
 A graph with the mean and standard deviations of
 [f1-scores](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
 across all runs is plotted.
@@ -203,8 +205,11 @@ The f1-score graph, along with all train/test sets, the trained models, classifi
 will be saved into a folder called `nlu_comparison_results`.
 
 Inspecting the f1-score graph can help in understanding if you have enough data for your NLU model.
+If the graph shows that f1-score is still improving when all of the training data is used,
+it may improve further with more data. But if f1-score has plateaued when all training data is used,
+adding more data may not help.
 
-You can also specify different number of runs and different exclusion percentages with:
+If you want to change the number of runs or exclusion percentages, you can:
 
 ```bash {3}
 rasa test nlu --nlu data/nlu.yml
@@ -225,19 +230,19 @@ as well as providing an overall average. You can save these reports as JSON file
 The confusion matrix shows which intents are mistaken for others.
 Any samples which have been incorrectly predicted are logged and saved to a file called `errors.json` for easier debugging.
 
-The histogram that the script produces allows you to visualize the confidence distribution for all predictions,
-with the volume of correct and incorrect predictions being displayed by blue and red bars respectively.
+The histogram allows you to visualize the confidence for all predictions,
+with the correct and incorrect predictions being displayed by blue and red bars respectively.
 Improving the quality of your training data will move the blue histogram bars to the right and the
 red histogram bars to the left of the plot.
 
 #### Response Selectors
 
-Similar to intent classifiers, the evaluation script outputs the same set of artifacts for response selectors -
+In addition to intent classifiers, `rasa test` also evaluates response selectors, producing a
 report, confusion matrix, confidence histogram and errors.
-If you have multiple response selectors in your pipeline, the evaluation for all of them is combined in a single report.
+If your pipeline includes multiple response selectors, they are evaluated in a single report.
 
 The report logs precision, recall and f1 measure for
-each sub-intent of a [retrieval intent](./glossary.mdx#retrieval-intent), as well as providing an overall average.
+each sub-intent of a [retrieval intent](./glossary.mdx#retrieval-intent) and provides an overall average.
 You can save these reports as JSON files using the `--report` argument.
 
 #### Entity Extraction
@@ -246,8 +251,7 @@ You can save these reports as JSON files using the `--report` argument.
 your trainable entity extractors are trained to recognize.
 
 Only trainable entity extractors, such as the `DIETClassifier` and `CRFEntityExtractor` will be
-evaluated by the `rasa test` script. If you use pretrained extractors like the `DucklingHTTPExtractor`,
-Rasa Open Source will not include these in the evaluation.
+evaluated by `rasa test`. Pretrained extractors like the `DucklingHTTPExtractor` are not evaluated.
 
 :::caution incorrect entity annotations
 If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
@@ -268,7 +272,6 @@ Our approach is more lenient when it comes to evaluation, as it rewards
 partial extraction and does not penalize the splitting of entities.
 For example, given the aforementioned entity “near Alexanderplatz” and a system that extracts
 “Alexanderplatz”, our approach rewards the extraction of “Alexanderplatz” and penalizes the missed out word “near”.
-
 
 The BILOU-based approach, however, would label this as a complete failure since it expects Alexanderplatz
 to be labeled as a last token in an entity (`L-LOC`) instead of a single token entity (`U-LOC`). Note also that
@@ -296,8 +299,7 @@ rasa test core --stories test_stories.yml --out results
 ```
 
 This will print any failed stories to `results/failed_test_stories.yml`.
-Rasa Open Source counts a story as failed if at least one of the actions
-was predicted incorrectly.
+A story fails if at least one of the actions was predicted incorrectly.
 
 The test script will also save a confusion matrix to a file called
 `results/story_confmat.pdf`. For each action in your domain, the confusion
@@ -339,7 +341,7 @@ rasa test core -m comparison_models --stories stories_folder
   --out comparison_results --evaluate-model-directory
 ```
 
-This will evaluate each of the models on the provided stories in `stories_folder`
+This will evaluate each model on the stories in `stories_folder`
 (can be either training or test set) and plot some graphs
 to show you which policy performs best. Since the previous train command
 excluded some amount of training data to train each model,
