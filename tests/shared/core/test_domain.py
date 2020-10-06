@@ -932,3 +932,12 @@ def test_domain_deepcopy():
     assert new_domain._custom_actions is not domain._custom_actions
     assert new_domain.user_actions is not domain.user_actions
     assert new_domain.action_names is not domain.action_names
+
+
+@pytest.mark.parametrize(
+    "template_key, validation",
+    [("utter_chitchat/faq", True), ("utter_chitchat", False)],
+)
+def test_is_retrieval_intent_template(template_key, validation):
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    assert domain.is_retrieval_intent_template((template_key, [{}])) == validation
