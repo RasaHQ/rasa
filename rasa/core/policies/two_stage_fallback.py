@@ -7,7 +7,12 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.core.constants import FALLBACK_POLICY_PRIORITY
+from rasa.core.constants import (
+    FALLBACK_POLICY_PRIORITY,
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+)
 from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
@@ -51,9 +56,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     def __init__(
         self,
         priority: int = FALLBACK_POLICY_PRIORITY,
-        nlu_threshold: float = 0.3,
-        ambiguity_threshold: float = 0.1,
-        core_threshold: float = 0.3,
+        nlu_threshold: float = DEFAULT_NLU_FALLBACK_THRESHOLD,
+        ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+        core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
         fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
