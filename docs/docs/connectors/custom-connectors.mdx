@@ -21,8 +21,8 @@ named `myio`, the webhook you can use to attach the external service is
 `http://<host>:<port>/webhooks/myio/webhook`, replacing 
 the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
 
-You can you can `POST` messages to your custom connector at the url 
-`http://<host>:<port>/webhooks/myio/webhook`, with the following format:
+You can `POST` messages to your custom connector at the url 
+`http://<host>:<port>/webhooks/myio/webhook` using the following format:
 
 ```json
 {
@@ -41,8 +41,8 @@ or action prediction. If you want to change the way metadata is extracted for an
 existing channel, you can overwrite the function `get_metadata`. The return value
 of this method will be passed to the `UserMessage`.
 
-In your implementation of the `receive` endpoint, you need to make
-sure to call `on_new_message(UserMessage(text, output, sender_id))`.
+In your implementation of the `receive` endpoint, you will need
+to call `on_new_message(UserMessage(text, output, sender_id))`.
 This will tell Rasa Core to handle this user message. The `output`
 is an output channel implementing the `OutputChannel` class. You can
 either implement the methods for your particular chat channel (e.g. there

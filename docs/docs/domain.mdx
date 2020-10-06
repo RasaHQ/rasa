@@ -9,7 +9,7 @@ It specifies the `intents`, `entities`, `slots`, `responses`, `forms`, and `acti
 your bot should know about. It also defines a `session_config` to configure
 conversation sessions.
 
-As an example, here the domain of the 
+As an example, here is the domain of the 
 [concertbot](https://github.com/RasaHQ/rasa/tree/master/examples/concertbot):
 
 ```yaml-rasa (docs/sources/examples/concertbot/domain.yml)
@@ -62,7 +62,7 @@ This means that excluded entities for those intents will be unfeaturized and the
 will not impact the next action predictions. This is useful when you have
 an intent where you don't care about the entities being picked up. 
 
-If you list your intents as normal without this parameter, the entities will be
+If you list your intents without this parameter, the entities will be
 featurized as normal.
 
 :::note
@@ -539,19 +539,19 @@ call, or to start the conversation with a bot message. The docs on
 
 ## Config 
 
-The `config` key in the domain file keeps track of one parameter, `store_entities_as_slots`.
-When an entity is recognized by the NLU model, if the entity type matches a slot name,
-this value defines whether the entity value should be placed in that slot.
+The `config` key in the domain file maintains the `store_entities_as_slots` parameter. 
+When an entity is recognized by the NLU model and the entity name matches a slot name,
+`store_entities_as_slots` defines whether the entity value should be placed in that slot.
 By default, entities will auto-fill slots of the same name. 
 
-You can turn off all slot auto-filling by changing the `store_entities_as_slots` parameter: 
+You can turn off all slot auto-filling by setting the `store_entities_as_slots` parameter to `false`: 
 
 ```yaml-rasa title="domain.yml"
 config:
   store_entities_as_slots: false
 ```
 
-You can also turn off this behavior for a specific slot by using the [`auto_fill`](./domain.mdx#slot-auto-fill)
+You can also turn off this behavior for a specific slot using the [`auto_fill`](./domain.mdx#slot-auto-fill)
 parameter in that slot's definition. 
 
 :::note looking for config.yml?
