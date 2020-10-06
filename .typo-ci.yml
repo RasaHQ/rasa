@@ -119,6 +119,7 @@ excluded_words:
   - mongod
   - mrkdown
   - mrkdwn
+  - myio
   - mymodelname
   - myuser
   - numpy
@@ -149,6 +150,7 @@ excluded_words:
   - sanitization
   - scipy
   - sklearn
+  - socketio
   - spacy
   - spacyfeaturizer
   - spacynlp
@@ -178,6 +180,7 @@ excluded_words:
   - crypto
   - regexes
   - walkthroughs
+  - webexteams
   - venv
   - regexfeaturizer
   - crfentityextractor
