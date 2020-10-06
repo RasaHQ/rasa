@@ -682,10 +682,10 @@ class Component(metaclass=ComponentMetaclass):
             else []
         )
 
-        # check if user provided a available setting
+        # check if user provided a valid setting
         if not supported_language_list and not not_supported_language_list:
-            # One of language settings must be available (not None and not a empty list),
-            # There are three combinations of settings are not available: (None, []), ([], None) and ([], [])
+            # One of language settings must be valid (not None and not a empty list),
+            # There are three combinations of settings are not valid: (None, []), ([], None) and ([], [])
             raise Exception("Empty lists for both `supported_language_list` and `not_supported language_list` is not a valid setting. If you meant to allow all languages for the component use `None` for both of them.")
 
         if supported_language_list:
