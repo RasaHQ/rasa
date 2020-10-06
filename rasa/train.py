@@ -481,7 +481,7 @@ async def _train_nlu_async(
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
     domain: Optional[Union[Domain, Text]] = None,
-):
+) -> Optional[Text]:
     if not nlu_data:
         print_error(
             "No NLU data given. Please provide NLU data in order to train "

@@ -166,12 +166,7 @@ def test_train_nlu_wrong_format_error_message(
     assert "Please verify the data format" in captured.out
 
 
-def test_train_nlu_with_responses_no_domain_warns(
-    tmp_path: Path, monkeypatch: MonkeyPatch,
-):
-    (tmp_path / "training").mkdir()
-    (tmp_path / "models").mkdir()
-
+def test_train_nlu_with_responses_no_domain_warns(tmp_path: Path):
     data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
 
     with pytest.warns(UserWarning) as records:
@@ -188,12 +183,7 @@ def test_train_nlu_with_responses_no_domain_warns(
     )
 
 
-def test_train_nlu_with_responses_and_domain_no_warns(
-    tmp_path: Path, monkeypatch: MonkeyPatch,
-):
-    (tmp_path / "training").mkdir()
-    (tmp_path / "models").mkdir()
-
+def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
     data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
     domain_path = "data/test_nlu_no_responses/domain_with_only_responses.yml"
 
