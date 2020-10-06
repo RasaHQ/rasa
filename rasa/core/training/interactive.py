@@ -19,7 +19,6 @@ import questionary
 from questionary import Choice, Form, Question
 
 from rasa import telemetry
-import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.cli.utils
@@ -699,6 +698,8 @@ async def _request_action_from_user(
 
 
 def _request_export_info() -> Tuple[Text, Text, Text]:
+    import rasa.shared.data
+
     """Request file path and export stories & nlu data to that path"""
 
     # export training data and quit
@@ -710,7 +711,8 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             validate=io_utils.file_type_validator(
                 rasa.shared.data.MARKDOWN_FILE_EXTENSIONS
                 + rasa.shared.data.YAML_FILE_EXTENSIONS,
-                "Please provide a valid export path for the stories, e.g. 'stories.yml'.",
+                "Please provide a valid export path for the stories, "
+                "e.g. 'stories.yml'.",
             ),
         ),
         export_nlu=questionary.text(
@@ -719,7 +721,8 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             default=PATHS["nlu"],
             validate=io_utils.file_type_validator(
                 list(rasa.shared.data.TRAINING_DATA_EXTENSIONS),
-                "Please provide a valid export path for the NLU data, e.g. 'nlu.yml'.",
+                "Please provide a valid export path for the NLU data, "
+                "e.g. 'nlu.yml'.",
             ),
         ),
         export_domain=questionary.text(
@@ -727,8 +730,9 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will be overwritten)",
             default=PATHS["domain"],
             validate=io_utils.file_type_validator(
-                [".yml", ".yaml"],
-                "Please provide a valid export path for the domain file, e.g. 'domain.yml'.",
+                rasa.shared.data.YAML_FILE_EXTENSIONS,
+                "Please provide a valid export path for the domain file, "
+                "e.g. 'domain.yml'.",
             ),
         ),
     )

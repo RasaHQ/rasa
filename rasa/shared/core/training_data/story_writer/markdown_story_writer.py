@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Dict, List, Text, Union
+from typing import List, Text, Union
 
 from ruamel import yaml
 
 from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
-from rasa.shared.utils.io import write_text_file
 from rasa.shared.core.training_data.structures import StoryStep
 
 

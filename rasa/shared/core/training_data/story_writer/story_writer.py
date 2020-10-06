@@ -1,15 +1,16 @@
 from pathlib import Path
-from typing import List, Text, Union, Any
+from typing import List, Text, Union, Any, TYPE_CHECKING
 
 from ruamel import yaml
 
-from rasa.shared.core.training_data.structures import StoryStep
+if TYPE_CHECKING:
+    from rasa.shared.core.training_data.structures import StoryStep
 
 
 class StoryWriter:
     @staticmethod
     def dumps(
-        story_steps: List[StoryStep], is_appendable: bool = False, **kwargs: Any
+        story_steps: List["StoryStep"], is_appendable: bool = False, **kwargs: Any
     ) -> Text:
         """Turns Story steps into an string.
 
@@ -26,7 +27,7 @@ class StoryWriter:
     @staticmethod
     def dump(
         target: Union[Text, Path, yaml.StringIO],
-        story_steps: List[StoryStep],
+        story_steps: List["StoryStep"],
         is_appendable: bool = False,
     ) -> None:
         """Writes Story steps into a target file/stream.
