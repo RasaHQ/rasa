@@ -64,7 +64,7 @@ function Container({children, values, defaultValue, ...props}) {
   };
 
   return (
-    <div className={clsx(styles.container)}>
+    <div className={clsx(styles.container, 'mdx-box-max')}>
       <ul className={clsx(styles.containerTabs)}>
         {values.map(({value, label}) => (
           <li

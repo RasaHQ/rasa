@@ -17,6 +17,11 @@
   border-bottom: 3px solid transparent;
   cursor: pointer;
   outline: none;
+  margin-top: 0 !important;
+}
+
+.tab::before {
+  content: '' !important;
 }
 
 .tabActive {
@@ -74,7 +79,7 @@
 
 .code > div {
   flex: 1;
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
   display: flex;
   flex-direction: column;
   overflow: scroll;
