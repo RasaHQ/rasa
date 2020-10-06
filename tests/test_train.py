@@ -166,18 +166,17 @@ def test_train_nlu_wrong_format_error_message(
     assert "Please verify the data format" in captured.out
 
 
-def test_train_nlu_with_responses_or_domain_warns(
-    tmp_path: Text, monkeypatch: MonkeyPatch,
+def test_train_nlu_with_responses_no_domain_warns(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
 ):
     (tmp_path / "training").mkdir()
     (tmp_path / "models").mkdir()
 
     data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
-    domain_path = "data/test_nlu_no_responses/domain_with_only_responses.yml"
 
-    with pytest.warns(None) as records:
+    with pytest.warns(UserWarning) as records:
         train_nlu(
-            "data/test_config/config_defaults.yml",
+            "data/test_config/config_response_selector_minimal.yml",
             data_path,
             output=str(tmp_path / "models"),
         )
@@ -188,9 +187,19 @@ def test_train_nlu_with_responses_or_domain_warns(
         for record in records
     )
 
+
+def test_train_nlu_with_responses_and_domain_no_warns(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+):
+    (tmp_path / "training").mkdir()
+    (tmp_path / "models").mkdir()
+
+    data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
+    domain_path = "data/test_nlu_no_responses/domain_with_only_responses.yml"
+
     with pytest.warns(None) as records:
         train_nlu(
-            "data/test_config/config_defaults.yml",
+            "data/test_config/config_response_selector_minimal.yml",
             data_path,
             output=str(tmp_path / "models"),
             domain=domain_path,
