@@ -47,7 +47,7 @@ Please note, that it's not currently possible to convert stories that contain fo
 automatically, these stories will be skipped and should be converted manually, see
 `Rule Policy` below.
 
-### Rule Policy
+### Policies
 
 With the introduction of [Rules](./rules.mdx), the following policies are
 deprecated:
@@ -57,13 +57,29 @@ deprecated:
 - [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy)
 - [Form Policy](./policies.mdx#form-policy)
 
-#### Migrating from the Mapping Policy
+:::tip Automatic migration
+Rasa Open Source can take care of automatically migrating the Mapping Policy,
+the Fallback Policy and the Two-Stage-Fallback Policy for you. To do so, run the
+following command:
+
+```bash
+rasa data convert config
+```
+
+This command will take care of updating your `config.yml`, `domain.yml` and `rules.yml`, while
+making backups of your pre-existing files using the `.bak` suffix.
+
+You can follow the steps below if you wish to do this migration manually.
+Please note that you would still need to [migrate the Form Policy](#migrating-from-the-form-policy) manually.
+:::
+
+#### Manually migrating from the Mapping Policy
 
 If you previously used the [Mapping Policy](./policies.mdx#mapping-policy), you
 can follow the documentation on [FAQs](./chitchat-faqs.mdx) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 intents:
  - ask_is_bot:
      triggers: action_is_bot
@@ -71,7 +87,7 @@ intents:
 
 This becomes the following rule:
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
 - rule: Rule to map `ask_is_bot` intent
   steps:
@@ -79,12 +95,28 @@ rules:
   - action: action_is_bot
 ```
 
-#### Migrating from the Fallback Policy
+And you can safely remove any `triggers:` from your domain:
+
+```yaml-rasa title="domain.yml"
+intents:
+ - ask_is_bot
+```
+
+Finally, you can replace the Mapping Policy with the
+[Rule Policy](./policies.mdx#rule-policy) in your model configuration:
+
+```yaml-rasa title="config.yml"
+policies:
+  # Other policies
+  - name: RulePolicy
+```
+
+#### Manually migrating from the Fallback Policy
 
 If you previously used the [Fallback Policy](./policies.mdx#fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
   - name: "FallbackPolicy"
     nlu_threshold: 0.4
@@ -95,12 +127,12 @@ policies:
 
 The new configuration would then look like:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
-# Other policies
-- name: RulePolicy
-  core_fallback_threshold: 0.3
-  core_fallback_action_name: "action_default_fallback"
+  # Other policies
+  - name: RulePolicy
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "action_default_fallback"
 
 pipeline:
   # Other components
@@ -112,24 +144,24 @@ pipeline:
 In addition, you need to add a [Rule](./rules.mdx) to specify which action to run
 in case of low NLU confidence:
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
-- rule: Ask the user to rephrase whenever they send a message with low NLU confidence
-  steps:
-  - intent: nlu_fallback
-  - action: utter_please_rephrase
+  - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
+    steps:
+    - intent: nlu_fallback
+    - action: utter_please_rephrase
 ```
 
 Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
-#### Migrating from the Two-Stage-Fallback Policy
+#### Manually migrating from the Two-Stage-Fallback Policy
 
 If you previously used the
 [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
   - name: TwoStageFallbackPolicy
     nlu_threshold: 0.4
@@ -142,12 +174,12 @@ policies:
 
 The new configuration would then look like:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
-# Other policies
-- name: RulePolicy
-  core_fallback_threshold: 0.3
-  core_fallback_action_name: "action_default_fallback"
+  # Other policies
+  - name: RulePolicy
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "action_default_fallback"
 
 pipeline:
   # Other components
@@ -159,16 +191,16 @@ pipeline:
 In addition you need to add a [Rule](./rules.mdx) to activate the Two-Stage Fallback for
 messages with low NLU confidence.
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
-- rule: Implementation of the TwoStageFallbackPolicy
-  steps:
-  # This intent is automatically triggered by the `FallbackClassifier` in the NLU
-  # pipeline in case the intent confidence was below the specified threshold.
-  - intent: nlu_fallback
-  # The Fallback is now implemented as a form.
-  - action: two_stage_fallback
-  - active_loop: two_stage_fallback
+  - rule: Implementation of the TwoStageFallbackPolicy
+    steps:
+    # This intent is automatically triggered by the `FallbackClassifier` in the NLU
+    # pipeline in case the intent confidence was below the specified threshold.
+    - intent: nlu_fallback
+    # The Fallback is now implemented as a form.
+    - action: action_two_stage_fallback
+    - active_loop: action_two_stage_fallback
 ```
 
 Note that the previous parameters `fallback_nlu_action_name` and
@@ -178,7 +210,7 @@ Note that the previous parameters `fallback_nlu_action_name` and
 Please see the [Fallbacks](./fallback-handoff.mdx#fallbacks) documentation for more
 information.
 
-#### Form Policy
+#### Migrating from the Form Policy
 
 As of Rasa Open Source 2.0 the logic for [Forms](./forms.mdx) has been moved from the
 Rasa SDK to Rasa Open Source to simplify implementations of custom action libraries.
@@ -245,17 +277,17 @@ class RestaurantForm(FormAction):
 Start the migration by adding the [RulePolicy](./policies.mdx#rule-policy) to your
 model configuration:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
-# Other policies
-# ...
-- name: RulePolicy
+  # Other policies
+  # ...
+  - name: RulePolicy
 ```
 
 Then you need to define the form and the required slots in the domain as described in
 [Forms](./forms.mdx#defining-a-form):
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 forms:
   restaurant_form:
     cuisine:
@@ -268,29 +300,29 @@ You don't have to add a rule for activating the form as this is already covered 
 existing stories. However, you have to add a story for handle the submission of the
 form.
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
-- rule: Submit form
-  condition:
-  # Condition that form is active.
-  - active_loop: restaurant_form
-  steps:
-  - action: restaurant_form
-  - active_loop: null
-  - slot_was_set:
-    - requested_slot: null
-  # The action we want to run when the form is submitted.
-  - action: utter_submit
+  - rule: Submit form
+    condition:
+    # Condition that form is active.
+    - active_loop: restaurant_form
+    steps:
+    - action: restaurant_form
+    - active_loop: null
+    - slot_was_set:
+      - requested_slot: null
+    # The action we want to run when the form is submitted.
+    - action: utter_submit
 ```
 
 The last step is to implement a custom action to validate the form slots. Start by
 adding the custom action to your domain:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 actions:
-# Other actions
-# ...
-- validate_restaurant_form
+  # Other actions
+  # ...
+  - validate_restaurant_form
 ```
 
 Then add a custom action which validates the `cuisine` slot:
@@ -303,7 +335,7 @@ class RestaurantFormValidator(Action):
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.form_slots_to_validate()
+        extracted_slots: Dict[Text, Any] = tracker.slots_to_validate()
 
         cuisine_slot_value = extracted_slots.get("cuisine")
         validated_slot_event = self.validate_cuisine(
@@ -468,6 +500,44 @@ response_selector_output.get("default")
   ```
 
   Alternatively, you can train a Core model without NLU using `rasa train core`.
+
+### Unfeaturized Slots
+
+[Slots](domain.mdx#slots) of type [`unfeaturized`](domain.mdx#unfeaturized-slot) are
+deprecated and will be removed in Rasa Open Source 3.0. To ignore slot values during
+a conversation, set the `influence_conversation` property of the slot to `false`.
+
+The following snippet is an example of a deprecated `unfeaturized` slot usage:
+
+```yaml-rasa
+slots:
+  username:
+    type: unfeaturized
+```
+
+With Rasa Open Source 2.0 you can now specify the expected data type `text` and
+define that the slot should be ignored during the conversation.
+
+```yaml-rasa
+slots:
+  username:
+    type: text
+    # Set `influence_conversation` to `false`
+    # to ignore the slot value during the conversation.
+    influence_conversation: false
+```
+
+If you don't require the slot to have a specific data type, you can use the new slot
+type [`any`](domain.mdx#any-slot). This slot type is always ignored during a conversation
+and does not make any assumptions regarding the data type of the slot value.
+
+```yaml-rasa
+slots:
+  username:
+    type: any
+```
+
+Please see the updated [slots documentation](domain.mdx#slots) for more information.
 
 ## Rasa 1.7 to Rasa 1.8
 

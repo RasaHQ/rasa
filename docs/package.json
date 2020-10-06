@@ -43,7 +43,7 @@
     "@mdx-js/mdx": "^1.6.16",
     "@mdx-js/react": "^1.6.16",
     "@philpl/buble": "^0.19.7",
-    "@rasahq/docusaurus-theme-tabula": "^0.7.11",
+    "@rasahq/docusaurus-theme-tabula": "^0.8.0",
     "classnames": "^2.2.6",
     "clsx": "^1.1.1",
     "core-js": "^3.6.5",
