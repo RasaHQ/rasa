@@ -69,31 +69,57 @@ def lazy_property(function: Callable) -> Any:
 
 
 def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
-    """Caches the first method call result.
+    """Caches method calls based on the call's `args` and `kwargs`.
 
     Works for `async` and `sync` methods. Don't apply this to functions.
 
     Returns:
-        The return value which the method gave for the first call.
+        The return value which the method gives for the first call with the given
+        arguments.
     """
+
+    class Cache:
+        """Helper class to abstract the caching details."""
+
+        def __init__(self, caching_object: object, args: Any, kwargs: Any) -> None:
+            self.caching_object = caching_object
+            self.cache = getattr(caching_object, self._cache_name(), {})
+            # noinspection PyUnresolvedReferences
+            self.cache_key = functools._make_key(args, kwargs, typed=False)
+
+        def _cache_name(self) -> Text:
+            return f"_cached_{self.caching_object.__class__.__name__}_{f.__name__}"
+
+        def is_cached(self) -> bool:
+            return self.cache_key in self.cache
+
+        def cache_result(self, result: Any) -> None:
+            self.cache[self.cache_key] = result
+            setattr(self.caching_object, self._cache_name(), self.cache)
+
+        def cached_result(self) -> Any:
+            return self.cache[self.cache_key]
+
     if asyncio.iscoroutinefunction(f):
 
         @functools.wraps(f)
         async def decorated(self: object, *args: Any, **kwargs: Any) -> Any:
-            cache_name = f"_cached_{self.__class__.__name__}_{f.__name__}"
-            if not hasattr(self, cache_name):
-                setattr(self, cache_name, await f(self, *args, **kwargs))
-            return getattr(self, cache_name)
+            cache = Cache(self, args, kwargs)
+            if not cache.is_cached():
+                to_cache = await f(self, *args, **kwargs)
+                cache.cache_result(to_cache)
+            return cache.cached_result()
 
         return decorated
     else:
 
         @functools.wraps(f)
         def decorated(self: object, *args: Any, **kwargs: Any) -> Any:
-            cache_name = f"_cached_{self.__class__.__name__}_{f.__name__}"
-            if not hasattr(self, cache_name):
-                setattr(self, cache_name, f(self, *args, **kwargs))
-            return getattr(self, cache_name)
+            cache = Cache(self, args, kwargs)
+            if not cache.is_cached():
+                to_cache = f(self, *args, **kwargs)
+                cache.cache_result(to_cache)
+            return cache.cached_result()
 
         return decorated
 

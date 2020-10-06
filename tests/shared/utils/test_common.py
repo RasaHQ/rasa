@@ -88,3 +88,33 @@ async def test_cached_method_with_async_method():
     assert await test_instance.f() == expected
 
     mock.assert_called_once()
+
+
+async def test_cached_method_with_different_arguments():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        async def f(self, arg1: bool, arg2: bool):
+            return mock()
+
+    test_instance = Test()
+
+    # Caching works
+    assert await test_instance.f(True, arg2=True) == expected
+    assert await test_instance.f(True, arg2=True) == expected
+
+    assert mock.call_count == 1
+
+    # Different arg results in cache miss
+    assert await test_instance.f(False, arg2=True) == expected
+    assert await test_instance.f(False, arg2=True) == expected
+
+    assert mock.call_count == 2
+
+    # Different kwarg results in cache miss
+    assert await test_instance.f(True, arg2=False) == expected
+    assert await test_instance.f(True, arg2=False) == expected
+
+    assert mock.call_count == 3
