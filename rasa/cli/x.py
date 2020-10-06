@@ -10,6 +10,7 @@ import traceback
 from typing import Iterable, List, Optional, Text, Tuple
 
 import aiohttp
+from rasa.exceptions import MissingDependencyException
 import ruamel.yaml as yaml
 
 from rasa import telemetry
@@ -422,8 +423,16 @@ def _get_credentials_and_endpoints_paths(
 
 
 def run_locally(args: argparse.Namespace):
-    # noinspection PyUnresolvedReferences
-    from rasax.community import local  # pytype: disable=import-error
+    try:
+        # noinspection PyUnresolvedReferences
+        from rasax.community import local  # pytype: disable=import-error
+    except ModuleNotFoundError:
+        raise MissingDependencyException(
+            f"Rasa X does not seem to be installed, but it is needed for this CLI command."
+            f"You can find more information on how to install Rasa X in local mode"
+            f"in the documentation: "
+            f"{DOCS_BASE_URL_RASA_X}/installation-and-setup/install/local-mode"
+        )
 
     args.rasa_x_port = args.rasa_x_port or DEFAULT_RASA_X_PORT
     args.port = args.port or DEFAULT_RASA_PORT
