@@ -59,9 +59,14 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
 from rasa.shared.core.domain import Domain, State  # pytype: disable=pyi-error
 from rasa.shared.core.slots import Slot
 
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+
 if typing.TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+
 
 logger = logging.getLogger(__name__)
 
@@ -598,7 +603,7 @@ class DialogueStateTracker:
 
     def export_stories(
         self,
-        writer: "StoryWriter",
+        writer: "StoryWriter" = YAMLStoryWriter(),
         e2e: bool = False,
         include_source: bool = False,
         should_append_stories: bool = False,
@@ -618,7 +623,7 @@ class DialogueStateTracker:
             story.story_steps, is_appendable=should_append_stories, is_test_story=e2e
         )
 
-    def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
+    def export_stories_to_file(self, export_path: Text = "debug.yml") -> None:
         """Dump the tracker as a story to a file."""
         rasa.shared.utils.io.write_text_file(
             self.export_stories() + "\n", export_path, append=True

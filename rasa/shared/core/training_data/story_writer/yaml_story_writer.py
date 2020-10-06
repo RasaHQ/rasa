@@ -48,7 +48,7 @@ class YAMLStoryWriter(StoryWriter):
     """Writes Core training data into a file in a YAML format. """
 
     def dumps(
-        self, story_steps: List[StoryStep], is_appendable: bool = False, **kwargs
+        self, story_steps: List[StoryStep], is_appendable: bool = False, **kwargs: Any
     ) -> Text:
         """Turns Story steps into an YAML string.
 
