@@ -5,7 +5,7 @@ import numpy as np
 from collections import defaultdict, OrderedDict
 import scipy.sparse
 
-from rasa.utils.tensorflow.model_data import Data
+from rasa.utils.tensorflow.model_data import Data, FeatureArray
 from rasa.utils.tensorflow.constants import SEQUENCE
 
 if typing.TYPE_CHECKING:
@@ -158,7 +158,7 @@ def _features_for_attribute(
     state_to_tracker_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     zero_state_features: Dict[Text, List["Features"]],
-) -> Dict[Text, List[np.ndarray]]:
+) -> Dict[Text, List[FeatureArray]]:
     """Create the features for the given attribute from the tracker features.
 
     Args:
@@ -186,37 +186,43 @@ def _features_for_attribute(
         tracker_features, zero_state_features[attribute]
     )
 
-    sparse_features = defaultdict(list)
-    dense_features = defaultdict(list)
+    sparse_features = {}
+    dense_features = {}
 
-    # vstack serves as removing dimension
-    # TODO check vstack for sequence features
+    # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():
-        sparse_features[key] = [scipy.sparse.vstack(value) for value in values]
+        if key == SEQUENCE:
+            sparse_features[key] = FeatureArray(
+                np.array(values), number_of_dimensions=4
+            )
+        else:
+            features = [scipy.sparse.vstack(value) for value in values]
+            sparse_features[key] = FeatureArray(
+                np.array(features), number_of_dimensions=3
+            )
     for key, values in _dense_features.items():
-        dense_features[key] = [np.vstack(value) for value in values]
+        if key == SEQUENCE:
+            dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
+        else:
+            features = [np.vstack(value) for value in values]
+            dense_features[key] = FeatureArray(
+                np.array(features), number_of_dimensions=3
+            )
 
-    attribute_features = {MASK: [np.array(attribute_masks)]}
+    attribute_features = {
+        MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=3)]
+    }
 
     feature_types = set()
     feature_types.update(list(dense_features.keys()))
     feature_types.update(list(sparse_features.keys()))
 
     for feature_type in feature_types:
-        if feature_type == SEQUENCE:
-            # TODO we don't take sequence features because that makes us deal
-            #  with 4D sparse tensors
-            continue
-
         attribute_features[feature_type] = []
         if feature_type in sparse_features:
-            attribute_features[feature_type].append(
-                np.array(sparse_features[feature_type])
-            )
+            attribute_features[feature_type].append(sparse_features[feature_type])
         if feature_type in dense_features:
-            attribute_features[feature_type].append(
-                np.array(dense_features[feature_type])
-            )
+            attribute_features[feature_type].append(dense_features[feature_type])
 
     return attribute_features
 

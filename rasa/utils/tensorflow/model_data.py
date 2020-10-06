@@ -24,6 +24,193 @@ from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 logger = logging.getLogger(__name__)
 
 
+class FeatureArray(np.ndarray):
+    """Stores any kind of features ready to be used by a RasaModel.
+
+    Next to the input numpy array of features, it also received the number of dimensions of the features.
+    As our features can have 1 to 4 dimensions we might have different number of numpy arrays stacked.
+    The number of dimensions helps us to figure out how to handle this particular feature array.
+    Also, it is automatically determined whether the feature array is sparse or not and the number of units
+    is determined as well.
+
+    Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
+    """
+
+    def __new__(
+        cls, input_array: np.ndarray, number_of_dimensions: int,
+    ) -> "FeatureArray":
+        FeatureArray._validate_number_of_dimensions(number_of_dimensions, input_array)
+
+        feature_array = np.asarray(input_array).view(cls)
+
+        if number_of_dimensions <= 2:
+            feature_array.units = input_array.shape[-1]
+            feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
+        elif number_of_dimensions == 3:
+            feature_array.units = input_array[0].shape[-1]
+            feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
+        elif number_of_dimensions == 4:
+            feature_array.units = input_array[0][0].shape[-1]
+            feature_array.is_sparse = isinstance(
+                input_array[0][0], scipy.sparse.spmatrix
+            )
+        else:
+            raise ValueError(
+                f"Number of dimensions '{number_of_dimensions}' currently not supported."
+            )
+
+        feature_array.number_of_dimensions = number_of_dimensions
+
+        return feature_array
+
+    def __init__(self, input_array: Any, number_of_dimensions: int, **kwargs):
+        # Needed in order to avoid 'Invalid keyword argument number_of_dimensions to function FeatureArray.__init__ '
+        super().__init__(**kwargs)
+        self.number_of_dimensions = number_of_dimensions
+
+    def __array_finalize__(self, obj: Any) -> None:
+        if obj is None:
+            return
+
+        self.units = getattr(obj, "units", None)
+        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)
+        self.is_sparse = getattr(obj, "is_sparse", None)
+
+        default_attributes = {
+            "units": self.units,
+            "number_of_dimensions": self.number_of_dimensions,
+            "is_spare": self.is_sparse,
+        }
+        self.__dict__.update(default_attributes)
+
+    # pytype: disable=attribute-error
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        f = {
+            "reduce": ufunc.reduce,
+            "accumulate": ufunc.accumulate,
+            "reduceat": ufunc.reduceat,
+            "outer": ufunc.outer,
+            "at": ufunc.at,
+            "__call__": ufunc,
+        }
+        # convert the inputs to np.ndarray to prevent recursion, call the function, then cast it back as FeatureArray
+        output = FeatureArray(
+            f[method](*(i.view(np.ndarray) for i in inputs), **kwargs),
+            number_of_dimensions=kwargs["number_of_dimensions"],
+        )
+        output.__dict__ = self.__dict__  # carry forward attributes
+        return output
+
+    def __reduce__(self):
+        # Needed in order to pickle this object
+        pickled_state = super(FeatureArray, self).__reduce__()
+        new_state = pickled_state[2] + (
+            self.number_of_dimensions,
+            self.is_sparse,
+            self.units,
+        )
+        return pickled_state[0], pickled_state[1], new_state
+
+    def __setstate__(self, state, **kwargs):
+        # Needed in order to load the object
+        self.number_of_dimensions = state[-3]
+        self.is_sparse = state[-2]
+        self.units = state[-1]
+        super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
+
+    # pytype: enable=attribute-error
+
+    @staticmethod
+    def _validate_number_of_dimensions(
+        number_of_dimensions: int, input_array: np.ndarray
+    ) -> None:
+        """Validates if the given number of dimensions maps the with the dimensions of the input array.
+
+        Args:
+            number_of_dimensions: number of dimensions
+            input_array: input array
+
+        Raises: ValueError in case the dimensions do not match
+        """
+        _sub_array = input_array
+        dim = 0
+        # Go number_of_dimensions into the given input_array
+        for i in range(1, number_of_dimensions + 1):
+            _sub_array = _sub_array[0]
+            if isinstance(_sub_array, scipy.sparse.spmatrix):
+                dim = i
+                break
+
+        # If the resulting sub_array is sparse, the remaining number of dimensions should be at least 2
+        if isinstance(_sub_array, scipy.sparse.spmatrix):
+            if dim > 2:
+                raise ValueError(
+                    f"Given number of dimensions '{number_of_dimensions}' does not match dimensiona of given input "
+                    f"array: {input_array}."
+                )
+        # If the resulting sub_array is dense, the sub_array should be a single number
+        elif not np.issubdtype(type(_sub_array), np.integer) and not isinstance(
+            _sub_array, (np.float32, np.float64)
+        ):
+            raise ValueError(
+                f"Given number of dimensions '{number_of_dimensions}' does not match dimensiona of given input "
+                f"array: {input_array}."
+            )
+
+    def get_shape_type_info(
+        self,
+    ) -> Tuple[
+        List[
+            Union[
+                int,
+                Tuple[None],
+                Tuple[None, int],
+                Tuple[None, None, int],
+                Tuple[None, None, None, int],
+            ]
+        ],
+        List[int],
+    ]:
+        """Returns the shape and type information needed to convert this feature array into tensors.
+
+        Returns:
+            A list of shape tuples.
+            A list of type tuples.
+        """
+        if self.is_sparse:
+            # scipy matrix is converted into indices, data, shape
+            return (
+                [
+                    (None, self.number_of_dimensions),
+                    (None,),
+                    (self.number_of_dimensions),
+                ],
+                [tf.int64, tf.float32, tf.int64],
+            )
+
+        if self.number_of_dimensions == 1:
+            return [(None,)], [tf.float32]
+
+        if self.number_of_dimensions == 2:
+            return [(None, self.units)], [tf.float32]
+
+        if self.number_of_dimensions == 3:
+            return [(None, None, self.units)], [tf.float32]
+
+        if self.number_of_dimensions == 4:
+            return [(None, None, None, self.units)], [tf.float32]
+
+        return [], []
+
+
+class FeatureSignature(NamedTuple):
+    """Stores the shape, the type (sparse vs dense), and the number of dimensions of features."""
+
+    is_sparse: bool
+    units: Optional[int]
+    number_of_dimensions: int
+
+
 # Mapping of attribute name and feature name to a list of numpy arrays representing
 # the actual features
 # For example:
@@ -31,14 +218,7 @@ logger = logging.getLogger(__name__)
 #   "numpy array containing dense features for every training example",
 #   "numpy array containing sparse features for every training example"
 # ]}
-Data = Dict[Text, Dict[Text, List[np.ndarray]]]
-
-
-class FeatureSignature(NamedTuple):
-    """Stores the shape and the type (sparse vs dense) of features."""
-
-    is_sparse: bool
-    feature_dimension: Optional[int]
+Data = Dict[Text, Dict[Text, List[FeatureArray]]]
 
 
 class RasaModelData:
@@ -70,7 +250,9 @@ class RasaModelData:
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
-    ) -> Union[Dict[Text, List[np.ndarray]], List[np.ndarray]]:
+    ) -> Union[
+        Dict[Text, List[FeatureArray]], List[FeatureArray],
+    ]:
         """Get the data under the given keys.
 
         Args:
@@ -96,7 +278,7 @@ class RasaModelData:
         """
         return self.data.items()
 
-    def values(self) -> ValuesView[Dict[Text, List[np.ndarray]]]:
+    def values(self) -> ValuesView[Dict[Text, List[FeatureArray]]]:
         """Return the values of the data attribute.
 
         Returns:
@@ -177,7 +359,7 @@ class RasaModelData:
             return 0
 
         example_lengths = [
-            f.shape[0]
+            len(f)
             for attribute_data in data.values()
             for features in attribute_data.values()
             for f in features
@@ -195,25 +377,25 @@ class RasaModelData:
 
         return example_lengths[0]
 
-    def feature_dimension(self, key: Text, sub_key: Text) -> int:
-        """Get the feature dimension of the given key.
+    def number_of_units(self, key: Text, sub_key: Text) -> int:
+        """Get the number of units of the given key.
 
         Args:
             key: The key.
             sub_key: The optional sub-key.
 
         Returns:
-            The feature dimension.
+            The number of units.
         """
         if key not in self.data or sub_key not in self.data[key]:
             return 0
 
-        number_of_features = 0
-        for data in self.data[key][sub_key]:
-            if data.size > 0:
-                number_of_features += data[0].shape[-1]
+        units = 0
+        for features in self.data[key][sub_key]:
+            if len(features) > 0:
+                units += features.units
 
-        return number_of_features
+        return units
 
     def add_data(self, data: Data, key_prefix: Optional[Text] = None) -> None:
         """Add incoming data to data.
@@ -230,7 +412,7 @@ class RasaModelData:
                     self.add_features(key, sub_key, features)
 
     def add_features(
-        self, key: Text, sub_key: Text, features: Optional[List[np.ndarray]]
+        self, key: Text, sub_key: Text, features: Optional[List[FeatureArray]],
     ) -> None:
         """Add list of features to data under specified key.
 
@@ -245,7 +427,7 @@ class RasaModelData:
             return
 
         for data in features:
-            if data.size > 0:
+            if len(data) > 0:
                 self.data[key][sub_key].append(data)
 
         if not self.data[key][sub_key]:
@@ -273,9 +455,11 @@ class RasaModelData:
         self.data[key][sub_key] = []
 
         for data in self.data[from_key][from_sub_key]:
-            if data.size > 0:
+            if len(data) > 0:
                 lengths = np.array([x.shape[0] for x in data])
-                self.data[key][sub_key].extend([lengths])
+                self.data[key][sub_key].extend(
+                    [FeatureArray(lengths, number_of_dimensions=1)]
+                )
                 break
 
     def split(
@@ -347,7 +531,9 @@ class RasaModelData:
 
         return self._convert_train_test_split(output_values, solo_values)
 
-    def get_signature(self) -> Dict[Text, Dict[Text, List[FeatureSignature]]]:
+    def get_signature(
+        self, data: Optional[Data] = None
+    ) -> Dict[Text, Dict[Text, List[FeatureSignature]]]:
         """Get signature of RasaModelData.
 
         Signature stores the shape and whether features are sparse or not for every key.
@@ -356,19 +542,18 @@ class RasaModelData:
             A dictionary of key and sub-key to a list of feature signatures
             (same structure as the data attribute).
         """
+        if not data:
+            data = self.data
 
         return {
             key: {
                 sub_key: [
-                    FeatureSignature(
-                        True if isinstance(f[0], scipy.sparse.spmatrix) else False,
-                        f[0].shape[-1] if f[0].shape else None,
-                    )
+                    FeatureSignature(f.is_sparse, f.units, f.number_of_dimensions)
                     for f in features
                 ]
                 for sub_key, features in attribute_data.items()
             }
-            for key, attribute_data in self.data.items()
+            for key, attribute_data in data.items()
         }
 
     def as_tf_dataset(
@@ -440,7 +625,7 @@ class RasaModelData:
                     else:
                         _data = v[:]
 
-                    if isinstance(_data[0], scipy.sparse.spmatrix):
+                    if _data.is_sparse:
                         batch_data.extend(self._scipy_matrix_to_values(_data))
                     else:
                         batch_data.append(self._pad_dense_data(_data))
@@ -454,37 +639,15 @@ class RasaModelData:
         Returns:
             A tuple of shapes and a tuple of types.
         """
-
         types = []
         shapes = []
-
-        def append_shape(features: np.ndarray) -> None:
-            if isinstance(features[0], scipy.sparse.spmatrix):
-                # scipy matrix is converted into indices, data, shape
-                shapes.append((None, features[0].ndim + 1))
-                shapes.append((None,))
-                shapes.append((features[0].ndim + 1))
-            elif features[0].ndim == 0:
-                shapes.append((None,))
-            elif features[0].ndim == 1:
-                shapes.append((None, features[0].shape[-1]))
-            else:
-                shapes.append((None, None, features[0].shape[-1]))
-
-        def append_type(features: np.ndarray) -> None:
-            if isinstance(features[0], scipy.sparse.spmatrix):
-                # scipy matrix is converted into indices, data, shape
-                types.append(tf.int64)
-                types.append(tf.float32)
-                types.append(tf.int64)
-            else:
-                types.append(tf.float32)
 
         for attribute_data in self.data.values():
             for features in attribute_data.values():
                 for f in features:
-                    append_shape(f)
-                    append_type(f)
+                    _shapes, _types = f.get_shape_type_info()
+                    shapes.extend(_shapes)
+                    types.extend(_types)
 
         return tuple(shapes), tuple(types)
 
@@ -584,7 +747,12 @@ class RasaModelData:
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
-                    final_data[key][sub_key].append(np.concatenate(np.array(f)))
+                    final_data[key][sub_key].append(
+                        FeatureArray(
+                            np.concatenate(np.array(f)),
+                            number_of_dimensions=f[0].number_of_dimensions,
+                        )
+                    )
 
         return final_data
 
@@ -685,7 +853,7 @@ class RasaModelData:
 
         label_data = []
         for label_id in unique_label_ids:
-            matching_ids = label_ids == label_id
+            matching_ids = np.array(label_ids) == label_id
             label_data.append(
                 RasaModelData(
                     self.label_key,
@@ -785,7 +953,7 @@ class RasaModelData:
         return np.concatenate([feature_1, feature_2])
 
     @staticmethod
-    def _create_label_ids(label_ids: np.ndarray) -> np.ndarray:
+    def _create_label_ids(label_ids: FeatureArray) -> np.ndarray:
         """Convert various size label_ids into single dim array.
 
         For multi-label y, map each distinct row to a string representation
@@ -795,10 +963,12 @@ class RasaModelData:
         Args:
             label_ids: The label ids.
 
+        Raises:
+            ValueError if dimensionality of label ids is not supported
+
         Returns:
             The single dim label array.
         """
-
         if label_ids.ndim == 1:
             return label_ids
 
@@ -814,7 +984,7 @@ class RasaModelData:
         raise ValueError("Unsupported label_ids dimensions")
 
     @staticmethod
-    def _pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
+    def _pad_dense_data(array_of_dense: FeatureArray) -> np.ndarray:
         """Pad data of different lengths.
 
         Sequential data is padded with zeros. Zeros are added to the end of data.
@@ -825,6 +995,8 @@ class RasaModelData:
         Returns:
             The padded array.
         """
+        if array_of_dense.number_of_dimensions == 4:
+            return RasaModelData._pad_4d_dense_data(array_of_dense)
 
         if array_of_dense[0].ndim < 2:
             # data doesn't contain a sequence
@@ -843,7 +1015,39 @@ class RasaModelData:
         return data_padded.astype(np.float32)
 
     @staticmethod
-    def _scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
+    def _pad_4d_dense_data(array_of_array_of_dense: FeatureArray) -> np.ndarray:
+        # in case of dialogue data we may have 4 dimensions
+        # batch size x dialogue history length x sequence length x number of features
+        data_size = len(array_of_array_of_dense)
+        max_dialogue_len = max(
+            len(array_of_dense) for array_of_dense in array_of_array_of_dense
+        )
+        max_seq_len = max(
+            [
+                x.shape[0]
+                for array_of_dense in array_of_array_of_dense
+                for x in array_of_dense
+            ]
+        )
+
+        data_padded = np.zeros(
+            [
+                data_size,
+                max_dialogue_len,
+                max_seq_len,
+                array_of_array_of_dense[0][0].shape[-1],
+            ],
+            dtype=array_of_array_of_dense[0][0].dtype,
+        )
+
+        for i, array_of_dense in enumerate(array_of_array_of_dense):
+            for j, dense in enumerate(array_of_dense):
+                data_padded[i, j, : dense.shape[0], :] = dense
+
+        return data_padded.astype(np.float32)
+
+    @staticmethod
+    def _scipy_matrix_to_values(array_of_sparse: FeatureArray) -> List[np.ndarray]:
         """Convert a scipy matrix into indices, data, and shape.
 
         Args:
@@ -852,6 +1056,8 @@ class RasaModelData:
         Returns:
             A list of dense numpy arrays representing the sparse data.
         """
+        if array_of_sparse.number_of_dimensions == 4:
+            return RasaModelData._4d_scipy_matrix_to_values(array_of_sparse)
 
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
@@ -872,6 +1078,64 @@ class RasaModelData:
 
         number_of_features = array_of_sparse[0].shape[-1]
         shape = np.array((len(array_of_sparse), max_seq_len, number_of_features))
+
+        return [
+            indices.astype(np.int64),
+            data.astype(np.float32),
+            shape.astype(np.int64),
+        ]
+
+    @staticmethod
+    def _4d_scipy_matrix_to_values(array_of_array_of_sparse: FeatureArray):
+        # in case of dialogue data we may have 4 dimensions
+        # batch size x dialogue history length x sequence length x number of features
+
+        # we need to make sure that the matrices are coo_matrices otherwise the
+        # transformation does not work (e.g. you cannot access x.row, x.col)
+        if not isinstance(array_of_array_of_sparse[0][0], scipy.sparse.coo_matrix):
+            array_of_array_of_sparse = [
+                [x.tocoo() for x in array_of_sparse]
+                for array_of_sparse in array_of_array_of_sparse
+            ]
+
+        max_dialogue_len = max(
+            [len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse]
+        )
+        max_seq_len = max(
+            [
+                x.shape[0]
+                for array_of_sparse in array_of_array_of_sparse
+                for x in array_of_sparse
+            ]
+        )
+        # get the indices of values
+        indices = np.hstack(
+            [
+                np.vstack(
+                    [i * np.ones_like(x.row), j * np.ones_like(x.row), x.row, x.col,]
+                )
+                for i, array_of_sparse in enumerate(array_of_array_of_sparse)
+                for j, x in enumerate(array_of_sparse)
+            ]
+        ).T
+
+        data = np.hstack(
+            [
+                x.data
+                for array_of_sparse in array_of_array_of_sparse
+                for x in array_of_sparse
+            ]
+        )
+
+        number_of_features = array_of_array_of_sparse[0][0].shape[-1]
+        shape = np.array(
+            (
+                len(array_of_array_of_sparse),
+                max_dialogue_len,
+                max_seq_len,
+                number_of_features,
+            )
+        )
 
         return [
             indices.astype(np.int64),

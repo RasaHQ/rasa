@@ -525,20 +525,15 @@ class RasaModel(tf.keras.models.Model):
         idx = 0
         for key, values in data_signature.items():
             for sub_key, signature in values.items():
-                for is_sparse, feature_dimension in signature:
+                for is_sparse, feature_dimension, number_of_dimensions in signature:
                     if is_sparse:
                         # explicitly substitute last dimension in shape with known
                         # static value
+                        shape = [
+                            batch[idx + 2][i] for i in range(number_of_dimensions - 1)
+                        ] + [feature_dimension]
                         batch_data[key][sub_key].append(
-                            tf.SparseTensor(
-                                batch[idx],
-                                batch[idx + 1],
-                                [
-                                    batch[idx + 2][0],
-                                    batch[idx + 2][1],
-                                    feature_dimension,
-                                ],
-                            )
+                            tf.SparseTensor(batch[idx], batch[idx + 1], shape,)
                         )
                         idx += 3
                     else:
@@ -754,7 +749,7 @@ class TransformerRasaModel(RasaModel):
     ) -> None:
         sparse = False
         dense = False
-        for is_sparse, _ in data_signature:
+        for is_sparse, _, _ in data_signature:
             if is_sparse:
                 sparse = True
             else:

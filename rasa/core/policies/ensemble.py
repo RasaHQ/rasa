@@ -29,9 +29,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
-from rasa.shared.core.events import (
-    DefinePrevUserUtteredFeaturization,
-)
+from rasa.shared.core.events import DefinePrevUserUtteredFeaturization
 from rasa.shared.core.events import ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
