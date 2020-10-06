@@ -4,6 +4,7 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
+from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
@@ -15,10 +16,6 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
-
-
-class MissingDependencyException(RasaException):
-    """Raised if a python package dependency is needed, but not installed."""
 
 
 def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
