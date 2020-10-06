@@ -21,6 +21,14 @@ def test_test_core_no_plot(run_in_simple_project: Callable[..., RunResult]):
     assert not os.path.exists(f"results/{CONFUSION_MATRIX_STORIES_FILE}")
 
 
+def test_test_core_with_no_model(run_in_simple_project: Callable[..., RunResult]):
+    assert not os.path.exists("models")
+
+    output = run_in_simple_project("test", "core")
+
+    assert "No model provided. Please make sure to specify the model to test with" in output.outlines[7]
+
+
 def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
     write_yaml(
         {
