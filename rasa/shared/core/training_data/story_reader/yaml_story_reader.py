@@ -67,7 +67,7 @@ class YAMLStoryReader(StoryReader):
             reader.template_variables,
             reader.use_e2e,
             reader.source_name,
-            reader.unfold_or_utterances,
+            reader.is_used_for_conversion,
         )
 
     def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
