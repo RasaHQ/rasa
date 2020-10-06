@@ -376,7 +376,7 @@ def dump_obj_as_yaml_to_string(
         should_preserve_key_order: Whether to force preserve key order in `data`.
 
     Returns:
-        The object as YAML string.
+        The object converted to a YAML string.
     """
     buffer = StringIO()
 
