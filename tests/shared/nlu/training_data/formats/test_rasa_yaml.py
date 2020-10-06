@@ -177,6 +177,30 @@ def test_yaml_examples_are_written(example: Text):
     assert example.strip() == writer.dumps(training_data).strip()
 
 
+def test_training_data_as_yaml_dict():
+    from collections import OrderedDict
+
+    parser = RasaYAMLReader()
+    writer = RasaYAMLWriter()
+
+    training_data = parser.reads(
+        """
+nlu:
+- intent: some_intent
+  examples: |
+    - an example
+responses:
+  utter_something:
+    - text: hello world
+    """
+    )
+    structure = writer.training_data_to_yaml(training_data)
+
+    assert isinstance(structure, OrderedDict)
+    assert "nlu" in structure
+    assert "responses" in structure
+
+
 def test_multiline_intent_example_is_skipped_when_no_leading_symbol():
     parser = RasaYAMLReader()
 
