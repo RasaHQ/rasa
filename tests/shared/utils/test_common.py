@@ -1,4 +1,5 @@
 from typing import Collection, List, Text
+from unittest.mock import Mock
 
 import pytest
 
@@ -55,3 +56,35 @@ def test_transform_collection_to_sentence(
 ):
     actual = rasa.shared.utils.common.transform_collection_to_sentence(collection)
     assert actual in possible_outputs
+
+
+async def test_cached_method_with_sync_method():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        def f(self):
+            return mock()
+
+    test_instance = Test()
+    assert test_instance.f() == expected
+    assert test_instance.f() == expected
+
+    mock.assert_called_once()
+
+
+async def test_cached_method_with_async_method():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        async def f(self):
+            return mock()
+
+    test_instance = Test()
+    assert await test_instance.f() == expected
+    assert await test_instance.f() == expected
+
+    mock.assert_called_once()

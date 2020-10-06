@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import importlib
 import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
@@ -64,6 +66,36 @@ def lazy_property(function: Callable) -> Any:
         return getattr(self, attr_name)
 
     return _lazyprop
+
+
+def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
+    """Caches the first method call result.
+
+    Works for `async` and `sync` methods. Don't apply this to functions.
+
+    Returns:
+        The return value which the method gave for the first call.
+    """
+    if asyncio.iscoroutinefunction(f):
+
+        @functools.wraps(f)
+        async def decorated(self: object, *args: Any, **kwargs: Any) -> Any:
+            cache_name = f"_cached_{self.__class__.__name__}_{f.__name__}"
+            if not hasattr(self, cache_name):
+                setattr(self, cache_name, await f(self, *args, **kwargs))
+            return getattr(self, cache_name)
+
+        return decorated
+    else:
+
+        @functools.wraps(f)
+        def decorated(self: object, *args: Any, **kwargs: Any) -> Any:
+            cache_name = f"_cached_{self.__class__.__name__}_{f.__name__}"
+            if not hasattr(self, cache_name):
+                setattr(self, cache_name, f(self, *args, **kwargs))
+            return getattr(self, cache_name)
+
+        return decorated
 
 
 def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
