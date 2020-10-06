@@ -6,7 +6,7 @@ import ThemeContext from '@theme/_contexts/ThemeContext';
 import styles from './styles.module.css';
 
 
-function Playground({children, theme, transformCode, noResult, name, ...props}) {
+function Playground({children, theme, transformCode, noResult, assistantBuilder, name, ...props}) {
   const code = children.replace(/\n$/, '');
   const themeContext = React.useContext(ThemeContext);
 
@@ -21,25 +21,42 @@ function Playground({children, theme, transformCode, noResult, name, ...props}) 
       transformCode={transformCode || ((code) => `${code};`)}
       theme={theme}
       {...props}>
-      <div
+      {
+        !assistantBuilder &&
+        <div
+          className={clsx(
+            styles.playgroundHeader,
+            styles.playgroundEditorHeader,
+          )}>
+          Live Editor
+        </div>
+      }
+      <LiveEditor
         className={clsx(
-          styles.playgroundHeader,
-          styles.playgroundEditorHeader,
-        )}>
-        Live Editor
-      </div>
-      <LiveEditor className={styles.playgroundEditor} onChange={value => themeContext.onLiveCodeChange(name, value)} />
-      {noResult ? undefined : <div
-        className={clsx(
-          styles.playgroundHeader,
-          styles.playgroundPreviewHeader,
-        )}>
-        Result
-      </div>}
-      {noResult ? undefined : <div className={styles.playgroundPreview}>
-        <LivePreview />
-        <LiveError />
-      </div>}
+          styles.playgroundEditor,
+          {[styles.playgroundEditorAssistantBuilder]: assistantBuilder}
+        )}
+        onChange={value => themeContext.onLiveCodeChange(name, value)}
+      />
+
+      {
+        !noResult &&
+        <div
+          className={clsx(
+            styles.playgroundHeader,
+            styles.playgroundPreviewHeader,
+          )}>
+          Result
+        </div>
+      }
+
+      {
+        !noResult &&
+        <div className={styles.playgroundPreview}>
+          <LivePreview/>
+          <LiveError/>
+        </div>
+      }
     </LiveProvider>
   );
 }
