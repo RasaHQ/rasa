@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.events import SlotSet, ActiveLoop
-from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP
+from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_LISTEN_NAME
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
@@ -63,6 +63,10 @@ def create_action_fingerprints(
     featurized_slots = {slot.name for slot in domain.slots if slot.has_features()}
     action_fingerprints = defaultdict(dict)
     for action_name, events_after_action in events_after_actions.items():
+        if action_name == ACTION_LISTEN_NAME:
+            # action_listen cannot have a fingerprint
+            continue
+
         slots = list(
             set(
                 event.key for event in events_after_action if isinstance(event, SlotSet)
