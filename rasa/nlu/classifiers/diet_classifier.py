@@ -34,7 +34,9 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    NO_ENTITY_TAG, ACTION_TEXT, ACTION_NAME,
+    NO_ENTITY_TAG,
+    ACTION_TEXT,
+    ACTION_NAME,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData

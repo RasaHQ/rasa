@@ -325,8 +325,14 @@ class Message:
         return (
             self.data.get(ACTION_NAME) is not None
             or self.data.get(ACTION_TEXT)
-            or ((self.data.get(INTENT) or self.data.get(RESPONSE)) and not self.data.get(TEXT))
-            or (self.data.get(TEXT) and not (self.data.get(INTENT) or self.data.get(RESPONSE)))
+            or (
+                (self.data.get(INTENT) or self.data.get(RESPONSE))
+                and not self.data.get(TEXT)
+            )
+            or (
+                self.data.get(TEXT)
+                and not (self.data.get(INTENT) or self.data.get(RESPONSE))
+            )
         )
 
 

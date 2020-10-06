@@ -10,7 +10,9 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
-    ACTION_NAME, INTENT, RESPONSE,
+    ACTION_NAME,
+    INTENT,
+    RESPONSE,
 )
 import rasa.shared.nlu.training_data.message
 from rasa.shared.nlu.training_data.message import Message
@@ -266,7 +268,6 @@ def test_build_from_action():
     ) == Message(data={ACTION_NAME: test_action_name, ACTION_TEXT: test_action_text})
 
 
-
 @pytest.mark.parametrize(
     "message, e2e_message",
     [
@@ -279,7 +280,6 @@ def test_build_from_action():
     ],
 )
 def test_is_e2e_message(
-    message: Message,
-    e2e_message: bool,
+    message: Message, e2e_message: bool,
 ):
     assert e2e_message == message.is_e2e_message()
