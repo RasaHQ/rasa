@@ -6,7 +6,7 @@ from typing import Dict, List, Text, Any, Union, Set
 import pytest
 
 import rasa.shared.utils.io
-from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
+from rasa.shared.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import TextSlot
