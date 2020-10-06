@@ -341,9 +341,9 @@ Read more about using lookup tables on the [NLU Training Data page](./nlu-traini
 
 Stories and rules are both representations of conversations between a user
 and a conversational assistant. They are used to train the dialogue management
-model. [**Stories**](stories.mdx) are used to train a machine learning model
+model. [Stories](stories.mdx) are used to train a machine learning model
 to identify patterns in conversations and generalize to unseen conversation paths.
-**[Rules](rules.mdx)** describe small pieces of conversations that should always
+[Rules](rules.mdx) describe small pieces of conversations that should always
 follow the same path and are used to train the
 [RulePolicy](policies.mdx#rule-policy).
 
@@ -431,7 +431,7 @@ by the name of the action.
 While writing stories, you will encounter two types of actions:
 
 
-1. [**Responses**](domain.mdx#responses): start with `utter_` and
+1. [Responses](domain.mdx#responses): start with `utter_` and
    send a specific message to the user. e.g.
 
 ```yaml-rasa {5}
@@ -442,7 +442,7 @@ stories:
   - action: utter_greet
 ```
 
-2. [**Custom actions**](custom-actions.mdx): start with `action_`, run
+2. [Custom actions](custom-actions.mdx): start with `action_`, run
    arbitrary code and send any number of messages (or none).
 
 ```yaml-rasa {5}
@@ -582,7 +582,7 @@ stories:
   steps:
   - checkpoint: greet_checkpoint
     # This checkpoint should only apply if slots are set to the specified value
-    slots:
+    slot_was_set:
     - context_scenario: holiday
     - holiday_name: thanksgiving
   - intent: greet
@@ -644,7 +644,7 @@ rules:
   - action: utter_greet
 ```
 
-Read more about writing rules [here](rules.mdx#writing-a-rule).
+For more information about writing rules, see [Rules](rules.mdx#writing-a-rule).
 
 ## Test Conversations
 
