@@ -82,7 +82,9 @@ class HFTransformersNLP(Component):
         if cached_component:
             return cached_component
 
-        return cls(meta, language=model_metadata.language)
+        language = model_metadata.language  # pytype: disable=attribute-error
+
+        return cls(meta, language=language)
 
     @classmethod
     def create(
