@@ -65,7 +65,11 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
             )
 
         writer = YAMLStoryWriter()
-        writer.dump(output_core_path, steps)
+        writer.dump(
+            output_core_path,
+            steps,
+            is_test_story=MarkdownStoryReader.is_test_stories_file(source_path),
+        )
 
         print_success(f"Converted Core file: '{source_path}' >> '{output_core_path}'.")
 
