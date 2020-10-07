@@ -15,6 +15,7 @@ class MarkdownStoryWriter(StoryWriter):
         target: Union[Text, Path, yaml.StringIO],
         story_steps: List[StoryStep],
         is_appendable: bool = False,
+        is_test_story: bool = False,
     ) -> None:
         """Writes Story steps into a target file/stream.
 
@@ -24,6 +25,8 @@ class MarkdownStoryWriter(StoryWriter):
             is_appendable: Specify if result should not contain
                            high level keys/definitions and can be appended to
                            the existing story file.
+            is_test_story: Identifies if the stories should be exported in test stories
+                           format
         """
         pass
 

@@ -144,8 +144,8 @@ class StoryStep:
 
         for s in self.events:
             if (
-                self._is_action_listen(s)
-                or self._is_action_session_start(s)
+                self.is_action_listen(s)
+                or self.is_action_session_start(s)
                 or isinstance(s, SessionStarted)
             ):
                 continue
@@ -165,7 +165,7 @@ class StoryStep:
         return result
 
     @staticmethod
-    def _is_action_listen(event: Event) -> bool:
+    def is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         # pytype: disable=attribute-error
@@ -173,7 +173,7 @@ class StoryStep:
         # pytype: enable=attribute-error
 
     @staticmethod
-    def _is_action_session_start(event: Event) -> bool:
+    def is_action_session_start(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         # pytype: disable=attribute-error
@@ -184,7 +184,7 @@ class StoryStep:
         # pytype: enable=attribute-error
 
     def _add_action_listen(self, events: List[Event]) -> None:
-        if not events or not self._is_action_listen(events[-1]):
+        if not events or not self.is_action_listen(events[-1]):
             # do not add second action_listen
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
 
