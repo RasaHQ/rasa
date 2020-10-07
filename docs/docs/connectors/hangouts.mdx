@@ -12,8 +12,17 @@ send one response. The response will be displayed to the user either as text or 
 more information, see the Cards section).
 
 In order to connect your Rasa bot to Google Hangouts Chat, you first need to create a project in
-Google Developer Console that includes the Hangouts API. There you can specify your bot's endpoint
-and also obtain your project id, which determines the scope for the OAuth2 authorization in case you
+Google Developer Console that includes the Hangouts API. There you can specify your bot's endpoint.
+This endpoint should look like look like `https://<host>:<port>/webhooks/hangouts/webhook`, replacing
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
+
+:::note configure https
+Hangouts Chat only forwards
+messages to endpoints via `https`, so take appropriate measures to add
+it to your setup.
+:::
+
+In the Google Developer console, obtain your project id, which determines the scope for the OAuth2 authorization in case you
 want to use OAuth2. The Hangouts Chat API sends a Bearer token with every request, but it is up to
 the bot to actually verify the token, hence the channel also works without this.
 For more information see the [Google Hangouts documentation](https://developers.google.com/hangouts/chat).
@@ -23,26 +32,23 @@ to the usually synchronous nature of Rasa bots, this functionality is not includ
 
 ### Running On Hangouts Chat
 
-If you want to connect to Hangouts Chat using the run script, e.g. using:
+Add the Hangouts credentials to your `credentials.yml`:
 
-```bash
-rasa run
+```yaml-rasa
+hangouts:
+  # no credentials required here
 ```
 
-you don't need to supply a `credentials.yml`.
-
-If you want to use OAuth2, simply put the project id obtained from the Google Developer Console into it.
+If you want to use OAuth2, add the project id obtained from the Google Developer Console:
 
 ```yaml-rasa
 hangouts:
   project_id: "12345678901"
 ```
 
-The endpoint for receiving Hangouts Chat messages is
-`http://localhost:5005/webhooks/hangouts/webhook`, replacing
-the host and port with the appropriate values. Hangouts Chat only forwards
-messages to endpoints via `https`, so take appropriate measures to add
-it to your setup.
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available for Google Hangouts to send messages to.
 
 ### Cards and Interactive Cards
 

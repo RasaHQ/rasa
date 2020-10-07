@@ -12,8 +12,11 @@ unlike [stories](./stories.mdx), rules don't have the power to generalize to uns
 paths. Combine rules and stories to make your assistant robust and able to handle
 real user behavior.
 
-If you can't decide whether to write a story or a rule to implement a certain behavior, see the 
+If you can't decide whether to write a story or a rule to implement a certain behavior, see the
 best practices for [Writing Conversation Data](./writing-stories.mdx)).
+
+For additional examples on implementing rules in a Rasa assistant, refer to
+our [Rules example bot](https://github.com/RasaHQ/rasa/tree/master/examples/rules).
 
 ## Writing a Rule
 
@@ -72,7 +75,7 @@ rules:
 
 - rule: Only say `hello` if the user provided a name
   condition:
-  - slot_was_set: 
+  - slot_was_set:
     - user_provided_name: true
   steps:
   - intent: greet
@@ -98,7 +101,7 @@ rules:
   # This means that Rasa Open Source will wait for the next user message.
 ```
 
-If you want to hand over the next action prediction to another story or rule, add 
+If you want to hand over the next action prediction to another story or rule, add
 `wait_for_user_input: false` to your rule:
 
 ```yaml-rasa
