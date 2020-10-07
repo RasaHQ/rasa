@@ -2,8 +2,7 @@
 id: responses
 sidebar_label: Responses
 title: Responses
-abstract: Responses are messages that your assistant sends to the user. A response
- is usually only text, but can also include content like images and buttons.
+abstract: Responses are messages that your assistant sends to the user. A response is usually only text, but can also include content like images and buttons.
 ---
 ## Defining Responses
 
@@ -60,10 +59,9 @@ When the `utter_greet` response is used, Rasa automatically fills in the variabl
 value found in the slot called `name`. If such a slot doesn't exist or is empty, the variable gets
 filled with `None`.
 
-
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
 In your custom action code, you can supply values to a response to fill in specific variables. 
-If you're using Rasa SDK for your action server,
+If you're using the Rasa SDK for your action server,
 you can pass a value for the variable as a keyword argument to [`dispatcher.utter_message`](https://rasa.com/docs/action-server/sdk-dispatcher):
 
 ```python {3}
@@ -246,7 +244,6 @@ stories:
 
 When the `utter_greet` action runs, it will send the message from
 the response back to the user.
-
 
 :::note Changing responses
 If you want to change the text, or any other part of the response,
