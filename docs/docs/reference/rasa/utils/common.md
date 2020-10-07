@@ -65,6 +65,15 @@ update_asyncio_log_level() -> None
 Set the log level of asyncio to the log level specified in the environment
 variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 
+#### update\_matplotlib\_log\_level
+
+```python
+update_matplotlib_log_level() -> None
+```
+
+Set the log level of matplotlib to the log level specified in the environment
+variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
+
 #### set\_log\_and\_warnings\_filters
 
 ```python

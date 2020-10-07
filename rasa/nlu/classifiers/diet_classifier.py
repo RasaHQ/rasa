@@ -1186,7 +1186,7 @@ class DIET(TransformerRasaModel):
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You specified '{self.__class__.__name__}' to train entities, but "
-                f"no entities are present in the training data. Skip training of "
+                f"no entities are present in the training data. Skipping training of "
                 f"entities."
             )
             self.config[ENTITY_RECOGNITION] = False
