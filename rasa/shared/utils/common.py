@@ -80,6 +80,7 @@ def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
         The return value which the method gives for the first call with the given
         arguments.
     """
+    assert "self" in arguments_of(f), "This decorator can only be used with methods."
 
     class Cache:
         """Helper class to abstract the caching details."""

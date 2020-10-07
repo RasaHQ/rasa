@@ -118,3 +118,23 @@ async def test_cached_method_with_different_arguments():
     assert await test_instance.f(True, arg2=False) == expected
 
     assert mock.call_count == 3
+
+
+def test_cached_method_with_function():
+    with pytest.raises(AssertionError):
+
+        @rasa.shared.utils.common.cached_method
+        def my_function():
+            pass
+
+        my_function()
+
+
+async def test_cached_method_with_async_function():
+    with pytest.raises(AssertionError):
+
+        @rasa.shared.utils.common.cached_method
+        async def my_function():
+            await asyncio.sleep(0)
+
+        await my_function()
