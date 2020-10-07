@@ -12,6 +12,7 @@ import warnings
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
+from ruamel.yaml.constructor import DuplicateKeyError
 
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
@@ -246,6 +247,7 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
     yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
+    yaml.allow_duplicate_keys = False
 
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
@@ -266,10 +268,18 @@ def _is_ascii(text: Text) -> bool:
 def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
+    Raises an exception if the content of the file can not be parsed as YAML.
+
     Args:
         filename: The path to the file which should be read.
+
+    Returns:
+        Parsed content of the file.
     """
-    return read_yaml(read_file(filename, DEFAULT_ENCODING))
+    try:
+        return read_yaml(read_file(filename, DEFAULT_ENCODING))
+    except (YAMLError, DuplicateKeyError) as e:
+        raise YamlSyntaxException(filename, e)
 
 
 def write_yaml(
@@ -426,10 +436,7 @@ def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     Args:
         filename: The path to the file which should be read.
     """
-    try:
-        content = read_yaml(read_file(filename))
-    except YAMLError as e:
-        raise YamlSyntaxException(filename, e)
+    content = read_yaml_file(filename)
 
     if content is None:
         return {}

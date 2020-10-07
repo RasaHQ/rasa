@@ -326,6 +326,12 @@ Checks whether the given file path is a Rasa domain file.
 **Returns**:
 
   `True` if it&#x27;s a domain file, otherwise `False`.
+  
+
+**Raises**:
+
+- `YamlException` - if the file seems to be a YAML file (extension) but
+  can not be read / parsed.
 
 #### slot\_mapping\_for\_form
 

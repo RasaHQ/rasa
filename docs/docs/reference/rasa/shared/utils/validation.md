@@ -6,7 +6,7 @@ title: rasa.shared.utils.validation
 ## YamlValidationException Objects
 
 ```python
-class YamlValidationException(ValueError,  RasaException)
+class YamlValidationException(YamlException,  ValueError)
 ```
 
 Raised if a yaml file does not correspond to the expected schema.
@@ -60,7 +60,7 @@ Validate rasa training data format to ensure proper training.
 #### validate\_training\_data\_format\_version
 
 ```python
-validate_training_data_format_version(yaml_file_content: Dict[Text, Any], filename: Text) -> bool
+validate_training_data_format_version(yaml_file_content: Dict[Text, Any], filename: Optional[Text]) -> bool
 ```
 
 Validates version on the training data content using `version` field

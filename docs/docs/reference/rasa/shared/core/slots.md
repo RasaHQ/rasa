@@ -3,6 +3,14 @@ sidebar_label: rasa.shared.core.slots
 title: rasa.shared.core.slots
 ---
 
+## InvalidSlotTypeException Objects
+
+```python
+class InvalidSlotTypeException(RasaException)
+```
+
+Raised if a slot type is invalid.
+
 ## Slot Objects
 
 ```python

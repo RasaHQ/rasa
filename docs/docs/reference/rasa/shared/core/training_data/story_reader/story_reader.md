@@ -14,7 +14,7 @@ Helper class to read a story file.
 #### \_\_init\_\_
 
 ```python
- | __init__(domain: Optional[Domain] = None, template_vars: Optional[Dict] = None, use_e2e: bool = False, source_name: Text = None, is_used_for_conversion: bool = False) -> None
+ | __init__(domain: Optional[Domain] = None, template_vars: Optional[Dict] = None, use_e2e: bool = False, source_name: Optional[Text] = None, is_used_for_conversion: bool = False) -> None
 ```
 
 Constructor for the StoryReader.

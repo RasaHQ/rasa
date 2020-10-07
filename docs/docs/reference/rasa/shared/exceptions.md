@@ -27,10 +27,30 @@ class RasaXTermsError(RasaException)
 
 Error in case the user didn&#x27;t accept the Rasa X terms.
 
+## YamlException Objects
+
+```python
+class YamlException(RasaException)
+```
+
+Raised if there is an error reading yaml.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(filename: Optional[Text] = None) -> None
+```
+
+Create exception.
+
+**Arguments**:
+
+- `filename` - optional file the error occurred in
+
 ## YamlSyntaxException Objects
 
 ```python
-class YamlSyntaxException(RasaException)
+class YamlSyntaxException(YamlException)
 ```
 
 Raised when a YAML file can not be parsed properly due to a syntax error.

@@ -1184,7 +1184,7 @@ class DIET(TransformerRasaModel):
             ENTITIES not in self.data_signature
             or ENTITY_ATTRIBUTE_TYPE not in self.data_signature[ENTITIES]
         ):
-            rasa.shared.utils.io.raise_warning(
+            logger.debug(
                 f"You specified '{self.__class__.__name__}' to train entities, but "
                 f"no entities are present in the training data. Skipping training of "
                 f"entities."

@@ -57,6 +57,12 @@ Checks if the specified file possibly contains NLU training data in YAML.
 
   `True` if the `filename` is possibly a valid YAML NLU file,
   `False` otherwise.
+  
+
+**Raises**:
+
+- `YamlException` - if the file seems to be a YAML file (extension) but
+  can not be read / parsed.
 
 ## RasaYAMLWriter Objects
 

@@ -123,9 +123,16 @@ read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]
 
 Parses a yaml file.
 
+Raises an exception if the content of the file can not be parsed as YAML.
+
 **Arguments**:
 
 - `filename` - The path to the file which should be read.
+  
+
+**Returns**:
+
+  Parsed content of the file.
 
 #### write\_yaml
 
