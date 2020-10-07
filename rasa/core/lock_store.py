@@ -26,8 +26,8 @@ DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 class LockError(Exception):
     """Exception that is raised when a lock cannot be acquired.
 
-     Attributes:
-          message (str): explanation of which `conversation_id` raised the error
+    Attributes:
+         message (str): explanation of which `conversation_id` raised the error
     """
 
     pass

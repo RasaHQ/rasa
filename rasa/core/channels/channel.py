@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class UserMessage:
     """Represents an incoming message.
 
-     Includes the channel the responses should be sent to."""
+    Includes the channel the responses should be sent to."""
 
     def __init__(
         self,

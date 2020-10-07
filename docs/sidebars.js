@@ -1,6 +1,7 @@
 module.exports = {
   default: [
     'introduction',
+    'prototype-an-assistant',
     {
       type: 'category',
       label: 'Building Assistants',
@@ -11,9 +12,7 @@ module.exports = {
           label: 'Getting Started',
           collapsed: true,
           items: [
-            'prototype-an-assistant',
             'installation',
-            // 'cheatsheet',
             'migrate-from',
           ],
         },
@@ -97,12 +96,21 @@ module.exports = {
             'connectors/cisco-webex-teams',
             'connectors/rocketchat',
             'connectors/mattermost',
+            'connectors/custom-connectors',
           ],
         },
         {
           type: 'category',
           label: 'Architecture', // name still confusing with architecture page elsewhere
-          items: ['arch-overview', 'tracker-stores', 'event-brokers', 'model-storage', 'lock-stores', 'nlg'],
+          items: [
+            'arch-overview',
+            'tracker-stores',
+            'event-brokers',
+            'model-storage',
+            'lock-stores',
+            'nlu-only',
+            'nlg',
+          ],
         },
       ],
     },
@@ -120,7 +128,7 @@ module.exports = {
             'http-api',
           ],
         },
-        'jupyter-notebooks',
+        // 'jupyter-notebooks',
       ],
     },
     {
