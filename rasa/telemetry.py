@@ -603,7 +603,7 @@ def initialize_error_reporting() -> None:
     Exceptions are reported to sentry. We avoid sending any metadata (local
     variables, paths, ...) to make sure we don't compromise any data. Only the
     exception and its stacktrace is logged and only if the exception origins
-    from the `rasa` package. """
+    from the `rasa` package."""
     import sentry_sdk
     from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
