@@ -62,7 +62,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 
 
 In general, it is not recommended to have more
-than one policy per priority level. If you have 2 policies with the same priority and they predict
+than one policy per priority level in your configuration. If you have 2 policies with the same priority and they predict
 with the same confidence, the resulting action will be chosen randomly.
 
 If you create your own policy, use these priorities as a guide for figuring out the priority of your policy.
@@ -429,7 +429,7 @@ policies:
     ```
  * `restrict_rules` (default: `true`): Rules are restricted to one user turn, but
     there can be multiple bot events, including e.g. a form being filled and its subsequent submission.
-    Changing this parameter to `false` may result in unexpected behaviors.
+    Changing this parameter to `false` may result in unexpected behavior.
 
   :::caution Overusing rules
     Overusing rules for purposes outside of the [recommended use cases](rules.mdx)
@@ -491,7 +491,7 @@ slot. Slot information is always available for every featurizer.
 
 ### Data Augmentation
 
-When you train a model, by default Rasa Core will create
+When you train a model, by default Rasa Open Source will create
 longer stories by randomly combining
 the ones in your stories files.
 Take the stories below as an example:
@@ -562,7 +562,7 @@ of the tracker has two steps:
 
     `SingleStateFeaturizer` uses the Rasa NLU pipeline to convert the intent and
     bot action names or bot utterances into numeric vectors.
-    See our [NLU Model Configuration](./model-configuration.mdx) documentation
+    See the [NLU Model Configuration](./model-configuration.mdx) documentation
     for the details on how to configure Rasa NLU pipeline.
 
     Entities, slots and active loops are featurized as one-hot encodings
