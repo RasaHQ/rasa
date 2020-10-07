@@ -128,21 +128,14 @@ def _load_and_set_updated_model(
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    try:
-        interpreter = _load_interpreter(agent, nlu_path)
-        domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
+    interpreter = _load_interpreter(agent, nlu_path)
+    domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
 
-        agent.update_model(
-            domain, policy_ensemble, fingerprint, interpreter, model_directory
-        )
+    agent.update_model(
+        domain, policy_ensemble, fingerprint, interpreter, model_directory
+    )
 
-        logger.debug("Finished updating agent to new model.")
-    except Exception as e:  # skipcq: PYL-W0703
-        # TODO: this exception shouldn't be that broad, we need to be more specific
-        logger.exception(
-            f"Failed to update model. The previous model will stay loaded instead. "
-            f"Error: {e}"
-        )
+    logger.debug("Finished updating agent to new model.")
 
 
 async def _update_model_from_server(
@@ -153,25 +146,44 @@ async def _update_model_from_server(
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    model_directory_and_fingerprint = await _pull_model_and_fingerprint(
-        model_server, agent.fingerprint
-    )
-    if model_directory_and_fingerprint:
-        model_directory, new_model_fingerprint = model_directory_and_fingerprint
-        _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
-    else:
-        logger.debug(f"No new model found at URL {model_server.url}")
+    model_directory = tempfile.mkdtemp()
+    remove_dir = True
+
+    try:
+        new_fingerprint = await _pull_model_and_fingerprint(
+            model_server, agent.fingerprint, model_directory
+        )
+
+        if new_fingerprint:
+            _load_and_set_updated_model(agent, model_directory, new_fingerprint)
+            remove_dir = False
+        else:
+            logger.debug(f"No new model found at URL {model_server.url}")
+    except Exception:  # skipcq: PYL-W0703
+        # TODO: Make this exception more specific, possibly print different log
+        # for each one.
+        logger.exception(
+            "Failed to update model. The previous model will stay loaded instead."
+        )
+    finally:
+        if remove_dir:
+            shutil.rmtree(model_directory)
 
 
 async def _pull_model_and_fingerprint(
-    model_server: EndpointConfig, fingerprint: Optional[Text]
-) -> Optional[Tuple[Text, Text]]:
+    model_server: EndpointConfig, fingerprint: Optional[Text], model_directory: Text
+) -> Optional[Text]:
     """Queries the model server.
 
-    Returns the temporary model directory and value of the response's <ETag> header
-    which contains the model hash. Returns `None` if no new model is found.
-    """
+    Args:
+        model_server: Model server endpoint information.
+        fingerprint: Current model fingerprint.
+        model_directory: Directory where to download model to.
 
+    Returns:
+        Value of the response's <ETag> header which contains the model
+        hash. Returns `None` if no new model is found.
+    """
     headers = {"If-None-Match": fingerprint}
 
     logger.debug(f"Requesting model from server {model_server.url}...")
@@ -211,16 +223,13 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
-                model_directory = tempfile.mkdtemp()
                 rasa.utils.io.unarchive(await resp.read(), model_directory)
                 logger.debug(
                     "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )
 
-                # get the new fingerprint
-                new_fingerprint = resp.headers.get("ETag")
-                # return new tmp model directory and new fingerprint
-                return model_directory, new_fingerprint
+                # return the new fingerprint
+                return resp.headers.get("ETag")
 
         except aiohttp.ClientError as e:
             logger.debug(

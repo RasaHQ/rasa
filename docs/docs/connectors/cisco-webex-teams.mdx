@@ -26,16 +26,14 @@ be used in `room` variable in the `credentials.yml` file.
 Please follow this link below to find the room ID
 `https://developer.webex.com/endpoint-rooms-get.html`
 
-## Running on Cisco Webex
+In the OAuth & Permissions section, add the URL of the Rasa Open Source endpoint
+that Webex should forward the messages to. The endpoint for receiving Cisco Webex Teams messages
+is `http://<host>:<port>/webhooks/webexteams/webhook`, replacing
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
 
-If you want to connect to the `webexteams` input channel using the run
-script, e.g. using:
+## Running on Cisco Webex Teams
 
-```bash
-rasa run
-```
-
-you need to supply a `credentials.yml` with the following content:
+Add the Webex Teams credentials to your `credentials.yml`:
 
 ```yaml-rasa
 webexteams:
@@ -43,10 +41,9 @@ webexteams:
   room: "YOUR-CISCOWEBEXTEAMS-ROOM-ID"
 ```
 
-The endpoint for receiving Cisco Webex Teams messages is
-`http://localhost:5005/webhooks/webexteams/webhook`, replacing
-the host and port with the appropriate values. This is the URL
-you should add in the OAuth & Permissions section.
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available for Cisco Webex Teams to send messages to.
 
 :::note
 If you do not set the `room` keyword
