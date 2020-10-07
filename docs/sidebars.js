@@ -128,7 +128,7 @@ module.exports = {
             'http-api',
           ],
         },
-        'jupyter-notebooks',
+        // 'jupyter-notebooks',
       ],
     },
     {
