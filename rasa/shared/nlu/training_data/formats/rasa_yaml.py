@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
 
 import rasa.shared.data
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils import validation
 from ruamel.yaml import YAMLError, StringIO
 
@@ -53,15 +54,15 @@ class RasaYAMLReader(TrainingDataReader):
         self.lookup_tables: List[Dict[Text, Any]] = []
         self.responses: Dict[Text, List[Dict[Text, Any]]] = {}
 
-    @staticmethod
-    def validate(string: Text) -> None:
+    def validate(self, string: Text) -> None:
         """Check if the string adheres to the NLU yaml data schema.
 
         If the string is not in the right format, an exception will be raised."""
         try:
             validation.validate_yaml_schema(string, NLU_SCHEMA_FILE)
-        except validation.InvalidYamlFileError as e:
-            raise ValueError from e
+        except validation.YamlValidationException as e:
+            e.filename = self.filename
+            raise e
 
     def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData in YAML format from a string.
@@ -350,7 +351,7 @@ class RasaYAMLReader(TrainingDataReader):
             return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
         except (YAMLError, Warning) as e:
             logger.error(
-                f"Tried to check if '{filename}' is an NLU file, but failed to "
+                f"Tried to check if '{filename}' is a NLU file, but failed to "
                 f"read it. If this file contains NLU data, you should "
                 f"investigate this error, otherwise it is probably best to "
                 f"move the file to a different location. "

@@ -28,6 +28,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.shared.constants import DOCS_URL_TELEMETRY
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
@@ -558,7 +559,7 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
 def strip_sensitive_data_from_sentry_event(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
-) -> Dict[Text, Any]:
+) -> Optional[Dict[Text, Any]]:
     """Remove any sensitive data from the event (e.g. path names).
 
     Args:
@@ -566,13 +567,32 @@ def strip_sensitive_data_from_sentry_event(
         _unused_hint: some hinting information sent alongside of the event
 
     Returns:
-        the event without any sensitive / PII data.
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
     """
     # removes any paths from stack traces (avoids e.g. sending
     # a users home directory name if package is installed there)
     for value in event.get("exception", {}).get("values", []):
         for frame in value.get("stacktrace", {}).get("frames", []):
             frame["abs_path"] = ""
+
+            if f"rasa_sdk{os.path.sep}executor.py" in frame["filename"]:
+                # this looks a lot like an exception in the SDK and hence custom code
+                # no need for us to deal with that
+                return None
+            elif "site-packages" in frame["filename"]:
+                # drop site-packages and following slash / backslash
+                relative_name = frame["filename"].split("site-packages")[-1][1:]
+                frame["filename"] = os.path.join("site-packages", relative_name)
+            elif "dist-packages" in frame["filename"]:
+                # drop dist-packages and following slash / backslash
+                relative_name = frame["filename"].split("dist-packages")[-1][1:]
+                frame["filename"] = os.path.join("dist-packages", relative_name)
+            elif os.path.isabs(frame["filename"]):
+                # if the file path is absolute, we'll drop the whole event as this is
+                # very likely custom code. needs to happen after cleaning as
+                # site-packages / dist-packages paths are also absolute, but fine.
+                return None
     return event
 
 
@@ -585,6 +605,7 @@ def initialize_error_reporting() -> None:
     exception and its stacktrace is logged and only if the exception origins
     from the `rasa` package. """
     import sentry_sdk
+    from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
@@ -596,6 +617,8 @@ def initialize_error_reporting() -> None:
 
     if not key:
         return
+
+    telemetry_id = get_telemetry_id()
 
     # this is a very defensive configuration, avoiding as many integrations as
     # possible. it also submits very little data (exception with error message
@@ -609,14 +632,18 @@ def initialize_error_reporting() -> None:
             AtexitIntegration(lambda _, __: None),
         ],
         send_default_pii=False,  # activate PII filter
-        server_name=get_telemetry_id() or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt],
+        server_name=telemetry_id or "UNKNOWN",
+        ignore_errors=[KeyboardInterrupt, RasaException],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
         default_integrations=False,
         environment="development" if in_continuous_integration() else "production",
     )
+
+    if telemetry_id:
+        with configure_scope() as scope:
+            scope.set_user({"id": telemetry_id})
 
 
 @async_generator.asynccontextmanager

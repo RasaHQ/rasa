@@ -29,15 +29,18 @@ need to define [Slot Mappings](./forms.mdx#slot-mappings) for each slot which yo
 form should fill.
 You can specify one or more slot mappings for each slot to be filled.
 
-The following example of a form `your_form` will fill only one slot
-`age` from an extracted entity `age`.
+The following example form `restaurant_form` will fill the slot
+`cuisine` from an extracted entity `cuisine` and slot `num_people` from entity `number`.
 
 ```yaml-rasa
 forms:
-  your_form:
-    age:
-    - type: from_entity
-      entity: age
+  restaurant_form:
+    cuisine:
+      - type: from_entity
+        entity: cuisine
+    num_people:
+      - type: from_entity
+        entity: number
 ```
 
 Once the form action gets called for the first time, the form gets activated and will
@@ -57,14 +60,14 @@ triggering a form, you can for example use the following rule:
 rules:
 - rule: Activate form
   steps:
-  - intent: intent_which_activates_form
-  - action: your_form
-  - active_loop: your_form
+  - intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
 ```
 
 :::note
-The `active_loop: your_form` step indicates that the form should be activated after
-`your_form` was run.
+The `active_loop: restaurant_form` step indicates that the form should be activated after
+`restaurant_form` was run.
 :::
 
 ### Deactivating a Form
@@ -81,15 +84,16 @@ rules:
 - rule: Submit form
   condition:
   # Condition that form is active.
-  - active_loop: your_form
+  - active_loop: restaurant_form
   steps:
   # Form is deactivated
-  - action: your_form
+  - action: restaurant_form
   - active_loop: null
-  - slot_was_set: 
+  - slot_was_set:
     - requested_slot: null
-  # The action we want to run when the form is submitted.
-  - action: utter_all_slots_filled
+  # The actions we want to run when the form is submitted.
+  - action: utter_submit
+  - action: utter_slots_values
 ```
 
 Users might want to break out of a form early. Please see
@@ -235,14 +239,14 @@ rules:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
-  - active_loop: your_form
+  - active_loop: restaurant_form
   steps:
   # This unhappy path handles the case of an intent `chitchat`.
   - intent: chitchat
   - action: utter_chitchat
   # Return to form after handling the `chitchat` intent
-  - action: your_form
-  - active_loop: your_form
+  - action: restaurant_form
+  - active_loop: restaurant_form
 ```
 
 In some situations, users may change their mind in the middle of the form action
@@ -257,7 +261,7 @@ rules:
 - rule: Example of an unhappy path
   condition:
   # Condition that form is active.
-  - active_loop: your_form
+  - active_loop: restaurant_form
   steps:
   - intent: stop
   - action: utter_ask_continue
@@ -266,10 +270,10 @@ rules:
   - active_loop: null
 ```
 
-It is **strongly** recommended that you build these rules or stories using 
-[interactive learning](./writing-stories.mdx#using-interactive-learning). 
+It is **strongly** recommended that you build these rules or stories using
+[interactive learning](./writing-stories.mdx#using-interactive-learning).
 If you write these rules / stories by hand you will likely miss important
-things. 
+things.
 
 ## Advanced Usage
 
@@ -290,59 +294,57 @@ section of your domain:
 
 ```yaml-rasa
 actions:
-- validate_your_form
+- validate_restaurant_form
 ```
 
-When the form is executed it will run your custom action. In your custom action
-you can either
+When the form is executed it will run your custom action.
 
-- validate already extracted slots. You can retrieve them from the tracker by running
-  `tracker.form_slots_to_validate`.
-- use [Custom Slot Mappings](./forms.mdx#slot-mappings) to extract slot values .
-
-After validating the extracted slots, return `SlotSet` events for them. If you want
-to mark a slot as invalid return a `SlotSet` event which sets the value to `None`.
-Note that if you don't return a `SlotSet` for an extracted slot, Rasa Open Source
-will assume that the value is valid.
+This custom action can extend `FormValidationAction` class to simplify
+the process of validating extracted slots. In this case, you need to write functions
+named `validate_<slot_name>` for every extracted slot.
 
 The following example shows the implementation of a custom action
-which validates that every extracted slot is valid.
+which validates that the slot named `cuisine` is valid.
 
 ```python
-from typing import Dict, Text, List, Any
+from typing import Text, List, Any, Dict
 
-from rasa_sdk import Tracker
-from rasa_sdk.events import EventType
-from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk import Action
+from rasa_sdk import Tracker, FormValidationAction
 from rasa_sdk.events import SlotSet
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.types import DomainDict
 
 
-class ValidateSlots(Action):
+class ValidateRestaurantForm(FormValidationAction):
     def name(self) -> Text:
-        return "validate_your_form"
+        return "validate_restaurant_form"
 
-    def run(
-        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
-    ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.form_slots_to_validate()
+    @staticmethod
+    def cuisine_db() -> List[Text]:
+        """Database of supported cuisines"""
 
-        validation_events = []
+        return ["caribbean", "chinese", "french"]
 
-        for slot_name, slot_value in extracted_slots:
-            # Check if slot is valid.
-            if is_valid(slot_value):
-                validation_events.append(SlotSet(slot_name, slot_value))
-            else:
-                # Return a `SlotSet` event with value `None` to indicate that this
-                # slot still needs to be filled.
-                validation_events.append(SlotSet(slot_name, None))
+    def validate_cuisine(
+        self,
+        slot_value: Any,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: DomainDict,
+    ) -> Dict[Text, Any]:
+        """Validate cuisine value."""
 
-        return validation_events
-
-    def is_valid(slot_value: Any) -> bool:
-        # Implementation of the validate function.
+        if slot_value.lower() in self.cuisine_db():
+            # validation succeeded, set the value of the "cuisine" slot to value
+            return {"cuisine": slot_value}
+        else:
+            # validation failed, set this slot to None so that the
+            # user will be asked for the slot again
+            return {"cuisine": None}
 ```
+
+You can also extend the `Action` class and retrieve extracted slots with `tracker.slots_to_validate`
+to fully customize the validation process.
 
 ### Custom Slot Mappings
 
@@ -365,9 +367,9 @@ from rasa_sdk import Action
 from rasa_sdk.events import SlotSet
 
 
-class ValidateSlots(Action):
+class ValidateRestaurantForm(Action):
     def name(self) -> Text:
-        return "validate_your_form"
+        return "validate_restaurant_form"
 
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
@@ -388,7 +390,7 @@ which should be extracted next. If all desired slots are filled, set `requested_
 to `None`.
 
 The following example shows the implementation of a custom action which requests
-the three slots `last_name`, `first_name`, and `city`.
+the three slots `cuisine`, `num_people`, and `outdoor_seating`.
 
 ```python
 from typing import Dict, Text, List
@@ -400,14 +402,14 @@ from rasa_sdk import Action
 from rasa_sdk.events import SlotSet
 
 
-class ValidateSlots(Action):
+class ValidateRestaurantForm(Action):
     def name(self) -> Text:
-        return "validate_your_form"
+        return "validate_restaurant_form"
 
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        required_slots = ["last name", "first_name", "city"]
+        required_slots = ["cuisine", "num_people", "outdoor_seating"]
 
         for slot_name in required_slots:
             if tracker.slots.get(slot_name) is None:
@@ -420,9 +422,12 @@ class ValidateSlots(Action):
 
 ### The requested_slot slot
 
-The slot `requested_slot` is automatically added to the domain as an
-unfeaturized slot. If you want to make it featurized, you need to add it
-to your domain file as a categorical slot. You might want to do this if you
+The slot `requested_slot` is automatically added to the domain as a
+slot of type [`text`](domain.mdx#text-slot). The value of the `requested_slot` will be
+ignored during conversations. If you want to change this behavior, you need to add
+the `requested_slot`  to your domain file as a categorical slot with
+`influence_conversation` set to `true`.
+You might want to do this if you
 want to handle your unhappy paths differently, depending on what slot is
 currently being asked from the user. For example, if your users respond
 to one of the bot's questions with another question, like *why do you need to know that?*
@@ -430,7 +435,7 @@ The response to this `explain` intent depends on where we are in the story.
 In the restaurant case, your stories would look something like this:
 
 ```yaml-rasa
-stories: 
+stories:
 - story: explain cuisine slot
   steps:
   - intent: request_restaurant
@@ -438,7 +443,7 @@ stories:
   - active_loop: restaurant
   - slot_was_set:
     - requested_slot: cuisine
-  - intent: explain 
+  - intent: explain
   - action: utter_explain_cuisine
   - action: restaurant_form
   - active_loop: null
@@ -452,13 +457,13 @@ stories:
     - requested_slot: cuisine
   - slot_was_set:
     - requested_slot: num_people
-  - intent: explain 
+  - intent: explain
   - action: utter_explain_num_people
   - action: restaurant_form
   - active_loop: null
 ```
 
-Again, it is **strongly** recommended that you use 
+Again, it is **strongly** recommended that you use
 [interactive learning](./writing-stories.mdx#using-interactive-learning) to build these stories.
 
 ### Using a Custom Action to Ask For the Next Slot
@@ -480,12 +485,12 @@ from rasa_sdk import Action
 
 class AskForSlotAction(Action):
     def name(self) -> Text:
-        return "action_ask_age"
+        return "action_ask_cuisine"
 
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
     ) -> List[EventType]:
-        dispatcher.utter_message(text="How old are you?")
+        dispatcher.utter_message(text="What cuisine?")
         return []
 ```
 

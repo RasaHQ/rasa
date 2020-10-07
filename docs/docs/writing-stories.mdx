@@ -84,15 +84,16 @@ stories:
 
 Here are some tips for managing the conversation flow in your stories:
 
-### When to Use Featurized Slots
+### When to Use Slots to Influence Conversations
 
-Slots act as your bot’s memory. When you define a slot, you can define its [slot type](domain.mdx#slot-types)
-as either `unfeaturized` or one of the featurized slot types.
-An unfeaturized slot can only store information, but a featurized slot can affect the
-dialogue flow based on the information stored in it.
+Slots act as your bot’s memory. When you define a slot, you can define whether a
+[slot](domain.mdx#slots) should influence the conversation or not.
+Slots with the property `influence_conversation` set to `false` can only store
+information. Slots with the property `influence_conversation` set to `true` can affect
+the dialogue flow based on the information stored in it.
 
-Because they affect the dialogue flow, you need to include any featurized slots set by
-[custom actions](./actions.mdx) in your stories.
+Slots which influence the conversation need to be added to your stories or rules. This also
+applies for the case if the slot was set by a [custom action](./actions.mdx).
 For example, you can use a boolean slot set by a custom action to control the dialogue
 flow based on its value using the following stories:
 
@@ -116,10 +117,10 @@ stories:
    - action: utter_ask_upgrade
 ```
 
-In cases where you don't want a slot to affect the conversation flow, you should use
-an unfeaturized slot. You do not need to include `slot_was_set` events for unfeaturized
-slots in your stories.
-
+In cases where you don't want a slot to affect the conversation flow, you should
+set the slot's property `influence_conversation` to `false`. You do not need to
+include `slot_was_set` events for slots in your stories which do not influence the
+conversation.
 
 ### Implementing Branching Logic
 
@@ -309,15 +310,14 @@ longer stories into smaller conversational blocks that handle sub-tasks.
 
 A happy path story for handling a lost credit card might look like:
 
-<!-- TODO replace with yaml-rasa once list slots are allowed -->
-```yaml
+```yaml-rasa
 stories:
 - story: Customer loses a credit card, reviews transactions, and gets a new card
   steps:
   - intent: card_lost
   - action: check_transactions
   - slot_was_set:
-  	 - reviewed_transactions: ["starbucks"]
+    - reviewed_transactions: ["starbucks"]
   - action: utter_ask_fraudulent_transactions
   - intent: inform
   - action: action_update_transactions
@@ -347,8 +347,7 @@ if there's anything else the bot can help them with.
 
 We can separate out this long story into several smaller stories as:
 
-<!-- TODO replace with yaml-rasa once list slots are allowed -->
-```yaml
+```yaml-rasa
 stories:
 - story: Customer loses a credit card
   steps:
@@ -358,7 +357,7 @@ stories:
   - active_loop: spending_history_form
   - active_loop: null
   - slot_was_set:
-   	- reviewed_transactions: ["starbucks"]
+    - reviewed_transactions: ["starbucks"]
   - action: utter_ask_fraudulent_transactions
 
 - story: Customer reviews transactions and gets a new card
@@ -367,7 +366,7 @@ stories:
   - intent: inform
   - action: action_update_transactions
   - slot_was_set:
-  	- reviewed_transactions: ["target", "starbucks"]
+    - reviewed_transactions: ["target", "starbucks"]
   - intent: affirm
   - action: utter_confirm_transaction_dispute
   - action: utter_replace_card
@@ -399,7 +398,8 @@ In some cases, such as single-turn interjections, you can handle context-switchi
 using [rules](./rules.mdx) instead of through [stories](./stories.mdx).
 
 Consider this conversation scenario:
-<Chat caption="Single-turn interjection">
+
+<Chat caption="A single-turn interjection">
 <ChatUserText>Hi, I want to pay my credit card bill</ChatUserText>
 <ChatBotText>Can do! Which of these credit accounts do you want to make a payment towards?</ChatBotText>
 <ChatBotText><p>- Credit Account A</p>
@@ -440,7 +440,7 @@ is maintained.
 For example, if you want to switch context upon a user ask and then return to the
 original flow after that ask is complete:
 
-<Chat caption="Contextual interjection">
+<Chat caption="A contextual interjection">
 <ChatUserText>Hi, I want to pay my credit card bill</ChatUserText>
 <ChatBotText>Can do! Which of these credit accounts do you want to make a payment towards?</ChatBotText>
 <ChatBotText><p>- Credit Account A</p>
@@ -501,4 +501,71 @@ and you can use any user conversation as a starting point.
 See [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot)
 in the Rasa X docs.
 
-<!-- TODO info about using interactive learning locally, can come from old docs -->
+### Command-line Interactive Learning
+
+The CLI command `rasa interactive` will start interactive learning on the command line.
+If your bot has custom actions, make sure to also 
+[run your action server](https://rasa.com/docs/action-server/running-action-server) in a separate terminal window.
+
+In interactive mode, you will be asked to confirm every intent and action prediction
+before the bot proceeds. Here's an example:
+
+```text
+? Next user input:  hello
+
+? Is the NLU classification for 'hello' with intent 'hello' correct?  Yes
+
+------
+Chat History
+
+ #    Bot                        You
+────────────────────────────────────────────
+ 1    action_listen
+────────────────────────────────────────────
+ 2                                    hello
+                         intent: hello 1.00
+------
+
+? The bot wants to run 'utter_greet', correct?  (Y/n)
+
+```
+
+You'll be able to see the conversation history and slot values at each step of the conversation.
+
+If you type ||y|| to approve a prediction, the bot will continue. If you type ||n||, you will
+be given the chance to correct the prediction before continuing: 
+
+```text
+? What is the next action of the bot?  (Use arrow keys)
+ » <create new action>
+   1.00 utter_greet
+   0.00 ...
+   0.00 action_back
+   0.00 action_deactivate_loop
+   0.00 action_default_ask_affirmation
+   0.00 action_default_ask_rephrase
+   0.00 action_default_fallback
+   0.00 action_listen
+   0.00 action_restart
+   0.00 action_revert_fallback_events
+   0.00 action_session_start
+   0.00 action_two_stage_fallback
+   0.00 utter_cheer_up
+   0.00 utter_did_that_help
+   0.00 utter_goodbye
+   0.00 utter_happy
+   0.00 utter_iamabot
+```
+
+At any point, you can use ||Ctrl-C|| to access the menu, allowing you to create more stories and export the 
+data from the stories you've created so far. 
+
+```text
+? Do you want to stop?  (Use arrow keys)
+ » Continue
+   Undo Last
+   Fork
+   Start Fresh
+   Export & Quit
+```
+

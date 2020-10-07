@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 from collections import deque
 from enum import Enum
 from typing import (
@@ -37,9 +38,9 @@ from rasa.shared.core.constants import (
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    LOOP_VALIDATE,
     LOOP_REJECTED,
     TRIGGER_MESSAGE,
+    LOOP_INTERRUPTED,
 )
 from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.shared.core.events import (  # pytype: disable=pyi-error
@@ -60,6 +61,8 @@ from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
+    from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +258,7 @@ class DialogueStateTracker:
         if loop_name is not None:
             self.active_loop = {
                 LOOP_NAME: loop_name,
-                LOOP_VALIDATE: True,
+                LOOP_INTERRUPTED: False,
                 LOOP_REJECTED: False,
                 TRIGGER_MESSAGE: self.latest_message.parse_data,
             }
@@ -271,9 +274,22 @@ class DialogueStateTracker:
         )
         self.change_loop_to(form_name)
 
+    def interrupt_loop(self, is_interrupted: bool) -> None:
+        """Interrupt loop and mark that we entered an unhappy path in the conversation.
+        Args:
+            is_interrupted: `True` if the loop was run after an unhappy path.
+        """
+        self.active_loop[LOOP_INTERRUPTED] = is_interrupted
+
     def set_form_validation(self, validate: bool) -> None:
-        """Toggle form validation"""
-        self.active_loop[LOOP_VALIDATE] = validate
+        rasa.shared.utils.io.raise_warning(
+            "`set_form_validation` is deprecated and will be removed "
+            "in future versions. Please use `interrupt_loop` "
+            "instead.",
+            category=DeprecationWarning,
+        )
+        # `validate = True` means `is_interrupted = False`
+        self.interrupt_loop(not validate)
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected"""
@@ -287,7 +303,7 @@ class DialogueStateTracker:
         self.latest_action = action
         if self.active_loop_name:
             # reset form validation if some loop is active
-            self.active_loop[LOOP_VALIDATE] = True
+            self.active_loop[LOOP_INTERRUPTED] = False
 
         if action.get(ACTION_NAME) == self.active_loop_name:
             # reset loop rejection if it was predicted again
@@ -581,22 +597,38 @@ class DialogueStateTracker:
         )
         return Story.from_events(self.applied_events(), story_name)
 
-    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
+    def export_stories(
+        self,
+        writer: "StoryWriter",
+        e2e: bool = False,
+        include_source: bool = False,
+        should_append_stories: bool = False,
+    ) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns:
             The dumped tracker as a string.
         """
+
         # TODO: we need to revisit all usages of this, the caller needs to specify
         #       the format. this likely points to areas where we are not properly
         #       handling markdown vs yaml
         story = self.as_story(include_source)
-        return story.as_story_string(flat=True, e2e=e2e)
 
-    def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
+        return writer.dumps(
+            story.story_steps, is_appendable=should_append_stories, is_test_story=e2e
+        )
+
+    def export_stories_to_file(self, export_path: Text = "debug_stories.yml") -> None:
         """Dump the tracker as a story to a file."""
+        from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+            YAMLStoryWriter,
+        )
+
+        append = not os.path.exists(export_path)
+
         rasa.shared.utils.io.write_text_file(
-            self.export_stories() + "\n", export_path, append=True
+            self.export_stories(YAMLStoryWriter()) + "\n", export_path, append=append
         )
 
     def get_last_event_for(

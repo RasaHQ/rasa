@@ -69,7 +69,7 @@ class RasaFileImporter(TrainingDataImporter):
         except InvalidDomain as e:
             rasa.shared.utils.io.raise_warning(
                 f"Loading domain from '{self._domain_path}' failed. Using "
-                f"empty domain. Error: '{e.message}'"
+                f"empty domain. Error: '{e}'"
             )
 
         return domain

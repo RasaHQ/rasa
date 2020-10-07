@@ -1,12 +1,14 @@
 import logging
-from typing import Text, Dict, Any
+from typing import Text, Dict, List, Optional, Any
 
 from packaging import version
 from packaging.version import LegacyVersion
+from pykwalify.errors import SchemaError
 
 from ruamel.yaml.constructor import DuplicateKeyError
 
 import rasa.shared
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
@@ -22,23 +24,102 @@ logger = logging.getLogger(__name__)
 KEY_TRAINING_DATA_FORMAT_VERSION = "version"
 
 
-class InvalidYamlFileError(ValueError):
-    """Raised if an invalid yaml file was provided."""
+class YamlValidationException(ValueError, RasaException):
+    """Raised if a yaml file does not correspond to the expected schema."""
 
-    def __init__(self, message: Text) -> None:
-        super().__init__(message)
+    def __init__(
+        self,
+        message: Text,
+        validation_errors: Optional[List[SchemaError.SchemaErrorEntry]] = None,
+        filename: Optional[Text] = None,
+        content: Any = None,
+    ) -> None:
+        """Create The Error.
+
+        Args:
+            message: error message
+            validation_errors: validation errors
+            filename: name of the file which was validated
+            content: yaml content loaded from the file (used for line information)
+        """
+        self.message = message
+        self.filename = filename
+        self.validation_errors = validation_errors
+        self.content = content
+        super(YamlValidationException, self).__init__()
+
+    def __str__(self) -> Text:
+        msg = ""
+        if self.filename:
+            msg += f"Failed to validate '{self.filename}'. "
+        else:
+            msg += "Failed to validate yaml. "
+        msg += self.message
+        if self.validation_errors:
+            unique_errors = {}
+            for error in self.validation_errors:
+                line_number = self._line_number_for_path(self.content, error.path)
+
+                if line_number and self.filename:
+                    error_representation = f"  in {self.filename}:{line_number}:\n"
+                elif line_number:
+                    error_representation = f"  in Line {line_number}:\n"
+                else:
+                    error_representation = ""
+
+                error_representation += f"      {error}"
+                unique_errors[str(error)] = error_representation
+            error_msg = "\n".join(unique_errors.values())
+            msg += f":\n{error_msg}"
+        return msg
+
+    def _line_number_for_path(self, current: Any, path: Text) -> Optional[int]:
+        """Get line number for a yaml path in the current content.
+
+        Implemented using recursion: algorithm goes down the path navigating to the
+        leaf in the YAML tree. Unfortunately, not all nodes returned from the
+        ruamel yaml parser have line numbers attached (arrays have them, dicts have
+        them), e.g. strings don't have attached line numbers.
+        If we arrive at a node that has no line number attached, we'll return the
+        line number of the parent - that is as close as it gets.
+
+        Args:
+            current: current content
+            path: path to traverse within the content
+
+        Returns:
+            the line number of the path in the content.
+        """
+        if not current:
+            return None
+
+        this_line = current.lc.line + 1 if hasattr(current, "lc") else None
+
+        if not path:
+            return this_line
+
+        if "/" in path:
+            head, tail = path.split("/", 1)
+        else:
+            head, tail = path, ""
+
+        if head:
+            if isinstance(current, dict) and head in current:
+                return self._line_number_for_path(current[head], tail) or this_line
+            elif isinstance(current, list) and head.isdigit():
+                return self._line_number_for_path(current[int(head)], tail) or this_line
+            else:
+                return this_line
+        return self._line_number_for_path(current, tail) or this_line
 
 
-def validate_yaml_schema(
-    yaml_file_content: Text, schema_path: Text, show_validation_errors: bool = True
-) -> None:
+def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
     """
     Validate yaml content.
 
     Args:
         yaml_file_content: the content of the yaml file to be validated
         schema_path: the schema of the yaml file
-        show_validation_errors: if true, validation errors are shown
     """
     from pykwalify.core import Core
     from pykwalify.errors import SchemaError
@@ -47,48 +128,53 @@ def validate_yaml_schema(
     import logging
 
     log = logging.getLogger("pykwalify")
-    if show_validation_errors:
-        log.setLevel(logging.WARN)
-    else:
-        log.setLevel(logging.CRITICAL)
+    log.setLevel(logging.CRITICAL)
 
     try:
-        source_data = rasa.shared.utils.io.read_yaml(yaml_file_content)
+        # we need "rt" since
+        # it will add meta information to the parsed output. this meta information
+        # will include e.g. at which line an object was parsed. this is very
+        # helpful when we validate files later on and want to point the user to the
+        # right line
+        source_data = rasa.shared.utils.io.read_yaml(
+            yaml_file_content, reader_type=["safe", "rt"]
+        )
     except YAMLError:
-        raise InvalidYamlFileError(
+        raise YamlValidationException(
             "The provided yaml file is invalid. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
             "of your file."
         )
     except DuplicateKeyError as e:
-        raise InvalidYamlFileError(
+        raise YamlValidationException(
             "The provided yaml file contains a duplicated key: '{}'. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
             "of your file.".format(str(e))
         )
 
-    try:
-        schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
-        schema_utils_file = pkg_resources.resource_filename(
-            PACKAGE_NAME, RESPONSES_SCHEMA_FILE
-        )
-        schema_extensions = pkg_resources.resource_filename(
-            PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE
-        )
+    schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
+    schema_utils_file = pkg_resources.resource_filename(
+        PACKAGE_NAME, RESPONSES_SCHEMA_FILE
+    )
+    schema_extensions = pkg_resources.resource_filename(
+        PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE
+    )
 
-        c = Core(
-            source_data=source_data,
-            schema_files=[schema_file, schema_utils_file],
-            extensions=[schema_extensions],
-        )
+    c = Core(
+        source_data=source_data,
+        schema_files=[schema_file, schema_utils_file],
+        extensions=[schema_extensions],
+    )
+
+    try:
         c.validate(raise_exception=True)
     except SchemaError:
-        raise InvalidYamlFileError(
-            "Failed to validate yaml file. "
+        raise YamlValidationException(
             "Please make sure the file is correct and all "
-            "mandatory parameters are specified; to do so, "
-            "take a look at the errors logged during "
-            "validation previous to this exception."
+            "mandatory parameters are specified. Here are the errors "
+            "found during validation",
+            c.errors,
+            content=source_data,
         )
 
 

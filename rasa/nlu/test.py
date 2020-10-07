@@ -1998,11 +1998,3 @@ def log_entity_results(results: EntityMetrics, dataset_name: Text) -> None:
     for extractor, result in results.items():
         logger.info(f"Entity extractor: {extractor}")
         log_results(result, dataset_name)
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.nlu.test` directly is no longer supported. Please use "
-        "`rasa test` to test a combined Core and NLU model or `rasa test nlu` "
-        "to test an NLU model."
-    )

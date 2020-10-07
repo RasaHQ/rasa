@@ -28,37 +28,35 @@ pipeline:
 
 ### Sensible Starting Pipelines
 
-We recommend using following pipeline, if your training data is in English:
-
-```yaml-rasa (docs/sources/data/configs_for_docs/default_english_config.yml)
-```
-
-The pipeline contains the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) that provides pre-trained word embeddings of the user utterance.
+If you're starting from scratch, it's often helpful to start with pretrained word embeddings.
 Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
 For example, if you have a sentence like “I want to buy apples” in your training data, and Rasa is asked to predict
 the intent for “get pears”, your model already knows that the words “apples” and “pears” are very similar.
 This is especially useful if you don't have enough training data.
-The advantage of the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
-creates a contextual vector representation for the complete sentence.
-However, `ConveRT` is only available in English.
 
-If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
-the following pipeline:
+If you are getting started with a one of [spaCy's supported languages](https://spacy.io/usage/models#languages),
+we recommend the following pipeline:
 
 ```yaml-rasa (docs/sources/data/configs_for_docs/default_spacy_config.yml)
 ```
 
-It uses the [SpacyFeaturizer](./components.mdx#spacyfeaturizer) instead of the [ConveRTFeaturizer](./components.mdx#convertfeaturizer).
-[SpacyFeaturizer](./components.mdx#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
+It uses the [SpacyFeaturizer](./components.mdx#spacyfeaturizer), which provides 
+pre-trained word embeddings from either GloVe or fastText in many different languages
 (see [Language Models](./components.mdx#language-models)).
 
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific.
+
 If there are no word embeddings for your language or you have very domain specific terminology,
 we recommend using the following pipeline:
 
 ```yaml-rasa (docs/sources/data/configs_for_docs/default_config.yml)
 ```
+
+This pipeline uses the [CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer) to train
+on only the training data you provide. This pipeline can handle any language in which words are
+separated by spaces. If this is not the case for your language, check out [alternatives to the 
+WhitespaceTokenizer](./components.mdx#tokenizers).
 
 :::note
 If you want to use custom components in your pipeline, see [Custom NLU Components](./components.mdx).
@@ -128,9 +126,9 @@ pipeline:
 
 The image below shows the call order during the training of this pipeline:
 
+import componentLifecycleImg from './component-lifecycle-img.png';
 
-
-<img alt="Component Lifecycle" src={useBaseUrl("/img/component_lifecycle.png")} />
+<Image img={componentLifecycleImg} caption="Component Lifecycle" alt="The component lifecycle during training. Components are processed in the order they're listed in the configuration file. All components are created and initialized in order before they are trained in order and then persisted in order." />
 
 Before the first component is created using the `create` function, a so
 called `context` is created (which is nothing more than a python dict).
