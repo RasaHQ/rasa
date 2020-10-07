@@ -227,7 +227,7 @@ def event_verbosity_parameter(
         )
 
 
-async def get_tracker(
+async def get_tracker_with_session_start(
     processor: "MessageProcessor", conversation_id: Text
 ) -> DialogueStateTracker:
     """Get tracker object from `MessageProcessor`."""
@@ -238,13 +238,10 @@ async def get_tracker(
     return tracker  # pytype: disable=bad-return-type
 
 
-def get_tracker_for_all_conversation_sessions(
+def get_tracker(
     processor: "MessageProcessor", conversation_id: Text
 ) -> DialogueStateTracker:
-    """Retrieves tracker from `processor` containing all historical conversation
-    sessions.
-
-    This retrieval does not update the conversation session.
+    """Retrieves tracker from `processor` without updating the conversation session.
 
     Args:
 
@@ -494,7 +491,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
+        tracker = await get_tracker_with_session_start(app.agent.create_processor(), conversation_id)
 
         try:
             if until_time is not None:
@@ -604,9 +601,7 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-
-        # retrieve tracker and set to requested state
-        tracker = get_tracker_for_all_conversation_sessions(
+        tracker = get_tracker(
             app.agent.create_processor(), conversation_id
         )
 
@@ -647,7 +642,7 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
+                tracker = await get_tracker_with_session_start(
                     app.agent.create_processor(), conversation_id
                 )
                 output_channel = _get_output_channel(request, tracker)
@@ -665,7 +660,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
+        tracker = await get_tracker_with_session_start(app.agent.create_processor(), conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -696,7 +691,7 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
+                tracker = await get_tracker_with_session_start(
                     app.agent.create_processor(), conversation_id
                 )
                 output_channel = _get_output_channel(request, tracker)

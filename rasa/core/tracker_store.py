@@ -1126,6 +1126,7 @@ def tracker_store_with_full_conversation_retrieval(
         tracker_store: Tracker store to modify.
     """
     previous_value = tracker_store.load_events_from_previous_conversation_sessions
+
     tracker_store.load_events_from_previous_conversation_sessions = True
 
     try:

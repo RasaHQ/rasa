@@ -25,6 +25,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.server
 from rasa.core import utils
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.shared.core import events
 from rasa.core.agent import Agent
 from rasa.core.channels import (
@@ -35,7 +36,16 @@ from rasa.core.channels import (
     CallbackInput,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.shared.core.events import Event, UserUttered, SlotSet, BotUttered
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
+    Event,
+    UserUttered,
+    SlotSet,
+    BotUttered,
+    ActionExecuted,
+    SessionStarted,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -915,7 +925,8 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
 
 
 @pytest.mark.parametrize(
-    "params", ["?execute_side_effects=true&output_channel=callback", ""],
+    "params",
+    ["?execute_side_effects=true&output_channel=callback", ""],
 )
 def test_pushing_event_while_executing_side_effects(rasa_server: Sanic, params: Text):
     input_channel = CallbackInput(EndpointConfig("https://example.com/callback"))
@@ -1306,3 +1317,97 @@ def test_app_when_app_has_no_input_channels():
         request, DialogueStateTracker.from_events("default", [])
     )
     assert isinstance(actual, CollectingOutputChannel)
+
+
+@pytest.mark.parametrize(
+    "conversation_events,expected",
+    # conversation with one session
+    [
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+            ],
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet""",
+        ),
+        # conversation with multiple sessions
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi again", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+            ],
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi again
+  - action: utter_greet""",
+        ),
+        # empty conversation
+        (
+            [],
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps: []""",
+        ),
+    ],
+)
+def test_get_story(
+    rasa_app: SanicTestClient, conversation_events: List[Event], expected: Text
+):
+    conversation_id = "some-conversation-ID"
+
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        conversation_events,
+    )
+
+    tracker_store.save(tracker)
+
+    rasa_app.app.agent.tracker_store = tracker_store
+
+    _, response = rasa_app.get(f"/conversations/{conversation_id}/story")
+
+    assert response.status == 200
+    assert response.content.decode().strip() == expected
+
+
+def test_get_story_does_not_update_conversation_session(
+    rasa_app: SanicTestClient, conversation_events: List[Event], expected: Text
+):
+    conversation_id = "some-conversation-ID"
+
+    # domain with short session expiration time
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        conversation_events,
+    )
+
+    tracker_store.save(tracker)
+
+    rasa_app.app.agent.tracker_store = tracker_store
+
+    _, response = rasa_app.get(f"/conversations/{conversation_id}/story")
+
+    assert response.status == 200
+    assert response.content.decode().strip() == expected
