@@ -229,9 +229,7 @@ class RedisLockStore(LockStore):
 
         if not prefix:
             self.prefix = "lock:"
-        elif (prefix is not None) and (
-            (isinstance(prefix, str)) and (prefix.isalnum())
-        ):
+        elif isinstance(prefix, str) and prefix.isalnum():
             self.prefix = prefix + ":lock:"
         else:
             self.prefix = "lock:"
