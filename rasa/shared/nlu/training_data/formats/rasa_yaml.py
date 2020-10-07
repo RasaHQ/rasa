@@ -380,9 +380,12 @@ class RasaYAMLWriter(TrainingDataWriter):
         """
         result = self.training_data_to_yaml(training_data)
 
-        rasa.shared.utils.io.write_yaml(result, target, True)
+        if result:
+            rasa.shared.utils.io.write_yaml(result, target, True)
 
-    def training_data_to_yaml(self, training_data: "TrainingData") -> OrderedDict:
+    def training_data_to_yaml(
+        self, training_data: "TrainingData"
+    ) -> Optional[OrderedDict]:
         """Converts NLU training data to a dict/list structure ready to be
         serialized as YAML.
 
@@ -402,7 +405,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         nlu_items.extend(self.process_lookup_tables(training_data))
 
         if not any([nlu_items, training_data.responses]):
-            return
+            return None
 
         result = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
