@@ -288,6 +288,29 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   The model is stored to whatever location has been specified with the `--out` parameter when calling `rasa train nlu/core ...`.
 - [#6024](https://github.com/rasahq/rasa/issues/6024): `rasa data split nlu` now makes sure that there is at least one example per
   intent and response in the test data.
+- [#6039](https://github.com/rasahq/rasa/issues/6039): The method `ensure_consistent_bilou_tagging` now also considers the confidence values of the predicted tags
+  when updating the BILOU tags.
+- [#6045](https://github.com/rasahq/rasa/issues/6045): We updated the way how we save and use features in our NLU pipeline.
+
+  The message object now has a dedicated field, called `features`, to store the
+  features that are generated in the NLU pipeline. We adapted all our featurizers in a
+  way that sequence and sentence features are stored independently. This allows us to
+  keep different kind of features for the sequence and the sentence. For example, the
+  `LexicalSyntacticFeaturizer` does not produce any sentence features anymore as our
+  experiments showed that those did not bring any performance gain just quite a lot of
+  additional values to store.
+
+  We also modified the DIET architecture to process the sequence and sentence
+  features independently at first. The features are concatenated just before
+  the transformer.
+
+  We also removed the `__CLS__` token again. Our Tokenizers will not
+  add this token anymore.
+
+  :::caution
+  This change is model-breaking. Please retrain your models.
+
+  :::
 - [#6052](https://github.com/rasahq/rasa/issues/6052): Add endpoint kwarg to `rasa.jupyter.chat` to enable using a custom action server while chatting with a model in a jupyter notebook.
 - [#6055](https://github.com/rasahq/rasa/issues/6055): Support for rasa conversation id with special characters on the server side - necessary for some channels (e.g. Viber)
 - [#6123](https://github.com/rasahq/rasa/issues/6123): Add support for proxy use in [slack](./connectors/slack.mdx) input channel.
@@ -504,6 +527,9 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#4441](https://github.com/rasahq/rasa/issues/4441): Added documentation on `ambiguity_threshold` parameter in Fallback Actions page.
 - [#4605](https://github.com/rasahq/rasa/issues/4605): Remove outdated whitespace tokenizer warning in Testing Your Assistant documentation.
 - [#5640](https://github.com/rasahq/rasa/issues/5640): Updated Facebook Messenger channel docs with supported attachment information
+- [#5675](https://github.com/rasahq/rasa/issues/5675): Update `rasa shell` documentation to explain how to recreate external
+  channel session behavior.
+- [#5811](https://github.com/rasahq/rasa/issues/5811): Event brokers documentation should say `url` instead of `host`.
 - [#5952](https://github.com/rasahq/rasa/issues/5952): Update `rasa init` documentation to include `tests/conversation_tests.md`
   in the resulting directory tree.
 - [#6819](https://github.com/rasahq/rasa/issues/6819): Update ["Validating Form Input" section](./forms.mdx#validating-form-input) to include details about 
