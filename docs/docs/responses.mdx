@@ -7,12 +7,9 @@ abstract: Responses are messages that your assistant sends to the user. A respon
 ---
 ## Defining Responses
 
-Responses go under the `responses` key in your [domain](./domain.mdx) file. Start each
-response name with `utter_`.
 
 Responses go under the `responses` key in your domain file or in a separate "responses.yml" file. Each response name should start with `utter_`.
-This response name is the key you should list your response under.
-
+For example, you could add responses for greeting and saying goodbye under the response names `utter_greet` and `utter_bye`:
 
 ```yaml-rasa {4-8} title="domain.yml"
 intents:
@@ -226,9 +223,9 @@ responses:
 
 ### Calling Responses as Actions
 
-1. If the name of the response starts with `utter_`, the response can
-   directly be used as an action, without being listed in the `actions` section of your domain. You would add the response
-   to the domain:
+If the name of the response starts with `utter_`, the response can
+directly be used as an action, without being listed in the `actions` section of your domain. You would add the response
+to the domain:
 
 
 ```yaml-rasa title="domain.yml"
@@ -259,32 +256,32 @@ you need to retrain the assistant before these changes will be picked up.
 ### Calling Responses from Custom Actions
 
 
-2. You can use the responses to generate response messages from your
-   custom actions. If you're using Rasa SDK as your action server, you can use the dispatcher to generate the response message, for example: 
+You can use the responses to generate response messages from your
+custom actions. If you're using Rasa SDK as your action server, you can use the dispatcher to generate the response message, for example: 
 
-  ```python {8} title="actions.py"
-  from rasa_sdk.interfaces import Action
+```python {8} title="actions.py"
+from rasa_sdk.interfaces import Action
 
-  class ActionGreet(Action):
-      def name(self):
-          return 'action_greet'
+class ActionGreet(Action):
+    def name(self):
+        return 'action_greet'
 
-      def run(self, dispatcher, tracker, domain):
-          dispatcher.utter_message(template="utter_greet")
-          return []
-  ```
+    def run(self, dispatcher, tracker, domain):
+        dispatcher.utter_message(template="utter_greet")
+        return []
+```
 
-  If you use a
-  [different custom action server](https://rasa.com/docs/action-server#other-action-servers),
-  your server should return the following JSON to call the `utter_greet` response:
+If you use a
+[different custom action server](https://rasa.com/docs/action-server#other-action-servers),
+your server should return the following JSON to call the `utter_greet` response:
 
-  ```json {5}
-  {
-    "events":[],
-    "responses":[
-      {
-        "template":"utter_greet"
-      }
-    ]
-  }
-  ```
+```json {5}
+{
+  "events":[],
+  "responses":[
+    {
+      "template":"utter_greet"
+    }
+  ]
+}
+```
