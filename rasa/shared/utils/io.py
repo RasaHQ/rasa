@@ -366,22 +366,23 @@ def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     write_text_file(json.dumps(obj, indent=2), filename)
 
 
-def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
-    import ruamel.yaml
+def dump_obj_as_yaml_to_string(
+    obj: Any, should_preserve_key_order: bool = False
+) -> Text:
+    """Writes data (python dict) to a yaml string.
 
-    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
-    yaml_writer.unicode_supplementary = True
-    yaml_writer.default_flow_style = False
-    yaml_writer.version = YAML_VERSION
+    Args:
+        obj: The object to dump. Has to be serializable.
+        should_preserve_key_order: Whether to force preserve key order in `data`.
 
-    yaml_writer.dump(obj, output)
+    Returns:
+        The object converted to a YAML string.
+    """
+    buffer = StringIO()
 
+    write_yaml(obj, buffer, should_preserve_key_order=should_preserve_key_order)
 
-def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
-    """Writes data (python dict) to a yaml string."""
-    str_io = StringIO()
-    _dump_yaml(obj, str_io)
-    return str_io.getvalue()
+    return buffer.getvalue()
 
 
 def create_directory(directory_path: Text) -> None:

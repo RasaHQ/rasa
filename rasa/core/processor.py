@@ -20,6 +20,7 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     REQUESTED_SLOT,
+    SLOTS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -567,7 +568,7 @@ class MessageProcessor:
         """Check whether the maximum number of predictions has been met.
 
         Args:
-            num_predictes_actions: Number of predicted actions.
+            num_predicted_actions: Number of predicted actions.
             should_predict_another_action: Whether the last executed action allows
             for more actions to be predicted or not.
 
@@ -745,7 +746,7 @@ class MessageProcessor:
             return
 
         fp = self.policy_ensemble.action_fingerprints[action_name]
-        slots_seen_during_train = fp.get("slots", set())
+        slots_seen_during_train = fp.get(SLOTS, set())
         for e in events:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)

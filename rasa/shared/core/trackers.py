@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 from collections import deque
 from enum import Enum
 from typing import (
@@ -60,6 +61,8 @@ from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
+    from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+
 
 logger = logging.getLogger(__name__)
 
@@ -603,22 +606,38 @@ class DialogueStateTracker:
         )
         return Story.from_events(self.applied_events(), story_name)
 
-    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
+    def export_stories(
+        self,
+        writer: "StoryWriter",
+        e2e: bool = False,
+        include_source: bool = False,
+        should_append_stories: bool = False,
+    ) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns:
             The dumped tracker as a string.
         """
+
         # TODO: we need to revisit all usages of this, the caller needs to specify
         #       the format. this likely points to areas where we are not properly
         #       handling markdown vs yaml
         story = self.as_story(include_source)
-        return story.as_story_string(flat=True, e2e=e2e)
 
-    def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
+        return writer.dumps(
+            story.story_steps, is_appendable=should_append_stories, is_test_story=e2e
+        )
+
+    def export_stories_to_file(self, export_path: Text = "debug_stories.yml") -> None:
         """Dump the tracker as a story to a file."""
+        from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+            YAMLStoryWriter,
+        )
+
+        append = not os.path.exists(export_path)
+
         rasa.shared.utils.io.write_text_file(
-            self.export_stories() + "\n", export_path, append=True
+            self.export_stories(YAMLStoryWriter()) + "\n", export_path, append=append
         )
 
     def get_last_event_for(

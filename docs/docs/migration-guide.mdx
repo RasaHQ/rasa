@@ -2,7 +2,9 @@
 id: migration-guide
 sidebar_label: Version Migration Guide
 title: Version Migration Guide
-description: Information about changes between major versions of chatbot framework Rasa Core and how you can migrate from one version to another.
+description: |
+  Information about changes between major versions of chatbot framework Rasa Core
+  and how you can migrate from one version to another.
 ---
 
 This page contains information about changes between major versions and
@@ -28,6 +30,18 @@ how you can migrate from one version to another.
 * The deprecated `KerasPolicy` has been removed. If you used this
   component in your `policies` configuration (`config.yml`) you can replace it
   with `TEDPolicy`. It accepts the same configuration parameters.
+
+* [Conversation sessions](domain.mdx#session-configuration) are now enabled by default
+  if your [Domain](domain.mdx) does not contain a session configuration. Previously a
+  missing session configuration was treated as if conversation sessions were disabled.
+  You can explicitly disable conversation sessions using the following snippet:
+
+  ```yaml-rasa title="domain.yml"
+  session_config:
+    # A session expiration time of `0`
+    # disables conversation sessions
+    session_expiration_time: 0
+  ```
 
 ### Training data files
 
@@ -215,13 +229,17 @@ information.
 As of Rasa Open Source 2.0 the logic for [Forms](./forms.mdx) has been moved from the
 Rasa SDK to Rasa Open Source to simplify implementations of custom action libraries.
 This means that you no longer need to use the `FormAction` when implementing custom
-actions with the Python SDK. Instead you can use a regular `Action` to validate and
+actions with the Python SDK. Instead you can `FormValidationAction` to validate and
 request slots.
 
 It is now recommended to move the slot mappings from your custom action to the
 [Domain](./domain.mdx) of your bot. Consider a custom form action like this:
 
 ```python
+from typing import Text, List, Any, Dict, Union
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.forms  import FormAction
 
 class RestaurantForm(FormAction):
     def name(self) -> Text:
@@ -328,20 +346,15 @@ actions:
 Then add a custom action which validates the `cuisine` slot:
 
 ```python
-class RestaurantFormValidator(Action):
+from typing import Text, List, Any, Dict, Union
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk import FormValidationAction
+from rasa_sdk.types import DomainDict
+
+class RestaurantFormValidator(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
-
-    def run(
-        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
-    ) -> List[EventType]:
-        extracted_slots: Dict[Text, Any] = tracker.form_slots_to_validate()
-
-        cuisine_slot_value = extracted_slots.get("cuisine")
-        validated_slot_event = self.validate_cuisine(
-            cuisine_slot_value, dispatcher, tracker, domain
-        )
-        return [validated_slot_event]
 
     @staticmethod
     def cuisine_db() -> List[Text]:
@@ -351,21 +364,20 @@ class RestaurantFormValidator(Action):
 
     def validate_cuisine(
         self,
-        value: Text,
+        slot_value: Any,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> EventType:
+        domain: DomainDict,
+    ) -> Dict[Text, Any]:
         """Validate cuisine value."""
 
-        if value.lower() in self.cuisine_db():
+        if slot_value.lower() in self.cuisine_db():
             # validation succeeded, set the value of the "cuisine" slot to value
-            return SlotSet("cuisine", value)
+            return {"cuisine": slot_value}
         else:
-            dispatcher.utter_message(template="utter_wrong_cuisine")
             # validation failed, set this slot to None, meaning the
             # user will be asked for the slot again
-            return SlotSet("cuisine", None)
+            return {"cuisine": None}
 ```
 
 Please see [Forms](./forms.mdx) if you have further customizations in your

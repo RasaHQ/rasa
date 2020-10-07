@@ -1085,8 +1085,8 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 * **Description**
 
   This classifier uses MITIE to perform intent classification. The underlying classifier
-  is using a multi-class linear SVM with a sparse linear kernel (see
-  [MITIE trainer code](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222)).
+  is using a multi-class linear SVM with a sparse linear kernel (see `train_text_categorizer_classifier` function at the
+  [MITIE trainer code](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp)).
 
   :::note
   This classifier does not rely on any featurizer as it extracts features on its own.
