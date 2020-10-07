@@ -48,6 +48,7 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
+import rasa.otel
 
 logger = logging.getLogger(__name__)
 
@@ -514,8 +515,11 @@ class Agent:
 
         processor = self.create_processor(message_preprocessor)
 
-        async with self.lock_store.lock(message.sender_id):
-            return await processor.handle_message(message)
+        with rasa.otel.tracer.start_span("lock_store", attributes={"channel": message.input_channel, "sender_id": message.sender_id, "message_id": message.message_id}):
+        #with rasa.otel.tracer.start_span("lock_store"):
+            async with self.lock_store.lock(message.sender_id):
+                with rasa.otel.tracer.start_span("handle_message"):
+                    return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal
     async def predict_next(

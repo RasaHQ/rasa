@@ -17,6 +17,7 @@ from typing import (
 
 from rasa.cli import utils as cli_utils
 from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
+import rasa.otel
 
 try:
     from urlparse import urljoin  # pytype: disable=import-error
@@ -81,7 +82,9 @@ def register(
     input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]
 ) -> None:
     async def handler(*args, **kwargs):
-        await app.agent.handle_message(*args, **kwargs)
+        with rasa.otel.tracer.start_span("channel.handler", attributes={"channel": args[0].input_channel, "sender_id": args[0].sender_id, "message_id": args[0].message_id}):
+        #with rasa.otel.tracer.start_span("channel.handler"):
+            await app.agent.handle_message(*args, **kwargs)
 
     for channel in input_channels:
         if route:

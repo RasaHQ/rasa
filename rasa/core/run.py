@@ -25,6 +25,7 @@ from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
 from sanic import Sanic
 from asyncio import AbstractEventLoop
+import rasa.otel
 
 logger = logging.getLogger()  # get the root logger
 
@@ -242,11 +243,12 @@ async def load_agent_on_start(
 
     # noinspection PyBroadException
     try:
-        with model.get_model(model_path) as unpacked_model:
-            _, nlu_model = model.get_model_subdirectories(unpacked_model)
-            _interpreter = rasa.core.interpreter.create_interpreter(
-                endpoints.nlu or nlu_model
-            )
+        with rasa.otel.tracer.tracer.start_span("parse_message"):
+            with model.get_model(model_path) as unpacked_model:
+                _, nlu_model = model.get_model_subdirectories(unpacked_model)
+                _interpreter = rasa.core.interpreter.create_interpreter(
+                    endpoints.nlu or nlu_model
+                )
     except Exception:
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None

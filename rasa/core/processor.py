@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 
-from rasa.tracer import Tracer
+import rasa.otel
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -81,28 +81,33 @@ class MessageProcessor:
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
 
-        # preprocess message if necessary
-        tracker = await self.log_message(message, should_save_tracker=False)
-        if not tracker:
-            return None
+        # preprocess message if 
+        with rasa.otel.tracer.start_span("log_message"):
+            tracker = await self.log_message(message, should_save_tracker=False)
+            if not tracker:
+                return None
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-            rasa.shared.utils.io.raise_warning(
-                "No policy ensemble or domain set. Skipping action prediction "
-                "and execution.",
-                docs=DOCS_URL_POLICIES,
-            )
-            return None
+            with rasa.otel.tracer.start_span("save_tracker"):
+                self._save_tracker(tracker)
+                rasa.shared.utils.io.raise_warning(
+                    "No policy ensemble or domain set. Skipping action prediction "
+                    "and execution.",
+                    docs=DOCS_URL_POLICIES,
+                )
+                return None
 
-        await self._predict_and_execute_next_action(message.output_channel, tracker)
+        with rasa.otel.tracer.start_span("_predict_and_execute_next_action", attributes={"intent_name": tracker.latest_message.intent_name}):
+            await self._predict_and_execute_next_action(message.output_channel, tracker)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        with rasa.otel.tracer.start_span("save_tracker"):
+            self._save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
-            return message.output_channel.messages
+            with rasa.otel.tracer.start_span("output_channel"):
+                return message.output_channel.messages
         else:
             return None
 
@@ -464,7 +469,8 @@ class MessageProcessor:
         """
         # preprocess message if necessary
         if self.message_preprocessor is not None:
-            text = self.message_preprocessor(message.text)
+            with rasa.otel.tracer.start_span("message_preprocessor"):
+                text = self.message_preprocessor(message.text)
         else:
             text = message.text
 
@@ -472,13 +478,15 @@ class MessageProcessor:
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
         if text.startswith(INTENT_MESSAGE_PREFIX):
-            parse_data = await RegexInterpreter().parse(
-                text, message.message_id, tracker
-            )
+            with rasa.otel.tracer.start_span("RegexInterpreter.parse"):
+                parse_data = await RegexInterpreter().parse(
+                    text, message.message_id, tracker
+                )
         else:
-            parse_data = await self.interpreter.parse(
-                text, message.message_id, tracker, metadata=message.metadata
-            )
+            with rasa.otel.tracer.start_span("interpreter.parse"):
+                parse_data = await self.interpreter.parse(
+                    text, message.message_id, tracker, metadata=message.metadata
+                )
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
@@ -487,7 +495,8 @@ class MessageProcessor:
             )
         )
 
-        self._check_for_unseen_features(parse_data)
+        with rasa.otel.tracer.start_span("_check_for_unseen_features"):
+            self._check_for_unseen_features(parse_data)
 
         return parse_data
 
@@ -498,11 +507,8 @@ class MessageProcessor:
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            self.tracer = Tracer().t
-            span = self.tracer.start_span('parse_message')
-            #with tracer.start_span('parse_message') as span:
-            parse_data = await self.parse_message(message, tracker)
-            span.finish()
+            with rasa.otel.tracer.start_span("parse_message"):
+                parse_data = await self.parse_message(message, tracker)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
@@ -565,11 +571,13 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
-            action, policy, confidence = self.predict_next_action(tracker)
+            with rasa.otel.tracer.start_span("predict_next_action"):
+                action, policy, confidence = self.predict_next_action(tracker)
 
-            should_predict_another_action = await self._run_action(
-                action, tracker, output_channel, self.nlg, policy, confidence
-            )
+            with rasa.otel.tracer.start_span("_run_action"):
+                should_predict_another_action = await self._run_action(
+                    action, tracker, output_channel, self.nlg, policy, confidence
+                )
             num_predicted_actions += 1
 
         if self.is_action_limit_reached(
