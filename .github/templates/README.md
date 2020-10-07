@@ -54,5 +54,5 @@ The template reads a file with a report (the report file is available as an arti
 #### How to run locally
 
 ```
-gomplate -d data=report.json -f .github/templates/model_regression_test_results.tmpl
+gomplate -d data=report.json -d results_master=report_master.json -f .github/templates/model_regression_test_results.tmpl
 ```
