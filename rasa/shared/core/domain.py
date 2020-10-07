@@ -151,7 +151,7 @@ class Domain:
             )
         except YamlException as e:
             e.filename = original_filename
-            raise InvalidDomain(str(e))
+            raise e
 
         data = rasa.shared.utils.io.read_yaml(yaml)
         if not rasa.shared.utils.validation.validate_training_data_format_version(
