@@ -360,7 +360,7 @@ class Domain:
         """Get entity properties for a domain from what is provided by a domain file.
 
         Args:
-            entities: The entities as provided by a domain file.
+            domain_entities: The entities as provided by a domain file.
 
         Returns:
             A list of entity names.
