@@ -15,7 +15,7 @@ class KafkaEventBroker(EventBroker):
         topic: Text = "rasa_core_events",
         client_id: Optional[Text] = None,
         group_id: Optional[Text] = None,
-        sasl_username: Union[Text, int, None] = None,
+        sasl_username: Optional[Text] = None,
         sasl_password: Optional[Text] = None,
         ssl_cafile: Optional[Text] = None,
         ssl_certfile: Optional[Text] = None,
@@ -29,39 +29,31 @@ class KafkaEventBroker(EventBroker):
 
         Args:
             url: 'url[:port]' string (or list of 'url[:port]'
-                strings) that the consumer should contact to bootstrap initial
+                strings) that the producer should contact to bootstrap initial
                 cluster metadata. This does not have to be the full node list.
                 It just needs to have at least one broker that will respond to a
-                Metadata API Request. The default port is 9092. If no servers are
-                specified, it will default to `localhost:9092`.
-            topic: Topics to subscribe to. If not set, call subscribe() or assign()
-                before consuming records
+                Metadata API Request.
+            topic: Topics to subscribe to.
             client_id: A name for this client. This string is passed in each request
                 to servers and can be used to identify specific server-side log entries
                 that correspond to this client. Also submitted to `GroupCoordinator` for
-                logging with respect to consumer group administration.
-                Default: ‘kafka-python-{version}’
-            group_id: The name of the consumer group to join for dynamic partition
+                logging with respect to producer group administration.
+            group_id: The name of the producer group to join for dynamic partition
                 assignment (if enabled), and to use for fetching and committing offsets.
                 If None, auto-partition assignment (via group coordinator) and offset
-                commits are disabled. Default: None
-            sasl_username: Username for sasl PLAIN authentication.
-                Required if `sasl_mechanism` is `PLAIN`.
-            sasl_password: Password for sasl PLAIN authentication.
-                Required if `sasl_mechanism` is PLAIN.
+                commits are disabled.
+            sasl_username: Username for plain authentication.
+            sasl_password: Password for plain authentication.
             ssl_cafile: Optional filename of ca file to use in certificate
-                verification. Default: None.
+                verification.
             ssl_certfile: Optional filename of file in pem format containing
                 the client certificate, as well as any ca certificates needed to
-                establish the certificate's authenticity. Default: None.
+                establish the certificate's authenticity.
             ssl_keyfile: Optional filename containing the client private key.
-                Default: None.
             ssl_check_hostname: Flag to configure whether ssl handshake
                 should verify that the certificate matches the brokers hostname.
-                Default: False.
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
-                Default: PLAINTEXT.
             loglevel: Logging level of the kafka logger.
 
         """
@@ -80,7 +72,7 @@ class KafkaEventBroker(EventBroker):
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
 
-        self.consumer: Optional[kafka.KafkaConsumer] = None
+        self.producer: Optional[kafka.KafkaConsumer] = None
 
         logging.getLogger("kafka").setLevel(loglevel)
 
@@ -100,7 +92,7 @@ class KafkaEventBroker(EventBroker):
         import kafka
 
         if self.security_protocol == "PLAINTEXT":
-            self.consumer = kafka.KafkaConsumer(
+            self.producer = kafka.KafkaConsumer(
                 self.topic,
                 bootstrap_servers=self.url,
                 client_id=self.client_id,
@@ -128,7 +120,7 @@ class KafkaEventBroker(EventBroker):
                 security_protocol=self.security_protocol,
             )
         elif self.security_protocol == "SASL_SSL":
-            self.consumer = kafka.KafkaConsumer(
+            self.producer = kafka.KafkaConsumer(
                 self.topic,
                 bootstrap_servers=self.url,
                 client_id=self.client_id,

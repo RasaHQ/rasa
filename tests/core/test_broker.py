@@ -218,8 +218,8 @@ def test_kafka_broker_from_config():
     "file,exception",
     [
         # `_create_producer()` raises `kafka.errors.NoBrokersAvailable` exception
-        # which means that configuration seems correct but a connection to
-        # broker cannot be established
+        # which means that the configuration seems correct but a connection to
+        # the broker cannot be established
         ("kafka_sasl_plaintext_endpoint.yml", kafka.errors.NoBrokersAvailable),
         ("kafka_plaintext_endpoint.yml", kafka.errors.NoBrokersAvailable),
         ("kafka_sasl_ssl_endpoint.yml", kafka.errors.NoBrokersAvailable),
