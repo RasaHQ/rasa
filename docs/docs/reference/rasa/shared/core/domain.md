@@ -127,6 +127,26 @@ Returns the number of available actions.
 
 Number of used input states for the action prediction.
 
+#### retrieval\_intent\_templates
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | retrieval_intent_templates() -> Dict[Text, List[Dict[Text, Any]]]
+```
+
+Return only the templates which are defined for retrieval intents
+
+#### is\_retrieval\_intent\_template
+
+```python
+ | @staticmethod
+ | is_retrieval_intent_template(template: Tuple[Text, List[Dict[Text, Any]]]) -> bool
+```
+
+Check if the response template is for a retrieval intent.
+
+These templates have a `/` symbol in their name. Use that to filter them from the rest.
+
 #### add\_categorical\_slot\_default\_value
 
 ```python
