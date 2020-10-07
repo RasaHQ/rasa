@@ -11,33 +11,33 @@ logger = logging.getLogger(__name__)
 
 
 class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
-    """Natural language generator that generates messages based on templates.
+    """Natural language generator that generates messages based on responses.
 
-    The templates can use variables to customize the utterances based on the
+    The responses can use variables to customize the utterances based on the
     state of the dialogue."""
 
-    def __init__(self, templates: Dict[Text, List[Dict[Text, Any]]]) -> None:
-        self.templates = templates
+    def __init__(self, responses: Dict[Text, List[Dict[Text, Any]]]) -> None:
+        self.responses = responses
 
-    def _templates_for_utter_action(
+    def _responses_for_utter_action(
         self, utter_action: Text, output_channel: Text
     ) -> List[Dict[Text, Any]]:
-        """Return array of templates that fit the channel and action."""
+        """Return array of responses that fit the channel and action."""
 
-        channel_templates = []
-        default_templates = []
+        channel_responses = []
+        default_responses = []
 
-        for template in self.templates[utter_action]:
+        for template in self.responses[utter_action]:
             if template.get("channel") == output_channel:
-                channel_templates.append(template)
+                channel_responses.append(template)
             elif not template.get("channel"):
-                default_templates.append(template)
+                default_responses.append(template)
 
-        # always prefer channel specific templates over default ones
-        if channel_templates:
-            return channel_templates
+        # always prefer channel specific responses over default ones
+        if channel_responses:
+            return channel_responses
         else:
-            return default_templates
+            return default_responses
 
     # noinspection PyUnusedLocal
     def _random_template_for(
@@ -45,18 +45,18 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     ) -> Optional[Dict[Text, Any]]:
         """Select random template for the utter action from available ones.
 
-        If channel-specific templates for the current output channel are given,
+        If channel-specific responses for the current output channel are given,
         only choose from channel-specific ones.
         """
         import numpy as np
 
-        if utter_action in self.templates:
-            suitable_templates = self._templates_for_utter_action(
+        if utter_action in self.responses:
+            suitable_responses = self._responses_for_utter_action(
                 utter_action, output_channel
             )
 
-            if suitable_templates:
-                return np.random.choice(suitable_templates)
+            if suitable_responses:
+                return np.random.choice(suitable_responses)
             else:
                 return None
         else:
@@ -99,7 +99,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         filled_slots: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> Dict[Text, Any]:
-        """Combine slot values and key word arguments to fill templates."""
+        """Combine slot values and key word arguments to fill responses."""
 
         # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
@@ -124,7 +124,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     def _template_variables(
         filled_slots: Dict[Text, Any], kwargs: Dict[Text, Any]
     ) -> Dict[Text, Any]:
-        """Combine slot values and key word arguments to fill templates."""
+        """Combine slot values and key word arguments to fill responses."""
 
         if filled_slots is None:
             filled_slots = {}

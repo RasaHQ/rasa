@@ -359,5 +359,5 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     assert domain.retrieval_intents == ["chitchat"]
     assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
     assert domain.retrieval_intent_templates == nlu_data.responses
-    assert domain.templates != nlu_data.responses
+    assert domain.responses != nlu_data.responses
     assert "utter_chitchat" in domain.action_names

@@ -1378,7 +1378,7 @@ async def test_one_stage_fallback_rule():
     # Fallback action reverts fallback events, next action is `ACTION_LISTEN`
     conversation_events += await ActionDefaultFallback().run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )

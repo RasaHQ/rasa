@@ -81,7 +81,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     assert loaded.domain.action_names == moodbot_domain.action_names
     assert loaded.domain.intents == moodbot_domain.intents
     assert loaded.domain.entities == moodbot_domain.entities
-    assert loaded.domain.templates == moodbot_domain.templates
+    assert loaded.domain.responses == moodbot_domain.responses
     assert [s.name for s in loaded.domain.slots] == [
         s.name for s in moodbot_domain.slots
     ]

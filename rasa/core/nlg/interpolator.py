@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
-    """Interpolate values into templates with placeholders.
+    """Interpolate values into responses with placeholders.
 
     Transform template tags from "{tag_name}" to "{0[tag_name]}" as described here:
     https://stackoverflow.com/questions/7934620/python-dots-in-the-name-of-variable-in-a-format-string#comment9695339_7934969

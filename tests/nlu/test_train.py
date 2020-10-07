@@ -27,7 +27,7 @@ def as_pipeline(*components):
 
 
 def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
-    # these templates really are just for testing
+    # these responses really are just for testing
     # every component should be in here so train-persist-load-use cycle can be
     # tested they still need to be in a useful order - hence we can not simply
     # generate this automatically.

@@ -694,9 +694,7 @@ async def track_model_training(
             "num_intent_examples": len(nlu_data.intent_examples),
             "num_entity_examples": len(nlu_data.entity_examples),
             "num_actions": len(domain.action_names),
-            # Old nomenclature from when 'responses' were still called
-            # 'templates' in the domain
-            "num_templates": len(domain.templates),
+            "num_responses": len(domain.responses),
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),

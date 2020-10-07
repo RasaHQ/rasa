@@ -310,13 +310,13 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     stories = await file_importer.get_stories()
     nlu_data = await file_importer.get_nlu_data()
 
-    responses = domain.templates
+    responses = domain.responses
 
     # Do a copy of the domain to not change the actual domain (shallow is enough)
     domain = copy.copy(domain)
     # don't include the response texts in the fingerprint.
     # Their fingerprint is separate.
-    domain.templates = []
+    domain.responses = []
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_hash_of_config(config, exclude_keys=CONFIG_KEYS),

@@ -192,7 +192,7 @@ def test_avoid_action_repetition():
     assert len(domain.action_names) == len(domain_with_no_actions.action_names)
 
 
-def test_utter_templates():
+def test_utter_responses():
     domain_file = "examples/moodbot/domain.yml"
     domain = Domain.load(domain_file)
     expected_template = {
@@ -349,7 +349,7 @@ responses:
     # single attribute should be taken from domain_1
     assert domain.store_entities_as_slots
     # conflicts should be taken from domain_1
-    assert domain.templates == {
+    assert domain.responses == {
         "utter_greet": [{"text": "hey there!"}],
         "utter_goodbye": [{"text": "bye!"}],
     }
@@ -365,7 +365,7 @@ responses:
     # single attribute should be taken from domain_2
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
-    assert domain.templates == {
+    assert domain.responses == {
         "utter_greet": [{"text": "hey you!"}],
         "utter_goodbye": [{"text": "bye!"}],
     }
@@ -716,7 +716,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[],
-            templates={},
+            responses={},
             action_names=["random_name", "random_name"],
             forms=[],
         )
@@ -726,7 +726,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[TextSlot("random_name"), TextSlot("random_name")],
-            templates={},
+            responses={},
             action_names=[],
             forms=[],
         )
@@ -736,7 +736,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=["random_name", "random_name", "other_name", "other_name"],
             slots=[],
-            templates={},
+            responses={},
             action_names=[],
             forms=[],
         )
@@ -746,7 +746,7 @@ def test_check_domain_sanity_on_invalid_domain():
             intents={},
             entities=[],
             slots=[],
-            templates={},
+            responses={},
             action_names=[],
             forms=["random_name", "random_name"],
         )
@@ -762,9 +762,9 @@ def test_load_on_invalid_domain_duplicate_actions():
         Domain.load("data/test_domains/duplicate_actions.yml")
 
 
-def test_load_on_invalid_domain_duplicate_templates():
+def test_load_on_invalid_domain_duplicate_responses():
     with pytest.raises(YamlSyntaxException):
-        Domain.load("data/test_domains/duplicate_templates.yml")
+        Domain.load("data/test_domains/duplicate_responses.yml")
 
 
 def test_load_on_invalid_domain_duplicate_entities():

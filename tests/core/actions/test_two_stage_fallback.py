@@ -54,7 +54,7 @@ async def test_ask_affirmation():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -83,7 +83,7 @@ async def test_1st_affirmation_is_successful():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -116,7 +116,7 @@ async def test_give_it_up_after_low_confidence_after_affirm_request():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -151,7 +151,7 @@ async def test_ask_rephrase_after_failed_affirmation():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -188,7 +188,7 @@ async def test_ask_rephrasing_successful():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -227,7 +227,7 @@ async def test_ask_affirm_after_rephrasing():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -264,7 +264,7 @@ async def test_2nd_affirm_successful():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -312,7 +312,7 @@ async def test_2nd_affirmation_failed(intent_which_lets_action_give_up: Text):
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )

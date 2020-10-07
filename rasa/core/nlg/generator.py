@@ -22,7 +22,7 @@ class NaturalLanguageGenerator:
         """Generate a response for the requested template.
 
         There are a lot of different methods to implement this, e.g. the
-        generation can be based on templates or be fully ML based by feeding
+        generation can be based on responses or be fully ML based by feeding
         the dialogue state into a machine learning NLG model."""
         raise NotImplementedError
 
@@ -50,7 +50,7 @@ def _create_from_endpoint_config(
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
         # this is the default type if no endpoint config is set
-        nlg = TemplatedNaturalLanguageGenerator(domain.templates)
+        nlg = TemplatedNaturalLanguageGenerator(domain.responses)
     elif endpoint_config.type is None or endpoint_config.type.lower() == "callback":
         from rasa.core.nlg import CallbackNaturalLanguageGenerator
 
@@ -59,7 +59,7 @@ def _create_from_endpoint_config(
     elif endpoint_config.type.lower() == "template":
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
-        nlg = TemplatedNaturalLanguageGenerator(domain.templates)
+        nlg = TemplatedNaturalLanguageGenerator(domain.responses)
     else:
         nlg = _load_from_module_name_in_endpoint_config(endpoint_config, domain)
 

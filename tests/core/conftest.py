@@ -145,7 +145,7 @@ async def default_processor(default_agent: Agent) -> MessageProcessor:
         default_agent.policy_ensemble,
         default_agent.domain,
         tracker_store,
-        TemplatedNaturalLanguageGenerator(default_agent.domain.templates),
+        TemplatedNaturalLanguageGenerator(default_agent.domain.responses),
     )
 
 
@@ -199,7 +199,7 @@ def moodbot_metadata(unpacked_trained_moodbot_path: Text) -> PolicyEnsemble:
 
 @pytest.fixture
 def default_nlg(default_domain: Domain) -> NaturalLanguageGenerator:
-    return TemplatedNaturalLanguageGenerator(default_domain.templates)
+    return TemplatedNaturalLanguageGenerator(default_domain.responses)
 
 
 @pytest.fixture

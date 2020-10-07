@@ -45,7 +45,7 @@ responses:
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -79,7 +79,7 @@ async def test_activate_with_prefilled_slot():
     domain = Domain.from_yaml(domain)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -120,7 +120,7 @@ async def test_activate_and_immediate_deactivate():
     domain = Domain.from_yaml(domain)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -159,7 +159,7 @@ async def test_set_slot_and_deactivate():
     action = FormAction(form_name, None)
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -199,7 +199,7 @@ async def test_action_rejection():
     with pytest.raises(ActionExecutionRejection):
         await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -345,7 +345,7 @@ async def test_validate_slots(
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )
@@ -433,7 +433,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
         events = await action.run(
             CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.templates),
+            TemplatedNaturalLanguageGenerator(domain.responses),
             tracker,
             domain,
         )

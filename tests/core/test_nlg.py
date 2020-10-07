@@ -101,7 +101,7 @@ def test_nlg_schema_validation_empty_custom_dict():
 )
 def test_nlg_fill_template_text(slot_name: Text, slot_value: Any):
     template = {"text": f"{{{slot_name}}}"}
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(template=template, filled_slots={slot_name: slot_value})
     assert result == {"text": str(slot_value)}
 
@@ -112,7 +112,7 @@ def test_nlg_fill_template_text(slot_name: Text, slot_value: Any):
 )
 def test_nlg_fill_template_image(img_slot_name: Text, img_slot_value: Text):
     template = {"image": f"{{{img_slot_name}}}"}
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(
         template=template, filled_slots={img_slot_name: img_slot_value}
     )
@@ -148,7 +148,7 @@ def test_nlg_fill_template_custom(slot_name: Text, slot_value: Any):
             "empty_field": None,
         }
     }
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(template=template, filled_slots={slot_name: slot_value})
 
     assert result == {
@@ -169,7 +169,7 @@ def test_nlg_fill_template_custom_with_list():
             "other": ["{test}"],
         }
     }
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(template=template, filled_slots={"test": 5})
     assert result == {
         "custom": {
@@ -191,7 +191,7 @@ def test_nlg_fill_template_custom_with_list():
 )
 def test_nlg_fill_template_text_with_json(template_text, expected):
     template = {"text": template_text}
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(
         template=template, filled_slots={"slot_1": "foo", "slot_2": "bar"}
     )
@@ -201,7 +201,7 @@ def test_nlg_fill_template_text_with_json(template_text, expected):
 @pytest.mark.parametrize("slot_name, slot_value", [("tag_w_\n", "a")])
 def test_nlg_fill_template_with_bad_slot_name(slot_name, slot_value):
     template_text = f"{{{slot_name}}}"
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(
         template={"text": template_text}, filled_slots={slot_name: slot_value}
     )
@@ -219,7 +219,7 @@ def test_nlg_fill_template_image_and_text(
     text_slot_name, text_slot_value, img_slot_name, img_slot_value
 ):
     template = {"text": f"{{{text_slot_name}}}", "image": f"{{{img_slot_name}}}"}
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(
         template=template,
         filled_slots={text_slot_name: text_slot_value, img_slot_name: img_slot_value},
@@ -244,7 +244,7 @@ def test_nlg_fill_template_text_and_custom(
             "properties": {"field_prefixed": f"prefix_{{{cust_slot_name}}}"},
         },
     }
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(
         template=template,
         filled_slots={text_slot_name: text_slot_value, cust_slot_name: cust_slot_value},
@@ -263,7 +263,7 @@ def test_nlg_fill_template_text_and_custom(
 )
 def test_nlg_fill_template_attachment(attach_slot_name, attach_slot_value):
     template = {"attachment": "{" + attach_slot_name + "}"}
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(
         template=template, filled_slots={attach_slot_name: attach_slot_value}
     )
@@ -282,7 +282,7 @@ def test_nlg_fill_template_button(button_slot_name, button_slot_value):
             }
         ]
     }
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(
         template=template, filled_slots={button_slot_name: button_slot_value}
     )
@@ -303,7 +303,7 @@ def test_nlg_fill_template_quick_replies(
     quick_replies_slot_name, quick_replies_slot_value
 ):
     template = {"quick_replies": f"{{{quick_replies_slot_name}}}"}
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    t = TemplatedNaturalLanguageGenerator(responses=dict())
     result = t._fill_template(
         template=template,
         filled_slots={quick_replies_slot_name: quick_replies_slot_value},

@@ -394,8 +394,8 @@ class Agent:
 
         # update domain on all instances
         self.tracker_store.domain = domain
-        if hasattr(self.nlg, "templates"):
-            self.nlg.templates = domain.templates if domain else {}
+        if hasattr(self.nlg, "responses"):
+            self.nlg.responses = domain.responses if domain else {}
 
         self.model_directory = model_directory
 
@@ -827,7 +827,7 @@ class Agent:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
-            domain.check_missing_templates()
+            domain.check_missing_responses()
             return domain
         elif isinstance(domain, Domain):
             return domain

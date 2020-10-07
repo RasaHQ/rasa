@@ -65,7 +65,7 @@ class RasaFileImporter(TrainingDataImporter):
             return domain
         try:
             domain = Domain.load(self._domain_path)
-            domain.check_missing_templates()
+            domain.check_missing_responses()
         except InvalidDomain as e:
             rasa.shared.utils.io.raise_warning(
                 f"Loading domain from '{self._domain_path}' failed. Using "

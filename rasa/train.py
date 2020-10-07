@@ -265,8 +265,8 @@ async def _do_training(
     elif fingerprint_comparison_result.should_retrain_nlg():
         print_color(
             "Core stories/configuration did not change. "
-            "Only the templates section has been changed. A new model with "
-            "the updated templates will be created.",
+            "Only the responses section has been changed. A new model with "
+            "the updated responses will be created.",
             color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
         await model.update_model_with_new_domain(file_importer, train_path)

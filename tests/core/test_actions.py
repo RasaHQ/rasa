@@ -55,7 +55,7 @@ from tests.utilities import json_of_latest_request, latest_request
 
 @pytest.fixture(scope="module")
 def template_nlg():
-    templates = {
+    responses = {
         "utter_ask_rephrase": [{"text": "can you rephrase that?"}],
         "utter_restart": [{"text": "congrats, you've restarted me!"}],
         "utter_back": [{"text": "backing up..."}],
@@ -70,7 +70,7 @@ def template_nlg():
             }
         ],
     }
-    return TemplatedNaturalLanguageGenerator(templates)
+    return TemplatedNaturalLanguageGenerator(responses)
 
 
 @pytest.fixture(scope="module")
@@ -95,7 +95,7 @@ def test_domain_action_instantiation():
         intents=[{"chitchat": {"is_retrieval_intent": True}}],
         entities=[],
         slots=[],
-        templates={},
+        responses={},
         action_names=["my_module.ActionTest", "utter_test", "utter_chitchat"],
         forms=[],
     )
@@ -366,7 +366,7 @@ async def test_action_utter_retrieved_response(
         },
     )
 
-    default_domain.templates.update(
+    default_domain.responses.update(
         {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
     )
 
@@ -404,7 +404,7 @@ async def test_action_utter_default_retrieved_response(
         },
     )
 
-    default_domain.templates.update(
+    default_domain.responses.update(
         {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
     )
 
@@ -443,7 +443,7 @@ async def test_action_utter_retrieved_empty_response(
         },
     )
 
-    default_domain.templates.update(
+    default_domain.responses.update(
         {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
     )
 

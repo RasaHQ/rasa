@@ -40,7 +40,7 @@ class TrainingDataImporter:
         """Retrieves the stories that should be used for training.
 
         Args:
-            template_variables: Values of templates that should be replaced while
+            template_variables: Values of responses that should be replaced while
                                 reading the story files.
             use_e2e: Specifies whether to parse end to end learning annotations.
             exclusion_percentage: Amount of training data that should be excluded.
@@ -296,7 +296,7 @@ class CombinedDataImporter(TrainingDataImporter):
 class RetrievalModelsDataImporter(TrainingDataImporter):
     """A `TrainingDataImporter` that sets up the data for training retrieval models.
 
-    Synchronizes response templates between Domain and NLU
+    Synchronizes response responses between Domain and NLU
     and adds retrieval intent properties from the NLU training data
     back to the Domain.
     """
@@ -317,7 +317,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
         # Check if NLU data has any retrieval intents, if yes
         # add corresponding retrieval actions with `utter_` prefix automatically
         # to an empty domain, update the properties of existing retrieval intents
-        # and merge response templates
+        # and merge response responses
         if existing_nlu_data.retrieval_intents:
 
             domain_with_retrieval_intents = self._get_domain_with_retrieval_intents(
