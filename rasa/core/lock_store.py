@@ -227,7 +227,7 @@ class RedisLockStore(LockStore):
             socket_timeout=socket_timeout,
         )
 
-        if (prefix is None) or (prefix == ""):
+        if not prefix:
             self.prefix = "lock:"
         elif (prefix is not None) and (
             (isinstance(prefix, str)) and (prefix.isalnum())
