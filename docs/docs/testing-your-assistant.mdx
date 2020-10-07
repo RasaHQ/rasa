@@ -265,7 +265,7 @@ multiple tokens.
 #### Entity Scoring
 
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider
-[BILOU tags](nlu-training-data.mdx#bilou-entity-tagging), but only the
+[BILOU tags](nlu-training-data.mdx#bilou-entity-tagging) exactly, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
 expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. 
 
