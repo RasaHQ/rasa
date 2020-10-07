@@ -328,10 +328,10 @@ async def load_agent(
 
 class Agent:
     """The Agent class provides a convenient interface for the most important
-     Rasa functionality.
+    Rasa functionality.
 
-     This includes training, handling messages, loading a dialogue model,
-     getting the next action, and handling a channel."""
+    This includes training, handling messages, loading a dialogue model,
+    getting the next action, and handling a channel."""
 
     def __init__(
         self,
@@ -457,8 +457,7 @@ class Agent:
         )
 
     def is_core_ready(self) -> bool:
-        """Check if all necessary components and policies are ready to use the agent.
-        """
+        """Check if all necessary components and policies are ready to use the agent."""
         return self.is_ready() and self.policy_ensemble is not None
 
     def is_ready(self) -> bool:
