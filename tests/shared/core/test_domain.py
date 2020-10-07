@@ -941,3 +941,13 @@ def test_domain_deepcopy():
 def test_is_retrieval_intent_template(template_key, validation):
     domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
     assert domain.is_retrieval_intent_template((template_key, [{}])) == validation
+
+
+def test_retrieval_intent_template_seggregation():
+    domain = Domain.load("data/test_domains/mixed_retrieval_intents.yml")
+    assert domain.templates != domain.retrieval_intent_templates
+    assert domain.templates and domain.retrieval_intent_templates
+    assert list(domain.retrieval_intent_templates.keys()) == [
+        "utter_chitchat/ask_weather",
+        "utter_chitchat/ask_name",
+    ]
