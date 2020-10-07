@@ -13,7 +13,6 @@ module.exports = {
           collapsed: true,
           items: [
             'installation',
-            // 'cheatsheet',
             'migrate-from',
           ],
         },
@@ -97,6 +96,7 @@ module.exports = {
             'connectors/cisco-webex-teams',
             'connectors/rocketchat',
             'connectors/mattermost',
+            'connectors/custom-connectors',
           ],
         },
         {
