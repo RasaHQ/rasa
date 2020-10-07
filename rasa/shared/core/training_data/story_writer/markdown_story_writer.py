@@ -26,7 +26,7 @@ class MarkdownStoryWriter(StoryWriter):
                            high level keys/definitions and can be appended to
                            the existing story file.
             is_test_story: Identifies if the stories should be exported in test stories
-                           format
+                           format.
         """
         pass
 
@@ -44,7 +44,7 @@ class MarkdownStoryWriter(StoryWriter):
                            high level keys/definitions and can be appended to
                            the existing story file.
             is_test_story: Identifies if the stories should be exported in test stories
-                           format
+                           format.
 
         Returns:
             String with story steps in the markdown format.

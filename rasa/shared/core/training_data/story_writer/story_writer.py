@@ -5,7 +5,7 @@ from typing import List, Text, Union
 from ruamel import yaml
 
 if typing.TYPE_CHECKING:
-    from rasa.shared.core.events import Event
+    from rasa.shared.core.events import Event  # pytype: disable=pyi-error
     from rasa.shared.core.training_data.structures import StoryStep
 
 
@@ -46,7 +46,7 @@ class StoryWriter:
                            high level keys/definitions and can be appended to
                            the existing story file.
             is_test_story: Identifies if the stories should be exported in test stories
-                           format
+                           format.
         """
         raise NotImplementedError
 
@@ -60,10 +60,9 @@ class StoryWriter:
         Returns:
             `True` if the event should be converted/written, `False` otherwise.
         """
-
-        # This is an "OR" statement, so we accept it
         from rasa.shared.core.training_data.structures import StoryStep
 
+        # This is an "OR" statement, so we accept it
         if isinstance(event, list):
             return True
 
