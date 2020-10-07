@@ -188,6 +188,58 @@ slots:
     policy.train([complete_rule, fixed_incomplete_rule], domain, RegexInterpreter())
 
 
+def test_no_incomplete_rules_due_to_slots_after_listen():
+    some_action = "some_action"
+    some_slot = "some_slot"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {some_action}
+entities:
+- {some_slot}
+slots:
+  {some_slot}:
+    type: text
+    """
+    )
+    policy = RulePolicy()
+    complete_rule = TrackerWithCachedStates.from_events(
+        "complete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                intent={"name": GREET_INTENT_NAME},
+                entities=[{"entity": some_slot, "value": "bla"}],
+            ),
+            SlotSet(some_slot, "bla"),
+            ActionExecuted(some_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    potentially_incomplete_rule = TrackerWithCachedStates.from_events(
+        "potentially_incomplete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy.train(
+        [complete_rule, potentially_incomplete_rule], domain, RegexInterpreter()
+    )
+
+
 def test_incomplete_rules_due_to_loops():
     some_form = "some_form"
     domain = Domain.from_yaml(

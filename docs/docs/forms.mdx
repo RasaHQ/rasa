@@ -307,12 +307,11 @@ The following example shows the implementation of a custom action
 which validates that the slot named `cuisine` is valid.
 
 ```python
-from typing import Text, List, Any
+from typing import Text, List, Any, Dict
 
-from rasa_sdk import Tracker
+from rasa_sdk import Tracker, FormValidationAction
 from rasa_sdk.events import SlotSet
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.forms import FormValidationAction
 from rasa_sdk.types import DomainDict
 
 
