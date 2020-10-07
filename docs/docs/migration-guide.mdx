@@ -15,10 +15,10 @@ how you can migrate from one version to another.
 
 ### General
 
-A lot has changed in version 2.0, we hope for the better! Make sure you read
+A lot has changed in version 2.0. Make sure you read
 through this guide thoroughly, to make sure all parts of your bot are updated.
 A lot of updates can be done automatically with inbuilt commands, others will need
-some manual conversion. If you have any feedback about these updates, please post them
+some manual conversion. If you have any feedback about these updates or the migration process, please post it
 in the [forum](https://forum.rasa.com/t/rasa-open-source-2-0-is-out-now-internal-draft/35577).
 
 ### Training data files
@@ -273,7 +273,7 @@ class RestaurantForm(FormAction):
         return []
 ```
 
-Start the migration by remoivng the FormPolicy and adding the [RulePolicy](./policies.mdx#rule-policy)
+Start the migration by removing the FormPolicy and adding the [RulePolicy](./policies.mdx#rule-policy)
 (if not there already) to your model configuration:
 
 ```yaml-rasa title="config.yml"
