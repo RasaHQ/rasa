@@ -183,7 +183,7 @@ def test_read_rules_without_stories(rule_steps_without_stories: List[StoryStep])
 
     # this file contains five rules and no ML stories
     assert len(ml_steps) == 0
-    assert len(rule_steps) == 5
+    assert len(rule_steps) == 8
 
 
 def test_rule_with_condition(rule_steps_without_stories: List[StoryStep]):
