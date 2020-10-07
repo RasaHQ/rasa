@@ -299,13 +299,14 @@ If you ran the command to [convert your stories](./migration-guide.mdx#training-
 you will have a story that handles form activation and deactivation like this:
 
 ```yaml-rasa title="stories.yml"
-- story: cuisine form
-  steps:
-  - intent: request_restaurant
-  - action: restaurant_form
-  - active_loop: restaurant_form
-  - active_loop: null
-  - action: utter_submit
+stories:
+  - story: cuisine form
+    steps:
+    - intent: request_restaurant
+    - action: restaurant_form
+    - active_loop: restaurant_form
+    - active_loop: null
+    - action: utter_submit
 ```
 
 This will work fine, but the best way to handle form behavior is to remove this story and instead
@@ -389,18 +390,20 @@ Additionally you will need to rename the `respond_` actions in your stories file
 `utter_` prefix instead. For example:
 
 ```yaml-rasa
-- story: chitchat
-steps:
-- intent: chitchat
-- action: respond_chitchat
+stories:
+  - story: chitchat
+    steps:
+    - intent: chitchat
+    - action: respond_chitchat
 ```
 becomes
 
 ```yaml-rasa
-- story: chitchat
-steps:
-- intent: chitchat
-- action: utter_chitchat
+stories:
+  - story: chitchat
+    steps:
+    - intent: chitchat
+    - action: utter_chitchat
 ```
 
 and you will need to add the `utter_` prefix to the response names in your `responses.md`
