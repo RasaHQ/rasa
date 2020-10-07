@@ -20,6 +20,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import (
     InvalidDomain,
     SessionConfig,
+    ENTITY_ROLES_KEY,
     USED_ENTITIES_KEY,
     USE_ENTITIES_KEY,
     IGNORE_ENTITIES_KEY,
@@ -714,6 +715,18 @@ def test_load_on_invalid_domain():
     #     Domain.load("data/test_domains/missing_text_for_templates.yml")
 
 
+def test_load_domain_with_entity_roles_groups():
+    domain = Domain.load("data/test_domains/travel_form.yml")
+
+    assert domain.entities is not None
+    assert "GPE" in domain.entities
+    assert "name" in domain.entities
+    assert "name" not in domain.roles
+    assert "GPE" in domain.roles
+    assert "origin" in domain.roles["GPE"]
+    assert "destination" in domain.roles["GPE"]
+
+
 def test_is_empty():
     assert Domain.empty().is_empty()
 
@@ -745,6 +758,19 @@ def test_transform_intents_for_file_with_mapping():
         {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
         {"default": {"triggers": "utter_default", USE_ENTITIES_KEY: True}},
         {"goodbye": {USE_ENTITIES_KEY: True}},
+    ]
+
+    assert transformed == expected
+
+
+def test_transform_entities_for_file_default():
+    domain_path = "data/test_domains/travel_form.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_entities_for_file()
+
+    expected = [
+        {"GPE": None, ENTITY_ROLES_KEY: ["destination", "origin"]},
+        "name",
     ]
 
     assert transformed == expected

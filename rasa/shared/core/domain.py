@@ -42,6 +42,8 @@ USED_ENTITIES_KEY = "used_entities"
 USE_ENTITIES_KEY = "use_entities"
 IGNORE_ENTITIES_KEY = "ignore_entities"
 IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
+ENTITY_ROLES_KEY = "roles"
+ENTITY_GROUPS_KEY = "groups"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -170,7 +172,7 @@ class Domain:
 
         return cls(
             intents,
-            data.get(KEY_ENTITIES, []),
+            data.get(KEY_ENTITIES, {}),
             slots,
             utter_templates,
             data.get(KEY_ACTIONS, []),
@@ -292,7 +294,7 @@ class Domain:
 
     @staticmethod
     def _transform_intent_properties_for_internal_use(
-        intent: Dict[Text, Any], entities: List
+        intent: Dict[Text, Any], entities: List[Text]
     ) -> Dict[Text, Any]:
         """Transform intent properties coming from a domain file for internal use.
 
@@ -350,6 +352,47 @@ class Domain:
             for intent in self.intent_properties
             if self.intent_properties[intent].get(IS_RETRIEVAL_INTENT_KEY)
         ]
+
+    @classmethod
+    def collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]:
+        """Get entity properties for a domain from what is provided by a domain file.
+
+        Args:
+            entities: The entities as provided by a domain file.
+
+        Returns:
+            A list of entity names.
+            A dictionary of entity names to roles.
+            A dictionary of entity names to groups.
+        """
+        entities = []
+        roles = {}
+        groups = {}
+
+        for entity in domain_entities:
+            if isinstance(entity, str):
+                entities.append(entity)
+            elif isinstance(entity, Dict):
+                _entity = None
+                for key in entity.keys():
+                    if key != ENTITY_ROLES_KEY and key != ENTITY_GROUPS_KEY:
+                        _entity = key
+                        break
+                if _entity is None:
+                    raise InvalidDomain(
+                        f"Invalid domain. No entity name in {entity}."
+                    )
+                entities.append(_entity)
+                if ENTITY_ROLES_KEY in entity:
+                    roles[_entity] = entity[ENTITY_ROLES_KEY]
+                if ENTITY_GROUPS_KEY in entity:
+                    groups[_entity] = entity[ENTITY_GROUPS_KEY]
+            else:
+                raise InvalidDomain(
+                    f"Invalid domain. Entity is invalid, type not supported: {entity}"
+                )
+
+        return entities, roles, groups
 
     @classmethod
     def collect_intent_properties(
@@ -416,7 +459,7 @@ class Domain:
     def __init__(
         self,
         intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
-        entities: List[Text],
+        entities: List[Union[Text, Dict[Text, Any]]],
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
@@ -425,12 +468,12 @@ class Domain:
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
+        self.entities, self.roles, self.groups = self.collect_entity_properties(entities)
 
-        self.intent_properties = self.collect_intent_properties(intents, entities)
+        self.intent_properties = self.collect_intent_properties(intents, self.entities)
         self.overriden_default_intents = self._collect_overridden_default_intents(
             intents
         )
-        self.entities = entities
 
         self.forms: Dict[Text, Any] = {}
         self.form_names: List[Text] = []
@@ -848,7 +891,7 @@ class Domain:
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
             KEY_INTENTS: self._transform_intents_for_file(),
-            KEY_ENTITIES: self.entities,
+            KEY_ENTITIES: self._transform_entities_for_file(),
             KEY_SLOTS: self._slot_definitions(),
             KEY_RESPONSES: self.templates,
             KEY_ACTIONS: self._custom_actions,  # class names of the actions
@@ -888,6 +931,37 @@ class Domain:
             intents_for_file.append({intent_name: intent_props})
 
         return intents_for_file
+
+    def _transform_entities_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+        """Transform entity properties for displaying or writing into a domain file.
+
+        Returns:
+            The entity properties as they are used in domain files.
+        """
+        entities = copy.deepcopy(self.entities)
+        entities_for_file = []
+
+        for entity in entities:
+            if entity in self.roles and entity in self.groups:
+                entities_for_file.append({
+                    entity: None,
+                    ENTITY_GROUPS_KEY: self.groups[entity],
+                    ENTITY_ROLES_KEY: self.roles[entity]
+                })
+            elif entity in self.roles:
+                entities_for_file.append({
+                    entity: None,
+                    ENTITY_ROLES_KEY: self.roles[entity]
+                })
+            elif entity in self.groups:
+                entities_for_file.append({
+                    entity: None,
+                    ENTITY_GROUPS_KEY: self.groups[entity],
+                })
+            else:
+                entities_for_file.append(entity)
+
+        return entities_for_file
 
     def cleaned_domain(self) -> Dict[Text, Any]:
         """Fetch cleaned domain to display or write into a file.
@@ -1223,3 +1297,4 @@ class Domain:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
         return self.forms.get(form_name, {})
+

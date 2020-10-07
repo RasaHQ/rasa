@@ -3,7 +3,11 @@ intents:
  - inform
 
 entities:
- - GPE
+  - GPE:
+    roles:
+     - destination
+     - origin
+  - name
 
 slots:
   GPE_origin:
