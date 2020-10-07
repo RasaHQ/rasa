@@ -2,15 +2,11 @@
 id: domain
 sidebar_label: Domain
 title: Domain
+abstract: The domain defines the universe in which your assistant operates. It specifies the intents, entities, slots, responses, forms, and actions your bot should know about. It also defines a configuration for conversation sessions.
 ---
 
-The `Domain` defines the universe in which your assistant operates.
-It specifies the `intents`, `entities`, `slots`, `responses`, `forms`, and `actions`
-your bot should know about. It also defines a `session_config` to configure
-conversation sessions.
-
-As an example, here is the domain of the 
-[concertbot](https://github.com/RasaHQ/rasa/tree/master/examples/concertbot):
+Here is a full example of a domain, taken from the
+[concertbot](https://github.com/RasaHQ/rasa/tree/master/examples/concertbot) example:
 
 ```yaml-rasa (docs/sources/examples/concertbot/domain.yml)
 ```
@@ -29,8 +25,8 @@ rasa train --domain path_to_domain_directory
 
 ## Intents
 
-The `intents` key in your domain file lists all intents 
-used in your NLU and conversation training data. 
+The `intents` key in your domain file lists all intents
+used in your NLU and conversation training data.
 
 ### Ignoring entities for certain intents
 
@@ -60,14 +56,15 @@ intents:
 
 This means that excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
-an intent where you don't care about the entities being picked up. 
+an intent where you don't care about the entities being picked up.
 
 If you list your intents without this parameter, the entities will be
 featurized as normal.
 
 :::note
 If you really want these entities not to influence action prediction we
-suggest you make the slots with the same name of type `unfeaturized`.
+suggest you set the [`influence_conversation: false`](./domain.mdx#slots-and-conversation-behavior)
+parameter for slots with the same name.
 
 :::
 
@@ -94,11 +91,10 @@ which can be used to store information the user provided (e.g their home city)
 as well as information gathered about the outside world (e.g. the result of a
 database query).
 
-Slots are defined in the `slots` section of your domain with their name and
-[type](domain.mdx#slot-types). The slot type will determine the data type of the slot
-and how the slot
-[influences the assistant's behavior](domain.mdx#slots-and-conversation-behavior).
-The following example defines a slot with name `slot_name` and type `text`.
+Slots are defined in the slots section of your domain with their name,
+[type](domain.mdx#slot-types) and if and how they should [influence the assistant's
+behavior](domain.mdx#slots-and-conversation-behavior).
+The following example defines a slot with name "slot_name" and type `text`.
 
 ```yaml
 slots:
@@ -108,7 +104,7 @@ slots:
 
 ### Slots and Conversation Behavior
 
-You can control whether or not a slot influences the conversation with the property
+You can specify whether or not a slot influences the conversation with the property
 `influence_conversation`. If you want to store information but don't want a slot to
 influence the conversation, set the `influence_conversation` property of your slot
 to `false`.
@@ -468,7 +464,7 @@ slots:
 ## Responses
 
 Responses are actions that simply send a message to a user without running any custom code or
-returning events. These responses can be defined directly in the domain file under the `responses` key 
+returning events. These responses can be defined directly in the domain file under the `responses` key
 and can include rich content such as buttons and attachments. For more information on responses and how to define them,
 see [Responses](./responses.mdx).
 
@@ -537,14 +533,14 @@ call, or to start the conversation with a bot message. The docs on
 
 :::
 
-## Config 
+## Config
 
-The `config` key in the domain file maintains the `store_entities_as_slots` parameter. 
+The `config` key in the domain file maintains the `store_entities_as_slots` parameter.
 When an entity is recognized by the NLU model and the entity name matches a slot name,
 `store_entities_as_slots` defines whether the entity value should be placed in that slot.
-By default, entities will auto-fill slots of the same name. 
+By default, entities will auto-fill slots of the same name.
 
-You can turn off all slot auto-filling by setting the `store_entities_as_slots` parameter to `false`: 
+You can turn off all slot auto-filling by setting the `store_entities_as_slots` parameter to `false`:
 
 ```yaml-rasa title="domain.yml"
 config:
@@ -552,7 +548,7 @@ config:
 ```
 
 You can also turn off this behavior for a specific slot using the [`auto_fill`](./domain.mdx#slot-auto-fill)
-parameter in that slot's definition. 
+parameter in that slot's definition.
 
 :::note looking for config.yml?
 If you're looking for information on the `config.yml` file, check out the docs on

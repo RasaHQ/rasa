@@ -122,7 +122,7 @@ module.exports = {
       items: [
         'command-line-interface',
         'http-api',
-        'jupyter-notebooks',
+        // 'jupyter-notebooks',
       ],
     },
     {
