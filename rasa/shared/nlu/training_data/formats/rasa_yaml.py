@@ -378,17 +378,35 @@ class RasaYAMLWriter(TrainingDataWriter):
             target: Name of the target object to write the YAML to.
             training_data: TrainingData object.
         """
+        result = self.training_data_to_dict(training_data)
+
+        if result:
+            rasa.shared.utils.io.write_yaml(result, target, True)
+
+    @classmethod
+    def training_data_to_dict(
+        cls, training_data: "TrainingData"
+    ) -> Optional[OrderedDict]:
+        """Represents NLU training data to a dict/list structure ready to be
+        serialized as YAML.
+
+        Args:
+            training_data: `TrainingData` to convert.
+
+        Returns:
+            `OrderedDict` containing all training data.
+        """
         from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
         from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
         nlu_items = []
-        nlu_items.extend(self.process_intents(training_data))
-        nlu_items.extend(self.process_synonyms(training_data))
-        nlu_items.extend(self.process_regexes(training_data))
-        nlu_items.extend(self.process_lookup_tables(training_data))
+        nlu_items.extend(cls.process_intents(training_data))
+        nlu_items.extend(cls.process_synonyms(training_data))
+        nlu_items.extend(cls.process_regexes(training_data))
+        nlu_items.extend(cls.process_lookup_tables(training_data))
 
         if not any([nlu_items, training_data.responses]):
-            return
+            return None
 
         result = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
@@ -401,7 +419,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         if training_data.responses:
             result[KEY_RESPONSES] = training_data.responses
 
-        rasa.shared.utils.io.write_yaml(result, target, True)
+        return result
 
     @classmethod
     def process_intents(cls, training_data: "TrainingData") -> List[OrderedDict]:
