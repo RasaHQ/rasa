@@ -617,10 +617,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = []
 
         for example in training_data:
-            # Do not train on e2e examples
-            if example.is_core_message():
-                continue
-
             if label_attribute is None or example.get(label_attribute):
                 text_features = self._extract_features(example, TEXT)
                 for feature_key, feature_value in text_features.items():
@@ -719,7 +715,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         model_data = self._create_model_data(
-            training_data.training_examples,
+            training_data.nlu_examples,
             label_id_index_mapping,
             label_attribute=label_attribute,
         )
