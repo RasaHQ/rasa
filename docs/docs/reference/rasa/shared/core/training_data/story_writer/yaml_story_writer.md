@@ -14,7 +14,7 @@ Writes Core training data into a file in a YAML format.
 #### dumps
 
 ```python
- | dumps(story_steps: List[StoryStep], is_appendable: bool = False, **kwargs: Any) -> Text
+ | dumps(story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> Text
 ```
 
 Turns Story steps into an YAML string.
@@ -25,6 +25,8 @@ Turns Story steps into an YAML string.
 - `is_appendable` - Specify if result should not contain
   high level keys/definitions and can be appended to
   the existing story file.
+- `is_test_story` - Identifies if the stories should be exported in test stories
+  format.
 
 **Returns**:
 
@@ -33,7 +35,7 @@ Turns Story steps into an YAML string.
 #### dump
 
 ```python
- | dump(target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep], is_appendable: bool = False) -> None
+ | dump(target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> None
 ```
 
 Writes Story steps into a target file/stream.
@@ -45,6 +47,8 @@ Writes Story steps into a target file/stream.
 - `is_appendable` - Specify if result should not contain
   high level keys/definitions and can be appended to
   the existing story file.
+- `is_test_story` - Identifies if the stories should be exported in test stories
+  format.
 
 #### stories\_to\_yaml
 
@@ -98,7 +102,7 @@ Checks if the stories contain at least one active loop.
 
 ```python
  | @staticmethod
- | process_user_utterance(user_utterance: UserUttered) -> OrderedDict
+ | process_user_utterance(user_utterance: UserUttered, is_test_story: bool = False) -> OrderedDict
 ```
 
 Converts a single user utterance into an ordered dict.
@@ -106,6 +110,8 @@ Converts a single user utterance into an ordered dict.
 **Arguments**:
 
 - `user_utterance` - Original user utterance object.
+- `is_test_story` - Identifies if the user utterance should be added
+  to the final YAML or not.
   
 
 **Returns**:
