@@ -10,7 +10,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.slots import TextSlot
+from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
 from rasa.shared.core.constants import (
     DEFAULT_INTENTS,
     SLOT_LISTED_ITEMS,
@@ -243,7 +243,7 @@ def test_custom_slot_type(tmpdir: Path):
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
     domain_path = str(tmpdir / "domain.yml")
     rasa.shared.utils.io.write_text_file(domain_unkown_slot_type, domain_path)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidSlotTypeException):
         Domain.load(domain_path)
 
 
