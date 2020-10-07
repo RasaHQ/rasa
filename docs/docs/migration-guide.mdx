@@ -27,7 +27,7 @@ As of version 2.0, the new default training data format is yaml. Markdown is sti
 but this will be deprecated in a future release.
 
 You can convert existing NLU, Stories, and NLG (i.e. `responses.md`) training data
-files in the markdown format to the new yaml format using following commands:
+files in the Markdown format to the new YAML format using following commands:
 
 ```bash
 rasa data convert nlu -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
@@ -58,8 +58,9 @@ To migrate the policies automatically, you can run the following command:
 rasa data convert config
 ```
 
-This command will take care of updating your `config.yml`, `domain.yml` and `rules.yml` while
-making backups of your existing files using the `.bak` suffix.
+This command will take care of updating your `config.yml` and `domain.yml`, while
+making backups of your existing files using the `.bak` suffix. It will also add a
+`rules.yml` if necessary.
 
 Your forms will still function as normal in the old format after this update, but this command
 does not convert them into the new format automatically. This should be done manually, as
@@ -211,8 +212,8 @@ Rasa SDK to Rasa Open Source to simplify implementation and make it easier to wr
 action servers in other languages.
 
 This means that forms are no longer implemented using a `FormAction`, but instead
-defined in the domain. Any customisations around requesting slots or slot validation
-can be handled with a `FormValidationAction`.
+defined in the domain. Any customisations around requesting slots or
+[slot validation](./forms.mdx#validating-form-input) can be handled with a `FormValidationAction`.
 
 Consider a custom form action from 1.x like this:
 
