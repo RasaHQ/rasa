@@ -193,7 +193,9 @@ def test_load_non_existent_custom_broker_name():
 
 
 def test_kafka_broker_from_config():
-    endpoints_path = "data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml"
+    endpoints_path = (
+        "data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml"
+    )
     cfg = read_endpoint_config(endpoints_path, "event_broker")
 
     actual = KafkaEventBroker.from_endpoint_config(cfg)
