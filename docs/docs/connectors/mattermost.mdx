@@ -36,31 +36,24 @@ For information on converting existing user account into bot account please see
 5. Make sure **trigger when** is set to value
    **first word matches a trigger word exactly**.
 
-6. The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
-   have your webhook running in Core or your public address, e.g.
-   `http://test.example.com/webhooks/mattermost/webhook` or `http://localhost:5005/webhooks/mattermost/webhook`.
+6. Add the Callback URL, which will
+   look like `http://<host>:<port>/webhooks/mattermost/webhook`, replacing
+   the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
 
 For more detailed steps, visit the
 [Mattermost docs](https://docs.mattermost.com/guides/developer.html).
 
 ## Running on Mattermost
 
-If you want to connect to the Mattermost input channel using the
-run script, e.g. using:
-
-```bash
-rasa run
-```
-
-you need to supply a `credentials.yml` with the following content:
+Add the Mattermost credentials to your `credentials.yml`:
 
 ```yaml-rasa
 mattermost:
   url: "https://chat.example.com/api/v4"
   token: "xxxxx" #  the token for the bot account from creating the bot step.
-  webhook_url: "https://server.example.com/webhooks/mattermost/webhook"
+  webhook_url: "https://server.example.com/webhooks/mattermost/webhook"  # this should match the callback url from step 6
 ```
 
-The endpoint for receiving Mattermost channel messages
-is `/webhooks/mattermost/webhook`, the same as `webhook_url` here. You should
-add this url also in the Mattermost outgoing webhook.
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available for Mattermost to send messages to.

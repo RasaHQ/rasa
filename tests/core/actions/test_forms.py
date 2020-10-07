@@ -263,6 +263,34 @@ async def test_action_rejection():
                 SlotSet("num_people", "hi"),
             ],
         ),
+        # Validate function decides that no more slots should be requested
+        (
+            [
+                {"event": "slot", "name": "num_people", "value": None},
+                {"event": "slot", "name": REQUESTED_SLOT, "value": None},
+            ],
+            [
+                SlotSet("num_people", None),
+                SlotSet(REQUESTED_SLOT, None),
+                SlotSet("num_tables", 5),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
+        # Validate function deactivates loop
+        (
+            [
+                {"event": "slot", "name": "num_people", "value": None},
+                {"event": "active_loop", "name": None},
+            ],
+            [
+                SlotSet("num_people", None),
+                ActiveLoop(None),
+                SlotSet("num_tables", 5),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
     ],
 )
 async def test_validate_slots(
