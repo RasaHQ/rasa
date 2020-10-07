@@ -441,7 +441,7 @@ policies:
 
 ### Max History
 
-One important hyperparameter for Rasa Core policies is the `max_history`.
+One important hyperparameter for Rasa Open Source policies is the `max_history`.
 This controls how much dialogue history the model looks at to decide which
 action to take next.
 
@@ -481,7 +481,7 @@ stories:
     - action: utter_help_message
 ```
 
-For Rasa Core to learn this pattern, the `max_history`
+For your model to learn this pattern, the `max_history`
 has to be at least 4.
 
 If you increase your `max_history`, your model will become bigger and
@@ -491,7 +491,7 @@ slot. Slot information is always available for every featurizer.
 
 ### Data Augmentation
 
-When you train a model, by default Rasa Open Source will create
+When you train a model, Rasa Open Source will create
 longer stories by randomly combining
 the ones in your stories files.
 Take the stories below as an example:
