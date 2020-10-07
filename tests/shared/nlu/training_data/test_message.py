@@ -13,6 +13,7 @@ from rasa.shared.nlu.constants import (
     ACTION_NAME,
     INTENT,
     RESPONSE,
+    INTENT_NAME,
 )
 import rasa.shared.nlu.training_data.message
 from rasa.shared.nlu.training_data.message import Message
@@ -277,6 +278,7 @@ def test_build_from_action():
         (Message({ACTION_TEXT: "action text", ACTION_NAME: ""}), True),
         (Message({ACTION_NAME: "action"}), True),
         (Message({TEXT: "text"}), True),
+        (Message({TEXT: None, INTENT_NAME: "affirm"}), True),
     ],
 )
 def test_is_core_message(
