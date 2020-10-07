@@ -22,7 +22,7 @@ from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
+from rasa.shared.exceptions import RasaException, YamlException
 from rasa.shared.utils.validation import YamlValidationException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
@@ -1187,6 +1187,9 @@ class Domain:
     @staticmethod
     def is_domain_file(filename: Text) -> bool:
         """Checks whether the given file path is a Rasa domain file.
+
+        Will throw exceptions if the file seems to be a YAML file (extension) but
+        can not be read / parsed.
 
         Args:
             filename: Path of the file which should be checked.

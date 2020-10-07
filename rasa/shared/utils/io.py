@@ -268,8 +268,13 @@ def _is_ascii(text: Text) -> bool:
 def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
+    Raises an exception if the content of the file can not be parsed as YAML.
+
     Args:
         filename: The path to the file which should be read.
+
+    Returns:
+        Parsed content of the file.
     """
     try:
         return read_yaml(read_file(filename, DEFAULT_ENCODING))

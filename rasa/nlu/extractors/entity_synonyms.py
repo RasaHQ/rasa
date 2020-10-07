@@ -84,7 +84,7 @@ class EntitySynonymMapper(EntityExtractor):
             synonyms = None
             rasa.shared.utils.io.raise_warning(
                 f"Failed to load synonyms file from '{entity_synonyms_file}'.",
-                docs=DOCS_URL_TRAINING_DATA + "#entity-synonyms",
+                docs=DOCS_URL_TRAINING_DATA + "#synonyms",
             )
         return cls(meta, synonyms)
 
@@ -112,7 +112,7 @@ class EntitySynonymMapper(EntityExtractor):
                         f"Check your training data and remove "
                         f"conflicting synonym definitions to "
                         f"prevent this from happening.",
-                        docs=DOCS_URL_TRAINING_DATA + "#entity-synonyms",
+                        docs=DOCS_URL_TRAINING_DATA + "#synonyms",
                     )
 
                 self.synonyms[original] = replacement

@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
 
 import rasa.shared.data
-from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
+from rasa.shared.exceptions import YamlException
 from rasa.shared.utils import validation
-from ruamel.yaml import YAMLError, StringIO
+from ruamel.yaml import StringIO
 
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
@@ -334,6 +334,9 @@ class RasaYAMLReader(TrainingDataReader):
     @staticmethod
     def is_yaml_nlu_file(filename: Text) -> bool:
         """Checks if the specified file possibly contains NLU training data in YAML.
+
+        Will throw exceptions if the file seems to be a YAML file (extension) but
+        can not be read / parsed.
 
         Args:
             filename: name of the file to check.

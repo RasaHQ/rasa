@@ -3,7 +3,7 @@ from json import JSONDecodeError
 from typing import Text, List, Dict, Match, Optional, NamedTuple, Any
 
 import rasa.shared.nlu.training_data.util
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -144,7 +144,7 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
         rasa.shared.utils.io.raise_warning(
             f"Incorrect training data format ('{{{json_str}}}'). Make sure your "
             f"data is valid.",
-            docs=DOCS_URL_TRAINING_DATA,
+            docs=DOCS_URL_TRAINING_DATA_NLU,
         )
         raise e
 

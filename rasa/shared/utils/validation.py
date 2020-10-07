@@ -9,7 +9,7 @@ from pykwalify.errors import SchemaError
 from ruamel.yaml.constructor import DuplicateKeyError
 
 import rasa.shared
-from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
+from rasa.shared.exceptions import YamlException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
@@ -42,10 +42,11 @@ class YamlValidationException(YamlException, ValueError):
             filename: name of the file which was validated
             content: yaml content loaded from the file (used for line information)
         """
+        super(YamlValidationException, self).__init__(filename)
+
         self.message = message
         self.validation_errors = validation_errors
         self.content = content
-        super(YamlValidationException, self).__init__(filename)
 
     def __str__(self) -> Text:
         msg = ""

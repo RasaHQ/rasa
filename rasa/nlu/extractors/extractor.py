@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.shared.utils.io
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -348,6 +348,6 @@ class EntityExtractor(Component):
                         f"end values of entities in the training data match the token "
                         f"boundaries (e.g. entities don't include trailing whitespaces "
                         f"or punctuation).",
-                        docs=DOCS_URL_TRAINING_DATA,
+                        docs=DOCS_URL_TRAINING_DATA_NLU,
                     )
                     break

@@ -16,7 +16,7 @@ class RasaXTermsError(RasaException):
 class YamlException(RasaException):
     """Raised if there is an error reading yaml."""
 
-    def __init__(self, filename: Optional[Text] = None):
+    def __init__(self, filename: Optional[Text] = None) -> None:
         """Create exception.
 
         Args:
@@ -31,15 +31,16 @@ class YamlSyntaxException(YamlException):
         self,
         filename: Optional[Text] = None,
         underlying_yaml_exception: Optional[Exception] = None,
-    ):
-        self.underlying_yaml_exception = underlying_yaml_exception
+    ) -> None:
         super(YamlSyntaxException, self).__init__(filename)
+
+        self.underlying_yaml_exception = underlying_yaml_exception
 
     def __str__(self) -> Text:
         if self.filename:
             exception_text = f"Failed to read '{self.filename}'."
         else:
-            exception_text = f"Failed to read YAML."
+            exception_text = "Failed to read YAML."
 
         if self.underlying_yaml_exception:
             self.underlying_yaml_exception.warn = None
@@ -52,7 +53,7 @@ class YamlSyntaxException(YamlException):
             )
 
         exception_text += (
-            "\n\nYou can use http://www.yamllint.com/ to validate the "
+            "\n\nYou can use https://yamlchecker.com/ to validate the "
             "YAML syntax of your file."
         )
         return exception_text

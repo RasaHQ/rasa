@@ -9,7 +9,6 @@ from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
-from ruamel.yaml.parser import ParserError
 
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
@@ -136,6 +135,9 @@ class YAMLStoryReader(StoryReader):
     def is_stories_file(cls, file_path: Text) -> bool:
         """Check if file contains Core training data or rule data in YAML format.
 
+        Will throw exceptions if the file seems to be a yaml file (extension) but
+        can not be read.
+
         Args:
             file_path: Path of the file to check.
 
@@ -150,6 +152,8 @@ class YAMLStoryReader(StoryReader):
     @classmethod
     def is_key_in_yaml(cls, file_path: Text, *keys: Text) -> bool:
         """Check if all keys are contained in the parsed dictionary from a yaml file.
+
+        Will throw exceptions if the file can not be parsed as YAML.
 
         Arguments:
             file_path: path to the yaml file
