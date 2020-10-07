@@ -7,8 +7,8 @@ abstract: NLU training data stores structured information about user messages.
 ---
 
 The goal of NLU (Natural Language Understanding) is to extract structured information from user messages. This usually includes the user's [intent](glossary.mdx#intent) and any 
-[entities](glossary.mdx#entities) their message contains. You can
-add extra information such as [regular expressions](#regular-expression-features) and [lookup tables](#lookup-tables) to your
+[entities](glossary.mdx#entity) their message contains. You can
+add extra information such as [regular expressions](#regular-expressions) and [lookup tables](#lookup-tables) to your
 training data to help the model identify intents and entities correctly. 
 
 
@@ -19,7 +19,7 @@ intent.
 To make it easier to use your intents, give them names that relate to what the user wants to accomplish with that intent, keep them in lowercase, and avoid spaces and special characters. 
 
 :::note
-The `/` symbol is reserved as a delimiter to separate [retrieval intents](glossary.mdx#retrieval-intents) from response text identifiers. Make sure not
+The `/` symbol is reserved as a delimiter to separate [retrieval intents](glossary.mdx#retrieval-intent) from response text identifiers. Make sure not
 to use it in the name of your intents.
 
 :::
