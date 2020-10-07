@@ -73,6 +73,9 @@ def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
 
     Works for `async` and `sync` methods. Don't apply this to functions.
 
+    Args:
+        f: The decorated method whose return value should be cached.
+
     Returns:
         The return value which the method gives for the first call with the given
         arguments.
