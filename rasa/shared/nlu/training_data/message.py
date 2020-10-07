@@ -18,7 +18,8 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
-    ACTION_NAME, INTENT_NAME,
+    ACTION_NAME,
+    INTENT_NAME,
 )
 
 if typing.TYPE_CHECKING:
