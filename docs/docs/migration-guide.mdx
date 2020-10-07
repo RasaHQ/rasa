@@ -2,7 +2,9 @@
 id: migration-guide
 sidebar_label: Version Migration Guide
 title: Version Migration Guide
-description: Information about changes between major versions of chatbot framework Rasa Core and how you can migrate from one version to another.
+description: |
+  Information about changes between major versions of chatbot framework Rasa Core
+  and how you can migrate from one version to another.
 ---
 
 This page contains information about changes between major versions and
@@ -234,6 +236,10 @@ It is now recommended to move the slot mappings from your custom action to the
 [Domain](./domain.mdx) of your bot. Consider a custom form action like this:
 
 ```python
+from typing import Text, List, Any, Dict, Union
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.forms  import FormAction
 
 class RestaurantForm(FormAction):
     def name(self) -> Text:
@@ -340,6 +346,12 @@ actions:
 Then add a custom action which validates the `cuisine` slot:
 
 ```python
+from typing import Text, List, Any, Dict, Union
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk import FormValidationAction
+from rasa_sdk.types import DomainDict
+
 class RestaurantFormValidator(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
