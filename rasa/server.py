@@ -238,6 +238,26 @@ async def get_tracker_with_session_start(
     return tracker  # pytype: disable=bad-return-type
 
 
+def get_trackers_for_all_conversation_sessions(
+    processor: "MessageProcessor", conversation_id: Text
+) -> List[DialogueStateTracker]:
+    """Retrieves trackers from `processor` for all conversation sessions for
+    `conversation_id`.
+
+    Args:
+
+    Returns:
+        The tracker for `conversation_id`.
+    """
+
+    trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+    for tracker in trackers:
+        _validate_tracker(trackers, conversation_id)
+
+    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
+    return trackers  # pytype: disable=bad-return-type
+
+
 def get_tracker(
     processor: "MessageProcessor", conversation_id: Text
 ) -> DialogueStateTracker:
@@ -248,7 +268,7 @@ def get_tracker(
     Returns:
         The tracker for `conversation_id`.
     """
-    tracker = processor.get_tracker_for_all_conversation_sessions(conversation_id)
+    tracker = processor.get_tracker(conversation_id)
     _validate_tracker(tracker, conversation_id)
 
     # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
@@ -491,7 +511,9 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await get_tracker_with_session_start(app.agent.create_processor(), conversation_id)
+        tracker = await get_tracker_with_session_start(
+            app.agent.create_processor(), conversation_id
+        )
 
         try:
             if until_time is not None:
@@ -601,9 +623,8 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-        tracker = get_tracker(
-            app.agent.create_processor(), conversation_id
-        )
+        # fetch tracker without triggering a conversation session update
+        tracker = get_tracker(app.agent.create_processor(), conversation_id)
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
@@ -660,7 +681,9 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-        tracker = await get_tracker_with_session_start(app.agent.create_processor(), conversation_id)
+        tracker = await get_tracker_with_session_start(
+            app.agent.create_processor(), conversation_id
+        )
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -1204,7 +1227,9 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
 
-def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_yaml(
+    request: Request,
+) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)

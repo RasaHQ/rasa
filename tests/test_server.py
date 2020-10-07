@@ -37,7 +37,7 @@ from rasa.core.channels import (
 )
 from rasa.core.channels.slack import SlackBot
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     Event,
     UserUttered,
@@ -925,8 +925,7 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
 
 
 @pytest.mark.parametrize(
-    "params",
-    ["?execute_side_effects=true&output_channel=callback", ""],
+    "params", ["?execute_side_effects=true&output_channel=callback", ""],
 )
 def test_pushing_event_while_executing_side_effects(rasa_server: Sanic, params: Text):
     input_channel = CallbackInput(EndpointConfig("https://example.com/callback"))
@@ -1376,10 +1375,7 @@ def test_get_story(
     conversation_id = "some-conversation-ID"
 
     tracker_store = InMemoryTrackerStore(Domain.empty())
-    tracker = DialogueStateTracker.from_events(
-        conversation_id,
-        conversation_events,
-    )
+    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events,)
 
     tracker_store.save(tracker)
 
@@ -1391,17 +1387,27 @@ def test_get_story(
     assert response.content.decode().strip() == expected
 
 
-def test_get_story_does_not_update_conversation_session(
-    rasa_app: SanicTestClient, conversation_events: List[Event], expected: Text
-):
+def test_get_story_does_not_update_conversation_session(rasa_app: SanicTestClient):
     conversation_id = "some-conversation-ID"
 
-    # domain with short session expiration time
-    tracker_store = InMemoryTrackerStore(Domain.empty())
-    tracker = DialogueStateTracker.from_events(
-        conversation_id,
-        conversation_events,
+    # domain with short session expiration time of one second
+    domain = Domain.empty()
+    domain.session_config = SessionConfig(
+        session_expiration_time=1 / 60, carry_over_slots=True
     )
+
+    # conversation contains one session that has expired
+    now = time.time()
+    conversation_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=now - 10),
+        SessionStarted(timestamp=now - 9),
+        UserUttered("hi", {"name": "greet"}, timestamp=now - 8),
+        ActionExecuted("utter_greet", timestamp=now - 7),
+    ]
+
+    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events,)
+
+    tracker_store = InMemoryTrackerStore(domain)
 
     tracker_store.save(tracker)
 
@@ -1410,4 +1416,22 @@ def test_get_story_does_not_update_conversation_session(
     _, response = rasa_app.get(f"/conversations/{conversation_id}/story")
 
     assert response.status == 200
-    assert response.content.decode().strip() == expected
+
+    # expected story is returned
+    assert (
+        response.content.decode().strip()
+        == """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet"""
+    )
+
+    # the tracker has the same number of events as were initially added
+    assert len(tracker.events) == len(conversation_events)
+
+    # the last event is still the same as before
+    assert tracker.events[-1].timestamp == conversation_events[-1].timestamp

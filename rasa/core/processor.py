@@ -221,9 +221,10 @@ class MessageProcessor:
             conversation_id, append_action_listen=False
         )
 
-    def get_tracker_for_all_conversation_sessions(
-        self, conversation_id: Text,
-    ) -> Optional[DialogueStateTracker]:
+    def get_trackers_for_all_conversation_sessions(
+        self,
+        conversation_id: Text,
+    ) -> Optional[List[DialogueStateTracker]]:
         """Get the tracker for a conversation.
 
         In contrast to `get_tracker_with_session_start` this does not add any
@@ -243,9 +244,11 @@ class MessageProcessor:
         with rasa.core.tracker_store.tracker_store_with_full_conversation_retrieval(
             self.tracker_store
         ):
-            return self.tracker_store.get_or_create_tracker(
+            tracker = self.tracker_store.get_or_create_tracker(
                 conversation_id, append_action_listen=False
             )
+
+        return tracker.subtrackers_for_conversation_sessions()
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True

@@ -127,7 +127,7 @@ class DialogueStateTracker:
         cls,
         sender_id: Text,
         evts: List[Event],
-        slots: Optional[List[Slot]] = None,
+        slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
     ):
@@ -295,7 +295,7 @@ class DialogueStateTracker:
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
         """Set latest action name
-            and reset form validation and rejection parameters
+        and reset form validation and rejection parameters
         """
         self.latest_action = action
         if self.active_loop_name:
@@ -404,7 +404,11 @@ class DialogueStateTracker:
 
         yield tracker
 
-    def applied_events(self) -> List[Event]:
+    def applied_events(
+        self,
+        include_restarts: bool = False,
+        include_previous_conversation_sessions: bool = False,
+    ) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events."""
 
         loop_names = [
@@ -416,7 +420,12 @@ class DialogueStateTracker:
         applied_events = []
 
         for event in self.events:
-            if isinstance(event, (Restarted, SessionStarted)):
+            if isinstance(event, Restarted) and not include_restarts:
+                applied_events = []
+            elif (
+                isinstance(event, SessionStarted)
+                and not include_previous_conversation_sessions
+            ):
                 applied_events = []
             elif isinstance(event, ActionReverted):
                 self._undo_till_previous(ActionExecuted, applied_events)
@@ -794,3 +803,44 @@ def is_prev_action_listen_in_state(state: State) -> bool:
     """
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME
+
+
+def subtrackers_for_conversation_sessions(
+    tracker: "DialogueStateTracker",
+) -> List["DialogueStateTracker"]:
+    """Generate subtrackers for `tracker` that are split by restarts and conversation
+    sessions.
+
+    Args:
+        tracker: Instance of `DialogueStateTracker` to split.
+
+    Returns:
+        The split subtrackers.
+    """
+    trackers: List["DialogueStateTracker"] = []
+    tracker_slots = tracker.slots
+
+    applied_events = tracker.applied_events(
+        include_restarts=True, include_previous_conversation_sessions=True
+    )
+
+    current_tracker = DialogueStateTracker.from_events(
+        tracker.sender_id,
+        [],
+        tracker_slots,
+        sender_source=tracker.sender_source,
+    )
+
+    for event in applied_events:
+        if isinstance(event, (SessionStarted, Restarted)):
+            trackers.append(current_tracker)
+            current_tracker = DialogueStateTracker.from_events(
+                tracker.sender_id,
+                [],
+                tracker_slots,
+                sender_source=tracker.sender_source,
+            )
+        else:
+            current_tracker.update(event)
+
+    return trackers
