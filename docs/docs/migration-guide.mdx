@@ -38,6 +38,9 @@ rasa data convert core -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
 Converted files will have the same names as the original ones but with a
 `_converted.yml` suffix.
 
+If you are using [forms](./migration-guide.mdx#forms) or [response selectors](./migration-guide.mdx#response-selectors),
+some additional changes will need to be made as described in their respective sections.
+
 ### Policies
 
 With the introduction of [rules](./rules.mdx) and the [RulePolicy](./policies.mdx#rule-policy),
@@ -55,7 +58,7 @@ To migrate the policies automatically, you can run the following command:
 rasa data convert config
 ```
 
-This command will take care of updating your `config.yml`, ``domain.yml` and `rules.yml` while
+This command will take care of updating your `config.yml`, `domain.yml` and `rules.yml` while
 making backups of your existing files using the `.bak` suffix.
 
 Your forms will still function as normal in the old format after this update, but this command
@@ -377,53 +380,74 @@ See the [forms](./forms.mdx) documentation for more details.
 
 ### Response Selectors
 
-* Response Selectors are now trained on retrieval intent labels by default instead
+Response Selectors are a stable feature as of version 2.0.
+
+The [conversion command](./migration-guide.mdx#training-data-files) will automatically
+convert your `responses.md` file, stories and nlu training data to the new yaml format.
+Additionally you will need to rename the `respond_` actions in your stories files to use the
+`utter_` prefix instead. For example:
+
+```yaml-rasa
+- story: chitchat
+steps:
+- intent: chitchat
+- action: respond_chitchat
+```
+becomes
+
+```yaml-rasa
+- story: chitchat
+steps:
+- intent: chitchat
+- action: utter_chitchat
+```
+
+and you will need to add the `utter_` prefix to the response names in your `responses.md`
+as well. For example:
+
+```yaml-rasa
+responses:
+  chitchat/ask_name:
+    - text: Oh yeah, I am called the retrieval bot.
+
+  chitchat/ask_weather:
+    - text: Oh, it does look sunny right now in Berlin.
+```
+
+becomes
+
+```yaml-rasa
+responses:
+  utter_chitchat/ask_name:
+    - text: Oh yeah, I am called the retrieval bot.
+
+  utter_chitchat/ask_weather:
+    - text: Oh, it does look sunny right now in Berlin.
+```
+
+Finally, you should remove any actions with the `respond_` prefix from the actions
+list in your domain.
+
+This behavior will work fine when defined as a story, but even better when defined
+as a rule. You should consider transfering your retrieval stories to rules. More information
+on what that looks like in the [chitchat and faqs documentation](./chitchat-faqs.mdx).
+
+
+Response Selectors are now trained on retrieval intent labels by default instead
 of the actual response text. For most models, this should improve training time
 and accuracy of the `ResponseSelector`.
 
-* If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label=true`
- parameter to your `ResponseSelector` component.
+If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label: true`
+parameter to your `ResponseSelector` component:
 
-* All response selector related evaluation artifacts - `report.json, successes.json,
-errors.json, confusion_matrix.png` now use the sub-intent of the retrieval intent as
- the target and predicted labels instead of the actual response text.
-This means that the output in these files should look like -
-
-```json title="response_selection_successes.json"
-{
-      "text": "Is this really legit?",
-      "intent_response_key_target": "faq/is_legit",
-      "intent_response_key_prediction": {
-              "name": "faq/is_legit",
-              "confidence": 0.88
-      }
-}
+```yaml-rasa
+pipeline:
+  # other components
+  - name: ResponseSelector
+    use_text_as_label: true
 ```
 
-```json title="response_selection_errors.json"
-{
-      "text": "Is this really legit?",
-      "intent_response_key_target": "faq/is_legit",
-      "intent_response_key_prediction": {
-              "name": "faq/ask_cost",
-              "confidence": 0.6
-      }
-}
-```
-
-* Retrieval actions with `respond_` prefix are now replaced with usual utterance actions with `utter_` prefix.
-If you were using retrieval actions before, rename all of them to start with `utter_` prefix. For example,
-`respond_chitchat` becomes `utter_chitchat`. Also, in order to keep the response templates more consistent,
-you should now add the `utter_` prefix to all response templates defined for retrieval intents. For example,
-a response template `chitchat/ask_name` becomes `utter_chitchat/ask_name`. Note that the NLU examples for this
-will still be under `chitchat/ask_name` intent. The example `responseselectorbot` should help clarify these changes further.
-
-* The output schema of `ResponseSelector` has changed - `full_retrieval_intent` and `name`
-have been deprecated in favour of `intent_response_key` and `response_templates` respectively.
-Additionally, two keys are added to the output -
-1. `all_retrieval_intents` - Holds a list of all retrieval intents(faq, chitchat, etc.) that are present in the training data.
-2. `template_name` - Holds the name of the response template which is predicted by the response selector(`utter_faq/is_legit`)
-An example output looks like this -
+The output schema of `ResponseSelector` has changed. An example output looks like this:
 
 ```json {3-4,10,11,20}
 {
