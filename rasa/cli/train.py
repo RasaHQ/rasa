@@ -143,6 +143,11 @@ def train_nlu(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
+    if args.domain:
+        args.domain = rasa.cli.utils.get_validated_path(
+            args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+        )
+
     return train_nlu(
         config=config,
         nlu_data=nlu_data,
@@ -151,6 +156,7 @@ def train_nlu(
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
         additional_arguments=extract_nlu_additional_arguments(args),
+        domain=args.domain,
     )
 
 

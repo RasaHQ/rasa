@@ -295,7 +295,7 @@ Returns the dumped tracker as a string.
 #### export\_stories
 
 ```python
- | export_stories(e2e: bool = False, include_source: bool = False) -> Text
+ | export_stories(writer: "StoryWriter", e2e: bool = False, include_source: bool = False, should_append_stories: bool = False) -> Text
 ```
 
 Dump the tracker as a story in the Rasa Core story format.
@@ -307,7 +307,7 @@ Dump the tracker as a story in the Rasa Core story format.
 #### export\_stories\_to\_file
 
 ```python
- | export_stories_to_file(export_path: Text = "debug.md") -> None
+ | export_stories_to_file(export_path: Text = "debug_stories.yml") -> None
 ```
 
 Dump the tracker as a story to a file.

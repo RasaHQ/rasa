@@ -6,7 +6,7 @@ title: rasa.shared.core.training_data.story_writer.yaml_story_writer
 ## YAMLStoryWriter Objects
 
 ```python
-class YAMLStoryWriter()
+class YAMLStoryWriter(StoryWriter)
 ```
 
 Writes Core training data into a file in a YAML format.
@@ -14,14 +14,17 @@ Writes Core training data into a file in a YAML format.
 #### dumps
 
 ```python
- | dumps(story_steps: List[StoryStep]) -> Text
+ | dumps(story_steps: List[StoryStep], is_appendable: bool = False, **kwargs: Any) -> Text
 ```
 
-Turns Story steps into a string.
+Turns Story steps into an YAML string.
 
 **Arguments**:
 
 - `story_steps` - Original story steps to be converted to the YAML.
+- `is_appendable` - Specify if result should not contain
+  high level keys/definitions and can be appended to
+  the existing story file.
 
 **Returns**:
 
@@ -30,7 +33,7 @@ Turns Story steps into a string.
 #### dump
 
 ```python
- | dump(target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep]) -> None
+ | dump(target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep], is_appendable: bool = False) -> None
 ```
 
 Writes Story steps into a target file/stream.
@@ -39,6 +42,9 @@ Writes Story steps into a target file/stream.
 
 - `target` - name of the target file/stream to write the YAML to.
 - `story_steps` - Original story steps to be converted to the YAML.
+- `is_appendable` - Specify if result should not contain
+  high level keys/definitions and can be appended to
+  the existing story file.
 
 #### stories\_to\_yaml
 

@@ -58,7 +58,7 @@ Trains a Core model.
 #### train\_nlu
 
 ```python
-train_nlu(config: Text, nlu_data: Text, output: Text, train_path: Optional[Text] = None, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, additional_arguments: Optional[Dict] = None) -> Optional[Text]
+train_nlu(config: Text, nlu_data: Text, output: Text, train_path: Optional[Text] = None, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, additional_arguments: Optional[Dict] = None, domain: Optional[Union[Domain, Text]] = None) -> Optional[Text]
 ```
 
 Trains an NLU model.
@@ -75,6 +75,7 @@ Trains an NLU model.
   with the model.
 - `additional_arguments` - Additional training parameters which will be passed to
   the `train` method of each component.
+- `domain` - Path to the optional domain file/Domain object.
   
   
 

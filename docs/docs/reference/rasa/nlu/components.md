@@ -3,14 +3,6 @@ sidebar_label: rasa.nlu.components
 title: rasa.nlu.components
 ---
 
-## MissingDependencyException Objects
-
-```python
-class MissingDependencyException(RasaException)
-```
-
-Raised if a python package dependency is needed, but not installed.
-
 #### find\_unavailable\_packages
 
 ```python
