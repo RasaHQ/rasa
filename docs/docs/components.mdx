@@ -1393,6 +1393,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
 |                                 |                  | Batch size will be linearly increased for each epoch.        |
+|                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
 |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
@@ -2232,6 +2233,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   +---------------------------------+------------------+--------------------------------------------------------------+
   | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
   |                                 |                  | Batch size will be linearly increased for each epoch.        |
+  |                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
   |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
@@ -2574,7 +2576,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | unidirectional_encoder          | False             | Use a unidirectional or bidirectional encoder.               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| batch_size                      | [8, 32]           | Initial and final value for batch sizes.                     |
+| batch_size                      | [64, 256]         | Initial and final value for batch sizes.                     |
 |                                 |                   | Batch size will be linearly increased for each epoch.        |
 |                                 |                   | If constant `batch_size` is required, pass an int, e.g. `8`. |
 +---------------------------------+-------------------+--------------------------------------------------------------+
