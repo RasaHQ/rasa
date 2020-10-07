@@ -555,7 +555,7 @@ def test_deprecation_warnings_json_payload(payload: Dict):
         rasa.server._validate_json_training_payload(payload)
 
 
-def test_train_with_yaml(rasa_app: SanicTestClient, tmp_path: Path):
+async def test_train_with_yaml(rasa_server: Sanic, tmp_path: Path):
     training_data = """
 stories:
 - story: My story
@@ -594,7 +594,7 @@ pipeline:
   - name: DIETClassifier
     epochs: 1
 """
-    _, response = rasa_app.post(
+    _, response = await rasa_server.asgi_client.post(
         "/model/train",
         data=training_data,
         headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
