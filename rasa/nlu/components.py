@@ -382,13 +382,19 @@ class Component(metaclass=ComponentMetaclass):
 
     # Defines what language(s) this component can handle.
     # This attribute is designed for instance method: `can_handle_language`.
-    # Default value is None which means it can handle all languages.
+    # Default value is None. if both `support_language_list` and
+    # `not_supported_language_list` are None, it means it can handle
+    # all languages. Also, only one of `support_language_list` and
+    # `not_supported_language_list` can be set to not None.
     # This is an important feature for backwards compatibility of components.
     supported_language_list = None
 
     # Defines what language(s) this component can NOT handle.
     # This attribute is designed for instance method: `can_handle_language`.
-    # Default value is None which means it can handle all languages.
+    # Default value is None. if both `support_language_list` and
+    # `not_supported_language_list` are None, it means it can handle
+    # all languages. Also, only one of `support_language_list` and
+    # `not_supported_language_list` can be set to not None.
     # This is an important feature for backwards compatibility of components.
     not_supported_language_list = None
 
@@ -646,17 +652,48 @@ class Component(metaclass=ComponentMetaclass):
             `True` if component can handle specific language, `False` otherwise.
         """
 
-        # if language_list is set to `None` it means: support all languages
+        # If both `supported_language_list` and `not_supported_language_list` are set to `None`,
+        # it means: support all languages
         if language is None or (
             cls.supported_language_list is None
             and cls.not_supported_language_list is None
         ):
             return True
 
-        language_list = cls.supported_language_list or []
-        not_supported_language_list = cls.not_supported_language_list or []
+        # check language supporting settings
+        if cls.supported_language_list and cls.not_supported_language_list:
+            # When user set both language supporting settings to not None, it will lead to ambiguity.
+            raise RasaException(
+                "Only one of `supported_language_list` and `not_supported_language_list` can be set to not None"
+            )
 
-        return language in language_list or language not in not_supported_language_list
+        # convert to `list` for membership test
+        supported_language_list = (
+            cls.supported_language_list
+            if cls.supported_language_list is not None
+            else []
+        )
+        not_supported_language_list = (
+            cls.not_supported_language_list
+            if cls.not_supported_language_list is not None
+            else []
+        )
+
+        # check if user provided a valid setting
+        if not supported_language_list and not not_supported_language_list:
+            # One of language settings must be valid (not None and not a empty list),
+            # There are three combinations of settings are not valid: (None, []), ([], None) and ([], [])
+            raise RasaException(
+                "Empty lists for both "
+                "`supported_language_list` and `not_supported language_list` "
+                "is not a valid setting. If you meant to allow all languages "
+                "for the component use `None` for both of them."
+            )
+
+        if supported_language_list:
+            return language in supported_language_list
+        else:
+            return language not in not_supported_language_list
 
 
 C = typing.TypeVar("C", bound=Component)

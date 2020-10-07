@@ -1,13 +1,5 @@
 version: "2.0"
 
-slots:
-  concerts:
-    type: list
-  venues:
-    type: list
-  likes_music:
-    type: bool
-
 intents:
   - affirm
   - deny
@@ -24,15 +16,26 @@ intents:
 entities:
   - name
 
+slots:
+  concerts:
+    type: list
+    influence_conversation: false
+  venues:
+    type: list
+    influence_conversation: false
+  likes_music:
+    type: bool
+    influence_conversation: true
+
 responses:
   utter_greet:
-    - text: "hey there!"
+    - text: "Hey there!"
   utter_goodbye:
-    - text: "goodbye :("
+    - text: "Goodbye :("
   utter_default:
-    - text: "default message"
+    - text: "Sorry, I didn't get that, can you rephrase?"
   utter_youarewelcome:
-    - text: "you're very welcome"
+    - text: "You're very welcome."
   utter_iamabot:
     - text: "I am a bot, powered by Rasa."
   utter_get_started:
