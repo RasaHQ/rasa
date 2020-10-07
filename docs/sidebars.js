@@ -7,15 +7,16 @@ module.exports = {
       label: 'Building Assistants',
       collapsed: false,
       items: [
-        {
-          type: 'category',
-          label: 'Getting Started',
-          collapsed: true,
-          items: [
-            'installation',
-            'migrate-from',
-          ],
-        },
+          'installation',
+//        {
+//          type: 'category',
+//          label: 'Getting Started',
+//          collapsed: true,
+//          items: [
+//            'installation',
+//            'migrate-from',
+//          ],
+//        },
         {
           type: 'category',
           label: 'Best Practices',
