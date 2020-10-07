@@ -5,7 +5,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Building Assistants',
-      collapsed: true,
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -53,7 +53,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Concepts',
-      collapsed: true,
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -120,14 +120,7 @@ module.exports = {
       collapsed: true,
       items: [
         'command-line-interface',
-        {
-          type: 'category',
-          label: 'HTTP API',
-          collapsed: true,
-          items: [
-            'http-api',
-          ],
-        },
+        'http-api',
         'jupyter-notebooks',
       ],
     },
