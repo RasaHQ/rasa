@@ -19,10 +19,10 @@ import questionary
 from questionary import Choice, Form, Question
 
 from rasa import telemetry
-import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.cli.utils
+import rasa.shared.data
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
 from rasa.shared.core.constants import (
@@ -698,6 +698,8 @@ async def _request_action_from_user(
 
 
 def _request_export_info() -> Tuple[Text, Text, Text]:
+    import rasa.shared.data
+
     """Request file path and export stories & nlu data to that path"""
 
     # export training data and quit
@@ -707,8 +709,10 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                [".md"],
-                "Please provide a valid export path for the stories, e.g. 'stories.md'.",
+                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS
+                + rasa.shared.data.YAML_FILE_EXTENSIONS,
+                "Please provide a valid export path for the stories, "
+                "e.g. 'stories.yml'.",
             ),
         ),
         export_nlu=questionary.text(
@@ -716,8 +720,9 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
             validate=io_utils.file_type_validator(
-                [".md", ".json"],
-                "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
+                list(rasa.shared.data.TRAINING_DATA_EXTENSIONS),
+                "Please provide a valid export path for the NLU data, "
+                "e.g. 'nlu.yml'.",
             ),
         ),
         export_domain=questionary.text(
@@ -725,8 +730,9 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will be overwritten)",
             default=PATHS["domain"],
             validate=io_utils.file_type_validator(
-                [".yml", ".yaml"],
-                "Please provide a valid export path for the domain file, e.g. 'domain.yml'.",
+                rasa.shared.data.YAML_FILE_EXTENSIONS,
+                "Please provide a valid export path for the domain file, "
+                "e.g. 'domain.yml'.",
             ),
         ),
     )
@@ -793,13 +799,29 @@ def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        YAMLStoryReader,
+    )
+    from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+        YAMLStoryWriter,
+    )
+    from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
+        MarkdownStoryWriter,
+    )
 
     sub_conversations = _split_conversation_at_restarts(events)
 
     io_utils.create_path(export_story_path)
 
+    if rasa.shared.data.is_likely_yaml_file(export_story_path):
+        writer = YAMLStoryWriter()
+    else:
+        writer = MarkdownStoryWriter()
+
+    should_append_stories = False
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
+        should_append_stories = True
     else:
         append_write = "w"  # make a new file if not
 
@@ -817,7 +839,14 @@ def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
+                f.write(
+                    "\n"
+                    + tracker.export_stories(
+                        writer=writer,
+                        should_append_stories=should_append_stories,
+                        e2e=SAVE_IN_E2E,
+                    )
+                )
 
 
 def _filter_messages(msgs: List[Message]) -> List[Message]:
