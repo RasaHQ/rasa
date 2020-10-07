@@ -12,7 +12,7 @@ def class_from_module_path(
 ) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
 
-    The loaded class can be used to instantiate new objects. """
+    The loaded class can be used to instantiate new objects."""
     # load the module, will raise ImportError if module cannot be loaded
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition(".")
