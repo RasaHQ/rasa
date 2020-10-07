@@ -1,0 +1,191 @@
+---
+id: contextual-conversations
+sidebar_label: Contextual Conversations
+title: Contextual Conversations
+abstract: Taking context into account is often key to providing a good user experience. This page is a guide to creating contextual conversation patterns.
+---
+
+In a contextual conversation, something beyond the previous step in the conversation
+plays a role in what should happen next. For example, if a user asks "How many?",
+it's not clear from the message alone what the user is asking about. In the context of the assistant saying,
+"You've got mail!", the response could be "You have five letters in your mailbox". In
+the context of a conversation about outstanding bills, the response could be, "You have
+three overdue bills". The assistant needs to know the previous action to choose the next action.
+
+To create a context-aware conversational assistant, you need to define
+how the conversation history affects the next response.
+
+For example, if a user asks the example concert bot how to get started,
+the bot responds differently based on whether or not they like music:
+
+A conversation with a user who likes music:
+
+<Chat caption="User likes music">
+<ChatUserText>How can I get started ?</ChatUserText>
+<ChatBotText>I can help you find concerts and venues. Do you like music?</ChatBotText>
+<ChatUserText>yes</ChatUserText>
+<ChatBotText>Awesome! You can ask me things like "Find me some concerts" or "What's a good venue"</ChatBotText>
+</Chat>
+
+A conversation with a user who doesn't like music:
+
+<Chat caption="User doesn't like music">
+<ChatUserText>How can I get started ?</ChatUserText>
+<ChatBotText>I can help you find concerts and venues. Do you like music?</ChatBotText>
+<ChatUserText>no</ChatUserText>
+<ChatBotText>Oh no!</ChatBotText>
+</Chat>
+
+## Step-by-step Guide on Creating Contextual Conversation Patterns
+
+### 1. Defining Slots
+
+[Slots](domain.mdx#slots) are your assistant's memory. Slots store pieces of information that your
+assistant needs to refer to later and can direct the flow of the conversation
+based on `slot_was_set` events. There are different [types of slots](domain.mdx#slot-types),
+and each affects the conversation flow in its own way.
+
+In the concert bot example, the `likes_music` slot is a boolean slot. If it is true, the bot sends an intro message. If it is false, the bot sends a different message.
+You define a slot and its type in the domain:
+
+```yaml-rasa title="domain.yml"
+slots:
+  likes_music:
+    type: bool
+```
+
+### 2. Creating Stories
+
+[Stories](./stories.mdx) are examples of how conversations should go.
+In the example above, the concert bot responds differently for users who like music
+and users who don't because of these two stories:
+
+```yaml-rasa title="stories.yml"
+stories:
+  - story: User likes music
+    steps:
+    - intent: how_to_get_started
+    - action: utter_get_started
+    - intent: affirm
+    - action: action_set_music_preference
+    - slot_was_set:
+      - likes_music: True
+    - action: utter_awesome
+
+  - story: User doesn't like music
+    steps:
+    - intent: how_to_get_started
+    - action: utter_get_started
+    - intent: deny
+    - action: action_set_music_preference
+    - slot_was_set:
+      - likes_music: False
+    - action: utter_goodbye
+```
+
+These stories diverge based on the user's intent (`affirm` or `deny`). Based on
+the user's intent, a custom action sets a slot that further directs
+the conversation.
+
+### 3. Configuring the TEDPolicy
+
+In addition to adding stories to account for context,
+machine learning policies can help your model generalize
+to unseen conversation paths. **It is important
+to understand that using machine-learning policies does not mean letting go of control over your
+assistant.** If a rule-based policy is able to make a prediction, that prediction will
+always have a higher [policy priority](./policies.mdx#policy-priority) and will predict the next action.
+
+The [TEDPolicy](https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/) is made to handle
+unexpected user behaviors. For example,
+in the conversation below (extracted from a conversation on [Rasa X](https://rasa.com/docs/rasa-x/user-guide/review-conversations/)):
+
+```yaml-rasa
+stories:
+- story: Story from conversation with a2baab6c83054bfaa8d598459c659d2a on November 28th 2019
+  steps:
+  - checkpoint: STORY_START
+  - intent: greet
+  - action: action_greet_user
+  - slot_was_set:
+    - shown_privacy: true
+  - intent: ask_whoisit
+  - action: action_chitchat
+  - intent: ask_whatspossible
+  - action: action_chitchat
+  - intent: telljoke
+  - action: action_chitchat
+  - intent: how_to_get_started
+    entities:
+    - product: x
+  - slot_was_set:
+    - product: x
+  - action: utter_explain_x
+  - action: utter_also_explain_nlucore
+  - intent: affirm
+  - action: utter_explain_nlu
+  - action: utter_explain_core
+  - action: utter_direct_to_step2
+```
+
+Here we can see the user has completed a few chitchat tasks first, and then ultimately
+asks how they can get started with Rasa X. The TEDPolicy correctly predicts that
+Rasa X should be explained to the user, and then also takes them down the getting started
+path, without asking all the qualifying questions first.
+
+Since the machine-learning policy has generalized to this situation, you should add this story
+to your training data to continuously improve your bot and help the model generalize
+better in future. [Rasa X](https://rasa.com/docs/rasa-x/) is a tool that can help
+you improve your bot and make it more contextual.
+
+
+#### Setting `max_history`
+
+Usually, only a certain amount of context is relevant to your assistant.
+[`max_history`](policies.mdx#max-history) is a hyperparameter for Rasa dialogue management policies
+that controls how many steps in a dialogue the model looks at to decide which
+action to take next.
+
+In the story below, the user asks for help three times in a row. The first two times,
+the bot sends the same message, but the third time, it hands them off to a human
+
+```yaml-rasa  title="stories.yml"
+stories:
+  - story: user persists in asking for help
+    steps:
+    - intent: help
+    - action: utter_help
+    - intent: help
+    - action: utter_help
+    - intent: help
+    - action: action_human_handoff
+```
+
+In order for the model to learn this pattern, it needs to know at least the previous
+four steps i.e. `max_history` of four. If `max_history` were 3, the model would not have
+enough context to see that the user had already sent two help requests, and would never
+predict the human handoff action.
+
+
+You can set the `max_history` by passing it to your policy's settings
+in your config file, for example:
+
+```yaml-rasa title="config.yml"
+policies:
+  - name: "TEDPolicy"
+    max_history: 5
+```
+
+You want to make sure `max_history` is set high enough
+to account for the most context your assistant will need to make an accurate
+prediction about what to do next.
+For more details see the docs on [featurizers](policies.mdx#featurizers).
+
+## Summary
+
+Here's a summary of the concepts you can apply to enable your assistant to have contextual conversations:
+
+- [ ] Write stories for contextual conversations
+- [ ] Use slots to store contextual information for later use
+- [ ] Set the `max_history` for your policies appropriately for the amount of context your bot needs
+- [ ] Use the TEDPolicy for generalization to unseen conversation paths

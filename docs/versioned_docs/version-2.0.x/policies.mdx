@@ -1,0 +1,665 @@
+---
+id: policies
+sidebar_label: Policies
+title: Policies
+abstract: Your assistant uses policies to decide which action to take at each step in a conversation. There are machine-learning and rule-based policies that your assistant can use in tandem.
+---
+You can customize the policies your assistant uses by specifying the `policies`
+key in your project's `config.yml`.
+There are different policies to choose from, and you can include
+multiple policies in a single configuration. Here's an example of
+what a list of policies might look like:
+
+```yaml-rasa title="config.yml"
+language:  # your language
+pipeline:
+  # - <pipeline components>
+
+policies:
+  - name: MemoizationPolicy
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 200
+  - name: RulePolicy
+```
+:::tip Starting from scratch?
+
+If you don't know which policies to choose, leave out the `policies` key from your `config.yml` completely.
+If you do, the [Suggested Config](.//model-configuration.mdx#suggested-config)
+feature will provide default policies for you.
+
+:::
+
+## Action Selection
+
+At every turn, each policy defined in your configuration will
+predict a next action with a certain confidence level. For more information
+about how each policy makes its decision, read into the policy's description below.
+The policy that predicts with the highest confidence decides the assistant's next action.
+
+:::note Maximum number of predictions
+By default, your assistant can predict a maximum of 10 next actions
+after each user message. To update this value,
+you can set the environment variable `MAX_NUMBER_OF_PREDICTIONS`
+to the desired number of maximum predictions.
+
+:::
+
+### Policy Priority
+
+In the case that two policies predict with equal confidence (for example, the Memoization
+and Rule Policies might both predict with confidence 1), the priority of the
+policies is considered. Rasa Open Source policies have default priorities that are set to ensure the
+expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
+
+<!-- We want to have high priority policies first; it's not possible to use a Markdown ordered list for that. -->
+
+* 6 - `RulePolicy`
+
+* 3 - `MemoizationPolicy` or `AugmentedMemoizationPolicy`
+
+* 1 - `TEDPolicy`
+
+
+In general, it is not recommended to have more
+than one policy per priority level in your configuration. If you have 2 policies with the same priority and they predict
+with the same confidence, the resulting action will be chosen randomly.
+
+If you create your own policy, use these priorities as a guide for figuring out the priority of your policy.
+If your policy is a machine learning policy, it should most likely have priority 1, the same as the `TEDPolicy`.
+
+:::warning overriding policy priorities
+All policy priorities are configurable via the `priority` parameter in the policy's configuration,
+but we **do not recommend** changing them outside of specific cases such as custom policies.
+Doing so can lead to unexpected and undesired bot behavior.
+
+:::
+
+
+## Machine Learning Policies
+
+### TED Policy
+
+The Transformer Embedding Dialogue (TED) Policy is described in
+[our paper](https://arxiv.org/abs/1910.00486).
+
+This policy has a pre-defined architecture, which comprises the
+following steps:
+
+1. Concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
+  step into an input vector to pre-transformer embedding layer.
+
+2. Feed the input vector into a transformer.
+
+3. Apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step.
+
+4. Apply a dense layer to create embeddings for system actions for each time step.
+
+5. Calculate the similarity between the dialogue embedding and embedded system actions.
+   This step is based on the [StarSpace](https://arxiv.org/abs/1709.03856) idea.
+
+**Configuration:**
+
+You can pass configuration parameters to the `TEDPolicy` using the `config.yml` file.
+If you want to fine-tune your model, start by modifying the following parameters:
+
+* `epochs`:
+  This parameter sets the number of times the algorithm will see the training data (default: `1`).
+  One `epoch` is equals to one forward pass and one backward pass of all the training examples.
+  Sometimes the model needs more epochs to properly learn.
+  Sometimes more epochs don't influence the performance.
+  The lower the number of epochs the faster the model is trained.
+  Here is how the config would look like:
+
+  ```yaml-rasa title="config.yml"
+  policies:
+  - name: TEDPolicy
+    epochs: 200
+  ```
+
+* `max_history`:
+  This parameter controls how much dialogue history the model looks at to decide which
+  action to take next. Default `max_history` for this policy is `None`,
+  which means that the complete dialogue history since session restart is taken into
+  account. If you want to limit the model to only see a certain number of previous
+  dialogue turns, you can set `max_history` to a finite value.
+  Please note that you should pick `max_history` carefully, so that the model has enough
+  previous dialogue turns to create a correct prediction.
+  See [Featurizers](#featurizers) for more details.
+  Here is how the config would look like:
+
+  ```yaml-rasa title="config.yml"
+  policies:
+  - name: TEDPolicy
+    max_history: 8
+  ```
+
+* `hidden_layers_sizes`:
+  This parameter allows you to define the number of feed forward layers and their output
+  dimensions for dialogues and intents (it defaults to: `dialogue: [], label: []`).
+  Every entry in the list corresponds to a feed forward layer.
+  For example, if you use the following configuration:
+
+  ```yaml-rasa title="config.yml"
+  policies:
+  - name: TEDPolicy
+    hidden_layers_sizes:
+      dialogue: [256, 128]
+  ```
+
+  Rasa Open Source will add two feed forward layers in front of the transformer.
+  The vectors of the input tokens (coming from the dialogue) will be passed on to those
+  layers. The first layer will have an output dimension of 256 and the second layer will have an output
+  dimension of 128. If an empty list is used (default behavior), no feed forward layer will be
+  added.
+  Make sure to use only positive integer values. Usually, numbers of power of two are used.
+  Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
+  value before.
+
+* `number_of_transformer_layers`:
+  This parameter sets the number of transformer layers to use (default: `1`).
+  The number of transformer layers corresponds to the transformer blocks to use for the model.
+
+* `transformer_size`:
+  This parameter sets the number of units in the transformer (default: `128`).
+  The vectors coming out of the transformers will have the given `transformer_size`.
+
+* `weight_sparsity`:
+  This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
+  in the model (default: `0.8`). The value should be a number between 0 and 1. If you set `weight_sparsity`
+  to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+  set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+  to learn.
+
+The above configuration parameters are the ones you should configure to fit your model to your data.
+However, additional parameters exist that can be adapted.
+
+<details><summary>More configurable parameters</summary>
+
+```
++---------------------------------+------------------+--------------------------------------------------------------+
+| Parameter                       | Default Value    | Description                                                  |
++=================================+==================+==============================================================+
+| hidden_layers_sizes             | dialogue: []     | Hidden layer sizes for layers before the embedding layers    |
+|                                 | label: []        | for dialogue and labels. The number of hidden layers is      |
+|                                 |                  | equal to the length of the corresponding.                    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| transformer_size                | 128              | Number of units in transformer.                              |
++---------------------------------+------------------+--------------------------------------------------------------+
+| number_of_transformer_layers    | 1                | Number of transformer layers.                                |
++---------------------------------+------------------+--------------------------------------------------------------+
+| number_of_attention_heads       | 4                | Number of attention heads in transformer.                    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_key_relative_attention      | False            | If 'True' use key relative embeddings in attention.          |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_value_relative_attention    | False            | If 'True' use value relative embeddings in attention.        |
++---------------------------------+------------------+--------------------------------------------------------------+
+| max_relative_position           | None             | Maximum position for relative embeddings.                    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
+|                                 |                  | Batch size will be linearly increased for each epoch.        |
+|                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
++---------------------------------+------------------+--------------------------------------------------------------+
+| batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
+|                                 |                  | Can be either 'sequence' or 'balanced'.                      |
++---------------------------------+------------------+--------------------------------------------------------------+
+| epochs                          | 1                | Number of epochs to train.                                   |
++---------------------------------+------------------+--------------------------------------------------------------+
+| random_seed                     | None             | Set random seed to any 'int' to get reproducible results.    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
++---------------------------------+------------------+--------------------------------------------------------------+
+| number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
+|                                 |                  | their similarity to the user input during training.          |
++---------------------------------+------------------+--------------------------------------------------------------+
+| similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
+|                                 |                  | or 'inner'.                                                  |
++---------------------------------+------------------+--------------------------------------------------------------+
+| loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
++---------------------------------+------------------+--------------------------------------------------------------+
+| ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
+|                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
++---------------------------------+------------------+--------------------------------------------------------------+
+| maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
+|                                 |                  | embedding vectors for correct labels.                        |
+|                                 |                  | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
++---------------------------------+------------------+--------------------------------------------------------------+
+| maximum_negative_similarity     | -0.2             | Maximum negative similarity for incorrect labels.            |
+|                                 |                  | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
++---------------------------------+------------------+--------------------------------------------------------------+
+| use_maximum_negative_similarity | True             | If 'True' the algorithm only minimizes maximum similarity    |
+|                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
+|                                 |                  | set to 'margin'.                                             |
++---------------------------------+------------------+--------------------------------------------------------------+
+| scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
+|                                 |                  | prediction.                                                  |
++---------------------------------+------------------+--------------------------------------------------------------+
+| regularization_constant         | 0.001            | The scale of regularization.                                 |
++---------------------------------+------------------+--------------------------------------------------------------+
+| negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
+|                                 |                  | similarity between embeddings of different labels.           |
++---------------------------------+------------------+--------------------------------------------------------------+
+| drop_rate_dialogue              | 0.1              | Dropout rate for embedding layers of dialogue features.      |
+|                                 |                  | Value should be between 0 and 1.                             |
+|                                 |                  | The higher the value the higher the regularization effect.   |
++---------------------------------+------------------+--------------------------------------------------------------+
+| drop_rate_label                 | 0.0              | Dropout rate for embedding layers of label features.         |
+|                                 |                  | Value should be between 0 and 1.                             |
+|                                 |                  | The higher the value the higher the regularization effect.   |
++---------------------------------+------------------+--------------------------------------------------------------+
+| drop_rate_attention             | 0.0              | Dropout rate for attention. Value should be between 0 and 1. |
+|                                 |                  | The higher the value the higher the regularization effect.   |
++---------------------------------+------------------+--------------------------------------------------------------+
+| weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+|                                 |                  | Value should be between 0 and 1.                             |
++---------------------------------+------------------+--------------------------------------------------------------+
+| evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
+|                                 |                  | Set to '-1' to evaluate just once at the end of training.    |
++---------------------------------+------------------+--------------------------------------------------------------+
+| evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
+|                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
+|                                 |                  | Keep at 0 if your data set contains a lot of unique examples |
+|                                 |                  | of dialogue turns.                                           |
++---------------------------------+------------------+--------------------------------------------------------------+
+| tensorboard_log_directory       | None             | If you want to use tensorboard to visualize training         |
+|                                 |                  | metrics, set this option to a valid output directory. You    |
+|                                 |                  | can view the training metrics after training in tensorboard  |
+|                                 |                  | via 'tensorboard --logdir <path-to-given-directory>'.        |
++---------------------------------+------------------+--------------------------------------------------------------+
+| tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
+|                                 |                  | logged. Either after every epoch ('epoch') or for every      |
+|                                 |                  | training step ('minibatch').                                 |
++---------------------------------+------------------+--------------------------------------------------------------+
+| checkpoint_model                | False            | Save the best performing model during training. Models are   |
+|                                 |                  | stored to the location specified by `--out`. Only the one    |
+|                                 |                  | best model will be saved.                                    |
+|                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
+|                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
++---------------------------------+------------------+--------------------------------------------------------------+
+```
+
+:::note
+The parameter `maximum_negative_similarity` is set to a negative value to mimic the original
+starspace algorithm in the case `maximum_negative_similarity = maximum_positive_similarity` and
+`use_maximum_negative_similarity = False`. See [starspace paper](https://arxiv.org/abs/1709.03856)
+for details.
+
+:::
+
+</details>
+
+### Memoization Policy
+
+The `MemoizationPolicy` remembers the stories from your
+training data. It checks if the current conversation matches a story
+in the training data. If so, it will predict the next action from the matching
+story of your training data with a confidence of `1.0`. If no matching conversation
+is found, the policy predicts `None` with confidence `0.0`.
+
+When looking for a match in your training data, the policy will take the last
+`max_history` number of turns of the conversation into account.
+One “turn” includes the message sent by the user and any actions the
+assistant performed before waiting for the next message.
+
+You can configure the number of turns the `MemoizationPolicy` should use in your
+configuration:
+```yaml title="config.yml"
+policies:
+  - name: "MemoizationPolicy"
+    max_history: 3
+```
+
+
+### Augmented Memoization Policy
+
+The `AugmentedMemoizationPolicy` remembers examples from training
+stories for up to `max_history` turns, just like the `MemoizationPolicy`.
+Additionally, it has a forgetting mechanism that will forget a certain amount
+of steps in the conversation history and try to find a match in your stories
+with the reduced history. It predicts the next action with confidence `1.0`
+if a match is found, otherwise it predicts `None` with confidence `0.0`.
+
+:::note Slots and predictions
+If you have dialogues where some slots that are set during
+prediction time might not be set in training stories (e.g. in training
+stories starting with a [reminder](./reaching-out-to-user.mdx#reminders), not all previous slots are set),
+make sure to add the relevant stories without slots to your training
+data as well.
+
+:::
+
+
+## Rule-based Policies
+
+### Rule Policy
+
+The `RulePolicy` is a policy that handles conversation parts that follow
+a fixed behavior (e.g. business logic). It makes predictions based on
+any `rules` you have in your training data. See the
+[Rules documentation](./rules.mdx) for further information on how to define rules.
+
+The `RulePolicy` has the following configuration options:
+
+```yaml title="config.yml"
+policies:
+  - name: "RulePolicy"
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: action_default_fallback
+    enable_fallback_prediction: true
+    restrict_rules: true
+    check_for_contradictions: true
+```
+
+* `core_fallback_threshold` (default: `0.3`): Please see the
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
+   further information.
+* `core_fallback_action_name` (default: `action_default_fallback`): Please see the
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
+   further information.
+* `enable_fallback_prediction` (default: `true`): Please see the
+   [fallback documentation](fallback-handoff.mdx#handling-low-action-confidence) for
+   further information.
+* `check_for_contradictions` (default: `true`):
+   Before training, the RulePolicy will perform a check to make sure that
+   slots and active loops set by actions are defined consistently for all rules.
+   The following snippet contains an example of an incomplete rule:
+
+   ```yaml-rasa
+   rules:
+   - rule: complete rule
+     steps:
+     - intent: search_venues
+     - action: action_search_venues
+     - slot_was_set:
+       - venues: [{"name": "Big Arena", "reviews": 4.5}]
+
+   - rule: incomplete rule
+     steps:
+     - intent: search_venues
+     - action: action_search_venues
+   ```
+
+   In the second `incomplete rule`, `action_search_venues` should set
+   the `venues` slot because it is set in `complete rule`, but this event is missing.
+   There are several possible ways to fix this rule.
+
+   In the case when `action_search_venues` can't find
+   a venue and the `venues` slot should not be set,
+   you should explicitly set the value of the slot to `null`.
+   In the following story `RulePolicy` will predict `utter_venues_not_found`
+   only if the slot `venues` is not set:
+
+   ```yaml-rasa
+   rules:
+   - rule: fixes incomplete rule
+     steps:
+     - intent: search_venues
+     - action: action_search_venues
+     - slot_was_set:
+       - venues: null
+     - action: utter_venues_not_found
+   ```
+
+   If you want the slot setting to be handled by a different rule or story,
+   you should add `wait_for_user_input: false` to the end of the rule snippet:
+
+   ```yaml-rasa
+   rules:
+   - rule: incomplete rule
+     steps:
+     - intent: search_venues
+     - action: action_search_venues
+     wait_for_user_input: false
+   ```
+
+   After training, the RulePolicy will check that none of the rules or stories contradict
+   each other. The following snippet is an example of two contradicting rules:
+
+    ```yaml-rasa
+    rules:
+    - rule: Chitchat
+      steps:
+      - intent: chitchat
+      - action: utter_chitchat
+
+    - rule: Greet instead of chitchat
+      steps:
+      - intent: chitchat
+      - action: utter_greet  # `utter_greet` contradicts `utter_chitchat` from the rule above
+    ```
+ * `restrict_rules` (default: `true`): Rules are restricted to one user turn, but
+    there can be multiple bot events, including e.g. a form being filled and its subsequent submission.
+    Changing this parameter to `false` may result in unexpected behavior.
+
+  :::caution Overusing rules
+    Overusing rules for purposes outside of the [recommended use cases](rules.mdx)
+    will make it very hard to maintain your assistant as the complexity grows.
+
+  :::
+
+## Configuring Policies
+
+### Max History
+
+One important hyperparameter for Rasa Open Source policies is the `max_history`.
+This controls how much dialogue history the model looks at to decide which
+action to take next.
+
+You can set the `max_history` by passing it to your policy
+in the policy configuration in your `config.yml`.
+The default value is `None`, which means that the complete dialogue history since session
+restart is taken in the account.
+
+```yaml-rasa title="config.yml" {3}
+policies:
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 200
+    batch_size: 50
+    max_training_samples: 300
+```
+
+:::note
+`RulePolicy` doesn't have max history parameter, it always consider the full length
+of provided rules. Please see [Rules](./rules.mdx) for further information.
+:::
+
+As an example, let's say you have an `out_of_scope` intent which
+describes off-topic user messages. If your bot sees this intent multiple
+times in a row, you might want to tell the user what you can help them
+with. So your story might look like this:
+
+```yaml-rasa
+stories:
+  - story: utter help after 2 fallbacks
+    steps:
+    - intent: out_of_scope
+    - action: utter_default
+    - intent: out_of_scope
+    - action: utter_default
+    - intent: out_of_scope
+    - action: utter_help_message
+```
+
+For your model to learn this pattern, the `max_history`
+has to be at least 4.
+
+If you increase your `max_history`, your model will become bigger and
+training will take longer. If you have some information that should
+affect the dialogue very far into the future, you should store it as a
+slot. Slot information is always available for every featurizer.
+
+### Data Augmentation
+
+When you train a model, Rasa Open Source will create
+longer stories by randomly combining
+the ones in your stories files.
+Take the stories below as an example:
+
+```yaml-rasa
+stories:
+  - story: thank
+    steps:
+    - intent: thankyou
+    - action: utter_youarewelcome
+  - story: say goodbye
+    steps:
+    - intent: goodbye
+    - action: utter_goodbye
+```
+
+You actually want to teach your policy to **ignore** the dialogue history
+when it isn't relevant and to respond with the same action no matter
+what happened before.
+
+You can alter this behavior with the `--augmentation` flag,
+which allows you to set the `augmentation_factor`.
+The `augmentation_factor` determines how many augmented stories are
+subsampled during training. The augmented stories are subsampled before training
+since their number can quickly become very large, and you want to limit it.
+The number of sampled stories is `augmentation_factor` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+
+`--augmentation 0` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the `augmentation_factor`) and will automatically
+ignore all augmented stories.
+
+### Featurizers
+
+In order to apply machine learning algorithms to conversational AI, you need
+to build up vector representations of conversations.
+
+Each story corresponds to a tracker which consists of the states of the
+conversation just before each action was taken.
+
+#### State Featurizers
+
+Every event in a trackers history creates a new state (e.g. running a bot
+action, receiving a user message, setting slots). Featurizing a single state
+of the tracker has two steps:
+
+1. **Tracker provides a bag of active features**:
+
+    * features indicating intents and entities, if this is the first
+     state in a turn, e.g. it's the first action we will take after
+     parsing the user's message. (e.g.
+     `[intent_restaurant_search, entity_cuisine]` )
+
+    * features indicating which slots are currently defined, e.g.
+     `slot_location` if the user previously mentioned the area
+     they're searching for restaurants.
+
+    * features indicating the results of any API calls stored in
+     slots, e.g. `slot_matches`
+
+    * features indicating what the last bot action or bot utterance was (e.g.
+     `prev_action_listen`)
+
+    * features indicating if any loop is active and which one
+
+2. **Convert all the features into numeric vectors**:
+
+    `SingleStateFeaturizer` uses the Rasa NLU pipeline to convert the intent and
+    bot action names or bot utterances into numeric vectors.
+    See the [NLU Model Configuration](./model-configuration.mdx) documentation
+    for the details on how to configure Rasa NLU pipeline.
+
+    Entities, slots and active loops are featurized as one-hot encodings
+    to indicate their presence.
+
+:::note
+If the domain defines the possible `actions`,
+`[ActionGreet, ActionGoodbye]`,
+4 additional default actions are added:
+`[ActionListen(), ActionRestart(),
+ActionDefaultFallback(), ActionDeactivateForm()]`.
+Therefore, label `0` indicates default action listen, label `1`
+default restart, label `2` a greeting and `3` indicates goodbye.
+
+:::
+
+#### Tracker Featurizers
+
+It's often useful to include a bit more history than just the current state
+when predicting an action. The `TrackerFeaturizer` iterates over tracker
+states and calls a `SingleStateFeaturizer` for each state to create numeric
+input features for a policy.
+The target labels correspond to bot actions or bot utterances
+represented as index in a list of all possible actions.
+
+There are two different tracker featurizers:
+
+##### 1. Full Dialogue
+
+`FullDialogueTrackerFeaturizer` creates a numerical representation of
+stories to feed to a recurrent neural network where the whole dialogue
+is fed to a network and the gradient is backpropagated from all time steps.
+The smaller dialogues are padded with `0` for all features.
+
+##### 2. Max History
+
+`MaxHistoryTrackerFeaturizer` creates an array of previous tracker
+states for each bot action or bot utterance, with the parameter
+`max_history` defining how many states go into each row of input features.
+If `max_history` is not specified, the algorithm takes
+the whole length of a dialogue into account.
+The smaller dialogues are padded with `0` for all features.
+Deduplication is performed to filter out duplicated turns (bot actions
+or bot utterances) in terms of their previous states.
+
+For some algorithms a flat feature vector is needed, so input features
+should be reshaped to `(num_unique_turns, max_history * num_input_features)`.
+
+## Custom Policies
+
+You can also write custom policies and reference them in your configuration. In the example below, the
+last two lines show how to use a custom policy class and pass arguments to it.
+
+```yaml-rasa {9-10}
+policies:
+  - name: "TEDPolicy"
+    max_history: 5
+    epochs: 200
+  - name: "RulePolicy"
+  - name: "path.to.your.policy.class"
+    arg1: "..."
+```
+
+## Deprecated Policies
+
+### Mapping Policy
+
+:::caution Deprecated
+The `MappingPolicy` is deprecated. Please see [Rules](./rules.mdx) for how to implement
+its behavior using the [Rule Policy](#rule-policy). If you previously used
+the `MappingPolicy`, see the
+[migration guide](./migration-guide.mdx#manually-migrating-from-the-mapping-policy).
+:::
+
+### Fallback Policy
+
+:::caution Deprecated
+The `FallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) for how to implement
+its behavior using the [Rule Policy](#rule-policy). If you previously used
+the `FallbackPolicy`, see the
+[migration guide](./migration-guide.mdx#manually-migrating-from-the-fallback-policy).
+:::
+
+### Two-Stage Fallback Policy
+
+:::caution Deprecated
+The `TwoStageFallbackPolicy` is deprecated. Please see [Fallbacks](./fallback-handoff.mdx#fallbacks) for how to implement
+its behavior using the [Rule Policy](#rule-policy). If you previously used
+the `TwoStageFallbackPolicy`, see the
+[migration guide](./migration-guide.mdx#manually-migrating-from-the-two-stage-fallback-policy).
+:::
+
+### Form Policy
+
+:::caution Deprecated
+The `FormPolicy` is deprecated. Please see [Forms](./forms.mdx) for how to implement
+its behavior using the [Rule Policy](#rule-policy). If you previously used
+the `FormPolicy`, see the
+[migration guide](./migration-guide.mdx#forms).
+:::

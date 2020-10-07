@@ -1,20 +1,18 @@
-usage: rasa shell [-h] [-v] [-vv] [--quiet]
-                  [--conversation-id CONVERSATION_ID] [-m MODEL]
-                  [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
-                  [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
-                  [--response-timeout RESPONSE_TIMEOUT]
-                  [--remote-storage REMOTE_STORAGE]
-                  [--ssl-certificate SSL_CERTIFICATE]
-                  [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
-                  [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
-                  [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
-                  [--jwt-method JWT_METHOD]
-                  {nlu} ... [model-as-positional-argument]
+usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+                [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+                [--cors [CORS [CORS ...]]] [--enable-api]
+                [--response-timeout RESPONSE_TIMEOUT]
+                [--remote-storage REMOTE_STORAGE]
+                [--ssl-certificate SSL_CERTIFICATE]
+                [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
+                [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
+                [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
+                [--jwt-method JWT_METHOD]
+                {actions} ... [model-as-positional-argument]
 
 positional arguments:
-  {nlu}
-    nlu                 Interprets messages on the command line using your NLU
-                        model.
+  {actions}
+    actions             Runs the action server.
   model-as-positional-argument
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -22,9 +20,6 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --conversation-id CONVERSATION_ID
-                        Set the conversation ID. (default:
-                        51349fef41e140188ebbba2464028878)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this

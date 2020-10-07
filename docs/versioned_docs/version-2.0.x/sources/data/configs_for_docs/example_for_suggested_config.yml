@@ -1,0 +1,10 @@
+language: en
+
+pipeline:
+# will be selected by the Suggested Config feature
+
+policies:
+- name: MemoizationPolicy
+- name: TEDPolicy
+  max_history: 5
+  epochs: 10

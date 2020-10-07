@@ -1,0 +1,210 @@
+---
+id: model-storage
+sidebar_label: Model Storage
+title: Model Storage
+abstract: |
+  Models can be stored in different places after you trained your assistant. This
+  page explains how to configure Rasa to load your models.
+---
+
+You can load your trained model in three different ways:
+
+1. Load the model from your local disk (see [Load Model from Disk](./model-storage.mdx#load-model-from-disk))
+
+2. Fetch the model from your own HTTP server (see [Load Model from Server](./model-storage.mdx#load-model-from-server))
+
+3. Fetch the model from cloud storage like S3 (see [Load Model from Cloud](./model-storage.mdx#load-model-from-cloud))
+
+By default all commands of Rasa's CLI will load models from your local disk.
+
+## Load Model from Disk
+
+By default models will be loaded from your local disk. You can specify the path
+to your model with the `--model` parameter:
+
+```bash
+rasa run --model models/20190506-100418.tar.gz
+```
+
+If you want to load the latest model in a directory, you can specify
+a directory instead of a file:
+
+```bash
+rasa run --model models/
+```
+
+Rasa Open Source will check all the models in that directory and load the one that was trained
+most recently.
+
+If you don't specify a `--model` argument, Rasa Open Source will look for models in the  `models/` directory. The two following calls
+will load the same model:
+
+```bash
+# this command will load the same model
+rasa run --model models/
+# ... as this command (using defaults)
+rasa run
+```
+
+## Load Model from Server
+
+You can configure the Rasa Open Source server to regularly fetch
+a model from a server and deploy it.
+
+### How to Configure Rasa Open Source
+
+You can configure the HTTP server to fetch models from another URL
+by adding it to your `endpoints.yml`:
+
+```yaml-rasa title="endpoints.yml"
+models:
+  url: http://my-server.com/models/default
+  wait_time_between_pulls: 10   # In seconds, optional, default: 100
+```
+The server will query the `url` for a zipped model every `wait_time_between_pulls`
+seconds.
+
+If you want to pull the model only when starting up the server, you can set the time
+between pulls to `null`:
+
+```yaml-rasa title="endpoints.yml"
+models:
+  url: http://my-server.com/models/default
+  wait_time_between_pulls: null  # fetches model only once
+```
+
+### How to Configure Your Server
+
+Rasa Open Source will send a `GET` request to the URL you specified in the
+`endpoints.yml`, e.g. `http://my-server.com/models/default` in the above examples.
+You can use any URL.
+The `GET` request will contain an `If-None-Match` header that contains the
+model hash of the last model it downloaded. An example request from Rasa Open
+Source to your server would look like this:
+
+```bash
+curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default
+```
+
+The response of your server to this `GET` request should be one of these:
+- a status code of `200`, a zipped Rasa Model and set the `ETag` header in
+  the response to the hash of the model.
+- a status code of `304` and an empty response if the `If-None-Match`
+  header of the request matches the model you want your server to return.
+
+Rasa Open Source uses the `If-None-Match` and `ETag` headers for caching. Setting
+the headers will avoid re-downloading the same model over and over, saving
+bandwidth and compute resources.
+
+## Load Model from Cloud
+
+You can also configure the Rasa server to fetch your model from a remote storage:
+
+```bash
+rasa run --model 20190506-100418.tar.gz --remote-storage aws
+```
+
+The zipped model will be downloaded from cloud storage, unzipped, and deployed.
+Rasa supports loading models from:
+- [Amazon S3](https://aws.amazon.com/s3/),
+- [Google Cloud Storage](https://cloud.google.com/storage/),
+- [Azure Storage](https://azure.microsoft.com/services/storage/) and
+- custom implementations for
+  [Other Remote Storages](./model-storage.mdx#other-remote-storages).
+
+Models need to be stored in the root folder of the storage service. Currently, it is
+not possible to manually specify the path on the cloud storage.
+
+### Amazon S3 Storage
+
+Amazon S3 is supported using the `boto3` package which you need to install
+as an additional dependency using `pip3`:
+```bash
+pip3 install boto3
+```
+
+For Rasa to be able to authenticate and download the model, you need to set the
+following environment variables before running any command requiring the storage:
+
+* `AWS_SECRET_ACCESS_KEY`: environment variable containing your AWS S3 secret access key
+
+* `AWS_ACCESS_KEY_ID`: environment variable containing your AWS S3 access key ID
+
+* `AWS_DEFAULT_REGION`: environment variable specifying the region of your AWS S3 bucket
+
+* `BUCKET_NAME`: environment variable specifying the S3 bucket
+
+* `AWS_ENDPOINT_URL`: The complete URL to use for the AWS S3 requests. You need to
+  specify a complete URL (including the "http/https" scheme).
+
+
+Once all environment variables are set, you can start the Rasa server with
+`remote-storage` option set to `aws`:
+
+```bash
+rasa run --model 20190506-100418.tar.gz --remote-storage aws
+```
+
+### Google Cloud Storage
+
+Google Cloud Storage (GCS) is supported using the `google-cloud-storage` package
+which you need to install as an additional dependency using `pip3`:
+```bash
+pip3 install google-cloud-storage
+```
+
+If you are running Rasa on Google App Engine or Compute Engine, the auth
+credentials are already set up (for the GCS in the same project). In this case,
+you can skip setting any additional environment variables.
+
+If you are running locally or on a machine outside of GAE or GCE you need to
+provide the authentication details to Rasa manually:
+1. Check out the [GCS documentation](https://cloud.google.com/docs/authentication/getting-started#auth-cloud-implicit-python)
+   and follow the descriptions on "Creating a service account" and
+   "Setting the environment variable."
+2. After you have completed the GCS instructions, you should have set an environment
+   variable called `GOOGLE_APPLICATION_CREDENTIALS` to the path of a service account
+   key file with access to your GCS.
+
+Once all environment variable is set, you can start the Rasa server with
+`remote-storage` option set to `gcs`:
+
+```bash
+rasa run --model 20190506-100418.tar.gz --remote-storage gcs
+```
+
+### Azure Storage
+
+Azure Storage is supported using the `azure-storage-blob` package which you need
+to install as an additional dependency using `pip3`:
+```bash
+pip3 install azure-storage-blob
+```
+
+For Rasa to be able to authenticate and download the model, you need to set the
+following environment variables before running any command requiring the storage:
+
+* `AZURE_CONTAINER`: environment variable containing your azure container name
+
+* `AZURE_ACCOUNT_NAME`: environment variable containing your azure account name
+
+* `AZURE_ACCOUNT_KEY`: environment variable containing your account key
+
+Once all environment variables are set, you can start the Rasa server with
+`remote-storage` option set to `azure`:
+
+```bash
+rasa run --model 20190506-100418.tar.gz --remote-storage azure
+```
+
+### Other Remote Storages
+
+If you want to use any other Cloud Storage, you can provide your own python
+implementation of the [`rasa.nlu.persistor.Persistor`](/reference/rasa/nlu/persistor) class.
+
+You can start the Rasa server with `remote-storage` option set to
+the module path of your persistor implementation:
+
+```bash
+rasa run --remote-storage <your module>.<class name>
+```
