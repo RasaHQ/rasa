@@ -76,7 +76,6 @@ class RasaYAMLReader(TrainingDataReader):
         """
         self.validate(string)
 
-        # TODO
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
         if not validation.validate_training_data_format_version(
