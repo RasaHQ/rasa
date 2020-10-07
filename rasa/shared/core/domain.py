@@ -354,7 +354,9 @@ class Domain:
         ]
 
     @classmethod
-    def collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]:
+    def collect_entity_properties(
+        cls, domain_entities: List[Union[Text, Dict[Text, Any]]]
+    ) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]:
         """Get entity properties for a domain from what is provided by a domain file.
 
         Args:
@@ -379,9 +381,7 @@ class Domain:
                         _entity = key
                         break
                 if _entity is None:
-                    raise InvalidDomain(
-                        f"Invalid domain. No entity name in {entity}."
-                    )
+                    raise InvalidDomain(f"Invalid domain. No entity name in {entity}.")
                 entities.append(_entity)
                 if ENTITY_ROLES_KEY in entity:
                     roles[_entity] = entity[ENTITY_ROLES_KEY]
@@ -468,7 +468,9 @@ class Domain:
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
-        self.entities, self.roles, self.groups = self.collect_entity_properties(entities)
+        self.entities, self.roles, self.groups = self.collect_entity_properties(
+            entities
+        )
 
         self.intent_properties = self.collect_intent_properties(intents, self.entities)
         self.overriden_default_intents = self._collect_overridden_default_intents(
@@ -943,21 +945,21 @@ class Domain:
 
         for entity in entities:
             if entity in self.roles and entity in self.groups:
-                entities_for_file.append({
-                    entity: None,
-                    ENTITY_GROUPS_KEY: self.groups[entity],
-                    ENTITY_ROLES_KEY: self.roles[entity]
-                })
+                entities_for_file.append(
+                    {
+                        entity: None,
+                        ENTITY_GROUPS_KEY: self.groups[entity],
+                        ENTITY_ROLES_KEY: self.roles[entity],
+                    }
+                )
             elif entity in self.roles:
-                entities_for_file.append({
-                    entity: None,
-                    ENTITY_ROLES_KEY: self.roles[entity]
-                })
+                entities_for_file.append(
+                    {entity: None, ENTITY_ROLES_KEY: self.roles[entity]}
+                )
             elif entity in self.groups:
-                entities_for_file.append({
-                    entity: None,
-                    ENTITY_GROUPS_KEY: self.groups[entity],
-                })
+                entities_for_file.append(
+                    {entity: None, ENTITY_GROUPS_KEY: self.groups[entity],}
+                )
             else:
                 entities_for_file.append(entity)
 
@@ -1297,4 +1299,3 @@ class Domain:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
         return self.forms.get(form_name, {})
-
