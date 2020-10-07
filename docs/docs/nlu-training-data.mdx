@@ -102,43 +102,47 @@ The `RegexFeaturizer` provides features to the intent classifier, but it doesn't
 
 If your entity has a deterministic structure, you can use regular expressions in one of two ways:
 
-1. As features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in the pipeline.
+#### Regular Expressions as Features
 
-  When used as features for the `RegexFeaturizer` the
-  name of the regular expression does not matter.
-  When using the `RegexFeaturizer`, a regular expression provides a feature
-  that helps the model learn an association between intents/entities and inputs
-  that fit the regular expression. 
-  
-  :::note Provide Training Examples
-  The `RegexFeaturizer` provides features to the entity extractor, but it doesn't predict the entity directly. Include enough examples containing the regular expression so that the entity extractor can learn ot use the regular expression feature.
+You can use regular expressions to create features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in you NLU pipeline.
 
-  :::
+When using a regular expression with the  `RegexFeaturizer`, the
+name of the regular expression does not matter.
+When using the `RegexFeaturizer`, a regular expression provides a feature
+that helps the model learn an association between intents/entities and inputs
+that fit the regular expression. 
 
-  Regex features for entity extraction
-  are currently only supported by the `CRFEntityExtractor` and `DIETClassifier` components. Other entity extractors, like
-  `MitieEntityExtractor` or `SpacyEntityExtractor`, won't use the generated
-  features and their presence will not improve entity recognition for
-  these extractors.
+:::note Provide Training Examples
+The `RegexFeaturizer` provides features to the entity extractor, but it doesn't predict the entity directly. Include enough examples containing the regular expression so that the entity extractor can learn ot use the regular expression feature.
 
-2. For rule-based entity extraction using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) component in the pipeline.
+:::
 
-  When using the `RegexEntityExtractor`, the name of the regular expression should
-  match the name of the entity you want to extract.
-  For example, you could extract account numbers of 10-12 digits by including this regular expression and at least two annotated examples in your training data:
+Regex features for entity extraction
+are currently only supported by the `CRFEntityExtractor` and `DIETClassifier` components. Other entity extractors, like
+`MitieEntityExtractor` or `SpacyEntityExtractor`, won't use the generated
+features and their presence will not improve entity recognition for
+these extractors.
 
-  ```yaml-rasa
-  nlu:
-  - regex: account_number
-    examples: |
-      - \d{10,12}
-  - intent: inform
-    examples: |
-      - my account number is [1234567891](account_number)
-      - This is my account number [1234567891](account_number)
-  ```
+#### Regular Expressions for Rule-based Entity Extraction
 
-  Whenever a user message contains a sequence of 10-12 digits, it will be extracted as an `account_number` entity. `RegexEntityExtractor` doesn't require training examples to learn to extract the entity, but you do need at least two annotated examples of the entity so that the NLU model can register it as an entity at training time.
+You can use regular expressions for rule-based entity extraction using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) component in your NLU pipeline.
+
+When using the `RegexEntityExtractor`, the name of the regular expression should
+match the name of the entity you want to extract.
+For example, you could extract account numbers of 10-12 digits by including this regular expression and at least two annotated examples in your training data:
+
+```yaml-rasa
+nlu:
+- regex: account_number
+  examples: |
+    - \d{10,12}
+- intent: inform
+  examples: |
+    - my account number is [1234567891](account_number)
+    - This is my account number [1234567891](account_number)
+```
+
+Whenever a user message contains a sequence of 10-12 digits, it will be extracted as an `account_number` entity. `RegexEntityExtractor` doesn't require training examples to learn to extract the entity, but you do need at least two annotated examples of the entity so that the NLU model can register it as an entity at training time.
 
 
 ## Lookup Tables
