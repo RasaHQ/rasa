@@ -5,7 +5,6 @@ from typing import Dict, Text, List, Any, Optional, Union
 import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
@@ -366,6 +365,8 @@ class YAMLStoryReader(StoryReader):
         return user_intent
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
+        from rasa.shared.nlu.interpreter import RegexInterpreter
+
         intent_name = self._user_intent_from_step(step)
         intent = {"name": intent_name, "confidence": 1.0}
 

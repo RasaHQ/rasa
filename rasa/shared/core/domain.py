@@ -86,7 +86,6 @@ class SessionConfig(NamedTuple):
 
     @staticmethod
     def default() -> "SessionConfig":
-        # TODO: 2.0, reconsider how to apply sessions to old projects
         return SessionConfig(
             rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
             rasa.shared.constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
@@ -185,7 +184,6 @@ class Domain:
     def _get_session_config(session_config: Dict) -> SessionConfig:
         session_expiration_time_min = session_config.get(SESSION_EXPIRATION_TIME_KEY)
 
-        # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
         if session_expiration_time_min is None:
             session_expiration_time_min = (
                 rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES

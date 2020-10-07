@@ -351,7 +351,7 @@ class RasaYAMLReader(TrainingDataReader):
             return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
         except (YAMLError, Warning) as e:
             logger.error(
-                f"Tried to check if '{filename}' is an NLU file, but failed to "
+                f"Tried to check if '{filename}' is a NLU file, but failed to "
                 f"read it. If this file contains NLU data, you should "
                 f"investigate this error, otherwise it is probably best to "
                 f"move the file to a different location. "
