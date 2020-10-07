@@ -1,7 +1,7 @@
 module.exports = {
   default: [
     'introduction',
-    'prototype-an-assistant',
+    'playground',
     {
       type: 'category',
       label: 'Building Assistants',
