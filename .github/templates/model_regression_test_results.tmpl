@@ -21,7 +21,7 @@ Dataset: `{{$dataset}}`
 {{- $intent_class_master = (index $dataset_master $config_name).intent_classification -}}
 {{- end -}}
 {{- $intent_class := index $config_data.intent_classification -}}
-{{- if (has (index $intent_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $intent_class "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index $intent_class_master "micro avg") "f1-score") | math.Sub (index (index $intent_class "micro avg") "f1-score")) }}){{- else if (has $intent_class "accuracy") -}}{{ printf "%.4f" $intent_class.accuracy }} ({{ printf "%.2f" ($intent_class_master.accuracy | math.Sub $intent_class.accuracy) }}){{- else -}}`no data`{{- end -}} |
+{{- if and (has (index $intent_class "micro avg") "f1-score") (has (index $intent_class_master "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $intent_class "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index $intent_class_master "micro avg") "f1-score") | math.Sub (index (index $intent_class "micro avg") "f1-score")) }}){{- else if and (has $intent_class "accuracy") (has $intent_class_master "accuracy") -}}{{ printf "%.4f" $intent_class.accuracy }} ({{ printf "%.2f" ($intent_class_master.accuracy | math.Sub $intent_class.accuracy) }}){{- else -}}`no data`{{- end -}} |
 {{- else -}}
 `no data`|
 {{- end -}}
@@ -32,7 +32,7 @@ Dataset: `{{$dataset}}`
 {{- $entity_class_master = (index $dataset_master $config_name).entity_prediction -}}
 {{- end -}}
 {{- $entity_class := $config_data.entity_prediction -}}
-{{- if (has (index $entity_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $entity_class "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index $entity_class_master "micro avg") "f1-score") | math.Sub (index (index $entity_class "micro avg") "f1-score")) }}){{- else if (has $entity_class "accuracy") -}}{{ printf "%.4f" $entity_class.accuracy }} ({{ printf "%.2f" ($entity_class_master.accuracy | math.Sub $entity_class.accuracy) }}){{- else -}}`no data`{{- end -}} |
+{{- if and (has (index $entity_class "micro avg") "f1-score") (has (index $entity_class_master "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $entity_class "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index $entity_class_master "micro avg") "f1-score") | math.Sub (index (index $entity_class "micro avg") "f1-score")) }}){{- else if and (has $entity_class "accuracy") (has $entity_class_master "accuracy") -}}{{ printf "%.4f" $entity_class.accuracy }} ({{ printf "%.2f" ($entity_class_master.accuracy | math.Sub $entity_class.accuracy) }}){{- else -}}`no data`{{- end -}} |
 {{- else -}}
 `no data`|
 {{- end -}}
@@ -43,7 +43,7 @@ Dataset: `{{$dataset}}`
 {{- $response_class_master = (index $dataset_master $config_name).response_selection -}}
 {{- end -}}
 {{- $response_class := $config_data.response_selection -}}
-{{- if (has (index $response_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $response_class "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index $response_class_master "micro avg") "f1-score") | math.Sub (index (index $response_class "micro avg") "f1-score")) }}){{- else if (has $response_class "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }} ({{ printf "%.2f" ($response_class_master.accuracy | math.Sub $response_class.accuracy) }}){{- else -}}`no data`{{- end -}} |
+{{- if and (has (index $response_class "micro avg") "f1-score") (has (index $response_class_master "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $response_class "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index $response_class_master "micro avg") "f1-score") | math.Sub (index (index $response_class "micro avg") "f1-score")) }}){{- else if and (has $response_class "accuracy") (has $response_class_master "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }} ({{ printf "%.2f" ($response_class_master.accuracy | math.Sub $response_class.accuracy) }}){{- else -}}`no data`{{- end -}} |
 {{- else -}}
 `no data`|
 {{- end }}
