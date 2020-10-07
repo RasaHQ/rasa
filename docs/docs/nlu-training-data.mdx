@@ -8,7 +8,7 @@ abstract: NLU training data stores structured information about user messages.
 
 The goal of NLU (Natural Language Understanding) is to extract structured information from user messages. This usually includes the user's [intent](glossary.mdx#intent) and any 
 [entities](glossary.mdx#entities) their message contains. You can
-add extra information such as **[regular expressions](#regular-expression-features)** and **[lookup tables](#lookup-tables)** to your
+add extra information such as [regular expressions](#regular-expression-features) and [lookup tables](#lookup-tables) to your
 training data to help the model identify intents and entities correctly. 
 
 
@@ -19,7 +19,7 @@ intent.
 To make it easier to use your intents, give them names that relate to what the user wants to accomplish with that intent, keep them in lowercase, and avoid spaces and special characters. 
 
 :::note
-The `/` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
+The `/` symbol is reserved as a delimiter to separate [retrieval intents](glossary.mdx#retrieval-intents) from response text identifiers. Make sure not
 to use it in the name of your intents.
 
 :::
@@ -44,7 +44,7 @@ Let's say you had an entity `account` that you use to look up the user's balance
 account" and "credit card account".
 
 In this case, you could define "credit card account" and "credit account" as
-**synonyms** to "credit":
+synonyms to "credit":
 
 ```yaml-rasa
 nlu:
@@ -55,9 +55,9 @@ nlu:
 ```
 
 Then, if either of these phrases is extracted as an entity, it will be
-mapped to the **value** `credit`.
+mapped to the value `credit`.
 
-:::note Needs Training Examples
+:::note Provide Training Examples
 Synonym mapping only happens **after** entities have been extracted.
 That means that your training examples should include the synonym examples
 (`credit card account` and `credit account`) so that the model will learn to
@@ -94,8 +94,8 @@ words as possible. E.g. using `\bhelp\b` instead of `help.*`, as the
 later one might match the whole message whereas the first one only
 matches a single word.
 
-:::note Needs Training Examples
-The `RegexFeaturizer` provides features to the intent classifier, but it doesn't predict the intent directly. Include enough examples containing the regular expression so that the intent classifier can learn ot use the regular expression feature.
+:::note Provide Training Examples
+The `RegexFeaturizer` provides features to the intent classifier, but it doesn't predict the intent directly. Include enough examples containing the regular expression so that the intent classifier can learn to use the regular expression feature.
 :::
 
 ### Regular Expressions for Entity Extraction
@@ -110,7 +110,7 @@ If your entity has a deterministic structure, you can use regular expressions in
   that helps the model learn an association between intents/entities and inputs
   that fit the regular expression. 
   
-  :::note Needs Training Examples
+  :::note Provide Training Examples
   The `RegexFeaturizer` provides features to the entity extractor, but it doesn't predict the entity directly. Include enough examples containing the regular expression so that the entity extractor can learn ot use the regular expression feature.
 
   :::
@@ -172,7 +172,7 @@ If you have feedback (positive or negative) please share it with us on the [Rasa
 
 :::
 
-Annotating words as custom entities to words allow you to define certain concepts in your training data.
+Annotating words as custom entities allows you to define certain concepts in your training data.
 For example, you can identify cities by annotating them:
 
 ```
@@ -190,7 +190,7 @@ To distinguish between the different roles, you can assign a role label in addit
 - I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
 ```
 
-You can also **group** different entities by specifying a group label next to the entity label.
+You can also group different entities by specifying a **group** label next to the entity label.
 The group label can, for example, be used to define different orders.
 In the following example, the group label specifies which toppings go with which pizza and
 what size each pizza should be.
