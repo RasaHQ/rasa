@@ -30,7 +30,7 @@ You need to set up a Twilio account.
    [Phone Numbers](https://www.twilio.com/console/phone-numbers/incoming) in the Twilio
    dashboard and selecting your phone number. Find the `Messaging` section and add
    your webhook URL (e.g. `https://<host>:<port>/webhooks/twilio/webhook`,
-   replacing the host and port with your running Rasa X or Rasa Open Source server)
+   replacing the host and port with the appropriate values from your running Rasa X or Rasa Open Source server)
    to the `A MESSAGE COMES IN` setting.
 
 For more information, see the [Twilio REST API](https://www.twilio.com/docs/iam/api).
@@ -45,9 +45,10 @@ access the [Twilio API for WhatsApp](https://www.twilio.com/docs/whatsapp/api).
 According to the [Twilio API documentation](https://www.twilio.com/docs/whatsapp/api#using-phone-numbers-with-whatsapp),
 the phone number you use should be prefixed with whatsapp: in the `credentials.yml` described below.
 
-## Applying the Credentials
 
-Add the Twilio credentials to your  `credentials.yml`:
+## Running on Twilio
+
+Add the Twilio credentials to your `credentials.yml`:
 
 ```yaml-rasa
 twilio:
@@ -56,5 +57,6 @@ twilio:
   twilio_number: "+440123456789"  # if using WhatsApp: "whatsapp:+440123456789"
 ```
 
-Make sure to restart your Rasa Open Source server or container to make changes to
-which connectors are available.
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available for Twilio to send messages to.
+

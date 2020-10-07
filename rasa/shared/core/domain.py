@@ -22,12 +22,15 @@ from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
 import rasa.shared.core.constants
+from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
+from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot
+from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -69,18 +72,12 @@ State = Dict[Text, SubState]
 logger = logging.getLogger(__name__)
 
 
-class InvalidDomain(Exception):
+class InvalidDomain(RasaException):
     """Exception that can be raised when domain is not valid."""
 
-    def __init__(self, message) -> None:
-        self.message = message
-        super(InvalidDomain, self).__init__()
 
-    def __str__(self) -> Text:
-        # return message in error colours
-        return rasa.shared.utils.io.wrap_with_color(
-            self.message, color=rasa.shared.utils.io.bcolors.FAIL
-        )
+class ActionNotFoundException(ValueError, RasaException):
+    """Raised when an action name could not be found."""
 
 
 class SessionConfig(NamedTuple):
@@ -89,7 +86,6 @@ class SessionConfig(NamedTuple):
 
     @staticmethod
     def default() -> "SessionConfig":
-        # TODO: 2.0, reconsider how to apply sessions to old projects
         return SessionConfig(
             rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
             rasa.shared.constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
@@ -110,7 +106,7 @@ class Domain:
         return cls([], [], [], {}, [], [])
 
     @classmethod
-    def load(cls, paths: Union[List[Text], Text]) -> "Domain":
+    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -127,7 +123,7 @@ class Domain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Text) -> "Domain":
+    def from_path(cls, path: Union[Text, Path]) -> "Domain":
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
@@ -148,12 +144,12 @@ class Domain:
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
-
         try:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
-        except rasa.shared.utils.validation.InvalidYamlFileError as e:
+        except rasa.shared.utils.validation.YamlValidationException as e:
+            e.filename = original_filename
             raise InvalidDomain(str(e))
 
         data = rasa.shared.utils.io.read_yaml(yaml)
@@ -188,7 +184,6 @@ class Domain:
     def _get_session_config(session_config: Dict) -> SessionConfig:
         session_expiration_time_min = session_config.get(SESSION_EXPIRATION_TIME_KEY)
 
-        # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
         if session_expiration_time_min is None:
             session_expiration_time_min = (
                 rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
@@ -283,15 +278,14 @@ class Domain:
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
-        # it is super important to sort the slots here!!!
-        # otherwise state ordering is not consistent
         slots = []
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)
+        # Sort the slots so that the order of the slot states is consistent
         for slot_name in sorted(slot_dict):
-            slot_class = Slot.resolve_by_type(slot_dict[slot_name].get("type"))
-            if "type" in slot_dict[slot_name]:
-                del slot_dict[slot_name]["type"]
+            slot_type = slot_dict[slot_name].pop("type", None)
+            slot_class = Slot.resolve_by_type(slot_type)
+
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
@@ -462,6 +456,22 @@ class Domain:
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
+    def __deepcopy__(self, memo: Optional[Dict[int, Any]]) -> "Domain":
+        """Enables making a deep copy of the `Domain` using `copy.deepcopy`.
+
+        See https://docs.python.org/3/library/copy.html#copy.deepcopy
+        for more implementation.
+
+        Args:
+            memo: Optional dictionary of objects already copied during the current
+            copying pass.
+
+        Returns:
+            A deep copy of the current domain.
+        """
+        domain_dict = self.as_dict()
+        return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
+
     @staticmethod
     def _collect_overridden_default_intents(
         intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
@@ -545,7 +555,7 @@ class Domain:
         All unseen values found for the slot will be mapped to this default value
         for featurization.
         """
-        for slot in [s for s in self.slots if type(s) is CategoricalSlot]:
+        for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
 
     def add_requested_slot(self) -> None:
@@ -558,7 +568,10 @@ class Domain:
             s.name for s in self.slots
         ]:
             self.slots.append(
-                UnfeaturizedSlot(rasa.shared.core.constants.REQUESTED_SLOT)
+                TextSlot(
+                    rasa.shared.core.constants.REQUESTED_SLOT,
+                    influence_conversation=False,
+                )
             )
 
     def add_knowledge_base_slots(self) -> None:
@@ -587,7 +600,7 @@ class Domain:
             ]
             for s in knowledge_base_slots:
                 if s not in slot_names:
-                    self.slots.append(UnfeaturizedSlot(s))
+                    self.slots.append(TextSlot(s, influence_conversation=False))
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Look up which action index corresponds to this action name."""
@@ -599,7 +612,7 @@ class Domain:
 
     def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
-        raise NameError(
+        raise ActionNotFoundException(
             f"Cannot access action '{action_name}', "
             f"as that name is not a registered "
             f"action for this domain. "
@@ -788,7 +801,6 @@ class Domain:
 
     def persist_specification(self, model_path: Text) -> None:
         """Persist the domain specification to storage."""
-
         domain_spec_path = os.path.join(model_path, "domain.json")
         rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
@@ -798,17 +810,16 @@ class Domain:
     @classmethod
     def load_specification(cls, path: Text) -> Dict[Text, Any]:
         """Load a domains specification from a dumped model directory."""
-
         metadata_path = os.path.join(path, "domain.json")
-        specification = json.loads(rasa.shared.utils.io.read_file(metadata_path))
-        return specification
+
+        return json.loads(rasa.shared.utils.io.read_file(metadata_path))
 
     def compare_with_specification(self, path: Text) -> bool:
         """Compare the domain spec of the current and the loaded domain.
 
         Throws exception if the loaded domain specification is different
-        to the current domain are different."""
-
+        to the current domain are different.
+        """
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
 
@@ -830,7 +841,6 @@ class Domain:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
-
         return {
             "config": {"store_entities_as_slots": self.store_entities_as_slots},
             SESSION_CONFIG_KEY: {
@@ -845,14 +855,6 @@ class Domain:
             KEY_FORMS: self.forms,
             KEY_E2E_ACTIONS: self.action_texts,
         }
-
-    def persist(self, filename: Union[Text, Path]) -> None:
-        """Write domain to a file."""
-
-        domain_data = self.as_dict()
-        rasa.shared.utils.io.write_yaml(
-            domain_data, filename, should_preserve_key_order=True
-        )
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
@@ -928,21 +930,29 @@ class Domain:
             if v != {} and v != [] and v is not None
         }
 
-    def persist_clean(self, filename: Text) -> None:
-        """Write cleaned domain to a file."""
+    def persist(self, filename: Union[Text, Path]) -> None:
+        """Write domain to a file."""
+        as_yaml = self.as_yaml(clean_before_dump=False)
+        rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
-        cleaned_domain_data = self.cleaned_domain()
-        rasa.shared.utils.io.write_yaml(
-            cleaned_domain_data, filename, should_preserve_key_order=True
-        )
+    def persist_clean(self, filename: Union[Text, Path]) -> None:
+        """Write cleaned domain to a file."""
+        as_yaml = self.as_yaml(clean_before_dump=True)
+        rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
-            domain_data = self.cleaned_domain()
+            domain_data: Dict[Text, Any] = self.cleaned_domain()
         else:
-            domain_data = self.as_dict()
+            domain_data: Dict[Text, Any] = self.as_dict()
 
-        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(domain_data)
+        domain_data[
+            KEY_TRAINING_DATA_FORMAT_VERSION
+        ] = f"{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
+            domain_data, should_preserve_key_order=True
+        )
 
     def intent_config(self, intent_name: Text) -> Dict[Text, Any]:
         """Return the configuration for an intent."""
@@ -956,10 +966,10 @@ class Domain:
     def _slots_for_domain_warnings(self) -> List[Text]:
         """Fetch names of slots that are used in domain warnings.
 
-        Excludes slots of type `UnfeaturizedSlot`.
+        Excludes slots which aren't featurized.
         """
 
-        return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
+        return [s.name for s in self.slots if s.influence_conversation]
 
     @property
     def _actions_for_domain_warnings(self) -> List[Text]:
@@ -1033,7 +1043,7 @@ class Domain:
 
         Returns a dictionary with entries for `intent_warnings`,
         `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
-        of type `UnfeaturizedSlot` from domain warnings.
+        from domain warnings in case they are not featurized.
         """
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)

@@ -71,8 +71,8 @@ word vectors in your pipeline.
      [configuration](./model-configuration.mdx) file.
 
   For a full example of how to train MITIE word vectors, check out
-  [this blogpost](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html)
-  of creating a MITIE model from a Chinese Wikipedia dump.
+  [用Rasa NLU构建自己的中文NLU系统](http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html),
+  a blogpost that goes through creating a MITIE model from a Chinese Wikipedia dump.
 
 
 
@@ -178,8 +178,8 @@ word vectors in your pipeline.
   available language models.
   Additionally, you can also specify the architecture variation of the chosen language model by specifying the
   parameter `model_weights`.
-  The full list of supported architectures can be found
-  [here](https://huggingface.co/transformers/pretrained_models.html).
+  The full list of supported architectures can be found in the
+  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
   If left empty, it uses the default model architecture that original Transformers library loads (see table below).
 
   ```
@@ -1085,8 +1085,8 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 * **Description**
 
   This classifier uses MITIE to perform intent classification. The underlying classifier
-  is using a multi-class linear SVM with a sparse linear kernel (see
-  [MITIE trainer code](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222)).
+  is using a multi-class linear SVM with a sparse linear kernel (see `train_text_categorizer_classifier` function at the
+  [MITIE trainer code](https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp)).
 
   :::note
   This classifier does not rely on any featurizer as it extracts features on its own.
@@ -1297,9 +1297,9 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
   minimize similarities with negative samples.
 
-  If you want to learn more about the model, please take a look at our
-  [videos](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) where we explain the model
-  architecture in detail.
+  If you want to learn more about the model, check out the
+  [Algorithm Whiteboard](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) series on YouTube,
+  where we explain the model architecture in detail.
 
   :::note
   If during prediction time a message contains **only** words unseen during training
@@ -1912,7 +1912,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   The extractor will always return 1.0 as a confidence, as it is a rule
   based system.
 
-  The list of supported languages can be found [here](https://github.com/facebook/duckling/tree/master/Duckling/Dimensions).
+  The list of supported languages can be found in the
+  [Duckling GitHub repository](https://github.com/facebook/duckling/tree/master/Duckling/Dimensions).
 
 
 
@@ -2133,9 +2134,9 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
     minimize similarities with negative samples.
 
-    If you want to learn more about the model, please take a look at our
-    [videos](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) where we explain the model
-    architecture in detail.
+    If you want to learn more about the model, check out the
+    [Algorithm Whiteboard](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) series on YouTube,
+    where we explain the model architecture in detail.
 
     :::note
     If during prediction time a message contains **only** words unseen during training
@@ -2467,7 +2468,7 @@ Selectors predict a bot response from a set of candidate responses.
 
   To use this component, your training data should contain [retrieval intents](./glossary.mdx#retrieval-intent). To define these,
   checkout [documentation on NLU training examples](./training-data-format.mdx#training-examples) and
-  [documentation on defining response utterances for retrieval intents](./responses.mdx#defining-responses-for-retrieval-intents).
+  [documentation on defining response utterances for retrieval intents](./responses.mdx#defining-responses).
 
   :::note
   If during prediction time a message contains **only** words unseen during training
@@ -2536,9 +2537,11 @@ Selectors predict a bot response from a set of candidate responses.
   template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
   combined with the response key as the label.
 
-  See this [example assistant](https://github.com/RasaHQ/rasa/tree/master/examples/responseselectorbot) to understand
+  :::note examples and tutorials
+  Check out the [responseselectorbot](https://github.com/RasaHQ/rasa/tree/master/examples/responseselectorbot) for an example of
   how you can use the `ResponseSelector` component in your assistant. Additionally, you will find this tutorial on
   [handling FAQs](./chitchat-faqs.mdx) using a `ResponseSelector` useful as well.
+  :::
 
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
@@ -2688,7 +2691,7 @@ You can create a custom component to perform a specific task which NLU doesn't c
 Below is the specification of the `rasa.nlu.components.Component`] class with the methods you'll need to implement.
 
 :::tip follow the tutorial
-There is a detailed tutorial on building custom components [here](https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/).
+There is a detailed tutorial on building custom components on the [Rasa Blog](https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/).
 
 :::
 
