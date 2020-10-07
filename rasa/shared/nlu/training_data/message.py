@@ -18,7 +18,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
-    ACTION_NAME,
+    ACTION_NAME, INTENT_NAME,
 )
 
 if typing.TYPE_CHECKING:
@@ -331,6 +331,7 @@ class Message:
         """
         return (
             self.data.get(ACTION_NAME) is not None
+            or self.data.get(INTENT_NAME) is not None
             or self.data.get(ACTION_TEXT)
             or (
                 (self.data.get(INTENT) or self.data.get(RESPONSE))
