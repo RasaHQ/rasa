@@ -149,17 +149,17 @@ class Domain:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
+
+            data = rasa.shared.utils.io.read_yaml(yaml)
+            if not rasa.shared.utils.validation.validate_training_data_format_version(
+                data, original_filename
+            ):
+                return Domain.empty()
+
+            return cls.from_dict(data)
         except YamlException as e:
             e.filename = original_filename
             raise e
-
-        data = rasa.shared.utils.io.read_yaml(yaml)
-        if not rasa.shared.utils.validation.validate_training_data_format_version(
-            data, original_filename
-        ):
-            return Domain.empty()
-
-        return cls.from_dict(data)
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
@@ -1188,14 +1188,15 @@ class Domain:
     def is_domain_file(filename: Text) -> bool:
         """Checks whether the given file path is a Rasa domain file.
 
-        Will throw exceptions if the file seems to be a YAML file (extension) but
-        can not be read / parsed.
-
         Args:
             filename: Path of the file which should be checked.
 
         Returns:
             `True` if it's a domain file, otherwise `False`.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
         from rasa.shared.data import is_likely_yaml_file
 

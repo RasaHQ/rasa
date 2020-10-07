@@ -193,7 +193,7 @@ def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) 
 
 
 def validate_training_data_format_version(
-    yaml_file_content: Dict[Text, Any], filename: Text
+    yaml_file_content: Dict[Text, Any], filename: Optional[Text]
 ) -> bool:
     """Validates version on the training data content using `version` field
        and warns users if the file is not compatible with the current version of
@@ -207,16 +207,24 @@ def validate_training_data_format_version(
         `True` if the file can be processed by current version of Rasa Open Source,
         `False` otherwise.
     """
+
+    if filename:
+        filename = os.path.abspath(filename)
+
     if not isinstance(yaml_file_content, dict):
-        raise ValueError(f"Failed to validate {os.path.abspath(filename)}.")
+        raise YamlValidationException(
+            "YAML content in is not a mapping, can not validate training "
+            "data schema version.",
+            filename=filename,
+        )
 
     version_value = yaml_file_content.get(KEY_TRAINING_DATA_FORMAT_VERSION)
 
     if not version_value:
         # not raising here since it's not critical
-        logger.warning(
+        logger.info(
             f"The '{KEY_TRAINING_DATA_FORMAT_VERSION}' key is missing in "
-            f"the training data file {os.path.abspath(filename)}. "
+            f"the training data file {filename}. "
             f"Rasa Open Source will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file. "
             f"See {DOCS_URL_TRAINING_DATA}."
@@ -233,7 +241,7 @@ def validate_training_data_format_version(
 
     except TypeError:
         rasa.shared.utils.io.raise_warning(
-            f"Training data file {os.path.abspath(filename)} must specify "
+            f"Training data file {filename} must specify "
             f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"
             f"{KEY_TRAINING_DATA_FORMAT_VERSION}: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
             f"Rasa Open Source will read the file as a "
@@ -243,7 +251,7 @@ def validate_training_data_format_version(
         return True
 
     rasa.shared.utils.io.raise_warning(
-        f"Training data file {os.path.abspath(filename)} has a greater "
+        f"Training data file {filename} has a greater "
         f"format version than your Rasa Open Source installation: "
         f"{version_value} > {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
         f"Please consider updating to the latest version of Rasa Open Source."

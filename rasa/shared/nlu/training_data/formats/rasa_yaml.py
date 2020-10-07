@@ -335,15 +335,16 @@ class RasaYAMLReader(TrainingDataReader):
     def is_yaml_nlu_file(filename: Text) -> bool:
         """Checks if the specified file possibly contains NLU training data in YAML.
 
-        Will throw exceptions if the file seems to be a YAML file (extension) but
-        can not be read / parsed.
-
         Args:
             filename: name of the file to check.
 
         Returns:
             `True` if the `filename` is possibly a valid YAML NLU file,
             `False` otherwise.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
         if not rasa.shared.data.is_likely_yaml_file(filename):
             return False

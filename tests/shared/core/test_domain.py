@@ -5,6 +5,7 @@ from typing import Dict, List, Text, Any, Union, Set
 
 import pytest
 
+from rasa.shared.exceptions import YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core import training, utils
@@ -696,22 +697,24 @@ def test_check_domain_sanity_on_invalid_domain():
         )
 
 
-def test_load_on_invalid_domain():
+def test_load_on_invalid_domain_duplicate_intents():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_intents.yml")
 
+
+def test_load_on_invalid_domain_duplicate_actions():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_actions.yml")
 
-    with pytest.raises(InvalidDomain):
+
+def test_load_on_invalid_domain_duplicate_templates():
+    with pytest.raises(YamlSyntaxException):
         Domain.load("data/test_domains/duplicate_templates.yml")
 
+
+def test_load_on_invalid_domain_duplicate_entities():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_entities.yml")
-
-    # Currently just deprecated
-    # with pytest.raises(InvalidDomain):
-    #     Domain.load("data/test_domains/missing_text_for_templates.yml")
 
 
 def test_is_empty():

@@ -564,7 +564,7 @@ stories:
   - action: utter_greet
 
 rules:
-- story: My rule
+- rule: My rule
   steps:
   - intent: greet
   - action: utter_greet
