@@ -194,7 +194,7 @@ responses:
     - text: hello world
     """
     )
-    structure = writer.training_data_to_yaml(training_data)
+    structure = writer.training_data_to_dict(training_data)
 
     assert isinstance(structure, OrderedDict)
     assert "nlu" in structure

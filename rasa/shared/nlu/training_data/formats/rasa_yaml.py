@@ -378,31 +378,32 @@ class RasaYAMLWriter(TrainingDataWriter):
             target: Name of the target object to write the YAML to.
             training_data: TrainingData object.
         """
-        result = self.training_data_to_yaml(training_data)
+        result = self.training_data_to_dict(training_data)
 
         if result:
             rasa.shared.utils.io.write_yaml(result, target, True)
 
-    def training_data_to_yaml(
-        self, training_data: "TrainingData"
+    @classmethod
+    def training_data_to_dict(
+        cls, training_data: "TrainingData"
     ) -> Optional[OrderedDict]:
-        """Converts NLU training data to a dict/list structure ready to be
+        """Represents NLU training data to a dict/list structure ready to be
         serialized as YAML.
 
         Args:
-            training_data: `TrainingDa` to convert.
+            training_data: `TrainingData` to convert.
 
         Returns:
-            `OrderedDict` containing all training data as dictionaries and lists.
+            `OrderedDict` containing all training data.
         """
         from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
         from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
         nlu_items = []
-        nlu_items.extend(self.process_intents(training_data))
-        nlu_items.extend(self.process_synonyms(training_data))
-        nlu_items.extend(self.process_regexes(training_data))
-        nlu_items.extend(self.process_lookup_tables(training_data))
+        nlu_items.extend(cls.process_intents(training_data))
+        nlu_items.extend(cls.process_synonyms(training_data))
+        nlu_items.extend(cls.process_regexes(training_data))
+        nlu_items.extend(cls.process_lookup_tables(training_data))
 
         if not any([nlu_items, training_data.responses]):
             return None
