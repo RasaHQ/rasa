@@ -715,7 +715,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         model_data = self._create_model_data(
-            training_data.training_examples,
+            training_data.nlu_examples,
             label_id_index_mapping,
             label_attribute=label_attribute,
         )
