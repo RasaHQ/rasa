@@ -1,3 +1,4 @@
+import asyncio
 from typing import Collection, List, Text
 from unittest.mock import Mock
 
@@ -81,6 +82,7 @@ async def test_cached_method_with_async_method():
     class Test:
         @rasa.shared.utils.common.cached_method
         async def f(self):
+            await asyncio.sleep(0)
             return mock()
 
     test_instance = Test()
