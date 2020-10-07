@@ -503,7 +503,7 @@ class StoryGraph:
         cps: List[Checkpoint], cp_name_to_ignore: Set[Text]
     ) -> List[Checkpoint]:
         """Finds checkpoints which names are
-            different form names of checkpoints to ignore"""
+        different form names of checkpoints to ignore"""
 
         return [cp for cp in cps if cp.name not in cp_name_to_ignore]
 
@@ -514,7 +514,7 @@ class StoryGraph:
         story_end_checkpoints: Dict[Text, Text],
     ) -> None:
         """Finds unused generated checkpoints
-            and remove them from story steps."""
+        and remove them from story steps."""
 
         unused_cps = self._find_unused_checkpoints(
             story_steps.values(), story_end_checkpoints
@@ -562,7 +562,7 @@ class StoryGraph:
         checkpoint_name: Text, conditions: Dict[Text, Any], cps: List[Checkpoint]
     ) -> bool:
         """Checks if checkpoint with name and conditions is
-            already in the list of checkpoints."""
+        already in the list of checkpoints."""
 
         for cp in cps:
             if checkpoint_name == cp.name and conditions == cp.conditions:

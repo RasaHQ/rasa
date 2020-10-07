@@ -520,7 +520,7 @@ class TrainingDataGenerator:
         used_checkpoints: Set[Text],
     ) -> Set[Text]:
         """Add unused end checkpoints
-            if they were never encountered as start checkpoints
+        if they were never encountered as start checkpoints
         """
 
         return unused_checkpoints.union(
@@ -536,7 +536,7 @@ class TrainingDataGenerator:
         active_trackers: TrackerLookupDict, unused_checkpoints: Set[Text]
     ) -> TrackerLookupDict:
         """Filter active trackers that ended with unused checkpoint
-            or are parts of loops."""
+        or are parts of loops."""
         next_active_trackers = defaultdict(list)
 
         for start_name in unused_checkpoints:
@@ -552,14 +552,14 @@ class TrainingDataGenerator:
     ) -> TrackerLookupDict:
         """This is where the augmentation magic happens.
 
-            We will reuse all the trackers that reached the
-            end checkpoint `None` (which is the end of a
-            story) and start processing all steps again. So instead
-            of starting with a fresh tracker, the second and
-            all following phases will reuse a couple of the trackers
-            that made their way to a story end.
+        We will reuse all the trackers that reached the
+        end checkpoint `None` (which is the end of a
+        story) and start processing all steps again. So instead
+        of starting with a fresh tracker, the second and
+        all following phases will reuse a couple of the trackers
+        that made their way to a story end.
 
-            We need to do some cleanup before processing them again.
+        We need to do some cleanup before processing them again.
         """
         next_active_trackers = defaultdict(list)
 
@@ -691,7 +691,7 @@ class TrainingDataGenerator:
         self, trackers: List[TrackerWithCachedStates]
     ) -> List[TrackerWithCachedStates]:
         """Removes trackers that reached story end and
-            created equal featurizations."""
+        created equal featurizations."""
 
         # collected trackers that created different featurizations
         unique_trackers = []  # for all steps
