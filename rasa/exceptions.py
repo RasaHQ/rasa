@@ -19,6 +19,10 @@ class NoEventsInTimeRangeError(RasaException):
     """Raised when a tracker store does not contain events within a given time range."""
 
 
+class MissingDependencyException(RasaException):
+    """Raised if a python package dependency is needed, but not installed."""
+
+
 class PublishingError(RasaException):
     """Raised when publishing of an event fails.
 
