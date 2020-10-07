@@ -112,9 +112,11 @@ def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
         async def decorated(self: object, *args: Any, **kwargs: Any) -> Any:
             cache = Cache(self, args, kwargs)
             if not cache.is_cached():
-                to_cache = await f(self, *args, **kwargs)
+                # Store the task immediately so that other concurrent calls of the
+                # method can re-use the same task and don't schedule a second execution.
+                to_cache = asyncio.ensure_future(f(self, *args, **kwargs))
                 cache.cache_result(to_cache)
-            return cache.cached_result()
+            return await cache.cached_result()
 
         return decorated
     else:
