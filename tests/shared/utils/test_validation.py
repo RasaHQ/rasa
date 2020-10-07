@@ -3,6 +3,7 @@ import pytest
 from jsonschema import ValidationError
 from pep440_version_utils import Version
 
+from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 import rasa.shared.utils.validation as validation_utils
 import rasa.utils.io as io_utils
@@ -40,7 +41,7 @@ def test_validate_yaml_schema(file, schema):
     ],
 )
 def test_validate_yaml_schema_raise_exception(file, schema):
-    with pytest.raises(validation_utils.YamlValidationException):
+    with pytest.raises(YamlException):
         validation_utils.validate_yaml_schema(
             rasa.shared.utils.io.read_file(file), schema
         )
