@@ -201,13 +201,13 @@ def test_kafka_broker_from_config():
 
     expected = KafkaEventBroker(
         "localhost",
-        "username",
-        "password",
+        sasl_username="username",
+        sasl_password="password",
         topic="topic",
         security_protocol="SASL_PLAINTEXT",
     )
 
-    assert actual.host == expected.host
+    assert actual.url == expected.url
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
     assert actual.topic == expected.topic
