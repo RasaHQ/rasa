@@ -12,7 +12,6 @@ import tensorflow_addons as tfa
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
 
 import rasa.shared.utils.io
-import rasa.utils.common as common_utils
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -1187,7 +1186,7 @@ class DIET(TransformerRasaModel):
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You specified '{self.__class__.__name__}' to train entities, but "
-                f"no entities are present in the training data. Skip training of "
+                f"no entities are present in the training data. Skipping training of "
                 f"entities."
             )
             self.config[ENTITY_RECOGNITION] = False
