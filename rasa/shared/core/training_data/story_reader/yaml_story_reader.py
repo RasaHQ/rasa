@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
 import rasa.shared.data
+from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
@@ -79,12 +80,15 @@ class YAMLStoryReader(StoryReader):
             `StoryStep`s read from `filename`.
         """
         self.source_name = filename
-
-        return self.read_from_string(
-            rasa.shared.utils.io.read_file(
-                filename, rasa.shared.utils.io.DEFAULT_ENCODING
+        try:
+            return self.read_from_string(
+                rasa.shared.utils.io.read_file(
+                    filename, rasa.shared.utils.io.DEFAULT_ENCODING
+                )
             )
-        )
+        except YamlException as e:
+            e.filename = filename
+            raise e
 
     def read_from_string(self, string: Text) -> List[StoryStep]:
         """Read stories or rules from a string.
@@ -95,15 +99,8 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `StoryStep`s read from `string`.
         """
-        try:
-            rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
-            yaml_content = rasa.shared.utils.io.read_yaml(string)
-        except (ValueError, ParserError) as e:
-            rasa.shared.utils.io.raise_warning(
-                f"Failed to read YAML from '{self.source_name}', "
-                f"it will be skipped. Error: {e}"
-            )
-            return []
+        rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+        yaml_content = rasa.shared.utils.io.read_yaml(string)
 
         return self.read_from_parsed_yaml(yaml_content)
 
@@ -160,16 +157,8 @@ class YAMLStoryReader(StoryReader):
         Returns:
               `True` if all the keys are contained in the file, `False` otherwise.
         """
-        try:
-            content = rasa.shared.utils.io.read_yaml_file(file_path)
-            return any(key in content for key in keys)
-        except Exception as e:
-            # Using broad `Exception` because yaml library is not exposing all Errors
-            rasa.shared.utils.io.raise_warning(
-                f"Tried to open '{file_path}' and load its data, but failed "
-                f"to read it. There seems to be an error with the yaml syntax: {e}"
-            )
-            return False
+        content = rasa.shared.utils.io.read_yaml_file(file_path)
+        return any(key in content for key in keys)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:

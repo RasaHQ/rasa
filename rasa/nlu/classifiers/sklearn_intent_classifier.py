@@ -8,7 +8,7 @@ import numpy as np
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.components import Component
@@ -100,7 +100,7 @@ class SklearnIntentClassifier(IntentClassifier):
                 "Can not train an intent classifier as there are not "
                 "enough intents. Need at least 2 different intents. "
                 "Skipping training of intent classifier.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 

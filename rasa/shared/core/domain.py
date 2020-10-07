@@ -22,7 +22,8 @@ from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
+from rasa.shared.utils.validation import YamlValidationException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -148,7 +149,7 @@ class Domain:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
-        except rasa.shared.utils.validation.YamlValidationException as e:
+        except YamlException as e:
             e.filename = original_filename
             raise InvalidDomain(str(e))
 
@@ -1197,14 +1198,9 @@ class Domain:
 
         if not is_likely_yaml_file(filename):
             return False
-        try:
-            content = rasa.shared.utils.io.read_yaml_file(filename)
-            if any(key in content for key in ALL_DOMAIN_KEYS):
-                return True
-        except YAMLError:
-            pass
 
-        return False
+        content = rasa.shared.utils.io.read_yaml_file(filename)
+        return any(key in content for key in ALL_DOMAIN_KEYS)
 
     def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
         """Retrieve the slot mappings for a form which are defined in the domain.
