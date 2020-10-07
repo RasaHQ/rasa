@@ -87,3 +87,22 @@ Writes training data into a file in a YAML format.
 - `target` - Name of the target object to write the YAML to.
 - `training_data` - TrainingData object.
 
+#### training\_data\_to\_dict
+
+```python
+ | @classmethod
+ | training_data_to_dict(cls, training_data: "TrainingData") -> Optional[OrderedDict]
+```
+
+Represents NLU training data to a dict/list structure ready to be
+serialized as YAML.
+
+**Arguments**:
+
+- `training_data` - `TrainingData` to convert.
+  
+
+**Returns**:
+
+  `OrderedDict` containing all training data.
+

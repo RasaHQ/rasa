@@ -153,6 +153,7 @@ back to the Domain.
 #### get\_domain
 
 ```python
+ | @rasa.shared.utils.common.cached_method
  | async get_domain() -> Domain
 ```
 
@@ -161,6 +162,7 @@ Merge existing domain with properties of retrieval intents in NLU data.
 #### get\_nlu\_data
 
 ```python
+ | @rasa.shared.utils.common.cached_method
  | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 

@@ -49,6 +49,26 @@ The result gets stored in a local var. Computation of the property
 will happen once, on the first call of the property. All
 succeeding calls will use the value stored in the private property.
 
+#### cached\_method
+
+```python
+cached_method(f: Callable[..., Any]) -> Callable[..., Any]
+```
+
+Caches method calls based on the call&#x27;s `args` and `kwargs`.
+
+Works for `async` and `sync` methods. Don&#x27;t apply this to functions.
+
+**Arguments**:
+
+- `f` - The decorated method whose return value should be cached.
+  
+
+**Returns**:
+
+  The return value which the method gives for the first call with the given
+  arguments.
+
 #### transform\_collection\_to\_sentence
 
 ```python

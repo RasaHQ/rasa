@@ -129,3 +129,17 @@ If no featurizers are provided, all available features will be considered.
 
   ``True``, if features are present, ``False`` otherwise
 
+#### is\_core\_message
+
+```python
+ | is_core_message() -> bool
+```
+
+Checks whether the message is a core message or not.
+
+E.g. a core message is created from a story, not from the NLU data.
+
+**Returns**:
+
+  True, if message is a core message, false otherwise.
+

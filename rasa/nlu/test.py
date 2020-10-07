@@ -1485,7 +1485,7 @@ def run_evaluation(
     if output_directory:
         rasa.shared.utils.io.create_directory(output_directory)
 
-    intent_results, response_selection_results, entity_results, = get_eval_data(
+    (intent_results, response_selection_results, entity_results,) = get_eval_data(
         interpreter, test_data
     )
 
@@ -1669,7 +1669,7 @@ def cross_validate(
 
     intent_test_results: List[IntentEvaluationResult] = []
     entity_test_results: List[EntityEvaluationResult] = []
-    response_selection_test_results: List[ResponseSelectionEvaluationResult] = ([])
+    response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
     intent_classifier_present = False
     response_selector_present = False
     entity_evaluation_possible = False
