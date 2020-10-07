@@ -2192,12 +2192,12 @@ category = "main"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 name = "rasa-sdk"
 optional = false
-python-versions = ">=3.6,<4.0"
-version = "2.0.0rc1"
+python-versions = ">=3.6,<3.9"
+version = "2.0.0"
 
 [package.dependencies]
 coloredlogs = ">=10,<15"
-requests = ">=2.0,<3.0"
+requests = ">=2.23,<3.0"
 sanic = ">=19.12.2,<21.0.0"
 sanic-cors = ">=0.10.0,<0.11.0"
 
@@ -2861,7 +2861,7 @@ description = "Fast, Extensible Progress Meter"
 name = "tqdm"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*"
-version = "4.50.0"
+version = "4.50.1"
 
 [package.extras]
 dev = ["py-make (>=0.1.0)", "twine", "argopt", "pydoc-markdown"]
@@ -4393,8 +4393,8 @@ questionary = [
     {file = "questionary-1.5.2.tar.gz", hash = "sha256:f6e41e36b6c86fe0c3ff12a30c6c6a4e80129efba5ad0a115d71fd5df119c726"},
 ]
 rasa-sdk = [
-    {file = "rasa-sdk-2.0.0rc1.tar.gz", hash = "sha256:4f4eee61dfaacc09396e852840073fca7b71884337ad6ea9bcafbfc2044f04a0"},
-    {file = "rasa_sdk-2.0.0rc1-py3-none-any.whl", hash = "sha256:38087859a7cfaf37f60101a4ae73a6b8806b5da78bb4869856e7dd8fb6b29d48"},
+    {file = "rasa-sdk-2.0.0.tar.gz", hash = "sha256:aef19c1f60be6f5155abdd2cb6266437987f571a85f744bb165807a811de66f6"},
+    {file = "rasa_sdk-2.0.0-py3-none-any.whl", hash = "sha256:8f3e0e94b5eb2dc58f68bfac923b2b0c9fd93bc6faa1ffa5cd3cabed973714a8"},
 ]
 redis = [
     {file = "redis-3.5.3-py2.py3-none-any.whl", hash = "sha256:432b788c4530cfe16d8d943a09d40ca6c16149727e4afe8c2c9d5580c59d9f24"},
@@ -4766,8 +4766,8 @@ towncrier = [
     {file = "towncrier-19.2.0.tar.gz", hash = "sha256:48251a1ae66d2cf7e6fa5552016386831b3e12bb3b2d08eb70374508c17a8196"},
 ]
 tqdm = [
-    {file = "tqdm-4.50.0-py2.py3-none-any.whl", hash = "sha256:2dd75fdb764f673b8187643496fcfbeac38348015b665878e582b152f3391cdb"},
-    {file = "tqdm-4.50.0.tar.gz", hash = "sha256:93b7a6a9129fce904f6df4cf3ae7ff431d779be681a95c3344c26f3e6c09abfa"},
+    {file = "tqdm-4.50.1-py2.py3-none-any.whl", hash = "sha256:5313148c57fcca7df562187903cf9cfa30fe1df2fe0641ea6ddb8ef9e841a137"},
+    {file = "tqdm-4.50.1.tar.gz", hash = "sha256:b04bbbc52a7f1e3665eaa310f34c6ebbdf058bd3f6251fd64c6ab831817121ea"},
 ]
 transformers = [
     {file = "transformers-2.11.0-py3-none-any.whl", hash = "sha256:b3e5198266f2a4b14841c70427cad46b89f473e6b0d0d3ab7461bf775f31631d"},
