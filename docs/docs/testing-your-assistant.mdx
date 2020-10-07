@@ -139,10 +139,10 @@ for them and include these tests in your [CI/CD pipeline](./setting-up-ci-cd.mdx
 
 ## Evaluating an NLU Model
 
-In addition to end-to-end testing, you can also test the natural language understanding(NLU) model separately.
+In addition to end-to-end testing, you can also test the natural language understanding (NLU) model separately.
 Once your assistant is deployed in the real world, it will be processing messages that it hasn't seen
 in the training data. To simulate this, you should always set aside some part of your data for testing.
-You can [split your NLU data](./command-line-interface.mdx#create-a-train-test-split)
+You can [split your NLU data](./command-line-interface.mdx#rasa-data-split)
 into train and test sets using:
 
 ```bash
@@ -264,7 +264,8 @@ multiple tokens.
 
 #### Entity Scoring
 
-To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
+To evaluate entity extraction we apply a simple tag-based approach. We don't consider
+[BILOU tags](nlu-training-data.mdx#bilou-entity-tagging), but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
 expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. 
 
