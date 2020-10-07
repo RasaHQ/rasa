@@ -6,6 +6,7 @@ from typing import List
 from rasa.cli import SubParsersAction
 import rasa.shared.data
 import rasa.shared.utils.io
+import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
@@ -82,6 +83,12 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     if isinstance(args.model, list) and len(args.model) == 1:
         args.model = args.model[0]
+
+    if args.model is None:
+        rasa.shared.utils.cli.print_error(
+            "No model provided. Please make sure to specify the model to test with '--model'."
+        )
+        return
 
     if isinstance(args.model, str):
         model_path = rasa.cli.utils.get_validated_path(
