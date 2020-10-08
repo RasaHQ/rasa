@@ -19,6 +19,7 @@ from transformers import (
     # XLMTokenizer,
     DistilBertTokenizer,
     RobertaTokenizer,
+    BertConfig,
 )
 from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (
     bert_tokens_pre_processor,
@@ -93,3 +94,5 @@ model_embeddings_post_processors = {
     "distilbert": bert_embeddings_post_processor,
     "roberta": roberta_embeddings_post_processor,
 }
+
+model_class_configs = {"bert": BertConfig}
