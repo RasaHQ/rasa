@@ -311,8 +311,8 @@ class Message:
         Returns:
             True, if message is a core message, false otherwise.
         """
-        return (
-            self.data.get(ACTION_NAME) is not None
+        return bool(
+            self.data.get(ACTION_NAME)
             or self.data.get(ACTION_TEXT)
             or (
                 (self.data.get(INTENT) or self.data.get(RESPONSE))
