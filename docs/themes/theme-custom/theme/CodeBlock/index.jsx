@@ -6,7 +6,7 @@ import ReactLiveScope from '@theme/ReactLiveScope';
 import CodeBlock from '@theme-init/CodeBlock';
 
 const withLiveEditor = (Component) => {
-  const WrappedComponent = (props) => {
+  return (props) => {
     const {isClient} = useDocusaurusContext();
     const prismTheme = usePrismTheme();
 
@@ -23,8 +23,6 @@ const withLiveEditor = (Component) => {
 
     return <Component {...props} />;
   };
-
-  return WrappedComponent;
 };
 
 export default withLiveEditor(CodeBlock);

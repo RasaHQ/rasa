@@ -143,6 +143,10 @@ class TrainingData:
         return [ex for ex in self.training_examples if ex.get(ENTITIES)]
 
     @lazy_property
+    def nlu_examples(self) -> List[Message]:
+        return [ex for ex in self.training_examples if not ex.is_core_message()]
+
+    @lazy_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
