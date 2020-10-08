@@ -235,16 +235,11 @@ Split the training data into a train and test set.
 
 Checks if any training data was loaded.
 
-#### without\_empty\_e2e\_examples
+#### can\_train\_nlu\_model
 
 ```python
- | without_empty_e2e_examples() -> "TrainingData"
+ | can_train_nlu_model() -> bool
 ```
 
-Removes training data examples from intent labels and action names which
-were added for end-to-end training.
-
-**Returns**:
-
-  Itself but without training examples which don&#x27;t have a text or intent.
+Checks if any NLU training data was loaded.
 

@@ -38,24 +38,6 @@ Build a Message from `UserUttered` data.
 
   Message
 
-#### build\_from\_action
-
-```python
- | @classmethod
- | build_from_action(cls, action_text: Optional[Text] = "", action_name: Optional[Text] = "", **kwargs: Any, ,) -> "Message"
-```
-
-Build a `Message` from `ActionExecuted` data.
-
-**Arguments**:
-
-- `action_text` - text of a bot&#x27;s utterance
-- `action_name` - name of an action executed
-
-**Returns**:
-
-  Message
-
 #### get\_full\_intent
 
 ```python
