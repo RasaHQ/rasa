@@ -260,14 +260,6 @@ def test_ordered():
     ]
 
 
-def test_build_from_action():
-    test_action_name = "test_action_name"
-    test_action_text = "test action text"
-    assert Message.build_from_action(
-        action_text=test_action_text, action_name=test_action_name
-    ) == Message(data={ACTION_NAME: test_action_name, ACTION_TEXT: test_action_text})
-
-
 @pytest.mark.parametrize(
     "message, core_message",
     [
