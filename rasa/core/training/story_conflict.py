@@ -306,7 +306,10 @@ def _get_previous_event(
     # We need to look out for `prev_` and `intent_` prefixes in the labels.
     for origin, substate in state.items():
         if origin == PREVIOUS_ACTION:
-            if "action_name" in substate and substate["action_name"] != ACTION_LISTEN_NAME:
+            if (
+                "action_name" in substate
+                and substate["action_name"] != ACTION_LISTEN_NAME
+            ):
                 # The `prev_...` was an action that was NOT `action_listen`
                 return "action", substate["action_name"]
             elif "action_text" in substate:
