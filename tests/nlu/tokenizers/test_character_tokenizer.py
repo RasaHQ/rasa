@@ -32,6 +32,7 @@ from rasa.nlu.tokenizers.character_tokenizer import CharacterTokenizer
                 (9, 10),
                 (10, 11),
                 (11, 12),
+                (12, 13),
             ],
         ),
     ],
