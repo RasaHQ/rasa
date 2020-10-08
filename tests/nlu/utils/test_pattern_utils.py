@@ -79,7 +79,7 @@ def test_extract_patterns_use_only_entities_regexes(
             Message(
                 data={
                     "text": "text",
-                    "intent": "intent",
+                    "intent": "greet",
                     "entities": [{"entity": entity, "value": "text"}],
                 }
             )
@@ -115,7 +115,7 @@ def test_extract_patterns_use_only_entities_lookup_tables(
             Message(
                 data={
                     "text": "text",
-                    "intent": "test",
+                    "intent": "greet",
                     "entities": [{"entity": entity, "value": "text"}],
                 }
             )

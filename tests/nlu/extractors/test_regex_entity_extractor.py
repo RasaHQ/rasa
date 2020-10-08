@@ -88,14 +88,14 @@ def test_process(
         Message(
             data={
                 TEXT: "Hi Max!",
-                INTENT: "intent",
+                INTENT: "greet",
                 ENTITIES: [{"entity": "person", "value": "Max"}],
             }
         ),
         Message(
             data={
                 TEXT: "I live in Berlin",
-                INTENT: "intent",
+                INTENT: "inform",
                 ENTITIES: [{"entity": "city", "value": "Berlin"}],
             }
         ),
@@ -172,14 +172,14 @@ def test_lowercase(
         Message(
             data={
                 TEXT: "Hi Max!",
-                INTENT: "intent",
+                INTENT: "greet",
                 ENTITIES: [{"entity": "person", "value": "Max"}],
             }
         ),
         Message(
             data={
                 TEXT: "I live in Berlin",
-                INTENT: "intent",
+                INTENT: "inform",
                 ENTITIES: [{"entity": "city", "value": "Berlin"}],
             }
         ),
@@ -194,7 +194,7 @@ def test_lowercase(
 
 
 def test_do_not_overwrite_any_entities():
-    message = Message(data={TEXT: "Max lives in Berlin.", INTENT: "intent"})
+    message = Message(data={TEXT: "Max lives in Berlin.", INTENT: "infrom"})
     message.set(ENTITIES, [{"entity": "person", "value": "Max", "start": 0, "end": 3}])
 
     training_data = TrainingData()
@@ -202,14 +202,14 @@ def test_do_not_overwrite_any_entities():
         Message(
             data={
                 TEXT: "Hi Max!",
-                INTENT: "intent",
+                INTENT: "greet",
                 ENTITIES: [{"entity": "person", "value": "Max"}],
             }
         ),
         Message(
             data={
                 TEXT: "I live in Berlin",
-                INTENT: "intent",
+                INTENT: "inform",
                 ENTITIES: [{"entity": "city", "value": "Berlin"}],
             }
         ),
