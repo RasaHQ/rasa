@@ -20,6 +20,7 @@ from pathlib import Path
 
 from ruamel.yaml import YAMLError
 
+from rasa.shared.core.constants import ENTITY_LABEL_SEPARATOR
 import rasa.shared.constants
 import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException
@@ -294,7 +295,10 @@ class Domain:
 
     @staticmethod
     def _transform_intent_properties_for_internal_use(
-        intent: Dict[Text, Any], entities: List[Text]
+        intent: Dict[Text, Any],
+        entities: List[Text],
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
     ) -> Dict[Text, Any]:
         """Transform intent properties coming from a domain file for internal use.
 
@@ -304,6 +308,8 @@ class Domain:
         Args:
             intent: The intents as provided by a domain file.
             entities: All entities as provided by a domain file.
+            roles: All roles for entities as provided by a domain file.
+            groups: All groups for entities as provided by a domain file.
 
         Returns:
             The intents as they should be used internally.
@@ -319,9 +325,17 @@ class Domain:
         # or `True` if all should be included
         if properties[USE_ENTITIES_KEY] is True:
             included_entities = set(entities)
+            included_entities.update(Domain.concatenate_entity_labels(roles))
+            included_entities.update(Domain.concatenate_entity_labels(groups))
         else:
             included_entities = set(properties[USE_ENTITIES_KEY])
+            for entity in set(properties[USE_ENTITIES_KEY]):
+                included_entities.update(Domain.concatenate_entity_labels(roles, entity))
+                included_entities.update(Domain.concatenate_entity_labels(groups, entity))
         excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
+        for entity in set(properties[IGNORE_ENTITIES_KEY]):
+            excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
+            excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
         used_entities = list(included_entities - excluded_entities)
         used_entities.sort()
 
@@ -396,13 +410,19 @@ class Domain:
 
     @classmethod
     def collect_intent_properties(
-        cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
+        cls,
+        intents: List[Union[Text, Dict[Text, Any]]],
+        entities: List[Text],
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
     ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
         """Get intent properties for a domain from what is provided by a domain file.
 
         Args:
             intents: The intents as provided by a domain file.
             entities: All entities as provided by a domain file.
+            roles: The roles of entities as provided by a domain file.
+            groups: The groups of entities as provided by a domain file.
 
         Returns:
             The intent properties to be stored in the domain.
@@ -413,7 +433,9 @@ class Domain:
         duplicates = set()
 
         for intent in intents:
-            intent_name, properties = cls._intent_properties(intent, entities)
+            intent_name, properties = cls._intent_properties(
+                intent, entities, roles, groups
+            )
 
             if intent_name in intent_properties.keys():
                 duplicates.add(intent_name)
@@ -426,13 +448,17 @@ class Domain:
                 f"Either rename or remove the duplicate ones."
             )
 
-        cls._add_default_intents(intent_properties, entities)
+        cls._add_default_intents(intent_properties, entities, roles, groups)
 
         return intent_properties
 
     @classmethod
     def _intent_properties(
-        cls, intent: Union[Text, Dict[Text, Any]], entities: List[Text]
+        cls,
+        intent: Union[Text, Dict[Text, Any]],
+        entities: List[Text],
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
     ) -> Tuple[Text, Dict[Text, Any]]:
         if not isinstance(intent, dict):
             intent_name = intent
@@ -442,7 +468,9 @@ class Domain:
 
         return (
             intent_name,
-            cls._transform_intent_properties_for_internal_use(intent, entities),
+            cls._transform_intent_properties_for_internal_use(
+                intent, entities, roles, groups
+            ),
         )
 
     @classmethod
@@ -450,10 +478,14 @@ class Domain:
         cls,
         intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
         entities: List[Text],
+        roles: Optional[Dict[Text, List[Text]]],
+        groups: Optional[Dict[Text, List[Text]]],
     ) -> None:
         for intent_name in rasa.shared.core.constants.DEFAULT_INTENTS:
             if intent_name not in intent_properties:
-                _, properties = cls._intent_properties(intent_name, entities)
+                _, properties = cls._intent_properties(
+                    intent_name, entities, roles, groups
+                )
                 intent_properties.update(properties)
 
     def __init__(
@@ -472,7 +504,9 @@ class Domain:
             entities
         )
 
-        self.intent_properties = self.collect_intent_properties(intents, self.entities)
+        self.intent_properties = self.collect_intent_properties(
+            intents, self.entities, self.roles, self.groups
+        )
         self.overriden_default_intents = self._collect_overridden_default_intents(
             intents
         )
@@ -683,6 +717,46 @@ class Domain:
             for feature_index in range(0, slot.feature_dimensionality())
         ]
 
+    # noinspection PyTypeChecker
+    @rasa.shared.utils.common.lazy_property
+    def entity_states(self) -> List[Text]:
+        """Returns all available entity state strings."""
+        entity_states = self.entities
+        entity_states.extend(Domain.concatenate_entity_labels(self.roles))
+        entity_states.extend(Domain.concatenate_entity_labels(self.groups))
+        return entity_states
+
+    @staticmethod
+    def concatenate_entity_labels(
+        entities: Dict[Text, List[Text]], entity: Optional[Text] = None
+    ) -> List[Text]:
+        """Concatenates the given entity labels with their corresponding sub-labels.
+
+        If a specific entity label is given, only this entity label will be concatenated with its
+        corresponding sub-labels.
+
+        Args:
+            entities: A map of an entity label to its sub-label list.
+            entity: If present, only this entity will be considered.
+
+        Returns:
+            A list of labels.
+        """
+        if entity is not None and entity not in entities:
+            return []
+
+        if entity:
+            return [
+                f"{entity}{ENTITY_LABEL_SEPARATOR}{sub_label}"
+                for sub_label in entities[entity]
+            ]
+
+        return [
+            f"{entity_label}{ENTITY_LABEL_SEPARATOR}{entity_sub_label}"
+            for entity_label, entity_sub_labels in entities.items()
+            for entity_sub_label in entity_sub_labels
+        ]
+
     @rasa.shared.utils.common.lazy_property
     def input_state_map(self) -> Dict[Text, int]:
         """Provide a mapping from state names to indices."""
@@ -694,7 +768,7 @@ class Domain:
 
         return (
             self.intents
-            + self.entities
+            + self.entity_states
             + self.slot_states
             + self.action_names
             + self.form_names
@@ -921,7 +995,13 @@ class Domain:
             ):
                 # Default intents should be not dumped with the domain
                 continue
-            use_entities = set(intent_props[USED_ENTITIES_KEY])
+            use_entities = set(
+                [
+                    entity
+                    for entity in intent_props[USED_ENTITIES_KEY]
+                    if ENTITY_LABEL_SEPARATOR not in entity
+                ]
+            )
             ignore_entities = set(self.entities) - use_entities
             if len(use_entities) == len(self.entities):
                 intent_props[USE_ENTITIES_KEY] = True

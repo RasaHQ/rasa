@@ -26,6 +26,7 @@ from rasa.shared.core.domain import (
     IGNORE_ENTITIES_KEY,
     State,
     Domain,
+    ENTITY_LABEL_SEPARATOR,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet
@@ -490,22 +491,50 @@ def test_merge_domain_with_forms():
 
 
 @pytest.mark.parametrize(
-    "intents, entities, intent_properties",
+    "intents, entities, roles, groups, intent_properties",
     [
         (
             ["greet", "goodbye"],
             ["entity", "other", "third"],
+            {"entity": ["role-1", "role-2"]},
+            {},
             {
-                "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
-                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "greet": {
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role-1",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role-2",
+                        "other",
+                        "third",
+                    ]
+                },
+                "goodbye": {
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role-1",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role-2",
+                        "other",
+                        "third",
+                    ]
+                },
             },
         ),
         (
             [{"greet": {USE_ENTITIES_KEY: []}}, "goodbye"],
             ["entity", "other", "third"],
+            {},
+            {"other": ["1", "2"]},
             {
                 "greet": {USED_ENTITIES_KEY: []},
-                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "goodbye": {
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        "other",
+                        f"other{ENTITY_LABEL_SEPARATOR}1",
+                        f"other{ENTITY_LABEL_SEPARATOR}2",
+                        "third",
+                    ]
+                },
             },
         ),
         (
@@ -520,9 +549,25 @@ def test_merge_domain_with_forms():
                 "goodbye",
             ],
             ["entity", "other", "third"],
+            {"entity": ["role"], "other": ["role"]},
+            {},
             {
-                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"]},
-                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "greet": {
+                    "triggers": "utter_goodbye",
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role",
+                    ],
+                },
+                "goodbye": {
+                    USED_ENTITIES_KEY: [
+                        "entity",
+                        f"entity{ENTITY_LABEL_SEPARATOR}role",
+                        "other",
+                        f"other{ENTITY_LABEL_SEPARATOR}role",
+                        "third",
+                    ]
+                },
             },
         ),
         (
@@ -531,6 +576,8 @@ def test_merge_domain_with_forms():
                 {"goodbye": {USE_ENTITIES_KEY: [], IGNORE_ENTITIES_KEY: []}},
             ],
             ["entity", "other", "third"],
+            {},
+            {},
             {
                 "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye"},
                 "goodbye": {USED_ENTITIES_KEY: []},
@@ -543,6 +590,8 @@ def test_merge_domain_with_forms():
                 {"chitchat": {"is_retrieval_intent": True, "use_entities": None}},
             ],
             ["entity", "other", "third"],
+            {},
+            {},
             {
                 "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
                 "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
@@ -554,11 +603,16 @@ def test_merge_domain_with_forms():
 def test_collect_intent_properties(
     intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
     entities: List[Text],
+    roles: Dict[Text, List[Text]],
+    groups: Dict[Text, List[Text]],
     intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
 ):
-    Domain._add_default_intents(intent_properties, entities)
+    Domain._add_default_intents(intent_properties, entities, roles, groups)
 
-    assert Domain.collect_intent_properties(intents, entities) == intent_properties
+    assert (
+        Domain.collect_intent_properties(intents, entities, roles, groups)
+        == intent_properties
+    )
 
 
 def test_load_domain_from_directory_tree(tmp_path: Path):
@@ -758,6 +812,19 @@ def test_transform_intents_for_file_with_mapping():
         {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
         {"default": {"triggers": "utter_default", USE_ENTITIES_KEY: True}},
         {"goodbye": {USE_ENTITIES_KEY: True}},
+    ]
+
+    assert transformed == expected
+
+
+def test_transform_intents_for_file_with_entity_roles_groups():
+    domain_path = "data/test_domains/travel_form.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"inform": {USE_ENTITIES_KEY: ["GPE"]}},
+        {"greet": {USE_ENTITIES_KEY: ["name"]}},
     ]
 
     assert transformed == expected

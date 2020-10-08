@@ -19,6 +19,7 @@ from rasa.shared.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     IS_EXTERNAL,
     LOOP_INTERRUPTED,
+    ENTITY_LABEL_SEPARATOR,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -29,6 +30,8 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
 )
 
 if typing.TYPE_CHECKING:
@@ -331,6 +334,21 @@ class UserUttered(Event):
             a dictionary with intent name, text and entities
         """
         entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
+        entities.extend(
+            [
+                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
+                for entity in self.entities
+                if ENTITY_ATTRIBUTE_ROLE in entity
+            ]
+        )
+        entities.extend(
+            [
+                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
+                for entity in self.entities
+                if ENTITY_ATTRIBUTE_GROUP in entity
+            ]
+        )
+
         out = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
