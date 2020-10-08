@@ -2,12 +2,9 @@
 id: forms
 sidebar_label: Forms
 title: Forms
-description: Follow a rule-based process of information gathering using FormActions in open source bot framework Rasa.
+description: Follow a rule-based process of information gathering using forms in open source bot framework Rasa.
+abstract: One of the most common conversation patterns is to collect a few pieces of information from a user in order to do something (book a restaurant, call an API, search a database, etc.). This is also called **slot filling**.
 ---
-
-One of the most common conversation patterns is to collect a few pieces of
-information from a user in order to do something (book a restaurant, call an
-API, search a database, etc.). This is also called **slot filling**.
 
 ## Usage
 
@@ -22,10 +19,10 @@ policies:
 
 ### Defining a Form
 
-Define a form by adding it to the `forms` section in your [Domain](./domain.mdx).
+Define a form by adding it to the `forms` section in your [domain](./domain.mdx).
 The name of the form is also the name of the action which you can use in
-[Stories](./stories.mdx) or [Rules](./rules.mdx) to handle form executions. Further you
-need to define [Slot Mappings](./forms.mdx#slot-mappings) for each slot which your
+[stories](./stories.mdx) or [rules](./rules.mdx) to handle form executions. You also
+need to define [slot mappings](./forms.mdx#slot-mappings) for each slot which your
 form should fill.
 You can specify one or more slot mappings for each slot to be filled.
 
@@ -52,7 +49,7 @@ each required slot.
 
 ### Activating a Form
 
-To activate a form you need to add a [Story](./stories.mdx) or [Rule](./rules.mdx),
+To activate a form you need to add a [story](./stories.mdx) or [rule](./rules.mdx),
 which describes when the assistant should run the form. In the case a specific intent
 triggering a form, you can for example use the following rule:
 
@@ -102,7 +99,7 @@ write stories or rules for this case.
 
 ### Slot Mappings
 
-Rasa Open Source comes with four predefined functions to fill the slots of a form
+Rasa Open Source comes with four predefined mappings to fill the slots of a form
 based on the latest user message. Please see
 [Custom Slot Mappings](./forms.mdx#custom-slot-mappings) if you need a custom function
 to extract the required information.
@@ -191,7 +188,7 @@ apply if the intent of the message is `excluded_intent`. Note that you can
 also define lists of intents for the parameters `intent` and `not_intent`.
 
 :::note
-The slot mapping will not apply during the initial activation of the form. To fill
+The `from_intent` slot mapping will not apply during the initial activation of the form. To fill
 a slot based on the intent that activated the form, use the `from_trigger_intent`
 mapping.
 :::
@@ -493,17 +490,3 @@ class AskForSlotAction(Action):
         dispatcher.utter_message(text="What cuisine?")
         return []
 ```
-
-## Debugging
-
-The first thing to try is running your bot with the `--debug` flag, see
-[Command Line Interface](./command-line-interface.mdx) for details.
-If you are just getting started, you probably only have a few hand-written stories.
-This is a great starting point, but
-you should give your bot to people to test **as soon as possible**. One of the guiding principles
-behind Rasa Core is:
-
-> Learning from real conversations is more important than designing hypothetical ones
-
-So don't try to cover every possibility in your hand-written stories before giving it to testers.
-Real user behavior will always surprise you!

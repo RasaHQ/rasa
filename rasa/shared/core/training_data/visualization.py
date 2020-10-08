@@ -93,7 +93,7 @@ def _fingerprint_node(graph, node, max_history) -> Set[Text]:
     remember max history number of nodes we have visited. Hence, if we randomly
     walk on our directed graph, always only remembering the last `max_history`
     nodes we have visited, we can never remember if we have visited node A or
-    node B if both have the same fingerprint. """
+    node B if both have the same fingerprint."""
 
     # the candidate list contains all node paths that haven't been
     # extended till `max_history` length yet.

@@ -19,6 +19,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
     ACTION_NAME,
+    INTENT_NAME,
 )
 
 if typing.TYPE_CHECKING:
@@ -320,6 +321,28 @@ class Message:
                 combined_features.combine_with_features(f)
 
         return combined_features
+
+    def is_core_message(self) -> bool:
+        """Checks whether the message is a core message or not.
+
+        E.g. a core message is created from a story, not from the NLU data.
+
+        Returns:
+            True, if message is a core message, false otherwise.
+        """
+        return (
+            self.data.get(ACTION_NAME) is not None
+            or self.data.get(INTENT_NAME) is not None
+            or self.data.get(ACTION_TEXT)
+            or (
+                (self.data.get(INTENT) or self.data.get(RESPONSE))
+                and not self.data.get(TEXT)
+            )
+            or (
+                self.data.get(TEXT)
+                and not (self.data.get(INTENT) or self.data.get(RESPONSE))
+            )
+        )
 
 
 def ordered(obj: Any) -> Any:

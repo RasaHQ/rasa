@@ -11,6 +11,9 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
     ACTION_NAME,
+    INTENT,
+    RESPONSE,
+    INTENT_NAME,
 )
 import rasa.shared.nlu.training_data.message
 from rasa.shared.nlu.training_data.message import Message
@@ -264,3 +267,21 @@ def test_build_from_action():
     assert Message.build_from_action(
         action_text=test_action_text, action_name=test_action_name
     ) == Message(data={ACTION_NAME: test_action_name, ACTION_TEXT: test_action_text})
+
+
+@pytest.mark.parametrize(
+    "message, core_message",
+    [
+        (Message({INTENT: "intent", TEXT: "text"}), False),
+        (Message({RESPONSE: "response", TEXT: "text"}), False),
+        (Message({INTENT: "intent"}), True),
+        (Message({ACTION_TEXT: "action text", ACTION_NAME: ""}), True),
+        (Message({ACTION_NAME: "action"}), True),
+        (Message({TEXT: "text"}), True),
+        (Message({TEXT: None, INTENT_NAME: "affirm"}), True),
+    ],
+)
+def test_is_core_message(
+    message: Message, core_message: bool,
+):
+    assert core_message == message.is_core_message()
