@@ -60,12 +60,6 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
                 "DIETClassifier",
             ),
         ),
-        (
-            "zh",
-            as_pipeline(
-                "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
-            ),
-        ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
     ]
 
@@ -92,6 +86,12 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
                 "MitieFeaturizer",
                 "MitieIntentClassifier",
                 "RegexEntityExtractor",
+            ),
+        ),
+        (
+            "zh",
+            as_pipeline(
+                "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
             ),
         ),
     ]
