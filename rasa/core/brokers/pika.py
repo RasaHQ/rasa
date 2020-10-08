@@ -15,7 +15,7 @@ from typing import (
     List,
     Tuple,
     Generator,
-    TYPE_CHECKING
+    TYPE_CHECKING,
 )
 
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
