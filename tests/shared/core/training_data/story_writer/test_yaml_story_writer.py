@@ -167,3 +167,18 @@ async def test_action_start_action_listen_are_not_dumped():
 
     assert ACTION_SESSION_START_NAME not in dump
     assert ACTION_LISTEN_NAME not in dump
+
+
+def test_yaml_writer_stories_to_yaml(default_domain: Domain):
+    from collections import OrderedDict
+
+    reader = YAMLStoryReader(default_domain, None, False)
+    writer = YAMLStoryWriter()
+    steps = reader.read_from_file(
+        "data/test_yaml_stories/simple_story_with_only_end.yml"
+    )
+
+    result = writer.stories_to_yaml(steps)
+    assert isinstance(result, OrderedDict)
+    assert "stories" in result
+    assert len(result["stories"]) == 1
