@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
 from rasa.shared.core.domain import Domain, PREV_PREFIX, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -304,17 +304,22 @@ def _get_previous_event(
     # A typical state is, for example,
     # `{'prev_action_listen': 1.0, 'intent_greet': 1.0, 'slot_cuisine_0': 1.0}`.
     # We need to look out for `prev_` and `intent_` prefixes in the labels.
-    for turn_label in state:
-        if (
-            turn_label.startswith(PREV_PREFIX)
-            and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
-        ):
-            # The `prev_...` was an action that was NOT `action_listen`
-            return "action", turn_label.replace(PREV_PREFIX, "")
-        elif turn_label.startswith(INTENT + "_"):
+    for origin, substate in state.items():
+        if origin == PREVIOUS_ACTION:
+            if "action_name" in substate and substate["action_name"] != ACTION_LISTEN_NAME:
+                # The `prev_...` was an action that was NOT `action_listen`
+                return "action", substate["action_name"]
+            elif "action_text" in substate:
+                # The `prev_...` was a a free form utterance action
+                return "bot uttered", substate["action_text"]
+        elif origin == USER:
             # We found an intent, but it is only the previous event if
             # the `prev_...` was `prev_action_listen`, so we don't return.
-            previous_event_type = "intent"
-            previous_event_name = turn_label.replace(INTENT + "_", "")
+            if "intent" in substate:
+                previous_event_type = "intent"
+                previous_event_name = substate["intent"]
+            elif "text" in substate:
+                previous_event_type = "user utterance"
+                previous_event_name = substate["text"]
 
     return previous_event_type, previous_event_name
