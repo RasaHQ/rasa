@@ -577,41 +577,12 @@ class TrainingData:
         """Checks if any training data was loaded."""
 
         lists_to_check = [
-            self._training_examples_without_empty_e2e_examples(),
+            self.training_examples,
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
-
-    def without_empty_e2e_examples(self) -> "TrainingData":
-        """Removes training data examples from intent labels and action names which
-        were added for end-to-end training.
-
-        Returns:
-            Itself but without training examples which don't have a text or intent.
-        """
-        training_examples = copy.deepcopy(self.training_examples)
-        entity_synonyms = self.entity_synonyms.copy()
-        regex_features = copy.deepcopy(self.regex_features)
-        lookup_tables = copy.deepcopy(self.lookup_tables)
-        responses = copy.deepcopy(self.responses)
-        copied = TrainingData(
-            training_examples, entity_synonyms, regex_features, lookup_tables, responses
-        )
-        copied.training_examples = self._training_examples_without_empty_e2e_examples()
-
-        return copied
-
-    def _training_examples_without_empty_e2e_examples(self) -> List[Message]:
-        return [
-            example
-            for example in self.training_examples
-            if not example.get(ACTION_NAME)
-            and not example.get(ACTION_TEXT)
-            and not (example.get(INTENT) and not example.get(TEXT))
-            and not (example.get(TEXT) and not example.get(INTENT))
-        ]
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:

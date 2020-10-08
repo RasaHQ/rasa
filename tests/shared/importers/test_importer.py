@@ -190,14 +190,14 @@ async def test_import_nlu_training_data_from_e2e_stories(
             StoryStep(
                 events=[
                     SlotSet("some slot", "doesn't matter"),
-                    UserUttered("greet_from_stories", {"name": "greet_from_stories"}),
+                    UserUttered(intent={"name": "greet_from_stories"}),
                     ActionExecuted("utter_greet_from_stories"),
                 ]
             ),
             StoryStep(
                 events=[
                     UserUttered("how are you doing?"),
-                    ActionExecuted("utter_greet_from_stories", action_text="Hi Joey."),
+                    ActionExecuted(action_text="Hi Joey."),
                 ]
             ),
         ]
@@ -227,12 +227,10 @@ async def test_import_nlu_training_data_from_e2e_stories(
 
     # Check if the NLU training data was added correctly from the story training data
     expected_additional_messages = [
-        Message(data={TEXT: "greet_from_stories", INTENT: "greet_from_stories"}),
-        Message(data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
-        Message(data={TEXT: "how are you doing?", INTENT: None}),
-        Message(
-            data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey."}
-        ),
+        Message(data={INTENT: "greet_from_stories"}),
+        Message(data={ACTION_NAME: "utter_greet_from_stories"}),
+        Message(data={TEXT: "how are you doing?"}),
+        Message(data={ACTION_TEXT: "Hi Joey."}),
     ]
 
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
@@ -294,7 +292,7 @@ async def test_import_nlu_training_data_with_default_actions(
 
     extended_training_data = await default_importer.get_nlu_data()
     assert all(
-        Message(data={ACTION_NAME: action_name, ACTION_TEXT: ""})
+        Message(data={ACTION_NAME: action_name})
         in extended_training_data.training_examples
         for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     )
