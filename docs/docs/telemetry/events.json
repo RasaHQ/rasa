@@ -53,9 +53,9 @@
           "type": "integer",
           "description": "Number of actions defined in the domain."
         },
-        "num_templates": {
+        "num_responses": {
           "type": "integer",
-          "description": "Number of templates defined in the domain."
+          "description": "Number of responses defined in the domain."
         },
         "num_slots": {
           "type": "integer",
@@ -100,7 +100,7 @@
         "num_intent_examples",
         "num_entity_examples",
         "num_actions",
-        "num_templates",
+        "num_responses",
         "num_slots",
         "num_forms",
         "num_intents",
