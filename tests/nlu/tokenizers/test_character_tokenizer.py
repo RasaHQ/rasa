@@ -37,7 +37,7 @@ from rasa.nlu.tokenizers.character_tokenizer import CharacterTokenizer
         ),
     ],
 )
-def test_whitespace(text, expected_tokens, expected_indices):
+def test_character_tokenizer(text, expected_tokens, expected_indices):
 
     tk = CharacterTokenizer()
 
