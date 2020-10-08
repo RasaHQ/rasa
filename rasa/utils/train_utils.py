@@ -8,7 +8,6 @@ from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
-from rasa.utils import common as common_utils
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     SIMILARITY_TYPE,
