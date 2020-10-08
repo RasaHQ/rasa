@@ -117,7 +117,7 @@ class HFTransformersNLP(Component):
             self.model_weights, cache_dir=self.cache_dir
         )
         # self.config = model_class_configs[self.model_name]()
-        self.config.output_hidden_states = True
+        # self.config.output_hidden_states = True
         self.model = model_class_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
