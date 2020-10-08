@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type
@@ -19,7 +20,7 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
 )
 from rasa.core.agent import Agent
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     SlotSet,
     UserUttered,
@@ -1177,3 +1178,41 @@ def test_set_form_validation_deprecation_warning(validate: bool):
         tracker.set_form_validation(validate)
 
     assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)
+
+
+def test_subtrackers_for_conversation_sessions():
+    import rasa.shared.core.trackers as trackers_module
+
+    # conversation contains multiple sessions
+    conversation_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        UserUttered("hi", {"name": "greet"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        UserUttered("goodbye", {"name": "goodbye"}),
+        ActionExecuted("utter_goodbye"),
+    ]
+
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID", conversation_events
+    )
+
+    subtrackers = trackers_module.subtrackers_for_conversation_sessions(tracker)
+
+    assert len(subtrackers) == 2
+
+    assert (
+        subtrackers[0].as_story().as_story_string().strip()
+        == """## some-conversation-ID
+* greet
+    - utter_greet"""
+    )
+
+    assert (
+        subtrackers[1].as_story().as_story_string().strip()
+        == """## some-conversation-ID
+* goodbye
+    - utter_goodbye"""
+    )

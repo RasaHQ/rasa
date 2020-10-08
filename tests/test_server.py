@@ -1331,7 +1331,7 @@ def test_app_when_app_has_no_input_channels():
             ],
             """version: "2.0"
 stories:
-- story: some-conversation-ID
+- story: some-conversation-ID, story 1
   steps:
   - intent: greet
     user: |-
@@ -1347,26 +1347,26 @@ stories:
                 ActionExecuted("utter_greet"),
                 ActionExecuted(ACTION_SESSION_START_NAME),
                 SessionStarted(),
-                UserUttered("hi again", {"name": "greet"}),
-                ActionExecuted("utter_greet"),
+                UserUttered("goodbye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
             ],
             """version: "2.0"
 stories:
-- story: some-conversation-ID
+- story: some-conversation-ID, story 1
   steps:
   - intent: greet
     user: |-
-      hi again
-  - action: utter_greet""",
+      hi
+  - action: utter_greet
+- story: some-conversation-ID, story 2
+  steps:
+  - intent: goodbye
+    user: |-
+      goodbye
+  - action: utter_goodbye""",
         ),
         # empty conversation
-        (
-            [],
-            """version: "2.0"
-stories:
-- story: some-conversation-ID
-  steps: []""",
-        ),
+        ([], 'version: "2.0"',),
     ],
 )
 def test_get_story(
@@ -1405,7 +1405,7 @@ def test_get_story_does_not_update_conversation_session(rasa_app: SanicTestClien
         ActionExecuted("utter_greet", timestamp=now - 7),
     ]
 
-    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events,)
+    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
     tracker_store = InMemoryTrackerStore(domain)
 
@@ -1422,7 +1422,7 @@ def test_get_story_does_not_update_conversation_session(rasa_app: SanicTestClien
         response.content.decode().strip()
         == """version: "2.0"
 stories:
-- story: some-conversation-ID
+- story: some-conversation-ID, story 1
   steps:
   - intent: greet
     user: |-

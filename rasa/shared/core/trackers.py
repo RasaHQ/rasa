@@ -768,7 +768,6 @@ class DialogueStateTracker:
         ]
         return new_slots
 
-    # pytype: disable=bad-return-type
     @property
     def active_loop_name(self) -> Optional[Text]:
         """Get the name of the currently active loop.
@@ -778,9 +777,7 @@ class DialogueStateTracker:
         if not self.active_loop or self.active_loop.get(LOOP_NAME) == SHOULD_NOT_BE_SET:
             return None
 
-        return self.active_loop.get(LOOP_NAME)
-
-    # pytype: enable=bad-return-type
+        return self.active_loop.get(LOOP_NAME)  # pytype: disable=bad-return-type
 
     @property
     def latest_action_name(self) -> Optional[Text]:
@@ -843,23 +840,34 @@ def subtrackers_for_conversation_sessions(
         include_restarts=True, include_previous_conversation_sessions=True
     )
 
-    current_tracker = DialogueStateTracker.from_events(
-        tracker.sender_id,
-        [],
-        tracker_slots,
-        sender_source=tracker.sender_source,
-    )
+    def _create_empty_tracker() -> DialogueStateTracker:
+        return DialogueStateTracker.from_events(
+            tracker.sender_id, [], tracker_slots, sender_source=tracker.sender_source,
+        )
 
-    for event in applied_events:
-        if isinstance(event, (SessionStarted, Restarted)):
+    processed_first_session_start = False
+    current_tracker = _create_empty_tracker()
+
+    for i in range(len(applied_events)):
+        event = applied_events[i]
+        is_session_started_event = isinstance(event, SessionStarted)
+
+        if is_session_started_event and not processed_first_session_start:
+            # first session start or restart
+            current_tracker.update(event)
+            processed_first_session_start = True
+        elif is_session_started_event:
+            # session start or restart, append to old one and start new tracker
             trackers.append(current_tracker)
-            current_tracker = DialogueStateTracker.from_events(
-                tracker.sender_id,
-                [],
-                tracker_slots,
-                sender_source=tracker.sender_source,
-            )
+
+            current_tracker = _create_empty_tracker()
+            current_tracker.update(event)
+        elif i == len(applied_events) - 1:
+            # last event, append the tracker
+            current_tracker.update(event)
+            trackers.append(current_tracker)
         else:
+            # ordinary event
             current_tracker.update(event)
 
     return trackers

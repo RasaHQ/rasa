@@ -112,6 +112,7 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_STORIES] = stories
         if rules:
             result[KEY_RULES] = rules
+
         return result
 
     def process_story_step(self, story_step: StoryStep) -> OrderedDict:

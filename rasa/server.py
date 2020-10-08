@@ -238,9 +238,9 @@ async def get_tracker_with_session_start(
     return tracker  # pytype: disable=bad-return-type
 
 
-def get_trackers_for_all_conversation_sessions(
-    processor: "MessageProcessor", conversation_id: Text
-) -> List[DialogueStateTracker]:
+def get_stories_for_all_conversation_sessions(
+    processor: "MessageProcessor", conversation_id: Text, until_time: Optional[float]
+) -> Text:
     """Retrieves trackers from `processor` for all conversation sessions for
     `conversation_id`.
 
@@ -250,12 +250,20 @@ def get_trackers_for_all_conversation_sessions(
         The tracker for `conversation_id`.
     """
 
-    trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
-    for tracker in trackers:
-        _validate_tracker(trackers, conversation_id)
+    subtrackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
 
-    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
-    return trackers  # pytype: disable=bad-return-type
+    story_steps = []
+
+    for i, tracker in enumerate(subtrackers, 1):
+        _validate_tracker(tracker, conversation_id)
+        if until_time is not None:
+            tracker = tracker.travel_back_in_time(until_time)
+
+        for story_step in tracker.as_story().story_steps:
+            story_step.block_name = f"{conversation_id}, story {i}"
+            story_steps.append(story_step)
+
+    return YAMLStoryWriter().dumps(story_steps)
 
 
 def get_tracker(
@@ -623,18 +631,13 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-        # fetch tracker without triggering a conversation session update
-        tracker = get_tracker(app.agent.create_processor(), conversation_id)
-
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
         try:
-            if until_time is not None:
-                tracker = tracker.travel_back_in_time(until_time)
-
-            # dump and return tracker
-            state = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
-            return response.text(state)
+            stories = get_stories_for_all_conversation_sessions(
+                app.agent.create_processor(), conversation_id, until_time
+            )
+            return response.text(stories)
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -1227,9 +1230,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
 
-def _training_payload_from_yaml(
-    request: Request,
-) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
