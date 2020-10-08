@@ -1,14 +1,8 @@
-import asyncio
-from pathlib import Path
 from typing import Text, List
 
 import pytest
 
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted
-from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
-from rasa.shared.importers.importer import E2EImporter, TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -44,7 +38,7 @@ def test_wit_data():
     td = load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 4
-    assert len(td.intent_examples) == 1
+    assert len(td.intent_examples) == 4
     assert len(td.training_examples) == 4
     assert td.entity_synonyms == {}
     assert td.intents == {"flight_booking"}
