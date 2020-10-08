@@ -584,6 +584,17 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def can_train_nlu_model(self) -> bool:
+        """Checks if any training data was loaded."""
+
+        lists_to_check = [
+            self.nlu_examples,
+            self.entity_synonyms,
+            self.regex_features,
+            self.lookup_tables,
+        ]
+        return not any([len(lst) > 0 for lst in lists_to_check])
+
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
     return delim.join([quote + e + quote for e in lst])
