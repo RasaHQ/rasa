@@ -266,10 +266,9 @@ def test_ordered():
         (Message({INTENT: "intent", TEXT: "text"}), False),
         (Message({RESPONSE: "response", TEXT: "text"}), False),
         (Message({INTENT: "intent"}), True),
-        (Message({ACTION_TEXT: "action text", ACTION_NAME: ""}), True),
-        (Message({ACTION_NAME: "action"}), True),
+        (Message({ACTION_TEXT: "action text"}), True),
+        (Message({ACTION_NAME: "action name"}), True),
         (Message({TEXT: "text"}), True),
-        (Message({TEXT: None, INTENT: "affirm"}), True),
     ],
 )
 def test_is_core_message(

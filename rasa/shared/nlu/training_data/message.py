@@ -312,7 +312,7 @@ class Message:
             True, if message is a core message, false otherwise.
         """
         return (
-            self.data.get(ACTION_NAME)
+            self.data.get(ACTION_NAME) is not None
             or self.data.get(ACTION_TEXT)
             or (
                 (self.data.get(INTENT) or self.data.get(RESPONSE))
