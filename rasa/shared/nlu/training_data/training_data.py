@@ -131,20 +131,20 @@ class TrainingData:
         return list(OrderedDict.fromkeys(examples))
 
     @lazy_property
+    def nlu_examples(self) -> List[Message]:
+        return [ex for ex in self.training_examples if not ex.is_core_message()]
+
+    @lazy_property
     def intent_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get(INTENT)]
+        return [ex for ex in self.nlu_examples if ex.get(INTENT)]
 
     @lazy_property
     def response_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get(INTENT_RESPONSE_KEY)]
+        return [ex for ex in self.nlu_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get(ENTITIES)]
-
-    @lazy_property
-    def nlu_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if not ex.is_core_message()]
+        return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
     @lazy_property
     def intents(self) -> Set[Text]:
