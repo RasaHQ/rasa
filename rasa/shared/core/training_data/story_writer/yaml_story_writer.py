@@ -89,23 +89,21 @@ class YAMLStoryWriter(StoryWriter):
             is_test_story: Identifies if the stories should be exported in test stories
                            format.
         """
-        result = self.stories_to_yaml(story_steps, is_test_story)
+        self._is_test_story = is_test_story
+
+        result = self.stories_to_yaml(story_steps)
         if is_appendable and KEY_STORIES in result:
             result = result[KEY_STORIES]
 
         rasa.shared.utils.io.write_yaml(result, target, True)
 
-    def stories_to_yaml(
-        self, story_steps: List[StoryStep], is_test_story: bool = False
-    ) -> Dict[Text, Any]:
+    def stories_to_yaml(self, story_steps: List[StoryStep]) -> Dict[Text, Any]:
         """Converts a sequence of story steps into yaml format.
 
         Args:
             story_steps: Original story steps to be converted to the YAML.
         """
         from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
-
-        self._is_test_story = is_test_story
 
         stories = []
         rules = []

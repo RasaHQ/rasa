@@ -53,7 +53,7 @@ Writes Story steps into a target file/stream.
 #### stories\_to\_yaml
 
 ```python
- | stories_to_yaml(story_steps: List[StoryStep], is_test_story: bool = False) -> Dict[Text, Any]
+ | stories_to_yaml(story_steps: List[StoryStep]) -> Dict[Text, Any]
 ```
 
 Converts a sequence of story steps into yaml format.
