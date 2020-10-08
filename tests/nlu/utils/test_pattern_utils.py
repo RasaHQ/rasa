@@ -77,7 +77,11 @@ def test_extract_patterns_use_only_entities_regexes(
     if entity:
         training_data.training_examples = [
             Message(
-                data={"text": "text", "intent": "intent", "entities": [{"entity": entity, "value": "text"}]}
+                data={
+                    "text": "text",
+                    "intent": "intent",
+                    "entities": [{"entity": entity, "value": "text"}],
+                }
             )
         ]
     if regex_features:
@@ -109,7 +113,11 @@ def test_extract_patterns_use_only_entities_lookup_tables(
     if entity:
         training_data.training_examples = [
             Message(
-                data={"text": "text", "intent": "test", "entities": [{"entity": entity, "value": "text"}]}
+                data={
+                    "text": "text",
+                    "intent": "test",
+                    "entities": [{"entity": entity, "value": "text"}],
+                }
             )
         ]
     if lookup_tables:

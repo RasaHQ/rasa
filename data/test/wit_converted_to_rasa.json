@@ -68,7 +68,7 @@
       }, 
       {
         "text": "i want to fly from london",
-        "intent": "flight_booking", 
+        "intent": "flight_booking",
         "entities": [
           {
             "start": 19, 
