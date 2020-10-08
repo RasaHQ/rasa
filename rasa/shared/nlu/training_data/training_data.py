@@ -585,7 +585,7 @@ class TrainingData:
         return not any([len(lst) > 0 for lst in lists_to_check])
 
     def can_train_nlu_model(self) -> bool:
-        """Checks if any training data was loaded."""
+        """Checks if any NLU training data was loaded."""
 
         lists_to_check = [
             self.nlu_examples,
