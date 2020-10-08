@@ -391,7 +391,8 @@ class PikaMessageProcessor:
 
         return False
 
-    def _connect(self):
+    def connect(self):
+        """Establish a connection to Pika."""
         self.pika_connection = initialise_pika_select_connection(
             self.parameters, self._on_open_connection, self._on_open_connection_error
         )
@@ -435,13 +436,7 @@ class PikaMessageProcessor:
     def process_messages(self) -> None:
         """Start to process messages. This process is indefinite thus it should
         be started in a separate process.
-
-        This method also automatically establishes a connection and wait for
-        the channel to get ready to process messages.
         """
-        if not self.is_connected:
-            self._connect()
-
         if not self.is_ready():
             logger.warning("RabbitMQ channel cannot be opened.")
             return
@@ -567,6 +562,9 @@ class PikaEventBroker(EventBroker):
         return multiprocessing.get_context(self.MP_CONTEXT)
 
     def _start_pika_process(self) -> multiprocessing.Process:
+        if not self.pika_message_processor.is_connected:
+            self.pika_message_processor.connect()
+
         process = multiprocessing.Process(
             target=self.pika_message_processor.process_messages, args=(), daemon=True
         )
