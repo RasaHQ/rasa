@@ -116,10 +116,10 @@ class HFTransformersNLP(Component):
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
-        self.config = model_class_configs[self.model_name]()
+        # self.config = model_class_configs[self.model_name]()
         self.config.output_hidden_states = True
         self.model = model_class_dict[self.model_name].from_pretrained(
-            self.model_weights, cache_dir=self.cache_dir, config=self.config
+            self.model_weights, cache_dir=self.cache_dir
         )
 
         # Use a universal pad token since all transformer architectures do not have a
@@ -440,9 +440,9 @@ class HFTransformersNLP(Component):
         )
 
         # sequence hidden states is always the first output from all models
-        sequence_hidden_states = model_outputs[2][-2]
+        # sequence_hidden_states = model_outputs[2][-2]
 
-        # sequence_hidden_states = model_outputs[0]
+        sequence_hidden_states = model_outputs[0]
 
         sequence_hidden_states = sequence_hidden_states.numpy()
         return sequence_hidden_states
