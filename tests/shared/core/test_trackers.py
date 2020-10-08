@@ -1189,6 +1189,7 @@ def test_subtrackers_for_conversation_sessions():
         SessionStarted(),
         UserUttered("hi", {"name": "greet"}),
         ActionExecuted("utter_greet"),
+        # second session begins here
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         UserUttered("goodbye", {"name": "goodbye"}),
@@ -1203,16 +1204,5 @@ def test_subtrackers_for_conversation_sessions():
 
     assert len(subtrackers) == 2
 
-    assert (
-        subtrackers[0].as_story().as_story_string().strip()
-        == """## some-conversation-ID
-* greet
-    - utter_greet"""
-    )
-
-    assert (
-        subtrackers[1].as_story().as_story_string().strip()
-        == """## some-conversation-ID
-* goodbye
-    - utter_goodbye"""
-    )
+    assert list(subtrackers[0].events) == conversation_events[:4]
+    assert list(subtrackers[1].events) == conversation_events[4:]

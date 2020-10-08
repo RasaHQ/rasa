@@ -41,6 +41,7 @@ from rasa.shared.core.constants import (
     LOOP_REJECTED,
     TRIGGER_MESSAGE,
     LOOP_INTERRUPTED,
+    ACTION_SESSION_START_NAME,
 )
 from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.shared.core.events import (  # pytype: disable=pyi-error
@@ -563,8 +564,9 @@ class DialogueStateTracker:
         at the target time will be included."""
 
         tracker = self.init_copy()
-
+        print("travelling", self.events)
         for event in self.events:
+            print("evt", event.as_dict(), event.timestamp, target_time)
             if event.timestamp <= target_time:
                 tracker.update(event)
             else:
@@ -824,8 +826,7 @@ def is_prev_action_listen_in_state(state: State) -> bool:
 def subtrackers_for_conversation_sessions(
     tracker: "DialogueStateTracker",
 ) -> List["DialogueStateTracker"]:
-    """Generate subtrackers for `tracker` that are split by restarts and conversation
-    sessions.
+    """Generate subtrackers for `tracker` that are split by conversation sessions.
 
     Args:
         tracker: Instance of `DialogueStateTracker` to split.
@@ -850,7 +851,10 @@ def subtrackers_for_conversation_sessions(
 
     for i in range(len(applied_events)):
         event = applied_events[i]
-        is_session_started_event = isinstance(event, SessionStarted)
+        is_session_started_event = (
+            isinstance(event, ActionExecuted)
+            and event.action_name == ACTION_SESSION_START_NAME
+        )
 
         if is_session_started_event and not processed_first_session_start:
             # first session start or restart

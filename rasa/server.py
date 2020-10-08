@@ -230,7 +230,15 @@ def event_verbosity_parameter(
 async def get_tracker_with_session_start(
     processor: "MessageProcessor", conversation_id: Text
 ) -> DialogueStateTracker:
-    """Get tracker object from `MessageProcessor`."""
+    """Get tracker object from `MessageProcessor`.
+
+    Args:
+        processor: An instance of `MessageProcessor`.
+        conversation_id: Conversation ID to fetch the tracker for.
+
+    Returns:
+        The tracker for `conversation_id`.
+    """
     tracker = await processor.get_tracker_with_session_start(conversation_id)
     _validate_tracker(tracker, conversation_id)
 
@@ -245,19 +253,31 @@ def get_stories_for_all_conversation_sessions(
     `conversation_id`.
 
     Args:
+        processor: An instance of `MessageProcessor`.
+        conversation_id: Conversation ID to fetch stories for.
+        until_time: Timestamp up to which to include events.
 
     Returns:
-        The tracker for `conversation_id`.
+        The stories for `conversation_id`.
     """
-
     subtrackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+
+    if until_time is not None:
+        subtrackers = [
+            tracker.travel_back_in_time(until_time) for tracker in subtrackers
+        ]
+        # keep only non-empty trackers are returned
+        subtrackers = [tracker for tracker in subtrackers if len(tracker.events)]
+
+    logger.debug(
+        f"Fetched trackers for {len(subtrackers)} conversation sessions "
+        f"for conversation ID {conversation_id}."
+    )
 
     story_steps = []
 
     for i, tracker in enumerate(subtrackers, 1):
         _validate_tracker(tracker, conversation_id)
-        if until_time is not None:
-            tracker = tracker.travel_back_in_time(until_time)
 
         for story_step in tracker.as_story().story_steps:
             story_step.block_name = f"{conversation_id}, story {i}"
@@ -272,6 +292,8 @@ def get_tracker(
     """Retrieves tracker from `processor` without updating the conversation session.
 
     Args:
+        processor: An instance of `MessageProcessor`.
+        conversation_id: Conversation ID to fetch the tracker for.
 
     Returns:
         The tracker for `conversation_id`.

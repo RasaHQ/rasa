@@ -1348,8 +1348,6 @@ stories:
 - story: some-conversation-ID, story 1
   steps:
   - intent: greet
-    user: |-
-      hi
   - action: utter_greet""",
         ),
         # conversation with multiple sessions
@@ -1369,22 +1367,18 @@ stories:
 - story: some-conversation-ID, story 1
   steps:
   - intent: greet
-    user: |-
-      hi
   - action: utter_greet
 - story: some-conversation-ID, story 2
   steps:
   - intent: goodbye
-    user: |-
-      goodbye
   - action: utter_goodbye""",
         ),
         # empty conversation
         ([], 'version: "2.0"',),
     ],
 )
-def test_get_story(
-    rasa_app: SanicTestClient, conversation_events: List[Event], expected: Text
+async def test_get_story(
+    rasa_app: SanicASGITestClient, conversation_events: List[Event], expected: Text
 ):
     conversation_id = "some-conversation-ID"
 
@@ -1395,13 +1389,52 @@ def test_get_story(
 
     rasa_app.app.agent.tracker_store = tracker_store
 
-    _, response = rasa_app.get(f"/conversations/{conversation_id}/story")
+    _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
 
     assert response.status == 200
     assert response.content.decode().strip() == expected
 
 
-def test_get_story_does_not_update_conversation_session(rasa_app: SanicTestClient):
+async def test_get_story_with_until_time(rasa_app: SanicASGITestClient):
+    conversation_id = "some-conversation-ID"
+
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+
+    conversation_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+        SessionStarted(timestamp=2),
+        UserUttered("hi", {"name": "greet"}, timestamp=3),
+        ActionExecuted("utter_greet", timestamp=4),
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=5),
+        SessionStarted(timestamp=6),
+        UserUttered("goodbye", {"name": "goodbye"}, timestamp=7),
+        ActionExecuted("utter_goodbye", timestamp=8),
+    ]
+
+    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events,)
+
+    tracker_store.save(tracker)
+
+    rasa_app.app.agent.tracker_store = tracker_store
+
+    # query parameter `?until=4` ensures that only the first session is returned
+    _, response = await rasa_app.get(f"/conversations/{conversation_id}/story?until=4")
+
+    assert response.status == 200
+    assert (
+        response.content.decode().strip()
+        == """version: "2.0"
+stories:
+- story: some-conversation-ID, story 1
+  steps:
+  - intent: greet
+  - action: utter_greet"""
+    )
+
+
+async def test_get_story_does_not_update_conversation_session(
+    rasa_app: SanicASGITestClient,
+):
     conversation_id = "some-conversation-ID"
 
     # domain with short session expiration time of one second
@@ -1427,7 +1460,7 @@ def test_get_story_does_not_update_conversation_session(rasa_app: SanicTestClien
 
     rasa_app.app.agent.tracker_store = tracker_store
 
-    _, response = rasa_app.get(f"/conversations/{conversation_id}/story")
+    _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
 
     assert response.status == 200
 
@@ -1439,8 +1472,6 @@ stories:
 - story: some-conversation-ID, story 1
   steps:
   - intent: greet
-    user: |-
-      hi
   - action: utter_greet"""
     )
 
