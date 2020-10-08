@@ -116,6 +116,7 @@ def test_all_components_are_in_at_least_one_test_pipeline():
         ), "`all_components` template is missing component."
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_persist_load_parse(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -135,6 +136,7 @@ async def test_train_persist_load_parse(language, pipeline, component_builder, t
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 async def test_train_persist_load_parse_non_windows(
@@ -157,6 +159,7 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 def test_train_model_without_data_non_windows(
@@ -165,6 +168,7 @@ def test_train_model_without_data_non_windows(
     test_train_model_without_data(language, pipeline, component_builder, tmpdir)
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 def test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -178,6 +182,7 @@ def test_load_and_persist_without_train(language, pipeline, component_builder, t
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 def test_load_and_persist_without_train_non_windows(
