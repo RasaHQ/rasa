@@ -1,1 +1,0 @@
-Fixed ``MappingPolicy`` not predicting ``action_listen`` after the mapped action while running ``rasa test``. 
