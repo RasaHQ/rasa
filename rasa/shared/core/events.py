@@ -392,14 +392,13 @@ class UserUttered(Event):
             else:
                 ent_string = ""
 
-            parse_string = "{intent}{entities}".format(
-                intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
-            )
+            parse_string = f"{self.intent.get(INTENT_NAME_KEY, '')}{ent_string}"
+
             if e2e:
                 message = md_format_message(
                     self.text, self.intent.get(INTENT_NAME_KEY), self.entities
                 )
-                return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
+                return f"{self.intent.get(INTENT_NAME_KEY)}: {message}"
             else:
                 return parse_string
         else:

@@ -331,8 +331,12 @@ class Domain:
         else:
             included_entities = set(properties[USE_ENTITIES_KEY])
             for entity in set(properties[USE_ENTITIES_KEY]):
-                included_entities.update(Domain.concatenate_entity_labels(roles, entity))
-                included_entities.update(Domain.concatenate_entity_labels(groups, entity))
+                included_entities.update(
+                    Domain.concatenate_entity_labels(roles, entity)
+                )
+                included_entities.update(
+                    Domain.concatenate_entity_labels(groups, entity)
+                )
         excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
         for entity in set(properties[IGNORE_ENTITIES_KEY]):
             excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
@@ -795,8 +799,18 @@ class Domain:
         )
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
-        entity_names = set(
-            entity["entity"] for entity in entities if "entity" in entity.keys()
+        entity_names = (
+            set(entity["entity"] for entity in entities if "entity" in entity.keys())
+            | set(
+                f"{entity['entity']}{ENTITY_LABEL_SEPARATOR}{entity['role']}"
+                for entity in entities
+                if "entity" in entity.keys() and "role" in entity.keys()
+            )
+            | set(
+                f"{entity['entity']}{ENTITY_LABEL_SEPARATOR}{entity['group']}"
+                for entity in entities
+                if "entity" in entity.keys() and "group" in entity.keys()
+            )
         )
 
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
