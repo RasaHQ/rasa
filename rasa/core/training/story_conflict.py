@@ -4,7 +4,7 @@ from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
-from rasa.shared.core.domain import Domain, PREV_PREFIX, State
+from rasa.shared.core.domain import Domain, PREV_PREFIX, State, SubState
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT
@@ -311,9 +311,11 @@ def _get_previous_event(
                 and substate["action_name"] != ACTION_LISTEN_NAME
             ):
                 # The `prev_...` was an action that was NOT `action_listen`
+                assert isinstance(substate["action_name"], str)
                 return "action", substate["action_name"]
             elif "action_text" in substate:
                 # The `prev_...` was a a free form utterance action
+                assert isinstance(substate["action_text"], str)
                 return "bot uttered", substate["action_text"]
         elif origin == USER:
             # We found an intent, but it is only the previous event if
@@ -325,4 +327,5 @@ def _get_previous_event(
                 previous_event_type = "user utterance"
                 previous_event_name = substate["text"]
 
+    assert isinstance(previous_event_name, (str, type(None)))
     return previous_event_type, previous_event_name
