@@ -7,7 +7,7 @@ description: Find out how open source chatbot framework Rasa allows you to strea
 
 An event broker allows you to connect your running assistant to other services that process the data coming
 in from conversations. For example, you could [connect your live assistant to
-Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment/)
+Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-an-existing-deployment)
 to review and annotate conversations or forward messages to an external analytics
 service. The event broker publishes messages to a message streaming service,
 also known as a message broker, to forward Rasa [Events](https://rasa.com/docs/action-server/events) from the Rasa server to other services.
@@ -32,7 +32,7 @@ tracker looks like this:
 ```
 
 The `event` field takes the event's `type_name` (for more on event
-types, check out the [Events](https://rasa.com/docs/action-server/events) docs).
+types, check out the [events](https://rasa.com/docs/action-server/events) docs).
 
 ## Pika Event Broker
 
@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
 ## Kafka Event Broker
 
-It is possible to use [Kafka](https://kafka.apache.org/) as main broker for your
+It is possible to use [Kafka](https://kafka.apache.org/) as the main broker for your
 events. In this example we are going to use the [python-kafka](https://kafka-python.readthedocs.io/en/master/usage.html) library, a Kafka client written in Python.
 
 ### Adding a Kafka Event Broker Using the Endpoint Configuration
@@ -111,12 +111,12 @@ events. In this example we are going to use the [python-kafka](https://kafka-pyt
 You can instruct Rasa to stream all events to your Kafka event broker by adding an `event_broker` section to your
 `endpoints.yml`.
 
-Using `SASL_PLAINTEXT` protocol the endpoints file must have the following entries:
+Using the `SASL_PLAINTEXT` protocol the endpoints file must have the following entries:
 
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
 ```
 
-If using SSL protocol, the endpoints file should look like:
+If using the `SSL` protocol, the endpoints file should look like:
 
 ```yaml-rasa (docs/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
 ```
@@ -138,7 +138,7 @@ tracker_store = InMemoryTrackerStore(domain=domain, event_broker=kafka_broker)
 The host variable can be either a list of brokers addresses or a single one.
 If only one broker address is available, the client will connect to it and
 request the cluster Metadata.
-Therefore, the remain brokers in the cluster can be discovered
+Therefore, the remaining brokers in the cluster can be discovered
 automatically through the data served by the first connected broker.
 
 To pass more than one broker address as argument, they must be passed in a
@@ -153,7 +153,7 @@ kafka_broker = KafkaEventBroker(host=['kafka_broker_1:9092',
 
 ### Authentication and Authorization
 
-Rasa's Kafka producer accepts two types of security protocols - `SASL_PLAINTEXT` and `SSL`.
+Rasa's Kafka producer accepts two types of security protocols: `SASL_PLAINTEXT` and `SSL`.
 
 For development environment, or if the brokers servers and clients are located
 into the same machine, you can use simple authentication with `SASL_PLAINTEXT`.
@@ -172,7 +172,7 @@ kafka_broker = KafkaEventBroker(host='kafka_broker:9092',
 ```
 
 If the clients or the brokers in the kafka cluster are located in different
-machines, it's important to use ssl protocol to assure encryption of data and client
+machines, it's important to use the `SSL` protocol to ensure encryption of data and client
 authentication. After generating valid certificates for the brokers and the
 clients, the path to the certificate and key generated for the producer must
 be provided as arguments, as well as the CA's root certificate.
@@ -193,7 +193,7 @@ and inter-broker connections to prevent man-in-the-middle attacks.
 
 ### Implementing a Kafka Event Consumer
 
-The parameters used to create a Kafka consumer are the same used on the producer creation,
+The parameters used to create a Kafka consumer are the same as those used in the producer creation,
 according to the security protocol being used. The following implementation shows an example:
 
 ```python
@@ -219,16 +219,16 @@ It is possible to use an SQL database as an event broker. Connections to databas
 [SQLAlchemy](https://www.sqlalchemy.org/), a Python library which can interact with many
 different types of SQL databases, such as [SQLite](https://sqlite.org/index.html),
 [PostgreSQL](https://www.postgresql.org/) and more. The default Rasa installation allows connections to SQLite
-and PostgreSQL databases, to see other options, please see the
+and PostgreSQL databases. To see other options, please see the
 [SQLAlchemy documentation on SQL dialects](https://docs.sqlalchemy.org/en/13/dialects/index.html).
 
 ### Adding a SQL Event Broker Using the Endpoint Configuration
 
 To instruct Rasa to save all events to your SQL event broker, add an `event_broker` section to your
 `endpoints.yml`. For example, a valid SQLite configuration
-could look like the following:
+could look like this:
 
-```yaml-rasa
+```yaml-rasa title="endpoints.yml"
 event_broker:
   type: SQL
   dialect: sqlite
@@ -237,7 +237,7 @@ event_broker:
 
 PostgreSQL databases can be used as well:
 
-```yaml-rasa
+```yaml-rasa title="endpoints.yml"
 event_broker:
   type: SQL
   url: 127.0.0.1

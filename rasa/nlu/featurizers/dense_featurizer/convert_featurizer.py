@@ -47,7 +47,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         super(ConveRTFeaturizer, self).__init__(component_config)
 
-    def __get_signature(self, signature: Text, module: Any) -> NoReturn:
+    @staticmethod
+    def __get_signature(signature: Text, module: Any) -> NoReturn:
         """Retrieve a signature from a (hopefully loaded) TF model."""
 
         if not module:

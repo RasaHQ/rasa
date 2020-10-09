@@ -99,3 +99,76 @@ async def test_example_component(component_builder, tmp_path):
     loaded = Interpreter.load(persisted_path, component_builder)
 
     assert loaded.parse("test") is not None
+
+
+@pytest.mark.parametrize(
+    "supported_language_list, not_supported_language_list, language, expected",
+    [
+        # in following comments: VAL stands for any valid setting
+        # for language is `None`
+        (None, None, None, True),
+        # (None, None)
+        (None, None, "en", True),
+        # (VAL, None)
+        (["en"], None, "en", True),
+        (["en"], None, "zh", False),
+        # (VAL, [])
+        (["en"], [], "en", True),
+        (["en"], [], "zh", False),
+        # (None, VAL)
+        (None, ["en"], "en", False),
+        (None, ["en"], "zh", True),
+        # ([], VAL)
+        ([], ["en"], "en", False),
+        ([], ["en"], "zh", True),
+    ],
+)
+def test_can_handle_language_logically_correctness(
+    supported_language_list, not_supported_language_list, language, expected
+):
+    from rasa.nlu.components import Component
+
+    SampleComponent = type(
+        "SampleComponent",
+        (Component,),
+        {
+            "supported_language_list": supported_language_list,
+            "not_supported_language_list": not_supported_language_list,
+        },
+    )
+
+    assert SampleComponent.can_handle_language(language) == expected
+
+
+@pytest.mark.parametrize(
+    "supported_language_list, not_supported_language_list, expected_exec_msg",
+    [
+        # in following comments: VAL stands for any valid setting
+        # (None, [])
+        (None, [], "Empty lists for both"),
+        # ([], None)
+        ([], None, "Empty lists for both"),
+        # ([], [])
+        ([], [], "Empty lists for both"),
+        # (VAL, VAL)
+        (["en"], ["zh"], "Only one of"),
+    ],
+)
+def test_can_handle_language_guard_clause(
+    supported_language_list, not_supported_language_list, expected_exec_msg
+):
+    from rasa.nlu.components import Component
+    from rasa.shared.exceptions import RasaException
+
+    SampleComponent = type(
+        "SampleComponent",
+        (Component,),
+        {
+            "supported_language_list": supported_language_list,
+            "not_supported_language_list": not_supported_language_list,
+        },
+    )
+
+    with pytest.raises(RasaException) as excinfo:
+        SampleComponent.can_handle_language("random_string")
+    assert expected_exec_msg in str(excinfo.value)

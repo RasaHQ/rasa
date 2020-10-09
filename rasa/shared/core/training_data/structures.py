@@ -144,8 +144,8 @@ class StoryStep:
 
         for s in self.events:
             if (
-                self._is_action_listen(s)
-                or self._is_action_session_start(s)
+                self.is_action_listen(s)
+                or self.is_action_session_start(s)
                 or isinstance(s, SessionStarted)
             ):
                 continue
@@ -165,7 +165,7 @@ class StoryStep:
         return result
 
     @staticmethod
-    def _is_action_listen(event: Event) -> bool:
+    def is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         # pytype: disable=attribute-error
@@ -173,7 +173,7 @@ class StoryStep:
         # pytype: enable=attribute-error
 
     @staticmethod
-    def _is_action_session_start(event: Event) -> bool:
+    def is_action_session_start(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         # pytype: disable=attribute-error
@@ -184,7 +184,7 @@ class StoryStep:
         # pytype: enable=attribute-error
 
     def _add_action_listen(self, events: List[Event]) -> None:
-        if not events or not self._is_action_listen(events[-1]):
+        if not events or not self.is_action_listen(events[-1]):
             # do not add second action_listen
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
 
@@ -503,7 +503,7 @@ class StoryGraph:
         cps: List[Checkpoint], cp_name_to_ignore: Set[Text]
     ) -> List[Checkpoint]:
         """Finds checkpoints which names are
-            different form names of checkpoints to ignore"""
+        different form names of checkpoints to ignore"""
 
         return [cp for cp in cps if cp.name not in cp_name_to_ignore]
 
@@ -514,7 +514,7 @@ class StoryGraph:
         story_end_checkpoints: Dict[Text, Text],
     ) -> None:
         """Finds unused generated checkpoints
-            and remove them from story steps."""
+        and remove them from story steps."""
 
         unused_cps = self._find_unused_checkpoints(
             story_steps.values(), story_end_checkpoints
@@ -562,7 +562,7 @@ class StoryGraph:
         checkpoint_name: Text, conditions: Dict[Text, Any], cps: List[Checkpoint]
     ) -> bool:
         """Checks if checkpoint with name and conditions is
-            already in the list of checkpoints."""
+        already in the list of checkpoints."""
 
         for cp in cps:
             if checkpoint_name == cp.name and conditions == cp.conditions:

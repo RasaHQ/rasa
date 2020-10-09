@@ -5,10 +5,6 @@ from typing import Text, List
 import pytest
 
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted
-from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
-from rasa.shared.importers.importer import E2EImporter, TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -26,6 +22,10 @@ from rasa.shared.nlu.training_data.util import (
 )
 
 import rasa.shared.data
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.importers.importer import TrainingDataImporter, E2EImporter
 
 
 def test_luis_data():
@@ -44,7 +44,7 @@ def test_wit_data():
     td = load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 4
-    assert len(td.intent_examples) == 1
+    assert len(td.intent_examples) == 4
     assert len(td.training_examples) == 4
     assert td.entity_synonyms == {}
     assert td.intents == {"flight_booking"}
@@ -640,4 +640,4 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
 
     assert training_data.training_examples
     assert training_data.is_empty()
-    assert not training_data.without_empty_e2e_examples().training_examples
+    assert not training_data.nlu_examples()

@@ -190,14 +190,14 @@ async def test_import_nlu_training_data_from_e2e_stories(
             StoryStep(
                 events=[
                     SlotSet("some slot", "doesn't matter"),
-                    UserUttered("greet_from_stories", {"name": "greet_from_stories"}),
+                    UserUttered(intent={"name": "greet_from_stories"}),
                     ActionExecuted("utter_greet_from_stories"),
                 ]
             ),
             StoryStep(
                 events=[
                     UserUttered("how are you doing?"),
-                    ActionExecuted("utter_greet_from_stories", action_text="Hi Joey."),
+                    ActionExecuted(action_text="Hi Joey."),
                 ]
             ),
         ]
@@ -294,7 +294,7 @@ async def test_import_nlu_training_data_with_default_actions(
 
     extended_training_data = await default_importer.get_nlu_data()
     assert all(
-        Message(data={ACTION_NAME: action_name, ACTION_TEXT: ""})
+        Message(data={ACTION_NAME: action_name})
         in extended_training_data.training_examples
         for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     )
@@ -360,5 +360,6 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
 
     assert domain.retrieval_intents == ["chitchat"]
     assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
-    assert domain.templates == nlu_data.responses
+    assert domain.retrieval_intent_templates == nlu_data.responses
+    assert domain.templates != nlu_data.responses
     assert "utter_chitchat" in domain.action_names

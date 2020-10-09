@@ -23,6 +23,7 @@ schema;responses:
             type: "seq"
             sequence:
             - type: "map"
+              allowempty: True
               mapping:
                 title:
                   type: "str"

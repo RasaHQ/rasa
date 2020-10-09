@@ -1038,7 +1038,7 @@ class ConversationPaused(Event):
     """Ignore messages from the user to let a human take over.
 
     As a side effect the ``Tracker``'s ``paused`` attribute will
-    be set to ``True``. """
+    be set to ``True``."""
 
     type_name = "pause"
 
@@ -1095,7 +1095,7 @@ class ActionExecuted(Event):
 
     def __init__(
         self,
-        action_name: Text,
+        action_name: Optional[Text] = None,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
@@ -1246,8 +1246,7 @@ class AgentUttered(Event):
 
 
 class ActiveLoop(Event):
-    """If `name` is not None: activates a loop with `name` else deactivates active loop.
-    """
+    """If `name` is not None: activates a loop with `name` else deactivates active loop."""
 
     type_name = "active_loop"
 
@@ -1315,7 +1314,7 @@ class LegacyForm(ActiveLoop):
 
 class LoopInterrupted(Event):
     """Event added by FormPolicy and RulePolicy to notify form action
-       whether or not to validate the user input."""
+    whether or not to validate the user input."""
 
     type_name = "loop_interrupted"
 
