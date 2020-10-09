@@ -321,7 +321,10 @@ class TestTEDPolicy(PolicyTestCollection):
 
     def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
         # first check the output is what we expect
-        predicted_probabilities, e2e_prediction = trained_policy.predict_action_probabilities(
+        (
+            predicted_probabilities,
+            e2e_prediction,
+        ) = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
         )
         # count number of non-zero confidences
@@ -467,7 +470,10 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
 
     def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
         # first check the output is what we expect
-        predicted_probabilities, e2e_prediction = trained_policy.predict_action_probabilities(
+        (
+            predicted_probabilities,
+            e2e_prediction,
+        ) = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
         )
         # there should be no normalization
@@ -944,7 +950,10 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories(MarkdownStoryWriter()) == "## sender\n* bye: Random\n"
+        assert (
+            tracker.export_stories(MarkdownStoryWriter())
+            == "## sender\n* bye: Random\n"
+        )
 
     def test_affirm_rephrased_intent(self, trained_policy, default_domain):
         events = [
@@ -984,7 +993,10 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories(MarkdownStoryWriter()) == "## sender\n* bye: Random\n"
+        assert (
+            tracker.export_stories(MarkdownStoryWriter())
+            == "## sender\n* bye: Random\n"
+        )
 
     def test_denied_rephrasing_affirmation(self, trained_policy, default_domain):
         events = [
