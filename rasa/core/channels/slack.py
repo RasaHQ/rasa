@@ -381,7 +381,7 @@ class SlackInput(InputChannel):
             message = payload.get("message", {})
             thread_id = message.get("thread_ts", message.get("ts"))
             return {
-                "out_channel": payload.get("channel"),
+                "out_channel": payload.get("channel", {}).get("id"),
                 "thread_id": thread_id,
                 "users": payload.get("user", {}).get("id"),
             }
