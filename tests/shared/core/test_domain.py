@@ -839,7 +839,7 @@ def test_transform_entities_for_file_default():
     transformed = domain._transform_entities_for_file()
 
     expected = [
-        {"GPE": None, ENTITY_ROLES_KEY: ["destination", "origin"]},
+        {"GPE": {ENTITY_ROLES_KEY: ["destination", "origin"]}},
         "name",
     ]
 

@@ -9,9 +9,9 @@ intents:
 
 entities:
   - GPE:
-    roles:
-     - destination
-     - origin
+      roles:
+       - destination
+       - origin
   - name
 
 slots:

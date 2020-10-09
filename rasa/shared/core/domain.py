@@ -390,18 +390,12 @@ class Domain:
             if isinstance(entity, str):
                 entities.append(entity)
             elif isinstance(entity, Dict):
-                _entity = None
-                for key in entity.keys():
-                    if key != ENTITY_ROLES_KEY and key != ENTITY_GROUPS_KEY:
-                        _entity = key
-                        break
-                if _entity is None:
-                    raise InvalidDomain(f"Invalid domain. No entity name in {entity}.")
-                entities.append(_entity)
-                if ENTITY_ROLES_KEY in entity:
-                    roles[_entity] = entity[ENTITY_ROLES_KEY]
-                if ENTITY_GROUPS_KEY in entity:
-                    groups[_entity] = entity[ENTITY_GROUPS_KEY]
+                for _entity, sub_labels in entity.items():
+                    entities.append(_entity)
+                    if ENTITY_ROLES_KEY in sub_labels:
+                        roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
+                    if ENTITY_GROUPS_KEY in sub_labels:
+                        groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
             else:
                 raise InvalidDomain(
                     f"Invalid domain. Entity is invalid, type not supported: {entity}"
@@ -742,7 +736,7 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available entity state strings."""
-        entity_states = self.entities
+        entity_states = copy.deepcopy(self.entities)
         entity_states.extend(Domain.concatenate_entity_labels(self.roles))
         entity_states.extend(Domain.concatenate_entity_labels(self.groups))
         return entity_states
@@ -1048,18 +1042,19 @@ class Domain:
             if entity in self.roles and entity in self.groups:
                 entities_for_file.append(
                     {
-                        entity: None,
-                        ENTITY_GROUPS_KEY: self.groups[entity],
-                        ENTITY_ROLES_KEY: self.roles[entity],
+                        entity: {
+                            ENTITY_GROUPS_KEY: self.groups[entity],
+                            ENTITY_ROLES_KEY: self.roles[entity],
+                        }
                     }
                 )
             elif entity in self.roles:
                 entities_for_file.append(
-                    {entity: None, ENTITY_ROLES_KEY: self.roles[entity]}
+                    {entity: {ENTITY_ROLES_KEY: self.roles[entity]}}
                 )
             elif entity in self.groups:
                 entities_for_file.append(
-                    {entity: None, ENTITY_GROUPS_KEY: self.groups[entity],}
+                    {entity: {ENTITY_GROUPS_KEY: self.groups[entity],}}
                 )
             else:
                 entities_for_file.append(entity)
