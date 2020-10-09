@@ -420,7 +420,6 @@ class PikaMessageProcessor:
         self.pika_connection = initialise_pika_select_connection(
             self.parameters, self._on_open_connection, self._on_open_connection_error
         )
-        logger.error(f"IOLOOP: {type(self.pika_connection.ioloop)}")
         # noinspection PyUnresolvedReferences
         self.pika_connection.ioloop.start()
 
