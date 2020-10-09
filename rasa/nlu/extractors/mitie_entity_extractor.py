@@ -82,7 +82,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         # filter out pre-trained entity examples
         filtered_entity_examples = self.filter_trainable_entities(
-            training_data.training_examples
+            training_data.nlu_examples
         )
 
         for example in filtered_entity_examples:

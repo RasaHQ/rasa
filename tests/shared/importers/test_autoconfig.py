@@ -205,3 +205,19 @@ def test_get_configuration_for_different_training_types(
     expected = rasa.shared.utils.io.read_file(str(CONFIG_FOLDER / expected_file))
 
     assert actual == expected
+
+
+def test_comment_causing_invalid_autoconfig(tmp_path: Path):
+    """Regression test for https://github.com/RasaHQ/rasa/issues/6948."""
+
+    config_file = tmp_path / "config.yml"
+    shutil.copyfile(
+        str(CONFIG_FOLDER / "config_with_comment_between_suggestions.yml"), config_file
+    )
+
+    _ = autoconfig.get_configuration(str(config_file))
+
+    # This should not throw
+    dumped = rasa.shared.utils.io.read_yaml_file(config_file)
+
+    assert dumped

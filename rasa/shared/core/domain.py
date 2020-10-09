@@ -23,7 +23,8 @@ from ruamel.yaml import YAMLError
 from rasa.shared.core.constants import ENTITY_LABEL_SEPARATOR
 import rasa.shared.constants
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, YamlException
+from rasa.shared.utils.validation import YamlValidationException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -151,17 +152,17 @@ class Domain:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
-        except rasa.shared.utils.validation.YamlValidationException as e:
+
+            data = rasa.shared.utils.io.read_yaml(yaml)
+            if not rasa.shared.utils.validation.validate_training_data_format_version(
+                data, original_filename
+            ):
+                return Domain.empty()
+
+            return cls.from_dict(data)
+        except YamlException as e:
             e.filename = original_filename
-            raise InvalidDomain(str(e))
-
-        data = rasa.shared.utils.io.read_yaml(yaml)
-        if not rasa.shared.utils.validation.validate_training_data_format_version(
-            data, original_filename
-        ):
-            return Domain.empty()
-
-        return cls.from_dict(data)
+            raise e
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
@@ -627,6 +628,26 @@ class Domain:
         """Number of used input states for the action prediction."""
 
         return len(self.input_states)
+
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the templates which are defined for retrieval intents"""
+
+        return dict(
+            filter(
+                lambda x: self.is_retrieval_intent_template(x), self.templates.items()
+            )
+        )
+
+    @staticmethod
+    def is_retrieval_intent_template(
+        template: Tuple[Text, List[Dict[Text, Any]]]
+    ) -> bool:
+        """Check if the response template is for a retrieval intent.
+
+        These templates have a `/` symbol in their name. Use that to filter them from the rest.
+        """
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
 
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
@@ -1348,19 +1369,18 @@ class Domain:
 
         Returns:
             `True` if it's a domain file, otherwise `False`.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
         from rasa.shared.data import is_likely_yaml_file
 
         if not is_likely_yaml_file(filename):
             return False
-        try:
-            content = rasa.shared.utils.io.read_yaml_file(filename)
-            if any(key in content for key in ALL_DOMAIN_KEYS):
-                return True
-        except YAMLError:
-            pass
 
-        return False
+        content = rasa.shared.utils.io.read_yaml_file(filename)
+        return any(key in content for key in ALL_DOMAIN_KEYS)
 
     def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
         """Retrieve the slot mappings for a form which are defined in the domain.
