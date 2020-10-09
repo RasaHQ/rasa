@@ -252,13 +252,13 @@ If you want to influence the dialogue predictions by roles or groups, you need t
 the desired role or group label. You also need to list the corresponding roles and groups of an entity in your
 [domain file](./domain.mdx#entities).
 
-Let's assume you want to output a different sentence depending on what the user is saying about his location. E.g.
-if the user informs you that he just arrived from London, you might want to ask how he liked London. But if he
-is saying that is on his way to Madrid, you might want to wish him a good stay. You can achieve this with the
+Let's assume you want to output a different sentence depending on what the user's location is. E.g.
+if the user just arrived from London, you might want to ask how the trip to London was. But if the user is on the way
+to Madrid, you might want to wish the user a good stay. You can achieve this with the
 following two stories.
 
 ```yaml-rasa
-- story: The user mentioned that he just arrived from another city.
+- story: The user just arrived from another city.
   steps:
     - intent: greet
     - action: utter_greet
@@ -268,7 +268,7 @@ following two stories.
           role: from
     - action: utter_ask_about_trip
 
-- story: The user is saying that he is going to another city.
+- story: The user is going to another city.
   steps:
     - intent: greet
     - action: utter_greet
