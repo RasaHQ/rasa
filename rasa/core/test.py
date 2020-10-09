@@ -360,7 +360,7 @@ def _collect_action_executed_predictions(
                 )
             raise ValueError(error_msg)
     else:
-        partial_tracker.update(ActionExecuted(predicted, policy, confidence))
+        partial_tracker.update(ActionExecuted(predicted, policy, confidence, event.timestamp))
 
     return action_executed_eval_store, policy, confidence
 
