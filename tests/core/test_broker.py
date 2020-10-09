@@ -95,6 +95,7 @@ def test_pika_queues_from_args(
         pika_processor = PikaMessageProcessor(
             TEST_CONNECTION_PARAMETERS,
             queues=queues_arg,
+            queue=queue_arg,
             get_message=lambda: ("", None),
         )
 
@@ -230,12 +231,15 @@ def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
 
 
 def test_pika_logs_in_debug_mode(caplog: LogCaptureFixture, monkeypatch: MonkeyPatch):
-    from rasa.core.brokers import pika
+    from rasa.core.brokers.pika import _pika_log_level
+
+    pika_level = logging.getLogger("pika").level
+
+    with caplog.at_level(logging.INFO):
+        with _pika_log_level(logging.CRITICAL):
+            assert logging.getLogger("pika").level == logging.CRITICAL
 
     with caplog.at_level(logging.DEBUG):
-        with pytest.raises(Exception):
-            pika.initialise_pika_connection(
-                "localhost", "user", "password", connection_attempts=1
-            )
-
-    assert len(caplog.records) > 0
+        with _pika_log_level(logging.CRITICAL):
+            # level should not change
+            assert logging.getLogger("pika").level == pika_level
