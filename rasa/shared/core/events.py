@@ -1039,7 +1039,7 @@ class ActionExecuted(Event):
 
     def __init__(
         self,
-        action_name: Text,
+        action_name: Optional[Text] = None,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
