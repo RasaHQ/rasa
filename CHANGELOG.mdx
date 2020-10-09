@@ -442,6 +442,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   - introduced `MissingDependencyException` as an exception raised if packages 
     need to be installed
 - [#6900](https://github.com/rasahq/rasa/issues/6900): Debug logs from `matplotlib` libraries are now hidden by default and are configurable with the `LOG_LEVEL_LIBRARIES` environment variable.
+- [#6943](https://github.com/rasahq/rasa/issues/6943): Update `KafkaEventBroker` to support `SASL_SSL` and `PLAINTEXT` protocols.
 
 ### Bugfixes
 - [#3597](https://github.com/rasahq/rasa/issues/3597): Fixed issue where temporary model directories were not removed after pulling from a model server. 
@@ -522,6 +523,9 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 - [#6919](https://github.com/rasahq/rasa/issues/6919): Do not filter training data in model.py but on component side.
 - [#6929](https://github.com/rasahq/rasa/issues/6929): Check if a model was provided when executing `rasa test core`. 
   If not, print a useful error message and stop.
+- [#6805](https://github.com/rasahq/rasa/issues/6805): Transfer only response templates for retrieval intents from domain to NLU Training Data.
+
+  This avoids retraining the NLU model if one of the non retrieval intent response templates are edited.
 
 ### Improved Documentation
 - [#4441](https://github.com/rasahq/rasa/issues/4441): Added documentation on `ambiguity_threshold` parameter in Fallback Actions page.
