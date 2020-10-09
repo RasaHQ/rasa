@@ -43,6 +43,9 @@ def test_pika_broker_from_config():
     )
     actual = EventBroker.create(cfg)
 
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
+    monkeypatch.setattr(PikaEventBroker, "_connect", lambda _: None)
+
     assert isinstance(actual, PikaEventBroker)
     assert actual.host == "localhost"
     assert actual.username == "username"
