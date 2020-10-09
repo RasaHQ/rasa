@@ -22,6 +22,7 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.transformer import MultiHeadAttention
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import TOKENS_NAMES
@@ -1318,6 +1319,17 @@ class DIET(TransformerRasaModel):
                 self.config[REGULARIZATION_CONSTANT],
                 f"tags.{name}",
             )
+            if name != ENTITY_ATTRIBUTE_TYPE:
+                self._tf_layers[f"attention.{name}"] = MultiHeadAttention(
+                    self.config[TRANSFORMER_SIZE],
+                    self.config[NUM_HEADS],
+                    attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+                    sparsity=self.config[WEIGHT_SPARSITY],
+                    unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+                    use_key_relative_position=True,
+                    use_value_relative_position=True,
+                    max_relative_position=5,
+                )
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
@@ -1543,6 +1555,7 @@ class DIET(TransformerRasaModel):
     def _calculate_entity_loss(
         self,
         inputs: tf.Tensor,
+        pre_inputs: tf.Tensor,
         tag_ids: tf.Tensor,
         mask: tf.Tensor,
         sequence_lengths: tf.Tensor,
@@ -1554,6 +1567,10 @@ class DIET(TransformerRasaModel):
 
         if entity_tags is not None:
             _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
+            # inputs = tf.concat([inputs, _tags], axis=-1)
+            inputs, _ = self._tf_layers[f"attention.{tag_name}"](
+                _tags, inputs, 1 - mask, self._training
+            )
             inputs = tf.concat([inputs, _tags], axis=-1)
 
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
@@ -1640,7 +1657,7 @@ class DIET(TransformerRasaModel):
 
         if self.config[ENTITY_RECOGNITION]:
             losses += self._batch_loss_entities(
-                mask_text, sequence_lengths, text_transformed, tf_batch_data
+                mask_text, sequence_lengths, text_transformed, text_in, tf_batch_data
             )
 
         return tf.math.add_n(losses)
@@ -1682,6 +1699,7 @@ class DIET(TransformerRasaModel):
         mask_text: tf.Tensor,
         sequence_lengths: tf.Tensor,
         text_transformed: tf.Tensor,
+        text_in: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> List[tf.Tensor]:
         losses = []
@@ -1701,6 +1719,7 @@ class DIET(TransformerRasaModel):
 
             loss, f1, _logits = self._calculate_entity_loss(
                 text_transformed,
+                text_in,
                 tag_ids,
                 mask_text,
                 sequence_lengths,
@@ -1763,13 +1782,13 @@ class DIET(TransformerRasaModel):
 
         if self.config[ENTITY_RECOGNITION]:
             predictions.update(
-                self._batch_predict_entities(sequence_lengths, text_transformed)
+                self._batch_predict_entities(sequence_lengths, text_transformed, mask)
             )
 
         return predictions
 
     def _batch_predict_entities(
-        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor
+        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor, mask: tf.Tensor
     ) -> Dict[Text, tf.Tensor]:
         predictions: Dict[Text, tf.Tensor] = {}
 
@@ -1785,6 +1804,10 @@ class DIET(TransformerRasaModel):
 
             if entity_tags is not None:
                 _tags = self._tf_layers[f"embed.{name}.tags"](entity_tags)
+                # _input = tf.concat([_input, _tags], axis=-1)
+                _input, _ = self._tf_layers[f"attention.{name}"](
+                    _tags, _input, 1 - mask, self._training
+                )
                 _input = tf.concat([_input, _tags], axis=-1)
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
