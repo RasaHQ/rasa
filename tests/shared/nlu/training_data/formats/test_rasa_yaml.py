@@ -3,6 +3,7 @@ from typing import Text
 
 import pytest
 
+from rasa.shared.exceptions import YamlException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import (
@@ -115,7 +116,7 @@ def test_wrong_format_raises():
     """
 
     parser = RasaYAMLReader()
-    with pytest.raises(ValueError):
+    with pytest.raises(YamlSyntaxException):
         parser.reads(wrong_yaml_nlu_content)
 
 
@@ -125,7 +126,7 @@ def test_wrong_format_raises():
 def test_wrong_schema_raises(example: Text):
 
     parser = RasaYAMLReader()
-    with pytest.raises(ValueError):
+    with pytest.raises(YamlException):
         parser.reads(example)
 
 

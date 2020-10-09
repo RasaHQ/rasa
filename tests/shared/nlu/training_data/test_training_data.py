@@ -1,14 +1,8 @@
-import asyncio
-from pathlib import Path
 from typing import Text, List
 
 import pytest
 
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted
-from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
-from rasa.shared.importers.importer import E2EImporter, TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -44,7 +38,7 @@ def test_wit_data():
     td = load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 4
-    assert len(td.intent_examples) == 1
+    assert len(td.intent_examples) == 4
     assert len(td.training_examples) == 4
     assert td.entity_synonyms == {}
     assert td.intents == {"flight_booking"}
@@ -607,37 +601,3 @@ def test_custom_attributes(tmp_path):
     assert len(td.training_examples) == 1
     example = td.training_examples[0]
     assert example.get("sentiment") == 0.8
-
-
-async def test_without_additional_e2e_examples(tmp_path: Path):
-    domain_path = tmp_path / "domain.yml"
-    domain_path.write_text(Domain.empty().as_yaml())
-
-    config_path = tmp_path / "config.yml"
-    config_path.touch()
-
-    existing = TrainingDataImporter.load_from_dict(
-        {}, str(config_path), str(domain_path), []
-    )
-
-    stories = StoryGraph(
-        [
-            StoryStep(
-                events=[
-                    UserUttered("greet_from_stories", {"name": "greet_from_stories"}),
-                    ActionExecuted("utter_greet_from_stories"),
-                ]
-            )
-        ]
-    )
-
-    # Patch to return our test stories
-    existing.get_stories = asyncio.coroutine(lambda *args: stories)
-
-    importer = E2EImporter(existing)
-
-    training_data = await importer.get_nlu_data()
-
-    assert training_data.training_examples
-    assert training_data.is_empty()
-    assert not training_data.without_empty_e2e_examples().training_examples
