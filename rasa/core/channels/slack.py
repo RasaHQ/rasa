@@ -366,11 +366,16 @@ class SlackInput(InputChannel):
             slack_event = request.json
             event = slack_event.get("event", {})
             thread_id = event.get("thread_ts", event.get("ts"))
+            users = (
+                slack_event.get("authed_users", [])
+                if "authed_users" in slack_event
+                else slack_event.get("authorizations")[0].get("user_id")
+            )
 
             return {
                 "out_channel": event.get("channel"),
                 "thread_id": thread_id,
-                "users": slack_event.get("authorizations")[0].get("user_id"),
+                "users": users,
             }
 
         if content_type == "application/x-www-form-urlencoded":
