@@ -426,9 +426,9 @@ class RasaModelData:
         if features is None:
             return
 
-        for data in features:
-            if len(data) > 0:
-                self.data[key][sub_key].append(data)
+        for feature_array in features:
+            if len(feature_array) > 0:
+                self.data[key][sub_key].append(feature_array)
 
         if not self.data[key][sub_key]:
             del self.data[key][sub_key]
