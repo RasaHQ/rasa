@@ -22,13 +22,16 @@ from ruamel.yaml import YAMLError
 
 import rasa.shared.constants
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, YamlException
+from rasa.shared.utils.validation import YamlValidationException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot
+from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -84,7 +87,6 @@ class SessionConfig(NamedTuple):
 
     @staticmethod
     def default() -> "SessionConfig":
-        # TODO: 2.0, reconsider how to apply sessions to old projects
         return SessionConfig(
             rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
             rasa.shared.constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
@@ -143,22 +145,21 @@ class Domain:
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
-
         try:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
-        except rasa.shared.utils.validation.YamlValidationException as e:
+
+            data = rasa.shared.utils.io.read_yaml(yaml)
+            if not rasa.shared.utils.validation.validate_training_data_format_version(
+                data, original_filename
+            ):
+                return Domain.empty()
+
+            return cls.from_dict(data)
+        except YamlException as e:
             e.filename = original_filename
-            raise InvalidDomain(str(e))
-
-        data = rasa.shared.utils.io.read_yaml(yaml)
-        if not rasa.shared.utils.validation.validate_training_data_format_version(
-            data, original_filename
-        ):
-            return Domain.empty()
-
-        return cls.from_dict(data)
+            raise e
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
@@ -184,7 +185,6 @@ class Domain:
     def _get_session_config(session_config: Dict) -> SessionConfig:
         session_expiration_time_min = session_config.get(SESSION_EXPIRATION_TIME_KEY)
 
-        # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
         if session_expiration_time_min is None:
             session_expiration_time_min = (
                 rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
@@ -550,6 +550,26 @@ class Domain:
 
         return len(self.input_states)
 
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the templates which are defined for retrieval intents"""
+
+        return dict(
+            filter(
+                lambda x: self.is_retrieval_intent_template(x), self.templates.items()
+            )
+        )
+
+    @staticmethod
+    def is_retrieval_intent_template(
+        template: Tuple[Text, List[Dict[Text, Any]]]
+    ) -> bool:
+        """Check if the response template is for a retrieval intent.
+
+        These templates have a `/` symbol in their name. Use that to filter them from the rest.
+        """
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
+
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
 
@@ -802,7 +822,6 @@ class Domain:
 
     def persist_specification(self, model_path: Text) -> None:
         """Persist the domain specification to storage."""
-
         domain_spec_path = os.path.join(model_path, "domain.json")
         rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
@@ -812,17 +831,16 @@ class Domain:
     @classmethod
     def load_specification(cls, path: Text) -> Dict[Text, Any]:
         """Load a domains specification from a dumped model directory."""
-
         metadata_path = os.path.join(path, "domain.json")
-        specification = json.loads(rasa.shared.utils.io.read_file(metadata_path))
-        return specification
+
+        return json.loads(rasa.shared.utils.io.read_file(metadata_path))
 
     def compare_with_specification(self, path: Text) -> bool:
         """Compare the domain spec of the current and the loaded domain.
 
         Throws exception if the loaded domain specification is different
-        to the current domain are different."""
-
+        to the current domain are different.
+        """
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
 
@@ -844,7 +862,6 @@ class Domain:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
-
         return {
             "config": {"store_entities_as_slots": self.store_entities_as_slots},
             SESSION_CONFIG_KEY: {
@@ -859,14 +876,6 @@ class Domain:
             KEY_FORMS: self.forms,
             KEY_E2E_ACTIONS: self.action_texts,
         }
-
-    def persist(self, filename: Union[Text, Path]) -> None:
-        """Write domain to a file."""
-
-        domain_data = self.as_dict()
-        rasa.shared.utils.io.write_yaml(
-            domain_data, filename, should_preserve_key_order=True
-        )
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
@@ -942,21 +951,29 @@ class Domain:
             if v != {} and v != [] and v is not None
         }
 
+    def persist(self, filename: Union[Text, Path]) -> None:
+        """Write domain to a file."""
+        as_yaml = self.as_yaml(clean_before_dump=False)
+        rasa.shared.utils.io.write_text_file(as_yaml, filename)
+
     def persist_clean(self, filename: Union[Text, Path]) -> None:
         """Write cleaned domain to a file."""
-
-        cleaned_domain_data = self.cleaned_domain()
-        rasa.shared.utils.io.write_yaml(
-            cleaned_domain_data, filename, should_preserve_key_order=True
-        )
+        as_yaml = self.as_yaml(clean_before_dump=True)
+        rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
-            domain_data = self.cleaned_domain()
+            domain_data: Dict[Text, Any] = self.cleaned_domain()
         else:
-            domain_data = self.as_dict()
+            domain_data: Dict[Text, Any] = self.as_dict()
 
-        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(domain_data)
+        domain_data[
+            KEY_TRAINING_DATA_FORMAT_VERSION
+        ] = f"{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
+            domain_data, should_preserve_key_order=True
+        )
 
     def intent_config(self, intent_name: Text) -> Dict[Text, Any]:
         """Return the configuration for an intent."""
@@ -1196,19 +1213,18 @@ class Domain:
 
         Returns:
             `True` if it's a domain file, otherwise `False`.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
         from rasa.shared.data import is_likely_yaml_file
 
         if not is_likely_yaml_file(filename):
             return False
-        try:
-            content = rasa.shared.utils.io.read_yaml_file(filename)
-            if any(key in content for key in ALL_DOMAIN_KEYS):
-                return True
-        except YAMLError:
-            pass
 
-        return False
+        content = rasa.shared.utils.io.read_yaml_file(filename)
+        return any(key in content for key in ALL_DOMAIN_KEYS)
 
     def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
         """Retrieve the slot mappings for a form which are defined in the domain.

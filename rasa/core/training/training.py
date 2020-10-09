@@ -1,7 +1,7 @@
 from typing import Text, List, TYPE_CHECKING, Dict, Set
 from collections import defaultdict
 
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.events import SlotSet, ActiveLoop
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP
 
@@ -24,14 +24,18 @@ def _find_events_after_actions(
     """
     events_after_actions = defaultdict(set)
 
-    for t in trackers:
-        tracker = t.init_copy()
-        for event in t.events:
-            tracker.update(event)
+    for tracker in trackers:
+        action_name = None
+        for event in tracker.events:
             if isinstance(event, ActionExecuted):
+                action_name = event.action_name or event.action_text
+                continue
+            if isinstance(event, UserUttered):
+                # UserUttered can contain entities that might set some slots, reset
+                # action_name so that these slots are not attributed to action_listen
+                action_name = None
                 continue
 
-            action_name = tracker.latest_action_name
             if action_name:
                 events_after_actions[action_name].add(event)
 
