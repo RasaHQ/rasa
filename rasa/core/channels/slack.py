@@ -370,7 +370,7 @@ class SlackInput(InputChannel):
             return {
                 "out_channel": event.get("channel"),
                 "thread_id": thread_id,
-                "users": slack_event.get("authed_users"),
+                "users": slack_event.get("authorizations"),
             }
 
         if content_type == "application/x-www-form-urlencoded":
@@ -382,7 +382,7 @@ class SlackInput(InputChannel):
             return {
                 "out_channel": payload.get("channel", {}).get("id"),
                 "thread_id": thread_id,
-                "users": payload.get("user", {}).get("id"),
+                "users": payload.get("authorizations", {}).get("user_id"),
             }
 
         return {}
