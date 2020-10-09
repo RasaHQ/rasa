@@ -157,7 +157,7 @@ async def _train_async_internal(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
 
-    if stories.is_empty() and nlu_data.is_empty():
+    if stories.is_empty() and nlu_data.can_train_nlu_model():
         print_error(
             "No training data given. Please provide stories and NLU data in "
             "order to train a Rasa model using the '--data' argument."
@@ -174,7 +174,7 @@ async def _train_async_internal(
             additional_arguments=nlu_additional_arguments,
         )
 
-    if nlu_data.is_empty():
+    if nlu_data.can_train_nlu_model():
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await _train_core_with_validated_data(
             file_importer,
@@ -495,7 +495,7 @@ async def _train_nlu_async(
     )
 
     training_data = await file_importer.get_nlu_data()
-    if training_data.is_empty():
+    if training_data.can_train_nlu_model():
         print_error(
             f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
             f"Please verify the data format. "

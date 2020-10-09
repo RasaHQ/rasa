@@ -1,11 +1,14 @@
 import json
 import logging
-from pathlib import Path
 import textwrap
-from typing import Union, Text, List, Optional, Type
+import kafka
 import pytest
+
+from pathlib import Path
+from typing import Union, Text, List, Optional, Type, Any
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
+from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -20,7 +23,6 @@ from rasa.core.brokers.pika import (
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 import pika.connection
 
@@ -201,23 +203,51 @@ def test_load_non_existent_custom_broker_name():
 
 
 def test_kafka_broker_from_config():
-    endpoints_path = "data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml"
+    endpoints_path = (
+        "data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml"
+    )
     cfg = read_endpoint_config(endpoints_path, "event_broker")
 
     actual = KafkaEventBroker.from_endpoint_config(cfg)
 
     expected = KafkaEventBroker(
         "localhost",
-        "username",
-        "password",
+        sasl_username="username",
+        sasl_password="password",
         topic="topic",
         security_protocol="SASL_PLAINTEXT",
     )
 
-    assert actual.host == expected.host
+    assert actual.url == expected.url
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
     assert actual.topic == expected.topic
+
+
+@pytest.mark.parametrize(
+    "file,exception",
+    [
+        # `_create_producer()` raises `kafka.errors.NoBrokersAvailable` exception
+        # which means that the configuration seems correct but a connection to
+        # the broker cannot be established
+        ("kafka_sasl_plaintext_endpoint.yml", kafka.errors.NoBrokersAvailable),
+        ("kafka_plaintext_endpoint.yml", kafka.errors.NoBrokersAvailable),
+        ("kafka_sasl_ssl_endpoint.yml", kafka.errors.NoBrokersAvailable),
+        ("kafka_ssl_endpoint.yml", kafka.errors.NoBrokersAvailable),
+        # `ValueError` exception is raised when the `security_protocol` is incorrect
+        ("kafka_invalid_security_protocol.yml", ValueError),
+        # `TypeError` exception is raised when there is no `url` specified
+        ("kafka_plaintext_endpoint_no_url.yml", TypeError),
+    ],
+)
+def test_kafka_broker_security_protocols(file: Text, exception: Exception):
+    endpoints_path = f"data/test_endpoints/event_brokers/{file}"
+    cfg = read_endpoint_config(endpoints_path, "event_broker")
+
+    actual = KafkaEventBroker.from_endpoint_config(cfg)
+    with pytest.raises(exception):
+        # noinspection PyProtectedMember
+        actual._create_producer()
 
 
 def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
