@@ -227,9 +227,10 @@ Your users will not always respond with the information you ask of them.
 Typically, users will ask questions, make chitchat, change their mind, or otherwise
 stray from the happy path. The way this works with forms is that a form will raise
 an `ActionExecutionRejection` if the user didn't provide the requested information.
+
 You need to handle events that might cause `ActionExecutionRejection` errors
 with rules or stories. For example, if you expect your users to chitchat with your bot,
-you could add a story like this:
+you could add a rule to handle this:
 
 ```yaml-rasa
 rules:
@@ -248,18 +249,20 @@ rules:
 
 In some situations, users may change their mind in the middle of the form action
 and decide not to go forward with their initial request. In cases like this, the
-assistant should stop asking for the requested slots. You can handle such situations
+assistant should stop asking for the requested slots.
+
+You can handle such situations
 gracefully using a default action `action_deactivate_loop` which will deactivate
 the form and reset the requested slot. An example story of such conversation could
 look as follows:
 
 ```yaml-rasa
-rules:
-- rule: Example of an unhappy path
-  condition:
-  # Condition that form is active.
-  - active_loop: restaurant_form
+stories:
+- story: User interrupts the form and doesn't want to continue
   steps:
+  - intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
   - intent: stop
   - action: utter_ask_continue
   - intent: stop
