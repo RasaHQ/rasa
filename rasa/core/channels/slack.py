@@ -364,7 +364,6 @@ class SlackInput(InputChannel):
         if content_type == "application/json":
             # if JSON-encoded message is received
             slack_event = request.json
-            print(slack_event)
             event = slack_event.get("event", {})
             thread_id = event.get("thread_ts", event.get("ts"))
 
@@ -401,7 +400,7 @@ class SlackInput(InputChannel):
         async def webhook(request: Request) -> HTTPResponse:
             content_type = request.headers.get("content-type")
             # Slack API sends either a JSON-encoded or a URL-encoded body depending on the content
-                       
+
             if content_type == "application/json":
                 # if JSON-encoded message is received
                 output = request.json
