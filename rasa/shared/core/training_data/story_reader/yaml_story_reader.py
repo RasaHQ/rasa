@@ -21,6 +21,7 @@ from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.shared.core.training_data.structures import StoryStep
+from rasa.shared.nlu.interpreter import RegexInterpreter
 
 logger = logging.getLogger(__name__)
 
