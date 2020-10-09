@@ -246,44 +246,55 @@ async def get_tracker_with_session_start(
     return tracker  # pytype: disable=bad-return-type
 
 
-def get_stories_for_all_conversation_sessions(
-    processor: "MessageProcessor", conversation_id: Text, until_time: Optional[float]
+def get_test_stories(
+    processor: "MessageProcessor",
+    conversation_id: Text,
+    until_time: Optional[float],
+    fetch_all_sessions: bool = False,
 ) -> Text:
-    """Retrieves trackers from `processor` for all conversation sessions for
+    """Retrieves test stories from `processor` for all conversation sessions for
     `conversation_id`.
 
     Args:
         processor: An instance of `MessageProcessor`.
         conversation_id: Conversation ID to fetch stories for.
         until_time: Timestamp up to which to include events.
+        fetch_all_sessions: Whether to fetch stories for all conversation sessions.
+            If `False`, only the last conversation session is retrieved.
 
     Returns:
-        The stories for `conversation_id`.
+        The stories for `conversation_id` in test format.
     """
-    subtrackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+    if fetch_all_sessions:
+        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+    else:
+        trackers = [processor.get_tracker(conversation_id)]
 
     if until_time is not None:
-        subtrackers = [
-            tracker.travel_back_in_time(until_time) for tracker in subtrackers
-        ]
+        trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
         # keep only non-empty trackers are returned
-        subtrackers = [tracker for tracker in subtrackers if len(tracker.events)]
+        trackers = [tracker for tracker in trackers if len(tracker.events)]
 
     logger.debug(
-        f"Fetched trackers for {len(subtrackers)} conversation sessions "
+        f"Fetched trackers for {len(trackers)} conversation sessions "
         f"for conversation ID {conversation_id}."
     )
 
     story_steps = []
 
-    for i, tracker in enumerate(subtrackers, 1):
+    more_than_one_story = len(trackers) > 1
+
+    for i, tracker in enumerate(trackers, 1):
         _validate_tracker(tracker, conversation_id)
 
         for story_step in tracker.as_story().story_steps:
-            story_step.block_name = f"{conversation_id}, story {i}"
+            story_step.block_name = conversation_id
+            if more_than_one_story:
+                story_step.block_name += f", story {i}"
+
             story_steps.append(story_step)
 
-    return YAMLStoryWriter().dumps(story_steps)
+    return YAMLStoryWriter().dumps(story_steps, is_test_story=True)
 
 
 def get_tracker(
@@ -654,10 +665,16 @@ def create_app(
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")
+        fetch_all_sessions = rasa.utils.endpoints.bool_arg(
+            request, "allSessions", default=False
+        )
 
         try:
-            stories = get_stories_for_all_conversation_sessions(
-                app.agent.create_processor(), conversation_id, until_time
+            stories = get_test_stories(
+                app.agent.create_processor(),
+                conversation_id,
+                until_time,
+                fetch_all_sessions=fetch_all_sessions,
             )
             return response.text(stories)
         except Exception as e:

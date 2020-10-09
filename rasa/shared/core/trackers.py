@@ -564,9 +564,8 @@ class DialogueStateTracker:
         at the target time will be included."""
 
         tracker = self.init_copy()
-        print("travelling", self.events)
+
         for event in self.events:
-            print("evt", event.as_dict(), event.timestamp, target_time)
             if event.timestamp <= target_time:
                 tracker.update(event)
             else:

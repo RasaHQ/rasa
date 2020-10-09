@@ -6,8 +6,9 @@ from unittest.mock import Mock, ANY
 import requests
 import time
 import uuid
+import urllib.parse
 
-from typing import List, Text, Type, Generator, NoReturn, Dict
+from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
 from contextlib import ExitStack
 
 from _pytest import pathlib
@@ -1333,7 +1334,7 @@ def test_app_when_app_has_no_input_channels():
 
 
 @pytest.mark.parametrize(
-    "conversation_events,expected",
+    "conversation_events,until_time,fetch_all_sessions,expected",
     # conversation with one session
     [
         (
@@ -1343,11 +1344,15 @@ def test_app_when_app_has_no_input_channels():
                 UserUttered("hi", {"name": "greet"}),
                 ActionExecuted("utter_greet"),
             ],
+            None,
+            True,
             """version: "2.0"
 stories:
-- story: some-conversation-ID, story 1
+- story: some-conversation-ID
   steps:
   - intent: greet
+    user: |-
+      hi
   - action: utter_greet""",
         ),
         # conversation with multiple sessions
@@ -1359,26 +1364,106 @@ stories:
                 ActionExecuted("utter_greet"),
                 ActionExecuted(ACTION_SESSION_START_NAME),
                 SessionStarted(),
-                UserUttered("goodbye", {"name": "goodbye"}),
+                UserUttered("bye bye", {"name": "goodbye"}),
                 ActionExecuted("utter_goodbye"),
             ],
+            None,
+            True,
             """version: "2.0"
 stories:
 - story: some-conversation-ID, story 1
   steps:
   - intent: greet
+    user: |-
+      hi
   - action: utter_greet
 - story: some-conversation-ID, story 2
   steps:
   - intent: goodbye
+    user: |-
+      bye bye
+  - action: utter_goodbye""",
+        ),
+        # conversation with multiple sessions, but setting `allSessions=false`
+        # means only the last one is returned
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("bye bye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
+            ],
+            None,
+            False,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: goodbye
+    user: |-
+      bye bye
+  - action: utter_goodbye""",
+        ),
+        # the default for `allSessions` is `False`
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("bye bye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
+            ],
+            None,
+            None,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: goodbye
+    user: |-
+      bye bye
   - action: utter_goodbye""",
         ),
         # empty conversation
-        ([], 'version: "2.0"',),
+        ([], None, True, 'version: "2.0"',),
+        # `until` parameter means only the first session is returned
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+                SessionStarted(timestamp=2),
+                UserUttered("hi", {"name": "greet"}, timestamp=3),
+                ActionExecuted("utter_greet", timestamp=4),
+                ActionExecuted(ACTION_SESSION_START_NAME, timestamp=5),
+                SessionStarted(timestamp=6),
+                UserUttered("bye bye", {"name": "goodbye"}, timestamp=7),
+                ActionExecuted("utter_goodbye", timestamp=8),
+            ],
+            4,
+            True,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet""",
+        ),
     ],
 )
 async def test_get_story(
-    rasa_app: SanicASGITestClient, conversation_events: List[Event], expected: Text
+    rasa_app: SanicASGITestClient,
+    conversation_events: List[Event],
+    until_time: Optional[float],
+    fetch_all_sessions: Optional[bool],
+    expected: Text,
 ):
     conversation_id = "some-conversation-ID"
 
@@ -1389,47 +1474,20 @@ async def test_get_story(
 
     rasa_app.app.agent.tracker_store = tracker_store
 
-    _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
+    url = f"/conversations/{conversation_id}/story?"
+
+    query = {}
+
+    if fetch_all_sessions is not None:
+        query["allSessions"] = fetch_all_sessions
+
+    if until_time is not None:
+        query["until"] = until_time
+
+    _, response = await rasa_app.get(url + urllib.parse.urlencode(query))
 
     assert response.status == 200
     assert response.content.decode().strip() == expected
-
-
-async def test_get_story_with_until_time(rasa_app: SanicASGITestClient):
-    conversation_id = "some-conversation-ID"
-
-    tracker_store = InMemoryTrackerStore(Domain.empty())
-
-    conversation_events = [
-        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
-        SessionStarted(timestamp=2),
-        UserUttered("hi", {"name": "greet"}, timestamp=3),
-        ActionExecuted("utter_greet", timestamp=4),
-        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=5),
-        SessionStarted(timestamp=6),
-        UserUttered("goodbye", {"name": "goodbye"}, timestamp=7),
-        ActionExecuted("utter_goodbye", timestamp=8),
-    ]
-
-    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events,)
-
-    tracker_store.save(tracker)
-
-    rasa_app.app.agent.tracker_store = tracker_store
-
-    # query parameter `?until=4` ensures that only the first session is returned
-    _, response = await rasa_app.get(f"/conversations/{conversation_id}/story?until=4")
-
-    assert response.status == 200
-    assert (
-        response.content.decode().strip()
-        == """version: "2.0"
-stories:
-- story: some-conversation-ID, story 1
-  steps:
-  - intent: greet
-  - action: utter_greet"""
-    )
 
 
 async def test_get_story_does_not_update_conversation_session(
@@ -1469,9 +1527,11 @@ async def test_get_story_does_not_update_conversation_session(
         response.content.decode().strip()
         == """version: "2.0"
 stories:
-- story: some-conversation-ID, story 1
+- story: some-conversation-ID
   steps:
   - intent: greet
+    user: |-
+      hi
   - action: utter_greet"""
     )
 
