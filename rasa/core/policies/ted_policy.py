@@ -449,7 +449,7 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return list(confidence.tolist()), is_e2e_prediction
+        return confidence.tolist(), is_e2e_prediction  # pytype: disable=bad-return-type
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
