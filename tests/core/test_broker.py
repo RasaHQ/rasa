@@ -34,7 +34,11 @@ TEST_CONNECTION_PARAMETERS = pika.connection.ConnectionParameters(
 )
 
 
-def test_pika_broker_from_config():
+def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
+
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
+    monkeypatch.setattr(PikaEventBroker, "_connect", lambda _: None)
+
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
     )
