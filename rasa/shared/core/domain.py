@@ -1049,10 +1049,9 @@ class Domain:
         Returns:
             The entity properties as they are used in domain files.
         """
-        entities = copy.deepcopy(self.entities)
         entities_for_file = []
 
-        for entity in entities:
+        for entity in self.entities:
             if entity in self.roles and entity in self.groups:
                 entities_for_file.append(
                     {
