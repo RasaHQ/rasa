@@ -386,9 +386,9 @@ class Domain:
             A dictionary of entity names to roles.
             A dictionary of entity names to groups.
         """
-        entities = []
-        roles = {}
-        groups = {}
+        entities: List[Text] = []
+        roles: Dict[Text, List[Text]] = {}
+        groups: Dict[Text, List[Text]] = {}
 
         for entity in domain_entities:
             if isinstance(entity, str):
@@ -405,7 +405,7 @@ class Domain:
                     f"Invalid domain. Entity is invalid, type not supported: {entity}"
                 )
 
-        return entities, roles, groups
+        return entities, roles, groups  # pytype: disable=bad-return-type
 
     @classmethod
     def collect_intent_properties(
@@ -936,7 +936,7 @@ class Domain:
             for s in self.slots:
                 if s.auto_fill:
                     matching_entities = [
-                        e["value"] for e in entities if e["entity"] == s.name
+                        e.get("value") for e in entities if e.get("entity") == s.name
                     ]
                     if matching_entities:
                         if s.type_name == "list":

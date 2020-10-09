@@ -351,7 +351,7 @@ stories:
 
 
 def test_end_to_end_story_with_entities():
-    story = f"""
+    story = """
 stories:
 - story: my story
   steps:
