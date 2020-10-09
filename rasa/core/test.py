@@ -326,8 +326,6 @@ def _collect_action_executed_predictions(
     else:
         action, policy, confidence = processor.predict_next_action(partial_tracker)
         predicted = action.name()
-        event.policy = policy
-        event.confidence = confidence
 
         if policy and predicted != gold and FormPolicy.__name__ in policy:
             # FormPolicy predicted wrong action
@@ -336,8 +334,6 @@ def _collect_action_executed_predictions(
             # try again
             action, policy, confidence = processor.predict_next_action(partial_tracker)
             predicted = action.name()
-            event.policy = policy
-            event.confidence = confidence
 
     action_executed_eval_store.add_to_store(
         action_predictions=predicted, action_targets=gold
@@ -346,7 +342,7 @@ def _collect_action_executed_predictions(
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
-                gold, predicted, event.policy, event.confidence, event.timestamp
+                gold, predicted, policy, confidence, event.timestamp
             )
         )
         if fail_on_prediction_errors:
@@ -364,7 +360,7 @@ def _collect_action_executed_predictions(
                 )
             raise ValueError(error_msg)
     else:
-        partial_tracker.update(event)
+        partial_tracker.update(ActionExecuted(predicted, policy, confidence))
 
     return action_executed_eval_store, policy, confidence
 
