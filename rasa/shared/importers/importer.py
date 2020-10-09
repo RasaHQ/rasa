@@ -13,7 +13,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import INTENT_NAME, TEXT
+from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
@@ -533,18 +533,23 @@ def _unique_events_from_stories(
 
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
-    return Message(data={TEXT: event.text, INTENT_NAME: event.intent_name})
+    # sub state correctly encodes intent vs text
+    data = event.as_sub_state()
+    # sub state stores entities differently
+    if data.get(ENTITIES) and event.entities:
+        data[ENTITIES] = event.entities
+
+    return Message(data=data)
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
-    return Message.build_from_action(
-        action_name=event.action_name, action_text=event.action_text or ""
-    )
+    # sub state correctly encodes action_name vs action_text
+    return Message(data=event.as_sub_state())
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:
     additional_messages_from_default_actions = [
-        Message.build_from_action(action_name=action_name)
+        Message(data={ACTION_NAME: action_name})
         for action_name in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
     ]
 
