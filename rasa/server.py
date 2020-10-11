@@ -230,14 +230,14 @@ def event_verbosity_parameter(
 async def get_tracker_with_session_start(
     processor: "MessageProcessor", conversation_id: Text
 ) -> DialogueStateTracker:
-    """Get tracker object from `MessageProcessor`.
+    """Get tracker object from `MessageProcessor` and update the conversation session.
 
     Args:
         processor: An instance of `MessageProcessor`.
         conversation_id: Conversation ID to fetch the tracker for.
 
     Returns:
-        The tracker for `conversation_id`.
+        The tracker for `conversation_id` with an updated conversation session.
     """
     tracker = await processor.get_tracker_with_session_start(conversation_id)
     _validate_tracker(tracker, conversation_id)
@@ -272,7 +272,7 @@ def get_test_stories(
 
     if until_time is not None:
         trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
-        # keep only non-empty trackers are returned
+        # keep only non-empty trackers
         trackers = [tracker for tracker in trackers if len(tracker.events)]
 
     logger.debug(
@@ -666,7 +666,7 @@ def create_app(
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")
         fetch_all_sessions = rasa.utils.endpoints.bool_arg(
-            request, "allSessions", default=False
+            request, "all_sessions", default=False
         )
 
         try:

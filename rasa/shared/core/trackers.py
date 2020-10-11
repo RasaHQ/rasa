@@ -413,8 +413,16 @@ class DialogueStateTracker:
         include_restarts: bool = False,
         include_previous_conversation_sessions: bool = False,
     ) -> List[Event]:
-        """Returns all actions that should be applied - w/o reverted events."""
+        """Returns all actions that should be applied - w/o reverted events.
 
+        Args:
+            include_restarts: Whether events should be returned across restarts.
+            include_previous_conversation_sessions: Whether events should be returned
+                across conversation sessions.
+
+        Returns:
+            The events applied to the tracker.
+        """
         loop_names = [
             event.name
             for event in self.events
@@ -822,16 +830,16 @@ def is_prev_action_listen_in_state(state: State) -> bool:
     return prev_action_name == ACTION_LISTEN_NAME
 
 
-def subtrackers_for_conversation_sessions(
+def get_trackers_for_conversation_sessions(
     tracker: "DialogueStateTracker",
 ) -> List["DialogueStateTracker"]:
-    """Generate subtrackers for `tracker` that are split by conversation sessions.
+    """Generate trackers for `tracker` that are split by conversation sessions.
 
     Args:
         tracker: Instance of `DialogueStateTracker` to split.
 
     Returns:
-        The split subtrackers.
+        The trackers split by conversation sessions.
     """
     trackers: List["DialogueStateTracker"] = []
     tracker_slots = tracker.slots

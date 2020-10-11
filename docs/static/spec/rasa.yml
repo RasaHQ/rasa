@@ -245,7 +245,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/until'
-      - $ref: '#/components/parameters/allSessions'
+      - $ref: '#/components/parameters/all_sessions'
       responses:
         200:
           $ref: '#/components/responses/200Story'
@@ -792,9 +792,9 @@ components:
         type: boolean
         default: false
       required: false
-    allSessions:
+    all_sessions:
       in: query
-      name: allSessions
+      name: all_sessions
       description: Fetch test stories for all conversation sessions
       example: false
       schema:

@@ -1,5 +1,4 @@
 import argparse
-import contextlib
 import json
 import logging
 import os
@@ -20,7 +19,6 @@ from typing import (
     Text,
     Tuple,
     Union,
-    TYPE_CHECKING,
 )
 
 import aiohttp
@@ -40,8 +38,6 @@ from sanic import Sanic
 from sanic.views import CompositionView
 import rasa.cli.utils as cli_utils
 
-if TYPE_CHECKING:
-    from rasa.core.tracker_store import TrackerStore
 
 logger = logging.getLogger(__name__)
 

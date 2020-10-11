@@ -1200,7 +1200,7 @@ def test_subtrackers_for_conversation_sessions():
         "some-conversation-ID", conversation_events
     )
 
-    subtrackers = trackers_module.subtrackers_for_conversation_sessions(tracker)
+    subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
 
     assert len(subtrackers) == 2
 

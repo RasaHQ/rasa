@@ -4,11 +4,10 @@ import re
 
 import jsonpickle
 import time
-import typing
 import uuid
 from dateutil import parser
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional
+from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING
 
 import rasa.shared.utils.common
 from typing import Union
@@ -31,7 +30,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
 )
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)

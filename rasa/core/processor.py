@@ -225,19 +225,17 @@ class MessageProcessor:
     def get_trackers_for_all_conversation_sessions(
         self, conversation_id: Text,
     ) -> Optional[List[DialogueStateTracker]]:
-        """Get the tracker for a conversation.
+        """Get all trackers for a conversation.
 
-        In contrast to `get_tracker_with_session_start` this does not add any
-        `action_session_start` or `session_start` events at the beginning of a
-        conversation.
+        Individual trackers are returned for each conversation session found
+        for `conversation_id`.
 
         Args:
-            conversation_id: The ID of the conversation for which the history should be
-                retrieved.
+            conversation_id: The ID of the conversation for which the trackers should
+                be retrieved.
 
         Returns:
-            Tracker for the conversation. Creates an empty tracker in case it's a new
-            conversation.
+            Trackers for the conversation.
         """
         import rasa.shared.core.trackers
 
@@ -250,7 +248,7 @@ class MessageProcessor:
                 conversation_id, append_action_listen=False
             )
 
-        return rasa.shared.core.trackers.subtrackers_for_conversation_sessions(tracker)
+        return rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True

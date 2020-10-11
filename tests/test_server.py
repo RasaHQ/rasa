@@ -1384,7 +1384,7 @@ stories:
       bye bye
   - action: utter_goodbye""",
         ),
-        # conversation with multiple sessions, but setting `allSessions=false`
+        # conversation with multiple sessions, but setting `all_sessions=false`
         # means only the last one is returned
         (
             [
@@ -1408,7 +1408,8 @@ stories:
       bye bye
   - action: utter_goodbye""",
         ),
-        # the default for `allSessions` is `False`
+        # the default for `all_sessions` is `false` - this test checks that
+        # only the latest session is returned in that case
         (
             [
                 ActionExecuted(ACTION_SESSION_START_NAME),
@@ -1431,8 +1432,6 @@ stories:
       bye bye
   - action: utter_goodbye""",
         ),
-        # empty conversation
-        ([], None, True, 'version: "2.0"',),
         # `until` parameter means only the first session is returned
         (
             [
@@ -1456,6 +1455,8 @@ stories:
       hi
   - action: utter_greet""",
         ),
+        # empty conversation
+        ([], None, True, 'version: "2.0"'),
     ],
 )
 async def test_get_story(
@@ -1468,7 +1469,7 @@ async def test_get_story(
     conversation_id = "some-conversation-ID"
 
     tracker_store = InMemoryTrackerStore(Domain.empty())
-    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events,)
+    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
     tracker_store.save(tracker)
 
@@ -1479,7 +1480,7 @@ async def test_get_story(
     query = {}
 
     if fetch_all_sessions is not None:
-        query["allSessions"] = fetch_all_sessions
+        query["all_sessions"] = fetch_all_sessions
 
     if until_time is not None:
         query["until"] = until_time
