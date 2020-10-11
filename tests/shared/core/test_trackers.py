@@ -1180,7 +1180,7 @@ def test_set_form_validation_deprecation_warning(validate: bool):
     assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)
 
 
-def test_subtrackers_for_conversation_sessions():
+def test_trackers_for_conversation_sessions():
     import rasa.shared.core.trackers as trackers_module
 
     # conversation contains multiple sessions
