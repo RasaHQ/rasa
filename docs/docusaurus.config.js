@@ -55,13 +55,13 @@ module.exports = {
   themeConfig: {
     announcementBar: {
       id: 'pre_release_notice', // Any value that will identify this message.
-      content: 'These docs are for version 2.0.0rc2 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the stable 1.x series can be found here.</a>',
+      content: 'These docs are for version 2.0 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the 1.x series can be found here.</a>',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      disabled: !isDev, // FIXME: remove this when our index is good
+      disabled: true, // FIXME: remove this when our index is good
       apiKey: '25626fae796133dc1e734c6bcaaeac3c', // FIXME: replace with values from our own index
       indexName: 'docsearch', // FIXME: replace with values from our own index
       inputSelector: '.search-bar',
@@ -162,6 +162,13 @@ module.exports = {
       },
     }],
     ['@docusaurus/plugin-content-pages', {}],
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        sizes: [160, 226, 320, 452, 640, 906, 1280, 1810, 2560],
+        quality: 70,
+      },
+    ],
     ['@docusaurus/plugin-sitemap',
       {
         cacheTime: 600 * 1000, // 600 sec - cache purge period

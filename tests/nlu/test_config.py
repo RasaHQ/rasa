@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.shared.exceptions import YamlSyntaxException
 from rasa.shared.importers import autoconfig
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
@@ -31,7 +32,7 @@ def test_invalid_config_json(tmp_path):
     f = tmp_path / "tmp_config_file.json"
     f.write_text(file_config)
 
-    with pytest.raises(config.InvalidConfigError):
+    with pytest.raises(YamlSyntaxException):
         config.load(str(f))
 
 
@@ -42,7 +43,7 @@ def test_invalid_many_tokenizers_in_config():
 
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(nlu_config))
-    assert "More than one tokenizer is used" in str(execinfo.value)
+    assert "The pipeline configuration contains more than one" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -53,14 +54,6 @@ def test_invalid_many_tokenizers_in_config():
             {
                 "pipeline": [
                     {"name": "WhitespaceTokenizer"},
-                    {"name": "ConveRTFeaturizer"},
-                ]
-            }
-        ),
-        pytest.param(
-            {
-                "pipeline": [
-                    {"name": "ConveRTTokenizer"},
                     {"name": "LanguageModelFeaturizer"},
                 ]
             }
@@ -71,7 +64,7 @@ def test_invalid_many_tokenizers_in_config():
 def test_missing_required_component(_config):
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(_config))
-    assert "Add required components to the pipeline" in str(execinfo.value)
+    assert "The pipeline configuration contains errors" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -80,7 +73,7 @@ def test_missing_required_component(_config):
 def test_missing_property(pipeline_config):
     with pytest.raises(config.InvalidConfigError) as execinfo:
         Trainer(config.RasaNLUModelConfig(pipeline_config))
-    assert "Add required components to the pipeline" in str(execinfo.value)
+    assert "The pipeline configuration contains errors" in str(execinfo.value)
 
 
 def test_default_config_file():

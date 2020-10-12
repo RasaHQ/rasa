@@ -1,32 +1,40 @@
 import asyncio
 import json
+import os
+import uuid
 from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Tuple, Callable
 
+import mock
 import pytest
-import uuid
-
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from mock import Mock
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions import action
+from rasa.core.training import interactive
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.core.training import interactive
+from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
+    MarkdownStoryReader,
+)
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.importers.rasa import TrainingDataImporter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
 from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader, MarkdownReader
+from rasa.shared.nlu.training_data.loading import RASA, MARKDOWN, UNK, RASA_YAML
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.loading import RASA, MARKDOWN, UNK
 from rasa.utils.endpoints import EndpointConfig
 from tests import utilities
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture
@@ -460,6 +468,66 @@ async def test_undo_latest_msg(mock_endpoint):
         assert corrected_event["event"] == "undo"
 
 
+@pytest.mark.parametrize(
+    "test_file_story, validator_story, test_file_nlu, validator_nlu, test_file_domain",
+    [
+        (
+            "stories.yml",
+            YAMLStoryReader.is_stories_file,
+            "nlu.yml",
+            RasaYAMLReader.is_yaml_nlu_file,
+            "domain.yml",
+        ),
+        (
+            "stories.md",
+            MarkdownStoryReader.is_stories_file,
+            "nlu.md",
+            MarkdownReader.is_markdown_nlu_file,
+            "domain.yml",
+        ),
+    ],
+)
+async def test_write_stories_to_file(
+    test_file_story: Text,
+    validator_story: Callable[[Text], bool],
+    test_file_nlu: Text,
+    validator_nlu: Callable[[Text], bool],
+    test_file_domain: Text,
+    mock_endpoint: EndpointConfig,
+    tmp_path,
+):
+    tracker_dump = rasa.shared.utils.io.read_file(
+        "data/test_trackers/tracker_moodbot_with_new_utterances.json"
+    )
+
+    sender_id = uuid.uuid4().hex
+
+    url = f"{mock_endpoint.url}/conversations/{sender_id}/tracker?include_events=ALL"
+    append_url = f"{mock_endpoint.url}/conversations/{sender_id}/tracker/events"
+    domain_url = f"{mock_endpoint.url}/domain"
+
+    target_files = [
+        {"name": str(tmp_path / test_file_story), "validator": validator_story},
+        {"name": str(tmp_path / test_file_nlu), "validator": validator_nlu},
+        {"name": str(tmp_path / test_file_domain), "validator": lambda path: True},
+    ]
+
+    def info() -> Tuple[Text, Text, Text]:
+        return target_files[0]["name"], target_files[1]["name"], target_files[2]["name"]
+
+    with aioresponses() as mocked:
+        mocked.get(url, body=tracker_dump)
+        mocked.post(append_url)
+        mocked.get(domain_url, payload={})
+
+        interactive._request_export_info = info
+        await interactive._write_data_to_file(sender_id, mock_endpoint)
+
+    for target_file in target_files:
+        assert os.path.exists(target_file["name"])
+        assert target_file["validator"](target_file["name"])
+
+
 def test_utter_custom_message():
     test_event = """
       {
@@ -557,7 +625,12 @@ async def test_filter_intents_before_save_nlu_file():
 
 @pytest.mark.parametrize(
     "path, expected_format",
-    [("bla.json", RASA), ("other.md", MARKDOWN), ("unknown", UNK)],
+    [
+        ("bla.json", RASA),
+        ("other.md", MARKDOWN),
+        ("other.yml", RASA_YAML),
+        ("unknown", UNK),
+    ],
 )
 def test_get_nlu_target_format(path: Text, expected_format: Text):
     assert interactive._get_nlu_target_format(path) == expected_format
@@ -624,3 +697,36 @@ async def test_not_getting_trackers_when_skipping_visualization(
         )
 
     get_trackers.assert_not_called()
+
+
+class QuestionaryConfirmMock:
+    def __init__(self, tries: int) -> None:
+        self.tries = tries
+
+    def __call__(self, text: Text) -> "QuestionaryConfirmMock":
+        return self
+
+    def ask(self) -> bool:
+        self.tries -= 1
+        if self.tries == 0:
+            return False
+        else:
+            return True
+
+
+def test_retry_on_error_success(monkeypatch: MonkeyPatch):
+    monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
+
+    m = Mock(return_value=None)
+    interactive._retry_on_error(m, "export_path", 1, a=2)
+    m.assert_called_once_with("export_path", 1, a=2)
+
+
+def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
+    monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
+
+    m = Mock(side_effect=PermissionError())
+    with pytest.raises(PermissionError):
+        interactive._retry_on_error(m, "export_path", 1, a=2)
+    c = mock.call("export_path", 1, a=2)
+    m.assert_has_calls([c, c, c])

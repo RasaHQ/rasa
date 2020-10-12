@@ -21,7 +21,7 @@ but for which you haven't implemented a user goal yet.
 You will need to define an `out_of_scope` intent in your NLU training data and add any known
 out-of-scope requests as training examples, for example:
 
-```yaml-rasa
+```yaml-rasa title="nlu.yml"
 nlu:
 - intent: out_of_scope
   examples: |
@@ -31,7 +31,7 @@ nlu:
 ```
 
 As with every intent, you should source the majority of your examples
-[from real conversations](conversation-driven-development.mdx). 
+[from real conversations](conversation-driven-development.mdx "Learning from real conversations via conversation-driven development").
 
 
 ### 2. Defining the response message
@@ -39,7 +39,7 @@ As with every intent, you should source the majority of your examples
 You'll need to define an out-of-scope response in the domain file.
 Using the utterance `utter_out_of_scope` as the default response, that would look like:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 responses:
   utter_out_of_scope:
   - text: Sorry, I can't handle that request.
@@ -49,7 +49,7 @@ responses:
 
 Finally, you will need to write a rule for what should happen for in out-of-scope request:
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
 - rule: out-of-scope
   steps:
@@ -88,21 +88,21 @@ for what the bot should do when `nlu_fallback` is predicted.
 
 #### 1. Updating the configuration
 
-To use the FallbackClassifier, add it to your NLU pipeline in config.yml.
+To use the FallbackClassifier, add it to your NLU pipeline:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 pipeline:
 # other components
 - name: FallbackClassifier
-  confidence_threshold: 0.7
+  threshold: 0.7
 ```
 
 #### 2. Defining the response message
 
 Define the message the bot should send when a message is classified with low confidence
-by adding a response.
+by adding a response:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 responses:
   utter_please_rephrase:
   - text: I'm sorry, I didn't quite understand that. Could you rephrase?
@@ -114,7 +114,7 @@ The following
 [Rule](./rules.mdx) will ask the user to rephrase when they send a message that is
 classified with low confidence:
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
 - rule: Ask the user to rephrase whenever they send a message with low NLU confidence
   steps:
@@ -142,10 +142,10 @@ the corresponding confidence threshold using the following steps:
 
 #### 1. Updating the configuration
 
-You will need to add the RulePolicy to your policies in config.yml. 
+You will need to add the RulePolicy to your policies in config.yml.
 By default, the rule policy comes with the settings below:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
 - name: RulePolicy
   # Confidence threshold for the `core_fallback_action_name` to apply.
@@ -161,9 +161,9 @@ policies:
 #### 2. Defining the default response message
 
 To define what your bot will say when action confidence is below the threshold,
-define a response `utter_default`. 
+define a response `utter_default`:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 responses:
   utter_default:
   - text: Sorry I didn't get that. Can you rephrase?
@@ -184,7 +184,7 @@ The following snippet is an implementation of a custom action which does the sam
 `action_default_fallback` but dispatches a different template
 `utter_fallback_template`:
 
-```python
+```python title="actions.py"
 from typing import Any, Text, Dict, List
 
 from rasa_sdk import Action, Tracker
@@ -218,43 +218,34 @@ To give the bot a chance to figure out what the user wants, you will usually wan
 clarifying questions. The Two-Stage Fallback is made to handle low NLU confidence in multiple stages
 using the following sequence:
 
-- A user message is classified with low confidence
-
+1. A user message is classified with low confidence
     - The user is asked to confirm the intent
-
-- The user confirms or denies the intent
-
+2. The user confirms or denies the intent
     - If they confirm, the conversation continues as if the intent was classified
-        with high confidence from the beginning. No further fallback steps are taken.
-
+      with high confidence from the beginning. No further fallback steps are taken.
     - If they deny, the user is asked to rephrase their message.
-
-- The user rephrases their intent
-
+3. The user rephrases their intent
     - If the message is classified with high confidence, the conversation
       continues as if the user had this intent from the beginning.
-
     - If the rephrased user message still has low confidence, the user
       is asked to confirm the intent.
-
-- The user confirms or denies the rephrased intent
-
+4. The user confirms or denies the rephrased intent
     - If they confirm, the conversation continues as if the user had this intent from the beginning.
     - If they deny, an ultimate fallback action is triggered (e.g. a handoff to a human).
 
-
 The Two-Stage-Fallback can be enabled using the following steps:
+
 
 #### 1. Updating the configuration
 
 Add FallbackClassifier to your pipeline and the [RulePolicy](./policies.mdx#rule-policy)
 to your policy configuration:
 
-```yaml
+```yaml title="config.yml"
 pipeline:
 # other components
 - name: FallbackClassifier
-  confidence_threshold: 0.7
+  threshold: 0.7
 
 policies:
 # other policies
@@ -267,7 +258,7 @@ policies:
 To define how your bot asks the user to rephrase their message,
 define  the response `utter_ask_rephrase`:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 responses:
   utter_ask_rephrase:
   - text: I'm sorry, I didn't quite understand that. Could you rephrase?
@@ -275,21 +266,21 @@ responses:
 
 Rasa provides default implementations for asking which intent the user
 meant and for asking the user to rephrase. To customize the behavior of these actions,
-see the [documentation default actions](default-actions.mdx).
+see the documentation on [default actions](default-actions.mdx).
 
 #### 3. Defining a Two-Stage Fallback rule
 
 Add the following [Rule](./rules.mdx) to your training data. This rule will make sure
 that the Two-Stage-Fallback will be activated whenever a message is received with
-low classification confidence.
+low classification confidence:
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
 - rule: Implementation of the Two-Stage-Fallback
   steps:
   - intent: nlu_fallback
-  - action: two_stage_fallback
-  - form: two_stage_fallback
+  - action: action_two_stage_fallback
+  - active_loop: two_stage_fallback
 ```
 
 
@@ -320,7 +311,7 @@ starterpacks.
 ## Summary
 
 To let your assistant gracefully handle failures, you should handle known
-out-of-scope messages and add a form of fallback behavior. If you want to add human 
+out-of-scope messages and add a form of fallback behavior. If you want to add human
 handoff, you can add it in addition or as a final step in your fallback
 set up.
 Here's a summary of changes you need to make for each method:
@@ -344,7 +335,7 @@ For handling low core confidence:
 
 For Two-Stage Fallback:
   - [ ] Add FallbackClassifier to your pipeline in `config.yml`
-  - [ ] Define a rule for the `nlu_fallback` intent that triggers the `two_stage_fallback` action
+  - [ ] Define a rule for the `nlu_fallback` intent that triggers the `action_two_stage_fallback` action
   - [ ] Define an out-of-scope intent in your domain
   - [ ] Add RulePolicy to config.yml
 

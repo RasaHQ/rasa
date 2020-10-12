@@ -760,7 +760,8 @@ class TED(TransformerRasaModel):
             batch_user = batch_encoded.pop(INTENT)
 
         batch_features = [batch_user, batch_action]
-        # once we have user input and previous action, add all other attributes (SLOTS, ACTIVE_LOOP, etc.) to batch_features;
+        # once we have user input and previous action,
+        # add all other attributes (SLOTS, ACTIVE_LOOP, etc.) to batch_features;
         for key in batch_encoded.keys():
             batch_features.append(batch_encoded.get(key))
 

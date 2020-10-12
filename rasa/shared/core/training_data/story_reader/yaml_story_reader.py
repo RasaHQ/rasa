@@ -3,13 +3,12 @@ from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
 import rasa.shared.data
+from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
-from ruamel.yaml.parser import ParserError
 
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
@@ -67,7 +66,7 @@ class YAMLStoryReader(StoryReader):
             reader.template_variables,
             reader.use_e2e,
             reader.source_name,
-            reader.unfold_or_utterances,
+            reader.is_used_for_conversion,
         )
 
     def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
@@ -80,20 +79,27 @@ class YAMLStoryReader(StoryReader):
             `StoryStep`s read from `filename`.
         """
         self.source_name = filename
-
         try:
-            file_content = rasa.shared.utils.io.read_file(
-                filename, rasa.shared.utils.io.DEFAULT_ENCODING
+            return self.read_from_string(
+                rasa.shared.utils.io.read_file(
+                    filename, rasa.shared.utils.io.DEFAULT_ENCODING
+                )
             )
-            rasa.shared.utils.validation.validate_yaml_schema(
-                file_content, CORE_SCHEMA_FILE
-            )
-            yaml_content = rasa.shared.utils.io.read_yaml(file_content)
-        except (ValueError, ParserError) as e:
-            rasa.shared.utils.io.raise_warning(
-                f"Failed to read YAML from '{filename}', it will be skipped. Error: {e}"
-            )
-            return []
+        except YamlException as e:
+            e.filename = filename
+            raise e
+
+    def read_from_string(self, string: Text) -> List[StoryStep]:
+        """Read stories or rules from a string.
+
+        Args:
+            string: Unprocessed YAML file content.
+
+        Returns:
+            `StoryStep`s read from `string`.
+        """
+        rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+        yaml_content = rasa.shared.utils.io.read_yaml(string)
 
         return self.read_from_parsed_yaml(yaml_content)
 
@@ -118,7 +124,7 @@ class YAMLStoryReader(StoryReader):
             KEY_STORIES: StoryParser,
             KEY_RULES: RuleParser,
         }.items():
-            data = parsed_content.get(key, [])
+            data = parsed_content.get(key) or []
             parser = parser_class.from_reader(self)
             parser.parse_data(data)
             self.story_steps.extend(parser.get_steps())
@@ -126,7 +132,7 @@ class YAMLStoryReader(StoryReader):
         return self.story_steps
 
     @classmethod
-    def is_yaml_story_file(cls, file_path: Text) -> bool:
+    def is_stories_file(cls, file_path: Text) -> bool:
         """Check if file contains Core training data or rule data in YAML format.
 
         Args:
@@ -135,6 +141,10 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `True` in case the file is a Core YAML training data or rule data file,
             `False` otherwise.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
         return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
             file_path, KEY_STORIES, KEY_RULES
@@ -147,19 +157,16 @@ class YAMLStoryReader(StoryReader):
         Arguments:
             file_path: path to the yaml file
             keys: keys to look for
+
         Returns:
               `True` if all the keys are contained in the file, `False` otherwise.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
-        try:
-            content = rasa.shared.utils.io.read_yaml_file(file_path)
-            return any(key in content for key in keys)
-        except Exception as e:
-            # Using broad `Exception` because yaml library is not exposing all Errors
-            rasa.shared.utils.io.raise_warning(
-                f"Tried to open '{file_path}' and load its data, but failed "
-                f"to read it. There seems to be an error with the yaml syntax: {e}"
-            )
-            return False
+        content = rasa.shared.utils.io.read_yaml_file(file_path)
+        return any(key in content for key in keys)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:
@@ -174,7 +181,7 @@ class YAMLStoryReader(StoryReader):
         return Path(file_path).name.startswith(TEST_STORIES_FILE_PREFIX)
 
     @classmethod
-    def is_yaml_test_stories_file(cls, file_path: Union[Text, Path]) -> bool:
+    def is_test_stories_file(cls, file_path: Union[Text, Path]) -> bool:
         """Checks if a file is a test conversations file.
 
         Args:
@@ -184,7 +191,7 @@ class YAMLStoryReader(StoryReader):
             `True` if it's a conversation test file, otherwise `False`.
         """
 
-        return cls._has_test_prefix(file_path) and cls.is_yaml_story_file(file_path)
+        return cls._has_test_prefix(file_path) and cls.is_stories_file(file_path)
 
     def get_steps(self) -> List[StoryStep]:
         self._add_current_stories_to_result()
@@ -355,6 +362,8 @@ class YAMLStoryReader(StoryReader):
         return user_intent
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
+        from rasa.shared.nlu.interpreter import RegexInterpreter
+
         intent_name = self._user_intent_from_step(step)
         intent = {"name": intent_name, "confidence": 1.0}
 
@@ -477,8 +486,10 @@ class RuleParser(YAMLStoryReader):
     def _parse_rule_conditions(
         self, conditions: List[Union[Text, Dict[Text, Any]]]
     ) -> None:
+        self._is_parsing_conditions = True
         for condition in conditions:
             self._parse_step(condition)
+        self._is_parsing_conditions = False
 
     def _close_part(self, item: Dict[Text, Any]) -> None:
         if item.get(KEY_WAIT_FOR_USER_INPUT_AFTER_RULE) is False:
