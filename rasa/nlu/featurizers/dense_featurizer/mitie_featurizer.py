@@ -8,6 +8,7 @@ from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -110,7 +111,7 @@ class MitieFeaturizer(DenseFeaturizer):
     def _mitie_feature_extractor(self, **kwargs) -> Any:
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            !raise Exception(
+            raise RasaException(
                 "Failed to train 'MitieFeaturizer'. "
                 "Missing a proper MITIE feature extractor. "
                 "Make sure this component is preceded by "

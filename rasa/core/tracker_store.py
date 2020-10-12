@@ -40,6 +40,7 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
+from rasa.shared.exceptions import RasaException
 import rasa.cli.utils as rasa_cli_utils
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
@@ -1098,7 +1099,7 @@ def _load_from_module_name_in_endpoint_config(
         init_args = rasa.shared.utils.common.arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
             # DEPRECATION EXCEPTION - remove in 2.1
-            !raise Exception(
+            raise RasaException(
                 "The `url` initialization argument for custom tracker stores has "
                 "been removed. Your custom tracker store should take a `host` "
                 "argument in its `__init__()` instead."

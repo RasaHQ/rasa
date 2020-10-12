@@ -3,6 +3,7 @@ import logging
 from typing import Any, Text, List, Optional, Union, Dict
 
 from rasa.core.brokers.broker import EventBroker
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
@@ -135,7 +136,7 @@ class KafkaEventBroker(EventBroker):
                 ssl_check_hostname=self.ssl_check_hostname,
             )
         else:
-            !raise ValueError(
+            raise RasaException(
                 f"Cannot initialise `KafkaEventBroker`: "
                 f"Invalid `security_protocol` ('{self.security_protocol}')."
             )

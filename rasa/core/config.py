@@ -21,6 +21,7 @@ from rasa.shared.constants import (
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
+from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -41,7 +42,7 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
     if not config_file:
-        !raise ValueError(
+        raise RasaException(
             "You have to provide a valid path to a config file. "
             "The file '{}' could not be found."
             "".format(os.path.abspath(config_file))

@@ -104,7 +104,7 @@ class FormAction(LoopAction):
                 not isinstance(requested_slot_mapping, dict)
                 or requested_slot_mapping.get("type") is None
             ):
-                !raise TypeError("Provided incompatible slot mapping")
+                raise RasaException("Provided incompatible slot mapping")
 
         return requested_slot_mappings
 
@@ -347,7 +347,7 @@ class FormAction(LoopAction):
                 elif mapping_type == str(SlotMapping.FROM_TEXT):
                     value = tracker.latest_message.text
                 else:
-                    !raise ValueError("Provided slot mapping type is not supported")
+                    raise RasaException("Provided slot mapping type is not supported")
 
                 if value is not None:
                     logger.debug(
@@ -562,7 +562,7 @@ class FormAction(LoopAction):
     ) -> Tuple[List[Text], List[Text]]:
         """Check provided intent and not_intent"""
         if intent and not_intent:
-            !raise ValueError(
+            raise RasaException(
                 f"Providing  both intent '{intent}' and not_intent '{not_intent}' "
                 f"is not supported."
             )

@@ -7,6 +7,8 @@ from typing import List, Optional, Text, Tuple
 import rasa.shared.utils.common
 import rasa.utils.common
 
+from rasa.shared.exceptions import RasaException
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
             persistor = rasa.shared.utils.common.class_from_module_path(name)
             return persistor()
         except ImportError:
-            !raise ImportError(
+            raise RasaException(
                 f"Unknown model persistor {name}. Please make sure to "
                 "either use an included model persistor (`aws`, `gcs` "
                 "or `azure`) or specify the module path to an external "
@@ -50,7 +52,7 @@ class Persistor:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
         if not os.path.isdir(model_directory):
-            !raise ValueError(f"Target directory '{model_directory}' not found.")
+            raise RasaException(f"Target directory '{model_directory}' not found.")
 
         file_key, tar_path = self._compress(model_directory, model_name)
         self._persist_tar(file_key, tar_path)

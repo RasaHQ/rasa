@@ -306,8 +306,8 @@ class MessengerBot(OutputChannel):
                     )
                 )
             except KeyError as e:
-                !raise ValueError(
-                    'Facebook quick replies must define a "{}" field.'.format(e.args[0])
+                raise RasaException(
+                    f"Facebook quick replies must define a "{e.args[0]}" field."
                 )
 
         return QuickReplies(quick_replies=fb_quick_replies)

@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.model import Metadata
+from rasa.shared.exceptions import RasaException
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -41,7 +42,7 @@ class MitieNLP(Component):
 
         model_file = component_config.get("model")
         if not model_file:
-            !raise Exception(
+            raise RasaException(
                 "The MITIE component 'MitieNLP' needs "
                 "the configuration value for 'model'."
                 "Please take a look at the "
@@ -78,7 +79,7 @@ class MitieNLP(Component):
     ) -> None:
 
         if extractor is None:
-            !raise Exception(
+            raise RasaException(
                 "Failed to load MITIE feature extractor. "
                 "Loading the model returned 'None'."
             )

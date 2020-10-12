@@ -13,6 +13,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
@@ -262,7 +263,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             return token_idx + pointer_position == 0
 
         if feature not in self.function_dict:
-            !raise ValueError(
+            raise RasaException(
                 f"Configured feature '{feature}' not valid. Please check "
                 f"'{DOCS_URL_COMPONENTS}' for valid configuration parameters."
             )

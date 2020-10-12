@@ -10,6 +10,7 @@ from oauth2client import client
 from oauth2client.crypt import AppIdentityError
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,7 @@ class HangoutsOutput(OutputChannel):
         elif message.get("cards"):
             msg_new = "cards"
         else:
-            !raise Exception(
+            raise RasaException(
                 "Your message to Hangouts channel must either contain 'text' or 'cards'!"
             )
 

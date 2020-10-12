@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Text, Optional, Dict, Any
 
+from rasa.shared.exceptions import RasaException
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
@@ -35,7 +36,7 @@ class DenseFeaturizer(Featurizer):
         if pooling_operation == MAX_POOLING:
             return np.max(non_zero_features, axis=0, keepdims=True)
 
-        !raise ValueError(
+        raise RasaException(
             f"Invalid pooling operation specified. Available operations are "
             f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
             f"'{pooling_operation}'."

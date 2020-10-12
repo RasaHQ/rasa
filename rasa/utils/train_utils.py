@@ -5,6 +5,7 @@ import numpy as np
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.exceptions import RasaException
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.io as io_utils
@@ -116,7 +117,7 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
     if config[EVAL_NUM_EPOCHS] == -1:
         config[EVAL_NUM_EPOCHS] = config[EPOCHS]
     elif config[EVAL_NUM_EPOCHS] < 1:
-        !raise ValueError(
+        raise RasaException(
             f"'{EVAL_NUM_EXAMPLES}' is set to "
             f"'{config[EVAL_NUM_EPOCHS]}'. "
             f"Only values > 1 are allowed for this configuration value."

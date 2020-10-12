@@ -293,7 +293,7 @@ def _load_from_module_name_in_endpoint_config(
         )
         return lock_store_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
-        !raise Exception(
+        raise RasaException(
             f"Could not find a class based on the module path "
             f"'{endpoint_config.type}'. Failed to create a `LockStore` "
             f"instance. Error: {e}"

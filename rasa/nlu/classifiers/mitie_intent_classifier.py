@@ -9,6 +9,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -45,7 +46,7 @@ class MitieIntentClassifier(IntentClassifier):
 
         model_file = kwargs.get("mitie_file")
         if not model_file:
-            !raise Exception(
+            raise RasaException(
                 "Can not run MITIE entity extractor without a "
                 "language model. Make sure this component is "
                 "preceeded by the 'MitieNLP' component."
@@ -66,7 +67,7 @@ class MitieIntentClassifier(IntentClassifier):
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            !raise Exception(
+            raise RasaException(
                 "Failed to train 'MitieFeaturizer'. "
                 "Missing a proper MITIE feature extractor."
             )

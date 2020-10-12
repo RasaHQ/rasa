@@ -21,6 +21,7 @@ from typing import (
 
 from tqdm import tqdm
 from rasa.constants import CHECKPOINT_MODEL_NAME
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.io import is_logging_disabled
 import rasa.utils.io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
@@ -112,7 +113,7 @@ class RasaModel(tf.keras.models.Model):
     def _set_up_tensorboard_writer(self) -> None:
         if self.tensorboard_log_dir is not None:
             if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
-                !raise ValueError(
+                raise RasaException(
                     f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{self.tensorboard_log_level}') "
                     f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
                 )

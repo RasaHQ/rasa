@@ -11,6 +11,7 @@ import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.shared.core.domain import Domain
+from rasa.shared.exceptions import RasaException
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
@@ -88,18 +89,18 @@ class SklearnPolicy(Policy):
 
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
-                !raise TypeError(
+                raise RasaException(
                     f"Passed featurizer of type '{type(featurizer).__name__}', "
                     f"should be MaxHistoryTrackerFeaturizer."
                 )
             if not featurizer.max_history:
-                !raise ValueError(
+                raise RasaException(
                     "Passed featurizer without `max_history`, `max_history` should be "
                     "set to a positive integer value."
                 )
         else:
             if not max_history:
-                !raise ValueError(
+                raise RasaException(
                     "max_history should be set to a positive integer value."
                 )
             featurizer = self._standard_featurizer(max_history)
@@ -192,7 +193,7 @@ class SklearnPolicy(Policy):
             intent, action_name, entities, forms, slots.
         """
         if TEXT in data or ACTION_TEXT in data:
-            !raise Exception(
+            raise RasaException(
                 f"{self.__name__} cannot be applied to text data. "
                 f"Try to use TEDPolicy instead. "
             )

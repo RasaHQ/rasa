@@ -11,6 +11,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -52,7 +53,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         """Retrieve a signature from a (hopefully loaded) TF model."""
 
         if not module:
-            !raise Exception(
+            raise RasaException(
                 "ConveRTFeaturizer needs a proper loaded tensorflow module when used. "
                 "Make sure to pass a module when training and using the component."
             )

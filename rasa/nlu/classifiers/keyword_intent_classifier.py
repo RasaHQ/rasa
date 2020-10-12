@@ -9,6 +9,7 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
@@ -156,7 +157,7 @@ class KeywordIntentClassifier(IntentClassifier):
                 intent_keyword_map = None
             return cls(meta, intent_keyword_map)
         else:
-            !raise Exception(
+            raise RasaException(
                 f"Failed to load keyword intent classifier model. "
                 f"Path {os.path.abspath(meta.get('file'))} doesn't exist."
             )

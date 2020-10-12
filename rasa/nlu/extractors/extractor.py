@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Text, Tuple, Optional
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -68,7 +69,7 @@ class EntityExtractor(Component):
                 "entities must span whole tokens. "
                 "Wrong entity start.".format(entity, text)
             )
-            !raise ValueError(message)
+            raise RasaException(message)
 
         if entity[ENTITY_ATTRIBUTE_END] not in ends:
             message = (
@@ -76,7 +77,7 @@ class EntityExtractor(Component):
                 "entities must span whole tokens. "
                 "Wrong entity end.".format(entity, text)
             )
-            !raise ValueError(message)
+            raise RasaException(message)
 
         start = offsets.index(entity[ENTITY_ATTRIBUTE_START])
         end = ends.index(entity[ENTITY_ATTRIBUTE_END]) + 1

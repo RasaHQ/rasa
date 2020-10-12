@@ -124,7 +124,7 @@ class TrackerFeaturizer:
               trackers
         """
         if self.state_featurizer is None:
-            !raise ValueError(
+            raise RasaException(
                 f"Instance variable 'state_featurizer' is not set. "
                 f"During initialization set 'state_featurizer' to an instance of "
                 f"'{SingleStateFeaturizer.__class__.__name__}' class "

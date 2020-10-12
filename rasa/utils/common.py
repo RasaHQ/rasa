@@ -10,6 +10,7 @@ import rasa.core.utils
 import rasa.utils.io
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -226,7 +227,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         if unavailable_ok:
             return None
         else:
-            !raise ValueError(f"Configuration '{name}' key not found.")
+            raise RasaException(f"Configuration '{name}' key not found.")
 
     # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
     # in tests

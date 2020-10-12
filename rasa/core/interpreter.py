@@ -7,6 +7,7 @@ from typing import Text, Dict, Any, Union, Optional
 
 from rasa.core import constants
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.io
 import rasa.shared.utils.common
@@ -188,7 +189,7 @@ def _load_from_module_name_in_endpoint_config(
         )
         return nlu_interpreter_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
-        !raise Exception(
+        raise RasaException(
             f"Could not find a class based on the module path "
             f"'{endpoint_config.type}'. Failed to create a "
             f"`NaturalLanguageInterpreter` instance. Error: {e}"

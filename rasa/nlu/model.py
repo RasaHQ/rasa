@@ -352,7 +352,7 @@ class Interpreter:
                     context.update(updates)
                 pipeline.append(component)
             except components.MissingArgumentError as e:
-                !raise Exception(
+                raise RasaException(
                     "Failed to initialize component '{}'. "
                     "{}".format(component.name, e)
                 )

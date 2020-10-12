@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import InvalidModelError
@@ -265,7 +266,7 @@ class SpacyNLP(Component):
         Raises an exception if the model is invalid."""
 
         if nlp is None:
-            !raise Exception(
+            raise RasaException(
                 "Failed to load spacy language model. "
                 "Loading the model returned 'None'."
             )
@@ -273,7 +274,7 @@ class SpacyNLP(Component):
             # Spacy sets the path to `None` if
             # it did not load the model from disk.
             # In this case `nlp` is an unusable stub.
-            !raise Exception(
+            raise RasaException(
                 "Failed to load spacy language model for "
                 "lang '{}'. Make sure you have downloaded the "
                 "correct model (https://spacy.io/docs/usage/)."

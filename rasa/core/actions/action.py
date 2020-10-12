@@ -96,7 +96,7 @@ def action_for_index(
         index.
     """
     if domain.num_actions <= index or index < 0:
-        !raise IndexError(
+        raise RasaException(
             f"Cannot access action at index {index}. "
             f"Domain has {domain.num_actions} actions."
         )
@@ -603,7 +603,7 @@ class RemoteAction(Action):
                 f"--endpoints flag. "
                 f"{DOCS_BASE_URL}/custom-actions"
             )
-            !raise Exception("Failed to execute custom action.")
+            raise RasaException("Failed to execute custom action.")
 
         try:
             logger.debug(
@@ -633,7 +633,7 @@ class RemoteAction(Action):
                 logger.error(exception.message)
                 raise exception
             else:
-                !raise Exception("Failed to execute custom action.") from e
+                raise RasaException("Failed to execute custom action.") from e
 
         except aiohttp.ClientConnectionError as e:
             logger.error(
@@ -641,7 +641,7 @@ class RemoteAction(Action):
                 "to the server at '{}'. Is the server running? "
                 "Error: {}".format(self.name(), self.action_endpoint.url, e)
             )
-            !raise Exception("Failed to execute custom action.")
+            raise RasaException("Failed to execute custom action.")
 
         except aiohttp.ClientError as e:
             # not all errors have a status attribute, but
@@ -656,7 +656,7 @@ class RemoteAction(Action):
                 "and returns a 200 once the action is executed. "
                 "Error: {}".format(self.name(), status, e)
             )
-            !raise Exception("Failed to execute custom action.")
+            raise RasaException("Failed to execute custom action.")
 
     def name(self) -> Text:
         return self._name

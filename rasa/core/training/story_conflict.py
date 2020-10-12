@@ -106,7 +106,7 @@ class StoryConflict:
         elif len(stories) == 1:
             conflict_description = f"'{stories[0]}'"
         else:
-            !raise ValueError(
+            raise ValueError(
                 "An internal error occurred while trying to summarise a conflict "
                 "without stories. Please file a bug report at "
                 "https://github.com/RasaHQ/rasa."

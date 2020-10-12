@@ -8,6 +8,7 @@ from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
@@ -782,7 +783,7 @@ class ComponentBuilder:
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            !raise Exception(
+            raise RasaException(
                 f"Failed to load component from file '{component_meta.get('file')}'. "
                 f"Error: {e}"
             )
@@ -815,7 +816,7 @@ class ComponentBuilder:
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            !raise Exception(
+            raise RasaException(
                 f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )

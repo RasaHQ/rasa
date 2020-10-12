@@ -25,6 +25,7 @@ from rasa.shared.nlu.constants import (
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.utils.io import DEFAULT_ENCODING
 
@@ -375,7 +376,7 @@ def _collect_user_uttered_predictions(
             WronglyClassifiedUserUtterance(event, user_uttered_eval_store)
         )
         if fail_on_prediction_errors:
-            !raise ValueError(
+            raise RasaException(
                 "NLU model predicted a wrong intent. Failed Story:"
                 " \n\n{}".format(
                     YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
@@ -469,7 +470,7 @@ def _collect_action_executed_predictions(
                     "If the story is correct, add it to the "
                     "training stories and retrain."
                 )
-            !raise ValueError(error_msg)
+            raise RasaException(error_msg)
     else:
         partial_tracker.update(event)
 

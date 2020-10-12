@@ -23,6 +23,7 @@ from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
+from rasa.shared.exceptions import RasaException
 from sanic import Sanic
 from asyncio import AbstractEventLoop
 
@@ -65,7 +66,7 @@ def _create_single_channel(channel, credentials) -> Any:
             )
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
-            !raise Exception(
+            raise RasaException(
                 "Failed to find input channel class for '{}'. Unknown "
                 "input channel. Check your credentials configuration to "
                 "make sure the mentioned channel is not misspelled. "

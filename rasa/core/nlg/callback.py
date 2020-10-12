@@ -4,6 +4,7 @@ from typing import Text, Any, Dict, Optional
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -103,7 +104,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         if self.validate_response(response):
             return response
         else:
-            !raise Exception("NLG web endpoint returned an invalid response.")
+            raise RasaException("NLG web endpoint returned an invalid response.")
 
     @staticmethod
     def validate_response(content: Optional[Dict[Text, Any]]) -> bool:

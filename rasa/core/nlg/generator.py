@@ -5,6 +5,7 @@ import rasa.shared.utils.common
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,7 @@ def _load_from_module_name_in_endpoint_config(
         )
         return nlg_class(endpoint_config=endpoint_config, domain=domain)
     except (AttributeError, ImportError) as e:
-        !raise Exception(
+        raise RasaException(
             f"Could not find a class based on the module path "
             f"'{endpoint_config.type}'. Failed to create a "
             f"`NaturalLanguageGenerator` instance. Error: {e}"

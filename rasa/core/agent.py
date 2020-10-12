@@ -36,6 +36,7 @@ from rasa.core.tracker_store import (
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.utils
 from rasa.exceptions import ModelNotFound
+from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.model import (
     get_latest_model,
@@ -419,7 +420,7 @@ class Agent:
             if os.path.isfile(model_path):
                 model_path = get_model(model_path)
         except ModelNotFound:
-            !raise ValueError(
+            raise RasaException(
                 "You are trying to load a MODEL from '{}', which is not possible. \n"
                 "The model path should be a 'tar.gz' file or a directory "
                 "containing the various model files in the sub-directories 'core' "
@@ -509,7 +510,7 @@ class Agent:
 
         if not isinstance(message, UserMessage):
             # DEPRECATION EXCEPTION - remove in 2.1
-            !raise Exception(
+            raise RasaException(
                 "Passing a text to `agent.handle_message(...)` is "
                 "not supported anymore. Rather use `agent.handle_text(...)`."
             )
@@ -719,7 +720,7 @@ class Agent:
         if isinstance(training_trackers, str):
             # the user most likely passed in a file name to load training
             # data from
-            !raise Exception(
+            raise RasaException(
                 "Passing a file name to `agent.train(...)` is "
                 "not supported anymore. Rather load the data with "
                 "`data = agent.load_data(file_name)` and pass it "
@@ -848,7 +849,7 @@ class Agent:
         elif domain is None:
             return Domain.empty()
         else:
-            !raise ValueError(
+            raise RasaException(
                 "Invalid param `domain`. Expected a path to a domain "
                 "specification or a domain instance. But got "
                 "type '{}' with value '{}'".format(type(domain), domain)
@@ -885,7 +886,7 @@ class Agent:
             return policies
         else:
             passed_type = type(policies).__name__
-            !raise ValueError(
+            raise RasaException(
                 "Invalid param `policies`. Passed object is "
                 "of type '{}', but should be policy, an array of "
                 "policies, or a policy ensemble.".format(passed_type)

@@ -10,6 +10,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.trackers import is_prev_action_listen_in_state
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
@@ -73,7 +74,7 @@ class SingleStateFeaturizer:
                 for i, value in enumerate(slot_as_feature)
             }
         else:
-            !raise ValueError(
+            raise RasaException(
                 f"Given attribute '{attribute}' is not supported. "
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )

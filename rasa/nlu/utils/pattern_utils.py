@@ -3,6 +3,7 @@ from typing import Dict, List, Text, Union
 
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.exceptions import RasaException
 
 
 def _convert_lookup_tables_to_regex(
@@ -66,7 +67,7 @@ def read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
     try:
         f = open(lookup_table_file, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING)
     except OSError:
-        !raise ValueError(
+        raise RasaException(
             f"Could not load lookup table {lookup_table_file}. "
             f"Please make sure you've provided the correct path."
         )
