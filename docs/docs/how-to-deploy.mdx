@@ -16,7 +16,7 @@ important happy paths or is what we call a [minimum viable assistant](./glossary
 
 The recommended deployment methods described below make it easy to share your assistant
 with test users via the [share your assistant feature in
-Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot).
+Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant#share-your-bot).
 Then, when you're ready to make your assistant available via one or more [Messaging and Voice Channels](./messaging-and-voice-channels.mdx),
 you can easily add them to your existing deployment set up.
 
@@ -69,7 +69,7 @@ for doing so, as well as manual instructions for any custom setups.
 It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your
 Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.
 
-* [Building a Rasa Assistant Locally](./prototype-an-assistant.mdx)
+* [Building a Rasa Assistant Locally](./playground.mdx)
 
 * [Building a Rasa Assistant in Docker](./docker/building-in-docker.mdx)
 
@@ -95,7 +95,8 @@ The following steps assume that you already created a GitHub repository and you 
 To create a workflow for building and pushing a Docker image into a DockerHub registry:
 
 1. Add GitHub Secrets with your DockerHub login name and password.
-   [Here](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository) you can find details on how to create encrypted secrets for a repository.
+   You can find details on how to create encrypted secrets for a repository
+   in the [Github docs](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository)
 
    The example uses the following secrets:
    - `DOCKER_HUB_LOGIN` - a login name for DockerHub

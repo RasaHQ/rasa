@@ -33,7 +33,7 @@ For FAQs and chitchat, you always want the assistant to respond the same way eve
 the same type of question is asked. [Rules](rules.mdx) allow you to do exactly that.
 To use rules, the you need to add the [RulePolicy](./policies.mdx#rule-policy) to your policies in your configuration file:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 policies:
 # other policies
 - name: RulePolicy
@@ -43,7 +43,7 @@ Next, include the ResponseSelector in your NLU pipeline in your configuration fi
 The ResponseSelector requires a featurizer and intent classifier to work, so
 it should come after these components in your pipeline, for example:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 pipeline:
   - name: WhitespaceTokenizer
   - name: RegexFeaturizer
@@ -64,7 +64,7 @@ By default, the ResponseSelector will build a single retrieval model for all ret
 To retrieve responses for FAQs and chitchat separately, use multiple ResponseSelector components
 and specify the `retrieval_intent` key:
 
-```yaml-rasa
+```yaml-rasa title="config.yml"
 pipeline:
 # Other components
 - name: ResponseSelector
@@ -96,7 +96,7 @@ grouped under that retrieval intent will then be handled the same way.
 The action name starts with `utter_` and ends with the retrieval intent's name.
 Write rules for responding to FAQs and chitchat:
 
-```yaml-rasa
+```yaml-rasa title="rules.yml"
 rules:
   - rule: respond to FAQs
     steps:
@@ -108,7 +108,7 @@ rules:
     - action: utter_chitchat
 ```
 
-The actions `utter_faq` and `utter_chitchat` will use the ResponseSelector`'s prediction to return the actual response message.
+The actions `utter_faq` and `utter_chitchat` will use the ResponseSelector's prediction to return the actual response message.
 
 ### 4. Updating the NLU Training Data
 
@@ -116,7 +116,7 @@ NLU training examples for the ResponseSelector look the same as
 regular training examples, except that their names must refer to the retrieval
 intent they are grouped under:
 
-```yaml-rasa
+```yaml-rasa title="nlu.yml"
 nlu:
   - intent: chitchat/ask_name
     examples: |
@@ -134,7 +134,7 @@ nlu:
 
 Be sure to update your domain file to include the added `chitchat` intent:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 intents:
 # other intents
 - chitchat
@@ -148,12 +148,12 @@ retrieval intents. Besides this, they can have all the characteristics of
 normal bot [response](domain.mdx#responses). For the chitchat intents
 listed above, our responses could look like:
 
-```yaml-rasa
+```yaml-rasa title="domain.yml"
 responses:
   utter_chitchat/ask_name:
   - image: "https://i.imgur.com/zTvA58i.jpeg"
-    text: hello, my name is retrieval bot.
-  - text: Oh yeah, I am called the retrieval bot.
+    text: Hello, my name is Retrieval Bot.
+  - text: I am called Retrieval Bot!
   utter_chitchat/ask_weather:
   - text: Oh, it does look sunny right now in Berlin.
     image: "https://i.imgur.com/vwv7aHN.png"

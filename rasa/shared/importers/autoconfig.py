@@ -1,8 +1,8 @@
 import copy
 import logging
 import os
-import sys
 from enum import Enum
+from pathlib import Path
 from typing import Text, Dict, Any, List, Set, Optional
 
 import rasa.shared.constants
@@ -112,12 +112,7 @@ def _auto_configure(
             f"Values will be provided from the default configuration."
         )
 
-    if sys.platform == "win32":
-        filename = "default_config_other_language.yml"
-    elif config.get("language") == "en":
-        filename = "default_config_en.yml"
-    else:
-        filename = "default_config_other_language.yml"
+    filename = "default_config.yml"
 
     default_config_file = pkg_resources.resource_filename(__name__, filename)
     default_config = rasa.shared.utils.io.read_config_file(default_config_file)
@@ -171,14 +166,14 @@ def _dump_config(
 
     autoconfig_lines = _get_commented_out_autoconfig_lines(config, auto_configured_keys)
 
-    with open(
-        config_file_path, "r+", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
-    ) as f:
-        lines = f.readlines()
-        updated_lines = _get_lines_including_autoconfig(lines, autoconfig_lines)
-        f.seek(0)
-        for line in updated_lines:
-            f.write(line)
+    current_config_content = rasa.shared.utils.io.read_file(config_file_path)
+    current_config_lines = current_config_content.splitlines(keepends=True)
+
+    updated_lines = _get_lines_including_autoconfig(
+        current_config_lines, autoconfig_lines
+    )
+
+    rasa.shared.utils.io.write_text_file("".join(updated_lines), config_file_path)
 
     auto_configured_keys = rasa.shared.utils.common.transform_collection_to_sentence(
         auto_configured_keys

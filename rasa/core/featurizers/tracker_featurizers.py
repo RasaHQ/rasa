@@ -3,6 +3,7 @@ from pathlib import Path
 import jsonpickle
 import logging
 
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TEXT
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union
@@ -22,7 +23,7 @@ FEATURIZER_FILE = "featurizer.json"
 logger = logging.getLogger(__name__)
 
 
-class InvalidStory(Exception):
+class InvalidStory(RasaException):
     """Exception that can be raised if story cannot be featurized."""
 
     def __init__(self, message) -> None:
@@ -30,10 +31,7 @@ class InvalidStory(Exception):
         super(InvalidStory, self).__init__()
 
     def __str__(self) -> Text:
-        # return message in error colours
-        return rasa.shared.utils.io.wrap_with_color(
-            self.message, color=rasa.shared.utils.io.bcolors.FAIL
-        )
+        return self.message
 
 
 class TrackerFeaturizer:

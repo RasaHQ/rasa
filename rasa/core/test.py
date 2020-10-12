@@ -539,7 +539,15 @@ async def _predict_tracker_actions(
             num_predicted_actions += 1
 
         elif use_e2e and isinstance(event, UserUttered):
-            predicted = await processor.parse_message(UserMessage(event.text))
+            # This means that user utterance didn't have a user message, only intent,
+            # so we can skip the NLU part and take the parse data directly.
+            # Indirectly that means that the test story was in YAML format.
+            if not event.text:
+                predicted = event.parse_data
+            # Indirectly that means that the test story was in Markdown format.
+            # Leaving that as it is because Markdown is in legacy mode.
+            else:
+                predicted = await processor.parse_message(UserMessage(event.text))
             user_uttered_result = _collect_user_uttered_predictions(
                 event, predicted, partial_tracker, fail_on_prediction_errors
             )
@@ -868,11 +876,3 @@ async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
     )
     failed_stories = story_eval_store.failed_stories
     return number_of_stories - len(failed_stories)
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.core.test` directly is no longer supported. Please use "
-        "`rasa test` to test a combined Core and NLU model or `rasa test core` "
-        "to test a Core model."
-    )

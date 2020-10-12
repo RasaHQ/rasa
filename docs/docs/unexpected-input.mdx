@@ -17,7 +17,7 @@ This page is a guide on methods for handling unexpected input that is still with
 Depending on what kind of unexpected
 input you're trying to handle, some or all of the methods describe may be applicable for you. This guide
 is not about disambiguating user input or handling out-of-scope questions; for these cases see
-the guide on [fallback and human handoff](fallback-handoff.mdx)
+the guide on [fallback and human handoff](fallback-handoff.mdx).
 
 
 ## User Interjections
@@ -39,7 +39,7 @@ One common case of contextual interjections is during slot filling for [form](fo
 asks “Why do you need to know that?” or "Can you explain that?".
 The response should differ for each slot. For example:
 
-<Chat caption="Contextual interjection">
+<Chat caption="A contextual interjection">
 <ChatUserText>Hi</ChatUserText>
 <ChatBotText>Hello! I am restaurant search assistant! How can I help?</ChatBotText>
 <ChatUserText>I'm looking for a restaurant</ChatUserText>
@@ -52,9 +52,10 @@ The response should differ for each slot. For example:
 </Chat>
 
 Since we want the `requested_slot` to influence the conversation,
-we need to make the `requested_slot` featurized, and assign it the categorical type:
+we need to set the property `influence_conversation` of the slot `requested_slot`
+to `true`, and assign it the categorical type:
 
-```yaml-rasa
+```yaml-rasa  title="domain.yml"
 slots:
   requested_slot:
     type: categorical
@@ -64,18 +65,20 @@ slots:
       - outdoor_seating
       - preferences
       - feedback
+    influence_conversation: true
 ```
 
 This means that the dialogue model will pay attention to the value of the slot when making a prediction
-(read more about other [featurized slots](./domain.mdx#slots), whereas
-unfeaturized slots are only used for storing information.
+(read more about how [slots influence the assistant's behaviour](./domain.mdx#slots-and-conversation-behavior)).
 
-You can then write stories for specific responses to interruptions based on the value of `requested_slot`, for example:
+You can then write stories for specific responses to interjections based on the value of `requested_slot`, for example:
 
-```yaml-rasa
+```yaml-rasa title="stories.yml"
 stories:
-- story: cuisine interruption
+- story: cuisine interjection
   steps:
+  - intent: request_restaurant
+  - action: restaurant_form
   - active_loop: restaurant_form
   - slot_was_set:
     - requested_slot: cuisine
@@ -83,8 +86,10 @@ stories:
   - action: utter_explain_cuisine
   - action: restaurant_form
 
-- story: number of people interruption
+- story: number of people interjection
   steps:
+  - intent: request_restaurant
+  - action: restaurant_form
   - active_loop: restaurant_form
   - slot_was_set:
     - requested_slot: num_people
