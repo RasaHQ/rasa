@@ -16,6 +16,20 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [1.10.15] - 2020-10-09
+
+### Bugfixes
+
+- [#3597](https://github.com/rasahq/rasa/issues/3597): Fixed issue where temporary model directories were not removed after pulling from a model server. If the model pulled from the server was invalid, this could lead to large amounts of local storage usage.
+- [#6755](https://github.com/rasahq/rasa/issues/6755): Treat the length of OOV token as 1 to fix token align issue when OOV occurred.
+- [#6899](https://github.com/rasahq/rasa/issues/6899): Fixed ``MappingPolicy`` not predicting ``action_listen`` after the mapped action while running ``rasa test``.
+
+
+### Improvements
+
+- [#6900](https://github.com/rasahq/rasa/issues/6900): Debug logs from ``matplotlib`` libraries are now hidden by default and are configurable with the ``LOG_LEVEL_LIBRARIES`` environment variable.
+
+
 ## [2.0.0] - 2020-10-07
                        
 
