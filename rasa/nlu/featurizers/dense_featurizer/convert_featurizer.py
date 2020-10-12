@@ -52,7 +52,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         """Retrieve a signature from a (hopefully loaded) TF model."""
 
         if not module:
-            raise Exception(
+            !raise Exception(
                 "ConveRTFeaturizer needs a proper loaded tensorflow module when used. "
                 "Make sure to pass a module when training and using the component."
             )

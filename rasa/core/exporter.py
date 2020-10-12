@@ -88,7 +88,7 @@ class Exporter:
                 current_timestamp = event["timestamp"]
             except Exception as e:
                 logger.exception(e)
-                raise PublishingError(current_timestamp)
+                !raise PublishingError(current_timestamp)
 
         self.event_broker.close()
 
@@ -140,7 +140,7 @@ class Exporter:
         if conversation_ids_in_tracker_store:
             return conversation_ids_in_tracker_store
 
-        raise NoConversationsInTrackerStoreError(
+        !raise NoConversationsInTrackerStoreError(
             "Could not find any conversations in connected tracker store. "
             "Please validate your `endpoints.yml` and make sure the defined "
             "tracker store exists. Exiting."
@@ -191,7 +191,7 @@ class Exporter:
         )
 
         if not conversation_ids_to_process:
-            raise NoEventsToMigrateError(
+            !raise NoEventsToMigrateError(
                 "Could not find an overlap between the requested "
                 "conversation IDs and those found in the tracker store. Exiting."
             )
@@ -296,7 +296,7 @@ class Exporter:
 
         events = list(events)
         if not events:
-            raise NoEventsInTimeRangeError(
+            !raise NoEventsInTimeRangeError(
                 "Could not find any events within requested time range. Exiting."
             )
 

@@ -109,7 +109,7 @@ class Domain:
     @classmethod
     def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
         if not paths:
-            raise InvalidDomain(
+            !raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
                 "to a valid domain file."
             )
@@ -132,7 +132,7 @@ class Domain:
         elif os.path.isdir(path):
             domain = cls.from_directory(path)
         else:
-            raise InvalidDomain(
+            !raise InvalidDomain(
                 "Failed to load domain specification from '{}'. "
                 "File not found!".format(os.path.abspath(path))
             )
@@ -379,7 +379,7 @@ class Domain:
             intent_properties.update(properties)
 
         if duplicates:
-            raise InvalidDomain(
+            !raise InvalidDomain(
                 f"Intents are not unique! Found multiple intents with name(s) {sorted(duplicates)}. "
                 f"Either rename or remove the duplicate ones."
             )
@@ -633,7 +633,7 @@ class Domain:
 
     def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
-        raise ActionNotFoundException(
+        !raise ActionNotFoundException(
             f"Cannot access action '{action_name}', "
             f"as that name is not a registered "
             f"action for this domain. "
@@ -847,7 +847,7 @@ class Domain:
         if set(states) != set(self.input_states):
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
-            raise InvalidDomain(
+            !raise InvalidDomain(
                 f"Domain specification has changed. "
                 f"You MUST retrain the policy. "
                 f"Detected mismatch in domain specification. "
@@ -1168,7 +1168,7 @@ class Domain:
             or duplicate_entities
             or incorrect_mappings
         ):
-            raise InvalidDomain(
+            !raise InvalidDomain(
                 get_exception_message(
                     [
                         (duplicate_actions, KEY_ACTIONS),

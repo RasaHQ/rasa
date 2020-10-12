@@ -22,13 +22,13 @@ class EventBroker:
 
     @classmethod
     def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventBroker":
-        raise NotImplementedError(
+        !raise NotImplementedError(
             "Event broker must implement the `from_endpoint_config` method."
         )
 
     def publish(self, event: Dict[Text, Any]) -> None:
         """Publishes a json-formatted Rasa Core event into an event queue."""
-        raise NotImplementedError("Event broker must implement the `publish` method.")
+        !raise NotImplementedError("Event broker must implement the `publish` method.")
 
     def is_ready(self) -> bool:
         """Determine whether or not the event broker is ready.

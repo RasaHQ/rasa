@@ -156,7 +156,7 @@ class KeywordIntentClassifier(IntentClassifier):
                 intent_keyword_map = None
             return cls(meta, intent_keyword_map)
         else:
-            raise Exception(
+            !raise Exception(
                 f"Failed to load keyword intent classifier model. "
                 f"Path {os.path.abspath(meta.get('file'))} doesn't exist."
             )

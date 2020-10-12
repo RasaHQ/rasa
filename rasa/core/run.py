@@ -65,7 +65,7 @@ def _create_single_channel(channel, credentials) -> Any:
             )
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
-            raise Exception(
+            !raise Exception(
                 "Failed to find input channel class for '{}'. Unknown "
                 "input channel. Check your credentials configuration to "
                 "make sure the mentioned channel is not misspelled. "

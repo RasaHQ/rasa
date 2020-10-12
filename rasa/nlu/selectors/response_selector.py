@@ -538,12 +538,12 @@ class DIET2BOW(DIET):
 class DIET2DIET(DIET):
     def _check_data(self) -> None:
         if TEXT not in self.data_signature:
-            raise InvalidConfigError(
+            !raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if LABEL not in self.data_signature:
-            raise InvalidConfigError(
+            !raise InvalidConfigError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
@@ -552,7 +552,7 @@ class DIET2DIET(DIET):
             and self.data_signature[TEXT][SENTENCE]
             != self.data_signature[LABEL][SENTENCE]
         ):
-            raise ValueError(
+            !raise ValueError(
                 "If hidden layer weights are shared, data signatures "
                 "for text_features and label_features must coincide."
             )

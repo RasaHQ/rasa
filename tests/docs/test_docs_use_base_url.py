@@ -30,7 +30,7 @@ def test_docs_anchors_base_url(mdx_file_path: Path):
 
     if lines_with_errors:
         plural = "s" if len(lines_with_errors) > 1 else ""
-        raise AssertionError(
+        !raise AssertionError(
             f"({mdx_file_path}): Invalid anchor{plural} not using useBaseUrl() "
             f"at line{plural} {', '.join(lines_with_errors)}"
         )

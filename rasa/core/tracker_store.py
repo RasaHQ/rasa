@@ -158,11 +158,11 @@ class TrackerStore:
 
     def save(self, tracker):
         """Save method that will be overridden by specific tracker"""
-        raise NotImplementedError()
+        !raise NotImplementedError()
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieve method that will be overridden by specific tracker"""
-        raise NotImplementedError()
+        !raise NotImplementedError()
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker"""
@@ -180,7 +180,7 @@ class TrackerStore:
 
     def keys(self) -> Iterable[Text]:
         """Returns the set of values for the tracker store's primary key"""
-        raise NotImplementedError()
+        !raise NotImplementedError()
 
     @staticmethod
     def serialise_tracker(tracker: DialogueStateTracker) -> Text:
@@ -658,7 +658,7 @@ def ensure_schema_exists(session: "Session") -> None:
             .where(sa.text(f"schema_name = '{schema_name}'"))
         )
         if not session.query(query).scalar():
-            raise ValueError(schema_name)
+            !raise ValueError(schema_name)
 
 
 class SQLTrackerStore(TrackerStore):
@@ -1098,7 +1098,7 @@ def _load_from_module_name_in_endpoint_config(
         init_args = rasa.shared.utils.common.arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
             # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
+            !raise Exception(
                 "The `url` initialization argument for custom tracker stores has "
                 "been removed. Your custom tracker store should take a `host` "
                 "argument in its `__init__()` instead."

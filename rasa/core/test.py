@@ -375,7 +375,7 @@ def _collect_user_uttered_predictions(
             WronglyClassifiedUserUtterance(event, user_uttered_eval_store)
         )
         if fail_on_prediction_errors:
-            raise ValueError(
+            !raise ValueError(
                 "NLU model predicted a wrong intent. Failed Story:"
                 " \n\n{}".format(
                     YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
@@ -469,7 +469,7 @@ def _collect_action_executed_predictions(
                     "If the story is correct, add it to the "
                     "training stories and retrain."
                 )
-            raise ValueError(error_msg)
+            !raise ValueError(error_msg)
     else:
         partial_tracker.update(event)
 

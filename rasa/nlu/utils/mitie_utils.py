@@ -41,7 +41,7 @@ class MitieNLP(Component):
 
         model_file = component_config.get("model")
         if not model_file:
-            raise Exception(
+            !raise Exception(
                 "The MITIE component 'MitieNLP' needs "
                 "the configuration value for 'model'."
                 "Please take a look at the "
@@ -78,7 +78,7 @@ class MitieNLP(Component):
     ) -> None:
 
         if extractor is None:
-            raise Exception(
+            !raise Exception(
                 "Failed to load MITIE feature extractor. "
                 "Loading the model returned 'None'."
             )

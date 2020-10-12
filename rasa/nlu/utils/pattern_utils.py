@@ -66,7 +66,7 @@ def read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
     try:
         f = open(lookup_table_file, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING)
     except OSError:
-        raise ValueError(
+        !raise ValueError(
             f"Could not load lookup table {lookup_table_file}. "
             f"Please make sure you've provided the correct path."
         )

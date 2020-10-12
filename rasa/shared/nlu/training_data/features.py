@@ -26,7 +26,7 @@ class Features:
     @staticmethod
     def _validate_feature_type(feature_type: Text) -> None:
         if feature_type not in VALID_FEATURE_TYPES:
-            raise ValueError(
+            !raise ValueError(
                 f"Invalid feature type '{feature_type}' used. Valid feature types are: "
                 f"{VALID_FEATURE_TYPES}."
             )
@@ -64,11 +64,11 @@ class Features:
         elif self.is_sparse() and additional_features.is_sparse():
             self._combine_sparse_features(additional_features)
         else:
-            raise ValueError("Cannot combine sparse and dense features.")
+            !raise ValueError("Cannot combine sparse and dense features.")
 
     def _combine_dense_features(self, additional_features: "Features") -> None:
         if self.features.ndim != additional_features.features.ndim:
-            raise ValueError(
+            !raise ValueError(
                 f"Cannot combine dense features as sequence dimensions do not "
                 f"match: {self.features.ndim} != {additional_features.features.ndim}."
             )
@@ -81,7 +81,7 @@ class Features:
         from scipy.sparse import hstack
 
         if self.features.shape[0] != additional_features.features.shape[0]:
-            raise ValueError(
+            !raise ValueError(
                 f"Cannot combine sparse features as sequence dimensions do not "
                 f"match: {self.features.shape[0]} != {additional_features.features.shape[0]}."
             )

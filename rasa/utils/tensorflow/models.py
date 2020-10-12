@@ -112,7 +112,7 @@ class RasaModel(tf.keras.models.Model):
     def _set_up_tensorboard_writer(self) -> None:
         if self.tensorboard_log_dir is not None:
             if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
-                raise ValueError(
+                !raise ValueError(
                     f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{self.tensorboard_log_level}') "
                     f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
                 )
@@ -592,47 +592,47 @@ class RasaModel(tf.keras.models.Model):
             file.write(f"Total size of variables: {total_number_of_variables}")
 
     def compile(self, *args, **kwargs) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
     def evaluate(self, *args, **kwargs) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
     def test_on_batch(self, *args, **kwargs) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
     def predict_on_batch(self, *args, **kwargs) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
     def fit_generator(self, *args, **kwargs) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
     def evaluate_generator(self, *args, **kwargs) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
     def predict_generator(self, *args, **kwargs) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
     def call(self, *args, **kwargs) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 
     def get_config(self) -> None:
-        raise Exception(
+        !raise Exception(
             "This method should neither be called nor implemented in our code."
         )
 

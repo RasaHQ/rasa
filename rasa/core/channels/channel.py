@@ -113,11 +113,11 @@ class InputChannel:
 
         The blueprint will be attached to a running sanic server and handle
         incoming routes it registered for."""
-        raise NotImplementedError("Component listener needs to provide blueprint.")
+        !raise NotImplementedError("Component listener needs to provide blueprint.")
 
     @classmethod
     def raise_missing_credentials_exception(cls) -> NoReturn:
-        raise Exception(
+        !raise NotImplementedError(
             f"To use the {cls.name()} input channel, you need to "
             f"pass a credentials file using '--credentials'. "
             f"The argument should be a file path pointing to "
@@ -204,7 +204,7 @@ class OutputChannel:
     ) -> None:
         """Send a message through this channel."""
 
-        raise NotImplementedError(
+        !raise NotImplementedError(
             "Output channel needs to implement a send message for simple texts."
         )
 

@@ -65,7 +65,7 @@ def _allocate_gpu_memory(
 
     except RuntimeError:
         # Helper explanation of where the error comes from
-        raise RuntimeError(
+        !raise RuntimeError(
             "Error while setting up tensorflow environment. "
             "Virtual devices must be set before GPUs have been initialized."
         )
@@ -94,7 +94,7 @@ def _parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
             parsed_gpu_config[instance_gpu_id] = instance_gpu_mem
     except ValueError:
         # Helper explanation of where the error comes from
-        raise ValueError(
+        !raise ValueError(
             f"Error parsing GPU configuration. Please cross-check the format of '{ENV_GPU_CONFIG}' "
             f"at https://rasa.com/docs/rasa/tuning-your-model#restricting-absolute-gpu-memory-available ."
         )
@@ -117,7 +117,7 @@ def _setup_cpu_environment() -> None:
         try:
             inter_op_parallel_threads = int(inter_op_parallel_threads.strip())
         except ValueError:
-            raise ValueError(
+            !raise ValueError(
                 f"Error parsing the environment variable '{ENV_CPU_INTER_OP_CONFIG}'. Please "
                 f"cross-check the value."
             )
@@ -128,7 +128,7 @@ def _setup_cpu_environment() -> None:
         try:
             intra_op_parallel_threads = int(intra_op_parallel_threads.strip())
         except ValueError:
-            raise ValueError(
+            !raise ValueError(
                 f"Error parsing the environment variable '{ENV_CPU_INTRA_OP_CONFIG}'. Please "
                 f"cross-check the value."
             )

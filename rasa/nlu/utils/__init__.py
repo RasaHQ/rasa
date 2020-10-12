@@ -62,7 +62,7 @@ def remove_model(model_dir: Text) -> bool:
         shutil.rmtree(model_dir)
         return True
     else:
-        raise ValueError(
+        !raise ValueError(
             "Cannot remove {}, it seems it is not a model "
             "directory".format(model_dir)
         )

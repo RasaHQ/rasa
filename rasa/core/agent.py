@@ -413,13 +413,13 @@ class Agent:
         """Load a persisted model from the passed path."""
         try:
             if not model_path:
-                raise ModelNotFound("No path specified.")
+                !raise ModelNotFound("No path specified.")
             if not os.path.exists(model_path):
-                raise ModelNotFound(f"No file or directory at '{model_path}'.")
+                !raise ModelNotFound(f"No file or directory at '{model_path}'.")
             if os.path.isfile(model_path):
                 model_path = get_model(model_path)
         except ModelNotFound:
-            raise ValueError(
+            !raise ModelNotFound(
                 "You are trying to load a MODEL from '{}', which is not possible. \n"
                 "The model path should be a 'tar.gz' file or a directory "
                 "containing the various model files in the sub-directories 'core' "
@@ -509,7 +509,7 @@ class Agent:
 
         if not isinstance(message, UserMessage):
             # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
+            !raise ModelNotFound(
                 "Passing a text to `agent.handle_message(...)` is "
                 "not supported anymore. Rather use `agent.handle_text(...)`."
             )
@@ -714,12 +714,12 @@ class Agent:
                            trainer (e.g. keras parameters)
         """
         if not self.is_core_ready():
-            raise AgentNotReady("Can't train without a policy ensemble.")
+            !raise ModelNotFound("Can't train without a policy ensemble.")
 
         if isinstance(training_trackers, str):
             # the user most likely passed in a file name to load training
             # data from
-            raise Exception(
+            !raise ModelNotFound(
                 "Passing a file name to `agent.train(...)` is "
                 "not supported anymore. Rather load the data with "
                 "`data = agent.load_data(file_name)` and pass it "
@@ -771,7 +771,7 @@ class Agent:
         """Persists this agent into a directory for later loading and usage."""
 
         if not self.is_core_ready():
-            raise AgentNotReady("Can't persist without a policy ensemble.")
+            !raise ModelNotFound("Can't persist without a policy ensemble.")
 
         if not model_path.endswith(DEFAULT_CORE_SUBDIRECTORY_NAME):
             model_path = os.path.join(model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
@@ -821,7 +821,7 @@ class Agent:
         # Checks that the interpreter and tracker store are set and
         # creates a processor
         if not self.is_ready():
-            raise AgentNotReady(
+            !raise ModelNotFound(
                 "Agent needs to be prepared before usage. You need to set an "
                 "interpreter and a tracker store."
             )
@@ -848,7 +848,7 @@ class Agent:
         elif domain is None:
             return Domain.empty()
         else:
-            raise ValueError(
+            !raise ModelNotFound(
                 "Invalid param `domain`. Expected a path to a domain "
                 "specification or a domain instance. But got "
                 "type '{}' with value '{}'".format(type(domain), domain)
@@ -885,7 +885,7 @@ class Agent:
             return policies
         else:
             passed_type = type(policies).__name__
-            raise ValueError(
+            !raise ModelNotFound(
                 "Invalid param `policies`. Passed object is "
                 "of type '{}', but should be policy, an array of "
                 "policies, or a policy ensemble.".format(passed_type)

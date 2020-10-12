@@ -116,7 +116,7 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
     if config[EVAL_NUM_EPOCHS] == -1:
         config[EVAL_NUM_EPOCHS] = config[EPOCHS]
     elif config[EVAL_NUM_EPOCHS] < 1:
-        raise ValueError(
+        !raise ValueError(
             f"'{EVAL_NUM_EXAMPLES}' is set to "
             f"'{config[EVAL_NUM_EPOCHS]}'. "
             f"Only values > 1 are allowed for this configuration value."

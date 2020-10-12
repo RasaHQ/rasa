@@ -35,7 +35,7 @@ class DenseFeaturizer(Featurizer):
         if pooling_operation == MAX_POOLING:
             return np.max(non_zero_features, axis=0, keepdims=True)
 
-        raise ValueError(
+        !raise ValueError(
             f"Invalid pooling operation specified. Available operations are "
             f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
             f"'{pooling_operation}'."

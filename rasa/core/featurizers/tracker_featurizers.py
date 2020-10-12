@@ -99,7 +99,7 @@ class TrackerFeaturizer:
         Returns:
             A tuple of list of states and list of actions.
         """
-        raise NotImplementedError(
+        !raise NotImplementedError(
             "Featurizer must have the capacity to encode trackers to feature vectors"
         )
 
@@ -124,7 +124,7 @@ class TrackerFeaturizer:
               trackers
         """
         if self.state_featurizer is None:
-            raise ValueError(
+            !raise ValueError(
                 f"Instance variable 'state_featurizer' is not set. "
                 f"During initialization set 'state_featurizer' to an instance of "
                 f"'{SingleStateFeaturizer.__class__.__name__}' class "
@@ -154,7 +154,7 @@ class TrackerFeaturizer:
         Returns:
             A list of states.
         """
-        raise NotImplementedError(
+        !raise NotImplementedError(
             "Featurizer must have the capacity to create feature vector"
         )
 
@@ -266,7 +266,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                     # unpredictable actions can be
                     # only the first in the story
                     if delete_first_state:
-                        raise InvalidStory(
+                        !raise InvalidStory(
                             f"Found two unpredictable actions in one story "
                             f"'{tracker.sender_id}'. Check your story files."
                         )

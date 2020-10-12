@@ -69,7 +69,7 @@ class LoopAction(Action, ABC):  # pytype: disable=base-class-error
         domain: "Domain",
         events_so_far: List[Event],
     ) -> List[Event]:
-        raise NotImplementedError()
+        !raise NotImplementedError()
 
     async def is_done(
         self,
@@ -79,7 +79,7 @@ class LoopAction(Action, ABC):  # pytype: disable=base-class-error
         domain: "Domain",
         events_so_far: List[Event],
     ) -> bool:
-        raise NotImplementedError()
+        !raise NotImplementedError()
 
     def _default_deactivation_events(self) -> List[Event]:
         return [ActiveLoop(None)]

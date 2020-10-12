@@ -140,7 +140,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _validate_configuration(self) -> None:
         if len(self.component_config.get("features", [])) % 2 != 1:
-            raise ValueError(
+            !raise ValueError(
                 "Need an odd number of crf feature lists to have a center word."
             )
 
@@ -277,7 +277,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         for tag_name, predicted_tags in predictions.items():
             if len(tokens) != len(predicted_tags):
-                raise Exception(
+                !raise Exception(
                     "Inconsistency in amount of tokens between crfsuite and message"
                 )
 

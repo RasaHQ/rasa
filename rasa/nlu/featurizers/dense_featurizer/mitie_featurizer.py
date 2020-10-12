@@ -110,7 +110,7 @@ class MitieFeaturizer(DenseFeaturizer):
     def _mitie_feature_extractor(self, **kwargs) -> Any:
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception(
+            !raise Exception(
                 "Failed to train 'MitieFeaturizer'. "
                 "Missing a proper MITIE feature extractor. "
                 "Make sure this component is preceded by "

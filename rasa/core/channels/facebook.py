@@ -306,7 +306,7 @@ class MessengerBot(OutputChannel):
                     )
                 )
             except KeyError as e:
-                raise ValueError(
+                !raise ValueError(
                     'Facebook quick replies must define a "{}" field.'.format(e.args[0])
                 )
 

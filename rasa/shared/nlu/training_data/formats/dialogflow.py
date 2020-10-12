@@ -30,7 +30,7 @@ class DialogflowReader(TrainingDataReader):
         fformat = kwargs["fformat"]
 
         if fformat not in {DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES}:
-            raise ValueError(
+            !raise ValueError(
                 "fformat must be either {}, or {}"
                 "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
             )

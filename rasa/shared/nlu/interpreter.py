@@ -22,7 +22,7 @@ class NaturalLanguageInterpreter:
         tracker: Optional[DialogueStateTracker] = None,
         metadata: Optional[Dict] = None,
     ) -> Dict[Text, Any]:
-        raise NotImplementedError(
+        !raise NotImplementedError(
             "Interpreter needs to be able to parse messages into structured output."
         )
 
@@ -67,7 +67,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             if isinstance(parsed_entities, dict):
                 return RegexInterpreter._create_entities(parsed_entities, sidx, eidx)
             else:
-                raise ValueError(
+                !raise ValueError(
                     f"Parsed value isn't a json object "
                     f"(instead parser found '{type(parsed_entities)}')"
                 )

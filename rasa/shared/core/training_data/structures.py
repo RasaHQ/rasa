@@ -157,7 +157,7 @@ class StoryStep:
                 if converted:
                     result += self._bot_string(s)
             else:
-                raise Exception(f"Unexpected element in story step: {s}")
+                !raise Exception(f"Unexpected element in story step: {s}")
 
         if not flat:
             for s in self.end_checkpoints:

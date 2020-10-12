@@ -106,7 +106,7 @@ class MarkdownStoryReader(StoryReader):
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
-                raise ValueError(msg) from e
+                !raise ValueError(msg) from e
         self._add_current_stories_to_result()
         return self.story_steps
 
@@ -123,13 +123,13 @@ class MarkdownStoryReader(StoryReader):
             if isinstance(parsed_slots, dict):
                 return parsed_slots
             else:
-                raise Exception(
+                !raise Exception(
                     "Parsed value isn't a json object "
                     "(instead parser found '{}')"
                     ".".format(type(parsed_slots))
                 )
         except Exception as e:
-            raise ValueError(
+            !raise ValueError(
                 "Invalid to parse arguments in line "
                 "'{}'. Failed to decode parameters"
                 "as a json object. Make sure the event"
@@ -143,7 +143,7 @@ class MarkdownStoryReader(StoryReader):
             if varname in self.template_variables:
                 return self.template_variables[varname]
             else:
-                raise ValueError(
+                !raise ValueError(
                     "Unknown variable `{var}` "
                     "in template line '{line}'"
                     "".format(var=varname, line=line)
@@ -180,7 +180,7 @@ class MarkdownStoryReader(StoryReader):
 
     def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
-            raise StoryParseError(
+            !raise StoryParseError(
                 "User message '{}' at invalid location. "
                 "Expected story start.".format(messages)
             )
@@ -191,7 +191,7 @@ class MarkdownStoryReader(StoryReader):
 
     def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
-            raise StoryParseError(
+            !raise StoryParseError(
                 "End-to-end message '{}' at invalid "
                 "location. Expected story start."
                 "".format(e2e_messages)
@@ -220,7 +220,7 @@ class MarkdownStoryReader(StoryReader):
         match = re.match(item_regex, line)
 
         if not match:
-            raise ValueError(
+            !raise ValueError(
                 "Encountered invalid test story format for message "
                 "`{}`. Please visit the documentation page on "
                 "end-to-end testing at {}/user-guide/testing-your-assistant/"

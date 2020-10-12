@@ -45,7 +45,7 @@ class MitieIntentClassifier(IntentClassifier):
 
         model_file = kwargs.get("mitie_file")
         if not model_file:
-            raise Exception(
+            !raise Exception(
                 "Can not run MITIE entity extractor without a "
                 "language model. Make sure this component is "
                 "preceeded by the 'MitieNLP' component."
@@ -66,7 +66,7 @@ class MitieIntentClassifier(IntentClassifier):
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception(
+            !raise Exception(
                 "Failed to train 'MitieFeaturizer'. "
                 "Missing a proper MITIE feature extractor."
             )

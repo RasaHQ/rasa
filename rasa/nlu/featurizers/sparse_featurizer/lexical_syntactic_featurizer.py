@@ -262,7 +262,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             return token_idx + pointer_position == 0
 
         if feature not in self.function_dict:
-            raise ValueError(
+            !raise ValueError(
                 f"Configured feature '{feature}' not valid. Please check "
                 f"'{DOCS_URL_COMPONENTS}' for valid configuration parameters."
             )

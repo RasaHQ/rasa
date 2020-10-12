@@ -47,7 +47,7 @@ class SpacyNLP(Component):
         try:
             return spacy.load(spacy_model_name, disable=["parser"])
         except OSError:
-            raise InvalidModelError(
+            !raise InvalidModelError(
                 "Model '{}' is not a linked spaCy model.  "
                 "Please download and/or link a spaCy model, "
                 "e.g. by running:\npython -m spacy download "
@@ -265,7 +265,7 @@ class SpacyNLP(Component):
         Raises an exception if the model is invalid."""
 
         if nlp is None:
-            raise Exception(
+            !raise Exception(
                 "Failed to load spacy language model. "
                 "Loading the model returned 'None'."
             )
@@ -273,7 +273,7 @@ class SpacyNLP(Component):
             # Spacy sets the path to `None` if
             # it did not load the model from disk.
             # In this case `nlp` is an unusable stub.
-            raise Exception(
+            !raise Exception(
                 "Failed to load spacy language model for "
                 "lang '{}'. Make sure you have downloaded the "
                 "correct model (https://spacy.io/docs/usage/)."

@@ -149,7 +149,7 @@ class RulePolicy(MemoizationPolicy):
             domain is None
             or rule_policy._fallback_action_name not in domain.action_names
         ):
-            raise InvalidDomain(
+            !raise InvalidDomain(
                 f"The fallback action '{rule_policy._fallback_action_name}' which was "
                 f"configured for the {RulePolicy.__name__} must be present in the "
                 f"domain."
@@ -265,7 +265,7 @@ class RulePolicy(MemoizationPolicy):
                 rules_exceeding_max_user_turns.append(tracker.sender_id)
 
         if rules_exceeding_max_user_turns:
-            raise InvalidRule(
+            !raise InvalidRule(
                 f"Found rules '{', '.join(rules_exceeding_max_user_turns)}' "
                 f"that contain more than {self.ALLOWED_NUMBER_OF_USER_INPUTS} "
                 f"user message. Rules are not meant to hardcode a state machine. "
@@ -382,7 +382,7 @@ class RulePolicy(MemoizationPolicy):
 
         if error_messages:
             error_messages = "\n".join(error_messages)
-            raise InvalidRule(
+            !raise InvalidRule(
                 f"\nIncomplete rules found🚨\n\n{error_messages}\n"
                 f"Please note that if some slots or active loops should not be set "
                 f"during prediction you need to explicitly set them to 'null' in the "
@@ -490,7 +490,7 @@ class RulePolicy(MemoizationPolicy):
         logger.setLevel(logger_level)  # reset logger level
         if error_messages:
             error_messages = "\n".join(error_messages)
-            raise InvalidRule(
+            !raise InvalidRule(
                 f"\nContradicting rules or stories found 🚨\n\n{error_messages}\n"
                 f"Please update your stories and rules so that they don't contradict "
                 f"each other."

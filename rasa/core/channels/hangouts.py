@@ -107,7 +107,7 @@ class HangoutsOutput(OutputChannel):
         elif message.get("cards"):
             msg_new = "cards"
         else:
-            raise Exception(
+            !raise Exception(
                 "Your message to Hangouts channel must either contain 'text' or 'cards'!"
             )
 

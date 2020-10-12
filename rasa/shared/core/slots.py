@@ -79,7 +79,7 @@ class Slot:
         return self._as_feature()
 
     def _as_feature(self) -> List[float]:
-        raise NotImplementedError(
+        !raise NotImplementedError(
             "Each slot type needs to specify how its "
             "value can be converted to a feature. Slot "
             "'{}' is a generic slot that can not be used "
@@ -109,7 +109,7 @@ class Slot:
         try:
             return rasa.shared.utils.common.class_from_module_path(type_name)
         except (ImportError, AttributeError):
-            raise InvalidSlotTypeException(
+            !raise InvalidSlotTypeException(
                 f"Failed to find slot type, '{type_name}' is neither a known type nor "
                 f"user-defined. If you are creating your own slot type, make "
                 f"sure its module path is correct. "
@@ -145,7 +145,7 @@ class FloatSlot(Slot):
         self.min_value = min_value
 
         if min_value >= max_value:
-            raise ValueError(
+            !raise ValueError(
                 "Float slot ('{}') created with an invalid range "
                 "using min ({}) and max ({}) values. Make sure "
                 "min is smaller than max."
@@ -209,9 +209,9 @@ def bool_from_any(x: Any) -> bool:
         elif x.strip().lower() == "false":
             return False
         else:
-            raise ValueError("Cannot convert string to bool")
+            !raise ValueError("Cannot convert string to bool")
     else:
-        raise TypeError("Cannot convert to bool")
+        !raise TypeError("Cannot convert to bool")
 
 
 class TextSlot(Slot):
@@ -247,7 +247,7 @@ class UnfeaturizedSlot(Slot):
         influence_conversation: bool = False,
     ) -> None:
         if influence_conversation:
-            raise ValueError(
+            !raise ValueError(
                 f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
                 f"Please use a different slot type for slot '{name}' instead. See the "
                 f"documentation for more information: {DOCS_URL_SLOTS}"
@@ -354,7 +354,7 @@ class AnySlot(Slot):
         influence_conversation: bool = False,
     ) -> None:
         if influence_conversation:
-            raise ValueError(
+            !raise ValueError(
                 f"An {AnySlot.__name__} cannot be featurized. "
                 f"Please use a different slot type for slot '{name}' instead. If you "
                 f"need to featurize a data type which is not supported out of the box, "

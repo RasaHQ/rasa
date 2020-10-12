@@ -1120,7 +1120,7 @@ def determine_entity_for_token(
     if entities is None or len(entities) == 0:
         return None
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
-        raise ValueError("The possible entities should not overlap.")
+        !raise ValueError("The possible entities should not overlap.")
 
     candidates = find_intersecting_entities(token, entities)
     return pick_best_entity_fit(token, candidates)

@@ -632,17 +632,17 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
         await _write_data_to_file(conversation_id, endpoint)
-        raise Abort()
+        !raise Abort()
     elif answer == "continue":
         # in this case we will just return, and the original
         # question will get asked again
         return True
     elif answer == "undo":
-        raise UndoLastStep()
+        !raise UndoLastStep()
     elif answer == "fork":
-        raise ForkTracker()
+        !raise ForkTracker()
     elif answer == "restart":
-        raise RestartConversation()
+        !raise RestartConversation()
 
 
 async def _request_action_from_user(
@@ -739,7 +739,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
 
     answers = questions.ask()
     if not answers:
-        raise Abort()
+        !raise Abort()
 
     return answers["export_stories"], answers["export_nlu"], answers["export_domain"]
 
@@ -1028,7 +1028,7 @@ async def _correct_wrong_nlu(
     corrected_message = latest_user_message(events)
 
     if corrected_message is None:
-        raise Exception("Failed to correct NLU data. User message not found.")
+        !raise Exception("Failed to correct NLU data. User message not found.")
 
     corrected_message["parse_data"] = corrected_nlu
     await send_event(
@@ -1326,7 +1326,7 @@ async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -
     message = await _ask_questions(question, conversation_id, endpoint, lambda a: not a)
 
     if message == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
-        raise RestartConversation()
+        !raise RestartConversation()
 
     await send_message(endpoint, conversation_id, message)
 

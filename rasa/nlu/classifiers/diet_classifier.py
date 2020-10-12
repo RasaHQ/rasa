@@ -254,7 +254,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[MASKED_LM]
             and self.component_config[NUM_TRANSFORMER_LAYERS] == 0
         ):
-            raise ValueError(
+            !raise ValueError(
                 f"If number of transformer layers is 0, "
                 f"'{MASKED_LM}' option should be 'False'."
             )
@@ -272,7 +272,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 ].values()
             )
             if not identical_hidden_layer_sizes:
-                raise ValueError(
+                !raise ValueError(
                     f"If hidden layer weights are shared, "
                     f"{HIDDEN_LAYERS_SIZES} must coincide."
                 )
@@ -448,7 +448,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 dense_sequence_features.features.shape[0]
                 != sparse_sequence_features.features.shape[0]
             ):
-                raise ValueError(
+                !raise ValueError(
                     f"Sequence dimensions for sparse and dense sequence features "
                     f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
                 )
@@ -457,7 +457,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 dense_sentence_features.features.shape[0]
                 != sparse_sentence_features.features.shape[0]
             ):
-                raise ValueError(
+                !raise ValueError(
                     f"Sequence dimensions for sparse and dense sentence features "
                     f"don't coincide in '{message.get(TEXT)}' for attribute '{attribute}'."
                 )
@@ -499,7 +499,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if (0 < num_text_sentence_features != num_label_sentence_features > 0) or (
                 0 < num_text_sequence_features != num_label_sequence_features > 0
             ):
-                raise ValueError(
+                !raise ValueError(
                     "If embeddings are shared text features and label features "
                     "must coincide. Check the output dimensions of previous components."
                 )
@@ -581,7 +581,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if label_data.does_feature_not_exist(
             LABEL, SENTENCE
         ) and label_data.does_feature_not_exist(LABEL, SEQUENCE):
-            raise ValueError(
+            !raise ValueError(
                 "No label features are present. Please check your configuration file."
             )
 
@@ -1143,13 +1143,13 @@ class DIET(TransformerRasaModel):
 
     def _check_data(self) -> None:
         if TEXT not in self.data_signature:
-            raise InvalidConfigError(
+            !raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if self.config[INTENT_CLASSIFICATION]:
             if LABEL not in self.data_signature:
-                raise InvalidConfigError(
+                !raise InvalidConfigError(
                     f"No label features specified. "
                     f"Cannot train '{self.__class__.__name__}' model."
                 )
@@ -1175,7 +1175,7 @@ class DIET(TransformerRasaModel):
                     )
 
                 if different_sentence_signatures or different_sequence_signatures:
-                    raise ValueError(
+                    !raise ValueError(
                         "If hidden layer weights are shared, data signatures "
                         "for text_features and label_features must coincide."
                     )
@@ -1376,7 +1376,7 @@ class DIET(TransformerRasaModel):
                 sequence_x, sentence_x, name, mask_text
             )
 
-        raise ValueError(
+        !raise ValueError(
             "No features are present. Please check your configuration file."
         )
 

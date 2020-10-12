@@ -98,7 +98,7 @@ async def test_loop_without_deactivate():
             return expected_do_events
 
         async def deactivate(self, *args) -> List[Event]:
-            raise ValueError("this shouldn't be called")
+            !raise ValueError("this shouldn't be called")
 
         async def is_done(self, *args) -> bool:
             return False
@@ -130,7 +130,7 @@ async def test_loop_without_activate_and_without_deactivate():
             return form_name
 
         async def activate(self, *args: Any) -> List[Event]:
-            raise ValueError("this shouldn't be called")
+            !raise ValueError("this shouldn't be called")
 
         async def do(self, *args: Any) -> List[Event]:
             return expected_do_events

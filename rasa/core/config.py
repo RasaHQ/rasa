@@ -41,7 +41,7 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
     if not config_file:
-        raise ValueError(
+        !raise ValueError(
             "You have to provide a valid path to a config file. "
             "The file '{}' could not be found."
             "".format(os.path.abspath(config_file))

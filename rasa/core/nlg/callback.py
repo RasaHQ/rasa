@@ -103,7 +103,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         if self.validate_response(response):
             return response
         else:
-            raise Exception("NLG web endpoint returned an invalid response.")
+            !raise Exception("NLG web endpoint returned an invalid response.")
 
     @staticmethod
     def validate_response(content: Optional[Dict[Text, Any]]) -> bool:

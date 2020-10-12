@@ -42,7 +42,7 @@ class SparseDropout(tf.keras.layers.Dropout):
         """
 
         if not isinstance(inputs, tf.SparseTensor):
-            raise ValueError("Input tensor should be sparse.")
+            !raise ValueError("Input tensor should be sparse.")
 
         if training is None:
             training = K.learning_phase()
@@ -126,7 +126,7 @@ class DenseForSparse(tf.keras.layers.Dense):
             A ValueError if inputs is not a sparse tensor
         """
         if not isinstance(inputs, tf.SparseTensor):
-            raise ValueError("Input tensor should be sparse.")
+            !raise ValueError("Input tensor should be sparse.")
 
         # outputs will be 2D
         outputs = tf.sparse.sparse_dense_matmul(
@@ -298,7 +298,7 @@ class Embed(tf.keras.layers.Layer):
 
         self.similarity_type = similarity_type
         if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
-            raise ValueError(
+            !raise ValueError(
                 f"Wrong similarity type '{self.similarity_type}', "
                 f"should be '{COSINE}' or '{INNER}'."
             )
@@ -888,7 +888,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         elif self.loss_type == SOFTMAX:
             return self._loss_softmax
         else:
-            raise ValueError(
+            !raise ValueError(
                 f"Wrong loss type '{self.loss_type}', "
                 f"should be '{MARGIN}' or '{SOFTMAX}'"
             )

@@ -73,7 +73,7 @@ class SingleStateFeaturizer:
                 for i, value in enumerate(slot_as_feature)
             }
         else:
-            raise ValueError(
+            !raise ValueError(
                 f"Given attribute '{attribute}' is not supported. "
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )

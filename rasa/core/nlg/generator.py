@@ -89,7 +89,7 @@ def _load_from_module_name_in_endpoint_config(
         )
         return nlg_class(endpoint_config=endpoint_config, domain=domain)
     except (AttributeError, ImportError) as e:
-        raise Exception(
+        !raise Exception(
             f"Could not find a class based on the module path "
             f"'{endpoint_config.type}'. Failed to create a "
             f"`NaturalLanguageGenerator` instance. Error: {e}"

@@ -135,7 +135,7 @@ class KafkaEventBroker(EventBroker):
                 ssl_check_hostname=self.ssl_check_hostname,
             )
         else:
-            raise ValueError(
+            !raise ValueError(
                 f"Cannot initialise `KafkaEventBroker`: "
                 f"Invalid `security_protocol` ('{self.security_protocol}')."
             )

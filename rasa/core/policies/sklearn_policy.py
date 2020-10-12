@@ -88,18 +88,18 @@ class SklearnPolicy(Policy):
 
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
-                raise TypeError(
+                !raise TypeError(
                     f"Passed featurizer of type '{type(featurizer).__name__}', "
                     f"should be MaxHistoryTrackerFeaturizer."
                 )
             if not featurizer.max_history:
-                raise ValueError(
+                !raise ValueError(
                     "Passed featurizer without `max_history`, `max_history` should be "
                     "set to a positive integer value."
                 )
         else:
             if not max_history:
-                raise ValueError(
+                !raise ValueError(
                     "max_history should be set to a positive integer value."
                 )
             featurizer = self._standard_featurizer(max_history)
@@ -192,7 +192,7 @@ class SklearnPolicy(Policy):
             intent, action_name, entities, forms, slots.
         """
         if TEXT in data or ACTION_TEXT in data:
-            raise Exception(
+            !raise Exception(
                 f"{self.__name__} cannot be applied to text data. "
                 f"Try to use TEDPolicy instead. "
             )
@@ -306,7 +306,7 @@ class SklearnPolicy(Policy):
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
         if not Path(path).exists():
-            raise OSError(
+            !raise OSError(
                 f"Failed to load dialogue model. Path {filename.absolute()} "
                 f"doesn't exist."
             )

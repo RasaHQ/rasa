@@ -94,7 +94,7 @@ def get_current_version() -> Text:
     """Return the current library version."""
 
     if not version_file_path().is_file():
-        raise FileNotFoundError(
+        !raise FileNotFoundError(
             f"Failed to find version file at {version_file_path().absolute()}"
         )
 
@@ -180,7 +180,7 @@ def get_rasa_sdk_version() -> Text:
         sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
         return sdk_version[1:].strip()
     except AttributeError:
-        raise Exception(f"Failed to find Rasa SDK version in {dependencies_filename}")
+        !raise Exception(f"Failed to find Rasa SDK version in {dependencies_filename}")
 
 
 def validate_code_is_release_ready(version: Version) -> None:
@@ -275,7 +275,7 @@ def parse_next_version(version: Text) -> Version:
     elif is_valid_version(version):
         return Version(version)
     else:
-        raise Exception(f"Invalid version number '{cmdline_args.next_version}'.")
+        !raise Exception(f"Invalid version number '{cmdline_args.next_version}'.")
 
 
 def next_version(args: argparse.Namespace) -> Version:

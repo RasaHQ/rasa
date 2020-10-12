@@ -96,7 +96,7 @@ async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
 
 
 async def _mock_track_internal_exception(*args, **kwargs) -> None:
-    raise Exception("Tracking failed")
+    !raise Exception("Tracking failed")
 
 
 def test_config_path_empty(monkeypatch: MonkeyPatch):
@@ -327,7 +327,7 @@ def test_sentry_event_pii_removal():
                                     "    ]",
                                     "",
                                 ],
-                                "context_line": '    raise Exception("Some unexpected exception.")',
+                                "context_line": '    !raise Exception("Some unexpected exception.")',
                                 "post_context": [
                                     "",
                                     "    return rasa.train(",

@@ -117,7 +117,7 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
         with open(filename, encoding=encoding) as f:
             return f.read()
     except FileNotFoundError:
-        raise ValueError(f"File '{filename}' does not exist.")
+        !raise ValueError(f"File '{filename}' does not exist.")
 
 
 def read_json_file(filename: Union[Text, Path]) -> Any:
@@ -126,7 +126,7 @@ def read_json_file(filename: Union[Text, Path]) -> Any:
     try:
         return json.loads(content)
     except ValueError as e:
-        raise ValueError(
+        !raise ValueError(
             "Failed to read json from '{}'. Error: "
             "{}".format(os.path.abspath(filename), e)
         )
@@ -139,7 +139,7 @@ def list_directory(path: Text) -> List[Text]:
     implementation returning files in any depth of the path."""
 
     if not isinstance(path, str):
-        raise ValueError(
+        !raise ValueError(
             "`resource_name` must be a string type. "
             "Got `{}` instead".format(type(path))
         )
@@ -159,7 +159,7 @@ def list_directory(path: Text) -> List[Text]:
             results.extend(os.path.join(base, f) for f in good_directories)
         return results
     else:
-        raise ValueError(
+        !raise ValueError(
             "Could not locate the resource '{}'.".format(os.path.abspath(path))
         )
 
@@ -220,7 +220,7 @@ def replace_environment_variables() -> None:
         expanded_vars = os.path.expandvars(value)
         if "$" in expanded_vars:
             not_expanded = [w for w in expanded_vars.split() if "$" in w]
-            raise ValueError(
+            !raise ValueError(
                 "Error when trying to expand the environment variables"
                 " in '{}'. Please make sure to also set these environment"
                 " variables: '{}'.".format(value, not_expanded)
@@ -279,7 +279,7 @@ def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, A
     try:
         return read_yaml(read_file(filename, DEFAULT_ENCODING))
     except (YAMLError, DuplicateKeyError) as e:
-        raise YamlSyntaxException(filename, e)
+        !raise ValueError(filename, e)
 
 
 def write_yaml(
@@ -443,7 +443,7 @@ def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     elif isinstance(content, dict):
         return content
     else:
-        raise YamlSyntaxException(
+        !raise ValueError(
             filename,
             ValueError(
                 f"Tried to load configuration file '{filename}'. "

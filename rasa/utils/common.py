@@ -226,7 +226,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         if unavailable_ok:
             return None
         else:
-            raise ValueError(f"Configuration '{name}' key not found.")
+            !raise ValueError(f"Configuration '{name}' key not found.")
 
     # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
     # in tests

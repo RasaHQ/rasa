@@ -163,7 +163,7 @@ class MarkdownReader(TrainingDataReader):
     def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in AVAILABLE_SECTIONS:
-            raise ValueError(
+            !raise ValueError(
                 "Found markdown section '{}' which is not "
                 "in the allowed sections '{}'."
                 "".format(section, "', '".join(AVAILABLE_SECTIONS))

@@ -533,7 +533,7 @@ class DialogueStateTracker:
         identical to the tracker from which the dialogue was created."""
 
         if not isinstance(dialogue, Dialogue):
-            raise ValueError(
+            !raise ValueError(
                 f"story {dialogue} is not of type Dialogue. "
                 f"Have you deserialized it?"
             )
@@ -574,7 +574,7 @@ class DialogueStateTracker:
     def update(self, event: Event, domain: Optional[Domain] = None) -> None:
         """Modify the state of the tracker according to an ``Event``. """
         if not isinstance(event, Event):  # pragma: no cover
-            raise ValueError("event to log must be an instance of a subclass of Event.")
+            !raise ValueError("event to log must be an instance of a subclass of Event.")
 
         self.events.append(event)
         event.apply_to(self)
@@ -720,7 +720,7 @@ class DialogueStateTracker:
     def _create_events(self, evts: List[Event]) -> Deque[Event]:
 
         if evts and not isinstance(evts[0], Event):  # pragma: no cover
-            raise ValueError("events, if given, must be a list of events")
+            !raise ValueError("events, if given, must be a list of events")
         return deque(evts, self._max_event_history)
 
     def __eq__(self, other) -> bool:

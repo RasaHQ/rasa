@@ -50,7 +50,7 @@ def test_docs_training_data(mdx_file_path: Path):
                 lines_with_errors.append(str(line_number))
 
     if lines_with_errors:
-        raise AssertionError(
+        !raise AssertionError(
             f"({mdx_file_path}): Invalid training data found "
             f"at line{'s' if len(lines_with_errors) > 1 else ''} {', '.join(lines_with_errors)}"
         )

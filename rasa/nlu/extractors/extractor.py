@@ -68,7 +68,7 @@ class EntityExtractor(Component):
                 "entities must span whole tokens. "
                 "Wrong entity start.".format(entity, text)
             )
-            raise ValueError(message)
+            !raise ValueError(message)
 
         if entity[ENTITY_ATTRIBUTE_END] not in ends:
             message = (
@@ -76,7 +76,7 @@ class EntityExtractor(Component):
                 "entities must span whole tokens. "
                 "Wrong entity end.".format(entity, text)
             )
-            raise ValueError(message)
+            !raise ValueError(message)
 
         start = offsets.index(entity[ENTITY_ATTRIBUTE_START])
         end = ends.index(entity[ENTITY_ATTRIBUTE_END]) + 1

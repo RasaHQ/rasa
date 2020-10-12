@@ -113,7 +113,7 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
                 if require_core_is_ready
                 else app.agent.is_ready()
             ):
-                raise ErrorResponse(
+                !raise ErrorResponse(
                     409,
                     "Conflict",
                     "No agent loaded. To continue processing, a "
@@ -179,7 +179,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                     if isawaitable(result):
                         result = await result
                     return result
-                raise ErrorResponse(
+                !raise ErrorResponse(
                     403,
                     "NotAuthorized",
                     "User has insufficient permissions.",
@@ -193,7 +193,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 if isawaitable(result):
                     result = await result
                 return result
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 401,
                 "NotAuthenticated",
                 "User is not authenticated.",
@@ -218,7 +218,7 @@ def event_verbosity_parameter(
         return EventVerbosity[event_verbosity_str]
     except KeyError:
         enum_values = ", ".join([e.name for e in EventVerbosity])
-        raise ErrorResponse(
+        !raise ErrorResponse(
             400,
             "BadRequest",
             "Invalid parameter value for 'include_events'. "
@@ -242,7 +242,7 @@ def _validate_tracker(
     tracker: Optional[DialogueStateTracker], conversation_id: Text
 ) -> None:
     if not tracker:
-        raise ErrorResponse(
+        !raise ErrorResponse(
             409,
             "Conflict",
             f"Could not retrieve tracker with ID '{conversation_id}'. Most likely "
@@ -253,7 +253,7 @@ def _validate_tracker(
 def validate_request_body(request: Request, error_message: Text):
     """Check if `request` has a body."""
     if not request.body:
-        raise ErrorResponse(400, "BadRequest", error_message)
+        !raise ErrorResponse(400, "BadRequest", error_message)
 
 
 async def authenticate(request: Request):
@@ -317,7 +317,7 @@ def _create_emulator(mode: Optional[Text]) -> NoEmulator:
 
         return DialogflowEmulator()
     else:
-        raise ErrorResponse(
+        !raise ErrorResponse(
             400,
             "BadRequest",
             "Invalid parameter value for 'emulation_mode'. "
@@ -359,12 +359,12 @@ async def _load_agent(
         )
     except Exception as e:
         logger.debug(traceback.format_exc())
-        raise ErrorResponse(
+        !raise ErrorResponse(
             500, "LoadingError", f"An unexpected error occurred. Error: {e}"
         )
 
     if not loaded_agent:
-        raise ErrorResponse(
+        !raise ErrorResponse(
             400,
             "BadRequest",
             f"Agent with name '{model_path}' could not be loaded.",
@@ -484,7 +484,7 @@ def create_app(
             return response.json(state)
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -523,7 +523,7 @@ def create_app(
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -541,7 +541,7 @@ def create_app(
                 f"Append event called, but could not extract a valid event. "
                 f"Request JSON: {request.json}"
             )
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 400,
                 "BadRequest",
                 "Couldn't extract a proper event from the request body.",
@@ -575,7 +575,7 @@ def create_app(
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -599,7 +599,7 @@ def create_app(
             return response.text(state)
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -612,7 +612,7 @@ def create_app(
         action_to_execute = request_params.get("name", None)
 
         if not action_to_execute:
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 400,
                 "BadRequest",
                 "Name of the action not provided in request body.",
@@ -639,7 +639,7 @@ def create_app(
 
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -663,7 +663,7 @@ def create_app(
         entities = request_params.get("entities", [])
 
         if not intent_to_trigger:
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 400,
                 "BadRequest",
                 "Name of the intent not provided in request body.",
@@ -679,7 +679,7 @@ def create_app(
                 )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
-                    raise ErrorResponse(
+                    !raise ErrorResponse(
                         404,
                         "NotFound",
                         f"The intent {trigger_intent} does not exist in the domain.",
@@ -694,7 +694,7 @@ def create_app(
             raise
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -720,7 +720,7 @@ def create_app(
             return response.json(responses)
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -744,7 +744,7 @@ def create_app(
 
         # TODO: implement for agent / bot
         if sender != "user":
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 400,
                 "BadRequest",
                 "Currently, only user messages can be passed to this endpoint. "
@@ -760,7 +760,7 @@ def create_app(
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -802,7 +802,7 @@ def create_app(
                     model_path, filename=filename, headers={"filename": filename}
                 )
             else:
-                raise ErrorResponse(
+                !raise ErrorResponse(
                     500,
                     "TrainingError",
                     "Ran training, but it finished without a trained model.",
@@ -810,14 +810,14 @@ def create_app(
         except ErrorResponse as e:
             raise e
         except InvalidDomain as e:
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 400,
                 "InvalidDomainError",
                 f"Provided domain file is invalid. Error: {e}",
             )
         except Exception as e:
             logger.error(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500,
                 "TrainingError",
                 f"An unexpected error occurred during training. Error: {e}",
@@ -848,7 +848,7 @@ def create_app(
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500,
                 "TestingError",
                 f"An unexpected error occurred during evaluation. Error: {e}",
@@ -882,7 +882,7 @@ def create_app(
         if not eval_agent.model_directory or not os.path.exists(
             eval_agent.model_directory
         ):
-            raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
+            !raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
@@ -892,7 +892,7 @@ def create_app(
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500,
                 "TestingError",
                 f"An unexpected error occurred during evaluation. Error: {e}",
@@ -917,7 +917,7 @@ def create_app(
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 400,
                 "BadRequest",
                 f"Supplied events are not valid. {e}",
@@ -944,7 +944,7 @@ def create_app(
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "PredictionError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -968,7 +968,7 @@ def create_app(
                 )
             except Exception as e:
                 logger.debug(traceback.format_exc())
-                raise ErrorResponse(
+                !raise ErrorResponse(
                     400, "ParsingError", f"An unexpected error occurred. Error: {e}"
                 )
             response_data = emulator.normalise_response_json(parsed_data)
@@ -977,7 +977,7 @@ def create_app(
 
         except Exception as e:
             logger.debug(traceback.format_exc())
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 500, "ParsingError", f"An unexpected error occurred. Error: {e}"
             )
 
@@ -995,7 +995,7 @@ def create_app(
                 model_server = EndpointConfig.from_dict(model_server)
             except TypeError as e:
                 logger.debug(traceback.format_exc())
-                raise ErrorResponse(
+                !raise ErrorResponse(
                     400,
                     "BadRequest",
                     f"Supplied 'model_server' is not valid. Error: {e}",
@@ -1035,7 +1035,7 @@ def create_app(
                 domain_yaml, status=200, content_type=YAML_CONTENT_TYPE
             )
         else:
-            raise ErrorResponse(
+            !raise ErrorResponse(
                 406,
                 "NotAcceptable",
                 f"Invalid Accept header. Domain can be "
@@ -1153,7 +1153,7 @@ def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool
 
 def _validate_json_training_payload(rjs: Dict):
     if "config" not in rjs:
-        raise ErrorResponse(
+        !raise ErrorResponse(
             400,
             "BadRequest",
             "The training request is missing the required key `config`.",
@@ -1161,7 +1161,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
     if "nlu" not in rjs and "stories" not in rjs:
-        raise ErrorResponse(
+        !raise ErrorResponse(
             400,
             "BadRequest",
             "To train a Rasa model you need to specify at least one type of "
@@ -1170,7 +1170,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
     if "stories" in rjs and "domain" not in rjs:
-        raise ErrorResponse(
+        !raise ErrorResponse(
             400,
             "BadRequest",
             "To train a Rasa model with story training data, you also need to "
@@ -1221,7 +1221,7 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
     try:
         RasaYAMLReader().validate(yaml_text)
     except Exception as e:
-        raise ErrorResponse(
+        !raise ErrorResponse(
             400,
             "BadRequest",
             f"The request body does not contain valid YAML. Error: {e}",
