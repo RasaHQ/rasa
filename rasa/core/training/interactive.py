@@ -55,6 +55,7 @@ from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.core.utils import AvailableEndpoints
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
@@ -638,11 +639,11 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
         # question will get asked again
         return True
     elif answer == "undo":
-        raise Abort()
+        raise UndoLastStep()
     elif answer == "fork":
-        raise Abort()
+        raise ForkTracker()
     elif answer == "restart":
-        raise Abort()
+        raise RestartConversation()
 
 
 async def _request_action_from_user(
@@ -1326,7 +1327,7 @@ async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -
     message = await _ask_questions(question, conversation_id, endpoint, lambda a: not a)
 
     if message == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
-        raise Abort()
+        raise RestartConversation()
 
     await send_message(endpoint, conversation_id, message)
 
