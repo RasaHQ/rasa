@@ -13,6 +13,7 @@ from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from rasa.shared.exceptions import RasaException
 from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
@@ -307,7 +308,7 @@ class MessengerBot(OutputChannel):
                 )
             except KeyError as e:
                 raise RasaException(
-                    f"Facebook quick replies must define a "{e.args[0]}" field."
+                    f"Facebook quick replies must define a '{e.args[0]}' field."
                 )
 
         return QuickReplies(quick_replies=fb_quick_replies)

@@ -295,7 +295,7 @@ class PolicyEnsemble:
         if policy is None:
             raise Exception(f"Failed to load policy {policy_name}: load returned None") # TODO
         elif not isinstance(policy, policy_cls):
-            raise Exception(f"Failed to load policy {policy_name}: load returned None") # TODO
+            raise Exception(  # TODO
                 "Failed to load policy {}: "
                 "load returned object that is not instance of its own class"
                 "".format(policy_name)
