@@ -11,22 +11,33 @@ from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Text, Union, Dict
 
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
-from rasa.nlu.training_data.formats import RasaYAMLReader
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import HTTPResponse
+from sanic_cors import CORS
+from sanic_jwt import Initialize, exceptions
+
 import rasa
 import rasa.core.utils
-from rasa.utils import common as common_utils
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 import rasa.utils.endpoints
 import rasa.utils.io
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa.utils import common as common_utils
 from rasa import model
-from rasa.constants import (
+from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
+from rasa.shared.constants import (
+    DOCS_URL_TRAINING_DATA,
+    DOCS_BASE_URL,
+    DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
-    DEFAULT_RESPONSE_TIMEOUT,
-    DOCS_BASE_URL,
-    MINIMUM_COMPATIBLE_VERSION,
-    DOCS_URL_TRAINING_DATA_NLU,
 )
+from rasa.shared.core.domain import InvalidDomain
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
@@ -34,21 +45,15 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
-from rasa.core.domain import InvalidDomain
-from rasa.core.events import Event
+from rasa.shared.core.events import Event
 from rasa.core.lock_store import LockStore
 from rasa.core.test import test
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
-from sanic import Sanic, response
-from sanic.request import Request
-from sanic.response import HTTPResponse
-from sanic_cors import CORS
-from sanic_jwt import Initialize, exceptions
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
@@ -61,6 +66,7 @@ YAML_CONTENT_TYPE = "application/x-yaml"
 
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
+EXECUTE_SIDE_EFFECTS_QUERY_KEY = "execute_side_effects"
 
 
 class ErrorResponse(Exception):
@@ -83,6 +89,7 @@ class ErrorResponse(Exception):
         }
         self.status = status
         logger.error(message)
+        super(ErrorResponse, self).__init__()
 
 
 def _docs(sub_url: Text) -> Text:
@@ -126,7 +133,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
     def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
-            argnames = common_utils.arguments_of(f)
+            argnames = rasa.shared.utils.common.arguments_of(f)
 
             try:
                 sender_id_arg_idx = argnames.index("conversation_id")
@@ -498,12 +505,19 @@ def create_app(
             async with app.agent.lock_store.lock(conversation_id):
                 processor = app.agent.create_processor()
                 tracker = processor.get_tracker(conversation_id)
+                output_channel = _get_output_channel(request, tracker)
                 _validate_tracker(tracker, conversation_id)
 
                 events = _get_events_from_request_body(request)
 
                 for event in events:
                     tracker.update(event, app.agent.domain)
+                if rasa.utils.endpoints.bool_arg(
+                    request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
+                ):
+                    await processor.execute_side_effects(
+                        events, tracker, output_channel
+                    )
                 app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
@@ -523,7 +537,7 @@ def create_app(
         events = [event for event in events if event]
 
         if not events:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Append event called, but could not extract a valid event. "
                 f"Request JSON: {request.json}"
             )
@@ -865,7 +879,9 @@ def create_app(
 
         data_path = os.path.abspath(test_data)
 
-        if not os.path.exists(eval_agent.model_directory):
+        if not eval_agent.model_directory or not os.path.exists(
+            eval_agent.model_directory
+        ):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory
@@ -893,12 +909,11 @@ def create_app(
             "predict the next action.",
         )
 
-        sender_id = UserMessage.DEFAULT_SENDER_ID
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json
         try:
             tracker = DialogueStateTracker.from_dict(
-                sender_id, request_params, app.agent.domain.slots
+                DEFAULT_SENDER_ID, request_params, app.agent.domain.slots
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -1097,24 +1112,26 @@ def _training_payload_from_json(request: Request) -> Dict[Text, Union[Text, bool
 
     config_path = os.path.join(temp_dir, "config.yml")
 
-    rasa.utils.io.write_text_file(request_payload["config"], config_path)
+    rasa.shared.utils.io.write_text_file(request_payload["config"], config_path)
 
     if "nlu" in request_payload:
         nlu_path = os.path.join(temp_dir, "nlu.md")
-        rasa.utils.io.write_text_file(request_payload["nlu"], nlu_path)
+        rasa.shared.utils.io.write_text_file(request_payload["nlu"], nlu_path)
 
     if "stories" in request_payload:
         stories_path = os.path.join(temp_dir, "stories.md")
-        rasa.utils.io.write_text_file(request_payload["stories"], stories_path)
+        rasa.shared.utils.io.write_text_file(request_payload["stories"], stories_path)
 
     if "responses" in request_payload:
         responses_path = os.path.join(temp_dir, "responses.md")
-        rasa.utils.io.write_text_file(request_payload["responses"], responses_path)
+        rasa.shared.utils.io.write_text_file(
+            request_payload["responses"], responses_path
+        )
 
     domain_path = DEFAULT_DOMAIN_PATH
     if "domain" in request_payload:
         domain_path = os.path.join(temp_dir, "domain.yml")
-        rasa.utils.io.write_text_file(request_payload["domain"], domain_path)
+        rasa.shared.utils.io.write_text_file(request_payload["domain"], domain_path)
 
     model_output_directory = _model_output_directory(
         request_payload.get(
@@ -1162,7 +1179,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
     if "force" in rjs or "save_to_default_model_directory" in rjs:
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "Specifying 'force' and 'save_to_default_model_directory' as part of the "
             "JSON payload is deprecated. Please use the header arguments "
             "'force_training' and 'save_to_default_model_directory'.",
@@ -1173,12 +1190,12 @@ def _validate_json_training_payload(rjs: Dict):
 def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
-    decoded = request.body.decode(rasa.utils.io.DEFAULT_ENCODING)
+    decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
     _validate_yaml_training_payload(decoded)
 
     temp_dir = tempfile.mkdtemp()
     training_data = Path(temp_dir) / "data.yml"
-    rasa.utils.io.write_text_file(decoded, training_data)
+    rasa.shared.utils.io.write_text_file(decoded, training_data)
 
     model_output_directory = _model_output_directory(
         request.args.get("save_to_default_model_directory", True)
@@ -1202,11 +1219,11 @@ def _model_output_directory(save_to_default_model_directory: bool) -> Text:
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
     try:
-        RasaYAMLReader.validate(yaml_text)
+        RasaYAMLReader().validate(yaml_text)
     except Exception as e:
         raise ErrorResponse(
             400,
             "BadRequest",
             f"The request body does not contain valid YAML. Error: {e}",
-            help_url=DOCS_URL_TRAINING_DATA_NLU,
+            help_url=DOCS_URL_TRAINING_DATA,
         )

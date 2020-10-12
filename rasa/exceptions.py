@@ -1,8 +1,6 @@
 from typing import Text
 
-
-class RasaException(Exception):
-    """Base exception class for all errors raised by Rasa."""
+from rasa.shared.exceptions import RasaException
 
 
 class ModelNotFound(RasaException):
@@ -21,6 +19,10 @@ class NoEventsInTimeRangeError(RasaException):
     """Raised when a tracker store does not contain events within a given time range."""
 
 
+class MissingDependencyException(RasaException):
+    """Raised if a python package dependency is needed, but not installed."""
+
+
 class PublishingError(RasaException):
     """Raised when publishing of an event fails.
 
@@ -30,6 +32,7 @@ class PublishingError(RasaException):
 
     def __init__(self, timestamp: float) -> None:
         self.timestamp = timestamp
+        super(PublishingError, self).__init__()
 
     def __str__(self) -> Text:
         return str(self.timestamp)

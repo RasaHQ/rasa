@@ -10,13 +10,18 @@ import aiohttp
 from aiohttp import ClientError
 
 import rasa
-from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain
+from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+import rasa.core.interpreter
+from rasa.shared.constants import (
+    DEFAULT_SENDER_ID,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
@@ -28,10 +33,10 @@ from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     TrackerStore,
 )
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.utils
 from rasa.exceptions import ModelNotFound
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.model import (
     get_latest_model,
     get_model,
@@ -39,7 +44,8 @@ from rasa.model import (
     unpack_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
 
@@ -80,7 +86,7 @@ def _load_interpreter(
         The NLU interpreter.
     """
     if nlu_path:
-        return NaturalLanguageInterpreter.create(nlu_path)
+        return rasa.core.interpreter.create_interpreter(nlu_path)
 
     return agent.interpreter or RegexInterpreter()
 
@@ -121,21 +127,14 @@ def _load_and_set_updated_model(
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    try:
-        interpreter = _load_interpreter(agent, nlu_path)
-        domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
+    interpreter = _load_interpreter(agent, nlu_path)
+    domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
 
-        agent.update_model(
-            domain, policy_ensemble, fingerprint, interpreter, model_directory
-        )
+    agent.update_model(
+        domain, policy_ensemble, fingerprint, interpreter, model_directory
+    )
 
-        logger.debug("Finished updating agent to new model.")
-    except Exception as e:  # skipcq: PYL-W0703
-        # TODO: this exception shouldn't be that broad, we need to be more specific
-        logger.exception(
-            f"Failed to update model. The previous model will stay loaded instead. "
-            f"Error: {e}"
-        )
+    logger.debug("Finished updating agent to new model.")
 
 
 async def _update_model_from_server(
@@ -146,25 +145,44 @@ async def _update_model_from_server(
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    model_directory_and_fingerprint = await _pull_model_and_fingerprint(
-        model_server, agent.fingerprint
-    )
-    if model_directory_and_fingerprint:
-        model_directory, new_model_fingerprint = model_directory_and_fingerprint
-        _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
-    else:
-        logger.debug(f"No new model found at URL {model_server.url}")
+    model_directory = tempfile.mkdtemp()
+    remove_dir = True
+
+    try:
+        new_fingerprint = await _pull_model_and_fingerprint(
+            model_server, agent.fingerprint, model_directory
+        )
+
+        if new_fingerprint:
+            _load_and_set_updated_model(agent, model_directory, new_fingerprint)
+            remove_dir = False
+        else:
+            logger.debug(f"No new model found at URL {model_server.url}")
+    except Exception:  # skipcq: PYL-W0703
+        # TODO: Make this exception more specific, possibly print different log
+        # for each one.
+        logger.exception(
+            "Failed to update model. The previous model will stay loaded instead."
+        )
+    finally:
+        if remove_dir:
+            shutil.rmtree(model_directory)
 
 
 async def _pull_model_and_fingerprint(
-    model_server: EndpointConfig, fingerprint: Optional[Text]
-) -> Optional[Tuple[Text, Text]]:
+    model_server: EndpointConfig, fingerprint: Optional[Text], model_directory: Text
+) -> Optional[Text]:
     """Queries the model server.
 
-    Returns the temporary model directory and value of the response's <ETag> header
-    which contains the model hash. Returns `None` if no new model is found.
-    """
+    Args:
+        model_server: Model server endpoint information.
+        fingerprint: Current model fingerprint.
+        model_directory: Directory where to download model to.
 
+    Returns:
+        Value of the response's <ETag> header which contains the model
+        hash. Returns `None` if no new model is found.
+    """
     headers = {"If-None-Match": fingerprint}
 
     logger.debug(f"Requesting model from server {model_server.url}...")
@@ -204,16 +222,13 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
-                model_directory = tempfile.mkdtemp()
                 rasa.utils.io.unarchive(await resp.read(), model_directory)
                 logger.debug(
                     "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )
 
-                # get the new fingerprint
-                new_fingerprint = resp.headers.get("ETag")
-                # return new tmp model directory and new fingerprint
-                return model_directory, new_fingerprint
+                # return the new fingerprint
+                return resp.headers.get("ETag")
 
         except aiohttp.ClientError as e:
             logger.debug(
@@ -301,7 +316,9 @@ async def load_agent(
             )
 
         else:
-            raise_warning("No valid configuration given to load agent.")
+            rasa.shared.utils.io.raise_warning(
+                "No valid configuration given to load agent."
+            )
             return None
 
     except Exception as e:
@@ -311,10 +328,10 @@ async def load_agent(
 
 class Agent:
     """The Agent class provides a convenient interface for the most important
-     Rasa functionality.
+    Rasa functionality.
 
-     This includes training, handling messages, loading a dialogue model,
-     getting the next action, and handling a channel."""
+    This includes training, handling messages, loading a dialogue model,
+    getting the next action, and handling a channel."""
 
     def __init__(
         self,
@@ -344,7 +361,7 @@ class Agent:
             self.policy_ensemble, self.domain
         )
 
-        self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
@@ -369,7 +386,7 @@ class Agent:
         self.policy_ensemble = policy_ensemble
 
         if interpreter:
-            self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+            self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         self._set_fingerprint(fingerprint)
 
@@ -413,7 +430,7 @@ class Agent:
         core_model, nlu_model = get_model_subdirectories(model_path)
 
         if not interpreter and nlu_model:
-            interpreter = NaturalLanguageInterpreter.create(nlu_model)
+            interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
 
         domain = None
         ensemble = None
@@ -440,8 +457,7 @@ class Agent:
         )
 
     def is_core_ready(self) -> bool:
-        """Check if all necessary components and policies are ready to use the agent.
-        """
+        """Check if all necessary components and policies are ready to use the agent."""
         return self.is_ready() and self.policy_ensemble is not None
 
     def is_ready(self) -> bool:
@@ -524,7 +540,7 @@ class Agent:
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         **kwargs: Any,
-    ) -> DialogueStateTracker:
+    ) -> Optional[DialogueStateTracker]:
         """Append a message to a dialogue - does not predict actions."""
 
         processor = self.create_processor(message_preprocessor)
@@ -537,7 +553,7 @@ class Agent:
         output_channel: OutputChannel,
         policy: Text,
         confidence: float,
-    ) -> DialogueStateTracker:
+    ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
 
         processor = self.create_processor()
@@ -564,7 +580,7 @@ class Agent:
         text_message: Union[Text, Dict[Text, Any]],
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         output_channel: Optional[OutputChannel] = None,
-        sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID,
+        sender_id: Optional[Text] = DEFAULT_SENDER_ID,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 
@@ -666,7 +682,7 @@ class Agent:
                 unique_last_num_states = max_history
         elif unique_last_num_states < max_history:
             # possibility of data loss
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"unique_last_num_states={unique_last_num_states} but "
                 f"maximum max_history={max_history}. "
                 f"Possibility of data loss. "
@@ -773,12 +789,12 @@ class Agent:
         resource_name: Text,
         output_file: Text,
         max_history: Optional[int] = None,
-        nlu_training_data: Optional[Text] = None,
+        nlu_training_data: Optional[TrainingData] = None,
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
-        from rasa.core.training.visualization import visualize_stories
-        from rasa.core.training import loading
+        from rasa.shared.core.training_data.visualization import visualize_stories
+        from rasa.shared.core.training_data import loading
 
         """Visualize the loaded training data from the resource."""
 
@@ -892,7 +908,9 @@ class Agent:
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            raise_warning(f"Could not load local model in '{model_path}'.")
+            rasa.shared.utils.io.raise_warning(
+                f"Could not load local model in '{model_path}'."
+            )
             return Agent()
 
         working_directory = tempfile.mkdtemp()

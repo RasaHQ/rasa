@@ -4,23 +4,21 @@ import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union
 
+from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
+from rasa.shared.constants import (
     DOCS_URL_PIPELINE,
     DOCS_URL_MIGRATION_GUIDE,
+    DEFAULT_CONFIG_PATH,
 )
-from rasa.nlu.utils import json_to_string
-import rasa.utils.common as common_utils
+from rasa.shared.utils.io import json_to_string
 
 logger = logging.getLogger(__name__)
 
 
-class InvalidConfigError(ValueError):
+class InvalidConfigError(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
-
-    def __init__(self, message: Text) -> None:
-        super().__init__(message)
 
 
 def load(
@@ -34,12 +32,7 @@ def load(
         config = DEFAULT_CONFIG_PATH
 
     if config is not None:
-        try:
-            file_config = rasa.utils.io.read_config_file(config)
-        except yaml.parser.ParserError as e:
-            raise InvalidConfigError(
-                f"Failed to read configuration file '{config}'. Error: {e}"
-            )
+        file_config = rasa.shared.utils.io.read_config_file(config)
 
     return _load_from_dict(file_config, **kwargs)
 
@@ -77,7 +70,7 @@ def component_config_from_pipeline(
         c = pipeline[index]
         return override_defaults(defaults, c)
     except IndexError:
-        common_utils.raise_warning(
+        rasa.shared.utils.io.raise_warning(
             f"Tried to get configuration value for component "
             f"number {index} which is not part of your pipeline. "
             f"Returning `defaults`.",
@@ -105,7 +98,7 @@ class RasaNLUModelConfig:
             self.__dict__["pipeline"] = []
         elif isinstance(self.__dict__["pipeline"], str):
             # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
+            raise RasaException(
                 f"You are using a pipeline template. All pipelines templates "
                 f"have been removed in 2.0. Please add "
                 f"the components you want to use directly to your configuration "
@@ -162,7 +155,7 @@ class RasaNLUModelConfig:
         try:
             self.pipeline[index].update(kwargs)
         except IndexError:
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Tried to set configuration value for component "
                 f"number {index} which is not part of the pipeline.",
                 docs=DOCS_URL_PIPELINE,

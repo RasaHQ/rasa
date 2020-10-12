@@ -3,48 +3,55 @@ import zlib
 import base64
 import json
 import logging
-import os
+
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
-
-from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted
-from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+import rasa.shared.utils.io
+from rasa.shared.constants import DOCS_URL_POLICIES
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.events import ActionExecuted
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+)
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import is_logging_disabled
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.utils.io import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
+# temporary constants to support back compatibility
+MAX_HISTORY_NOT_SET = -1
+OLD_DEFAULT_MAX_HISTORY = 5
+
 
 class MemoizationPolicy(Policy):
     """The policy that remembers exact examples of
-        `max_history` turns from training stories.
+    `max_history` turns from training stories.
 
-        Since `slots` that are set some time in the past are
-        preserved in all future feature vectors until they are set
-        to None, this policy implicitly remembers and most importantly
-        recalls examples in the context of the current dialogue
-        longer than `max_history`.
+    Since `slots` that are set some time in the past are
+    preserved in all future feature vectors until they are set
+    to None, this policy implicitly remembers and most importantly
+    recalls examples in the context of the current dialogue
+    longer than `max_history`.
 
-        This policy is not supposed to be the only policy in an ensemble,
-        it is optimized for precision and not recall.
-        It should get a 100% precision because it emits probabilities of 1.1
-        along it's predictions, which makes every mistake fatal as
-        no other policy can overrule it.
+    This policy is not supposed to be the only policy in an ensemble,
+    it is optimized for precision and not recall.
+    It should get a 100% precision because it emits probabilities of 1.1
+    along it's predictions, which makes every mistake fatal as
+    no other policy can overrule it.
 
-        If it is needed to recall turns from training dialogues where
-        some slots might not be set during prediction time, and there are
-        training stories for this, use AugmentedMemoizationPolicy.
+    If it is needed to recall turns from training dialogues where
+    some slots might not be set during prediction time, and there are
+    training stories for this, use AugmentedMemoizationPolicy.
     """
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
-
-    SUPPORTS_ONLINE_TRAINING = True
 
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
@@ -55,16 +62,14 @@ class MemoizationPolicy(Policy):
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=None,
-            max_history=max_history,
-            use_intent_probabilities=False,
+            state_featurizer=None, max_history=max_history
         )
 
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = MEMOIZATION_POLICY_PRIORITY,
-        max_history: Optional[int] = None,
+        max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
     ) -> None:
         """Initialize the policy.
@@ -77,6 +82,18 @@ class MemoizationPolicy(Policy):
                 predicted actions for them
         """
 
+        if max_history == MAX_HISTORY_NOT_SET:
+            max_history = OLD_DEFAULT_MAX_HISTORY  # old default value
+            rasa.shared.utils.io.raise_warning(
+                f"Please configure the max history in your configuration file, "
+                f"currently 'max_history' is set to old default value of "
+                f"'{max_history}'. If you want to have infinite max history "
+                f"set it to 'None' explicitly. We will change the default value of "
+                f"'max_history' in the future to 'None'.",
+                DeprecationWarning,
+                docs=DOCS_URL_POLICIES,
+            )
+
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
@@ -87,7 +104,7 @@ class MemoizationPolicy(Policy):
 
     def _create_lookup_from_states(
         self,
-        trackers_as_states: List[List[Dict]],
+        trackers_as_states: List[List[State]],
         trackers_as_actions: List[List[Text]],
     ) -> Dict[Text, Text]:
         """Creates lookup dictionary from the tracker represented as states.
@@ -105,12 +122,6 @@ class MemoizationPolicy(Policy):
         if not trackers_as_states:
             return lookup
 
-        if self.max_history:
-            assert len(trackers_as_states[0]) == self.max_history, (
-                f"Trying to memorizefeaturized data with {len(trackers_as_states[0])} "
-                f"historic turns. Expected: {self.max_history}"
-            )
-
         assert len(trackers_as_actions[0]) == 1, (
             f"The second dimension of trackers_as_action should be 1, "
             f"instead of {len(trackers_as_actions[0])}"
@@ -127,6 +138,8 @@ class MemoizationPolicy(Policy):
             action = actions[0]
 
             feature_key = self._create_feature_key(states)
+            if not feature_key:
+                continue
 
             if feature_key not in ambiguous_feature_keys:
                 if feature_key in lookup.keys():
@@ -141,19 +154,24 @@ class MemoizationPolicy(Policy):
 
         return lookup
 
-    def _create_feature_key(self, states: List[Dict]) -> Text:
-        from rasa.utils import io
-
+    def _create_feature_key(self, states: List[State]) -> Text:
+        # we sort keys to make sure that the same states
+        # represented as dictionaries have the same json strings
+        # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
-            compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
-            return base64.b64encode(compressed).decode(io.DEFAULT_ENCODING)
+            compressed = zlib.compress(
+                bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
+            )
+            return base64.b64encode(compressed).decode(
+                rasa.shared.utils.io.DEFAULT_ENCODING
+            )
         else:
             return feature_str
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -173,17 +191,12 @@ class MemoizationPolicy(Policy):
         )
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
-    def _recall_states(self, states: List[Dict[Text, float]]) -> Optional[Text]:
-
+    def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self,
-        states: List[Dict[Text, float]],
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
     ) -> Optional[Text]:
-
         return self._recall_states(states)
 
     def _prediction_result(
@@ -206,7 +219,7 @@ class MemoizationPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         result = self._default_predictions(domain)
@@ -223,59 +236,41 @@ class MemoizationPolicy(Policy):
 
         return result
 
-    def persist(self, path: Text) -> None:
-
-        self.featurizer.persist(path)
-
-        memorized_file = os.path.join(path, "memorized_turns.json")
-        data = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "max_history": self.max_history,
             "lookup": self.lookup,
         }
-        rasa.utils.io.create_directory_for_file(memorized_file)
-        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
-    def load(cls, path: Text) -> "MemoizationPolicy":
-
-        featurizer = TrackerFeaturizer.load(path)
-        memorized_file = os.path.join(path, "memorized_turns.json")
-        if os.path.isfile(memorized_file):
-            data = json.loads(rasa.utils.io.read_file(memorized_file))
-            return cls(
-                featurizer=featurizer, priority=data["priority"], lookup=data["lookup"]
-            )
-        else:
-            logger.info(
-                "Couldn't load memoization for policy. "
-                "File '{}' doesn't exist. Falling back to empty "
-                "turn memory.".format(memorized_file)
-            )
-            return cls()
+    def _metadata_filename(cls) -> Text:
+        return "memorized_turns.json"
 
 
 class AugmentedMemoizationPolicy(MemoizationPolicy):
     """The policy that remembers examples from training stories
-        for `max_history` turns.
+    for `max_history` turns.
 
-        If it is needed to recall turns from training dialogues
-        where some slots might not be set during prediction time,
-        add relevant stories without such slots to training data.
-        E.g. reminder stories.
+    If it is needed to recall turns from training dialogues
+    where some slots might not be set during prediction time,
+    add relevant stories without such slots to training data.
+    E.g. reminder stories.
 
-        Since `slots` that are set some time in the past are
-        preserved in all future feature vectors until they are set
-        to None, this policy has a capability to recall the turns
-        up to `max_history` from training stories during prediction
-        even if additional slots were filled in the past
-        for current dialogue.
+    Since `slots` that are set some time in the past are
+    preserved in all future feature vectors until they are set
+    to None, this policy has a capability to recall the turns
+    up to `max_history` from training stories during prediction
+    even if additional slots were filled in the past
+    for current dialogue.
     """
 
     @staticmethod
-    def _back_to_the_future_again(tracker) -> Optional[DialogueStateTracker]:
+    def _back_to_the_future(
+        tracker, again: bool = False
+    ) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
-            the new featurization for the future"""
+        the new featurization for the future"""
 
         idx_of_first_action = None
         idx_of_second_action = None
@@ -290,12 +285,15 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                     idx_of_second_action = e_i
                     break
 
-        if idx_of_second_action is None:
-            return None
+        # use first action, if we went first time and second action, if we went again
+        idx_to_use = idx_of_second_action if again else idx_of_first_action
+        if idx_to_use is None:
+            return
+
         # make second ActionExecuted the first one
-        events = tracker.applied_events()[idx_of_second_action:]
+        events = tracker.applied_events()[idx_to_use:]
         if not events:
-            return None
+            return
 
         mcfly_tracker = tracker.init_copy()
         for e in events:
@@ -305,10 +303,11 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
     def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[Text]:
         """Recursively go to the past to correctly forget slots,
-            and then back to the future to recall."""
+        and then back to the future to recall."""
 
         logger.debug("Launch DeLorean...")
-        mcfly_tracker = self._back_to_the_future_again(tracker)
+
+        mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
             tracker_as_states = self.featurizer.prediction_states(
                 [mcfly_tracker], domain
@@ -324,17 +323,14 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
+            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True)
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
         return None
 
     def recall(
-        self,
-        states: List[Dict[Text, float]],
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
     ) -> Optional[Text]:
 
         predicted_action_name = self._recall_states(states)

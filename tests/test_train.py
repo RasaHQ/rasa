@@ -12,15 +12,14 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 import rasa.core
-import rasa.importers.autoconfig as autoconfig
+import rasa.shared.importers.autoconfig as autoconfig
 from rasa.core.interpreter import RasaNLUInterpreter
+from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
 
 from rasa.train import train_core, train_nlu, train
 from tests.conftest import DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA
-from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_STORIES_FILE,
-)
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from tests.core.test_model import _fingerprint
 
 
@@ -144,9 +143,7 @@ def test_train_nlu_temp_files(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(
-        default_stack_config, default_nlu_data, output=str(tmp_path / "models"),
-    )
+    train_nlu(default_stack_config, default_nlu_data, output=str(tmp_path / "models"))
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
@@ -163,12 +160,46 @@ def test_train_nlu_wrong_format_error_message(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(
-        default_stack_config, incorrect_nlu_data, output=str(tmp_path / "models"),
-    )
+    train_nlu(default_stack_config, incorrect_nlu_data, output=str(tmp_path / "models"))
 
     captured = capsys.readouterr()
     assert "Please verify the data format" in captured.out
+
+
+def test_train_nlu_with_responses_no_domain_warns(tmp_path: Path):
+    data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
+
+    with pytest.warns(UserWarning) as records:
+        train_nlu(
+            "data/test_config/config_response_selector_minimal.yml",
+            data_path,
+            output=str(tmp_path / "models"),
+        )
+
+    assert any(
+        "You either need to add a response phrase or correct the intent"
+        in record.message.args[0]
+        for record in records
+    )
+
+
+def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
+    data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
+    domain_path = "data/test_nlu_no_responses/domain_with_only_responses.yml"
+
+    with pytest.warns(None) as records:
+        train_nlu(
+            "data/test_config/config_response_selector_minimal.yml",
+            data_path,
+            output=str(tmp_path / "models"),
+            domain=domain_path,
+        )
+
+    assert not any(
+        "You either need to add a response phrase or correct the intent"
+        in record.message.args[0]
+        for record in records
+    )
 
 
 def test_train_nlu_no_nlu_file_error_message(
@@ -188,6 +219,7 @@ def test_train_nlu_no_nlu_file_error_message(
     assert "No NLU data given" in captured.out
 
 
+@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_trained_interpreter_passed_to_core_training(
     monkeypatch: MonkeyPatch, tmp_path: Path, unpacked_trained_moodbot_path: Text
 ):
@@ -218,6 +250,7 @@ def test_trained_interpreter_passed_to_core_training(
     assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
 
 
+@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
 def test_interpreter_of_old_model_passed_to_core_training(
     monkeypatch: MonkeyPatch, tmp_path: Path, trained_moodbot_path: Text
 ):

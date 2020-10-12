@@ -4,9 +4,10 @@ from typing import Any, Text, Dict
 
 import pytest
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.test import (
-    _generate_trackers,
+    _create_data_generator,
     _collect_story_predictions,
     test as evaluate_stories,
     FAILED_STORIES_FILE,
@@ -52,10 +53,12 @@ async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     assert os.path.isfile(confusion_matrix_path)
 
 
-async def test_end_to_end_evaluation_script(default_agent: Agent):
-    completed_trackers = await _generate_trackers(
-        END_TO_END_STORY_FILE, default_agent, use_e2e=True
-    )
+@pytest.mark.parametrize(
+    "test_file", [END_TO_END_STORY_FILE, "data/test_evaluations/end_to_end_story.yml"]
+)
+async def test_end_to_end_evaluation_script(default_agent: Agent, test_file: Text):
+    generator = await _create_data_generator(test_file, default_agent, use_e2e=True)
+    completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, num_stories = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
@@ -90,9 +93,10 @@ async def test_end_to_end_evaluation_script(default_agent: Agent):
 
 
 async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent):
-    completed_trackers = await _generate_trackers(
+    generator = await _create_data_generator(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True
     )
+    completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, num_stories = await _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
@@ -104,9 +108,10 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
 
 
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
-    test_stories = await _generate_trackers(
+    generator = await _create_data_generator(
         "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
     )
+    test_stories = generator.generate_story_trackers()
 
     story_evaluation, num_stories = await _collect_story_predictions(
         test_stories, form_bot_agent, use_e2e=True
@@ -126,7 +131,7 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
         e2e=False,
     )
 
-    failed_stories = rasa.utils.io.read_file(stories_path)
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
     assert (
         f"story: simple_story_with_unknown_entity ({E2E_STORY_FILE_UNKNOWN_ENTITY})"
@@ -142,9 +147,10 @@ async def test_end_to_evaluation_trips_circuit_breaker():
     training_data = await agent.load_data(STORY_FILE_TRIPS_CIRCUIT_BREAKER)
     agent.train(training_data)
 
-    test_stories = await _generate_trackers(
+    generator = await _create_data_generator(
         E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER, agent, use_e2e=True
     )
+    test_stories = generator.generate_story_trackers()
 
     story_evaluation, num_stories = await _collect_story_predictions(
         test_stories, agent, use_e2e=True
@@ -177,7 +183,7 @@ async def test_end_to_evaluation_trips_circuit_breaker():
         (
             "The first one please.",
             {
-                "extractor": "DucklingHTTPExtractor",
+                "extractor": "DucklingEntityExtractor",
                 "entity": "ordinal",
                 "confidence": 0.87,
                 "start": 4,

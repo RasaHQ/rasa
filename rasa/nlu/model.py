@@ -5,22 +5,34 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
+from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
+    IntentClassifier,
+)
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
-from rasa.nlu.constants import INTENT_NAME_KEY
-from rasa.nlu.persistor import Persistor
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.utils import write_json_to_file
+from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
 
-MODEL_NAME_PREFIX = "nlu_"
+from rasa.nlu.persistor import Persistor
+from rasa.shared.nlu.constants import (
+    TEXT,
+    ENTITIES,
+    INTENT,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+)
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.utils import write_json_to_file
 
 logger = logging.getLogger(__name__)
 
 
-class InvalidModelError(Exception):
+class InvalidModelError(RasaException):
     """Raised when a model failed to load.
 
     Attributes:
@@ -29,12 +41,13 @@ class InvalidModelError(Exception):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(InvalidModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
 
 
-class UnsupportedModelError(Exception):
+class UnsupportedModelError(RasaException):
     """Raised when a model is too old to be loaded.
 
     Attributes:
@@ -43,6 +56,7 @@ class UnsupportedModelError(Exception):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+        super(UnsupportedModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
@@ -62,7 +76,7 @@ class Metadata:
         """
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
-            data = rasa.utils.io.read_json_file(metadata_file)
+            data = rasa.shared.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
@@ -184,7 +198,7 @@ class Trainer:
             )
 
         # data gets modified internally during the training - hence the copy
-        working_data = copy.deepcopy(data)
+        working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
             logger.info(f"Starting to train component {component.name}")
@@ -217,12 +231,12 @@ class Trainer:
         if fixed_model_name:
             model_name = fixed_model_name
         else:
-            model_name = MODEL_NAME_PREFIX + timestamp
+            model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
 
-        rasa.utils.io.create_directory(dir_name)
+        rasa.shared.utils.io.create_directory(dir_name)
 
         if self.training_data and persist_nlu_training_data:
             metadata.update(self.training_data.persist(dir_name))
@@ -254,7 +268,11 @@ class Interpreter:
     # that will be returned by `parse`
     @staticmethod
     def default_output_attributes() -> Dict[Text, Any]:
-        return {"intent": {INTENT_NAME_KEY: None, "confidence": 0.0}, "entities": []}
+        return {
+            TEXT: "",
+            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
+            ENTITIES: [],
+        }
 
     @staticmethod
     def ensure_model_compatibility(
@@ -285,7 +303,7 @@ class Interpreter:
         """Create an interpreter based on a persisted model.
 
         Args:
-            skip_validation: If set to `True`, tries to check that all
+            skip_validation: If set to `True`, does not check that all
                 required packages for the components are installed
                 before loading them.
             model_dir: The path of the model to load
@@ -371,7 +389,10 @@ class Interpreter:
             output["text"] = ""
             return output
 
-        message = Message(text, self.default_output_attributes(), time=time)
+        data = self.default_output_attributes()
+        data[TEXT] = text
+
+        message = Message(data=data, time=time)
 
         for component in self.pipeline:
             component.process(message, **self.context)
@@ -379,3 +400,17 @@ class Interpreter:
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
+
+    def featurize_message(self, message: Message) -> Message:
+        """
+        Tokenize and featurize the input message
+        Args:
+            message: message storing text to process;
+        Returns:
+            message: it contains the tokens and features which are the output of the NLU pipeline;
+        """
+
+        for component in self.pipeline:
+            if not isinstance(component, (EntityExtractor, IntentClassifier)):
+                component.process(message, **self.context)
+        return message

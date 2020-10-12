@@ -1,22 +1,25 @@
 import logging
+from collections import defaultdict, Counter
 from typing import List, Tuple, Text, Optional, Dict, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.training_data import Message
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    ENTITIES,
     TOKENS_NAMES,
-    TEXT,
     BILOU_ENTITIES,
-    NO_ENTITY_TAG,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_START,
     BILOU_ENTITIES_GROUP,
     BILOU_ENTITIES_ROLE,
-    ENTITY_ATTRIBUTE_ROLE,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    NO_ENTITY_TAG,
 )
 
 logger = logging.getLogger(__name__)
@@ -246,20 +249,25 @@ def _add_bilou_tags_to_entities(
                 bilou[end_token_idx] = f"{LAST}{label}"
 
 
-def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
+def ensure_consistent_bilou_tagging(
+    predicted_tags: List[Text], predicted_confidences: List[float]
+) -> Tuple[List[Text], List[float]]:
     """
     Ensure predicted tags follow the BILOU tagging schema.
 
     We assume that starting B- tags are correct. Followed tags that belong to start
-    tag but have a different entity type are updated.
+    tag but have a different entity type are updated considering also the confidence
+    values of those tags.
     For example, B-a I-b L-a is updated to B-a I-a L-a and B-a I-a O is changed to
     B-a L-a.
 
     Args:
         predicted_tags: predicted tags
+        predicted_confidences: predicted confidences
 
     Return:
         List of tags.
+        List of confidences.
     """
 
     for idx, predicted_tag in enumerate(predicted_tags):
@@ -268,6 +276,30 @@ def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
 
         if prefix == BEGINNING:
             last_idx = _find_bilou_end(idx, predicted_tags)
+
+            relevant_confidences = predicted_confidences[idx : last_idx + 1]
+            relevant_tags = [
+                tag_without_prefix(tag) for tag in predicted_tags[idx : last_idx + 1]
+            ]
+
+            # if not all tags are the same, for example, B-person I-person L-location
+            # we need to check what tag we should use depending on the confidence
+            # values and update the tags and confidences accordingly
+            if not all(relevant_tags[0] == tag for tag in relevant_tags):
+                # decide which tag this entity should use
+                tag, tag_score = _tag_to_use(relevant_tags, relevant_confidences)
+
+                logger.debug(
+                    f"Using tag '{tag}' for entity with mixed tag labels "
+                    f"(original tags: {predicted_tags[idx : last_idx + 1]}, "
+                    f"(original confidences: "
+                    f"{predicted_confidences[idx : last_idx + 1]})."
+                )
+
+                # all tags that change get the score of that tag assigned
+                predicted_confidences = _update_confidences(
+                    predicted_confidences, predicted_tags, tag, tag_score, idx, last_idx
+                )
 
             # ensure correct BILOU annotations
             if last_idx == idx:
@@ -281,10 +313,113 @@ def ensure_consistent_bilou_tagging(predicted_tags: List[Text]) -> List[Text]:
                 for i in range(idx + 1, last_idx):
                     predicted_tags[i] = f"{INSIDE}{tag}"
 
-    return predicted_tags
+    return predicted_tags, predicted_confidences
+
+
+def _tag_to_use(
+    relevant_tags: List[Text], relevant_confidences: List[float]
+) -> Tuple[Text, float]:
+    """Decide what tag to use according to the following metric:
+
+    Calculate the average confidence per tag.
+    Calculate the percentage of tokens assigned to a tag within the entity per tag.
+    The harmonic mean of those two metrics is the score for the tag.
+    The tag with the highest score is taken as the tag for the entity.
+
+    Args:
+        relevant_tags: The tags of the entity.
+        relevant_confidences: The confidence values.
+
+    Returns:
+        The tag to use. The score of that tag.
+    """
+    # Calculate the average confidence per tag.
+    avg_confidence_per_tag = _avg_confidence_per_tag(
+        relevant_tags, relevant_confidences
+    )
+    # Calculate the percentage of tokens assigned to a tag per tag.
+    token_percentage_per_tag = Counter(relevant_tags)
+    for tag, count in token_percentage_per_tag.items():
+        token_percentage_per_tag[tag] = round(count / len(relevant_tags), 2)
+
+    # Calculate the harmonic mean between the two metrics per tag.
+    score_per_tag = {}
+    for tag, token_percentage in token_percentage_per_tag.items():
+        avg_confidence = avg_confidence_per_tag[tag]
+        score_per_tag[tag] = (
+            2
+            * (avg_confidence * token_percentage)
+            / (avg_confidence + token_percentage)
+        )
+
+    # Take the tag with the highest score as the tag for the entity
+    tag = max(score_per_tag, key=score_per_tag.get)
+    score = score_per_tag[tag]
+
+    return tag, score
+
+
+def _update_confidences(
+    predicted_confidences: List[float],
+    predicted_tags: List[Text],
+    tag: Text,
+    score: float,
+    idx: int,
+    last_idx: int,
+):
+    """Update the confidence values.
+
+    Set the confidence value of a tag to score value if the predicated
+    tag changed.
+
+    Args:
+        predicted_confidences: The list of predicted confidences.
+        predicted_tags: The list of predicted tags.
+        tag: The tag of the entity.
+        score: The score value of that tag.
+        idx: The start index of the entity.
+        last_idx: The end index of the entity.
+
+    Returns:
+        The updated list of confidences.
+    """
+    for i in range(idx, last_idx + 1):
+        predicted_confidences[i] = (
+            round(score, 2)
+            if tag_without_prefix(predicted_tags[i]) != tag
+            else predicted_confidences[i]
+        )
+    return predicted_confidences
+
+
+def _avg_confidence_per_tag(
+    relevant_tags: List[Text], relevant_confidences: List[float]
+) -> Dict[Text, float]:
+    confidences_per_tag = defaultdict(list)
+
+    for tag, confidence in zip(relevant_tags, relevant_confidences):
+        confidences_per_tag[tag].append(confidence)
+
+    avg_confidence_per_tag = {}
+    for tag, confidences in confidences_per_tag.items():
+        avg_confidence_per_tag[tag] = round(sum(confidences) / len(confidences), 2)
+
+    return avg_confidence_per_tag
 
 
 def _find_bilou_end(start_idx: int, predicted_tags: List[Text]) -> int:
+    """Find the last index of the entity.
+
+    The start index is pointing to a B- tag. The entity is closed as soon as we find
+    a L- tag or a O tag.
+
+    Args:
+        start_idx: The start index of the entity
+        predicted_tags: The list of predicted tags
+
+    Returns:
+        The end index of the entity
+    """
     current_idx = start_idx + 1
     finished = False
     start_tag = tag_without_prefix(predicted_tags[start_idx])

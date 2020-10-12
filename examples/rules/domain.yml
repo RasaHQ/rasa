@@ -18,7 +18,8 @@ entities:
 
 slots:
   some_slot:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
   detailed_faq:
     type: bool
 
@@ -42,7 +43,7 @@ actions:
 #- validate_loop_q_form
 
 forms:
-- loop_q_form:
+  loop_q_form:
     some_slot:
     # Slot mappings can be defined in the domain.
     # You can also implement custom slot mappings in your validate function for the

@@ -18,12 +18,16 @@ dictionaries:
 excluded_files:
   - "*.py"
   - "*.css"
+  - "*.scss"
   - "*.yml"
   - "*.yaml"
   - "*.html"
   - "*.json"
   - "*.lock"
   - "*.js"
+  - "*.jsx"
+  - "*.ts"
+  - "*.tsx"
   - "*.md"
   - "CHANGELOG.mdx"
   - "CODE_OF_CONDUCT.md"
@@ -88,6 +92,9 @@ excluded_words:
   - featurizes
   - featurizing
   - forni
+  - gzip
+  - gzipped
+  - hftransformersnlp
   - initializer
   - instaclient
   - jwt
@@ -105,12 +112,14 @@ excluded_words:
   - memoization
   - miniconda
   - mitie
+  - mitiefeaturizer
   - mitie's
   - mitienlp
   - dataset
   - mongod
   - mrkdown
   - mrkdwn
+  - myio
   - mymodelname
   - myuser
   - numpy
@@ -134,13 +143,16 @@ excluded_words:
   - rasa
   - rasa's
   - readthedocs
+  - regularizer
   - repo
   - rst
   - sanic
   - sanitization
   - scipy
   - sklearn
+  - socketio
   - spacy
+  - spacyfeaturizer
   - spacynlp
   - ish
   - spaCy
@@ -157,6 +169,7 @@ excluded_words:
   - tokenization
   - tokenizer
   - tokenizers
+  - tokenizing
   - typoci
   - unfeaturized
   - unschedule
@@ -167,10 +180,17 @@ excluded_words:
   - crypto
   - regexes
   - walkthroughs
+  - webexteams
   - venv
   - regexfeaturizer
   - crfentityextractor
   - Comerica
   - entitysynonymmapper
+  - memoizationpolicy
+  - NLG
+  - nlg
+  - Juste
+  - Tanja
+  - Vova
 
 spellcheck_filenames: false

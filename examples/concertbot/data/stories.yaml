@@ -1,5 +1,4 @@
 version: "2.0"
-
 stories:
   - story: search_venues
     steps:
@@ -32,3 +31,23 @@ stories:
       - concerts: [{"artist": "Foo Fighters", "reviews": 4.5}]
     - intent: compare_reviews
     - action: action_show_concert_reviews
+
+  - story: how_to_get_started, doesn't like music
+    steps:
+    - intent: how_to_get_started
+    - action: utter_get_started
+    - intent: deny
+    - action: action_set_music_preference
+    - slot_was_set:
+      - likes_music: False
+    - action: utter_goodbye
+
+  - story: how_to_get_started, likes music
+    steps:
+    - intent: how_to_get_started
+    - action: utter_get_started
+    - intent: affirm
+    - action: action_set_music_preference
+    - slot_was_set:
+      - likes_music: True
+    - action: utter_awesome

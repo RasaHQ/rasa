@@ -37,23 +37,25 @@ You need to set up a Facebook app and a page.
    `--credentials credentials.yml` option.
 
 6. Set up a **Webhook** and select at least the **messaging** and
-   **messaging_postback** subscriptions. Insert your callback URL which will
-   look like `https://<YOUR_HOST>/webhooks/facebook/webhook`. Insert the
-   **Verify Token** which has to match the `verify`
+   **messaging_postback** subscriptions. Insert your callback URL, which will
+   look like `https://<host>:<port>/webhooks/facebook/webhook`, replacing
+   the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
+   
+   Insert the **Verify Token** which has to match the `verify`
    entry in your `credentials.yml`.
+
+:::note configure https
+Facebook Messenger only forwards
+messages to endpoints via `https`, so take appropriate measures to add
+it to your setup.
+:::
 
 For more detailed steps, visit the
 [Messenger docs](https://developers.facebook.com/docs/graph-api/webhooks).
 
 ### Running On Facebook Messenger
 
-If you want to connect to Facebook using the run script, e.g. using:
-
-```bash
-rasa run
-```
-
-you need to supply a `credentials.yml` with the following content:
+Add the Facebook credentials to your `credentials.yml`:
 
 ```yaml-rasa
 facebook:
@@ -62,10 +64,10 @@ facebook:
   page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
 ```
 
-The endpoint for receiving Facebook messenger messages is
-`http://localhost:5005/webhooks/facebook/webhook`, replacing
-the host and port with the appropriate values. This is the URL
-you should add in the configuration of the webhook.
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available for Facebook Messenger to send messages to.
+
 
 ## Supported response attachments
 

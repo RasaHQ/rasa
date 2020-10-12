@@ -4,7 +4,6 @@ import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 import numpy as np
-
 from rasa.utils.tensorflow.layers import DenseWithSparseWeights
 
 
