@@ -77,12 +77,9 @@ types:
 	--disable-error-code index \
 	--disable-error-code misc \
 	--disable-error-code return \
-	--disable-error-code call-arg \
 	--disable-error-code type-var \
-	--disable-error-code list-item \
 	--disable-error-code has-type \
 	--disable-error-code valid-type \
-	--disable-error-code dict-item \
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
 
