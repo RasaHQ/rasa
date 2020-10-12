@@ -9,6 +9,7 @@ import os
 
 import rasa.shared.utils.io
 import rasa.utils.io
+from rasa.core.lock_store import RedisLockStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, Event
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -85,3 +86,7 @@ def user_uttered(
 
 def get_tracker(events: List[Event]) -> DialogueStateTracker:
     return DialogueStateTracker.from_events("sender", events, [], 20)
+
+
+class CustomRedisLockStore(RedisLockStore):
+    pass
