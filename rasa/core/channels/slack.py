@@ -211,7 +211,7 @@ class SlackInput(InputChannel):
         )
 
     @staticmethod
-    def _sanitize_user_message(text, uids_to_remove) -> Text:
+    def _sanitize_user_message(text: Text, uids_to_remove: List[Text]) -> Text:
         """Remove superfluous/wrong/problematic tokens from a message.
 
         Probably a good starting point for pre-formatting of user-provided text
@@ -366,11 +366,12 @@ class SlackInput(InputChannel):
             slack_event = request.json
             event = slack_event.get("event", {})
             thread_id = event.get("thread_ts", event.get("ts"))
-            users = (
-                slack_event.get("authed_users", [])
-                if "authed_users" in slack_event
-                else slack_event.get("authorizations")[0].get("user_id")
-            )
+
+            users = []
+            if "authed_users" in slack_event:
+                users = slack_event.get("authed_users")
+            elif "authorizations" in slack_event and len(slack_event.get("authorizations")) > 0:
+                users.append(slack_event.get("authorizations")[0].get("user_id"))
 
             return {
                 "out_channel": event.get("channel"),
@@ -384,10 +385,15 @@ class SlackInput(InputChannel):
             payload = json.loads(output["payload"][0])
             message = payload.get("message", {})
             thread_id = message.get("thread_ts", message.get("ts"))
+
+            users = []
+            if payload.get("user", {}).get("id"):
+                users.append(payload.get("user", {}).get("id"))
+
             return {
                 "out_channel": payload.get("channel", {}).get("id"),
                 "thread_id": thread_id,
-                "users": payload.get("user", {}).get("id"),
+                "users": users,
             }
 
         return {}
