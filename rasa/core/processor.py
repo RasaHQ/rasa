@@ -179,7 +179,7 @@ class MessageProcessor:
         sender_id: Text,
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
         If a new tracker is created, `action_session_start` is run.
@@ -194,14 +194,12 @@ class MessageProcessor:
         """
 
         tracker = self.get_tracker(sender_id)
-        if not tracker:
-            return None
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
 
-    def get_tracker(self, conversation_id: Text) -> Optional[DialogueStateTracker]:
+    def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
         In contrast to `get_tracker_with_session_start` this does not add any
@@ -223,8 +221,9 @@ class MessageProcessor:
         )
 
     def get_trackers_for_all_conversation_sessions(
-        self, conversation_id: Text,
-    ) -> Optional[List[DialogueStateTracker]]:
+        self,
+        conversation_id: Text,
+    ) -> List[DialogueStateTracker]:
         """Get all trackers for a conversation.
 
         Individual trackers are returned for each conversation session found

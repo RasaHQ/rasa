@@ -239,11 +239,7 @@ async def get_tracker_with_session_start(
     Returns:
         The tracker for `conversation_id` with an updated conversation session.
     """
-    tracker = await processor.get_tracker_with_session_start(conversation_id)
-    _validate_tracker(tracker, conversation_id)
-
-    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
-    return tracker  # pytype: disable=bad-return-type
+    return await processor.get_tracker_with_session_start(conversation_id)
 
 
 def get_test_stories(
@@ -266,7 +262,9 @@ def get_test_stories(
         The stories for `conversation_id` in test format.
     """
     if fetch_all_sessions:
-        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+        trackers: List[
+            DialogueStateTracker
+        ] = processor.get_trackers_for_all_conversation_sessions(conversation_id)
     else:
         trackers = [processor.get_tracker(conversation_id)]
 
@@ -285,8 +283,6 @@ def get_test_stories(
     more_than_one_story = len(trackers) > 1
 
     for i, tracker in enumerate(trackers, 1):
-        _validate_tracker(tracker, conversation_id)
-
         for story_step in tracker.as_story().story_steps:
             story_step.block_name = conversation_id
             if more_than_one_story:
@@ -309,23 +305,7 @@ def get_tracker(
     Returns:
         The tracker for `conversation_id`.
     """
-    tracker = processor.get_tracker(conversation_id)
-    _validate_tracker(tracker, conversation_id)
-
-    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
-    return tracker  # pytype: disable=bad-return-type
-
-
-def _validate_tracker(
-    tracker: Optional[DialogueStateTracker], conversation_id: Text
-) -> None:
-    if not tracker:
-        raise ErrorResponse(
-            409,
-            "Conflict",
-            f"Could not retrieve tracker with ID '{conversation_id}'. Most likely "
-            f"because there is no domain set on the agent.",
-        )
+    return processor.get_tracker(conversation_id)
 
 
 def validate_request_body(request: Request, error_message: Text):
@@ -586,7 +566,6 @@ def create_app(
                 processor = app.agent.create_processor()
                 tracker = processor.get_tracker(conversation_id)
                 output_channel = _get_output_channel(request, tracker)
-                _validate_tracker(tracker, conversation_id)
 
                 events = _get_events_from_request_body(request)
 
@@ -1269,7 +1248,9 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
 
-def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_yaml(
+    request: Request,
+) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)

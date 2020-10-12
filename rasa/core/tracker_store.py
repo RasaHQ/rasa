@@ -94,11 +94,10 @@ class TrackerStore:
         event_broker: Optional[EventBroker] = None,
     ) -> "TrackerStore":
         """Factory to create a tracker store."""
-
         if isinstance(obj, TrackerStore):
             return obj
-        else:
-            return _create_from_endpoint_config(obj, domain, event_broker)
+
+        return _create_from_endpoint_config(obj, domain, event_broker)
 
     def get_or_create_tracker(
         self,
