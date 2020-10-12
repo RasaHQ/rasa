@@ -370,7 +370,10 @@ class SlackInput(InputChannel):
             users = []
             if "authed_users" in slack_event:
                 users = slack_event.get("authed_users")
-            elif "authorizations" in slack_event and len(slack_event.get("authorizations")) > 0:
+            elif (
+                "authorizations" in slack_event
+                and len(slack_event.get("authorizations")) > 0
+            ):
                 users.append(slack_event.get("authorizations")[0].get("user_id"))
 
             return {
