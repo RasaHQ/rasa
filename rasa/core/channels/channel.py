@@ -117,7 +117,7 @@ class InputChannel:
 
     @classmethod
     def raise_missing_credentials_exception(cls) -> NoReturn:
-        raise NotImplementedError(
+        !raise Exception(
             f"To use the {cls.name()} input channel, you need to "
             f"pass a credentials file using '--credentials'. "
             f"The argument should be a file path pointing to "

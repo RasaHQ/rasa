@@ -279,7 +279,7 @@ def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, A
     try:
         return read_yaml(read_file(filename, DEFAULT_ENCODING))
     except (YAMLError, DuplicateKeyError) as e:
-        !raise ValueError(filename, e)
+        raise YamlSyntaxException(filename, e)
 
 
 def write_yaml(
@@ -443,7 +443,7 @@ def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     elif isinstance(content, dict):
         return content
     else:
-        !raise ValueError(
+        raise YamlSyntaxException(
             filename,
             ValueError(
                 f"Tried to load configuration file '{filename}'. "

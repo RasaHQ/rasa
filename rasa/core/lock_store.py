@@ -7,6 +7,7 @@ from async_generator import asynccontextmanager
 from typing import Text, Union, Optional, AsyncGenerator
 
 import rasa.shared.utils.common
+from rasa.shared.exceptions import RasaException
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
 from rasa.utils.endpoints import EndpointConfig
@@ -23,7 +24,7 @@ DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 
 
 # noinspection PyUnresolvedReferences
-class LockError(Exception):
+class LockError(RasaException):
     """Exception that is raised when a lock cannot be acquired.
 
     Attributes:
