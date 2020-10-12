@@ -133,20 +133,30 @@ def test_single_state_featurizer_creates_encoded_all_actions():
     )
 
 
-def test_single_state_featurizer_with_entity_roles_and_groups(unpacked_trained_moodbot_path: Text):
+def test_single_state_featurizer_with_entity_roles_and_groups(
+    unpacked_trained_moodbot_path: Text,
+):
     from rasa.core.agent import Agent
 
     interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
 
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
-    f._default_feature_states[ENTITIES] = {"c": 0, "d": 1, f"d{ENTITY_LABEL_SEPARATOR}e": 2}
+    f._default_feature_states[ENTITIES] = {
+        "c": 0,
+        "d": 1,
+        f"d{ENTITY_LABEL_SEPARATOR}e": 2,
+    }
     f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
     f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
     f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
     encoded = f.encode_state(
         {
-            "user": {"text": "a ball", "intent": "b", "entities": ["c", f"d{ENTITY_LABEL_SEPARATOR}e"]},
+            "user": {
+                "text": "a ball",
+                "intent": "b",
+                "entities": ["c", f"d{ENTITY_LABEL_SEPARATOR}e"],
+            },
             "prev_action": {
                 "action_name": "action_listen",
                 "action_text": "throw a ball",
