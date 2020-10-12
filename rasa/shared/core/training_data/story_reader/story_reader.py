@@ -27,7 +27,7 @@ class StoryReader:
         domain: Optional[Domain] = None,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
-        source_name: Text = None,
+        source_name: Optional[Text] = None,
         is_used_for_conversion: bool = False,
     ) -> None:
         """Constructor for the StoryReader.
@@ -86,11 +86,11 @@ class StoryReader:
             self.current_step_builder.flush()
             self.story_steps.extend(self.current_step_builder.story_steps)
 
-    def _new_story_part(self, name: Text, source_name: Text):
+    def _new_story_part(self, name: Text, source_name: Optional[Text]):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
 
-    def _new_rule_part(self, name: Text, source_name: Text):
+    def _new_rule_part(self, name: Text, source_name: Optional[Text]):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
 

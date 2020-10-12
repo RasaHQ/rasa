@@ -2,15 +2,13 @@
 id: responses
 sidebar_label: Responses
 title: Responses
-abstract: Responses are messages that your assistant sends to the user. A response
- is usually only text, but can also include content like images and buttons.
+abstract: Responses are messages that your assistant sends to the user. A response is usually only text, but can also include content like images and buttons.
 ---
 ## Defining Responses
 
-Responses go under the `responses` key in your [domain](./domain.mdx) file. Start each
-response name with `utter_`.
 
-Here is an example of a domain file with two responses called `utter_greet` and `utter_bye`:
+Responses go under the `responses` key in your domain file or in a separate "responses.yml" file. Each response name should start with `utter_`.
+For example, you could add responses for greeting and saying goodbye under the response names `utter_greet` and `utter_bye`:
 
 ```yaml-rasa {4-8} title="domain.yml"
 intents:
@@ -23,8 +21,9 @@ responses:
   - text: "See you!"
 ```
 
-If you use [retrieval intents](./glossary.mdx#retrieval-intent), make sure you define the responses 
-for each retrieval intent in your domain file, like in the following example:
+
+If you are using [retrieval intents](glossary.mdx#retrieval-intent) in your assistant, you also need to add responses
+for your assistant's replies to these intents:
 
 ```yaml-rasa {5-6,8-9}
 intents:
@@ -62,7 +61,8 @@ filled with `None`.
 
 Another way to fill in a variable is within a [custom action](./custom-actions.mdx).
 In your custom action code, you can supply values to a response to fill in specific variables. 
-If you use Rasa SDK for your action server, you can do this using `dispatcher.utter_message`:
+If you're using the Rasa SDK for your action server,
+you can pass a value for the variable as a keyword argument to [`dispatcher.utter_message`](https://rasa.com/docs/action-server/sdk-dispatcher):
 
 ```python {3}
 dispatcher.utter_message(
@@ -221,8 +221,10 @@ responses:
 
 ### Calling Responses as Actions
 
-So long as the name of the response starts with `utter_`, the response can
-directly be used as an action. Say you have the following response in your domain:
+If the name of the response starts with `utter_`, the response can
+directly be used as an action, without being listed in the `actions` section of your domain. You would add the response
+to the domain:
+
 
 ```yaml-rasa title="domain.yml"
 responses:
@@ -250,10 +252,9 @@ you need to retrain the assistant before these changes will be picked up.
 
 ### Calling Responses from Custom Actions
 
-If you use Rasa SDK as your action server, you can call responses from your
-[Custom Actions](custom-actions.mdx) by using the `dispatcher`
-variable. In your custom action code, you can
-send a message based on the responses defined under `utter_greet` like this:
+
+You can use the responses to generate response messages from your
+custom actions. If you're using Rasa SDK as your action server, you can use the dispatcher to generate the response message, for example: 
 
 ```python {8} title="actions.py"
 from rasa_sdk.interfaces import Action

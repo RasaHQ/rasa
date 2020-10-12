@@ -5,7 +5,9 @@ from typing import List
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
+from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
+import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
@@ -83,6 +85,12 @@ def run_core_test(args: argparse.Namespace) -> None:
     if isinstance(args.model, list) and len(args.model) == 1:
         args.model = args.model[0]
 
+    if args.model is None:
+        rasa.shared.utils.cli.print_error(
+            "No model provided. Please make sure to specify the model to test with '--model'."
+        )
+        return
+
     if isinstance(args.model, str):
         model_path = rasa.cli.utils.get_validated_path(
             args.model, "model", DEFAULT_MODELS_PATH
@@ -130,8 +138,8 @@ def run_nlu_test(args: argparse.Namespace) -> None:
                     rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE,
                 )
                 config_files.append(file)
-            except validation_utils.YamlValidationException:
-                logger.debug(
+            except YamlException:
+                rasa.shared.utils.io.raise_warning(
                     f"Ignoring file '{file}' as it is not a valid config file."
                 )
                 continue
