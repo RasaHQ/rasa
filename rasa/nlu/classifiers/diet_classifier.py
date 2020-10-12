@@ -25,6 +25,7 @@ from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
@@ -581,7 +582,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if label_data.does_feature_not_exist(
             LABEL, SENTENCE
         ) and label_data.does_feature_not_exist(LABEL, SEQUENCE):
-            raise ValueError( # TODO
+            raise RasaException(
                 "No label features are present. Please check your configuration file."
             )
 
@@ -1376,7 +1377,7 @@ class DIET(TransformerRasaModel):
                 sequence_x, sentence_x, name, mask_text
             )
 
-        raise ValueError( # TODO
+        raise RasaException(
             "No features are present. Please check your configuration file."
         )
 

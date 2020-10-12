@@ -7,6 +7,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_SLOTS
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -145,11 +146,10 @@ class FloatSlot(Slot):
         self.min_value = min_value
 
         if min_value >= max_value:
-            raise ValueError( # TODO
-                "Float slot ('{}') created with an invalid range "
-                "using min ({}) and max ({}) values. Make sure "
-                "min is smaller than max."
-                "".format(self.name, self.min_value, self.max_value)
+            raise RasaException(
+                f"Float slot ('{self.name}') created with an invalid range "
+                f"using min ({self.min_value}) and max ({self.max_value}) values. Make sure "
+                f"min is smaller than max."
             )
 
         if initial_value is not None and not (min_value <= initial_value <= max_value):
@@ -247,7 +247,7 @@ class UnfeaturizedSlot(Slot):
         influence_conversation: bool = False,
     ) -> None:
         if influence_conversation:
-            raise ValueError( # TODO
+            raise RasaException(
                 f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
                 f"Please use a different slot type for slot '{name}' instead. See the "
                 f"documentation for more information: {DOCS_URL_SLOTS}"

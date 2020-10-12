@@ -6,6 +6,7 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -76,8 +77,8 @@ class HFTransformersNLP(Component):
         self.model_name = self.component_config["model_name"]
 
         if self.model_name not in model_class_dict:
-            raise KeyError( # TODO
-                f"'{self.model_name}' not a valid model name. Choose from "
+            raise RasaException(
+                f"'{self.model_name}' is not a valid model name. Choose from "
                 f"{str(list(model_class_dict.keys()))} or create"
                 f"a new class inheriting from this class to support your model."
             )
@@ -467,7 +468,7 @@ class HFTransformersNLP(Component):
         for sequence_length, example in zip(actual_sequence_lengths, batch_examples):
             if sequence_length > self.max_model_sequence_length:
                 if not inference_mode:
-                    raise RuntimeError( # TODO
+                    raise RasaException(
                         f"The sequence length of '{example.get(attribute)[:20]}...' "
                         f"is too long({sequence_length} tokens) for the "
                         f"model chosen {self.model_name} which has a maximum "

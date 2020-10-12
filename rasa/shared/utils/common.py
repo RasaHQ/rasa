@@ -4,6 +4,8 @@ import importlib
 import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
+from rasa.shared.exceptions import RasaException
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +31,7 @@ def class_from_module_path(
             m = importlib.import_module(lookup_path)
             return getattr(m, module_path)
         else:
-            raise ImportError(f"Cannot retrieve class from path {module_path}.") # TODO
+            raise RasaException(f"Cannot retrieve class from path {module_path}.")
 
 
 def all_subclasses(cls: Any) -> List[Any]:

@@ -3,6 +3,7 @@ from typing import Union, Text, Optional, List, Any, Tuple
 import numpy as np
 import scipy.sparse
 
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import VALID_FEATURE_TYPES
 
 
@@ -26,7 +27,7 @@ class Features:
     @staticmethod
     def _validate_feature_type(feature_type: Text) -> None:
         if feature_type not in VALID_FEATURE_TYPES:
-            raise ValueError( # TODO
+            raise RasaException(
                 f"Invalid feature type '{feature_type}' used. Valid feature types are: "
                 f"{VALID_FEATURE_TYPES}."
             )

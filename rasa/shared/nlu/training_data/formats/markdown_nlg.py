@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Text, Union
 
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -79,7 +80,7 @@ class NLGMarkdownReader(TrainingDataReader):
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
-                raise ValueError(msg) # TODO
+                raise RasaException(msg)
 
         # add last story
         if story_intent:

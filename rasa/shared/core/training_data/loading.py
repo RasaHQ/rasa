@@ -15,6 +15,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 )
 from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSIONS
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ def _guess_reader(
         return YAMLStoryReader(domain, template_variables, use_e2e, filename)
     elif MarkdownStoryReader.is_stories_file(filename):
         return MarkdownStoryReader(domain, template_variables, use_e2e, filename)
-    raise ValueError( # TODO
+    raise RasaException(
         f"Failed to find a reader class for the story file `{filename}`. "
         f"Supported formats are "
         f"{', '.join(MARKDOWN_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)}."

@@ -22,6 +22,7 @@ from rasa.shared.core.training_data.story_reader.story_reader import (
     StoryParseError,
 )
 from rasa.shared.core.training_data.structures import StoryStep, FORM_PREFIX
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -106,7 +107,7 @@ class MarkdownStoryReader(StoryReader):
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
-                raise ValueError(msg) from e # TODO
+                raise RasaException(msg) from e
         self._add_current_stories_to_result()
         return self.story_steps
 
@@ -129,7 +130,7 @@ class MarkdownStoryReader(StoryReader):
                     ".".format(type(parsed_slots))
                 )
         except Exception as e:
-            raise ValueError( # TODO
+            raise RasaException(
                 "Invalid to parse arguments in line "
                 "'{}'. Failed to decode parameters"
                 "as a json object. Make sure the event"
@@ -220,7 +221,7 @@ class MarkdownStoryReader(StoryReader):
         match = re.match(item_regex, line)
 
         if not match:
-            raise ValueError( # TODO
+            raise RasaException(
                 "Encountered invalid test story format for message "
                 "`{}`. Please visit the documentation page on "
                 "end-to-end testing at {}/user-guide/testing-your-assistant/"

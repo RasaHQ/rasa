@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 import rasa.shared.data
 from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     RESPONSE,
     INTENT_RESPONSE_KEY,
@@ -20,8 +21,6 @@ from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
     TEXT,
-    ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -322,7 +321,7 @@ class TrainingData:
         elif rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_yaml(), filename)
         else:
-            raise ValueError( # TODO
+            raise RasaException(
                 "Unsupported file format detected. Supported file formats are 'json', 'yml' "
                 "and 'md'."
             )
@@ -335,7 +334,7 @@ class TrainingData:
             if nlg_serialized_data:
                 rasa.shared.utils.io.write_text_file(nlg_serialized_data, filename)
         else:
-            raise ValueError( # TODO
+            raise RasaException(
                 "Unsupported file format detected. Supported file formats are 'md' "
                 "and 'yml'."
             )
