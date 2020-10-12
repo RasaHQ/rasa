@@ -137,18 +137,18 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
 
     """
     if not model_path:
-        !raise ModelNotFound("No path specified.")
+        raise ModelNotFound("No path specified.")
     elif not os.path.exists(model_path):
-        !raise ModelNotFound(f"No file or directory at '{model_path}'.")
+        raise ModelNotFound(f"No file or directory at '{model_path}'.")
 
     if os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
         if not model_path:
-            !raise ModelNotFound(
+            raise ModelNotFound(
                 f"Could not find any Rasa model files in '{model_path}'."
             )
     elif not model_path.endswith(".tar.gz"):
-        !raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
+        raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
     return unpack_model(model_path)
 
@@ -229,7 +229,7 @@ def get_model_subdirectories(
         nlu_path = None
 
     if not core_path and not nlu_path:
-        !raise ModelNotFound(
+        raise ModelNotFound(
             "No NLU or Core data for unpacked model at: '{}'.".format(
                 unpacked_model_path
             )

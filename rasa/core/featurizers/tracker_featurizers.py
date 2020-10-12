@@ -266,7 +266,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                     # unpredictable actions can be
                     # only the first in the story
                     if delete_first_state:
-                        !raise InvalidStory(
+                        raise InvalidStory(
                             f"Found two unpredictable actions in one story "
                             f"'{tracker.sender_id}'. Check your story files."
                         )

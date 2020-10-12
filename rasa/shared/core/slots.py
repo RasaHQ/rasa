@@ -109,7 +109,7 @@ class Slot:
         try:
             return rasa.shared.utils.common.class_from_module_path(type_name)
         except (ImportError, AttributeError):
-            !raise InvalidSlotTypeException(
+            raise InvalidSlotTypeException(
                 f"Failed to find slot type, '{type_name}' is neither a known type nor "
                 f"user-defined. If you are creating your own slot type, make "
                 f"sure its module path is correct. "

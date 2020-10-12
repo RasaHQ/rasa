@@ -68,7 +68,7 @@ def validate_requirements(component_names: List[Text]) -> None:
             for d, cs in dependency_component_map.items()
         ]
         missing = "\n  - ".join(missing_lines)
-        !raise MissingDependencyException(
+        raise MissingDependencyException(
             f"Not all required importable packages are installed to use "
             f"the configured NLU pipeline. "
             f"To use this pipeline, you need to install the "
@@ -86,7 +86,7 @@ def validate_empty_pipeline(pipeline: List["Component"]) -> None:
     """
 
     if len(pipeline) == 0:
-        !raise MissingDependencyException(
+        raise MissingDependencyException(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
             "the configuration using the 'pipeline' key."
@@ -108,7 +108,7 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
             tokenizer_names.append(component.name)
 
     if len(tokenizer_names) > 1:
-        !raise MissingDependencyException(
+        raise MissingDependencyException(
             f"The pipeline configuration contains more than one tokenizer, "
             f"which is not possible at this time. You can only use one tokenizer. "
             f"The pipeline contains the following tokenizers: {tokenizer_names}. "
@@ -151,7 +151,7 @@ def validate_required_components(pipeline: List["Component"]) -> None:
         missing_components_str = ", ".join(f"'{c}'" for c in missing_components)
 
         if missing_components:
-            !raise MissingDependencyException(
+            raise MissingDependencyException(
                 f"The pipeline configuration contains errors. The component "
                 f"'{component.name}' requires {missing_components_str} to be "
                 f"placed before it in the pipeline. Please "
@@ -482,7 +482,7 @@ class Component(metaclass=ComponentMetaclass):
         language = config.language
         if not cls.can_handle_language(language):
             # check failed
-            !raise MissingDependencyException(cls.name, language)
+            raise MissingDependencyException(cls.name, language)
 
         return cls(component_config)
 
@@ -663,7 +663,7 @@ class Component(metaclass=ComponentMetaclass):
         # check language supporting settings
         if cls.supported_language_list and cls.not_supported_language_list:
             # When user set both language supporting settings to not None, it will lead to ambiguity.
-            !raise MissingDependencyException(
+            raise MissingDependencyException(
                 "Only one of `supported_language_list` and `not_supported_language_list` can be set to not None"
             )
 
@@ -683,7 +683,7 @@ class Component(metaclass=ComponentMetaclass):
         if not supported_language_list and not not_supported_language_list:
             # One of language settings must be valid (not None and not a empty list),
             # There are three combinations of settings are not valid: (None, []), ([], None) and ([], [])
-            !raise MissingDependencyException(
+            raise MissingDependencyException(
                 "Empty lists for both "
                 "`supported_language_list` and `not_supported language_list` "
                 "is not a valid setting. If you meant to allow all languages "
@@ -782,7 +782,7 @@ class ComponentBuilder:
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            !raise MissingDependencyException(
+            raise MissingDependencyException(
                 f"Failed to load component from file '{component_meta.get('file')}'. "
                 f"Error: {e}"
             )
@@ -815,7 +815,7 @@ class ComponentBuilder:
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            !raise MissingDependencyException(
+            raise MissingDependencyException(
                 f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )

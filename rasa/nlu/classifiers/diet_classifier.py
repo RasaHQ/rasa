@@ -1143,13 +1143,13 @@ class DIET(TransformerRasaModel):
 
     def _check_data(self) -> None:
         if TEXT not in self.data_signature:
-            !raise InvalidConfigError(
+            raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if self.config[INTENT_CLASSIFICATION]:
             if LABEL not in self.data_signature:
-                !raise InvalidConfigError(
+                raise InvalidConfigError(
                     f"No label features specified. "
                     f"Cannot train '{self.__class__.__name__}' model."
                 )

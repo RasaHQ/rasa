@@ -80,7 +80,7 @@ class Metadata:
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
-            !raise InvalidModelError(
+            raise InvalidModelError(
                 f"Failed to load model metadata from '{abspath}'. {e}"
             )
 
@@ -285,7 +285,7 @@ class Interpreter:
 
         model_version = metadata.get("rasa_version", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
-            !raise UnsupportedModelError(
+            raise UnsupportedModelError(
                 "The model version is too old to be "
                 "loaded by this Rasa NLU instance. "
                 "Either retrain the model, or run with "

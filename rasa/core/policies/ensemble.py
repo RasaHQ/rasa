@@ -279,7 +279,7 @@ class PolicyEnsemble:
 
         model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
-            !raise UnsupportedDialogueModelError(
+            raise UnsupportedDialogueModelError(
                 "The model version is too old to be "
                 "loaded by this Rasa Core instance. "
                 "Either retrain the model, or run with "
@@ -330,13 +330,13 @@ class PolicyEnsemble:
             "policy"
         )
         if policies is None:
-            !raise InvalidPolicyConfig(
+            raise InvalidPolicyConfig(
                 "You didn't define any policies. "
                 "Please define them under 'policies:' "
                 "in your policy configuration file."
             )
         if len(policies) == 0:
-            !raise InvalidPolicyConfig(
+            raise InvalidPolicyConfig(
                 "The policy configuration file has to include at least one policy."
             )
 
@@ -373,7 +373,7 @@ class PolicyEnsemble:
                     !raise Exception(f"Could not initialize {policy_name}. {e}")
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
-                !raise InvalidPolicyConfig(
+                raise InvalidPolicyConfig(
                     f"Module for policy '{policy_name}' could not "
                     f"be loaded. Please make sure the "
                     f"name is a valid policy."
@@ -387,7 +387,7 @@ class PolicyEnsemble:
     def get_featurizer_from_dict(cls, policy) -> Tuple[Any, Any]:
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
-            !raise InvalidPolicyConfig(
+            raise InvalidPolicyConfig(
                 f"Every policy can only have 1 featurizer "
                 f"but '{policy.get('name')}' "
                 f"uses {len(policy['featurizer'])} featurizers."
@@ -402,7 +402,7 @@ class PolicyEnsemble:
     def get_state_featurizer_from_dict(cls, featurizer_config) -> Tuple[Any, Any]:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
-            !raise InvalidPolicyConfig(
+            raise InvalidPolicyConfig(
                 f"Every featurizer can only have 1 state "
                 f"featurizer but one of the featurizers uses "
                 f"{len(featurizer_config['state_featurizer'])}."
@@ -702,7 +702,7 @@ def _check_policy_for_forms_available(
     )
 
     if domain.form_names and not has_policy_for_forms:
-        !raise InvalidDomain(
+        raise InvalidDomain(
             "You have defined a form action, but haven't added the "
             "FormPolicy to your policy ensemble. Either remove all "
             "forms from your domain or exclude the FormPolicy from your "

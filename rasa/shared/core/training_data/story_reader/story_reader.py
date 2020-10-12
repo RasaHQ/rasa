@@ -104,12 +104,12 @@ class StoryReader:
             event_name, parameters, default=ActionExecuted
         )
         if parsed_events is None:
-            !raise StoryParseError(
+            raise StoryParseError(
                 "Unknown event '{}'. It is Neither an event "
                 "nor an action).".format(event_name)
             )
         if self.current_step_builder is None:
-            !raise StoryParseError(
+            raise StoryParseError(
                 "Failed to handle event '{}'. There is no "
                 "started story block available. "
                 "".format(event_name)
@@ -128,7 +128,7 @@ class StoryReader:
 
         # Ensure story part already has a name
         if not self.current_step_builder:
-            !raise StoryParseError(
+            raise StoryParseError(
                 "Checkpoint '{}' is at an invalid location. "
                 "Expected a story start.".format(name)
             )

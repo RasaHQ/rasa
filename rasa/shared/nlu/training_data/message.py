@@ -162,7 +162,7 @@ class Message:
         elif len(split_title) == 1:
             return split_title[0], None
 
-        !raise RasaException(
+        raise RasaException(
             f"Intent name '{original_intent}' is invalid, "
             f"it cannot contain more than one '{RESPONSE_IDENTIFIER_DELIMITER}'."
         )

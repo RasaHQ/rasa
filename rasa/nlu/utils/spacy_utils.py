@@ -47,7 +47,7 @@ class SpacyNLP(Component):
         try:
             return spacy.load(spacy_model_name, disable=["parser"])
         except OSError:
-            !raise InvalidModelError(
+            raise InvalidModelError(
                 "Model '{}' is not a linked spaCy model.  "
                 "Please download and/or link a spaCy model, "
                 "e.g. by running:\npython -m spacy download "

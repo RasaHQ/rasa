@@ -180,7 +180,7 @@ class MarkdownStoryReader(StoryReader):
 
     def _add_user_messages(self, messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
-            !raise StoryParseError(
+            raise StoryParseError(
                 "User message '{}' at invalid location. "
                 "Expected story start.".format(messages)
             )
@@ -191,7 +191,7 @@ class MarkdownStoryReader(StoryReader):
 
     def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
-            !raise StoryParseError(
+            raise StoryParseError(
                 "End-to-end message '{}' at invalid "
                 "location. Expected story start."
                 "".format(e2e_messages)

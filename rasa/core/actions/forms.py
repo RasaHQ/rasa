@@ -449,7 +449,7 @@ class FormAction(LoopAction):
                 # reject to execute the form action
                 # if some slot was requested but nothing was extracted
                 # it will allow other policies to predict another action
-                !raise ActionExecutionRejection(
+                raise ActionExecutionRejection(
                     self.name(),
                     f"Failed to extract slot {slot_to_fill} with action {self.name()}",
                 )

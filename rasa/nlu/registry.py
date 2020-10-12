@@ -145,7 +145,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                     f"namespace."
                 )
 
-            !raise ComponentNotFoundException(
+            raise ComponentNotFoundException(
                 f"Failed to load the component "
                 f"'{component_name}'. "
                 f"{exception_message} Either your "
