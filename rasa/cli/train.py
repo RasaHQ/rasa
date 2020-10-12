@@ -1,30 +1,34 @@
 import argparse
-import asyncio
 import os
+import sys
 from typing import List, Optional, Text, Dict
 
+from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
-from rasa.train import (
-    train as rasa_train,
-    train_core as rasa_train_core,
-    train_nlu as rasa_train_nlu,
-)
-from rasa.cli.utils import get_validated_path, missing_config_keys, print_error
-from rasa.core.train import do_compare_training
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATH,
-    CONFIG_MANDATORY_KEYS_NLU,
+
+import rasa.cli.utils
+from rasa.shared.utils.cli import print_error
+from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
 )
 
+import rasa.utils.common
 
-# noinspection PyProtectedMember
+
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all training parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     train_parser = subparsers.add_parser(
         "train",
         help="Trains a Rasa model using your NLU data and stories.",
@@ -59,18 +63,22 @@ def add_subparser(
 
 
 def train(args: argparse.Namespace) -> Optional[Text]:
-    domain = get_validated_path(
+    import rasa
+
+    domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
-        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
+        rasa.cli.utils.get_validated_path(
+            f, "data", DEFAULT_DATA_PATH, none_is_valid=True
+        )
         for f in args.data
     ]
 
-    return rasa_train(
+    return rasa.train(
         domain=domain,
         config=config,
         training_files=training_files,
@@ -86,13 +94,14 @@ def train(args: argparse.Namespace) -> Optional[Text]:
 def train_core(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
-    loop = asyncio.get_event_loop()
+    from rasa.train import train_core
+
     output = train_path or args.out
 
-    args.domain = get_validated_path(
+    args.domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    story_file = get_validated_path(
+    story_file = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
     additional_arguments = extract_core_additional_arguments(args)
@@ -105,7 +114,7 @@ def train_core(
 
         config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
 
-        return rasa_train_core(
+        return train_core(
             domain=args.domain,
             config=config,
             stories=story_file,
@@ -115,7 +124,9 @@ def train_core(
             additional_arguments=additional_arguments,
         )
     else:
-        loop.run_until_complete(
+        from rasa.core.train import do_compare_training
+
+        rasa.utils.common.run_in_loop(
             do_compare_training(args, story_file, additional_arguments)
         )
 
@@ -123,14 +134,21 @@ def train_core(
 def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
+    from rasa.train import train_nlu
+
     output = train_path or args.out
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
-    nlu_data = get_validated_path(
+    nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
-    return rasa_train_nlu(
+    if args.domain:
+        args.domain = rasa.cli.utils.get_validated_path(
+            args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+        )
+
+    return train_nlu(
         config=config,
         nlu_data=nlu_data,
         output=output,
@@ -138,6 +156,7 @@ def train_nlu(
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
         additional_arguments=extract_nlu_additional_arguments(args),
+        domain=args.domain,
     )
 
 
@@ -177,7 +196,7 @@ def _get_valid_config(
 
     Returns: The path to the config file if the config is valid.
     """
-    config = get_validated_path(config, "config", default_config)
+    config = rasa.cli.utils.get_validated_path(config, "config", default_config)
 
     if not os.path.exists(config):
         print_error(
@@ -185,15 +204,15 @@ def _get_valid_config(
             "valid config file."
             "".format(config)
         )
-        exit(1)
+        sys.exit(1)
 
-    missing_keys = missing_config_keys(config, mandatory_keys)
+    missing_keys = rasa.cli.utils.missing_config_keys(config, mandatory_keys)
     if missing_keys:
         print_error(
             "The config file '{}' is missing mandatory parameters: "
             "'{}'. Add missing parameters to config file and try again."
             "".format(config, "', '".join(missing_keys))
         )
-        exit(1)
+        sys.exit(1)
 
     return config  # pytype: disable=bad-return-type

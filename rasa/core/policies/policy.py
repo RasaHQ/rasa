@@ -1,19 +1,39 @@
 import copy
+import json
 import logging
 from enum import Enum
-from typing import Any, List, Optional, Text, Dict, Callable, Type, Union
-
-import rasa.utils.common
-from rasa.core.domain import Domain
-from rasa.core.featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer,
+from pathlib import Path
+from typing import (
+    Any,
+    List,
+    Optional,
+    Text,
+    Dict,
+    Callable,
+    Type,
+    Union,
+    Tuple,
+    TYPE_CHECKING,
 )
-from rasa.core.featurizers import TrackerFeaturizer
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.data import DialogueTrainingData
+import numpy as np
+
+import rasa.shared.utils.common
+import rasa.utils.common
+import rasa.shared.utils.io
+from rasa.shared.core.domain import Domain
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+    FEATURIZER_FILE,
+)
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+
+if TYPE_CHECKING:
+    from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
@@ -33,8 +53,9 @@ class SupportedData(Enum):
 
     @staticmethod
     def trackers_for_policy(
-        policy: Union["Policy", Type["Policy"]], trackers: List[DialogueStateTracker]
-    ) -> List[DialogueStateTracker]:
+        policy: Union["Policy", Type["Policy"]],
+        trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
+    ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
         """Return trackers for a given policy.
 
         Args:
@@ -57,8 +78,6 @@ class SupportedData(Enum):
 
 
 class Policy:
-    SUPPORTS_ONLINE_TRAINING = False
-
     @staticmethod
     def supported_data() -> SupportedData:
         """The type of data supported by this policy.
@@ -73,7 +92,7 @@ class Policy:
 
     @staticmethod
     def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
+        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
 
     @classmethod
     def _create_featurizer(
@@ -107,7 +126,7 @@ class Policy:
             the dictionary of parameters
         """
 
-        valid_keys = rasa.utils.common.arguments_of(func)
+        valid_keys = rasa.shared.utils.common.arguments_of(func)
 
         params = {key: kwargs.get(key) for key in valid_keys if kwargs.get(key)}
         ignored_params = {
@@ -120,8 +139,9 @@ class Policy:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> DialogueTrainingData:
+    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
         """Transform training trackers into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
@@ -130,13 +150,20 @@ class Policy:
         Args:
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
 
         Returns:
-            the :class:`rasa.core.training.data.DialogueTrainingData`
+            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
+              all training trackers
+            - the label ids (e.g. action ids) for every dialogue turn in all training
+              trackers
         """
 
-        training_data = self.featurizer.featurize_trackers(training_trackers, domain)
+        state_features, label_ids = self.featurizer.featurize_trackers(
+            training_trackers, domain, interpreter
+        )
 
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
@@ -144,13 +171,14 @@ class Policy:
                 "Limit training data to {} training samples."
                 "".format(max_training_samples)
             )
-            training_data.limit_training_data_to(max_training_samples)
+            state_features = state_features[:max_training_samples]
+            label_ids = label_ids[:max_training_samples]
 
-        return training_data
+        return state_features, label_ids
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -160,7 +188,7 @@ class Policy:
         Args:
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which can be used by the polices for featurization.
         """
 
@@ -170,14 +198,14 @@ class Policy:
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
 
@@ -187,32 +215,76 @@ class Policy:
 
         raise NotImplementedError("Policy must have the capacity to predict.")
 
-    def persist(self, path: Text) -> None:
-        """Persists the policy to a storage.
+    def _metadata(self) -> Optional[Dict[Text, Any]]:
+        """Returns this policy's attributes that should be persisted.
 
-        Args:
-            path: the path where to save the policy to
+        Policies following the default `persist()` and `load()` templates must
+        implement the `_metadata()` method."
+
+        Returns:
+            The policy metadata.
         """
-
-        raise NotImplementedError("Policy must have the capacity to persist itself.")
+        pass
 
     @classmethod
-    def load(cls, path: Text) -> "Policy":
-        """Loads a policy from the storage.
+    def _metadata_filename(cls) -> Optional[Text]:
+        """Returns the filename of the persisted policy metadata.
 
-        Needs to load its featurizer.
+        Policies following the default `persist()` and `load()` templates must
+        implement the `_metadata_filename()` method.
+
+        Returns:
+            The filename of the persisted policy metadata.
+        """
+        pass
+
+    def persist(self, path: Union[Text, Path]) -> None:
+        """Persists the policy to storage.
 
         Args:
-            path: the path from where to load the policy
+            path: Path to persist policy to.
         """
+        # not all policies have a featurizer
+        if self.featurizer is not None:
+            self.featurizer.persist(path)
 
-        raise NotImplementedError("Policy must have the capacity to load itself.")
+        file = Path(path) / self._metadata_filename()
+
+        rasa.shared.utils.io.create_directory_for_file(file)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
+
+    @classmethod
+    def load(cls, path: Union[Text, Path]) -> "Policy":
+        """Loads a policy from path.
+
+        Args:
+            path: Path to load policy from.
+
+        Returns:
+            An instance of `Policy`.
+        """
+        metadata_file = Path(path) / cls._metadata_filename()
+
+        if metadata_file.is_file():
+            data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
+
+            if (Path(path) / FEATURIZER_FILE).is_file():
+                featurizer = TrackerFeaturizer.load(path)
+                data["featurizer"] = featurizer
+
+            return cls(**data)
+
+        logger.info(
+            f"Couldn't load metadata for policy '{cls.__name__}'. "
+            f"File '{metadata_file}' doesn't exist."
+        )
+        return cls()
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.
 
         Args:
-            domain: the :class:`rasa.core.domain.Domain`
+            domain: the :class:`rasa.shared.core.domain.Domain`
         Returns:
             the list of the length of the number of actions
         """
@@ -228,7 +300,7 @@ def confidence_scores_for(
     Args:
         action_name: the name of the action for which the score should be set
         value: the confidence for `action_name`
-        domain: the :class:`rasa.core.domain.Domain`
+        domain: the :class:`rasa.shared.core.domain.Domain`
 
     Returns:
         the list of the length of the number of actions

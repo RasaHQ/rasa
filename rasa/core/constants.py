@@ -1,14 +1,14 @@
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-
 DEFAULT_SERVER_PORT = 5005
 
 DEFAULT_SERVER_FORMAT = "{}://localhost:{}"
 
 DEFAULT_SERVER_URL = DEFAULT_SERVER_FORMAT.format("http", DEFAULT_SERVER_PORT)
 
-DEFAULT_NLU_FALLBACK_THRESHOLD = 0.0
+DEFAULT_NLU_FALLBACK_THRESHOLD = 0.3
 
-DEFAULT_CORE_FALLBACK_THRESHOLD = 0.0
+DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD = 0.1
+
+DEFAULT_CORE_FALLBACK_THRESHOLD = 0.3
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
@@ -16,41 +16,7 @@ DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
 DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
-REQUESTED_SLOT = "requested_slot"
-
-# slots for knowledge base
-SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
-SLOT_LAST_OBJECT = "knowledge_base_last_object"
-SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
-DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
-
-# start of special user message section
-INTENT_MESSAGE_PREFIX = "/"
-EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
-
-USER_INTENT_RESTART = "restart"
-
-USER_INTENT_SESSION_START = "session_start"
-
-USER_INTENT_BACK = "back"
-
-USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
-
-DEFAULT_INTENTS = [
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
-    USER_INTENT_OUT_OF_SCOPE,
-    USER_INTENT_SESSION_START,
-    DEFAULT_NLU_FALLBACK_INTENT_NAME,
-]
-
-ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
-
 BEARER_TOKEN_PREFIX = "Bearer "
-
-# Key to access data in the event metadata
-# It specifies if an event was caused by an external entity (e.g. a sensor).
-IS_EXTERNAL = "is_external"
 
 # the lowest priority intended to be used by machine learning policies
 DEFAULT_POLICY_PRIORITY = 1
@@ -65,11 +31,12 @@ FALLBACK_POLICY_PRIORITY = 4
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
 FORM_POLICY_PRIORITY = 5
-UTTER_PREFIX = "utter_"
-RESPOND_PREFIX = "respond_"
+# The priority of the `RulePolicy` is higher than the priorities for `FallbackPolicy`,
+# `TwoStageFallbackPolicy` and `FormPolicy` to make it possible to use the
+# `RulePolicy` in conjunction with these deprecated policies.
+RULE_POLICY_PRIORITY = 6
 
 DIALOGUE = "dialogue"
-DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
 # RabbitMQ message property header added to events published using `rasa export`
 RASA_EXPORT_PROCESS_ID_HEADER_NAME = "rasa-export-process-id"

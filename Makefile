@@ -52,11 +52,6 @@ install-mitie:
 install-full: install install-mitie
 	poetry install -E full
 
-install-full-windows: install install-mitie
-	# tensorflow_text is not available on Windows, so we're skipping it
-	# see https://github.com/tensorflow/text/issues/44 for more details
-	poetry install -E spacy -E transformers -E jieba
-
 install-docs:
 	cd docs/ && yarn install
 
@@ -68,7 +63,31 @@ lint:
 	poetry run black --check rasa tests
 
 types:
-	MYPYPATH=./stubs poetry run mypy rasa
+	# FIXME: working our way towards removing these
+	# see https://github.com/RasaHQ/rasa/pull/6470
+	# the list below is sorted by the number of errors for each error code, in decreasing order
+	MYPYPATH=./stubs poetry run mypy rasa --disable-error-code arg-type \
+	--disable-error-code assignment \
+	--disable-error-code var-annotated \
+	--disable-error-code return-value \
+	--disable-error-code union-attr \
+	--disable-error-code override \
+	--disable-error-code operator \
+	--disable-error-code attr-defined \
+	--disable-error-code index \
+	--disable-error-code misc \
+	--disable-error-code return \
+	--disable-error-code call-arg \
+	--disable-error-code type-var \
+	--disable-error-code list-item \
+	--disable-error-code has-type \
+	--disable-error-code valid-type \
+	--disable-error-code dict-item \
+	--disable-error-code no-redef \
+	--disable-error-code func-returns-value
+
+types-old:
+	poetry run pytype --keep-going rasa -j 16
 
 prepare-tests-files:
 	poetry install -E spacy
@@ -110,6 +129,7 @@ cleanup-generated-changelog:
 
 test-docs: generate-pending-changelog docs
 	poetry run pytest tests/docs/*
+	cd docs && yarn mdx-lint
 
 docs:
 	cd docs/ && poetry run yarn pre-build && yarn build

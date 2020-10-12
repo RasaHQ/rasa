@@ -8,15 +8,19 @@ import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.events import UserUttered
+from rasa.core.agent import Agent
+from rasa.shared.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
     WronglyClassifiedUserUtterance,
     WronglyPredictedAction,
 )
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.training.story_writer.yaml_story_writer import YAMLStoryWriter
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
 import rasa.model
 import rasa.cli.utils
 from rasa.nlu.test import NO_ENTITY
@@ -142,7 +146,16 @@ def test_get_label_set(targets, exclude_label, expected):
     assert set(expected) == set(actual)
 
 
-async def test_e2e_warning_if_no_nlu_model(
+async def test_interpreter_passed_to_agent(
+    monkeypatch: MonkeyPatch, trained_rasa_model: Text
+):
+    from rasa.core.interpreter import RasaNLUInterpreter
+
+    agent = Agent.load(trained_rasa_model)
+    assert isinstance(agent.interpreter, RasaNLUInterpreter)
+
+
+def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
     from rasa.test import test_core
@@ -150,7 +163,7 @@ async def test_e2e_warning_if_no_nlu_model(
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
     monkeypatch.setattr(
-        sys.modules["rasa.test"], "_test_core", asyncio.coroutine(lambda *_, **__: True)
+        sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
     test_core(trained_core_model, additional_arguments={"e2e": True})
@@ -174,7 +187,7 @@ def test_write_classification_errors():
         WronglyPredictedAction("utter_greet", "utter_goodbye"),
     ]
     tracker = DialogueStateTracker.from_events("default", events)
-    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps, is_test_story=True)
     assert (
         dump.strip()
         == textwrap.dedent(
@@ -197,7 +210,182 @@ def test_log_failed_stories(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.core.test._log_stories([], path)
 
-    dump = rasa.utils.io.read_file(path)
+    dump = rasa.shared.utils.io.read_file(path)
 
     assert dump.startswith("#")
     assert len(dump.split("\n")) == 1
+
+
+@pytest.mark.parametrize(
+    "entity_predictions,entity_targets",
+    [
+        (
+            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"}],
+            [
+                {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
+                {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
+            ],
+        ),
+        (
+            [
+                {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
+                {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
+            ],
+            [
+                {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
+                {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
+            ],
+        ),
+        (
+            [
+                {"text": "hi, how are you", "start": 0, "end": 2, "entity": "bb"},
+                {"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"},
+            ],
+            [{"text": "hi, how are you", "start": 4, "end": 7, "entity": "aa"}],
+        ),
+        (
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 0,
+                    "end": 5,
+                    "entity": "person",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 22,
+                    "end": 28,
+                    "entity": "city",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                },
+            ],
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 22,
+                    "end": 28,
+                    "entity": "city",
+                }
+            ],
+        ),
+        (
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 0,
+                    "end": 5,
+                    "entity": "person",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                },
+            ],
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 22,
+                    "end": 28,
+                    "entity": "city",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                },
+            ],
+        ),
+        (
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                }
+            ],
+            [
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 0,
+                    "end": 5,
+                    "entity": "person",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 22,
+                    "end": 28,
+                    "entity": "city",
+                },
+                {
+                    "text": "Tanja is currently in Munich, but she lives in Berlin",
+                    "start": 47,
+                    "end": 53,
+                    "entity": "city",
+                },
+            ],
+        ),
+    ],
+)
+def test_evaluation_store_serialise(entity_predictions, entity_targets):
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
+
+    store = EvaluationStore(
+        entity_predictions=entity_predictions, entity_targets=entity_targets
+    )
+
+    targets, predictions = store.serialise()
+
+    assert len(targets) == len(predictions)
+
+    i_pred = 0
+    i_target = 0
+    for i, prediction in enumerate(predictions):
+        target = targets[i]
+        if prediction != "None" and target != "None":
+            predicted = entity_predictions[i_pred]
+            assert prediction == TrainingDataWriter.generate_entity(
+                predicted.get("text"), predicted
+            )
+            assert predicted.get("start") == entity_targets[i_target].get("start")
+            assert predicted.get("end") == entity_targets[i_target].get("end")
+
+        if prediction != "None":
+            i_pred += 1
+        if target != "None":
+            i_target += 1
+
+
+async def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
+    from rasa.core.test import _create_data_generator
+
+    test_file = tmp_path / "test.yml"
+    test_name = "my test story"
+    tests = f"""
+stories:
+- story: {test_name}
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+rules:
+- rule: rule which is ignored
+  steps:
+  - intent: greet
+  - action: utter_greet
+    """
+
+    test_file.write_text(tests)
+
+    generator = await _create_data_generator(str(test_file), default_agent)
+    test_trackers = generator.generate_story_trackers()
+    assert len(test_trackers) == 1
+    assert test_trackers[0].sender_id == test_name

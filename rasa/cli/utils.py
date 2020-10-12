@@ -2,16 +2,16 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
+from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Text
+
+from rasa.shared.constants import DEFAULT_MODELS_PATH
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from questionary import Question
 
-from rasa.constants import DEFAULT_MODELS_PATH
-from typing import NoReturn
-
 logger = logging.getLogger(__name__)
-
 
 FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
 
@@ -41,9 +41,7 @@ def get_validated_path(
             if current is None:
                 reason_str = f"Parameter '{parameter}' not set."
             else:
-                from rasa.utils.common import raise_warning  # avoid import cycle
-
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"The path '{current}' does not seem to exist. Using the "
                     f"default value '{default}' instead."
                 )
@@ -64,7 +62,7 @@ def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
     if not os.path.exists(path):
         return mandatory_keys
 
-    config_data = rasa.utils.io.read_config_file(path)
+    config_data = rasa.shared.utils.io.read_config_file(path)
 
     return [k for k in mandatory_keys if k not in config_data or config_data[k] is None]
 
@@ -84,7 +82,7 @@ def cancel_cause_not_found(
     default_clause = ""
     if default:
         default_clause = f"use the default location ('{default}') or "
-    print_error(
+    rasa.shared.utils.cli.print_error(
         "The path '{}' does not exist. Please make sure to {}specify it"
         " with '--{}'.".format(current, default_clause, parameter)
     )
@@ -93,7 +91,6 @@ def cancel_cause_not_found(
 
 def parse_last_positional_argument_as_model_path() -> None:
     """Fixes the parsing of a potential positional model path argument."""
-    import sys
 
     if (
         len(sys.argv) >= 2
@@ -197,48 +194,6 @@ def payload_from_button_question(button_question: "Question") -> Text:
         # Extract intent slash command if it's a button
         response = response[response.find("(") + 1 : response.find(")")]
     return response
-
-
-class bcolors:
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
-
-
-def wrap_with_color(*args: Any, color: Text):
-    return color + " ".join(str(s) for s in args) + bcolors.ENDC
-
-
-def print_color(*args: Any, color: Text):
-    print(wrap_with_color(*args, color=color))
-
-
-def print_success(*args: Any):
-    print_color(*args, color=bcolors.OKGREEN)
-
-
-def print_info(*args: Any):
-    print_color(*args, color=bcolors.OKBLUE)
-
-
-def print_warning(*args: Any):
-    print_color(*args, color=bcolors.WARNING)
-
-
-def print_error(*args: Any):
-    print_color(*args, color=bcolors.FAIL)
-
-
-def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:
-    """Print error message and exit the application."""
-
-    print_error(message)
-    sys.exit(exit_code)
 
 
 def signal_handler(sig, frame) -> NoReturn:

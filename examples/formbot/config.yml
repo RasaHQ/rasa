@@ -5,7 +5,7 @@ pipeline:
   - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
     token_pattern: (?u)\b\w+\b
-  - name: DucklingHTTPExtractor
+  - name: DucklingEntityExtractor
     url: http://localhost:8000
     dimensions:
       - number
@@ -15,5 +15,6 @@ pipeline:
 
 policies:
   - name: TEDPolicy
+    epochs: 100
   - name: AugmentedMemoizationPolicy
   - name: RulePolicy

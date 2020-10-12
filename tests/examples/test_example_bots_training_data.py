@@ -4,7 +4,7 @@ from typing import Text
 import pytest
 
 from rasa.cli import scaffold
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 
 
 @pytest.mark.parametrize(
@@ -14,6 +14,11 @@ from rasa.importers.importer import TrainingDataImporter
             "examples/concertbot/config.yml",
             "examples/concertbot/domain.yml",
             "examples/concertbot/data",
+        ),
+        (
+            "examples/formbot/config.yml",
+            "examples/formbot/domain.yml",
+            "examples/formbot/data",
         ),
         (
             "examples/knowledgebasebot/config.yml",

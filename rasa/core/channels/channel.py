@@ -16,8 +16,7 @@ from typing import (
 )
 
 from rasa.cli import utils as cli_utils
-from rasa.constants import DOCS_BASE_URL
-from rasa.core import utils
+from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 
 try:
     from urlparse import urljoin  # pytype: disable=import-error
@@ -30,9 +29,7 @@ logger = logging.getLogger(__name__)
 class UserMessage:
     """Represents an incoming message.
 
-     Includes the channel the responses should be sent to."""
-
-    DEFAULT_SENDER_ID = "default"
+    Includes the channel the responses should be sent to."""
 
     def __init__(
         self,
@@ -72,7 +69,7 @@ class UserMessage:
         if sender_id is not None:
             self.sender_id = str(sender_id)
         else:
-            self.sender_id = self.DEFAULT_SENDER_ID
+            self.sender_id = DEFAULT_SENDER_ID
 
         self.input_channel = input_channel
 
@@ -121,14 +118,12 @@ class InputChannel:
     @classmethod
     def raise_missing_credentials_exception(cls) -> NoReturn:
         raise Exception(
-            "To use the {} input channel, you need to "
-            "pass a credentials file using '--credentials'. "
-            "The argument should be a file path pointing to "
-            "a yml file containing the {} authentication "
-            "information. Details in the docs: "
-            "{}/user-guide/messaging-and-voice-channels/".format(
-                cls.name(), cls.name(), DOCS_BASE_URL
-            )
+            f"To use the {cls.name()} input channel, you need to "
+            f"pass a credentials file using '--credentials'. "
+            f"The argument should be a file path pointing to "
+            f"a yml file containing the {cls.name()} authentication "
+            f"information. Details in the docs: "
+            f"{DOCS_BASE_URL}/messaging-and-voice-channels/"
         )
 
     def get_output_channel(self) -> Optional["OutputChannel"]:
@@ -314,7 +309,7 @@ class CollectingOutputChannel(OutputChannel):
         }
 
         # filter out any values that are `None`
-        return utils.remove_none_values(obj)
+        return {k: v for k, v in obj.items() if v is not None}
 
     def latest_output(self) -> Optional[Dict[Text, Any]]:
         if self.messages:

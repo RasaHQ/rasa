@@ -3,14 +3,11 @@ id: how-to-deploy
 sidebar_label: Deploying Your Assistant
 title: Deploying Your Rasa Assistant
 description: How to deploy your Rasa Assistant with Docker Compose or Kubernetes/Openshift
+abstract: This page explains when and how to deploy an assistant built with Rasa.
+  It will allow you to make your assistant available to users and set you up with a production-ready environment.
 ---
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from './variables.json';
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="deploying-your-rasa-assistant"></a>
-
-This page explains when and how to deploy an assistant built with Rasa.
-It will allow you to make your assistant available to users and set you up with a production-ready environment.
 
 ## When to Deploy Your Assistant
 
@@ -19,11 +16,9 @@ important happy paths or is what we call a [minimum viable assistant](./glossary
 
 The recommended deployment methods described below make it easy to share your assistant
 with test users via the [share your assistant feature in
-Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot).
+Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant#share-your-bot).
 Then, when you're ready to make your assistant available via one or more [Messaging and Voice Channels](./messaging-and-voice-channels.mdx),
 you can easily add them to your existing deployment set up.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="recommended-deployment-methods"></a>
 
 ## Recommended Deployment Methods
 
@@ -42,6 +37,8 @@ cluster on your machine with sensible defaults, getting you up and running in on
 
   ```bash
   curl -s get-rasa-x.rasa.com | sudo bash
+  ```
+
 * Custom: See [Customizing the Script](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#server-quick-install)
   and the [Server Quick-Install docs](https://rasa.com/docs/rasa-x/installation-and-setup/install/quick-install-script) docs.
 
@@ -55,8 +52,6 @@ However, you can also customize the Helm charts if you have specific requirement
 
 * Custom: Read the above, as well as the [Advanced Configuration](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#helm-chart)
   documentation, and customize the [open source Helm charts](https://github.com/RasaHQ/rasa-x-helm) to your needs.
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="rasa-only-deployment"></a>
 
 ## Alternative Deployment Methods
 
@@ -74,16 +69,14 @@ for doing so, as well as manual instructions for any custom setups.
 It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your
 Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.
 
-* [Building a Rasa Assistant Locally](./prototype-an-assistant)
+* [Building a Rasa Assistant Locally](./playground.mdx)
 
-* [Building a Rasa Assistant in Docker](./docker/building-in-docker)
+* [Building a Rasa Assistant in Docker](./docker/building-in-docker.mdx)
 
-* [Deploying a Rasa Open Source Assistant in Docker Compose](./docker/deploying-in-docker-compose)
+* [Deploying a Rasa Open Source Assistant in Docker Compose](./docker/deploying-in-docker-compose.mdx)
 
 
 ## Deploying Your Action Server
-
-<a aria-hidden="true" tabIndex="-1" className="anchor enhancedAnchor" id="building-an-action-server-image"></a>
 
 ### Building an Action Server Image
 
@@ -92,18 +85,97 @@ as part of your deployment, without having to move code between servers.
 In addition, you can add any additional dependencies of systems or Python libraries
 that are part of your action code but not included in the base `rasa/rasa-sdk` image.
 
+#### Automating your Action Server Image Builds
+
+In addition to a manually creating a new Action Server image, you can use the [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) to automate image builds.
+If GitHub Actions are new to you, it might be helpful to get familiar with [GitHub Actions Documentation](https://docs.github.com/en/actions).
+
+The following steps assume that you already created a GitHub repository and you have a DockerHub account.
+
+To create a workflow for building and pushing a Docker image into a DockerHub registry:
+
+1. Add GitHub Secrets with your DockerHub login name and password.
+   You can find details on how to create encrypted secrets for a repository
+   in the [Github docs](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository)
+
+   The example uses the following secrets:
+   - `DOCKER_HUB_LOGIN` - a login name for DockerHub
+   - `DOCKER_HUB_PASSWORD` - a password for DockerHub
+
+2. In your GitHub repository create a file [`.github/workflows/action_server.yml`](https://github.com/RasaHQ/action-server-gha/blob/master/examples/action_server.yml).
+
+The GitHub Action workflow below builds a new docker image every time files inside the `actions/` directory have changed and the changes are pushed into the `master` branch.
+
+```yaml
+on:
+  push:
+    branches:
+      - master
+    paths:
+    - 'actions/**'
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    name: Build Action Server image and upgrade Rasa X deployment
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - id: action_server
+      name: Build an action server with a custom actions
+      uses: RasaHQ/action-server-gha@master
+      # Full list of parameters: https://github.com/RasaHQ/action-server-gha/tree/master#input-arguments
+      with:
+        docker_image_name: 'account_username/repository_name'
+        docker_registry_login: ${{ secrets.DOCKER_HUB_LOGIN }}
+        docker_registry_password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        # More details about github context:
+        # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#github-context
+        #
+        # github.sha - The commit SHA that triggered the workflow run
+        docker_image_tag: ${{ github.sha }}
+```
+
+3. Push your changes to the `master` branch. After changes are pushed, the workflow will build and push a new image into the DockerHub registry.
+
+4. Now, you can use your new brand docker image.
+
+5. You can also extend your workflow, so that you do not have to manually update your Rasa X deployment. The example below shows how to extend your workflow with an additional step that updates a Rasa X [Helm Chart](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server) deployment.
+
+```yaml
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    name: Build Action Server image and upgrade Rasa X deployment
+    steps:
+    [..]
+
+    # This step shows only the example of output parameter usage
+    # and it's not focused on deployment itself.
+    - name: "Upgrade a Rasa X deployment"
+      run: |
+        helm upgrade --install --reuse-values \
+          --set app.name=${{ steps.action_server.outputs.docker_image_name }} \
+          --set app.tag=${{ steps.action_server.outputs.docker_image_tag }} rasa rasa-x/rasa-x
+```
+
+As you can see it's possible to use output variables from the `action_server` step. The `steps.action_server.outputs.docker_image_name` variable returns
+a docker image name and the `steps.action_server.outputs.docker_image_tag` variable returns a docker image tag.
+
+More examples on how to use and customize [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) you can find in the [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) repository.
+
+#### Manually Building an Action Server
+
 To create your image:
 
-1. Move your actions code to a folder `actions` in your project directory.
-   Make sure to also add an empty `actions/__init__.py` file:
-
-   ```bash
-   mkdir actions
-   mv actions.py actions/actions.py
-   touch actions/__init__.py  # the init file indicates actions.py is a python module
-   ```
-
-   The `rasa/rasa-sdk` image will automatically look for the actions in `actions/actions.py`.
+1. Make sure your actions are defined in `actions/actions.py`. The `rasa/rasa-sdk`
+  image will automatically look for the actions in this file.
 
 2. If your actions have any extra dependencies, create a list of them in a file,
    `actions/requirements-actions.txt`.
@@ -176,4 +248,4 @@ your deployment:
 
 * [Docker Compose](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#connecting-a-custom-action-server)
 
-* [Rasa Open Source Only](./docker/deploying-in-docker-compose#running-multiple-services)
+* [Rasa Open Source Only](./docker/deploying-in-docker-compose.mdx#using-docker-compose-to-run-multiple-services)

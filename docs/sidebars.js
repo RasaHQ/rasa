@@ -1,31 +1,27 @@
 module.exports = {
-  someSidebar: [
+  default: [
+    'introduction',
+    'playground',
     {
       type: 'category',
       label: 'Building Assistants',
       collapsed: false,
       items: [
-        {
-          type: 'category',
-          label: 'Getting Started',
-          collapsed: true,
-          items: [
-            'index',
-            'prototype-an-assistant',
-            'installation',
-            // 'cheatsheet',
-            'migrate-from',
-          ],
-        },
+          'installation',
+//        {
+//          type: 'category',
+//          label: 'Getting Started',
+//          collapsed: true,
+//          items: [
+//            'installation',
+//            'migrate-from',
+//          ],
+//        },
         {
           type: 'category',
           label: 'Best Practices',
           collapsed: true,
-          items: [
-            'conversation-driven-development',
-            'generating-nlu-data',
-            'writing-stories',
-          ],
+          items: ['conversation-driven-development', 'generating-nlu-data', 'writing-stories'],
         },
         {
           type: 'category',
@@ -37,6 +33,7 @@ module.exports = {
             'fallback-handoff',
             'unexpected-input',
             'contextual-conversations',
+            'reaching-out-to-user',
           ],
         },
         {
@@ -51,16 +48,8 @@ module.exports = {
             'how-to-deploy',
           ],
         },
-        {
-          type: 'category',
-          label: 'Reference',
-          collapsed: true,
-          items: [
-            'glossary',
-            require("./docs/reference/sidebar.json"),
-          ],
-        },
-      ]
+        "glossary",
+      ],
     },
     {
       type: 'category',
@@ -70,12 +59,7 @@ module.exports = {
         {
           type: 'category',
           label: 'Training Data',
-          items: [
-            'training-data-format',
-            'nlu-training-data',
-            'stories',
-            'rules',
-          ],
+          items: ['training-data-format', 'nlu-training-data', 'stories', 'rules'],
         },
         'domain',
         {
@@ -83,19 +67,7 @@ module.exports = {
           label: 'Config',
           items: [
             'model-configuration',
-            {
-              type: 'category',
-              label: 'Pipeline Components',
-              items: [
-                'components/language-models',
-                'components/tokenizers',
-                'components/featurizers',
-                'components/intent-classifiers',
-                'components/entity-extractors',
-                'components/selectors',
-                'components/custom-nlu-components',
-              ],
-            },
+            'components',
             'policies',
             'training-data-importers',
           ],
@@ -104,30 +76,10 @@ module.exports = {
           type: 'category',
           label: 'Actions',
           items: [
-            // 'actions',
+            'actions',
             'responses',
-            {
-              type: 'category',
-              label: 'Custom Actions',
-              items: [
-                'custom-actions',
-                'knowledge-bases',
-                {
-                  type: 'category',
-                  label: 'Rasa SDK',
-                  collapsed: true,
-                  items: [
-                    'running-action-server',
-                    'tracker-dispatcher',
-                    // 'events',
-                    // 'rasa-sdk-changelog'
-                  ],
-                },
-              ],
-            },
-            'retrieval-actions',
+            'custom-actions',
             'forms',
-            'reminders-and-external-events',
             'default-actions',
           ],
         },
@@ -145,20 +97,23 @@ module.exports = {
             'connectors/cisco-webex-teams',
             'connectors/rocketchat',
             'connectors/mattermost',
+            'connectors/custom-connectors',
           ],
         },
         {
           type: 'category',
           label: 'Architecture', // name still confusing with architecture page elsewhere
           items: [
+            'arch-overview',
             'tracker-stores',
             'event-brokers',
             'model-storage',
             'lock-stores',
+            'nlu-only',
             'nlg',
           ],
         },
-      ]
+      ],
     },
     {
       type: 'category',
@@ -166,26 +121,24 @@ module.exports = {
       collapsed: true,
       items: [
         'command-line-interface',
-        {
-          type: 'category',
-          label: 'HTTP API',
-          collapsed: true,
-          items: [
-            'http-api',
-            'http-api-spec',
-          ],
-        },
-        'jupyter-notebooks',
+        'http-api',
+        // 'jupyter-notebooks',
       ],
+    },
+    {
+      type: 'category',
+      label: 'Reference',
+      collapsed: true,
+      items: [
+        'telemetry/telemetry',
+        'telemetry/reference',
+        require('./docs/reference/sidebar.json')],
     },
     {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: [
-        'changelog',
-        'migration-guide',
-      ],
+      items: ['changelog', 'migration-guide'],
     },
   ],
 };

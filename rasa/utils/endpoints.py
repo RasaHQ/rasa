@@ -5,6 +5,7 @@ from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
 from typing import Any, Optional, Text, Dict
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
 
@@ -17,12 +18,12 @@ def read_endpoint_config(
 ) -> Optional["EndpointConfig"]:
     """Read an endpoint configuration file from disk and extract one
 
-    config. """
+    config."""
     if not filename:
         return None
 
     try:
-        content = rasa.utils.io.read_config_file(filename)
+        content = rasa.shared.utils.io.read_config_file(filename)
 
         if endpoint_type in content:
             return EndpointConfig.from_dict(content[endpoint_type])

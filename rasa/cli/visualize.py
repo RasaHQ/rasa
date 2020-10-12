@@ -1,17 +1,23 @@
 import argparse
-import asyncio
 import os
 from typing import List
 
-from rasa import data
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import visualize as arguments
-from rasa.constants import DEFAULT_DATA_PATH
+from rasa.shared.constants import DEFAULT_DATA_PATH
+import rasa.shared.data
+import rasa.utils.common
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all visualization parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     visualize_parser = subparsers.add_parser(
         "visualize",
         parents=parents,
@@ -27,13 +33,11 @@ def add_subparser(
 def visualize_stories(args: argparse.Namespace):
     import rasa.core.visualize
 
-    loop = asyncio.get_event_loop()
-
-    args.stories = data.get_core_directory(args.stories)
+    args.stories = rasa.shared.data.get_core_directory(args.stories)
     if args.nlu is None and os.path.exists(DEFAULT_DATA_PATH):
-        args.nlu = data.get_nlu_directory(DEFAULT_DATA_PATH)
+        args.nlu = rasa.shared.data.get_nlu_directory(DEFAULT_DATA_PATH)
 
-    loop.run_until_complete(
+    rasa.utils.common.run_in_loop(
         rasa.core.visualize(
             args.config, args.domain, args.stories, args.nlu, args.out, args.max_history
         )

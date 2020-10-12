@@ -11,16 +11,16 @@ from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
 
 import rasa.core
+import rasa.shared.utils.common
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.mapping_policy import MappingPolicy
 import rasa.utils.io
-from rasa.core import jobs, utils
+from rasa.core import jobs
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
@@ -173,7 +173,8 @@ async def test_agent_with_model_server_in_thread(
     assert hash(agent.domain) == hash(moodbot_domain)
 
     agent_policies = {
-        utils.module_path_from_instance(p) for p in agent.policy_ensemble.policies
+        rasa.shared.utils.common.module_path_from_instance(p)
+        for p in agent.policy_ensemble.policies
     }
     moodbot_policies = set(moodbot_metadata["policy_names"])
     assert agent_policies == moodbot_policies
@@ -326,7 +327,7 @@ def test_rule_policy_without_fallback_action_present(
             policies=PolicyEnsemble.from_dict(policy_config),
         )
 
-    assert RulePolicy.__name__ in execinfo.value.message
+    assert RulePolicy.__name__ in str(execinfo.value)
 
 
 @pytest.mark.parametrize(

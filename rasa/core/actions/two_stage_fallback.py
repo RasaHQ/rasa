@@ -2,19 +2,11 @@ import copy
 import time
 from typing import List, Text, Optional, cast
 
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.actions import action
-from rasa.core.actions.action import (
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_LISTEN_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-)
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     Event,
     UserUtteranceReverted,
     ActionExecuted,
@@ -22,10 +14,17 @@ from rasa.core.events import (
     ActiveLoop,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.core.constants import (
+    USER_INTENT_OUT_OF_SCOPE,
+    ACTION_LISTEN_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_TWO_STAGE_FALLBACK_NAME,
+)
 from rasa.utils.endpoints import EndpointConfig
-
-ACTION_TWO_STAGE_FALLBACK_NAME = "two_stage_fallback"
 
 
 class TwoStageFallbackAction(LoopAction):

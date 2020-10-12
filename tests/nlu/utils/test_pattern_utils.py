@@ -3,8 +3,8 @@ from typing import Dict, List, Text
 import pytest
 
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.nlu.training_data import Message
-from rasa.nlu.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(
@@ -76,7 +76,13 @@ def test_extract_patterns_use_only_entities_regexes(
     training_data = TrainingData()
     if entity:
         training_data.training_examples = [
-            Message("text", data={"entities": [{"entity": entity, "value": "text"}]})
+            Message(
+                data={
+                    "text": "text",
+                    "intent": "greet",
+                    "entities": [{"entity": entity, "value": "text"}],
+                }
+            )
         ]
     if regex_features:
         training_data.regex_features = [regex_features]
@@ -106,7 +112,13 @@ def test_extract_patterns_use_only_entities_lookup_tables(
     training_data = TrainingData()
     if entity:
         training_data.training_examples = [
-            Message("text", data={"entities": [{"entity": entity, "value": "text"}]})
+            Message(
+                data={
+                    "text": "text",
+                    "intent": "greet",
+                    "entities": [{"entity": entity, "value": "text"}],
+                }
+            )
         ]
     if lookup_tables:
         training_data.lookup_tables = [lookup_tables]

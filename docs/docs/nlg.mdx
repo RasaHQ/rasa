@@ -4,112 +4,232 @@ sidebar_label: NLG
 title: NLG Servers
 ---
 
-
 Retraining the bot just to change the text copy can be suboptimal for
-some workflows. That's why Core also allows you to outsource the
+some workflows. That's why Rasa Open Source also allows you to outsource the
 response generation and separate it from the dialogue learning.
 
 The assistant will still learn to predict actions and to react to user input
 based on past dialogues, but the responses it sends back to the user
-are generated outside of Rasa Core.
+will be generated outside of Rasa Open Source.
 
-If the assistant wants to send a message to the user, it will call an
-external HTTP server with a `POST` request. To configure this endpoint,
-you need to create an `endpoints.yml` and pass it either to the `run`
-or `server` script. The content of the `endpoints.yml` should be
+When the assistant wants to send a message to the user, it will call an
+external HTTP server that you define.
 
-```yaml-rasa (docs/sources/data/test_endpoints/example_endpoints.yml)
-```
+## Responding to Requests
 
-Then pass the `enable-api` flag to the `rasa run` command when starting
-the server:
+### Response Format
 
-```shell
-rasa run \
-  --enable-api \
-  -m examples/babi/models \
-  --log-file out.log \
-  --endpoints endpoints.yml
-```
+When your model predicts that your bot should send a response to the user,
+it will send a request to your server, giving you the information
+required to select or generate a response.
 
-The body of the `POST` request sent to the endpoint will look
+The body of the `POST` request sent to your NLG endpoint will be structured
 like this:
 
 ```json
 {
-  "tracker": {
-    "latest_message": {
-      "text": "/greet",
-      "intent_ranking": [
-        {
-          "confidence": 1.0,
-          "name": "greet"
-        }
-      ],
-      "intent": {
-        "confidence": 1.0,
-        "name": "greet"
-      },
-      "entities": []
-    },
-    "sender_id": "22ae96a6-85cd-11e8-b1c3-f40f241f6547",
-    "paused": false,
-    "latest_event_time": 1531397673.293572,
-    "slots": {
-      "name": null
-    },
-    "events": [
-      {
-        "timestamp": 1531397673.291998,
-        "event": "action",
-        "name": "action_listen"
-      },
-      {
-        "timestamp": 1531397673.293572,
-        "parse_data": {
-          "text": "/greet",
-          "intent_ranking": [
-            {
-              "confidence": 1.0,
-              "name": "greet"
-            }
-          ],
-          "intent": {
-            "confidence": 1.0,
-            "name": "greet"
-          },
-          "entities": []
-        },
-        "event": "user",
-        "text": "/greet"
-      }
-    ]
+  "template":"utter_what_can_do",
+  "arguments":{
+    
   },
-  "arguments": {},
-  "template": "utter_greet",
-  "channel": {
-    "name": "collector"
+  "tracker":{
+    "sender_id":"user_0",
+    "slots":{
+      
+    },
+    "latest_message":{
+      "intent":{
+        "id":3014457480322877053,
+        "name":"greet",
+        "confidence":0.9999994039535522
+      },
+      "entities":[
+        
+      ],
+      "text":"Hello",
+      "message_id":"94838d6f49ff4366b254b6f6d23a90cf",
+      "metadata":{
+        
+      },
+      "intent_ranking":[
+        {
+          "id":3014457480322877053,
+          "name":"greet",
+          "confidence":0.9999994039535522
+        },
+        {
+          "id":8842445304628198686,
+          "name":"ask_forget_reminders",
+          "confidence":5.675940428773174e-07
+        },
+        {
+          "id":-2566831912141022859,
+          "name":"bye",
+          "confidence":3.418941929567154e-08
+        },
+        {
+          "id":8340513453672591403,
+          "name":"ask_id",
+          "confidence":2.5274500714544956e-08
+        },
+        {
+          "id":5822154213939471096,
+          "name":"ask_remind_call",
+          "confidence":2.4177523982871207e-08
+        }
+      ]
+    },
+    "latest_event_time":1599476297.694504,
+    "followup_action":null,
+    "paused":false,
+    "events":[
+      {
+        "event":"action",
+        "timestamp":1599476297.68784,
+        "name":"action_session_start",
+        "policy":null,
+        "confidence":null
+      },
+      {
+        "event":"session_started",
+        "timestamp":1599476297.6878452
+      },
+      {
+        "event":"action",
+        "timestamp":1599476297.6878562,
+        "name":"action_listen",
+        "policy":null,
+        "confidence":null
+      },
+      {
+        "event":"user",
+        "timestamp":1599476297.694504,
+        "text":"Hello",
+        "parse_data":{
+          "intent":{
+            "id":3014457480322877053,
+            "name":"greet",
+            "confidence":0.9999994039535522
+          },
+          "entities":[
+            
+          ],
+          "text":"Hello",
+          "message_id":"94838d6f49ff4366b254b6f6d23a90cf",
+          "metadata":{
+            
+          },
+          "intent_ranking":[
+            {
+              "id":3014457480322877053,
+              "name":"greet",
+              "confidence":0.9999994039535522
+            },
+            {
+              "id":8842445304628198686,
+              "name":"ask_forget_reminders",
+              "confidence":5.675940428773174e-07
+            },
+            {
+              "id":-2566831912141022859,
+              "name":"bye",
+              "confidence":3.418941929567154e-08
+            },
+            {
+              "id":8340513453672591403,
+              "name":"ask_id",
+              "confidence":2.5274500714544956e-08
+            },
+            {
+              "id":5822154213939471096,
+              "name":"ask_remind_call",
+              "confidence":2.4177523982871207e-08
+            }
+          ]
+        },
+        "input_channel":"rest",
+        "message_id":"94838d6f49ff4366b254b6f6d23a90cf",
+        "metadata":{
+          
+        }
+      }
+    ],
+    "latest_input_channel":"rest",
+    "active_loop":{
+      
+    },
+    "latest_action_name":"action_listen"
+  },
+  "channel":{
+    "name":"collector"
   }
 }
 ```
 
-The endpoint then needs to respond with the generated response:
+Here is an overview of the high-level keys in the post request: 
+
+Key | Description
+---|---
+`template` | The name of the response predicted by Rasa Open Source.
+`arguments` | Optional keyword arguments that can be provided by custom actions.
+`tracker` | A dictionary containing the entire conversation history.
+`channel` | The output channel this message will be sent to.
+
+You can use any or all of this information to decide
+how to generate your response.
+
+### Response Format
+
+The endpoint needs to respond with the generated response. 
+Rasa will then sent this response back to the user.
+
+Below are the possible keys of a response and their (empty) types: 
 
 ```json
 {
-    "text": "hey there",
+    "text": "Some text",
     "buttons": [],
-    "image": null,
+    "image": null,  # string of image URL
     "elements": [],
-    "attachments": []
+    "attachments": [], 
+    "custom": {}
 }
 ```
 
-Rasa will then use this response and sent it back to the user.
+You can choose to provide just text, or a combination of different types of rich responses. 
+Just like [the responses defined in the domain file](./responses.mdx), a response needs to contain at the very least
+either `text` or `custom` to be a valid response. 
 
-:::note
+:::caution Calling responses from stories
 If you use an external NLG service, you don't need to specify the
-responses in the domain, but you still need to add the utterance names
-to the actions list of the domain.
+responses under `responses` in the domain. However, you still need to add the response names
+to the `actions` list of the domain if you want to call them directly from
+your stories.
 
 :::
+
+
+## Configuring the Server URL
+
+To tell Rasa Open Source where to find your NLG server, add the URL to your `endpoints.yml`: 
+
+```yaml-rasa title="endpoints.yml"
+nlg:
+  url: http://localhost:5055/nlg
+```
+
+If your NLG server is protected and Rasa Open Source will need authentication to
+access it, you can configure authentication in the endpoints:
+
+```yaml-rasa title="endpoints.yml"
+nlg:
+  url: http://localhost:5055/nlg
+  # 
+  # You can also specify additional parameters, if you need them:
+  # headers:
+  #   my-custom-header: value
+  # token: "my_authentication_token"  # will be passed as a GET parameter
+  # basic_auth:
+  #   username: user
+  #   password: pass
+```
