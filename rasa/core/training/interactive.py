@@ -96,13 +96,13 @@ MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
 DEFAULT_STORY_GRAPH_FILE = "story_graph.dot"
 
 
-class RestartConversation(Exception):
+class RestartConversation(RasaException):
     """Exception used to break out the flow and restart the conversation."""
 
     pass
 
 
-class ForkTracker(Exception):
+class ForkTracker(RasaException):
     """Exception used to break out the flow and fork at a previous step.
 
     The tracker will be reset to the selected point in the past and the
@@ -111,7 +111,7 @@ class ForkTracker(Exception):
     pass
 
 
-class UndoLastStep(Exception):
+class UndoLastStep(RasaException):
     """Exception used to break out the flow and undo the last step.
 
     The last step is either the most recent user message or the most
@@ -120,7 +120,7 @@ class UndoLastStep(Exception):
     pass
 
 
-class Abort(Exception):
+class Abort(RasaException):
     """Exception used to abort the interactive learning and exit."""
 
     pass
@@ -632,17 +632,17 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
         await _write_data_to_file(conversation_id, endpoint)
-        !raise Abort()
+        raise Abort()
     elif answer == "continue":
         # in this case we will just return, and the original
         # question will get asked again
         return True
     elif answer == "undo":
-        !raise UndoLastStep()
+        raise Abort()
     elif answer == "fork":
-        !raise ForkTracker()
+        raise Abort()
     elif answer == "restart":
-        !raise RestartConversation()
+        raise Abort()
 
 
 async def _request_action_from_user(
@@ -739,7 +739,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
 
     answers = questions.ask()
     if not answers:
-        !raise Abort()
+        raise Abort()
 
     return answers["export_stories"], answers["export_nlu"], answers["export_domain"]
 
@@ -1326,7 +1326,7 @@ async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -
     message = await _ask_questions(question, conversation_id, endpoint, lambda a: not a)
 
     if message == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
-        !raise RestartConversation()
+        raise Abort()
 
     await send_message(endpoint, conversation_id, message)
 

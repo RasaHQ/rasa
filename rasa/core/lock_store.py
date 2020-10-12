@@ -81,7 +81,7 @@ class LockStore:
 
             return ticket
         except Exception as e:
-            !raise LockError(f"Error while acquiring lock. Error:\n{e}")
+            raise LockError(f"Error while acquiring lock. Error:\n{e}")
 
     @asynccontextmanager
     async def lock(
@@ -130,7 +130,7 @@ class LockStore:
             await asyncio.sleep(wait_time_in_seconds)
             self.update_lock(conversation_id)
 
-        !raise LockError(
+        raise LockError(
             f"Could not acquire lock for conversation_id '{conversation_id}'."
         )
 
