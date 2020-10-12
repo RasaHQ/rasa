@@ -166,7 +166,7 @@ def create_validator(
         def validate(document: Document) -> None:
             is_valid = function(document.text)
             if not is_valid:
-                !raise ValidationError(message=error_message)
+                raise ValidationError(message=error_message)
 
     return FunctionValidator
 
