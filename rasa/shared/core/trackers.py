@@ -850,14 +850,16 @@ def get_trackers_for_conversation_sessions(
 
     def _create_empty_tracker() -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
-            tracker.sender_id, [], tracker_slots, sender_source=tracker.sender_source,
+            tracker.sender_id,
+            [],
+            tracker_slots,
+            sender_source=tracker.sender_source,
         )
 
     processed_first_session_start = False
     current_tracker = _create_empty_tracker()
 
-    for i in range(len(applied_events)):
-        event = applied_events[i]
+    for i, event in enumerate(applied_events):
         is_session_started_event = (
             isinstance(event, ActionExecuted)
             and event.action_name == ACTION_SESSION_START_NAME
