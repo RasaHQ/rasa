@@ -576,7 +576,7 @@ def strip_sensitive_data_from_sentry_event(
         for frame in value.get("stacktrace", {}).get("frames", []):
             frame["abs_path"] = ""
 
-            if "rasa_sdk/executor.py" in frame["filename"]:
+            if f"rasa_sdk{os.path.sep}executor.py" in frame["filename"]:
                 # this looks a lot like an exception in the SDK and hence custom code
                 # no need for us to deal with that
                 return None
@@ -603,7 +603,7 @@ def initialize_error_reporting() -> None:
     Exceptions are reported to sentry. We avoid sending any metadata (local
     variables, paths, ...) to make sure we don't compromise any data. Only the
     exception and its stacktrace is logged and only if the exception origins
-    from the `rasa` package. """
+    from the `rasa` package."""
     import sentry_sdk
     from sentry_sdk import configure_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration

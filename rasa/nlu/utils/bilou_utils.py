@@ -130,7 +130,7 @@ def build_tag_id_dict(
     distinct_tags = set(
         [
             tag_without_prefix(e)
-            for example in training_data.training_examples
+            for example in training_data.nlu_examples
             if example.get(bilou_key)
             for e in example.get(bilou_key)
         ]
@@ -157,7 +157,7 @@ def apply_bilou_schema(training_data: TrainingData) -> None:
     Args:
         training_data: the training data
     """
-    for message in training_data.training_examples:
+    for message in training_data.nlu_examples:
         entities = message.get(ENTITIES)
 
         if not entities:
