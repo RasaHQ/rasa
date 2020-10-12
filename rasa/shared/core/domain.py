@@ -324,6 +324,9 @@ class Domain:
 
         # `use_entities` is either a list of explicitly included entities
         # or `True` if all should be included
+        # if the listed entities have a role or group label, concatenate the entity label with the
+        # corresponding role or group label to make sure roles and groups can also influence
+        # the dialogue predictions
         if properties[USE_ENTITIES_KEY] is True:
             included_entities = set(entities)
             included_entities.update(Domain.concatenate_entity_labels(roles))
@@ -747,7 +750,7 @@ class Domain:
 
     @staticmethod
     def concatenate_entity_labels(
-        entities: Dict[Text, List[Text]], entity: Optional[Text] = None
+        entity_labels: Dict[Text, List[Text]], entity: Optional[Text] = None
     ) -> List[Text]:
         """Concatenates the given entity labels with their corresponding sub-labels.
 
@@ -755,24 +758,24 @@ class Domain:
         corresponding sub-labels.
 
         Args:
-            entities: A map of an entity label to its sub-label list.
+            entity_labels: A map of an entity label to its sub-label list.
             entity: If present, only this entity will be considered.
 
         Returns:
             A list of labels.
         """
-        if entity is not None and entity not in entities:
+        if entity is not None and entity not in entity_labels:
             return []
 
         if entity:
             return [
                 f"{entity}{ENTITY_LABEL_SEPARATOR}{sub_label}"
-                for sub_label in entities[entity]
+                for sub_label in entity_labels[entity]
             ]
 
         return [
             f"{entity_label}{ENTITY_LABEL_SEPARATOR}{entity_sub_label}"
-            for entity_label, entity_sub_labels in entities.items()
+            for entity_label, entity_sub_labels in entity_labels.items()
             for entity_sub_label in entity_sub_labels
         ]
 
@@ -799,6 +802,10 @@ class Domain:
         )
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
+
+        # If Entity Roles and Groups is used, we also need to make sure the roles and groups get featurized.
+        # We concatenate the entity label with the role/group label using a special separator to make
+        # sure that the resulting label is unique (as you can have the same role/group label for different entities).
         entity_names = (
             set(entity["entity"] for entity in entities if "entity" in entity.keys())
             | set(
@@ -813,6 +820,8 @@ class Domain:
             )
         )
 
+        # the USED_ENTITIES_KEY of an intent also contains the entity labels and the concatenated entity labels with
+        # their corresponding roles and groups labels
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
         return entity_names.intersection(wanted_entities)
@@ -1024,6 +1033,8 @@ class Domain:
             ):
                 # Default intents should be not dumped with the domain
                 continue
+            # `use_entities` and `ignore_entities` in the domain file do not consider the role and group labels
+            # remove them from the list to make sure to not put them into the domain file
             use_entities = set(
                 [
                     entity

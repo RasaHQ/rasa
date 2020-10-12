@@ -30,7 +30,7 @@ from rasa.shared.core.domain import (
     ENTITY_LABEL_SEPARATOR,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.events import ActionExecuted, SlotSet
+from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
@@ -1047,3 +1047,27 @@ def test_retrieval_intent_template_seggregation():
         "utter_chitchat/ask_weather",
         "utter_chitchat/ask_name",
     ]
+
+
+def test_get_featurized_entities():
+    domain = Domain.load("data/test_domains/travel_form.yml")
+
+    user_uttered = UserUttered(
+        text="Hello, I am going to London",
+        intent={"name": "greet", "confidence": 1.0},
+        entities=[{"entity": "GPE", "value": "London", "role": "destination"}],
+    )
+
+    featurized_entities = domain._get_featurized_entities(user_uttered)
+
+    assert featurized_entities == set()
+
+    user_uttered = UserUttered(
+        text="I am going to London",
+        intent={"inform": "greet", "confidence": 1.0},
+        entities=[{"entity": "GPE", "value": "London", "role": "destination"}],
+    )
+
+    featurized_entities = domain._get_featurized_entities(user_uttered)
+
+    assert featurized_entities == {"GPE", f"GPE{ENTITY_LABEL_SEPARATOR}destination"}
