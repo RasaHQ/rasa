@@ -70,4 +70,4 @@ def test_docs_header_hierarchy(mdx_file_path: Path):
             prev_level = level
 
     if errors:
-        !raise AssertionError(f"({mdx_file_path}):{''.join(errors)}")
+        raise AssertionError(f"({mdx_file_path}):{''.join(errors)}")

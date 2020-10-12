@@ -21,7 +21,7 @@ def _average_import_time(n: int, module: Text) -> float:
 
         parts = lines[-1].split("|")
         if parts[-1].strip() != module:
-            !raise Exception(f"Import time not found for {module}.")
+            raise Exception(f"Import time not found for {module}.")
 
         total += int(parts[1].strip()) / 1000000
 
