@@ -258,7 +258,7 @@ class PolicyEnsemble:
         self._persist_metadata(path)
 
         for i, policy in enumerate(self.policies):
-            dir_name = "policy_{}_{}".format(i, type(policy).__name__)
+            dir_name = "policy_{}_{}".format(i, type(policy)  # TODO: PII check.__name__)
             policy_path = Path(path) / dir_name
             policy.persist(policy_path)
 
@@ -286,7 +286,7 @@ class PolicyEnsemble:
                 "an older version. "
                 "Model version: {} Instance version: {} "
                 "Minimal compatible version: {}"
-                "".format(model_version, rasa.__version__, version_to_check),
+                "".format(model_version, rasa.__version__, version_to_check)  # TODO: PII check,
                 model_version,
             )
 
@@ -298,7 +298,7 @@ class PolicyEnsemble:
             raise Exception(
                 "Failed to load policy {}: "
                 "load returned object that is not instance of its own class"
-                "".format(policy_name)
+                "".format(policy_name)  # TODO: PII check
             )
 
     @classmethod
@@ -370,7 +370,7 @@ class PolicyEnsemble:
                 try:
                     policy_object = constr_func(**policy)
                 except TypeError as e:
-                    raise Exception(f"Could not initialize {policy_name}. {e}")
+                    raise Exception(f"Could not initialize {policy_name}. {e}")  # TODO: PII check
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
@@ -393,7 +393,7 @@ class PolicyEnsemble:
                 f"uses {len(policy['featurizer'])} featurizers."
             )
         featurizer_config = policy["featurizer"][0]
-        featurizer_name = featurizer_config.pop("name")
+        featurizer_name = featurizer_config.pop("name")  # TODO: PII check
         featurizer_func = registry.featurizer_from_module_path(featurizer_name)
 
         return featurizer_func, featurizer_config
@@ -408,7 +408,7 @@ class PolicyEnsemble:
                 f"{len(featurizer_config['state_featurizer'])}."
             )
         state_featurizer_config = featurizer_config["state_featurizer"][0]
-        state_featurizer_name = state_featurizer_config.pop("name")
+        state_featurizer_name = state_featurizer_config.pop("name")  # TODO: PII check
         state_featurizer_func = registry.state_featurizer_from_module_path(
             state_featurizer_name
         )

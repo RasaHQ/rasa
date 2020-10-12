@@ -323,7 +323,7 @@ class SlackInput(InputChannel):
             return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
 
         if metadata is not None:
-            output_channel = metadata.get("out_channel")
+            output_channel = metadata.get("out_channel")  # TODO: PII check
             if self.use_threads:
                 thread_id = metadata.get("thread_id")
             else:
@@ -343,7 +343,7 @@ class SlackInput(InputChannel):
 
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error(f"Exception when trying to handle message.{e}")
+            logger.error(f"Exception when trying to handle message.{e}")  # TODO: PII check
             logger.error(str(e), exc_info=True)
 
         return response.text("")
@@ -444,7 +444,7 @@ class SlackInput(InputChannel):
                         )
                     if payload["actions"][0]["type"] == "button":
                         # link buttons don't have "value", don't send their clicks to bot
-                        return response.text("User clicked link button")
+                        return response.text("User clicked link button")  # TODO: PII check
                 return response.text(
                     "The input message could not be processed.", status=500
                 )

@@ -57,8 +57,8 @@ async def visualize(
         stories_path, output_path, max_history, nlu_training_data=nlu_training_data
     )
 
-    full_output_path = "file://{}".format(os.path.abspath(output_path))
-    logger.info(f"Finished graph creation. Saved into {full_output_path}")
+    full_output_path = "file://{}".format(os.path.abspath(output_path)  # TODO: PII check)
+    logger.info(f"Finished graph creation. Saved into {full_output_path}")  # TODO: PII check
 
     import webbrowser
 

@@ -202,7 +202,7 @@ def run(args: argparse.Namespace) -> None:
         )
 
     if args.no_prompt and not os.path.isdir(path):
-        print_error_and_exit(f"Project init path '{path}' not found.")
+        print_error_and_exit(f"Project init path '{path}' not found.")  # TODO: PII check
 
     if path and not os.path.isdir(path):
         _ask_create_path(path)

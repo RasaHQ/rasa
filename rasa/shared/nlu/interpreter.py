@@ -123,7 +123,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
             return event_name, confidence, entities
         else:
-            logger.warning(f"Failed to parse intent end entities from '{user_input}'.")
+            logger.warning(f"Failed to parse intent end entities from '{user_input}'.")  # TODO: PII check
             return None, 0.0, []
 
     async def parse(

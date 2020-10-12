@@ -319,7 +319,7 @@ class DialogueStateTracker:
         if key in self.slots:
             return self.slots[key].value
         else:
-            logger.info(f"Tried to access non existent slot '{key}'")
+            logger.info(f"Tried to access non existent slot '{key}'")  # TODO: PII check
             return None
 
     def get_latest_entity_values(
@@ -544,7 +544,7 @@ class DialogueStateTracker:
 
     def copy(self) -> "DialogueStateTracker":
         """Creates a duplicate of this tracker"""
-        return self.travel_back_in_time(float("inf"))
+        return self.travel_back_in_time(float("inf")  # TODO: PII check)
 
     def travel_back_in_time(self, target_time: float) -> "DialogueStateTracker":
         """Creates a new tracker with a state at a specific timestamp.
@@ -720,7 +720,7 @@ class DialogueStateTracker:
     def _create_events(self, evts: List[Event]) -> Deque[Event]:
 
         if evts and not isinstance(evts[0], Event):  # pragma: no cover
-            raise ValueError("events, if given, must be a list of events")
+            raise ValueError("events, if given, must be a list of events")  # TODO: PII check
         return deque(evts, self._max_event_history)
 
     def __eq__(self, other) -> bool:

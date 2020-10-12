@@ -215,7 +215,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
         rasa.shared.utils.io.write_yaml(c, rasa.constants.GLOBAL_USER_CONFIG_PATH)
         return True
     except Exception as e:
-        logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
+        logger.warning(f"Failed to write global config. Error: {e}. Skipping.")  # TODO: PII check
         return False
 
 
@@ -226,7 +226,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         if unavailable_ok:
             return None
         else:
-            raise ValueError(f"Configuration '{name}' key not found.")
+            raise ValueError(f"Configuration '{name}' key not found.")  # TODO: PII check
 
     # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
     # in tests

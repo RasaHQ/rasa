@@ -880,7 +880,7 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
-    nlu_format = _get_nlu_target_format(export_nlu_path)
+    nlu_format = _get_nlu_target_format(export_nlu_path)  # TODO: PII check
     if nlu_format == RASA_YAML:
         stringified_training_data = nlu_data.nlu_as_yaml()
     elif nlu_format == MARKDOWN:
@@ -1429,7 +1429,7 @@ def _print_help(skip_visualization: bool) -> None:
     if not skip_visualization:
         visualization_url = DEFAULT_SERVER_FORMAT.format(
             "http", DEFAULT_SERVER_PORT + 1
-        )
+        )  # TODO: PII check
         visualization_help = (
             f"Visualisation at {visualization_url}/visualization.html ."
         )
@@ -1462,7 +1462,7 @@ async def record_messages(
             )
             return
 
-        intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+        intents = [next(iter(i)) for i in (domain.get("intents")  # TODO: PII check or [])]
 
         num_messages = 0
 
@@ -1575,7 +1575,7 @@ def _serve_application(
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
-    endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format("http", port))
+    endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format("http", port)  # TODO: PII check)
 
     async def run_interactive_io(running_app: Sanic) -> None:
         """Small wrapper to shut down the server once cmd io is done."""
@@ -1660,7 +1660,7 @@ async def wait_til_server_is_running(
     while max_retries:
         try:
             r = await retrieve_status(endpoint)
-            logger.info(f"Reached core: {r}")
+            logger.info(f"Reached core: {r}")  # TODO: PII check
             if not r.get("is_ready"):
                 # server did not finish loading the agent yet
                 # in this case, we need to wait till the model trained

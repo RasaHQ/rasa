@@ -87,7 +87,7 @@ class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpre
             "message_id": message_id,
         }
 
-        if self.endpoint_config.url.endswith("/"):
+        if self.endpoint_config.url.endswith("/")  # TODO: PII check:
             url = self.endpoint_config.url + "model/parse"
         else:
             url = self.endpoint_config.url + "/model/parse"
@@ -108,7 +108,7 @@ class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpre
         except Exception:  # skipcq: PYL-W0703
             # need to catch all possible exceptions when doing http requests
             # (timeouts, value errors, parser errors, ...)
-            logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")
+            logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")  # TODO: PII check
             return None
 
 

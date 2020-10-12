@@ -32,7 +32,7 @@ def read_endpoint_config(
     except FileNotFoundError:
         logger.error(
             "Failed to read endpoint configuration "
-            "from {}. No such file.".format(os.path.abspath(filename))
+            "from {}. No such file.".format(os.path.abspath(filename)  # TODO: PII check)
         )
         return None
 
@@ -224,5 +224,5 @@ def float_arg(
     try:
         return float(str(arg))
     except (ValueError, TypeError):
-        logger.warning(f"Failed to convert '{arg}' to float.")
+        logger.warning(f"Failed to convert '{arg}' to float.")  # TODO: PII check
         return default

@@ -80,7 +80,7 @@ class LockStore:
 
             return ticket
         except Exception as e:
-            raise LockError(f"Error while acquiring lock. Error:\n{e}")
+            raise LockError(f"Error while acquiring lock. Error:\n{e}")  # TODO: PII check
 
     @asynccontextmanager
     async def lock(
@@ -183,7 +183,7 @@ class LockStore:
     @staticmethod
     def _log_deletion(conversation_id: Text, deletion_successful: bool) -> None:
         if deletion_successful:
-            logger.debug(f"Deleted lock for conversation '{conversation_id}'.")
+            logger.debug(f"Deleted lock for conversation '{conversation_id}'.")  # TODO: PII check
         else:
             logger.debug(f"Could not delete lock for conversation '{conversation_id}'.")
 

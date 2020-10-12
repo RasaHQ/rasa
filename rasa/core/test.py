@@ -378,7 +378,7 @@ def _collect_user_uttered_predictions(
             raise ValueError(
                 "NLU model predicted a wrong intent. Failed Story:"
                 " \n\n{}".format(
-                    YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
+                    YAMLStoryWriter()  # TODO: PII check.dumps(partial_tracker.as_story().story_steps)
                 )
             )
     else:
@@ -592,7 +592,7 @@ async def _collect_story_predictions(
     correct_dialogues = []
     number_of_stories = len(completed_trackers)
 
-    logger.info(f"Evaluating {number_of_stories} stories\nProgress:")
+    logger.info(f"Evaluating {number_of_stories} stories\nProgress:")  # TODO: PII check
 
     action_list = []
 
@@ -717,7 +717,7 @@ async def test(
 
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
             rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
-            logger.info(f"Stories report saved to {report_filename}.")
+            logger.info(f"Stories report saved to {report_filename}.")  # TODO: PII check
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
                 targets, predictions, output_dict=True
@@ -776,15 +776,15 @@ def _log_evaluation_table(
     include_report: bool = True,
 ) -> None:  # pragma: no cover
     """Log the sklearn evaluation metrics."""
-    logger.info(f"Evaluation Results on {name} level:")
-    logger.info(f"\tCorrect:          {int(len(golds) * accuracy)} / {len(golds)}")
-    logger.info(f"\tF1-Score:         {f1:.3f}")
-    logger.info(f"\tPrecision:        {precision:.3f}")
-    logger.info(f"\tAccuracy:         {accuracy:.3f}")
-    logger.info(f"\tIn-data fraction: {in_training_data_fraction:.3g}")
+    logger.info(f"Evaluation Results on {name} level:")  # TODO: PII check
+    logger.info(f"\tCorrect:          {int(len(golds) * accuracy)} / {len(golds)}")  # TODO: PII check
+    logger.info(f"\tF1-Score:         {f1:.3f}")  # TODO: PII check
+    logger.info(f"\tPrecision:        {precision:.3f}")  # TODO: PII check
+    logger.info(f"\tAccuracy:         {accuracy:.3f}")  # TODO: PII check
+    logger.info(f"\tIn-data fraction: {in_training_data_fraction:.3g}")  # TODO: PII check
 
     if include_report:
-        logger.info(f"\tClassification report: \n{report}")
+        logger.info(f"\tClassification report: \n{report}")  # TODO: PII check
 
 
 def _plot_story_evaluation(
@@ -866,7 +866,7 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
 async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
     from rasa.core.agent import Agent
 
-    logger.info(f"Evaluating model '{model}'")
+    logger.info(f"Evaluating model '{model}'")  # TODO: PII check
 
     agent = Agent.load(model)
     generator = await _create_data_generator(stories_file, agent)

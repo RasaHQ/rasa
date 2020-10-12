@@ -203,7 +203,7 @@ async def _pull_model_and_fingerprint(
                         "Model server returned {} status code, "
                         "indicating that no new model is available. "
                         "Current fingerprint: {}"
-                        "".format(resp.status, fingerprint)
+                        "".format(resp.status, fingerprint)  # TODO: PII check
                     )
                     return None
                 elif resp.status == 404:
@@ -424,7 +424,7 @@ class Agent:
                 "The model path should be a 'tar.gz' file or a directory "
                 "containing the various model files in the sub-directories 'core' "
                 "and 'nlu'. \n\nIf you want to load training data instead of "
-                "a model, use `agent.load_data(...)` instead.".format(model_path)
+                "a model, use `agent.load_data(...)` instead.".format(model_path)  # TODO: PII check
             )
 
         core_model, nlu_model = get_model_subdirectories(model_path)
@@ -757,7 +757,7 @@ class Agent:
             logger.info(
                 "Model directory {} exists and contains old "
                 "model files. All files will be overwritten."
-                "".format(model_path)
+                "".format(model_path)  # TODO: PII check
             )
             shutil.rmtree(model_path)
         else:
@@ -782,7 +782,7 @@ class Agent:
         self.domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
         self.domain.persist_specification(model_path)
 
-        logger.info("Persisted model to '{}'".format(os.path.abspath(model_path)))
+        logger.info("Persisted model to '{}'".format(os.path.abspath(model_path)  # TODO: PII check))
 
     async def visualize(
         self,
@@ -888,7 +888,7 @@ class Agent:
             raise ValueError(
                 "Invalid param `policies`. Passed object is "
                 "of type '{}', but should be policy, an array of "
-                "policies, or a policy ensemble.".format(passed_type)
+                "policies, or a policy ensemble.".format(passed_type)  # TODO: PII check
             )
 
     @staticmethod

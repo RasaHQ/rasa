@@ -160,7 +160,7 @@ def find_story_conflicts(
     if not max_history:
         max_history = _get_length_of_longest_story(trackers, domain)
 
-    logger.info(f"Considering the preceding {max_history} turns for conflict analysis.")
+    logger.info(f"Considering the preceding {max_history} turns for conflict analysis.")  # TODO: PII check
 
     # We do this in two steps, to reduce memory consumption:
 

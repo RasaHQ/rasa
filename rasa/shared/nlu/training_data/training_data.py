@@ -554,10 +554,10 @@ class TrainingData:
         )
         # log the number of training examples per intent
 
-        logger.debug(f"{newline.join(number_of_examples_for_each_intent)}")
+        logger.debug(f"{newline.join(number_of_examples_for_each_intent)}")  # TODO: PII check
 
         if self.intents:
-            logger.info(f"  Found intents: {list_to_str(self.intents)}")
+            logger.info(f"  Found intents: {list_to_str(self.intents)}")  # TODO: PII check
         logger.info(
             f"Number of response examples: {len(self.response_examples)} "
             f"({len(self.responses)} distinct responses)"
@@ -567,11 +567,11 @@ class TrainingData:
             f"({len(self.entities)} distinct entities)"
         )
         if self.entities:
-            logger.info(f"  Found entity types: {list_to_str(self.entities)}")
+            logger.info(f"  Found entity types: {list_to_str(self.entities)}")  # TODO: PII check
         if self.entity_roles:
-            logger.info(f"  Found entity roles: {list_to_str(self.entity_roles)}")
+            logger.info(f"  Found entity roles: {list_to_str(self.entity_roles)}")  # TODO: PII check
         if self.entity_groups:
-            logger.info(f"  Found entity groups: {list_to_str(self.entity_groups)}")
+            logger.info(f"  Found entity groups: {list_to_str(self.entity_groups)}")  # TODO: PII check
 
     def is_empty(self) -> bool:
         """Checks if any training data was loaded."""

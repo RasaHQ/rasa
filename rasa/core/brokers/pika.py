@@ -386,7 +386,7 @@ class PikaEventBroker(EventBroker):
             f"Connecting to '{self.host}' failed with error '{error}'. Trying again."
         )
 
-    def _on_channel_open(self, channel: "Channel") -> None:
+    def _on_channel_open(self, channel: "Channel")  # TODO: PII check -> None:
         logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
 
         # declare exchange of type 'fanout' in order to publish to multiple queues
@@ -463,18 +463,11 @@ class PikaEventBroker(EventBroker):
                 self._publish(body, headers)
                 return
             except Exception as e:
-                logger.error(
-                    f"Could not open Pika channel at host '{self.host}'. "
-                    f"Failed with error: {e}"
-                )
-                self.channel = None
-                if self.raise_on_failure:
-                    raise e
+                logger.warning(
+            f"Connecting to '{self.host}' failed with error '{error}'. Trying again."
+        )
 
-            retries -= 1
-            time.sleep(retry_delay_in_seconds)
-
-        logger.error(f"Failed to publish Pika event on host '{self.host}':\n{body}")
+    def _on_channel_open(self, channel: "Channel")  # TODO: PII check
 
     def _get_message_properties(
         self, headers: Optional[Dict[Text, Text]] = None
@@ -537,41 +530,11 @@ class PikaEventBroker(EventBroker):
                 f"{len(self._unpublished_messages)}."
             )
             self._unpublished_messages.append(body)
-        else:
-            self._basic_publish(body, headers)
+        elselogger.warning(
+            f"Connecting to '{self.host}' failed with error '{error}'. Trying again."
+        )
 
-
-def create_rabbitmq_ssl_options(
-    rabbitmq_host: Optional[Text] = None,
-) -> Optional["pika.SSLOptions"]:
-    """Create RabbitMQ SSL options.
-
-    Requires the following environment variables to be set:
-
-        RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
-        RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
-        RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
-        RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
-
-    Details on how to enable RabbitMQ TLS support can be found here:
-    https://www.rabbitmq.com/ssl.html#enabling-tls
-
-    Args:
-        rabbitmq_host: RabbitMQ hostname
-
-    Returns:
-        Pika SSL context of type `pika.SSLOptions` if
-        the RABBITMQ_SSL_CLIENT_CERTIFICATE and RABBITMQ_SSL_CLIENT_KEY
-        environment variables are valid paths, else `None`.
-    """
-    client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
-    client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
-
-    if client_certificate_path and client_key_path:
-        import pika
-        import rasa.server
-
-        logger.debug(f"Configuring SSL context for RabbitMQ host '{rabbitmq_host}'.")
+    def _on_channel_open(self, channel: "Channel")  # TODO: PII checkt}'.")
 
         ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE")
         key_password = os.environ.get("RABBITMQ_SSL_KEY_PASSWORD")

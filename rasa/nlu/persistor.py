@@ -50,7 +50,7 @@ class Persistor:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
         if not os.path.isdir(model_directory):
-            raise ValueError(f"Target directory '{model_directory}' not found.")
+            raise ValueError(f"Target directory '{model_directory}' not found.")  # TODO: PII check
 
         file_key, tar_path = self._compress(model_directory, model_name)
         self._persist_tar(file_key, tar_path)
@@ -148,7 +148,7 @@ class AWSPersistor(Persistor):
                 for obj in self.bucket.objects.filter()
             ]
         except Exception as e:
-            logger.warning(f"Failed to list models in AWS. {e}")
+            logger.warning(f"Failed to list models in AWS. {e}")  # TODO: PII check
             return []
 
     def _ensure_bucket_exists(
@@ -207,7 +207,7 @@ class GCSPersistor(Persistor):
                 for b in blob_iterator
             ]
         except Exception as e:
-            logger.warning(f"Failed to list models in google cloud storage. {e}")
+            logger.warning(f"Failed to list models in google cloud storage. {e}")  # TODO: PII check
             return []
 
     def _ensure_bucket_exists(self, bucket_name: Text) -> None:
@@ -271,7 +271,7 @@ class AzurePersistor(Persistor):
                 for b in blob_iterator
             ]
         except Exception as e:
-            logger.warning(f"Failed to list models azure blob storage. {e}")
+            logger.warning(f"Failed to list models azure blob storage. {e}")  # TODO: PII check
             return []
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:

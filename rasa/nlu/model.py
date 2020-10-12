@@ -256,7 +256,7 @@ class Trainer:
         if persistor is not None:
             persistor.persist(dir_name, model_name)
         logger.info(
-            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
+            "Successfully saved model into '{}'".format(os.path.abspath(dir_name)  # TODO: PII check)
         )
         return dir_name
 
@@ -291,7 +291,7 @@ class Interpreter:
                 "Either retrain the model, or run with "
                 "an older version. "
                 "Model version: {} Instance version: {}"
-                "".format(model_version, rasa.__version__)
+                "".format(model_version, rasa.__version__)  # TODO: PII check
             )
 
     @staticmethod
@@ -354,7 +354,7 @@ class Interpreter:
             except components.MissingArgumentError as e:
                 raise Exception(
                     "Failed to initialize component '{}'. "
-                    "{}".format(component.name, e)
+                    "{}".format(component.name, e)  # TODO: PII check
                 )
 
         return Interpreter(pipeline, context, model_metadata)

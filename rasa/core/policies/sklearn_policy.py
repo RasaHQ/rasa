@@ -225,7 +225,7 @@ class SklearnPolicy(Policy):
         )
         training_data, zero_state_features = model_data_utils.convert_to_data_format(
             tracker_state_features
-        )
+        )  # TODO: PII check
         self.zero_state_features = zero_state_features
 
         self._train_params.update(kwargs)
@@ -248,7 +248,7 @@ class SklearnPolicy(Policy):
         self.model = model
         logger.info("Done fitting sklearn policy model")
         if score is not None:
-            logger.info(f"Cross validation score: {score:.5f}")
+            logger.info(f"Cross validation score: {score:.5f}")  # TODO: PII check
 
     def _postprocess_prediction(self, y_proba, domain) -> List[float]:
         yp = y_proba[0].tolist()
@@ -331,5 +331,5 @@ class SklearnPolicy(Policy):
 
         vars(policy).update(state)
 
-        logger.info("Loaded sklearn model")
+        logger.info("Loaded sklearn model")  # TODO: PII check
         return policy

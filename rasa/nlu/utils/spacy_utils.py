@@ -52,7 +52,7 @@ class SpacyNLP(Component):
                 "Please download and/or link a spaCy model, "
                 "e.g. by running:\npython -m spacy download "
                 "en_core_web_md\npython -m spacy link "
-                "en_core_web_md en".format(spacy_model_name)
+                "en_core_web_md en".format(spacy_model_name)  # TODO: PII check
             )
 
     @classmethod
@@ -277,5 +277,5 @@ class SpacyNLP(Component):
                 "Failed to load spacy language model for "
                 "lang '{}'. Make sure you have downloaded the "
                 "correct model (https://spacy.io/docs/usage/)."
-                "".format(nlp.lang)
+                "".format(nlp.lang)  # TODO: PII check
             )

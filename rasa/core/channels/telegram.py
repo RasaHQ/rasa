@@ -89,7 +89,7 @@ class TelegramOutput(Bot, OutputChannel):
         else:
             logger.error(
                 "Trying to send text with buttons for unknown "
-                "button type {}".format(button_type)
+                "button type {}".format(button_type)  # TODO: PII check
             )
             return
 
@@ -219,7 +219,7 @@ class TelegramInput(InputChannel):
                     elif self._is_location(msg):
                         text = '{{"lng":{0}, "lat":{1}}}'.format(
                             msg.location.longitude, msg.location.latitude
-                        )
+                        )  # TODO: PII check
                     else:
                         return response.text("success")
                 sender_id = msg.chat.id
@@ -255,7 +255,7 @@ class TelegramInput(InputChannel):
                             )
                         )
                 except Exception as e:
-                    logger.error(f"Exception when trying to handle message.{e}")
+                    logger.error(f"Exception when trying to handle message.{e}")  # TODO: PII check
                     logger.debug(e, exc_info=True)
                     if self.debug_mode:
                         raise

@@ -232,7 +232,7 @@ def get_model_subdirectories(
         raise ModelNotFound(
             "No NLU or Core data for unpacked model at: '{}'.".format(
                 unpacked_model_path
-            )
+            )  # TODO: PII check
         )
 
     return core_path, nlu_path
@@ -487,7 +487,7 @@ def package_model(
 
     print_success(
         "Your Rasa model is trained and saved at '{}'.".format(
-            os.path.abspath(output_directory)
+            os.path.abspath(output_directory)  # TODO: PII check
         )
     )
 

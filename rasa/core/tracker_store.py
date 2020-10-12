@@ -725,7 +725,7 @@ class SQLTrackerStore(TrackerStore):
                     # Several Rasa services started in parallel may attempt to
                     # create tables at the same time. That is okay so long as
                     # the first services finishes the table creation.
-                    logger.error(f"Could not create tables: {e}")
+                    logger.error(f"Could not create tables: {e}")  # TODO: PII check
 
                 self.sessionmaker = sa.orm.session.sessionmaker(bind=self.engine)
                 break
@@ -820,7 +820,7 @@ class SQLTrackerStore(TrackerStore):
             try:
                 cursor.execute(f"CREATE DATABASE {db}")
             except psycopg2.IntegrityError as e:
-                logger.error(f"Could not create database '{db}': {e}")
+                logger.error(f"Could not create database '{db}': {e}")  # TODO: PII check
 
         cursor.close()
         conn.close()
@@ -858,7 +858,7 @@ class SQLTrackerStore(TrackerStore):
             events = [json.loads(event.data) for event in serialised_events]
 
             if self.domain and len(events) > 0:
-                logger.debug(f"Recreating tracker from sender id '{sender_id}'")
+                logger.debug(f"Recreating tracker from sender id '{sender_id}'")  # TODO: PII check
                 return DialogueStateTracker.from_dict(
                     sender_id, events, self.domain.slots
                 )
@@ -1070,7 +1070,7 @@ def _create_from_endpoint_config(
             domain, endpoint_config, event_broker
         )
 
-    logger.debug(f"Connected to {tracker_store.__class__.__name__}.")
+    logger.debug(f"Connected to {tracker_store.__class__.__name__}.")  # TODO: PII check
 
     return tracker_store
 

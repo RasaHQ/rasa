@@ -74,7 +74,7 @@ async def load_data_from_resource(
         Story steps from the training data.
     """
     if not os.path.exists(resource):
-        raise ValueError(f"Resource '{resource}' does not exist.")
+        raise ValueError(f"Resource '{resource}' does not exist.")  # TODO: PII check
 
     return await load_data_from_files(
         rasa.shared.utils.io.list_files(resource),

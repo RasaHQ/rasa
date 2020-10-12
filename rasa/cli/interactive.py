@@ -81,7 +81,7 @@ def interactive(args: argparse.Namespace) -> None:
                 f"Use 'rasa train' to train a model."
             )
         if not args.skip_visualization:
-            logger.info(f"Loading visualization data from {args.data}.")
+            logger.info(f"Loading visualization data from {args.data}.")  # TODO: PII check
 
     perform_interactive_learning(args, zipped_model, file_importer)
 

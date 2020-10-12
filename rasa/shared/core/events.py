@@ -157,7 +157,7 @@ class Event:
         parameters: Dict[Text, Any], default: Optional[Type["Event"]] = None
     ) -> Optional["Event"]:
 
-        event_name = parameters.get("event")
+        event_name = parameters.get("event")  # TODO: PII check
         if event_name is None:
             return None
 
@@ -213,7 +213,7 @@ class Event:
         elif default is not None:
             return default
         else:
-            raise ValueError(f"Unknown event name '{type_name}'.")
+            raise ValueError(f"Unknown event name '{type_name}'.")  # TODO: PII check
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         pass
@@ -375,7 +375,7 @@ class UserUttered(Event):
                 ent_string = ""
 
             parse_string = "{intent}{entities}".format(
-                intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
+                intent=self.intent.get(INTENT_NAME_KEY, "")  # TODO: PII check, entities=ent_string
             )
             if e2e:
                 message = md_format_message(
@@ -492,7 +492,7 @@ class BotUttered(Event):
                 parameters.get("timestamp"),
             )
         except KeyError as e:
-            raise ValueError(f"Failed to parse bot uttered event. {e}")
+            raise ValueError(f"Failed to parse bot uttered event. {e}")  # TODO: PII check
 
 
 # noinspection PyProtectedMember
@@ -561,7 +561,7 @@ class SlotSet(Event):
                 parameters.get("metadata"),
             )
         except KeyError as e:
-            raise ValueError(f"Failed to parse set slot event. {e}")
+            raise ValueError(f"Failed to parse set slot event. {e}")  # TODO: PII check
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker._set_slot(self.key, self.value)
@@ -1179,7 +1179,7 @@ class AgentUttered(Event):
                 parameters.get("metadata"),
             )
         except KeyError as e:
-            raise ValueError(f"Failed to parse agent uttered event. {e}")
+            raise ValueError(f"Failed to parse agent uttered event. {e}")  # TODO: PII check
 
 
 class ActiveLoop(Event):
@@ -1413,6 +1413,6 @@ class SessionStarted(Event):
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
 
-    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+    def apply_to(self, tracker: "DialogueStateTracker")  # TODO: PII check -> None:
         # noinspection PyProtectedMember
         tracker._reset()

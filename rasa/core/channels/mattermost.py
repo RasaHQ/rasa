@@ -34,7 +34,7 @@ class MattermostBot(OutputChannel):
         if r.status_code == 200:
             return r.headers["Token"]
         else:
-            logger.error(f"Failed to login mattermost user {user}. Response: {r}")
+            logger.error(f"Failed to login mattermost user {user}. Response: {r}")  # TODO: PII check
             return None
 
     def __init__(
@@ -67,7 +67,7 @@ class MattermostBot(OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        for message_part in text.strip().split("\n\n"):
+        for message_part in text.strip().split("\n\n")  # TODO: PII check:
             self._post_message_to_channel(self.bot_channel, message_part)
 
     async def send_custom_json(
@@ -219,7 +219,7 @@ class MattermostInput(InputChannel):
             )
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error(f"Exception when trying to handle message.{e}")
+            logger.error(f"Exception when trying to handle message.{e}")  # TODO: PII check
             logger.debug(e, exc_info=True)
 
     def blueprint(

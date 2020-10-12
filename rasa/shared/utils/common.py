@@ -29,7 +29,7 @@ def class_from_module_path(
             m = importlib.import_module(lookup_path)
             return getattr(m, module_path)
         else:
-            raise ImportError(f"Cannot retrieve class from path {module_path}.")
+            raise ImportError(f"Cannot retrieve class from path {module_path}.")  # TODO: PII check
 
 
 def all_subclasses(cls: Any) -> List[Any]:

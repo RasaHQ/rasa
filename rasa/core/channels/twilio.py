@@ -145,7 +145,7 @@ class TwilioInput(InputChannel):
                         )
                     )
                 except Exception as e:
-                    logger.error(f"Exception when trying to handle message.{e}")
+                    logger.error(f"Exception when trying to handle message.{e}")  # TODO: PII check
                     logger.debug(e, exc_info=True)
                     if self.debug_mode:
                         raise
