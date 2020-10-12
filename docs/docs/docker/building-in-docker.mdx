@@ -33,7 +33,7 @@ The only difference is that you'll be running Rasa inside a Docker container, us
 the image `rasa/rasa`. To initialize your project, run:
 
 <pre><code parentName="pre" className="language-bash">
-{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full init --no-prompt`}</code></pre>
+{`docker run -v $(pwd):/app --tmpfs /tmp rasa/rasa:${variables.release}-full init --no-prompt`}</code></pre>
 
 What does this command mean?
 
@@ -42,6 +42,8 @@ What does this command mean?
     in the Docker container. This means that files you create on your computer will be
     visible inside the container, and files created in the container will
     get synced back to your computer.</li>
+  <li><inlineCode>--tmpfs /tmp</inlineCode> mounts /tmp as a temporary file system that is cleared when
+    the container is terminated.</li>
   <li><inlineCode>rasa/rasa</inlineCode> is the name of the docker image to run. '{variables.release}-full' is the name of the tag,
     which specifies the version and dependencies.</li>
 
@@ -76,7 +78,7 @@ if you want to run the containers as a different user.
 To talk to your newly-trained assistant, run this command:
 
 <pre><code parentName="pre" className="language-bash">
-{`docker run -it -v $(pwd):/app rasa/rasa:${variables.release}-full shell`}</code></pre>
+{`docker run -it -v $(pwd):/app --tmpfs /tmp rasa/rasa:${variables.release}-full shell`}</code></pre>
 
 This will start a shell where you can chat to your assistant.
 Note that this command includes the flags `-it`, which means that you are running
@@ -90,7 +92,7 @@ If you edit any training data or edit the `config.yml` file, you'll need to
 retrain your Rasa model. You can do so by running:
 
 <pre><code parentName="pre" className="language-bash">
-{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full train --domain domain.yml --data data --out models`}</code></pre>
+{`docker run -v $(pwd):/app --tmpfs /tmp rasa/rasa:${variables.release}-full train --domain domain.yml --data data --out models`}</code></pre>
 
 Here's what's happening in that command:
 
@@ -196,7 +198,7 @@ actions:
 After updating your domain and stories, you have to retrain your model:
 
 <pre><code parentName="pre" className="language-bash">
-{`docker run -v $(pwd):/app rasa/rasa:${variables.release}-full train`}</code></pre>
+{`docker run -v $(pwd):/app --tmpfs /tmp rasa/rasa:${variables.release}-full train`}</code></pre>
 
 Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:
 
@@ -239,7 +241,7 @@ action_endpoint:
 Now you can talk to your bot again via the `shell` command:
 
 <pre><code parentName="pre" className="language-bash">
-{`docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:${variables.release}-full shell`}</code></pre>
+{`docker run -it -v $(pwd):/app --tmpfs /tmp -p 5005:5005 --net my-project rasa/rasa:${variables.release}-full shell`}</code></pre>
 
 :::note
 If you stop and restart the `action-server` container, you might see an error like this:
