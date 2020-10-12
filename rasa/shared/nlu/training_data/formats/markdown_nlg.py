@@ -79,7 +79,7 @@ class NLGMarkdownReader(TrainingDataReader):
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
-                !raise ValueError(msg)
+                raise ValueError(msg) # TODO
 
         # add last story
         if story_intent:

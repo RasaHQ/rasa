@@ -659,7 +659,7 @@ def ensure_schema_exists(session: "Session") -> None:
             .where(sa.text(f"schema_name = '{schema_name}'"))
         )
         if not session.query(query).scalar():
-            !raise ValueError(schema_name)
+            raise ValueError(schema_name) # TODO
 
 
 class SQLTrackerStore(TrackerStore):

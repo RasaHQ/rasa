@@ -213,7 +213,7 @@ class Event:
         elif default is not None:
             return default
         else:
-            !raise ValueError(f"Unknown event name '{type_name}'.")
+            raise ValueError(f"Unknown event name '{type_name}'.") # TODO
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         pass
@@ -357,7 +357,7 @@ class UserUttered(Event):
                 )
             ]
         except KeyError as e:
-            !raise ValueError(f"Failed to parse bot uttered event. {e}")
+            raise ValueError(f"Failed to parse bot uttered event. {e}") # TODO
 
     def as_story_string(self, e2e: bool = False) -> Text:
         # TODO figure out how to print if TED chose to use text,
@@ -492,7 +492,7 @@ class BotUttered(Event):
                 parameters.get("timestamp"),
             )
         except KeyError as e:
-            !raise ValueError(f"Failed to parse bot uttered event. {e}")
+            raise ValueError(f"Failed to parse bot uttered event. {e}") # TODO
 
 
 # noinspection PyProtectedMember
@@ -561,7 +561,7 @@ class SlotSet(Event):
                 parameters.get("metadata"),
             )
         except KeyError as e:
-            !raise ValueError(f"Failed to parse set slot event. {e}")
+            raise ValueError(f"Failed to parse set slot event. {e}") # TODO
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker._set_slot(self.key, self.value)
@@ -1179,7 +1179,7 @@ class AgentUttered(Event):
                 parameters.get("metadata"),
             )
         except KeyError as e:
-            !raise ValueError(f"Failed to parse agent uttered event. {e}")
+            raise ValueError(f"Failed to parse agent uttered event. {e}") # TODO
 
 
 class ActiveLoop(Event):

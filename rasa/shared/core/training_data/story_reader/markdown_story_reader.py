@@ -106,7 +106,7 @@ class MarkdownStoryReader(StoryReader):
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
-                !raise ValueError(msg) from e
+                raise ValueError(msg) from e # TODO
         self._add_current_stories_to_result()
         return self.story_steps
 
@@ -123,13 +123,13 @@ class MarkdownStoryReader(StoryReader):
             if isinstance(parsed_slots, dict):
                 return parsed_slots
             else:
-                !raise Exception(
+                raise Exception( # TODO
                     "Parsed value isn't a json object "
                     "(instead parser found '{}')"
                     ".".format(type(parsed_slots))
                 )
         except Exception as e:
-            !raise ValueError(
+            raise ValueError( # TODO
                 "Invalid to parse arguments in line "
                 "'{}'. Failed to decode parameters"
                 "as a json object. Make sure the event"
@@ -143,7 +143,7 @@ class MarkdownStoryReader(StoryReader):
             if varname in self.template_variables:
                 return self.template_variables[varname]
             else:
-                !raise ValueError(
+                raise ValueError( # TODO
                     "Unknown variable `{var}` "
                     "in template line '{line}'"
                     "".format(var=varname, line=line)
@@ -220,7 +220,7 @@ class MarkdownStoryReader(StoryReader):
         match = re.match(item_regex, line)
 
         if not match:
-            !raise ValueError(
+            raise ValueError( # TODO
                 "Encountered invalid test story format for message "
                 "`{}`. Please visit the documentation page on "
                 "end-to-end testing at {}/user-guide/testing-your-assistant/"

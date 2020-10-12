@@ -67,7 +67,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             if isinstance(parsed_entities, dict):
                 return RegexInterpreter._create_entities(parsed_entities, sidx, eidx)
             else:
-                !raise ValueError(
+                raise ValueError( # TODO
                     f"Parsed value isn't a json object "
                     f"(instead parser found '{type(parsed_entities)}')"
                 )

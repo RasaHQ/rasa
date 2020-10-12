@@ -151,7 +151,7 @@ class EndpointConfig:
                 **kwargs,
             ) as response:
                 if response.status >= 400:
-                    !raise ClientResponseError(
+                    raise ClientResponseError( # TODO
                         response.status, response.reason, await response.content.read()
                     )
                 try:

@@ -552,7 +552,7 @@ class DIET2DIET(DIET):
             and self.data_signature[TEXT][SENTENCE]
             != self.data_signature[LABEL][SENTENCE]
         ):
-            !raise ValueError(
+            raise ValueError( # TODO
                 "If hidden layer weights are shared, data signatures "
                 "for text_features and label_features must coincide."
             )

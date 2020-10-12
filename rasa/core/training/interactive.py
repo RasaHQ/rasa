@@ -1028,7 +1028,7 @@ async def _correct_wrong_nlu(
     corrected_message = latest_user_message(events)
 
     if corrected_message is None:
-        !raise Exception("Failed to correct NLU data. User message not found.")
+        raise Exception("Failed to correct NLU data. User message not found.") # TODO
 
     corrected_message["parse_data"] = corrected_nlu
     await send_event(

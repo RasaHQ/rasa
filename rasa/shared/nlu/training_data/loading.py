@@ -50,7 +50,7 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
 
     Merges them if loaded from disk and multiple files are found."""
     if not os.path.exists(resource_name):
-        !raise ValueError(f"File '{resource_name}' does not exist.")
+        raise ValueError(f"File '{resource_name}' does not exist.") # TODO
 
     if os.path.isfile(resource_name):
         files = [resource_name]
@@ -104,7 +104,7 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
 
     fformat = guess_format(filename)
     if fformat == UNK:
-        !raise ValueError(f"Unknown data format for file '{filename}'.")
+        raise ValueError(f"Unknown data format for file '{filename}'.") # TODO
 
     reader = _reader_factory(fformat)
 

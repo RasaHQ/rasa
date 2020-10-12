@@ -44,7 +44,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         super().__init__()
 
         if units % num_heads != 0:
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"number of units {units} should be proportional to "
                 f"number of attention heads {num_heads}."
             )
@@ -90,7 +90,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         if self.use_key_relative_position or self.use_value_relative_position:
             if not self.relative_length:
-                !raise ValueError(
+                raise ValueError( # TODO
                     f"Max relative position {self.relative_length} "
                     f"should be > 0 when using relative attention."
                 )
@@ -163,7 +163,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         x_dim = len(x.shape)
 
         if x_dim < 4 or x_dim > 5:
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"Relative tensor has a wrong shape {x.shape}, "
                 f"it should have 4 or 5 dimensions."
             )

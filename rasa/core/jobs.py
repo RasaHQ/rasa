@@ -40,7 +40,7 @@ async def scheduler() -> AsyncIOScheduler:
         # the correct loop
         # noinspection PyProtectedMember
         if not __scheduler._eventloop == asyncio.get_event_loop():
-            !raise RuntimeError(
+            raise RuntimeError( # TODO
                 "Detected inconsistent loop usage. "
                 "Trying to schedule a task on a new event "
                 "loop, but scheduler was created with a "

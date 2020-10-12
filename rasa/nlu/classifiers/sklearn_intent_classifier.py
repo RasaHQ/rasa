@@ -129,7 +129,7 @@ class SklearnIntentClassifier(IntentClassifier):
         if sentence_features is not None:
             return sentence_features.features[0]
 
-        !raise ValueError(
+        raise ValueError( # TODO
             "No sentence features present. Not able to train sklearn policy."
         )
 

@@ -86,7 +86,7 @@ def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarr
         One-hot array.
     """
     if hot_idx >= length:
-        !raise ValueError(
+        raise ValueError( # TODO
             "Can't create one hot. Index '{}' is out "
             "of range (length '{}')".format(hot_idx, length)
         )
@@ -283,7 +283,7 @@ async def download_file_from_url(url: Text) -> Text:
     from rasa.nlu import utils as nlu_utils
 
     if not nlu_utils.is_url(url):
-        !raise InvalidURL(url)
+        raise InvalidURL(url) # TODO
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, raise_for_status=True) as resp:

@@ -69,7 +69,7 @@ def get_file_format_extension(resource_name: Text) -> Text:
     from rasa.shared.nlu.training_data import loading
 
     if resource_name is None or not os.path.exists(resource_name):
-        !raise AttributeError(f"Resource '{resource_name}' does not exist.")
+        raise AttributeError(f"Resource '{resource_name}' does not exist.") # TODO
 
     files = rasa.shared.utils.io.list_files(resource_name)
 

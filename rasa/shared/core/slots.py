@@ -145,7 +145,7 @@ class FloatSlot(Slot):
         self.min_value = min_value
 
         if min_value >= max_value:
-            !raise ValueError(
+            raise ValueError( # TODO
                 "Float slot ('{}') created with an invalid range "
                 "using min ({}) and max ({}) values. Make sure "
                 "min is smaller than max."
@@ -209,9 +209,9 @@ def bool_from_any(x: Any) -> bool:
         elif x.strip().lower() == "false":
             return False
         else:
-            !raise ValueError("Cannot convert string to bool")
+            raise ValueError("Cannot convert string to bool") # TODO
     else:
-        !raise TypeError("Cannot convert to bool")
+        raise TypeError("Cannot convert to bool") # TODO
 
 
 class TextSlot(Slot):
@@ -247,7 +247,7 @@ class UnfeaturizedSlot(Slot):
         influence_conversation: bool = False,
     ) -> None:
         if influence_conversation:
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
                 f"Please use a different slot type for slot '{name}' instead. See the "
                 f"documentation for more information: {DOCS_URL_SLOTS}"
@@ -354,7 +354,7 @@ class AnySlot(Slot):
         influence_conversation: bool = False,
     ) -> None:
         if influence_conversation:
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"An {AnySlot.__name__} cannot be featurized. "
                 f"Please use a different slot type for slot '{name}' instead. If you "
                 f"need to featurize a data type which is not supported out of the box, "

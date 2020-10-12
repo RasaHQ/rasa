@@ -188,7 +188,7 @@ class RasaModelData:
 
         # check if number of examples is the same for all values
         if not all(length == example_lengths[0] for length in example_lengths):
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"Number of examples differs for keys '{data.keys()}'. Number of "
                 f"examples should be the same for all data."
             )
@@ -635,13 +635,13 @@ class RasaModelData:
         """
 
         if number_of_test_examples >= self.num_examples - len(label_counts):
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"Test set of {number_of_test_examples} is too large. Remaining "
                 f"train set should be at least equal to number of classes "
                 f"{len(label_counts)}."
             )
         if number_of_test_examples < len(label_counts):
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"Test set of {number_of_test_examples} is too small. It should "
                 f"be at least equal to number of classes {label_counts}."
             )
@@ -710,7 +710,7 @@ class RasaModelData:
                 or len(self.data[self.label_key][self.label_sub_key]) > 1
             )
         ):
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"Key '{self.label_key}.{self.label_sub_key}' not in RasaModelData."
             )
 
@@ -811,7 +811,7 @@ class RasaModelData:
         if label_ids.ndim == 3 and label_ids.shape[-1] == 1:
             return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
 
-        !raise ValueError("Unsupported label_ids dimensions")
+        raise ValueError("Unsupported label_ids dimensions") # TODO
 
     @staticmethod
     def _pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:

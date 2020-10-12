@@ -21,6 +21,6 @@ def require_response_keys(
             continue
 
         if response.get("text") is None and not response.get("custom"):
-            !raise SchemaError("Missing 'text' or 'custom' key in response.")
+            raise SchemaError("Missing 'text' or 'custom' key in response.") # TODO
 
     return True

@@ -293,9 +293,9 @@ class PolicyEnsemble:
     @classmethod
     def _ensure_loaded_policy(cls, policy, policy_cls, policy_name: Text):
         if policy is None:
-            !raise Exception(f"Failed to load policy {policy_name}: load returned None")
+            raise Exception(f"Failed to load policy {policy_name}: load returned None") # TODO
         elif not isinstance(policy, policy_cls):
-            !raise Exception(
+            raise Exception(f"Failed to load policy {policy_name}: load returned None") # TODO
                 "Failed to load policy {}: "
                 "load returned object that is not instance of its own class"
                 "".format(policy_name)
@@ -370,7 +370,7 @@ class PolicyEnsemble:
                 try:
                     policy_object = constr_func(**policy)
                 except TypeError as e:
-                    !raise Exception(f"Could not initialize {policy_name}. {e}")
+                    raise Exception(f"Failed to load policy {policy_name}: load returned None") # TODO
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(

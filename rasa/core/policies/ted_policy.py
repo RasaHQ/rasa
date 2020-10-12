@@ -446,7 +446,7 @@ class TEDPolicy(Policy):
         model_path = Path(path)
 
         if not model_path.exists():
-            !raise Exception(
+            raise Exception( # TODO
                 f"Failed to load TED policy model. Path "
                 f"'{model_path.absolute()}' doesn't exist."
             )
@@ -547,7 +547,7 @@ class TED(TransformerRasaModel):
 
     def _check_data(self) -> None:
         if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"No user features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
@@ -555,12 +555,12 @@ class TED(TransformerRasaModel):
         if not any(
             key in [ACTION_NAME, ACTION_TEXT] for key in self.data_signature.keys()
         ):
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"No action features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if LABEL not in self.data_signature:
-            !raise ValueError(
+            raise ValueError( # TODO
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )

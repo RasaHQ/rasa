@@ -66,7 +66,7 @@ def _allocate_gpu_memory(
 
     except RuntimeError:
         # Helper explanation of where the error comes from
-        !raise RuntimeError(
+        raise RuntimeError( # TODO
             "Error while setting up tensorflow environment. "
             "Virtual devices must be set before GPUs have been initialized."
         )
