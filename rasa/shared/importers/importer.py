@@ -29,7 +29,7 @@ class TrainingDataImporter:
         Returns:
             Loaded `Domain`.
         """
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     async def get_stories(
         self,
@@ -49,7 +49,7 @@ class TrainingDataImporter:
             `StoryGraph` containing all loaded stories.
         """
 
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     async def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
@@ -58,7 +58,7 @@ class TrainingDataImporter:
             The configuration as dictionary.
         """
 
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves the NLU training data that should be used for training.
@@ -70,7 +70,7 @@ class TrainingDataImporter:
             Loaded NLU `TrainingData`.
         """
 
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     @staticmethod
     def load_from_config(

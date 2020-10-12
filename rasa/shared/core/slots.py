@@ -79,7 +79,7 @@ class Slot:
         return self._as_feature()
 
     def _as_feature(self) -> List[float]:
-        !raise NotImplementedError(
+        raise NotImplementedError(
             "Each slot type needs to specify how its "
             "value can be converted to a feature. Slot "
             "'{}' is a generic slot that can not be used "

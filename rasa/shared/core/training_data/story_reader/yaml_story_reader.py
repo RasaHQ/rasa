@@ -247,7 +247,7 @@ class YAMLStoryReader(StoryReader):
         self._close_part(item)
 
     def _new_part(self, item_name: Text, item: Dict[Text, Any]) -> None:
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     def _close_part(self, item: Dict[Text, Any]) -> None:
         pass
@@ -287,13 +287,13 @@ class YAMLStoryReader(StoryReader):
             )
 
     def _get_item_title(self) -> Text:
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     def _get_plural_item_title(self) -> Text:
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     def _get_docs_link(self) -> Text:
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)

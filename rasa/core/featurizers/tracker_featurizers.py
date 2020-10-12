@@ -99,7 +99,7 @@ class TrackerFeaturizer:
         Returns:
             A tuple of list of states and list of actions.
         """
-        !raise NotImplementedError(
+        raise NotImplementedError(
             "Featurizer must have the capacity to encode trackers to feature vectors"
         )
 
@@ -154,7 +154,7 @@ class TrackerFeaturizer:
         Returns:
             A list of states.
         """
-        !raise NotImplementedError(
+        raise NotImplementedError(
             "Featurizer must have the capacity to create feature vector"
         )
 

@@ -158,11 +158,11 @@ class TrackerStore:
 
     def save(self, tracker):
         """Save method that will be overridden by specific tracker"""
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieve method that will be overridden by specific tracker"""
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker"""
@@ -180,7 +180,7 @@ class TrackerStore:
 
     def keys(self) -> Iterable[Text]:
         """Returns the set of values for the tracker store's primary key"""
-        !raise NotImplementedError()
+        raise NotImplementedError()
 
     @staticmethod
     def serialise_tracker(tracker: DialogueStateTracker) -> Text:

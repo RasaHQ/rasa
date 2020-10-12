@@ -192,7 +192,7 @@ class Policy:
             interpreter: Interpreter which can be used by the polices for featurization.
         """
 
-        !raise NotImplementedError("Policy must have the capacity to train.")
+        raise NotImplementedError("Policy must have the capacity to train.")
 
     def predict_action_probabilities(
         self,
@@ -213,7 +213,7 @@ class Policy:
              the list of probabilities for the next actions
         """
 
-        !raise NotImplementedError("Policy must have the capacity to predict.")
+        raise NotImplementedError("Policy must have the capacity to predict.")
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
         """Returns this policy's attributes that should be persisted.

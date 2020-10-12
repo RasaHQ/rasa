@@ -22,7 +22,7 @@ class NaturalLanguageInterpreter:
         tracker: Optional[DialogueStateTracker] = None,
         metadata: Optional[Dict] = None,
     ) -> Dict[Text, Any]:
-        !raise NotImplementedError(
+        raise NotImplementedError(
             "Interpreter needs to be able to parse messages into structured output."
         )
 

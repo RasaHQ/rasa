@@ -11,7 +11,7 @@ class NGramFeaturizer(SparseFeaturizer):
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         super(NGramFeaturizer, self).__init__(component_config)
 
-        !raise NotImplementedError(
+        raise NotImplementedError(
             "REMOVAL warning: You cannot use `NGramFeaturizer` anymore. "
             "Please use `CountVectorsFeaturizer` instead. The following settings"
             "match the previous `NGramFeaturizer`:"

@@ -75,12 +75,12 @@ class Persistor:
     def _retrieve_tar(self, filename: Text) -> Text:
         """Downloads a model previously persisted to cloud storage."""
 
-        !raise NotImplementedError("")
+        raise NotImplementedError("")
 
     def _persist_tar(self, filekey: Text, tarname: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
-        !raise NotImplementedError("")
+        raise NotImplementedError("")
 
     def _compress(self, model_directory: Text, model_name: Text) -> Tuple[Text, Text]:
         """Creates a compressed archive and returns key and tar."""

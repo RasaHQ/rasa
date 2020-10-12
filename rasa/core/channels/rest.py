@@ -156,7 +156,7 @@ class QueueOutputChannel(CollectingOutputChannel):
         self.messages = Queue() if not message_queue else message_queue
 
     def latest_output(self) -> NoReturn:
-        !raise NotImplementedError("A queue doesn't allow to peek at messages.")
+        raise NotImplementedError("A queue doesn't allow to peek at messages.")
 
     async def _persist_message(self, message) -> None:
         await self.messages.put(message)  # pytype: disable=bad-return-type
