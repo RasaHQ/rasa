@@ -840,42 +840,7 @@ class TED(TransformerRasaModel):
             sim_all, self.config[SIMILARITY_TYPE]
         )
 
-        if self.tensorboard_log_dir and len(batch_in) == 1:
-            # Log attention weights if we make a single prediction
-            print("xxxxxxxxxxxxxxxxxxxxxxxx")
-            if not self.test_summary_writer:
-                self._set_up_tensorboard_writer()
-            if self.test_summary_writer:
-                with self.test_summary_writer.as_default():
-                    tf.summary.image(
-                        "TED_attention_weights",
-                        image_from_attention_weights(attention_weights),
-                        step=0,
-                        max_outputs=9
-                    )
 
         return {"action_scores": scores}
-
-
-def image_from_attention_weights(attention_weights: tf.Tensor) -> tf.Tensor:
-    num_layers = tf.shape(attention_weights)[0]
-    batch_size = tf.shape(attention_weights)[1]
-    num_heads = tf.shape(attention_weights)[2]
-    length = tf.shape(attention_weights)[3]
-
-    img = attention_weights
-    img = tf.transpose(img, perm=[1, 0, 2, 3, 4])
-    img = tf.reshape(img, (batch_size * num_layers, length, num_heads * length, 1))
-    # img = tf.transpose(img, perm=[0, 2, 1, 3])
-    # rescale values to range from 0.0 to 1.0
-    img = normalize_image(img)
-    return img
-
-
-def normalize_image(image: tf.Tensor) -> tf.Tensor:
-    return (image - tf.reduce_min(image)) / (
-        tf.reduce_max(image) - tf.reduce_min(image)
-    )
-
 
 # pytype: enable=key-error

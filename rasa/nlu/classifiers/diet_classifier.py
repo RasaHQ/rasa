@@ -21,6 +21,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
+from rasa.utils.plotting import plot_attention_weights
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
@@ -898,6 +899,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             message.set(ENTITIES, entities, add_to_output=True)
 
+        if "diagnostic_data" in out and "attention_weights" in out["diagnostic_data"]:
+            plot_attention_weights(
+                out["diagnostic_data"]["attention_weights"],
+                output_file="JOHANNES.png"  # ToDo: Fix
+            )
+
+
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
@@ -1447,7 +1455,7 @@ class DIET(TransformerRasaModel):
         dense_dropout: bool = False,
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
-    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor], Optional[tf.Tensor]]:
         if sequence_ids:
             seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
         else:
@@ -1480,7 +1488,7 @@ class DIET(TransformerRasaModel):
             # apply activation
             outputs = tfa.activations.gelu(outputs)
 
-        return outputs, inputs, seq_ids, lm_mask_bool
+        return outputs, inputs, seq_ids, lm_mask_bool, attention_weights
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
@@ -1610,6 +1618,7 @@ class DIET(TransformerRasaModel):
             text_in,
             text_seq_ids,
             lm_mask_bool_text,
+            _,
         ) = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
@@ -1746,7 +1755,7 @@ class DIET(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, _, _, _, attention_weights = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
             mask_sequence_text,
@@ -1755,6 +1764,8 @@ class DIET(TransformerRasaModel):
         )
 
         predictions: Dict[Text, tf.Tensor] = {}
+
+        predictions["diagnostic_data"] = {"attention_weights": attention_weights}
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(
