@@ -20,7 +20,7 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
 )
 from rasa.core.agent import Agent
-from rasa.shared.core.domain import Domain, SessionConfig
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     SlotSet,
     UserUttered,
@@ -463,8 +463,6 @@ def test_traveling_back_in_time(default_domain: Domain):
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent, []))
-
-    import time
 
     time.sleep(1)
     time_for_timemachine = time.time()
