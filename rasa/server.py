@@ -283,12 +283,9 @@ def get_test_stories(
     more_than_one_story = len(trackers) > 1
 
     for i, tracker in enumerate(trackers, 1):
-        for story_step in tracker.as_story().story_steps:
-            story_step.block_name = conversation_id
-            if more_than_one_story:
-                story_step.block_name += f", story {i}"
-
-            story_steps.append(story_step)
+        if more_than_one_story:
+            tracker.sender_id = f"{tracker.sender_id}, story {i}"
+        story_steps += tracker.as_story().story_steps
 
     return YAMLStoryWriter().dumps(story_steps, is_test_story=True)
 
