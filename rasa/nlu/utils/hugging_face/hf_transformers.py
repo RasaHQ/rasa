@@ -73,7 +73,8 @@ class HFTransformersNLP(Component):
             model_weights_defaults,
         )
 
-        self.model_name = self.component_config["model_name"]
+        # self.model_name = self.component_config["model_name"]
+        self.model_name = "bert"
 
         if self.model_name not in model_class_dict:
             raise KeyError(
@@ -91,6 +92,9 @@ class HFTransformersNLP(Component):
                 f"{model_weights_defaults[self.model_name]}"
             )
             self.model_weights = model_weights_defaults[self.model_name]
+
+        # overwrite for now
+        self.model_weights = "pvl/labse_bert"
 
         self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
 
