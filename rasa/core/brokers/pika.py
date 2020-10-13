@@ -157,6 +157,8 @@ def initialise_pika_select_connection(
     """
     import pika
 
+    logger.debug("Pika initialise_pika_select_connection")
+
     return pika.SelectConnection(
         parameters,
         on_open_callback=on_open_callback,
@@ -273,13 +275,14 @@ class PikaMessageProcessor:
 
         self.pika_connection: Optional["SelectConnection"] = None
         self.channel: Optional["Channel"] = None
+        self.val: int = 0
 
     def __del__(self) -> None:
         if self.channel:
             close_pika_channel(self.channel)
             close_pika_connection(self.channel.connection)
 
-        if self.is_connected:
+        if self.is_connected():
             self.pika_connection.close()
 
     def close(self) -> None:
@@ -359,17 +362,16 @@ class PikaMessageProcessor:
 
         return BasicProperties(**kwargs)
 
-    @property
     def is_connected(self) -> bool:
         """Indicates if Pika is connected and the channel is initialized.
 
         Returns:
             A boolean value indicating if the connection is established.
         """
-        return self.pika_connection and self.channel
+        return self.pika_connection and self.pika_connection.is_open and self.channel
 
     def is_ready(
-        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
+        self, attempts: int = 100, wait_time_between_attempts_in_seconds: float = 0.1
     ) -> bool:
         """Spin until the connector is ready to process messages.
 
@@ -384,7 +386,10 @@ class PikaMessageProcessor:
             `True` if the channel is available, `False` otherwise.
         """
         while attempts:
-            if self.is_connected:
+            logger.warning(f"PikaConnection: {self.pika_connection}")
+            logger.warning(f"Channel: {self.channel}")
+            logger.warning(f"Val: {self.val}")
+            if self.is_connected():
                 return True
             time.sleep(wait_time_between_attempts_in_seconds)
             attempts -= 1
@@ -397,8 +402,10 @@ class PikaMessageProcessor:
 
     def connect(self):
         """Establish a connection to Pika."""
-        self.pika_connection = initialise_pika_select_connection(
-            self.parameters, self._on_open_connection, self._on_open_connection_error
+        self.pika_connection = pika.SelectConnection(
+            self.parameters,
+            on_open_callback=self._on_open_connection,
+            on_open_error_callback=self._on_open_connection_error,
         )
 
         process = multiprocessing.Process(target=self._run_pika_io_loop, args=(), daemon=True)
@@ -426,7 +433,11 @@ class PikaMessageProcessor:
             channel.queue_declare(queue=queue, durable=True)
             channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
+        logger.debug(f"Self: {self}")
+        logger.debug(f"Channel: {channel}")
         self.channel = channel
+        self.val = 1
+        logger.debug(f"Channel (2): {self.channel}")
 
     def _publish(self, message: Message) -> None:
         body, headers = message
@@ -567,7 +578,7 @@ class PikaEventBroker(EventBroker):
         return multiprocessing.get_context(self.MP_CONTEXT)
 
     def _start_pika_process(self) -> multiprocessing.Process:
-        if not self.pika_message_processor.is_connected:
+        if not self.pika_message_processor.is_connected():
             self.pika_message_processor.connect()
 
         process = multiprocessing.Process(
@@ -581,7 +592,7 @@ class PikaEventBroker(EventBroker):
             self._connect()
 
         if (
-            self.pika_message_processor.is_connected
+            self.pika_message_processor.is_connected()
             or self.should_keep_unpublished_messages
         ):
             self.process_queue.put((body, headers))
