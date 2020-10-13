@@ -5,65 +5,141 @@ import numpy as np
 from collections import defaultdict, OrderedDict
 import scipy.sparse
 
+import rasa.nlu.utils.bilou_utils
+import rasa.nlu.test
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
 from rasa.utils.tensorflow.constants import SEQUENCE
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import (
+    TEXT,
+    ENTITIES,
+    FEATURE_TYPE_SEQUENCE,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
+    from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
 
 MASK = "mask"
 
 
-def surface_attributes(
-    tracker_state_features: List[List[Dict[Text, List["Features"]]]]
+def convert_training_examples(
+    training_examples: List[Message],
+    attributes: List[Text],
+    entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
+    featurizers: Optional[List[Text]] = None,
+    bilou_tagging: bool = False,
+) -> List[Dict[Text, List["Features"]]]:
+    """Converts training data into a list of attribute to features.
+    
+    Possible attributes are, for example, INTENT, TEXT, or ENTITIES.
+    
+    Args:
+        training_examples: the list of training examples
+        attributes: the attributes to consider
+        entity_tag_specs: the entity specs
+        featurizers: the featurizers to consider
+        bilou_tagging: indicates whether BILOU tagging should be used or not
+
+    Returns:
+        A list of attribute to features.
+    """
+    output = []
+
+    for example in training_examples:
+        attribute_to_features = {}
+        for attribute in attributes:
+            if attribute == ENTITIES:
+                # If ENTITIES should be extracted, we need to add the tag ids
+                for tag_spec in entity_tag_specs:
+                    attribute_to_features[attribute] = [
+                        _get_tag_ids(example, tag_spec, bilou_tagging)
+                    ]
+            elif attribute in example.data:
+                attribute_to_features[attribute] = example.get_all_features(
+                    attribute, featurizers
+                )
+        output.append(attribute_to_features)
+
+    return output
+
+
+def _get_tag_ids(
+    example: Message, tag_spec: "EntityTagSpec", bilou_tagging: bool
+) -> "Features":
+    """Creates a feature array containing the tag ids of the given example."""
+    from rasa.nlu.test import determine_token_labels
+    from rasa.shared.nlu.training_data.features import Features
+
+    if bilou_tagging:
+        _tags = rasa.nlu.utils.bilou_utils.bilou_tags_to_ids(
+            example, tag_spec.tags_to_ids, tag_spec.tag_name
+        )
+    else:
+        _tags = []
+        for token in example.get(TOKENS_NAMES[TEXT]):
+            _tag = determine_token_labels(
+                token, example.get(ENTITIES), attribute_key=tag_spec.tag_name
+            )
+            _tags.append(tag_spec.tags_to_ids[_tag])
+
+    # transpose to have seq_len x 1
+    return Features(np.array([_tags]).T, FEATURE_TYPE_SEQUENCE, tag_spec.tag_name, "")
+
+
+def _surface_attributes(
+    features_for_examples: List[List[Dict[Text, List["Features"]]]]
 ) -> Dict[Text, List[List[List["Features"]]]]:
     """Restructure the input.
 
+    "features_for_examples" can, for example, be a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
+    ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in all training trackers.
+    For NLU training it would just be a dictionary of attributes (either INTENT or RESPONSE, TEXT, and potentially
+    ENTITIES) to a list of features for all training examples.
+
     Args:
-        tracker_state_features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
-            ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all
-            dialogue turns in all training trackers
+        features_for_examples: a dictionary of attributes to a list of features for all
+            examples in the training data
 
     Returns:
-        A dictionary of attributes to a list of features for all dialogue turns
-        and all training trackers.
+        A dictionary of attributes to a list of features for all examples.
     """
     # collect all attributes
     attributes = set(
         attribute
-        for features_in_tracker in tracker_state_features
-        for features_in_turn in features_in_tracker
-        for attribute in features_in_turn.keys()
+        for list_of_attribute_to_features in features_for_examples
+        for attribute_to_features in list_of_attribute_to_features
+        for attribute in attribute_to_features.keys()
     )
 
-    attribute_to_features = defaultdict(list)
+    output = defaultdict(list)
 
-    for features_in_tracker in tracker_state_features:
+    for list_of_attribute_to_features in features_for_examples:
         intermediate_features = defaultdict(list)
 
-        for features_in_dialogue in features_in_tracker:
+        for attribute_to_features in list_of_attribute_to_features:
             for attribute in attributes:
                 # if attribute is not present in the example, populate it with None
                 intermediate_features[attribute].append(
-                    features_in_dialogue.get(attribute)
+                    attribute_to_features.get(attribute)
                 )
 
         for key, value in intermediate_features.items():
-            attribute_to_features[key].append(value)
+            output[key].append(value)
 
-    return attribute_to_features
+    return output
 
 
-def create_zero_features(
-    tracker_features: List[List[List["Features"]]],
+def _create_zero_features(
+    all_features: List[List[List["Features"]]],
 ) -> List["Features"]:
-    """Computes default feature values for an attribute.
+    """Computes default feature values.
 
     All given features should have the same type, e.g. dense or sparse.
 
     Args:
-        tracker_features: list containing all feature values encountered
-        in the dataset for an attribute.
+        all_features: list containing all feature values encountered in the dataset for an attribute.
 
     Returns:
         The default features
@@ -72,8 +148,8 @@ def create_zero_features(
         iter(
             [
                 list_of_features
-                for turn_features in tracker_features
-                for list_of_features in turn_features
+                for list_of_list_of_features in all_features
+                for list_of_features in list_of_list_of_features
                 if list_of_features is not None
             ]
         )
@@ -81,13 +157,13 @@ def create_zero_features(
 
     # create zero_features for nones
     zero_features = []
-    for features in example_features:
-        new_features = copy.deepcopy(features)
-        if features.is_dense():
-            new_features.features = np.zeros_like(features.features)
-        elif features.is_sparse():
+    for _features in example_features:
+        new_features = copy.deepcopy(_features)
+        if _features.is_dense():
+            new_features.features = np.zeros_like(_features.features)
+        elif _features.is_sparse():
             new_features.features = scipy.sparse.coo_matrix(
-                features.features.shape, features.features.dtype
+                _features.features.shape, _features.features.dtype
             )
         zero_features.append(new_features)
 
@@ -95,98 +171,102 @@ def create_zero_features(
 
 
 def convert_to_data_format(
-    tracker_state_features: Union[
+    features_for_examples: Union[
         List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
     ],
-    zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
+    zero_features: Optional[Dict[Text, List["Features"]]] = None,
+    consider_dialogue_dimension: bool = True,
 ) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
     """Converts the input into "Data" format.
 
+    "features_for_examples" can, for example, be a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
+    ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in all training trackers.
+    For NLU training it would just be a dictionary of attributes (either INTENT or RESPONSE, TEXT, and potentially
+    ENTITIES) to a list of features for all training examples.
+
     Args:
-        tracker_state_features: a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
-            ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all
-            dialogue turns in all training trackers
-        zero_state_features: Contains default feature values for attributes
+        features_for_examples: a dictionary of attributes to a list of features for all
+            examples in the training data
+        zero_features: Contains default feature values for attributes
+        consider_dialogue_dimension: If False the dialogue dimension will be removed from the resulting sequence
+            features.
 
     Returns:
-        Input in "Data" format and zero state features
+        Input in "Data" format and zero features
     """
     training = False
-    if not zero_state_features:
+    if not zero_features:
         training = True
-        zero_state_features = defaultdict(list)
+        zero_features = defaultdict(list)
 
     # unify format of incoming features
-    if isinstance(tracker_state_features[0], Dict):
-        tracker_state_features = [[dicts] for dicts in tracker_state_features]
+    if isinstance(features_for_examples[0], Dict):
+        features_for_examples = [[dicts] for dicts in features_for_examples]
 
-    state_to_tracker_features = surface_attributes(tracker_state_features)
+    features_for_examples = _surface_attributes(features_for_examples)
 
     attribute_data = {}
 
     # During prediction we need to iterate over the zero features attributes to
     # have all keys in the resulting model data
     if training:
-        attributes = list(state_to_tracker_features.keys())
+        attributes = list(features_for_examples.keys())
     else:
-        attributes = list(zero_state_features.keys())
+        attributes = list(zero_features.keys())
 
     # In case an attribute is not present during prediction, replace it with
     # None values that will then be replaced by zero features
     dialogue_length = 1
     num_examples = 1
-    for tracker_features in state_to_tracker_features.values():
-        num_examples = max(num_examples, len(tracker_features))
-        dialogue_length = max(dialogue_length, len(tracker_features[0]))
+    for _features in features_for_examples.values():
+        num_examples = max(num_examples, len(_features))
+        dialogue_length = max(dialogue_length, len(_features[0]))
     empty_features = [[None] * dialogue_length] * num_examples
 
     for attribute in attributes:
         attribute_data[attribute] = _features_for_attribute(
-            attribute,
-            empty_features,
-            state_to_tracker_features,
-            training,
-            zero_state_features,
+            attribute, empty_features, features_for_examples, training, zero_features, consider_dialogue_dimension
         )
 
     # ensure that all attributes are in the same order
     attribute_data = OrderedDict(sorted(attribute_data.items()))
 
-    return attribute_data, zero_state_features
+    return attribute_data, zero_features
 
 
 def _features_for_attribute(
     attribute: Text,
     empty_features: List[Any],
-    state_to_tracker_features: Dict[Text, List[List[List["Features"]]]],
+    features_for_examples: Dict[Text, List[List[List["Features"]]]],
     training: bool,
-    zero_state_features: Dict[Text, List["Features"]],
+    zero_features: Dict[Text, List["Features"]],
+    consider_dialogue_dimension: bool
 ) -> Dict[Text, List[FeatureArray]]:
-    """Create the features for the given attribute from the tracker features.
+    """Create the features for the given attribute from the all examples features.
 
     Args:
         attribute: the attribute
         empty_features: empty features
-        state_to_tracker_features: tracker features for every state
+        features_for_examples: features for every example
         training: boolean indicating whether we are currently in training or not
-        zero_state_features: zero features
+        zero_features: zero features
 
     Returns:
         A dictionary of feature type to actual features for the given attribute.
     """
-    tracker_features = (
-        state_to_tracker_features[attribute]
-        if attribute in state_to_tracker_features
+    features = (
+        features_for_examples[attribute]
+        if attribute in features_for_examples
         else empty_features
     )
 
-    # in case some features for a specific attribute and dialogue turn are
+    # in case some features for a specific attribute are
     # missing, replace them with a feature vector of zeros
     if training:
-        zero_state_features[attribute] = create_zero_features(tracker_features)
+        zero_features[attribute] = _create_zero_features(features)
 
-    (attribute_masks, _dense_features, _sparse_features) = map_tracker_features(
-        tracker_features, zero_state_features[attribute]
+    (attribute_masks, _dense_features, _sparse_features) = _extract_features(
+        features, zero_features[attribute], attribute, consider_dialogue_dimension
     )
 
     sparse_features = {}
@@ -195,9 +275,14 @@ def _features_for_attribute(
     # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():
         if key == SEQUENCE:
-            sparse_features[key] = FeatureArray(
-                np.array(values), number_of_dimensions=4
-            )
+            if consider_dialogue_dimension:
+                sparse_features[key] = FeatureArray(
+                    np.array(values), number_of_dimensions=4
+                )
+            else:
+                sparse_features[key] = FeatureArray(
+                    np.array([v[0] for v in values]), number_of_dimensions=3
+                )
         else:
             features = [scipy.sparse.vstack(value) for value in values]
             sparse_features[key] = FeatureArray(
@@ -205,14 +290,17 @@ def _features_for_attribute(
             )
     for key, values in _dense_features.items():
         if key == SEQUENCE:
-            dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
+            if consider_dialogue_dimension:
+                dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
+            else:
+                dense_features[key] = FeatureArray(np.array([v[0] for v in values]), number_of_dimensions=3)
         else:
             features = [np.vstack(value) for value in values]
             dense_features[key] = FeatureArray(
                 np.array(features), number_of_dimensions=3
             )
 
-    attribute_features = {
+    attribute_to_feature_arrays = {
         MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=3)]
     }
 
@@ -221,17 +309,24 @@ def _features_for_attribute(
     feature_types.update(list(sparse_features.keys()))
 
     for feature_type in feature_types:
-        attribute_features[feature_type] = []
+        attribute_to_feature_arrays[feature_type] = []
         if feature_type in sparse_features:
-            attribute_features[feature_type].append(sparse_features[feature_type])
+            attribute_to_feature_arrays[feature_type].append(
+                sparse_features[feature_type]
+            )
         if feature_type in dense_features:
-            attribute_features[feature_type].append(dense_features[feature_type])
+            attribute_to_feature_arrays[feature_type].append(
+                dense_features[feature_type]
+            )
 
-    return attribute_features
+    return attribute_to_feature_arrays
 
 
-def map_tracker_features(
-    tracker_features: List[List[List["Features"]]], zero_features: List["Features"]
+def _extract_features(
+    features: List[List[List["Features"]]],
+    zero_features: List["Features"],
+    attribute: Text,
+    consider_dialogue_dimension: bool
 ) -> Tuple[
     List[np.ndarray],
     Dict[Text, List[List["Features"]]],
@@ -241,7 +336,7 @@ def map_tracker_features(
     into sparse and dense features.
 
     Args:
-        tracker_features: all features
+        features: all features
         zero_features: list of zero features
 
     Returns:
@@ -253,15 +348,17 @@ def map_tracker_features(
     dense_features = defaultdict(list)
     attribute_masks = []
 
-    for turn_features in tracker_features:
+    for list_of_list_of_features in features:
         dialogue_sparse_features = defaultdict(list)
         dialogue_dense_features = defaultdict(list)
 
         # create a mask for every state
         # to capture which turn has which input
-        attribute_mask = np.expand_dims(np.ones(len(turn_features), np.float32), -1)
+        attribute_mask = np.expand_dims(
+            np.ones(len(list_of_list_of_features), np.float32), -1
+        )
 
-        for i, list_of_features in enumerate(turn_features):
+        for i, list_of_features in enumerate(list_of_list_of_features):
 
             if list_of_features is None:
                 # use zero features and set mask to zero
@@ -270,10 +367,11 @@ def map_tracker_features(
 
             for features in list_of_features:
                 # all features should have the same types
+                key = features.type if attribute != ENTITIES else features.attribute
                 if features.is_sparse():
-                    dialogue_sparse_features[features.type].append(features.features)
+                    dialogue_sparse_features[key].append(features.features)
                 else:
-                    dialogue_dense_features[features.type].append(features.features)
+                    dialogue_dense_features[key].append(features.features)
 
         for key, value in dialogue_sparse_features.items():
             sparse_features[key].append(value)

@@ -43,6 +43,7 @@ from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
+import rasa.utils.tensorflow.model_data_utils
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -629,86 +630,74 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> RasaModelData:
         """Prepare data for training and create a RasaModelData object"""
 
-        # TODO: simplify model data creation
-        #   convert training data into a list of attribute to features and reuse some
-        #   of the methods of TED (they most likely need to change a bit)
+        attributes_to_consider = [TEXT]
+        if training:
+            attributes_to_consider.append(label_attribute)
+        if self.component_config[ENTITY_RECOGNITION]:
+            attributes_to_consider.append(ENTITIES)
 
-        features = defaultdict(lambda: defaultdict(list))
-        label_ids = []
-
-        for example in training_data:
-            if label_attribute is None or example.get(label_attribute):
-                text_features = self._extract_features(example, TEXT)
-                for feature_key, feature_value in text_features.items():
-                    features[TEXT][feature_key].append(feature_value)
-
-            # only add features for intent labels during training
-            if training and example.get(label_attribute):
-                label_features = self._extract_features(example, label_attribute)
-                for feature_key, feature_value in label_features.items():
-                    features[LABEL][feature_key].append(feature_value)
-
-                if label_id_dict:
-                    label_ids.append(label_id_dict[example.get(label_attribute)])
-
-            # only add tag_ids during training
-            if training and self.component_config.get(ENTITY_RECOGNITION):
-                for tag_spec in self._entity_tag_specs:
-                    features[ENTITIES][tag_spec.tag_name].append(
-                        self._tag_ids_for_crf(example, tag_spec)
-                    )
+        output = rasa.utils.tensorflow.model_data_utils.convert_training_examples(
+            training_data,
+            attributes_to_consider,
+            entity_tag_specs=self._entity_tag_specs,
+            featurizers=self.component_config[FEATURIZERS],
+            bilou_tagging=self.component_config[BILOU_FLAG],
+        )
+        (
+            attribute_data,
+            _,
+        ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(output, consider_dialogue_dimension=False)
 
         model_data = RasaModelData(
             label_key=self.label_key, label_sub_key=self.label_sub_key
         )
-        for key, attribute_features in features.items():
-            for sub_key, _features in attribute_features.items():
-                sub_key = sub_key.replace(f"{SPARSE}_", "").replace(f"{DENSE}_", "")
-                model_data.add_features(
-                    key,
-                    sub_key,
-                    [FeatureArray(np.array(_features), number_of_dimensions=3)],
-                )
+        model_data.add_data(attribute_data)
 
-        if (
-            label_attribute
-            and model_data.does_feature_not_exist(LABEL, SENTENCE)
-            and model_data.does_feature_not_exist(LABEL, SEQUENCE)
-        ):
-            # no label features are present, get default features from _label_data
+        if training:
+            label_ids = []
+            for example in training_data:
+                if training and example.get(label_attribute):
+                    if label_id_dict:
+                        label_ids.append(label_id_dict[example.get(label_attribute)])
+
+            # explicitly add last dimension to label_ids
+            # to track correctly dynamic sequences
             model_data.add_features(
-                LABEL, SENTENCE, self._use_default_label_features(np.array(label_ids))
+                LABEL_KEY,
+                LABEL_SUB_KEY,
+                [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
             )
 
-        # explicitly add last dimension to label_ids
-        # to track correctly dynamic sequences
-        model_data.add_features(
-            LABEL_KEY,
-            LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
-        )
+            if (
+                label_attribute
+                and model_data.does_feature_not_exist(label_attribute, SENTENCE)
+                and model_data.does_feature_not_exist(label_attribute, SEQUENCE)
+            ):
+                # no label features are present, get default features from _label_data
+                model_data.add_features(
+                    label_attribute,
+                    SENTENCE,
+                    self._use_default_label_features(np.array(label_ids)),
+                )
 
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
-        model_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
+        model_data.add_lengths(
+            label_attribute, SEQUENCE_LENGTH, label_attribute, SEQUENCE
+        )
+
+        if not model_data.does_feature_not_exist(label_attribute, SENTENCE):
+            model_data.add_features(
+                LABEL, SENTENCE, model_data.get(label_attribute, SENTENCE)
+            )
+        if not model_data.does_feature_not_exist(label_attribute, SEQUENCE):
+            model_data.add_features(
+                LABEL, SEQUENCE, model_data.get(label_attribute, SEQUENCE)
+            )
+            model_data.add_features(
+                LABEL, SEQUENCE_LENGTH, model_data.get(label_attribute, SEQUENCE_LENGTH)
+            )
 
         return model_data
-
-    def _tag_ids_for_crf(self, example: Message, tag_spec: EntityTagSpec) -> np.ndarray:
-        """Create a np.array containing the tag ids of the given message."""
-        if self.component_config[BILOU_FLAG]:
-            _tags = bilou_utils.bilou_tags_to_ids(
-                example, tag_spec.tags_to_ids, tag_spec.tag_name
-            )
-        else:
-            _tags = []
-            for token in example.get(TOKENS_NAMES[TEXT]):
-                _tag = determine_token_labels(
-                    token, example.get(ENTITIES), attribute_key=tag_spec.tag_name
-                )
-                _tags.append(tag_spec.tags_to_ids[_tag])
-
-        # transpose to have seq_len x 1
-        return np.array([_tags]).T
 
     # train helpers
     def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:

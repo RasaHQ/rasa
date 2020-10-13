@@ -21,7 +21,7 @@ def test_create_zero_features():
     )
     features = [[None, None, [dense_feature_sentence_features]]]
 
-    zero_features = model_data_utils.create_zero_features(features)
+    zero_features = model_data_utils._create_zero_features(features)
     assert len(zero_features) == 1
     assert zero_features[0].is_dense()
     assert (zero_features[0].features == np.zeros(shape)).all()
@@ -34,7 +34,7 @@ def test_create_zero_features():
         origin=[],
     )
     features = [[None, None, [sparse_feature_sentence_features]]]
-    zero_features = model_data_utils.create_zero_features(features)
+    zero_features = model_data_utils._create_zero_features(features)
     assert len(zero_features) == 1
     assert zero_features[0].is_sparse()
     assert (zero_features[0].features != scipy.sparse.coo_matrix((1, shape))).nnz == 0
@@ -67,7 +67,7 @@ def test_surface_attributes():
     state_features.update(copy.deepcopy(action_name_features))
     # test on 2 dialogs -- one with dialog length 3 the other one with dialog length 2
     dialogs = [[state_features, intent_features, {}], [{}, action_name_features]]
-    surfaced_features = model_data_utils.surface_attributes(dialogs)
+    surfaced_features = model_data_utils._surface_attributes(dialogs)
     assert INTENT in surfaced_features and ACTION_NAME in surfaced_features
     # check that number of lists corresponds to number of dialogs
     assert (
@@ -140,7 +140,7 @@ def test_map_tracker_features():
         attribute_masks,
         dense_features,
         sparse_features,
-    ) = model_data_utils.map_tracker_features(tracker_features, zero_features_list)
+    ) = model_data_utils._extract_features(tracker_features, zero_features_list)
     expected_mask = np.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
 
     assert np.all(np.squeeze(np.array(attribute_masks), 2) == expected_mask)

@@ -456,7 +456,10 @@ class RasaModelData:
 
         for features in self.data[from_key][from_sub_key]:
             if len(features) > 0:
-                lengths = np.array([x.shape[0] for x in features])
+                if features.number_of_dimensions == 4:
+                    lengths = np.array([x[0].shape[0] for x in features])
+                else:
+                    lengths = np.array([x.shape[0] for x in features])
                 self.data[key][sub_key].extend(
                     [FeatureArray(lengths, number_of_dimensions=1)]
                 )
