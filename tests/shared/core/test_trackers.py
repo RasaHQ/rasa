@@ -1178,21 +1178,48 @@ def test_set_form_validation_deprecation_warning(validate: bool):
     assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)
 
 
-def test_trackers_for_conversation_sessions():
+@pytest.mark.parametrize(
+    "conversation_events,n_subtrackers",
+    [
+        (
+            # conversation contains multiple sessions
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                # second session begins here
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("goodbye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
+            ],
+            2,
+        ),
+        (
+            # conversation contains only one session
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+            ],
+            1,
+        ),
+        (
+            # this conversation does not contain a session
+            [
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+            ],
+            1,
+        ),
+    ],
+)
+def test_trackers_for_conversation_sessions(
+    conversation_events: List[Event], n_subtrackers: int
+):
     import rasa.shared.core.trackers as trackers_module
-
-    # conversation contains multiple sessions
-    conversation_events = [
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-        UserUttered("hi", {"name": "greet"}),
-        ActionExecuted("utter_greet"),
-        # second session begins here
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-        UserUttered("goodbye", {"name": "goodbye"}),
-        ActionExecuted("utter_goodbye"),
-    ]
 
     tracker = DialogueStateTracker.from_events(
         "some-conversation-ID", conversation_events
@@ -1200,7 +1227,4 @@ def test_trackers_for_conversation_sessions():
 
     subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
 
-    assert len(subtrackers) == 2
-
-    assert list(subtrackers[0].events) == conversation_events[:4]
-    assert list(subtrackers[1].events) == conversation_events[4:]
+    assert len(subtrackers) == n_subtrackers

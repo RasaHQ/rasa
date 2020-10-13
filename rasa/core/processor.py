@@ -2,7 +2,7 @@ import logging
 import os
 import time
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 
@@ -44,12 +44,10 @@ from rasa.shared.constants import (
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 import rasa.core.tracker_store
+import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
-
-if TYPE_CHECKING:
-    from rasa.core.tracker_store import TrackerStore
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +60,7 @@ class MessageProcessor:
         interpreter: NaturalLanguageInterpreter,
         policy_ensemble: PolicyEnsemble,
         domain: Domain,
-        tracker_store: "TrackerStore",
+        tracker_store: rasa.core.tracker_store.TrackerStore,
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
@@ -221,7 +219,8 @@ class MessageProcessor:
         )
 
     def get_trackers_for_all_conversation_sessions(
-        self, conversation_id: Text,
+        self,
+        conversation_id: Text,
     ) -> List[DialogueStateTracker]:
         """Get all trackers for a conversation.
 
@@ -235,8 +234,6 @@ class MessageProcessor:
         Returns:
             Trackers for the conversation.
         """
-        import rasa.shared.core.trackers
-
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
         with rasa.core.tracker_store.tracker_store_with_full_conversation_retrieval(

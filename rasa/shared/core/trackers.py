@@ -408,17 +408,8 @@ class DialogueStateTracker:
 
         yield tracker
 
-    def applied_events(
-        self,
-        include_restarts: bool = False,
-        include_previous_conversation_sessions: bool = False,
-    ) -> List[Event]:
+    def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events.
-
-        Args:
-            include_restarts: Whether events should be returned across restarts.
-            include_previous_conversation_sessions: Whether events should be returned
-                across conversation sessions.
 
         Returns:
             The events applied to the tracker.
@@ -432,12 +423,7 @@ class DialogueStateTracker:
         applied_events = []
 
         for event in self.events:
-            if isinstance(event, Restarted) and not include_restarts:
-                applied_events = []
-            elif (
-                isinstance(event, SessionStarted)
-                and not include_previous_conversation_sessions
-            ):
+            if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
                 self._undo_till_previous(ActionExecuted, applied_events)
@@ -844,19 +830,18 @@ def get_trackers_for_conversation_sessions(
     trackers: List["DialogueStateTracker"] = []
     tracker_slots = tracker.slots
 
-    applied_events = tracker.applied_events(
-        include_restarts=True, include_previous_conversation_sessions=True
-    )
-
     def _create_empty_tracker() -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
-            tracker.sender_id, [], tracker_slots, sender_source=tracker.sender_source,
+            tracker.sender_id,
+            [],
+            tracker_slots,
+            sender_source=tracker.sender_source,
         )
 
     processed_first_session_start = False
     current_tracker = _create_empty_tracker()
 
-    for i, event in enumerate(applied_events):
+    for i, event in enumerate(tracker.events):
         is_session_started_event = (
             isinstance(event, ActionExecuted)
             and event.action_name == ACTION_SESSION_START_NAME
@@ -872,7 +857,7 @@ def get_trackers_for_conversation_sessions(
 
             current_tracker = _create_empty_tracker()
             current_tracker.update(event)
-        elif i == len(applied_events) - 1:
+        elif i == len(tracker.events) - 1:
             # last event, append the tracker
             current_tracker.update(event)
             trackers.append(current_tracker)
