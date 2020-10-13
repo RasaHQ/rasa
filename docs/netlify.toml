@@ -176,13 +176,6 @@
   from = "/docs/rasa/prototype-an-assistant"
   to = "/docs/rasa/playground/"
 
-# FIXME: this may conflict with version URL structure
-[[redirects]]
-  from = "/docs/rasa/next/*"
-  to = "/docs/rasa/:splat"
-  status = 301
-  force = true
-
 # FIXME: this requires some feedback as to the 404, like in the website
 [[redirects]]
   from = "/docs/rasa/*"
