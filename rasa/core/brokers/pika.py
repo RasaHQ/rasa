@@ -366,7 +366,7 @@ class PikaMessageProcessor:
         Returns:
             A boolean value indicating if the connection is established.
         """
-        return self.pika_connection and self.pika_connection.is_open and self.channel
+        return self.pika_connection and self.channel
 
     def is_ready(
         self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
