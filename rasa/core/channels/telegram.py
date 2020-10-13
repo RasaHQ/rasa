@@ -34,13 +34,11 @@ class TelegramOutput(TeleBot, OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         for message_part in text.strip().split("\n\n"):
-            logger.debug(f"message_part: {message_part}")
             self.send_message(recipient_id, message_part)
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
-        logger.debug(f"image: {image}")
         self.send_photo(recipient_id, image)
 
     async def send_text_with_buttons(
@@ -63,28 +61,22 @@ class TelegramOutput(TeleBot, OutputChannel):
         """
         if button_type == "inline":
             reply_markup = InlineKeyboardMarkup()
-            reply_markup.row_width = len(buttons)
-            for idx, button in enumerate(buttons):
-                reply_markup.add(
-                    InlineKeyboardButton(
-                        button["title"], callback_data=button["payload"]
-                    )
-                )
+            button_list = [
+                InlineKeyboardButton(s["title"], callback_data=s["payload"]) for s in buttons
+            ]
+            reply_markup.row(*button_list)
 
         elif button_type == "vertical":
-            reply_markup = ReplyKeyboardMarkup(
-                resize_keyboard=True, one_time_keyboard=True
-            )
-            for idx, button in enumerate(buttons):
-                if isinstance(button, list):
-                    reply_markup.add(KeyboardButton(s["title"]) for s in button)
-                else:
-                    reply_markup.add(KeyboardButton(button["title"]))
+            reply_markup = InlineKeyboardMarkup()
+            [reply_markup.row(InlineKeyboardButton(s["title"], callback_data=s["payload"])) for s in buttons]
+                
 
         elif button_type == "reply":
             reply_markup = ReplyKeyboardMarkup(
                 resize_keyboard=False, one_time_keyboard=True
             )
+            # drop button_type from button_list
+            button_list = [b for b in buttons if b.get('title')]
             for idx, button in enumerate(buttons):
                 if isinstance(button, list):
                     reply_markup.add(KeyboardButton(s["title"]) for s in button)
@@ -97,7 +89,6 @@ class TelegramOutput(TeleBot, OutputChannel):
             )
             return
 
-        logger.debug(f"with buttons, text: {text}")
         self.send_message(recipient_id, text, reply_markup=reply_markup)
 
     async def send_custom_json(

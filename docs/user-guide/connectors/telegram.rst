@@ -45,7 +45,7 @@ you need to supply a ``credentials.yml`` with the following content:
      verify: "your_bot"
      webhook_url: "https://your_url.com/webhooks/telegram/webhook"
 
-In addition to standard `text:` utterances, this channel also supports the following components from the `Telegram API <https://core.telegram.org/bots/api/>`_
+In addition to standard ``text:`` utterances, this channel also supports the following components from the `Telegram API <https://core.telegram.org/bots/api/#message>`_
 
 - button
   - button_type: inline | vertical | reply
