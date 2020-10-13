@@ -204,19 +204,19 @@ class FeatureArray(np.ndarray):
 
 
 class FeatureSignature(NamedTuple):
-    """Stores the shape, the type (sparse vs dense), and the number of dimensions of features."""
+    """Stores the number of units, the type (sparse vs dense), and the number of dimensions of features."""
 
     is_sparse: bool
     units: Optional[int]
     number_of_dimensions: int
 
 
-# Mapping of attribute name and feature name to a list of numpy arrays representing
+# Mapping of attribute name and feature name to a list of feature arrays representing
 # the actual features
 # For example:
 # "text" -> { "sentence": [
-#   "numpy array containing dense features for every training example",
-#   "numpy array containing sparse features for every training example"
+#   "feature array containing dense features for every training example",
+#   "feature array containing sparse features for every training example"
 # ]}
 Data = Dict[Text, Dict[Text, List[FeatureArray]]]
 
@@ -426,9 +426,9 @@ class RasaModelData:
         if features is None:
             return
 
-        for data in features:
-            if len(data) > 0:
-                self.data[key][sub_key].append(data)
+        for _features in features:
+            if len(_features) > 0:
+                self.data[key][sub_key].append(_features)
 
         if not self.data[key][sub_key]:
             del self.data[key][sub_key]
@@ -439,7 +439,7 @@ class RasaModelData:
     def add_lengths(
         self, key: Text, sub_key: Text, from_key: Text, from_sub_key: Text
     ) -> None:
-        """Adds np.array of lengths of sequences to data under given key.
+        """Adds a feature array of lengths of sequences to data under given key.
 
         Args:
             key: The key to add the lengths to
@@ -454,9 +454,9 @@ class RasaModelData:
 
         self.data[key][sub_key] = []
 
-        for data in self.data[from_key][from_sub_key]:
-            if len(data) > 0:
-                lengths = np.array([x.shape[0] for x in data])
+        for features in self.data[from_key][from_sub_key]:
+            if len(features) > 0:
+                lengths = np.array([x.shape[0] for x in features])
                 self.data[key][sub_key].extend(
                     [FeatureArray(lengths, number_of_dimensions=1)]
                 )
@@ -474,11 +474,10 @@ class RasaModelData:
         Returns:
             A tuple of train and test RasaModelData.
         """
-
         self._check_label_key()
 
         if self.label_key is None or self.label_sub_key is None:
-            # randomly split data as no label key is split
+            # randomly split data as no label key is set
             multi_values = [
                 v
                 for attribute_data in self.data.values()

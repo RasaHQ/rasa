@@ -57,14 +57,17 @@ def surface_attributes(
 def create_zero_features(
     tracker_features: List[List[List["Features"]]],
 ) -> List["Features"]:
-    # all features should have the same types
-    """
-    Computes default feature values for an attribute;
+    """Computes default feature values for an attribute.
+
+    All given features should have the same type, e.g. dense or sparse.
+
     Args:
         tracker_features: list containing all feature values encountered
-        in the dataset for an attribute;
-    """
+        in the dataset for an attribute.
 
+    Returns:
+        The default features
+    """
     example_features = next(
         iter(
             [
@@ -82,7 +85,7 @@ def create_zero_features(
         new_features = copy.deepcopy(features)
         if features.is_dense():
             new_features.features = np.zeros_like(features.features)
-        if features.is_sparse():
+        elif features.is_sparse():
             new_features.features = scipy.sparse.coo_matrix(
                 features.features.shape, features.features.dtype
             )
