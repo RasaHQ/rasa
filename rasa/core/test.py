@@ -346,6 +346,25 @@ def _clean_entity_results(
     return cleaned_entities
 
 
+def _collect_predicted_intent(predicted: Dict[Text, Any]) -> Text:
+
+    predicted_intent = predicted.get(INTENT, {}).get("name")
+    if "response_selector" not in predicted:
+        return predicted_intent
+
+    if predicted_intent not in predicted["response_selector"]["all_retrieval_intents"]:
+        return predicted_intent
+
+    if predicted_intent in predicted["response_selector"]:
+        return predicted["response_selector"][predicted_intent]["response"][
+            "intent_response_key"
+        ]
+    else:
+        return predicted["response_selector"]["default"]["response"][
+            "intent_response_key"
+        ]
+
+
 def _collect_user_uttered_predictions(
     event: UserUttered,
     predicted: Dict[Text, Any],
@@ -355,7 +374,7 @@ def _collect_user_uttered_predictions(
     user_uttered_eval_store = EvaluationStore()
 
     intent_gold = event.intent.get("name")
-    predicted_intent = predicted.get(INTENT, {}).get("name")
+    predicted_intent = _collect_predicted_intent(predicted)
 
     user_uttered_eval_store.add_to_store(
         intent_predictions=[predicted_intent], intent_targets=[intent_gold]
