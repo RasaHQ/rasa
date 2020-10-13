@@ -442,10 +442,6 @@ class PikaMessageProcessor:
         """Start to process messages. This process is indefinite thus it should
         be started in a separate process.
         """
-        if not self.is_ready():
-            logger.warning("RabbitMQ channel cannot be opened.")
-            return
-
         try:
             while True:
                 message = self.get_message()
