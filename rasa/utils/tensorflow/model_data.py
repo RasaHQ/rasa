@@ -443,9 +443,9 @@ class RasaModelData:
         if features is None:
             return
 
-        for _features in features:
-            if len(_features) > 0:
-                self.data[key][sub_key].append(_features)
+        for feature_array in features:
+            if len(feature_array) > 0:
+                self.data[key][sub_key].append(feature_array)
 
         if not self.data[key][sub_key]:
             del self.data[key][sub_key]
@@ -952,7 +952,7 @@ class RasaModelData:
         feature_1: Union[np.ndarray, scipy.sparse.spmatrix],
         feature_2: Union[np.ndarray, scipy.sparse.spmatrix],
         number_of_dimensions: Optional[int] = 1,
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
+    ) -> FeatureArray:
         """Concatenate features.
 
         Args:

@@ -681,11 +681,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
-        model_data.add_features(
-            LABEL_KEY,
-            LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
-        )
+        if label_ids:
+            model_data.add_features(
+                LABEL_KEY,
+                LABEL_SUB_KEY,
+                [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            )
 
         if (
             label_attribute
