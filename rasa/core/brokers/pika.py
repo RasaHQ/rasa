@@ -391,13 +391,18 @@ class PikaMessageProcessor:
 
         return False
 
+    def _run_pika_io_loop(self):
+        # noinspection PyUnresolvedReferences
+        self.pika_connection.ioloop.start()
+
     def connect(self):
         """Establish a connection to Pika."""
         self.pika_connection = initialise_pika_select_connection(
             self.parameters, self._on_open_connection, self._on_open_connection_error
         )
-        # noinspection PyUnresolvedReferences
-        self.pika_connection.ioloop.start()
+
+        process = multiprocessing.Process(target=self._run_pika_io_loop, args=(), daemon=True)
+        process.start()
 
     def _on_open_connection(self, connection: "SelectConnection") -> None:
         logger.debug(
