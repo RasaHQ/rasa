@@ -411,6 +411,23 @@ class RasaModelData:
                 else:
                     self.add_features(key, sub_key, features)
 
+    def update_key(
+        self, from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text
+    ) -> None:
+        """Copies the features under the given keys to the new keys and deletes the old keys.
+
+        Args:
+            from_key: current feature key
+            from_sub_key: current feature sub-key
+            to_key: new key for feature
+            to_sub_key: new sub-key for feature
+        """
+        if from_key not in self.data or from_sub_key not in self.data[from_key]:
+            return
+
+        self.data[to_key][to_sub_key] = self.get(from_key, from_sub_key)
+        del self.data[from_key][from_sub_key]
+
     def add_features(
         self, key: Text, sub_key: Text, features: Optional[List[FeatureArray]],
     ) -> None:

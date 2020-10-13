@@ -188,7 +188,7 @@ def convert_to_data_format(
         features_for_examples: a dictionary of attributes to a list of features for all
             examples in the training data
         zero_features: Contains default feature values for attributes
-        consider_dialogue_dimension: If False the dialogue dimension will be removed from the resulting sequence
+        consider_dialogue_dimension: If set to false the dialogue dimension will be removed from the resulting sequence
             features.
 
     Returns:
@@ -225,7 +225,12 @@ def convert_to_data_format(
 
     for attribute in attributes:
         attribute_data[attribute] = _features_for_attribute(
-            attribute, empty_features, features_for_examples, training, zero_features, consider_dialogue_dimension
+            attribute,
+            empty_features,
+            features_for_examples,
+            training,
+            zero_features,
+            consider_dialogue_dimension,
         )
 
     # ensure that all attributes are in the same order
@@ -240,7 +245,7 @@ def _features_for_attribute(
     features_for_examples: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     zero_features: Dict[Text, List["Features"]],
-    consider_dialogue_dimension: bool
+    consider_dialogue_dimension: bool,
 ) -> Dict[Text, List[FeatureArray]]:
     """Create the features for the given attribute from the all examples features.
 
@@ -250,6 +255,8 @@ def _features_for_attribute(
         features_for_examples: features for every example
         training: boolean indicating whether we are currently in training or not
         zero_features: zero features
+        consider_dialogue_dimension: If set to false the dialogue dimension will be removed from the resulting sequence
+            features.
 
     Returns:
         A dictionary of feature type to actual features for the given attribute.
@@ -266,7 +273,7 @@ def _features_for_attribute(
         zero_features[attribute] = _create_zero_features(features)
 
     (attribute_masks, _dense_features, _sparse_features) = _extract_features(
-        features, zero_features[attribute], attribute, consider_dialogue_dimension
+        features, zero_features[attribute], attribute
     )
 
     sparse_features = {}
@@ -291,9 +298,13 @@ def _features_for_attribute(
     for key, values in _dense_features.items():
         if key == SEQUENCE:
             if consider_dialogue_dimension:
-                dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
+                dense_features[key] = FeatureArray(
+                    np.array(values), number_of_dimensions=4
+                )
             else:
-                dense_features[key] = FeatureArray(np.array([v[0] for v in values]), number_of_dimensions=3)
+                dense_features[key] = FeatureArray(
+                    np.array([v[0] for v in values]), number_of_dimensions=3
+                )
         else:
             features = [np.vstack(value) for value in values]
             dense_features[key] = FeatureArray(
@@ -326,7 +337,6 @@ def _extract_features(
     features: List[List[List["Features"]]],
     zero_features: List["Features"],
     attribute: Text,
-    consider_dialogue_dimension: bool
 ) -> Tuple[
     List[np.ndarray],
     Dict[Text, List[List["Features"]]],

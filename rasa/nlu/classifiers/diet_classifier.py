@@ -18,7 +18,6 @@ from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractor
-from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
@@ -646,58 +645,65 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         (
             attribute_data,
             _,
-        ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(output, consider_dialogue_dimension=False)
+        ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
+            output, consider_dialogue_dimension=False
+        )
 
         model_data = RasaModelData(
             label_key=self.label_key, label_sub_key=self.label_sub_key
         )
         model_data.add_data(attribute_data)
+        model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
 
         if training:
-            label_ids = []
-            for example in training_data:
-                if training and example.get(label_attribute):
-                    if label_id_dict:
-                        label_ids.append(label_id_dict[example.get(label_attribute)])
-
-            # explicitly add last dimension to label_ids
-            # to track correctly dynamic sequences
-            model_data.add_features(
-                LABEL_KEY,
-                LABEL_SUB_KEY,
-                [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            self._add_label_features(
+                model_data, training_data, label_attribute, label_id_dict
             )
 
-            if (
-                label_attribute
-                and model_data.does_feature_not_exist(label_attribute, SENTENCE)
-                and model_data.does_feature_not_exist(label_attribute, SEQUENCE)
-            ):
-                # no label features are present, get default features from _label_data
-                model_data.add_features(
-                    label_attribute,
-                    SENTENCE,
-                    self._use_default_label_features(np.array(label_ids)),
-                )
+        return model_data
 
-        model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
+    def _add_label_features(
+        self,
+        model_data: RasaModelData,
+        training_data: List[Message],
+        label_attribute: Text,
+        label_id_dict: Dict[Text, int],
+    ):
+        label_ids = []
+        for example in training_data:
+            if example.get(label_attribute):
+                if label_id_dict:
+                    label_ids.append(label_id_dict[example.get(label_attribute)])
+
+        # explicitly add last dimension to label_ids
+        # to track correctly dynamic sequences
+        model_data.add_features(
+            LABEL_KEY,
+            LABEL_SUB_KEY,
+            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+        )
+
+        if (
+            label_attribute
+            and model_data.does_feature_not_exist(label_attribute, SENTENCE)
+            and model_data.does_feature_not_exist(label_attribute, SEQUENCE)
+        ):
+            # no label features are present, get default features from _label_data
+            model_data.add_features(
+                label_attribute,
+                SENTENCE,
+                self._use_default_label_features(np.array(label_ids)),
+            )
+
         model_data.add_lengths(
             label_attribute, SEQUENCE_LENGTH, label_attribute, SEQUENCE
         )
 
-        if not model_data.does_feature_not_exist(label_attribute, SENTENCE):
-            model_data.add_features(
-                LABEL, SENTENCE, model_data.get(label_attribute, SENTENCE)
-            )
-        if not model_data.does_feature_not_exist(label_attribute, SEQUENCE):
-            model_data.add_features(
-                LABEL, SEQUENCE, model_data.get(label_attribute, SEQUENCE)
-            )
-            model_data.add_features(
-                LABEL, SEQUENCE_LENGTH, model_data.get(label_attribute, SEQUENCE_LENGTH)
-            )
-
-        return model_data
+        # as label_attribute can have different values, copy over the features to the label to make
+        # it easier to access the label features inside the model itself
+        model_data.update_key(label_attribute, SENTENCE, LABEL, SENTENCE)
+        model_data.update_key(label_attribute, SEQUENCE, LABEL, SEQUENCE)
+        model_data.update_key(label_attribute, SEQUENCE_LENGTH, LABEL, SEQUENCE_LENGTH)
 
     # train helpers
     def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:
