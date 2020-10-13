@@ -62,21 +62,26 @@ class TelegramOutput(TeleBot, OutputChannel):
         if button_type == "inline":
             reply_markup = InlineKeyboardMarkup()
             button_list = [
-                InlineKeyboardButton(s["title"], callback_data=s["payload"]) for s in buttons
+                InlineKeyboardButton(s["title"], callback_data=s["payload"])
+                for s in buttons
             ]
             reply_markup.row(*button_list)
 
         elif button_type == "vertical":
             reply_markup = InlineKeyboardMarkup()
-            [reply_markup.row(InlineKeyboardButton(s["title"], callback_data=s["payload"])) for s in buttons]
-                
+            [
+                reply_markup.row(
+                    InlineKeyboardButton(s["title"], callback_data=s["payload"])
+                )
+                for s in buttons
+            ]
 
         elif button_type == "reply":
             reply_markup = ReplyKeyboardMarkup(
                 resize_keyboard=False, one_time_keyboard=True
             )
             # drop button_type from button_list
-            button_list = [b for b in buttons if b.get('title')]
+            button_list = [b for b in buttons if b.get("title")]
             for idx, button in enumerate(buttons):
                 if isinstance(button, list):
                     reply_markup.add(KeyboardButton(s["title"]) for s in button)
