@@ -113,7 +113,7 @@ def test_surface_attributes():
     )
 
 
-def test_map_tracker_features():
+def test_extract_features():
     zero_features = np.zeros(shape)
     zero_features_as_features = Features(
         features=zero_features, attribute=INTENT, feature_type=SENTENCE, origin=[]
@@ -144,5 +144,5 @@ def test_map_tracker_features():
     expected_mask = np.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
 
     assert np.all(np.squeeze(np.array(attribute_masks), 2) == expected_mask)
-    assert np.array(dense_features["sentence"]).shape[-1] == zero_features.shape[-1]
+    assert np.array(dense_features[SENTENCE]).shape[-1] == zero_features.shape[-1]
     assert sparse_features == {}

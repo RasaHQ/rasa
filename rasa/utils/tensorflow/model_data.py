@@ -924,10 +924,12 @@ class RasaModelData:
         index = 0
         for key, attribute_data in self.data.items():
             for sub_key, features in attribute_data.items():
-                for _ in features:
+                for f in features:
                     data_train[key][sub_key].append(
                         self._combine_features(
-                            output_values[index * 2], solo_values[index]
+                            output_values[index * 2],
+                            solo_values[index],
+                            f.number_of_dimensions,
                         )
                     )
                     index += 1
@@ -949,6 +951,7 @@ class RasaModelData:
     def _combine_features(
         feature_1: Union[np.ndarray, scipy.sparse.spmatrix],
         feature_2: Union[np.ndarray, scipy.sparse.spmatrix],
+        number_of_dimensions: Optional[int] = 1,
     ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
         """Concatenate features.
 
@@ -964,12 +967,16 @@ class RasaModelData:
             feature_2, scipy.sparse.spmatrix
         ):
             if feature_2.shape[0] == 0:
-                return feature_1
+                return FeatureArray(feature_1, number_of_dimensions)
             if feature_1.shape[0] == 0:
-                return feature_2
-            return scipy.sparse.vstack([feature_1, feature_2])
+                return FeatureArray(feature_2, number_of_dimensions)
+            return FeatureArray(
+                scipy.sparse.vstack([feature_1, feature_2]), number_of_dimensions
+            )
 
-        return np.concatenate([feature_1, feature_2])
+        return FeatureArray(
+            np.concatenate([feature_1, feature_2]), number_of_dimensions
+        )
 
     @staticmethod
     def _create_label_ids(label_ids: FeatureArray) -> np.ndarray:

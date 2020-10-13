@@ -1,15 +1,14 @@
 import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Any
 import copy
 import numpy as np
-from collections import defaultdict, OrderedDict
 import scipy.sparse
+from collections import defaultdict, OrderedDict
+from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
 import rasa.nlu.utils.bilou_utils
-import rasa.nlu.test
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
-from rasa.utils.tensorflow.constants import SEQUENCE
+from rasa.utils.tensorflow.constants import SEQUENCE, MASK
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -21,8 +20,6 @@ if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
     from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
 
-MASK = "mask"
-
 
 def convert_training_examples(
     training_examples: List[Message],
@@ -33,7 +30,7 @@ def convert_training_examples(
 ) -> List[Dict[Text, List["Features"]]]:
     """Converts training data into a list of attribute to features.
     
-    Possible attributes are, for example, INTENT, TEXT, or ENTITIES.
+    Possible attributes are, for example, INTENT, RRESPONSE, TEXT, or ENTITIES.
     
     Args:
         training_examples: the list of training examples
@@ -51,7 +48,7 @@ def convert_training_examples(
         attribute_to_features = {}
         for attribute in attributes:
             if attribute == ENTITIES:
-                # If ENTITIES should be extracted, we need to add the tag ids
+                # in case of entities add the tag_ids
                 for tag_spec in entity_tag_specs:
                     attribute_to_features[attribute] = [
                         _get_tag_ids(example, tag_spec, bilou_tagging)

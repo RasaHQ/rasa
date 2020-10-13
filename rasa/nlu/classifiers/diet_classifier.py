@@ -616,7 +616,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return [
             FeatureArray(
                 np.array([all_label_features[label_id] for label_id in label_ids]),
-                number_of_dimensions=2,
+                number_of_dimensions=all_label_features.number_of_dimensions,
             )
         ]
 
@@ -635,7 +635,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[ENTITY_RECOGNITION]:
             attributes_to_consider.append(ENTITIES)
 
-        output = rasa.utils.tensorflow.model_data_utils.convert_training_examples(
+        if training:
+            training_data = [
+                example for example in training_data if label_attribute in example.data
+            ]
+
+        features_for_examples = rasa.utils.tensorflow.model_data_utils.convert_training_examples(
             training_data,
             attributes_to_consider,
             entity_tag_specs=self._entity_tag_specs,
@@ -644,9 +649,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
         (
             attribute_data,
-            _,
+            zero_features,
         ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
-            output, consider_dialogue_dimension=False
+            features_for_examples, consider_dialogue_dimension=False
         )
 
         model_data = RasaModelData(
@@ -672,8 +677,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = []
         for example in training_data:
             if example.get(label_attribute):
-                if label_id_dict:
-                    label_ids.append(label_id_dict[example.get(label_attribute)])
+                label_ids.append(label_id_dict[example.get(label_attribute)])
 
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
