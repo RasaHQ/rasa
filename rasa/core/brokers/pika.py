@@ -566,15 +566,19 @@ class PikaEventBroker(EventBroker):
     def _get_mp_context(self) -> multiprocessing.context.BaseContext:
         return multiprocessing.get_context(self.MP_CONTEXT)
 
-    def _start_pika_process(self) -> multiprocessing.Process:
+    def _start_pika_process(self) -> Optional[multiprocessing.Process]:
         if not self.pika_message_processor.is_connected:
             self.pika_message_processor.connect()
 
-        process = multiprocessing.Process(
-            target=self.pika_message_processor.process_messages, args=(), daemon=True
-        )
-        process.start()
-        return process
+        if self.pika_message_processor.is_ready():
+            process = multiprocessing.Process(
+                target=self.pika_message_processor.process_messages, args=(), daemon=True
+            )
+            process.start()
+            return process
+
+        logger.warning("RabbitMQ channel cannot be opened.")
+        return None
 
     def _publish(self, body: Text, headers: MessageHeaders = None) -> None:
         if not self.pika_message_processor:
