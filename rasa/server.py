@@ -1248,9 +1248,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
 
-def _training_payload_from_yaml(
-    request: Request,
-) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_yaml(request: Request) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
