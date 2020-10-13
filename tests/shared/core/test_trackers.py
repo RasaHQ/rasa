@@ -1208,10 +1208,7 @@ def test_set_form_validation_deprecation_warning(validate: bool):
         ),
         (
             # this conversation does not contain a session
-            [
-                UserUttered("hi", {"name": "greet"}),
-                ActionExecuted("utter_greet"),
-            ],
+            [UserUttered("hi", {"name": "greet"}), ActionExecuted("utter_greet"),],
             1,
         ),
     ],

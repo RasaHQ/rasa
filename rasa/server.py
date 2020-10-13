@@ -227,6 +227,21 @@ def event_verbosity_parameter(
         )
 
 
+def get_tracker(
+    processor: "MessageProcessor", conversation_id: Text
+) -> DialogueStateTracker:
+    """Retrieves tracker from `processor` without updating the conversation session.
+
+    Args:
+        processor: An instance of `MessageProcessor`.
+        conversation_id: Conversation ID to fetch the tracker for.
+
+    Returns:
+        The tracker for `conversation_id`.
+    """
+    return processor.get_tracker(conversation_id)
+
+
 async def get_tracker_with_session_start(
     processor: "MessageProcessor", conversation_id: Text
 ) -> DialogueStateTracker:
@@ -283,26 +298,14 @@ def get_test_stories(
     more_than_one_story = len(trackers) > 1
 
     for i, tracker in enumerate(trackers, 1):
+        tracker.sender_id = conversation_id
+
         if more_than_one_story:
-            tracker.sender_id = f"{tracker.sender_id}, story {i}"
+            tracker.sender_id += f", story {i}"
+
         story_steps += tracker.as_story().story_steps
 
     return YAMLStoryWriter().dumps(story_steps, is_test_story=True)
-
-
-def get_tracker(
-    processor: "MessageProcessor", conversation_id: Text
-) -> DialogueStateTracker:
-    """Retrieves tracker from `processor` without updating the conversation session.
-
-    Args:
-        processor: An instance of `MessageProcessor`.
-        conversation_id: Conversation ID to fetch the tracker for.
-
-    Returns:
-        The tracker for `conversation_id`.
-    """
-    return processor.get_tracker(conversation_id)
 
 
 def validate_request_body(request: Request, error_message: Text):
@@ -1245,7 +1248,9 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
 
-def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_yaml(
+    request: Request,
+) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
