@@ -71,12 +71,14 @@ slots:
 This means that the dialogue model will pay attention to the value of the slot when making a prediction
 (read more about how [slots influence the assistant's behaviour](./domain.mdx#slots-and-conversation-behavior)).
 
-You can then write stories for specific responses to interruptions based on the value of `requested_slot`, for example:
+You can then write stories for specific responses to interjections based on the value of `requested_slot`, for example:
 
 ```yaml-rasa title="stories.yml"
 stories:
-- story: cuisine interruption
+- story: cuisine interjection
   steps:
+  - intent: request_restaurant
+  - action: restaurant_form
   - active_loop: restaurant_form
   - slot_was_set:
     - requested_slot: cuisine
@@ -84,8 +86,10 @@ stories:
   - action: utter_explain_cuisine
   - action: restaurant_form
 
-- story: number of people interruption
+- story: number of people interjection
   steps:
+  - intent: request_restaurant
+  - action: restaurant_form
   - active_loop: restaurant_form
   - slot_was_set:
     - requested_slot: num_people
