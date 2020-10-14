@@ -658,6 +658,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
                 features_for_examples, consider_dialogue_dimension=False
             )
+            # we don't want to fill in zero features for the label attribute during prediction
+            if label_attribute in self.zero_features:
+                del self.zero_features[label_attribute]
         else:
             (
                 attribute_data,
@@ -665,6 +668,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
                 features_for_examples, consider_dialogue_dimension=False, zero_features=self.zero_features
             )
+            # during prediction there are not tag ids
+            if ENTITIES in attribute_data:
+                del attribute_data[ENTITIES]
 
         model_data = RasaModelData(
             label_key=self.label_key, label_sub_key=self.label_sub_key
@@ -676,6 +682,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_data, training_data, label_attribute, label_id_dict, training
         )
 
+        # make sure all keys are in the same order during training and prediction
         model_data.sort()
 
         return model_data
