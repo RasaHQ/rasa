@@ -150,8 +150,10 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
-    model_relative_path = create_output_path(model_path)
-    model_relative_path = os.path.relpath(model_relative_path)
+    try:
+        model_relative_path = os.path.relpath(model_path)
+    except ValueError:
+        model_relative_path = model_path
     logger.info(f"Loading model {model_relative_path}...")
 
     return unpack_model(model_path)
