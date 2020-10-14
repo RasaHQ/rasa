@@ -16,6 +16,8 @@ from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
 import rasa.shared.utils.io
+from nlu.components import ComponentBuilder
+from nlu.config import RasaNLUModelConfig
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
@@ -274,6 +276,22 @@ def project() -> Text:
     return directory
 
 
+@pytest.fixture(scope="session")
+def component_builder():
+    return ComponentBuilder()
+
+
+@pytest.fixture(scope="session")
+def spacy_nlp(component_builder, blank_config):
+    spacy_nlp_config = {"name": "SpacyNLP"}
+    return component_builder.create_component(spacy_nlp_config, blank_config).nlp
+
+
+@pytest.fixture(scope="session")
+def blank_config() -> RasaNLUModelConfig:
+    return RasaNLUModelConfig({"language": "en", "pipeline": []})
+
+
 def write_endpoint_config_to_yaml(
     path: Path, data: Dict[Text, Any], endpoints_filename: Text = "endpoints.yml"
 ) -> Path:
@@ -309,3 +327,4 @@ class MockExporter(Exporter):
         endpoints_path: Text = "",
     ) -> None:
         super().__init__(tracker_store, event_broker, endpoints_path)
+

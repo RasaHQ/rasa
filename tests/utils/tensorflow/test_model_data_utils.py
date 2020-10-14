@@ -1,12 +1,21 @@
+from typing import Any, Text, Optional, Dict, List
+
+import pytest
 import scipy.sparse
 import numpy as np
 import copy
 
+from nlu.constants import SPACY_DOCS
+from nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import CountVectorsFeaturizer
+from nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.shared.nlu.constants import ACTION_NAME, TEXT, ENTITIES
 from rasa.utils.tensorflow.constants import SENTENCE
+from shared.nlu.training_data.message import Message
+from shared.nlu.training_data.training_data import TrainingData
 
 shape = 100
 
@@ -146,3 +155,50 @@ def test_extract_features():
     assert np.all(np.squeeze(np.array(attribute_masks), 2) == expected_mask)
     assert np.array(dense_features[SENTENCE]).shape[-1] == zero_features.shape[-1]
     assert sparse_features == {}
+
+
+
+@pytest.mark.parametrize(
+    "text, intent, entities, attributes",
+    [
+        (
+            "Hello!", "greet", None, [TEXT]
+        ),
+        (
+            "Hello!", "greet", None, [TEXT, INTENT]
+        ),
+    ],
+)
+def test_convert_training_examples(
+        spacy_nlp: Any,
+        text: Text,
+        intent: Optional[Text],
+        entities: Optional[Dict[Text, Any]],
+        attributes: List[Text]
+):
+    message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
+
+    tokenizer = SpacyTokenizer()
+    count_vectors_featurizer = CountVectorsFeaturizer()
+    spacy_featurizer = SpacyFeaturizer()
+
+    message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
+
+    training_data = TrainingData([message])
+    tokenizer.train(training_data)
+    count_vectors_featurizer.train(training_data)
+    spacy_featurizer.train(training_data)
+
+    output = model_data_utils.convert_training_examples([message], attributes=attributes)
+
+    assert len(output) == 1
+    for attribute in attributes:
+        assert attribute in output[0]
+    for attribute in {INTENT, TEXT, ENTITIES} - set(attributes):
+        assert attribute not in output[0]
+    # we have sparse sentence, sparse sequence, dense sentence, and dense sequence features in the list
+    assert len(output[0][TEXT]) == 4
+    if INTENT in attributes:
+        # we will just have space sentence features
+        assert len(output[0][INTENT]) == 1
+

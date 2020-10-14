@@ -91,9 +91,9 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     SEQUENCE,
     SENTENCE,
-    DENSE_DIMENSION,
+    DENSE_DIMENSION, MASK,
 )
-
+from shared.nlu.training_data.features import Features
 
 logger = logging.getLogger(__name__)
 
@@ -307,6 +307,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
+        zero_features: Optional[Dict[Text, List["Features"]]] = None,
     ) -> None:
         """Declare instance variables with default values."""
 
@@ -329,6 +330,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self._label_data: Optional[RasaModelData] = None
         self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
+
+        self.zero_features = zero_features or defaultdict(list)
 
     @property
     def label_key(self) -> Optional[Text]:
@@ -647,12 +650,21 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             featurizers=self.component_config[FEATURIZERS],
             bilou_tagging=self.component_config[BILOU_FLAG],
         )
-        (
-            attribute_data,
-            zero_features,
-        ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
-            features_for_examples, consider_dialogue_dimension=False
-        )
+
+        if training:
+            (
+                attribute_data,
+                self.zero_features,
+            ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
+                features_for_examples, consider_dialogue_dimension=False
+            )
+        else:
+            (
+                attribute_data,
+                _
+            ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
+                features_for_examples, consider_dialogue_dimension=False, zero_features=self.zero_features
+            )
 
         model_data = RasaModelData(
             label_key=self.label_key, label_sub_key=self.label_sub_key
@@ -660,10 +672,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_data(attribute_data)
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
 
-        if training:
-            self._add_label_features(
-                model_data, training_data, label_attribute, label_id_dict
-            )
+        self._add_label_features(
+            model_data, training_data, label_attribute, label_id_dict, training
+        )
+
+        model_data.sort()
 
         return model_data
 
@@ -673,20 +686,23 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         training_data: List[Message],
         label_attribute: Text,
         label_id_dict: Dict[Text, int],
+        training: bool = True,
     ):
         label_ids = []
-        for example in training_data:
-            if example.get(label_attribute):
-                label_ids.append(label_id_dict[example.get(label_attribute)])
+        if training:
+            for example in training_data:
+                if example.get(label_attribute):
+                    label_ids.append(label_id_dict[example.get(label_attribute)])
 
-        # explicitly add last dimension to label_ids
-        # to track correctly dynamic sequences
         if label_ids:
+            # explicitly add last dimension to label_ids
+            # to track correctly dynamic sequences
             model_data.add_features(
                 LABEL_KEY,
                 LABEL_SUB_KEY,
                 [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
             )
+            self.zero_features[LABEL_KEY] = [Features(np.expand_dims(label_ids, -1), "sentence", LABEL_SUB_KEY, "")]
 
         if (
             label_attribute
@@ -695,20 +711,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(
-                label_attribute,
+                LABEL,
                 SENTENCE,
                 self._use_default_label_features(np.array(label_ids)),
             )
-
-        model_data.add_lengths(
-            label_attribute, SEQUENCE_LENGTH, label_attribute, SEQUENCE
-        )
 
         # as label_attribute can have different values, copy over the features to the label to make
         # it easier to access the label features inside the model itself
         model_data.update_key(label_attribute, SENTENCE, LABEL, SENTENCE)
         model_data.update_key(label_attribute, SEQUENCE, LABEL, SEQUENCE)
-        model_data.update_key(label_attribute, SEQUENCE_LENGTH, LABEL, SEQUENCE_LENGTH)
+        model_data.update_key(label_attribute, MASK, LABEL, MASK)
+
+        model_data.add_lengths(
+            LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE
+        )
 
     # train helpers
     def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:
@@ -953,6 +969,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.index_label_id_mapping.json",
             self.index_label_id_mapping,
         )
+        io_utils.pickle_dump(
+            model_dir / f"{file_name}.zero_features.pkl",
+            self.zero_features,
+        )
 
         entity_tag_specs = (
             [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
@@ -990,6 +1010,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data,
             meta,
             data_example,
+            zero_features
         ) = cls._load_from_files(meta, model_dir)
 
         meta = train_utils.update_similarity_type(meta)
@@ -1003,6 +1024,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             index_label_id_mapping=index_label_id_mapping,
             entity_tag_specs=entity_tag_specs,
             model=model,
+            zero_features=zero_features
         )
 
     @classmethod
@@ -1016,6 +1038,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data = RasaModelData(data=label_data)
         index_label_id_mapping = io_utils.json_unpickle(
             model_dir / f"{file_name}.index_label_id_mapping.json"
+        )
+        zero_features = io_utils.pickle_load(
+            model_dir / f"{file_name}.zero_features.pkl"
         )
         entity_tag_specs = rasa.shared.utils.io.read_json_file(
             model_dir / f"{file_name}.entity_tag_specs.json"
@@ -1045,6 +1070,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data,
             meta,
             data_example,
+            zero_features
         )
 
     @classmethod

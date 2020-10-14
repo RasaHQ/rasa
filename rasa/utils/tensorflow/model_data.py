@@ -18,7 +18,7 @@ from typing import (
     ValuesView,
     ItemsView,
 )
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 
 logger = logging.getLogger(__name__)
@@ -303,6 +303,9 @@ class RasaModelData:
 
         return []
 
+    def sort(self):
+        self.data = OrderedDict(sorted(self.data.items()))
+
     def first_data_example(self) -> Data:
         """Return the data with just one feature example per key, sub-key.
 
@@ -315,6 +318,9 @@ class RasaModelData:
             for sub_key, features in attribute_data.items():
                 out_data[key][sub_key] = [feature[:1] for feature in features]
         return out_data
+
+    def does_feature_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
+        return not self.does_feature_not_exist(key, sub_key)
 
     def does_feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
         """Check if feature key (and sub-key) is present and features are available.
@@ -425,8 +431,13 @@ class RasaModelData:
         if from_key not in self.data or from_sub_key not in self.data[from_key]:
             return
 
+        if to_key not in self.data:
+            self.data[to_key] = {}
         self.data[to_key][to_sub_key] = self.get(from_key, from_sub_key)
         del self.data[from_key][from_sub_key]
+
+        if not self.data[from_key]:
+            del self.data[from_key]
 
     def add_features(
         self, key: Text, sub_key: Text, features: Optional[List[FeatureArray]],
@@ -668,6 +679,9 @@ class RasaModelData:
                     shapes.extend(_shapes)
                     types.extend(_types)
 
+
+        print(shapes)
+        print(types)
         return tuple(shapes), tuple(types)
 
     def _shuffled_data(self, data: Data) -> Data:
