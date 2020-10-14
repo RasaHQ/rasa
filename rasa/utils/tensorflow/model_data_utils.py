@@ -14,6 +14,9 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ENTITIES,
     FEATURE_TYPE_SEQUENCE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 
 if typing.TYPE_CHECKING:
@@ -158,7 +161,7 @@ def _create_zero_features(
         new_features = copy.deepcopy(_features)
         if _features.is_dense():
             new_features.features = np.zeros_like(_features.features)
-        elif _features.is_sparse():
+        if _features.is_sparse():
             new_features.features = scipy.sparse.coo_matrix(
                 _features.features.shape, _features.features.dtype
             )
@@ -200,14 +203,14 @@ def convert_to_data_format(
     if isinstance(features_for_examples[0], Dict):
         features_for_examples = [[dicts] for dicts in features_for_examples]
 
-    features_for_examples = _surface_attributes(features_for_examples)
+    _features_for_examples = _surface_attributes(features_for_examples)
 
     attribute_data = {}
 
     # During prediction we need to iterate over the zero features attributes to
     # have all keys in the resulting model data
     if training:
-        attributes = list(features_for_examples.keys())
+        attributes = list(_features_for_examples.keys())
     else:
         attributes = list(zero_features.keys())
 
@@ -215,7 +218,7 @@ def convert_to_data_format(
     # None values that will then be replaced by zero features
     dialogue_length = 1
     num_examples = 1
-    for _features in features_for_examples.values():
+    for _features in _features_for_examples.values():
         num_examples = max(num_examples, len(_features))
         dialogue_length = max(dialogue_length, len(_features[0]))
     empty_features = [[None] * dialogue_length] * num_examples
@@ -224,7 +227,7 @@ def convert_to_data_format(
         attribute_data[attribute] = _features_for_attribute(
             attribute,
             empty_features,
-            features_for_examples,
+            _features_for_examples,
             training,
             zero_features,
             consider_dialogue_dimension,
@@ -373,8 +376,19 @@ def _extract_features(
                 list_of_features = zero_features
 
             for features in list_of_features:
+                # in case of ENTITIES, if the attribute type matches either 'entity', 'role', or 'group' the
+                # features correspond to the tag ids of that entity type
+                # in order to distinguish later on between the different tag ids, we use the entity type as key
+                if attribute == ENTITIES and features.attribute in [
+                    ENTITY_ATTRIBUTE_TYPE,
+                    ENTITY_ATTRIBUTE_GROUP,
+                    ENTITY_ATTRIBUTE_ROLE,
+                ]:
+                    key = features.attribute
+                else:
+                    key = features.type
+
                 # all features should have the same types
-                key = features.type if attribute != ENTITIES else features.attribute
                 if features.is_sparse():
                     dialogue_sparse_features[key].append(features.features)
                 else:
