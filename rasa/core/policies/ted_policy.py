@@ -310,7 +310,6 @@ class TEDPolicy(Policy):
             attribute_data, self.zero_state_features = convert_to_data_format(
                 tracker_state_features
             )
-
         else:
             # method is called during prediction
             attribute_data, _ = convert_to_data_format(

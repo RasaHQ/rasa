@@ -42,7 +42,6 @@ from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
-import rasa.utils.tensorflow.model_data_utils
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -94,7 +93,6 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     MASK,
 )
-from rasa.shared.nlu.training_data.features import Features
 
 logger = logging.getLogger(__name__)
 
@@ -629,43 +627,34 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         training: bool = True,
     ) -> RasaModelData:
         """Prepare data for training and create a RasaModelData object"""
+        from rasa.utils.tensorflow import model_data_utils
 
-        attributes_to_consider = [TEXT]
-        if training:
-            attributes_to_consider.append(label_attribute)
+        attributes_to_consider = [TEXT, label_attribute]
         if self.component_config[ENTITY_RECOGNITION]:
             attributes_to_consider.append(ENTITIES)
 
         if training:
+            # only use those training examples that have the label_attribute set
+            # during training
             training_data = [
                 example for example in training_data if label_attribute in example.data
             ]
 
-        features_for_examples = rasa.utils.tensorflow.model_data_utils.convert_training_examples(
+        features_for_examples = model_data_utils.convert_training_examples(
             training_data,
             attributes_to_consider,
             entity_tag_specs=self._entity_tag_specs,
             featurizers=self.component_config[FEATURIZERS],
             bilou_tagging=self.component_config[BILOU_FLAG],
         )
+        attribute_data, _ = model_data_utils.convert_to_data_format(
+            features_for_examples, consider_dialogue_dimension=False
+        )
 
-        if training:
-            (
-                attribute_data,
-                _,
-            ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
-                features_for_examples, consider_dialogue_dimension=False
-            )
-        else:
-            (
-                attribute_data,
-                _,
-            ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
-                features_for_examples, consider_dialogue_dimension=False
-            )
-            # during prediction there are not tag ids
-            if ENTITIES in attribute_data:
-                del attribute_data[ENTITIES]
+        # during training we store the tag ids for the different entity labels under
+        # the key ENTITIES. during prediction we do not have any tag ids.
+        if not training and ENTITIES in attribute_data:
+            del attribute_data[ENTITIES]
 
         model_data = RasaModelData(
             label_key=self.label_key, label_sub_key=self.label_sub_key
@@ -696,7 +685,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 if example.get(label_attribute):
                     label_ids.append(label_id_dict[example.get(label_attribute)])
 
-        if label_ids:
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
             model_data.add_features(
@@ -712,10 +700,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(
-                LABEL, SENTENCE, self._use_default_label_features(np.array(label_ids)),
+                LABEL, SENTENCE, self._use_default_label_features(np.array(label_ids))
             )
 
-        # as label_attribute can have different values, copy over the features to the label to make
+        # as label_attribute can have different values, e.g. INTENT or RESPONSE,
+        # copy over the features to the LABEL key to make
         # it easier to access the label features inside the model itself
         model_data.update_key(label_attribute, SENTENCE, LABEL, SENTENCE)
         model_data.update_key(label_attribute, SEQUENCE, LABEL, SEQUENCE)
