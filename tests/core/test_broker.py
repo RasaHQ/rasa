@@ -15,10 +15,16 @@ import rasa.utils.io
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker
-from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
+from rasa.core.brokers.pika import (
+    PikaEventBroker,
+    PikaMessageProcessor,
+    DEFAULT_QUEUE_NAME,
+)
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+
+import pika.connection
 
 TEST_EVENTS = [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
@@ -26,8 +32,15 @@ TEST_EVENTS = [
     Restarted(),
 ]
 
+TEST_CONNECTION_PARAMETERS = pika.connection.ConnectionParameters(
+    "amqp://username:password@host:port"
+)
 
-def test_pika_broker_from_config():
+
+def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
+    monkeypatch.setattr(PikaEventBroker, "_connect", lambda _: None)
+
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
     )
@@ -41,18 +54,18 @@ def test_pika_broker_from_config():
 
 # noinspection PyProtectedMember
 def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
-    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
-    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
-    pika_producer = PikaEventBroker("", "", "")
+    pika_processor = PikaMessageProcessor(
+        TEST_CONNECTION_PARAMETERS, queues=None, get_message=lambda: ("", None)
+    )
 
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
-    assert not pika_producer._get_message_properties().app_id
+    assert not pika_processor._get_message_properties().app_id
 
     # setting it to some value results in that value as the App ID
     rasa_environment = "some-test-environment"
     monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
-    assert pika_producer._get_message_properties().app_id == rasa_environment
+    assert pika_processor._get_message_properties().app_id == rasa_environment
 
 
 @pytest.mark.parametrize(
@@ -70,15 +83,15 @@ def test_pika_queues_from_args(
     queues_arg: Union[Text, List[Text], None],
     expected: List[Text],
     warning: Optional[Type[Warning]],
-    monkeypatch: MonkeyPatch,
 ):
-    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
-    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
-
     with pytest.warns(warning):
-        pika_producer = PikaEventBroker("", "", "", queues=queues_arg)
+        pika_processor = PikaMessageProcessor(
+            TEST_CONNECTION_PARAMETERS,
+            queues=queues_arg,
+            get_message=lambda: ("", None),
+        )
 
-    assert pika_producer.queues == expected
+    assert pika_processor.queues == expected
 
 
 def test_no_broker_in_config():
