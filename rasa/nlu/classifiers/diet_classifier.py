@@ -91,7 +91,8 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     SEQUENCE,
     SENTENCE,
-    DENSE_DIMENSION, MASK,
+    DENSE_DIMENSION,
+    MASK,
 )
 from rasa.shared.nlu.training_data.features import Features
 
@@ -658,7 +659,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         else:
             (
                 attribute_data,
-                _
+                _,
             ) = rasa.utils.tensorflow.model_data_utils.convert_to_data_format(
                 features_for_examples, consider_dialogue_dimension=False
             )
@@ -711,9 +712,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ):
             # no label features are present, get default features from _label_data
             model_data.add_features(
-                LABEL,
-                SENTENCE,
-                self._use_default_label_features(np.array(label_ids)),
+                LABEL, SENTENCE, self._use_default_label_features(np.array(label_ids)),
             )
 
         # as label_attribute can have different values, copy over the features to the label to make
@@ -722,9 +721,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.update_key(label_attribute, SEQUENCE, LABEL, SEQUENCE)
         model_data.update_key(label_attribute, MASK, LABEL, MASK)
 
-        model_data.add_lengths(
-            LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE
-        )
+        model_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
     # train helpers
     def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:

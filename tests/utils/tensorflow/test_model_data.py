@@ -486,11 +486,23 @@ def test_scipy_matrix_to_values(
 
 
 def test_sort(model_data: RasaModelData):
-    assert list(model_data.data.keys()) == ["text", "action_text", "dialogue", "label", "entities"]
+    assert list(model_data.data.keys()) == [
+        "text",
+        "action_text",
+        "dialogue",
+        "label",
+        "entities",
+    ]
 
     model_data.sort()
 
-    assert list(model_data.data.keys()) == ["action_text", "dialogue", "entities", "label", "text"]
+    assert list(model_data.data.keys()) == [
+        "action_text",
+        "dialogue",
+        "entities",
+        "label",
+        "text",
+    ]
 
 
 def test_update_key(model_data: RasaModelData):

@@ -16,8 +16,8 @@ from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
 import rasa.shared.utils.io
-from nlu.components import ComponentBuilder
-from nlu.config import RasaNLUModelConfig
+from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
@@ -327,4 +327,3 @@ class MockExporter(Exporter):
         endpoints_path: Text = "",
     ) -> None:
         super().__init__(tracker_store, event_broker, endpoints_path)
-

@@ -5,17 +5,20 @@ import scipy.sparse
 import numpy as np
 import copy
 
-from nlu.constants import SPACY_DOCS
-from nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import CountVectorsFeaturizer
-from nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
+from rasa.nlu.constants import SPACY_DOCS
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    CountVectorsFeaturizer,
+)
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import ACTION_NAME, TEXT, ENTITIES
 from rasa.utils.tensorflow.constants import SENTENCE
-from shared.nlu.training_data.message import Message
-from shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 shape = 100
 
@@ -157,24 +160,25 @@ def test_extract_features():
     assert sparse_features == {}
 
 
-
 @pytest.mark.parametrize(
     "text, intent, entities, attributes",
     [
+        ("Hello!", "greet", None, [TEXT]),
+        ("Hello!", "greet", None, [TEXT, INTENT]),
         (
-            "Hello!", "greet", None, [TEXT]
-        ),
-        (
-            "Hello!", "greet", None, [TEXT, INTENT]
+            "Hello Max!",
+            "greet",
+            [{"entity": "name", "value": "Max", "start": 6, "end": 9}],
+            [TEXT, ENTITIES],
         ),
     ],
 )
 def test_convert_training_examples(
-        spacy_nlp: Any,
-        text: Text,
-        intent: Optional[Text],
-        entities: Optional[Dict[Text, Any]],
-        attributes: List[Text]
+    spacy_nlp: Any,
+    text: Text,
+    intent: Optional[Text],
+    entities: Optional[List[Dict[Text, Any]]],
+    attributes: List[Text],
 ):
     message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
 
@@ -189,7 +193,17 @@ def test_convert_training_examples(
     count_vectors_featurizer.train(training_data)
     spacy_featurizer.train(training_data)
 
-    output = model_data_utils.convert_training_examples([message], attributes=attributes)
+    entity_tag_spec = [
+        EntityTagSpec(
+            "entity",
+            {0: "O", 1: "name", 2: "location"},
+            {"O": 0, "name": 1, "location": 2},
+            3,
+        )
+    ]
+    output = model_data_utils.convert_training_examples(
+        [message], attributes=attributes, entity_tag_specs=entity_tag_spec
+    )
 
     assert len(output) == 1
     for attribute in attributes:
@@ -201,4 +215,6 @@ def test_convert_training_examples(
     if INTENT in attributes:
         # we will just have space sentence features
         assert len(output[0][INTENT]) == 1
-
+    if ENTITIES in attributes:
+        # we will just have space sentence features
+        assert len(output[0][ENTITIES]) == len(entity_tag_spec)
