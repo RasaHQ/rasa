@@ -162,7 +162,7 @@ word vectors in your pipeline.
 
   Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
   featurization to compute sequence and sentence level representations for each example in the training data.
-  Include [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) to utilize the output of this
+  Include a [tokenizer](./components.mdx#tokenizers) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) to utilize the output of this
   component for downstream NLU models.
 
   :::note
@@ -455,46 +455,6 @@ word vectors in your pipeline.
       "token_pattern": None
       # Remote URL of hosted model
       "model_url": TF_HUB_MODULE_URL
-    ```
-
-
-  ### LanguageModelTokenizer
-
-
-  * **Short**
-
-    Tokenizer from pre-trained language models
-
-
-
-  * **Outputs**
-
-    `tokens` for user messages, responses (if present), and intents (if specified)
-
-
-
-  * **Requires**
-
-    [HFTransformersNLP](./components.mdx#hftransformersnlp)
-
-
-
-  * **Description**
-
-    Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
-    Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
-
-
-
-  * **Configuration**
-
-    ```yaml-rasa
-    pipeline:
-    - name: "LanguageModelTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
     ```
 
 
@@ -2739,4 +2699,12 @@ features. The sequence features are a matrix of size `(number-of-tokens x featur
 the matrix contains a feature vector for every token in the sequence.
 The sentence features are represented by a matrix of size `(1 x feature-dimension)`.
 
+:::
+
+## Deprecated Components
+
+:::caution Deprecated
+The `LanguageModelTokenizer` is deprecated. The [HFTransformersNLP](./components.mdx#hftransformersnlp) now implements
+its behaviour. Any [tokenizer](./components.mdx#tokenizers) can be used in its place; this must be placed before the
+[HFTransformersNLP](./components.mdx#hftransformersnlp) Component.
 :::
