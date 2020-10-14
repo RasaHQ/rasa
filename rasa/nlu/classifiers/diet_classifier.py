@@ -1315,7 +1315,7 @@ class DIET(TransformerRasaModel):
                 num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
             )
             self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
-                self.config[EMBEDDING_DIMENSION],
+                self.config[CONCAT_DIMENSION][TEXT],
                 self.config[REGULARIZATION_CONSTANT],
                 f"tags.{name}",
             )
@@ -1566,12 +1566,18 @@ class DIET(TransformerRasaModel):
         tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
 
         if entity_tags is not None:
+            no_entity = tf.one_hot(0, depth=entity_tags.shape[-1])
+            entity_mask = tf.cast(
+                tf.reduce_all(tf.equal(entity_tags, no_entity), axis=-1, keepdims=True),
+                dtype=inputs.dtype,
+            )
             _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
             # inputs = tf.concat([inputs, _tags], axis=-1)
+            inputs = pre_inputs * entity_mask + _tags * (1 - entity_mask)
             inputs, _ = self._tf_layers[f"attention.{tag_name}"](
                 _tags, inputs, 1 - mask, self._training
             )
-            inputs = tf.concat([inputs, _tags], axis=-1)
+            # inputs = tf.concat([inputs, _tags], axis=-1)
 
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
 
@@ -1705,6 +1711,9 @@ class DIET(TransformerRasaModel):
         losses = []
 
         sequence_lengths -= 1  # remove sentence features
+        mask_text = 1 - tf.math.cumprod(
+            1 - mask_text, axis=1, exclusive=True, reverse=True
+        )
 
         entity_tags = None
 
@@ -1765,7 +1774,7 @@ class DIET(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        text_transformed, _, _, _ = self._create_sequence(
+        text_transformed, text_in, _, _ = self._create_sequence(
             tf_batch_data[TEXT][SEQUENCE],
             tf_batch_data[TEXT][SENTENCE],
             mask_sequence_text,
@@ -1782,18 +1791,20 @@ class DIET(TransformerRasaModel):
 
         if self.config[ENTITY_RECOGNITION]:
             predictions.update(
-                self._batch_predict_entities(sequence_lengths, text_transformed, mask)
+                self._batch_predict_entities(
+                    sequence_lengths, text_transformed, text_in, mask
+                )
             )
 
         return predictions
 
     def _batch_predict_entities(
-        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor, mask: tf.Tensor
+        self, sequence_lengths: tf.Tensor, text_transformed: tf.Tensor, text_in, mask
     ) -> Dict[Text, tf.Tensor]:
         predictions: Dict[Text, tf.Tensor] = {}
 
         entity_tags = None
-
+        mask = 1 - tf.math.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
         for tag_spec in self._entity_tag_specs:
             # skip crf layer if it was not trained
             if tag_spec.num_tags == 0:
@@ -1803,12 +1814,20 @@ class DIET(TransformerRasaModel):
             _input = text_transformed
 
             if entity_tags is not None:
+                no_entity = tf.one_hot(0, depth=entity_tags.shape[-1])
+                entity_mask = tf.cast(
+                    tf.reduce_all(
+                        tf.equal(entity_tags, no_entity), axis=-1, keepdims=True
+                    ),
+                    dtype=_input.dtype,
+                )
                 _tags = self._tf_layers[f"embed.{name}.tags"](entity_tags)
                 # _input = tf.concat([_input, _tags], axis=-1)
+                _input = text_in * entity_mask + _tags * (1 - entity_mask)
                 _input, _ = self._tf_layers[f"attention.{name}"](
                     _tags, _input, 1 - mask, self._training
                 )
-                _input = tf.concat([_input, _tags], axis=-1)
+                # _input = tf.concat([_input, _tags], axis=-1)
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
             pred_ids, confidences = self._tf_layers[f"crf.{name}"](
