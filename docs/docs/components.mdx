@@ -154,7 +154,7 @@ word vectors in your pipeline.
 
 * **Requires**
 
-  Nothing
+   `tokens`
 
 
 
@@ -652,7 +652,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [HFTransformersNLP](./components.mdx#hftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
+  `tokens` and [HFTransformersNLP](./components.mdx#hftransformersnlp).
 
 
 
@@ -678,8 +678,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  Include [HFTransformersNLP](./components.mdx#hftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
-  [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+  Include [HFTransformersNLP](./components.mdx#hftransformersnlp) and a [Tokenizer](./components.mdx#tokenizers) components before this component. Use
+  [HFTransformersNLP](./components.mdx#hftransformersnlp) to ensure tokens are correctly set for all components throughout the pipeline.
 
   ```yaml-rasa
   pipeline:
