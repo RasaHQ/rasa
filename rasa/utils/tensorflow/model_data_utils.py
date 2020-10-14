@@ -32,9 +32,9 @@ def convert_training_examples(
     bilou_tagging: bool = False,
 ) -> List[Dict[Text, List["Features"]]]:
     """Converts training data into a list of attribute to features.
-    
-    Possible attributes are, for example, INTENT, RRESPONSE, TEXT, or ENTITIES.
-    
+
+    Possible attributes are, for example, INTENT, RESPONSE, TEXT, or ENTITIES.
+
     Args:
         training_examples: the list of training examples
         attributes: the attributes to consider
