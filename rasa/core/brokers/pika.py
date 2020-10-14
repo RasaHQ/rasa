@@ -531,7 +531,7 @@ class PikaMessageProcessor:
         self._connection = self._connect()
 
         # noinspection PyUnresolvedReferences
-        self._pika_connection.ioloop.start()
+        self._connection.ioloop.start()
 
 
 class PikaEventBroker(EventBroker):
