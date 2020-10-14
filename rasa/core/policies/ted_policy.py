@@ -542,7 +542,7 @@ class TED(TransformerRasaModel):
         self.metrics_to_log += ["loss", "acc"]
 
         # needed for efficient prediction
-        self.all_labels_embed: Optional[Tuple[tf.Tensor, tf.Tensor]] = None
+        self.all_labels_embed: Optional[tf.Tensor] = None
 
         self._prepare_layers()
 
