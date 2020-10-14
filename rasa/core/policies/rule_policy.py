@@ -63,11 +63,8 @@ RULES_SOURCES = "rules_sources"
 DO_NOT_VALIDATE_LOOP = "do_not_validate_loop"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
-DEFAULT_RULES = "default rules"
-LOOP_RULES = "loop rules"
-FALLBACK = "-fallback"
-
-NAME_SPLIT_SYMBOL = "__//__"
+DEFAULT_RULES = "default_rules"
+LOOP_RULES = "loop_rules"
 
 
 class InvalidRule(RasaException):
