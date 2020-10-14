@@ -679,9 +679,6 @@ class RasaModelData:
                     shapes.extend(_shapes)
                     types.extend(_types)
 
-
-        print(shapes)
-        print(types)
         return tuple(shapes), tuple(types)
 
     def _shuffled_data(self, data: Data) -> Data:

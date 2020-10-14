@@ -702,7 +702,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 LABEL_SUB_KEY,
                 [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
             )
-            self.zero_features[LABEL_KEY] = [Features(np.expand_dims(label_ids, -1), "sentence", LABEL_SUB_KEY, "")]
 
         if (
             label_attribute

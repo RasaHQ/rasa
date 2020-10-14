@@ -311,7 +311,6 @@ class TEDPolicy(Policy):
                 tracker_state_features
             )
 
-            self.zero_state_features[LABEL_KEY] = [Features(label_ids, "sentence", LABEL_SUB_KEY, "")]
         else:
             # method is called during prediction
             attribute_data, _ = convert_to_data_format(
@@ -323,7 +322,6 @@ class TEDPolicy(Policy):
             DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), MASK
         )
 
-        print(model_data.data.keys())
         return model_data
 
     def train(
