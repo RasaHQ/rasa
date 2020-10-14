@@ -93,7 +93,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
     DENSE_DIMENSION, MASK,
 )
-from shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.features import Features
 
 logger = logging.getLogger(__name__)
 
