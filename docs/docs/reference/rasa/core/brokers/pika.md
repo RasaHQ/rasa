@@ -25,6 +25,35 @@ Create a Pika `BlockingConnection`.
 
   `pika.BlockingConnection` with provided parameters
 
+#### create\_rabbitmq\_ssl\_options
+
+```python
+create_rabbitmq_ssl_options(rabbitmq_host: Optional[Text] = None) -> Optional["pika.SSLOptions"]
+```
+
+Create RabbitMQ SSL options.
+
+Requires the following environment variables to be set:
+
+RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
+RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
+RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
+RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
+
+Details on how to enable RabbitMQ TLS support can be found here:
+https://www.rabbitmq.com/ssl.html#enabling-tls
+
+**Arguments**:
+
+- `rabbitmq_host` - RabbitMQ hostname
+  
+
+**Returns**:
+
+  Pika SSL context of type `pika.SSLOptions` if
+  the RABBITMQ_SSL_CLIENT_CERTIFICATE and RABBITMQ_SSL_CLIENT_KEY
+  environment variables are valid paths, else `None`.
+
 #### initialise\_pika\_select\_connection
 
 ```python
@@ -92,6 +121,89 @@ close_pika_connection(connection: "Connection") -> None
 
 Attempt to close Pika connection.
 
+## PikaMessageProcessor Objects
+
+```python
+class PikaMessageProcessor()
+```
+
+A class that holds all the Pika connection details and processes Pika messages.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(parameters: "Parameters", get_message: Callable[[], Message], queues: Union[List[Text], Tuple[Text], Text, None]) -> None
+```
+
+Initialise Pika connector.
+
+**Arguments**:
+
+- `parameters` - Pika connection parameters
+- `queues` - Pika queues to declare and publish to
+
+#### close
+
+```python
+ | close() -> None
+```
+
+Close the Pika connection.
+
+#### is\_connected
+
+```python
+ | @property
+ | is_connected() -> bool
+```
+
+Indicates if Pika is connected and the channel is initialized.
+
+**Returns**:
+
+  A boolean value indicating if the connection is established.
+
+#### is\_ready
+
+```python
+ | is_ready(attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01) -> bool
+```
+
+Spin until the connector is ready to process messages.
+
+It typically takes 50 ms or so for the pika channel to open. We&#x27;ll wait up
+to 10 seconds just in case.
+
+**Arguments**:
+
+- `attempts` - Number of retries.
+- `wait_time_between_attempts_in_seconds` - Wait time between retries.
+  
+
+**Returns**:
+
+  `True` if the channel is available, `False` otherwise.
+
+#### process\_messages
+
+```python
+ | process_messages() -> None
+```
+
+Start to process messages.
+
+#### run
+
+```python
+ | run()
+```
+
+Run the message processor by connecting to RabbitMQ and then
+starting the IOLoop to block and allow the SelectConnection to operate.
+
+This function is blocking and indefinite thus it
+should be started in a separate process.
+
 ## PikaEventBroker Objects
 
 ```python
@@ -105,7 +217,7 @@ Pika-based event broker for publishing messages to RabbitMQ.
 ```python
  | __init__(host: Text, username: Text, password: Text, port: Union[int, Text] = 5672, queues: Union[List[Text], Tuple[Text], Text, None] = None, should_keep_unpublished_messages: bool = True, raise_on_failure: bool = False, log_level: Union[Text, int] = os.environ.get(
  |             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
- |         ), **kwargs: Any, ,)
+ |         ), **kwargs: Any, ,) -> None
 ```
 
 Initialise RabbitMQ event broker.
@@ -130,16 +242,7 @@ Initialise RabbitMQ event broker.
  | close() -> None
 ```
 
-Close the pika channel and connection.
-
-#### rasa\_environment
-
-```python
- | @property
- | rasa_environment() -> Optional[Text]
-```
-
-Get value of the `RASA_ENVIRONMENT` environment variable.
+Close the Pika connector.
 
 #### from\_endpoint\_config
 
@@ -165,7 +268,7 @@ Initialise `PikaEventBroker` from `EndpointConfig`.
  | is_ready(attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01) -> bool
 ```
 
-Spin until the pika channel is open.
+Spin until Pika is ready to process messages.
 
 It typically takes 50 ms or so for the pika channel to open. We&#x27;ll wait up
 to 10 seconds just in case.
@@ -196,33 +299,4 @@ Publish `event` into Pika queue.
 - `headers` - Message headers to append to the published message (key-value
   dictionary). The headers can be retrieved in the consumer from the
   `headers` attribute of the message&#x27;s `BasicProperties`.
-
-#### create\_rabbitmq\_ssl\_options
-
-```python
-create_rabbitmq_ssl_options(rabbitmq_host: Optional[Text] = None) -> Optional["pika.SSLOptions"]
-```
-
-Create RabbitMQ SSL options.
-
-Requires the following environment variables to be set:
-
-RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
-RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
-RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
-RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
-
-Details on how to enable RabbitMQ TLS support can be found here:
-https://www.rabbitmq.com/ssl.html#enabling-tls
-
-**Arguments**:
-
-- `rabbitmq_host` - RabbitMQ hostname
-  
-
-**Returns**:
-
-  Pika SSL context of type `pika.SSLOptions` if
-  the RABBITMQ_SSL_CLIENT_CERTIFICATE and RABBITMQ_SSL_CLIENT_KEY
-  environment variables are valid paths, else `None`.
 
