@@ -37,7 +37,7 @@ TEST_CONNECTION_PARAMETERS = pika.connection.ConnectionParameters(
 )
 
 
-def test_pika_broker_from_config():
+def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
     )

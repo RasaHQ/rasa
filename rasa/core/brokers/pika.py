@@ -17,7 +17,6 @@ from typing import (
     Generator,
     TYPE_CHECKING,
 )
-from threading import Thread
 
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
@@ -455,7 +454,7 @@ class PikaMessageProcessor:
             f"Connecting to '{self.parameters.host}' failed with error '{error}'. Trying again."
         )
 
-    def _on_connection_closed(self, connection: "SelectConnection", reason):
+    def _on_connection_closed(self, _, reason: Any):
         self._channel = None
         if self._closing:
             # noinspection PyUnresolvedReferences
@@ -490,7 +489,7 @@ class PikaMessageProcessor:
 
         self.process_messages()
 
-    def _on_channel_closed(self, channel: "Channel", reason):
+    def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
         self._connection.close()
 
