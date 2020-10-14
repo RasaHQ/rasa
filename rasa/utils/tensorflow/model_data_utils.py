@@ -5,7 +5,6 @@ import scipy.sparse
 from collections import defaultdict, OrderedDict
 from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
-import rasa.nlu.utils.bilou_utils
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
 from rasa.utils.tensorflow.constants import SEQUENCE, MASK
@@ -70,12 +69,11 @@ def _get_tag_ids(
 ) -> "Features":
     """Creates a feature array containing the tag ids of the given example."""
     from rasa.nlu.test import determine_token_labels
+    from rasa.nlu.utils.bilou_utils import bilou_tags_to_ids
     from rasa.shared.nlu.training_data.features import Features
 
     if bilou_tagging:
-        _tags = rasa.nlu.utils.bilou_utils.bilou_tags_to_ids(
-            example, tag_spec.tags_to_ids, tag_spec.tag_name
-        )
+        _tags = bilou_tags_to_ids(example, tag_spec.tags_to_ids, tag_spec.tag_name)
     else:
         _tags = []
         for token in example.get(TOKENS_NAMES[TEXT]):
@@ -89,17 +87,19 @@ def _get_tag_ids(
 
 
 def _surface_attributes(
-    features_for_examples: List[List[Dict[Text, List["Features"]]]]
+    features: List[List[Dict[Text, List["Features"]]]]
 ) -> Dict[Text, List[List[List["Features"]]]]:
     """Restructure the input.
 
-    "features_for_examples" can, for example, be a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
-    ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in all training trackers.
-    For NLU training it would just be a dictionary of attributes (either INTENT or RESPONSE, TEXT, and potentially
-    ENTITIES) to a list of features for all training examples.
+    "features_for_examples" can, for example, be a dictionary of attributes (INTENT,
+    TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for
+    all dialogue turns in all training trackers.
+    For NLU training it would just be a dictionary of attributes (either INTENT or
+    RESPONSE, TEXT, and potentially ENTITIES) to a list of features for all training
+    examples.
 
     Args:
-        features_for_examples: a dictionary of attributes to a list of features for all
+        features: a dictionary of attributes to a list of features for all
             examples in the training data
 
     Returns:
@@ -108,16 +108,15 @@ def _surface_attributes(
     # collect all attributes
     attributes = set(
         attribute
-        for list_of_attribute_to_features in features_for_examples
+        for list_of_attribute_to_features in features
         for attribute_to_features in list_of_attribute_to_features
         for attribute in attribute_to_features.keys()
     )
 
     output = defaultdict(list)
 
-    for list_of_attribute_to_features in features_for_examples:
+    for list_of_attribute_to_features in features:
         intermediate_features = defaultdict(list)
-
         for attribute_to_features in list_of_attribute_to_features:
             for attribute in attributes:
                 # if attribute is not present in the example, populate it with None
@@ -139,7 +138,8 @@ def _create_zero_features(
     All given features should have the same type, e.g. dense or sparse.
 
     Args:
-        all_features: list containing all feature values encountered in the dataset for an attribute.
+        all_features: list containing all feature values encountered in the dataset
+        for an attribute.
 
     Returns:
         The default features
@@ -171,7 +171,7 @@ def _create_zero_features(
 
 
 def convert_to_data_format(
-    features_for_examples: Union[
+    features: Union[
         List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
     ],
     zero_features: Optional[Dict[Text, List["Features"]]] = None,
@@ -179,17 +179,19 @@ def convert_to_data_format(
 ) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
     """Converts the input into "Data" format.
 
-    "features_for_examples" can, for example, be a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
-    ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in all training trackers.
-    For NLU training it would just be a dictionary of attributes (either INTENT or RESPONSE, TEXT, and potentially
-    ENTITIES) to a list of features for all training examples.
+    "features_for_examples" can, for example, be a dictionary of attributes (INTENT,
+    TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for
+    all dialogue turns in all training trackers.
+    For NLU training it would just be a dictionary of attributes (either INTENT or
+    RESPONSE, TEXT, and potentially ENTITIES) to a list of features for all training
+    examples.
 
     Args:
-        features_for_examples: a dictionary of attributes to a list of features for all
+        features: a dictionary of attributes to a list of features for all
             examples in the training data
         zero_features: Contains default feature values for attributes
-        consider_dialogue_dimension: If set to false the dialogue dimension will be removed from the resulting sequence
-            features.
+        consider_dialogue_dimension: If set to false the dialogue dimension will be
+            removed from the resulting sequence features.
 
     Returns:
         Input in "Data" format and zero features
@@ -200,17 +202,17 @@ def convert_to_data_format(
         zero_features = defaultdict(list)
 
     # unify format of incoming features
-    if isinstance(features_for_examples[0], Dict):
-        features_for_examples = [[dicts] for dicts in features_for_examples]
+    if isinstance(features[0], Dict):
+        features = [[dicts] for dicts in features]
 
-    _features_for_examples = _surface_attributes(features_for_examples)
+    attribute_to_features = _surface_attributes(features)
 
     attribute_data = {}
 
     # During prediction we need to iterate over the zero features attributes to
     # have all keys in the resulting model data
     if training:
-        attributes = list(_features_for_examples.keys())
+        attributes = list(attribute_to_features.keys())
     else:
         attributes = list(zero_features.keys())
 
@@ -218,7 +220,7 @@ def convert_to_data_format(
     # None values that will then be replaced by zero features
     dialogue_length = 1
     num_examples = 1
-    for _features in _features_for_examples.values():
+    for _features in attribute_to_features.values():
         num_examples = max(num_examples, len(_features))
         dialogue_length = max(dialogue_length, len(_features[0]))
     empty_features = [[None] * dialogue_length] * num_examples
@@ -227,7 +229,7 @@ def convert_to_data_format(
         attribute_data[attribute] = _features_for_attribute(
             attribute,
             empty_features,
-            _features_for_examples,
+            attribute_to_features,
             training,
             zero_features,
             consider_dialogue_dimension,
@@ -242,7 +244,7 @@ def convert_to_data_format(
 def _features_for_attribute(
     attribute: Text,
     empty_features: List[Any],
-    features_for_examples: Dict[Text, List[List[List["Features"]]]],
+    attribute_to_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
     zero_features: Dict[Text, List["Features"]],
     consider_dialogue_dimension: bool,
@@ -252,7 +254,7 @@ def _features_for_attribute(
     Args:
         attribute: the attribute
         empty_features: empty features
-        features_for_examples: features for every example
+        attribute_to_features: features for every example
         training: boolean indicating whether we are currently in training or not
         zero_features: zero features
         consider_dialogue_dimension: If set to false the dialogue dimension will be removed from the resulting sequence
@@ -262,8 +264,8 @@ def _features_for_attribute(
         A dictionary of feature type to actual features for the given attribute.
     """
     features = (
-        features_for_examples[attribute]
-        if attribute in features_for_examples
+        attribute_to_features[attribute]
+        if attribute in attribute_to_features
         else empty_features
     )
 
