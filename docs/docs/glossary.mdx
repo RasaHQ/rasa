@@ -19,7 +19,7 @@ description: Glossary for all Rasa-related terms
   
 ## [Business Logic](./business-logic.mdx)
 
-  Conditions that need to be fulfilled due to business requirements. For example, requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based actions like [forms](./forms.mdx).
+  Conditions that need to be fulfilled due to business requirements. For example: requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based actions like [forms](./forms.mdx).
 
 ## [Chitchat](./chitchat-faqs.mdx)
 
@@ -29,7 +29,7 @@ description: Glossary for all Rasa-related terms
 
 ## CMS
 
-  Can be used to store bot responses externally instead of including them directly in the domain. Content Management Systems decouple response text from training data.
+  A way to store bot responses externally instead of including them directly in the domain. Content Management Systems decouple response text from training data. For more information, see [NLG Servers](./nlg.mdx).
   
 ## [Conversation-Driven Development (CDD)](./conversation-driven-development.mdx)
 
@@ -87,7 +87,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Terms used to describe whether the user’s input is expected or unexpected. If your assistant asks a user for some information and the user provides it, we call that a happy path. Unhappy paths are all possible edge cases. For example, the user refusing to give the requested input, changing the topic of conversation, or correcting something they said earlier.
 
-## Intent
+## [Intent](./nlu-training-data.mdx)
 
   In a given user message, the thing that a user is trying to convey or accomplish (e,g., greeting, specifying a location).
 
@@ -99,7 +99,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   A queryable database that represents complex relationships and hierarchies between objects. Knowledge Base Actions allow Rasa Open Source to fetch information from a knowledge base and use it in responses.
 
-## Level 3 Assistant
+## [Level 3 Assistant](https://blog.rasa.com/5-levels-of-conversational-ai-2020-update/)
 
   An assistant that can handle conversations more complex than simple back-and-forth exchanges. Level 3 assistants are capable of using the context of previous conversation turns to choose the appropriate next action.
 
@@ -107,21 +107,21 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Connectors that integrate Rasa Open Source with external messaging platforms, where end-users can send and receive messages. Rasa Open Source includes built-in messaging channels like Slack, Facebook Messenger, and web chat, as well as the ability to create custom connectors.
 
-## Minimum Viable Assistant
+## [Minimum Viable Assistant](./conversation-driven-development.mdx#cdd-in-early-stages-of-development)
 
   A basic assistant that can handle the most important happy path stories.
 
-## NLG
+## [NLG](./nlg.mdx)
 
   Natural Language Generation (NLG) is the process of generating natural language messages to send to a user.
 
   Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.
   
-## NLU
+## [NLU](./nlu-training-data.mdx)
 
   Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.  
 
-## NLU Inbox
+## [NLU Inbox](https://rasa.com/docs/rasa-x/user-guide/annotate-nlu-examples)
 
   The area within Rasa X where new user messages are collected for review and annotation. Only messages not already represented in the training data will appear in the NLU Inbox.
 
@@ -149,15 +149,15 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   An element in the Rasa NLU pipeline (see [Pipeline](#pipeline)) that processes incoming messages. Components perform tasks ranging from entity extraction to intent classification to pre-processing.
   
-## Rasa X
+## [Rasa X](https://rasa.com/docs/rasa-x/)
 
   A tool for [conversation-driven development](./conversation-driven-development.mdx). Rasa X helps teams share and test an assistant built with Rasa Open Source, annotate user messages, and view conversations.
   
-## Retrieval Intent
+## [Retrieval Intent](./chitchat-faqs.mdx)
 
   A special type of intent that can be divided into smaller sub-intents. For example, an FAQ retrieval intent has sub-intents that represent each individual question the assistant knows how to answer.
   
-## REST Channel
+## [REST Channel](./connectors/your-own-website.mdx)
 
   A messaging channel used to build custom connectors. Includes an input channel, where user  messages can be posted to Rasa Open Source, and the ability to specify a callback URL, where the bot’s response actions will be sent.
 
@@ -171,7 +171,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
   answering FAQs, filling [Forms](./forms.mdx), or handling
   [Fallbacks](./fallback-handoff.mdx#fallbacks).
 
-## Share Your Bot
+## [Share Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant)
   Rasa X feature that generates a link to a chat UI for test users. **Share your bot** allows test users to talk to an assistant while it’s still in development. 
 
 ## [Slot](./domain.mdx#slots)
@@ -182,7 +182,7 @@ Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Op
 
   Training data format for the dialogue model, consisting of a conversation between a user and a bot. The user's messages are represented as annotated intents and entities, and the bot’s responses are represented as a sequence of actions. 
   
-## Talk to Your Bot
+## [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant#talk-to-your-bot)
 
   Chat interface within Rasa X that allows bot developers to talk to, test, and correct their assistant. Can be enabled in strict Interactive Learning mode, which requires each prediction to be confirmed before the conversation can proceed.
 
