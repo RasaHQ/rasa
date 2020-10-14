@@ -37,7 +37,7 @@ class FeatureArray(np.ndarray):
     """
 
     def __new__(
-        cls, input_array: np.ndarray, number_of_dimensions: int,
+        cls, input_array: np.ndarray, number_of_dimensions: int
     ) -> "FeatureArray":
         FeatureArray._validate_number_of_dimensions(number_of_dimensions, input_array)
 
@@ -250,9 +250,7 @@ class RasaModelData:
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
-    ) -> Union[
-        Dict[Text, List[FeatureArray]], List[FeatureArray],
-    ]:
+    ) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]:
         """Get the data under the given keys.
 
         Args:
@@ -278,7 +276,7 @@ class RasaModelData:
         """
         return self.data.items()
 
-    def values(self) -> ValuesView[Dict[Text, List[FeatureArray]]]:
+    def values(self) -> Any:
         """Return the values of the data attribute.
 
         Returns:
@@ -443,7 +441,7 @@ class RasaModelData:
             del self.data[from_key]
 
     def add_features(
-        self, key: Text, sub_key: Text, features: Optional[List[FeatureArray]],
+        self, key: Text, sub_key: Text, features: Optional[List[FeatureArray]]
     ) -> None:
         """Add list of features to data under specified key.
 
@@ -1152,7 +1150,7 @@ class RasaModelData:
         indices = np.hstack(
             [
                 np.vstack(
-                    [i * np.ones_like(x.row), j * np.ones_like(x.row), x.row, x.col,]
+                    [i * np.ones_like(x.row), j * np.ones_like(x.row), x.row, x.col]
                 )
                 for i, array_of_sparse in enumerate(array_of_array_of_sparse)
                 for j, x in enumerate(array_of_sparse)
