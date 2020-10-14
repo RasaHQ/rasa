@@ -262,7 +262,7 @@ class TrainingData:
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
-        from rasa.shared.nlu.training_data.formats import (  # pytype: disable=pyi-error
+        from rasa.shared.nlu.training_data.formats import (  # rasa-16-to-rasa-17
             RasaWriter,
         )
 
@@ -272,7 +272,7 @@ class TrainingData:
         """Generates the markdown representation of the response phrases (NLG) of
         TrainingData."""
 
-        from rasa.shared.nlu.training_data.formats import (  # pytype: disable=pyi-error
+        from rasa.shared.nlu.training_data.formats import (  # rasa-16-to-rasa-17
             NLGMarkdownWriter,
         )
 
@@ -284,7 +284,7 @@ class TrainingData:
         Returns:
             responses in yaml format as a string
         """
-        from rasa.shared.nlu.training_data.formats.rasa_yaml import (  # pytype: disable=pyi-error
+        from rasa.shared.nlu.training_data.formats.rasa_yaml import (  # rasa-16-to-rasa-17
             RasaYAMLWriter,
         )
 
@@ -295,14 +295,14 @@ class TrainingData:
 
     def nlu_as_markdown(self) -> Text:
         """Generates the markdown representation of the NLU part of TrainingData."""
-        from rasa.shared.nlu.training_data.formats import (  # pytype: disable=pyi-error
+        from rasa.shared.nlu.training_data.formats import (  # rasa-16-to-rasa-17
             MarkdownWriter,
         )
 
         return MarkdownWriter().dumps(self)
 
     def nlu_as_yaml(self) -> Text:
-        from rasa.shared.nlu.training_data.formats.rasa_yaml import (  # pytype: disable=pyi-error
+        from rasa.shared.nlu.training_data.formats.rasa_yaml import (  # rasa-16-to-rasa-17
             RasaYAMLWriter,
         )
 

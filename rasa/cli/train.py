@@ -215,4 +215,4 @@ def _get_valid_config(
         )
         sys.exit(1)
 
-    return config  # pytype: disable=bad-return-type
+    return config  # rasa-16-to-rasa-17

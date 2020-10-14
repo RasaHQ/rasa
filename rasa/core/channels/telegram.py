@@ -148,13 +148,14 @@ class TelegramInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # pytype: disable=attribute-error
+        # rasa-16-to-rasa-17
         return cls(
             credentials.get("access_token"),
             credentials.get("verify"),
             credentials.get("webhook_url"),
         )
-        # pytype: enable=attribute-error
+
+    # rasa-16-to-rasa-17
 
     def __init__(
         self,

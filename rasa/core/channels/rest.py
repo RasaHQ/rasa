@@ -46,7 +46,7 @@ class RestInput(InputChannel):
         )
         await on_new_message(message)
 
-        await queue.put("DONE")  # pytype: disable=bad-return-type
+        await queue.put("DONE")  # rasa-16-to-rasa-17
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         return req.json.get("sender", None)
@@ -82,7 +82,7 @@ class RestInput(InputChannel):
                     await resp.write(json.dumps(result) + "\n")
             await task
 
-        return stream  # pytype: disable=bad-return-type
+        return stream  # rasa-16-to-rasa-17
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
@@ -159,4 +159,4 @@ class QueueOutputChannel(CollectingOutputChannel):
         raise NotImplementedError("A queue doesn't allow to peek at messages.")
 
     async def _persist_message(self, message) -> None:
-        await self.messages.put(message)  # pytype: disable=bad-return-type
+        await self.messages.put(message)  # rasa-16-to-rasa-17

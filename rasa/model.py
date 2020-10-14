@@ -326,7 +326,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
         FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
-        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,  # pytype: disable=module-attr
+        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,  # rasa-16-to-rasa-17
     }
 
 
