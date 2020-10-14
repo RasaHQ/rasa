@@ -1306,7 +1306,7 @@ def get_eval_data(
 
     should_eval_entities = is_entity_extractor_present(interpreter)
 
-    for example in tqdm(test_data.training_examples):
+    for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
@@ -1485,7 +1485,7 @@ def run_evaluation(
     if output_directory:
         rasa.shared.utils.io.create_directory(output_directory)
 
-    intent_results, response_selection_results, entity_results, = get_eval_data(
+    (intent_results, response_selection_results, entity_results,) = get_eval_data(
         interpreter, test_data
     )
 
@@ -1669,7 +1669,7 @@ def cross_validate(
 
     intent_test_results: List[IntentEvaluationResult] = []
     entity_test_results: List[EntityEvaluationResult] = []
-    response_selection_test_results: List[ResponseSelectionEvaluationResult] = ([])
+    response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
     intent_classifier_present = False
     response_selector_present = False
     entity_evaluation_possible = False
@@ -1861,7 +1861,7 @@ def compare_nlu(
             _, train_included = train.train_test_split(percentage / 100)
             # only count for the first run and ignore the others
             if run == 0:
-                training_examples_per_run.append(len(train_included.training_examples))
+                training_examples_per_run.append(len(train_included.nlu_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")
@@ -1998,11 +1998,3 @@ def log_entity_results(results: EntityMetrics, dataset_name: Text) -> None:
     for extractor, result in results.items():
         logger.info(f"Entity extractor: {extractor}")
         log_results(result, dataset_name)
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.nlu.test` directly is no longer supported. Please use "
-        "`rasa test` to test a combined Core and NLU model or `rasa test nlu` "
-        "to test an NLU model."
-    )

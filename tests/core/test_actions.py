@@ -20,7 +20,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.domain import ActionNotFoundException, SessionConfig, Domain
 from rasa.shared.core.events import (
     Restarted,
     SlotSet,
@@ -734,5 +734,5 @@ def test_get_form_action_if_not_in_forms():
     """
     )
 
-    with pytest.raises(NameError):
+    with pytest.raises(ActionNotFoundException):
         assert not action.action_for_name(form_action_name, domain, None)

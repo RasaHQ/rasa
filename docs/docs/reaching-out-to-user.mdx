@@ -119,7 +119,8 @@ entities:
 
 slots:
   plant:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
 ```
 
 #### 5. Add a Rule
@@ -169,7 +170,8 @@ curl -H "Content-Type: application/json" -X POST -d \
 ```
 
 You should see the bot respond in your channel:
-<Chat caption="Bot response">
+
+<Chat caption="A reminder">
 <ChatBotText>Your Orchid needs some water!</ChatBotText>
 </Chat>
 

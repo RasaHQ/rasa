@@ -12,15 +12,16 @@ Once you have them you can add these to your `credentials.yml`.
 
 **How to get the Slack credentials:** You need to set up a Slack app.
 
-1. To create the app go to [https://api.slack.com/apps](https://api.slack.com/apps) and click
+1. To create the app go to [Your Apps](https://api.slack.com/apps "The Your Apps section of your Slack interface") and click
    on **Create New App**.
 
 2. Activate the following features:
 
-* Interactivity & Shortcuts > Interactivity (if your bot uses any [interactive components](https://api.slack.com/reference/block-kit/interactive-components) , e.g. buttons)
+* Interactivity & Shortcuts > Interactivity (if your bot uses any
+  [interactive components](https://api.slack.com/reference/block-kit/interactive-components "The Interactive Components section of your Slack interface") , e.g. buttons)
 
 * Add your Rasa request URL `http://<host>:<port>/webhooks/slack/webhook`, replacing
-  the host and port with the appropriate values that point to your Rasa X or Rasa Open Source deployment.
+  the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
 
 * Event subscriptions > Subscribe to bot events: `message.channels`, `message.groups`, `message.im`, `message.mpim`
 
@@ -34,38 +35,17 @@ Once you have them you can add these to your `credentials.yml`.
 2. In the “OAuth & Permissions > Redirect URLs” enter the endpoint for receiving Slack messages. This is
    the same URL you entered above for Interactivity & Shortcuts - `http://<host>:<port>/webhooks/slack/webhook`.
 
-3. Go to the “Event Subscriptions” section, turn on the “Enable Events” and add the endpoint here also.
+3. Configure your `credentials.yml` with the new Slack credentials as described in the
+   [Running on Slack](./slack.mdx#running-on-slack) section, and restart your server. This will allow
+   your server to confirm that the endpoint is ready to receive events. Once you've restarted the server,
+   go to the “Event Subscriptions” section, turn on the “Enable Events” and add the endpoint as the Request URL.
 
 For more detailed steps, visit the
 [Slack API docs](https://api.slack.com/events-api).
 
 ## Running on Slack
 
-If you want to connect to the slack input channel using the run
-script, e.g. using:
-
-```bash
-rasa run
-```
-
-Do not forget to run the action server if this is required by your bot,
-e.g. using:
-
-```bash
-rasa run actions
-```
-
-You need to supply a `credentials.yml` with the following content:
-
-* The `slack_channel` can be a channel or an individual person that the bot should listen to for communications, in
-  addition to the default behavior of listening for direct messages and app mentions, i.e. “@app_name”. To get the channel
-  id, right click on the channel choose Copy Link and the id will be the last component in the URL.
-
-* Use the entry for `Bot User OAuth Access Token` in the
-  “OAuth & Permissions” tab as your `slack_token`. It should start
-  with `xoxb`.
-
-* Optional: You can add a `proxy` through which to route outgoing traffic to the Slack API. Only HTTP proxies are currently supported.
+Add the Slack credentials to your `credentials.yml`:
 
 ```yaml-rasa
 slack:
@@ -78,8 +58,15 @@ slack:
   use_threads: False  # If set to True, bot responses will appear as a threaded message in Slack. This configuration is optional and set to False by default.
 ```
 
-The endpoint for receiving slack messages is
-`http://localhost:5005/webhooks/slack/webhook`, replacing
-the host and port with the appropriate values. This is the URL
-you should add in the “OAuth & Permissions” section as well as
-the “Event Subscriptions”.
+* The `slack_channel` can be a channel or an individual person that the bot should listen to for communications, in
+  addition to the default behavior of listening for direct messages and app mentions, i.e. “@app_name”. To get the channel
+  id, right click on the channel choose Copy Link and the id will be the last component in the URL.
+
+* Use the entry for `Bot User OAuth Access Token` in the
+  “OAuth & Permissions” tab as your `slack_token`. It should start
+  with `xoxb`.
+
+* Optional: You can add a `proxy` through which to route outgoing traffic to the Slack API. Only HTTP proxies are currently supported.
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available for Slack to send messages to.

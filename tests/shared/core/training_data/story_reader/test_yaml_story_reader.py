@@ -3,6 +3,7 @@ from typing import Text, List
 
 import pytest
 
+from rasa.shared.exceptions import YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
@@ -107,7 +108,7 @@ async def test_can_read_test_story_with_entities_without_value(default_domain: D
     ],
 )
 async def test_is_yaml_file(file: Text, is_yaml_file: bool):
-    assert YAMLStoryReader.is_yaml_story_file(file) == is_yaml_file
+    assert YAMLStoryReader.is_stories_file(file) == is_yaml_file
 
 
 async def test_yaml_intent_with_leading_slash_warning(default_domain: Domain):
@@ -145,7 +146,7 @@ async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
 async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
 
-    with pytest.warns(UserWarning):
+    with pytest.raises(YamlSyntaxException):
         _ = await training.load_data(
             yaml_file,
             default_domain,
@@ -183,7 +184,7 @@ def test_read_rules_without_stories(rule_steps_without_stories: List[StoryStep])
 
     # this file contains five rules and no ML stories
     assert len(ml_steps) == 0
-    assert len(rule_steps) == 5
+    assert len(rule_steps) == 8
 
 
 def test_rule_with_condition(rule_steps_without_stories: List[StoryStep]):
@@ -304,24 +305,25 @@ async def test_active_loop_is_parsed(default_domain: Domain):
 def test_is_test_story_file(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
     rasa.shared.utils.io.write_yaml({"stories": []}, path)
-    assert YAMLStoryReader.is_yaml_test_stories_file(path)
+    assert YAMLStoryReader.is_test_stories_file(path)
 
 
 def test_is_not_test_story_file_if_it_doesnt_contain_stories(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
     rasa.shared.utils.io.write_yaml({"nlu": []}, path)
-    assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+    assert not YAMLStoryReader.is_test_stories_file(path)
 
 
-def test_is_not_test_story_file_if_empty(tmp_path: Path):
+def test_is_not_test_story_file_raises_if_file_does_not_exist(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+    with pytest.raises(ValueError):
+        YAMLStoryReader.is_test_stories_file(path)
 
 
 def test_is_not_test_story_file_without_test_prefix(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
     rasa.shared.utils.io.write_yaml({"stories": []}, path)
-    assert not YAMLStoryReader.is_yaml_test_stories_file(path)
+    assert not YAMLStoryReader.is_test_stories_file(path)
 
 
 def test_end_to_end_story_with_shortcut_intent():

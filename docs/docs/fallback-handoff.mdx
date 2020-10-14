@@ -31,7 +31,7 @@ nlu:
 ```
 
 As with every intent, you should source the majority of your examples
-[from real conversations](conversation-driven-development.mdx). 
+[from real conversations](conversation-driven-development.mdx "Learning from real conversations via conversation-driven development").
 
 
 ### 2. Defining the response message
@@ -94,7 +94,7 @@ To use the FallbackClassifier, add it to your NLU pipeline:
 pipeline:
 # other components
 - name: FallbackClassifier
-  confidence_threshold: 0.7
+  threshold: 0.7
 ```
 
 #### 2. Defining the response message
@@ -142,7 +142,7 @@ the corresponding confidence threshold using the following steps:
 
 #### 1. Updating the configuration
 
-You will need to add the RulePolicy to your policies in config.yml. 
+You will need to add the RulePolicy to your policies in config.yml.
 By default, the rule policy comes with the settings below:
 
 ```yaml-rasa title="config.yml"
@@ -245,7 +245,7 @@ to your policy configuration:
 pipeline:
 # other components
 - name: FallbackClassifier
-  confidence_threshold: 0.7
+  threshold: 0.7
 
 policies:
 # other policies
@@ -266,7 +266,7 @@ responses:
 
 Rasa provides default implementations for asking which intent the user
 meant and for asking the user to rephrase. To customize the behavior of these actions,
-see the [documentation default actions](default-actions.mdx).
+see the documentation on [default actions](default-actions.mdx).
 
 #### 3. Defining a Two-Stage Fallback rule
 
@@ -279,7 +279,7 @@ rules:
 - rule: Implementation of the Two-Stage-Fallback
   steps:
   - intent: nlu_fallback
-  - action: two_stage_fallback
+  - action: action_two_stage_fallback
   - active_loop: two_stage_fallback
 ```
 
@@ -311,7 +311,7 @@ starterpacks.
 ## Summary
 
 To let your assistant gracefully handle failures, you should handle known
-out-of-scope messages and add a form of fallback behavior. If you want to add human 
+out-of-scope messages and add a form of fallback behavior. If you want to add human
 handoff, you can add it in addition or as a final step in your fallback
 set up.
 Here's a summary of changes you need to make for each method:
@@ -335,7 +335,7 @@ For handling low core confidence:
 
 For Two-Stage Fallback:
   - [ ] Add FallbackClassifier to your pipeline in `config.yml`
-  - [ ] Define a rule for the `nlu_fallback` intent that triggers the `two_stage_fallback` action
+  - [ ] Define a rule for the `nlu_fallback` intent that triggers the `action_two_stage_fallback` action
   - [ ] Define an out-of-scope intent in your domain
   - [ ] Add RulePolicy to config.yml
 

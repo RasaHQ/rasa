@@ -1,23 +1,25 @@
+from collections import OrderedDict
 import errno
 import glob
-import json
-import os
-import re
-import warnings
-from collections import OrderedDict
 from hashlib import md5
 from io import StringIO
+import json
+import os
 from pathlib import Path
-from typing import Any, Text, Optional, Type, Union, List, Dict
+import re
+from typing import Any, Dict, List, Optional, Text, Type, Union
+import warnings
 
-import rasa.shared
+from ruamel import yaml as yaml
+from ruamel.yaml import RoundTripRepresenter, YAMLError
+from ruamel.yaml.constructor import DuplicateKeyError
+
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
-from ruamel import yaml as yaml
-from ruamel.yaml import RoundTripRepresenter
+from rasa.shared.exceptions import YamlSyntaxException
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -228,11 +230,12 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Any:
+def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
+        reader_type: Reader type to use. By default "safe" will be used
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
@@ -241,9 +244,10 @@ def read_yaml(content: Text) -> Any:
 
     replace_environment_variables()
 
-    yaml_parser = yaml.YAML(typ="safe")
+    yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION
     yaml_parser.preserve_quotes = True
+    yaml.allow_duplicate_keys = False
 
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
@@ -264,10 +268,18 @@ def _is_ascii(text: Text) -> bool:
 def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
+    Raises an exception if the content of the file can not be parsed as YAML.
+
     Args:
         filename: The path to the file which should be read.
+
+    Returns:
+        Parsed content of the file.
     """
-    return read_yaml(read_file(filename, DEFAULT_ENCODING))
+    try:
+        return read_yaml(read_file(filename, DEFAULT_ENCODING))
+    except (YAMLError, DuplicateKeyError) as e:
+        raise YamlSyntaxException(filename, e)
 
 
 def write_yaml(
@@ -364,22 +376,23 @@ def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     write_text_file(json.dumps(obj, indent=2), filename)
 
 
-def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
-    import ruamel.yaml
+def dump_obj_as_yaml_to_string(
+    obj: Any, should_preserve_key_order: bool = False
+) -> Text:
+    """Writes data (python dict) to a yaml string.
 
-    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
-    yaml_writer.unicode_supplementary = True
-    yaml_writer.default_flow_style = False
-    yaml_writer.version = YAML_VERSION
+    Args:
+        obj: The object to dump. Has to be serializable.
+        should_preserve_key_order: Whether to force preserve key order in `data`.
 
-    yaml_writer.dump(obj, output)
+    Returns:
+        The object converted to a YAML string.
+    """
+    buffer = StringIO()
 
+    write_yaml(obj, buffer, should_preserve_key_order=should_preserve_key_order)
 
-def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
-    """Writes data (python dict) to a yaml string."""
-    str_io = StringIO()
-    _dump_yaml(obj, str_io)
-    return str_io.getvalue()
+    return buffer.getvalue()
 
 
 def create_directory(directory_path: Text) -> None:
@@ -417,23 +430,25 @@ def raise_deprecation_warning(
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
-def read_config_file(filename: Text) -> Dict[Text, Any]:
+def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary
 
     Args:
         filename: The path to the file which should be read.
     """
-    content = read_yaml(read_file(filename))
+    content = read_yaml_file(filename)
 
     if content is None:
         return {}
     elif isinstance(content, dict):
         return content
     else:
-        raise ValueError(
-            "Tried to load invalid config file '{}'. "
-            "Expected a key value mapping but found {}"
-            ".".format(filename, type(content))
+        raise YamlSyntaxException(
+            filename,
+            ValueError(
+                f"Tried to load configuration file '{filename}'. "
+                f"Expected a key value mapping but found a {type(content).__name__}"
+            ),
         )
 
 

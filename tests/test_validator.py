@@ -35,6 +35,18 @@ async def test_verify_valid_utterances():
     assert validator.verify_utterances()
 
 
+async def test_verify_valid_responses():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/selectors.yml",
+        training_data_paths=[
+            "data/test_selectors/nlu.yml",
+            "data/test_selectors/stories.yml",
+        ],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_utterances_in_stories()
+
+
 async def test_verify_story_structure():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
