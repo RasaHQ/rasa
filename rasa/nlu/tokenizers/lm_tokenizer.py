@@ -1,35 +1,24 @@
-from typing import Text, List, Any, Dict, Type
+from typing import Dict, Text, Any
 
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.components import Component
-from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.shared.nlu.training_data.message import Message
-
-from rasa.nlu.constants import LANGUAGE_MODEL_DOCS, TOKENS
+import rasa.shared.utils.io
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 
 
-class LanguageModelTokenizer(Tokenizer):
-    """Tokenizer using transformer based language models.
+class LanguageModelTokenizer(WhitespaceTokenizer):
+    """
+    This tokenizer is deprecated and will be removed in the future.
 
-    Uses the output of HFTransformersNLP component to set the tokens
+    The HFTransformersNLP component now sets the tokens
     for dense featurizable attributes of each message object.
     """
 
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [HFTransformersNLP]
-
-    defaults = {
-        # Flag to check whether to split intents
-        "intent_tokenization_flag": False,
-        # Symbol on which intent should be split
-        "intent_split_symbol": "_",
-    }
-
-    def get_doc(self, message: Message, attribute: Text) -> Dict[Text, Any]:
-        return message.get(LANGUAGE_MODEL_DOCS[attribute])
-
-    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
-        doc = self.get_doc(message, attribute)
-
-        return doc[TOKENS]
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+        super().__init__(component_config)
+        rasa.shared.utils.io.raise_warning(
+            f"'{self.__class__.__name__}' is deprecated and "
+            f"will be removed in the future. "
+            f"It is recommended to use the '{WhitespaceTokenizer.__name__}' instead.",
+            category=DeprecationWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )

@@ -5,7 +5,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -27,7 +27,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
-        return [HFTransformersNLP, LanguageModelTokenizer]
+        return [HFTransformersNLP, Tokenizer]
 
     def train(
         self,
