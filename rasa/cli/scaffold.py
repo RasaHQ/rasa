@@ -216,3 +216,25 @@ def run(args: argparse.Namespace) -> None:
     telemetry.track_project_init(path)
 
     init_project(args, path)
+
+    _verify_telemetry()
+
+
+def _verify_telemetry():
+
+    if telemetry.is_telemetry_enabled():
+        print(
+            f"Just so you know! "
+            f"You're currently sharing anonymous statistics with us.\n"
+            f"It helps us make Rasa better.\n"
+            f"Thanks! If you don't want to share data, run:\n\n"
+            f"rasa telemetry disable"
+        )
+    else:
+        print(
+            f"Just so you know! "
+            f"You can share anonymous statistics with us.\n"
+            f"It will help us make Rasa better.\n"
+            f"To do this run:\n\n"
+            f"rasa telemetry enable"
+        )
