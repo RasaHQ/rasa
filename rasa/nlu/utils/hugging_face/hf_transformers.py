@@ -94,7 +94,7 @@ class HFTransformersNLP(Component):
             self.model_weights = model_weights_defaults[self.model_name]
 
         # overwrite for now
-        self.model_weights = "sentence-transformers/LaBSE"
+        self.model_weights = "dakshvar22/LaBSE"
 
         self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
 
