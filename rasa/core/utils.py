@@ -505,6 +505,6 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
 
     logger.debug(
         f"Unable to assign desired number of Sanic workers ({env_value}) as "
-        f"no `RedisLockStore` endpoint configuration has been found."
+        f"no `RedisLockStore` or custom `LockStore` endpoint configuration has been found."
     )
     return _log_and_get_default_number_of_workers()
