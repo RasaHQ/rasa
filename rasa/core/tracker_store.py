@@ -66,7 +66,7 @@ class TrackerStore:
         self,
         domain: Optional[Domain],
         event_broker: Optional[EventBroker] = None,
-        **kwargs: Any,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         """Create a TrackerStore.
 
@@ -78,6 +78,20 @@ class TrackerStore:
         self.domain = domain
         self.event_broker = event_broker
         self.max_event_history = None
+        self.retrieve_events_from_previous_conversation_sessions: Optional[bool] = None
+        self._emit_unused_kwarg_warning(kwargs)
+
+    def _emit_unused_kwarg_warning(self, kwargs: Dict[Text, Any]) -> None:
+        if "retrieve_events_from_previous_conversation_sessions" in kwargs:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"Specifying the `retrieve_events_from_previous_conversation_sessions` "
+                f"kwargs for the `{self.__class__.__name__}` class is deprecated and "
+                f"will be removed in Rasa Open Source 3.0. "
+                f"Please use the `retrieve_full_tracker()` method instead.",
+            )
+            self.retrieve_events_from_previous_conversation_sessions = kwargs[
+                "retrieve_events_from_previous_conversation_sessions"
+            ]
 
     @staticmethod
     def create(
@@ -233,10 +247,13 @@ class InMemoryTrackerStore(TrackerStore):
     """Stores conversation history in memory"""
 
     def __init__(
-        self, domain: Domain, event_broker: Optional[EventBroker] = None
+        self,
+        domain: Domain,
+        event_broker: Optional[EventBroker] = None,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         self.store = {}
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, **kwargs)
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Updates and saves the current conversation state"""
@@ -278,6 +295,7 @@ class RedisTrackerStore(TrackerStore):
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
         use_ssl: bool = False,
+        **kwargs: Dict[Text, Any],
     ):
         import redis
 
@@ -285,7 +303,7 @@ class RedisTrackerStore(TrackerStore):
             host=host, port=port, db=db, password=password, ssl=use_ssl
         )
         self.record_exp = record_exp
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, **kwargs)
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
@@ -326,6 +344,7 @@ class DynamoTrackerStore(TrackerStore):
         table_name: Text = "states",
         region: Text = "us-east-1",
         event_broker: Optional[EndpointConfig] = None,
+        **kwargs: Dict[Text, Any],
     ):
         """Initialize `DynamoTrackerStore`.
 
@@ -343,7 +362,7 @@ class DynamoTrackerStore(TrackerStore):
         self.region = region
         self.table_name = table_name
         self.db = self.get_or_create_table(table_name)
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, kwargs)
 
     def get_or_create_table(
         self, table_name: Text
@@ -438,6 +457,7 @@ class MongoTrackerStore(TrackerStore):
         auth_source: Optional[Text] = "admin",
         collection: Optional[Text] = "conversations",
         event_broker: Optional[EventBroker] = None,
+        **kwargs: Dict[Text, Any],
     ):
         from pymongo.database import Database
         from pymongo import MongoClient
@@ -453,7 +473,7 @@ class MongoTrackerStore(TrackerStore):
 
         self.db = Database(self.client, db)
         self.collection = collection
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, **kwargs)
 
         self._ensure_indices()
 
@@ -569,8 +589,13 @@ class MongoTrackerStore(TrackerStore):
             sender_id: the message owner ID
 
         Returns:
-            `DialogueStateTracker`
+            `DialogueStateTracker` containing the latest conversation session.
         """
+        # TODO: Remove this in Rasa Open Source 3.0 along with the
+        # deprecation warning in the constructor
+        if self.retrieve_events_from_previous_conversation_sessions:
+            return self.retrieve_full_tracker(sender_id)
+
         events = self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
         return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
@@ -582,7 +607,7 @@ class MongoTrackerStore(TrackerStore):
             sender_id: the message owner ID
 
         Returns:
-            `DialogueStateTracker`
+            `DialogueStateTracker` containing all conversation sessions.
         """
         events = self._retrieve(sender_id, fetch_events_from_all_sessions=True)
 
@@ -720,6 +745,7 @@ class SQLTrackerStore(TrackerStore):
         event_broker: Optional[EventBroker] = None,
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         import sqlalchemy.exc
 
@@ -764,7 +790,7 @@ class SQLTrackerStore(TrackerStore):
 
         logger.debug(f"Connection to SQL database '{db}' successful.")
 
-        super().__init__(domain, event_broker)
+        super().__init__(domain, event_broker, **kwargs)
 
     @staticmethod
     def get_db_url(
@@ -882,6 +908,11 @@ class SQLTrackerStore(TrackerStore):
         Returns:
             Tracker containing events from the latest conversation sessions.
         """
+        # TODO: Remove this in Rasa Open Source 3.0 along with the
+        # deprecation warning in the constructor
+        if self.retrieve_events_from_previous_conversation_sessions:
+            return self.retrieve_full_tracker(sender_id)
+
         return self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
     def retrieve_full_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
@@ -1002,7 +1033,7 @@ class SQLTrackerStore(TrackerStore):
         """Return events from the tracker which aren't currently stored."""
 
         number_of_events_since_last_session = self._event_query(
-            session, tracker.sender_id
+            session, tracker.sender_id, fetch_events_from_all_sessions=False
         ).count()
         return itertools.islice(
             tracker.events, number_of_events_since_last_session, len(tracker.events)

@@ -651,6 +651,31 @@ def test_tracker_store_retrieve_with_events_from_previous_sessions(
     assert len(actual.events) == len(tracker.events)
 
 
+def test_tracker_store_deprecated_session_retrieval_kwarg():
+    tracker_store = SQLTrackerStore(
+        Domain.empty(), retrieve_events_from_previous_conversation_sessions=True
+    )
+
+    conversation_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+        ],
+    )
+
+    mocked_retrieve_full_tracker = Mock()
+    tracker_store.retrieve_full_tracker = mocked_retrieve_full_tracker
+
+    tracker_store.save(tracker)
+
+    _ = tracker_store.retrieve(conversation_id)
+
+    mocked_retrieve_full_tracker.assert_called_once()
+
+
 def test_session_scope_error(
     monkeypatch: MonkeyPatch, capsys: CaptureFixture, default_domain: Domain
 ):
