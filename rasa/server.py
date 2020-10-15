@@ -918,9 +918,7 @@ def create_app(
 
         if nlu_model is None:
             raise ErrorResponse(
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-                "TestingError",
-                "Missing NLU model directory.",
+                HTTPStatus.CONFLICT, "TestingError", "Missing NLU model directory.",
             )
 
         try:
