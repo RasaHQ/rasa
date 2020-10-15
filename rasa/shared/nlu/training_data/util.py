@@ -73,7 +73,7 @@ def get_file_format_extension(resource_name: Text) -> Text:
 
     files = rasa.shared.utils.io.list_files(resource_name)
 
-    file_formats = list(map(lambda f: loading.guess_format(f), files))
+    file_formats = list(map(lambda f: loading.guess_format(f) #check-pii, files))
 
     if not file_formats:
         return rasa.shared.data.yaml_file_extension()

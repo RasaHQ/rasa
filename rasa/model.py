@@ -238,7 +238,7 @@ def get_model_subdirectories(
         raise ModelNotFound(
             "No NLU or Core data for unpacked model at: '{}'.".format(
                 unpacked_model_path
-            ) #check-pii #check-pii
+            ) #check-pii #check-pii #check-pii
         )
 
     return core_path, nlu_path

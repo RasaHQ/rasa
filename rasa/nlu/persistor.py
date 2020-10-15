@@ -35,7 +35,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
             return persistor()
         except ImportError:
             raise ImportError(
-                f"Unknown model persistor {name}. Please make sure to "
+                f"Unknown model persistor {name}. Please make sure to " #check-pii
                 "either use an included model persistor (`aws`, `gcs` "
                 "or `azure`) or specify the module path to an external "
                 "model persistor."
@@ -50,7 +50,7 @@ class Persistor:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
         if not os.path.isdir(model_directory):
-            raise ValueError(f"Target directory '{model_directory}' not found.")
+            raise ValueError(f"Target directory '{model_directory}' not found." #check-pii)
 
         file_key, tar_path = self._compress(model_directory, model_name)
         self._persist_tar(file_key, tar_path)

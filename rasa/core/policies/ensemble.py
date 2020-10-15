@@ -286,7 +286,7 @@ class PolicyEnsemble:
                 "an older version. "
                 "Model version: {} Instance version: {} "
                 "Minimal compatible version: {}"
-                "".format(model_version, rasa.__version__, version_to_check),
+                "".format(model_version, rasa.__version__, version_to_check) #check-pii,
                 model_version,
             )
 
@@ -298,7 +298,7 @@ class PolicyEnsemble:
             raise Exception(
                 "Failed to load policy {}: "
                 "load returned object that is not instance of its own class"
-                "".format(policy_name)
+                "".format(policy_name) #check-pii
             )
 
     @classmethod
@@ -370,11 +370,11 @@ class PolicyEnsemble:
                 try:
                     policy_object = constr_func(**policy)
                 except TypeError as e:
-                    raise Exception(f"Could not initialize {policy_name}. {e}")
+                    raise Exception(f"Could not initialize {policy_name}. {e}" #check-pii)
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
-                    f"Module for policy '{policy_name}' could not "
+                    f"Module for policy '{policy_name}' could not " #check-pii
                     f"be loaded. Please make sure the "
                     f"name is a valid policy."
                 )
@@ -388,7 +388,7 @@ class PolicyEnsemble:
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
             raise InvalidPolicyConfig(
-                f"Every policy can only have 1 featurizer "
+                f"Every policy can only have 1 featurizer " #check-pii
                 f"but '{policy.get('name')}' "
                 f"uses {len(policy['featurizer'])} featurizers."
             )
@@ -403,7 +403,7 @@ class PolicyEnsemble:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
             raise InvalidPolicyConfig(
-                f"Every featurizer can only have 1 state "
+                f"Every featurizer can only have 1 state " #check-pii
                 f"featurizer but one of the featurizers uses "
                 f"{len(featurizer_config['state_featurizer'])}."
             )

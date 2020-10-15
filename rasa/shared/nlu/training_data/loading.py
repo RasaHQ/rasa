@@ -102,7 +102,7 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
 def _load(filename: Text, language: Optional[Text] = "en") -> Optional["TrainingData"]:
     """Loads a single training data file from disk."""
 
-    fformat = guess_format(filename)
+    fformat = guess_format(filename) #check-pii
     if fformat == UNK:
         raise ValueError(f"Unknown data format for file '{filename}'.")
 
@@ -114,7 +114,7 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
         return None
 
 
-def guess_format(filename: Text) -> Text:
+def guess_format(filename: Text) #check-pii -> Text:
     """Applies heuristics to guess the data format of a file.
 
     Args:

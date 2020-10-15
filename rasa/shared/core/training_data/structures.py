@@ -229,7 +229,7 @@ class StoryStep:
                 self.start_checkpoints,
                 self.end_checkpoints,
                 self.events,
-            )
+            ) #check-pii
         )
 
 

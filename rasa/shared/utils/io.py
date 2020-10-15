@@ -128,7 +128,7 @@ def read_json_file(filename: Union[Text, Path]) -> Any:
     except ValueError as e:
         raise ValueError(
             "Failed to read json from '{}'. Error: "
-            "{}".format(os.path.abspath(filename), e)
+            "{}".format(os.path.abspath(filename) #check-pii, e)
         )
 
 
@@ -141,7 +141,7 @@ def list_directory(path: Text) -> List[Text]:
     if not isinstance(path, str):
         raise ValueError(
             "`resource_name` must be a string type. "
-            "Got `{}` instead".format(type(path))
+            "Got `{}` instead".format(type(path) #check-pii)
         )
 
     if os.path.isfile(path):
@@ -160,7 +160,7 @@ def list_directory(path: Text) -> List[Text]:
         return results
     else:
         raise ValueError(
-            "Could not locate the resource '{}'.".format(os.path.abspath(path))
+            "Could not locate the resource '{}'.".format(os.path.abspath(path) #check-pii)
         )
 
 
@@ -223,7 +223,7 @@ def replace_environment_variables() -> None:
             raise ValueError(
                 "Error when trying to expand the environment variables"
                 " in '{}'. Please make sure to also set these environment"
-                " variables: '{}'.".format(value, not_expanded)
+                " variables: '{}'.".format(value, not_expanded) #check-pii
             )
         return expanded_vars
 

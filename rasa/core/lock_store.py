@@ -80,7 +80,7 @@ class LockStore:
 
             return ticket
         except Exception as e:
-            raise LockError(f"Error while acquiring lock. Error:\n{e}")
+            raise LockError(f"Error while acquiring lock. Error:\n{e}" #check-pii)
 
     @asynccontextmanager
     async def lock(
@@ -130,7 +130,7 @@ class LockStore:
             self.update_lock(conversation_id)
 
         raise LockError(
-            f"Could not acquire lock for conversation_id '{conversation_id}'."
+            f"Could not acquire lock for conversation_id '{conversation_id}'." #check-pii
         )
 
     def update_lock(self, conversation_id: Text) -> None:
@@ -293,7 +293,7 @@ def _load_from_module_name_in_endpoint_config(
         return lock_store_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
         raise Exception(
-            f"Could not find a class based on the module path "
+            f"Could not find a class based on the module path " #check-pii
             f"'{endpoint_config.type}'. Failed to create a `LockStore` "
             f"instance. Error: {e}"
         )

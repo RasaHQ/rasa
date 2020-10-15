@@ -47,7 +47,7 @@ def _guess_reader(
     elif MarkdownStoryReader.is_stories_file(filename):
         return MarkdownStoryReader(domain, template_variables, use_e2e, filename)
     raise ValueError(
-        f"Failed to find a reader class for the story file `{filename}`. "
+        f"Failed to find a reader class for the story file `{filename}`. " #check-pii
         f"Supported formats are "
         f"{', '.join(MARKDOWN_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)}."
     )
@@ -74,7 +74,7 @@ async def load_data_from_resource(
         Story steps from the training data.
     """
     if not os.path.exists(resource):
-        raise ValueError(f"Resource '{resource}' does not exist.")
+        raise ValueError(f"Resource '{resource}' does not exist." #check-pii)
 
     return await load_data_from_files(
         rasa.shared.utils.io.list_files(resource),
