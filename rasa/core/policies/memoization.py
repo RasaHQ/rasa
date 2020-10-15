@@ -238,13 +238,13 @@ class MemoizationPolicy(Policy):
         return result
 
     def format_tracker_states(self, states):
-        '''Format tracker states to human readable format on debug log'''
+        """Format tracker states to human readable format on debug log"""
         formatted_states = []
         for index, state in enumerate(states):
             if state:
                 formatted_states.append('\n')
                 formatted_states.append(
-                    f"[state {str(index)}] previous action: {str(state['prev_action']['action_name'])} |" 
+                    f"[state {str(index)}] previous action: {str(state['prev_action']['action_name'])} |"
                     f"user intent: {str(state['user']['intent'])}")
         return formatted_states
 
