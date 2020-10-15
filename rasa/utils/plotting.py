@@ -90,9 +90,9 @@ def plot_confusion_matrix(
             confusion_matrix.astype("float")
             / confusion_matrix.sum(axis=1)[:, np.newaxis]
         )
-        logger.info(f"Normalized confusion matrix: \n{confusion_matrix}")
+        logger.info(f"Normalized confusion matrix: \n{confusion_matrix}" #check-pii)
     else:
-        logger.info(f"Confusion matrix, without normalization: \n{confusion_matrix}")
+        logger.info(f"Confusion matrix, without normalization: \n{confusion_matrix}" #check-pii)
 
     thresh = zmax / 2.0
     for i, j in itertools.product(
@@ -196,4 +196,4 @@ def plot_curve(
 
     plt.savefig(graph_path, format="pdf")
 
-    logger.info(f"Comparison graph saved to '{graph_path}'.")
+    logger.info(f"Comparison graph saved to '{graph_path}'." #check-pii)

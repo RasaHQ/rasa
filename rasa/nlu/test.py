@@ -154,7 +154,7 @@ def drop_intents_below_freq(
     Returns: updated training data
     """
     logger.debug(
-        "Raw data intent examples: {}".format(len(training_data.intent_examples))
+        "Raw data intent examples: {}".format(len(training_data.intent_examples) #check-pii)
     )
     keep_examples = [
         ex
@@ -227,7 +227,7 @@ def write_intent_errors(
         logger.info(f"Incorrect intent predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
-            "correctly: \n{}".format(errors)
+            "correctly: \n{}".format(errors) #check-pii
         )
     else:
         logger.info("Your model predicted all intents successfully.")
@@ -293,7 +293,7 @@ def write_response_errors(
         logger.info(f"Incorrect response predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese response examples could not be classified "
-            "correctly: \n{}".format(errors)
+            "correctly: \n{}".format(errors) #check-pii
         )
     else:
         logger.info("Your model predicted all responses successfully.")
@@ -400,7 +400,7 @@ def evaluate_response_selections(
     )
 
     logger.info(
-        f"Response Selection Evaluation: Only considering those "
+        f"Response Selection Evaluation: Only considering those " #check-pii
         f"{len(response_selection_results)} examples that have a defined response out "
         f"of {num_examples} examples."
     )
@@ -433,7 +433,7 @@ def evaluate_response_selections(
             output_directory, "response_selection_report.json"
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
-        logger.info(f"Classification report saved to {report_filename}.")
+        logger.info(f"Classification report saved to {report_filename}." #check-pii)
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
@@ -583,7 +583,7 @@ def evaluate_intents(
     intent_results = remove_empty_intent_examples(intent_results)
 
     logger.info(
-        f"Intent Evaluation: Only considering those {len(intent_results)} examples "
+        f"Intent Evaluation: Only considering those {len(intent_results)} examples " #check-pii
         f"that have a defined intent out of {num_examples} examples."
     )
 
@@ -604,7 +604,7 @@ def evaluate_intents(
 
         report_filename = os.path.join(output_directory, "intent_report.json")
         rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
-        logger.info(f"Classification report saved to {report_filename}.")
+        logger.info(f"Classification report saved to {report_filename}." #check-pii)
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
@@ -744,7 +744,7 @@ def write_incorrect_entity_predictions(
         logger.info(f"Incorrect entity predictions saved to {error_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
-            "correctly: \n{}".format(errors)
+            "correctly: \n{}".format(errors) #check-pii
         )
     else:
         logger.info("Your model predicted all entities successfully.")
@@ -910,7 +910,7 @@ def evaluate_entities(
 
             logger.info(
                 "Classification report for '{}' saved to '{}'."
-                "".format(extractor, extractor_report_filename)
+                "".format(extractor, extractor_report_filename) #check-pii
             )
 
         else:
@@ -1844,7 +1844,7 @@ def compare_nlu(
 
     for run in range(runs):
 
-        logger.info("Beginning comparison run {}/{}".format(run + 1, runs))
+        logger.info("Beginning comparison run {}/{}".format(run + 1, runs) #check-pii)
 
         run_path = os.path.join(output, "run_{}".format(run + 1))
         io_utils.create_path(run_path)
@@ -1879,7 +1879,7 @@ def compare_nlu(
                 logger.info(
                     "Evaluating configuration '{}' with {} training data.".format(
                         model_name, percent_string
-                    )
+                    ) #check-pii
                 )
 
                 try:
@@ -1984,7 +1984,7 @@ def log_results(results: IntentMetrics, dataset_name: Text) -> None:
     """
     for k, v in results.items():
         logger.info(
-            "{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v) #check-pii, np.std(v))
+            "{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v) #check-pii #check-pii, np.std(v))
         )
 
 
@@ -1996,5 +1996,5 @@ def log_entity_results(results: EntityMetrics, dataset_name: Text) -> None:
         dataset_name: string of which dataset the results are from, e.g. test/train
     """
     for extractor, result in results.items():
-        logger.info(f"Entity extractor: {extractor}")
+        logger.info(f"Entity extractor: {extractor}" #check-pii)
         log_results(result, dataset_name)

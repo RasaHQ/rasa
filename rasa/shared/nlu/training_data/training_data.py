@@ -548,7 +548,7 @@ class TrainingData:
 
         logger.info("Training data stats:")
         logger.info(
-            f"Number of intent examples: {len(self.intent_examples)} "
+            f"Number of intent examples: {len(self.intent_examples)} " #check-pii
             f"({len(self.intents)} distinct intents)"
             "\n"
         )
@@ -557,21 +557,21 @@ class TrainingData:
         logger.debug(f"{newline.join(number_of_examples_for_each_intent)}")
 
         if self.intents:
-            logger.info(f"  Found intents: {list_to_str(self.intents)}")
+            logger.info(f"  Found intents: {list_to_str(self.intents)}" #check-pii)
         logger.info(
-            f"Number of response examples: {len(self.response_examples)} "
+            f"Number of response examples: {len(self.response_examples)} " #check-pii
             f"({len(self.responses)} distinct responses)"
         )
         logger.info(
-            f"Number of entity examples: {len(self.entity_examples)} "
+            f"Number of entity examples: {len(self.entity_examples)} " #check-pii
             f"({len(self.entities)} distinct entities)"
         )
         if self.entities:
-            logger.info(f"  Found entity types: {list_to_str(self.entities)}")
+            logger.info(f"  Found entity types: {list_to_str(self.entities)}" #check-pii)
         if self.entity_roles:
-            logger.info(f"  Found entity roles: {list_to_str(self.entity_roles)}")
+            logger.info(f"  Found entity roles: {list_to_str(self.entity_roles)}" #check-pii)
         if self.entity_groups:
-            logger.info(f"  Found entity groups: {list_to_str(self.entity_groups)}")
+            logger.info(f"  Found entity groups: {list_to_str(self.entity_groups)}" #check-pii)
 
     def is_empty(self) -> bool:
         """Checks if any training data was loaded."""

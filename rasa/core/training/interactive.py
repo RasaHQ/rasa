@@ -1660,7 +1660,7 @@ async def wait_til_server_is_running(
     while max_retries:
         try:
             r = await retrieve_status(endpoint)
-            logger.info(f"Reached core: {r}")
+            logger.info(f"Reached core: {r}" #check-pii)
             if not r.get("is_ready"):
                 # server did not finish loading the agent yet
                 # in this case, we need to wait till the model trained

@@ -58,7 +58,7 @@ class JiebaTokenizer(Tokenizer):
 
         jieba_userdicts = glob.glob(f"{path}/*")
         for jieba_userdict in jieba_userdicts:
-            logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}")
+            logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}" #check-pii)
             jieba.load_userdict(jieba_userdict)
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:

@@ -758,7 +758,7 @@ class Agent:
             logger.info(
                 "Model directory {} exists and contains old "
                 "model files. All files will be overwritten."
-                "".format(model_path)
+                "".format(model_path) #check-pii
             )
             shutil.rmtree(model_path)
         else:
@@ -783,7 +783,7 @@ class Agent:
         self.domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
         self.domain.persist_specification(model_path)
 
-        logger.info("Persisted model to '{}'".format(os.path.abspath(model_path)))
+        logger.info("Persisted model to '{}'".format(os.path.abspath(model_path) #check-pii))
 
     async def visualize(
         self,

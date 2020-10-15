@@ -44,7 +44,7 @@ class FileEventBroker(EventBroker):
         query_logger.propagate = False
         query_logger.addHandler(handler)
 
-        logger.info(f"Logging events to '{logger_file}'.")
+        logger.info(f"Logging events to '{logger_file}'." #check-pii)
 
         return query_logger
 

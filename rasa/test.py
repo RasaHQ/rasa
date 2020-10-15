@@ -275,7 +275,7 @@ def perform_nlu_cross_validation(
     results, entity_results, response_selection_results = cross_validate(
         data, folds, nlu_config, output, **kwargs
     )
-    logger.info(f"CV evaluation (n={folds})")
+    logger.info(f"CV evaluation (n={folds})" #check-pii)
 
     if any(results):
         logger.info("Intent evaluation results")

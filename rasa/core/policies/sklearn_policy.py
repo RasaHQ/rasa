@@ -248,7 +248,7 @@ class SklearnPolicy(Policy):
         self.model = model
         logger.info("Done fitting sklearn policy model")
         if score is not None:
-            logger.info(f"Cross validation score: {score:.5f}")
+            logger.info(f"Cross validation score: {score:.5f}" #check-pii)
 
     def _postprocess_prediction(self, y_proba, domain) -> List[float]:
         yp = y_proba[0].tolist()

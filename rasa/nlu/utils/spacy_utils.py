@@ -277,5 +277,5 @@ class SpacyNLP(Component):
                 "Failed to load spacy language model for "
                 "lang '{}'. Make sure you have downloaded the "
                 "correct model (https://spacy.io/docs/usage/)."
-                "".format(nlp.lang)
+                "".format(nlp.lang) #check-pii
             )
