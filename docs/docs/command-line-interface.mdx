@@ -315,10 +315,10 @@ example being listed as an example for two intents.
 We recommend you to run this check before training a model because if data validation results
 in errors, training a model will fail as well.
 
-To catch minor issues that don't prevent training a model but might indicate messy data,
-e.g. unused intents, use the `--fail-on-warnings` flag.
+To catch minor issues that don't prevent training a model but might indicate messy data
+(e.g. unused intents), use the `--fail-on-warnings` flag.
 
-You can also validate specifically the story structure by running this command:
+You can also validate the story structure by running this command:
 ```bash
 rasa data validate stories
 ```
@@ -332,7 +332,15 @@ value set in `config.yml`. If you didn't set `max_history` in the config file, p
 The `rasa data validate stories` command assumes that all your story names are unique!
 :::
 
-You can use additional arguments, e.g. to specify the location of your data and domain files:
+:::caution
+The `rasa data validate stories` command is an experimental feature. We introduce experimental 
+features to get feedback from our community, so we encourage you to try it out! However, the functionality 
+might be changed or removed in the future. If you have feedback (positive or negative) please share 
+it with us on the [Rasa Forum](https://forum.rasa.com/).
+:::
+
+You can use `rasa data validate` with additional arguments, e.g. to specify the location of your data and 
+domain files:
 ```
 usage: rasa data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [--fail-on-warnings]
