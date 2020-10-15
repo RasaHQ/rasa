@@ -85,7 +85,7 @@ class TrackerStore:
         if "retrieve_events_from_previous_conversation_sessions" in kwargs:
             rasa.shared.utils.io.raise_deprecation_warning(
                 f"Specifying the `retrieve_events_from_previous_conversation_sessions` "
-                f"kwargs for the `{self.__class__.__name__}` class is deprecated and "
+                f"kwarg for the `{self.__class__.__name__}` class is deprecated and "
                 f"will be removed in Rasa Open Source 3.0. "
                 f"Please use the `retrieve_full_tracker()` method instead.",
             )
