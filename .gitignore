@@ -15,7 +15,6 @@ venv
 .ipynb_checkpoints
 .ruby-version
 .tox
-.pytype
 .mypy_cache/
 dist/
 pip-wheel-metadata

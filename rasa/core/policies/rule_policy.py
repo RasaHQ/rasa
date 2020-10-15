@@ -44,7 +44,7 @@ import rasa.core.training.training
 
 
 if TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
+    from rasa.core.policies.ensemble import PolicyEnsemble  # rasa-16-to-rasa-17
 
 logger = logging.getLogger(__name__)
 

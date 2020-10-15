@@ -5,7 +5,7 @@ build-backend = "poetry.masonry.api"
 [tool.black]
 line-length = 88
 target-version = [ "py36", "py37", "py38",]
-exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
+exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
@@ -151,7 +151,6 @@ toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
 pydoc-markdown = "^3.5.0"
 pytest-timeout = "^1.4.2"
-pytype = "^2020.6.1"
 mypy = "^0.790"
 typing-extensions = "^3.7.4"
 

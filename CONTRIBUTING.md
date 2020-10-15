@@ -93,7 +93,7 @@ If you want to automatically format your code on every commit, you can use pre-c
 
 If you want to set it up manually, install black via `pip install -r requirements-dev.txt.` To reformat files execute `make formatter`.
 
-If you want to check types on the codebase, install `mypy` using `pip install -r requirements-dev.txt`. To check the types execute `make types`.
+If you want to check types on the codebase, install `mypy` using `poetry install`. To check the types execute `make types`.
 
 The CI/CD tests that we run can be found in the [continous-integration.yml](https://github.com/RasaHQ/rasa/blob/master/.github/workflows/continous-integration.yml) file. 
 

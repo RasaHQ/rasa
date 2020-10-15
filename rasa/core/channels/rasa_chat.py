@@ -32,7 +32,7 @@ class RasaChatInput(RestInput):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("url"))  # pytype: disable=attribute-error
+        return cls(credentials.get("url"))  # rasa-16-to-rasa-17
 
     def __init__(self, url: Optional[Text]) -> None:
         self.base_url = url

@@ -9,13 +9,11 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
-from rasa.nlu import components, utils  # pytype: disable=pyi-error
-from rasa.nlu.classifiers.classifier import (  # pytype: disable=pyi-error
-    IntentClassifier,
-)
-from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
+from rasa.nlu import components, utils  # rasa-16-to-rasa-17
+from rasa.nlu.classifiers.classifier import IntentClassifier  # rasa-16-to-rasa-17
+from rasa.nlu.components import Component, ComponentBuilder  # rasa-16-to-rasa-17
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
-from rasa.nlu.extractors.extractor import EntityExtractor  # pytype: disable=pyi-error
+from rasa.nlu.extractors.extractor import EntityExtractor  # rasa-16-to-rasa-17
 
 from rasa.nlu.persistor import Persistor
 from rasa.shared.nlu.constants import (

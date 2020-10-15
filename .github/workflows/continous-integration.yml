@@ -102,9 +102,6 @@ jobs:
     - name: Check Types 📚
       run: make types
 
-    - name: Check Types (old) 📚
-      run: make types-old
-
     - name: Test CLI 🖥
       # makes sure we catch any dependency error early. they will create strange
       # errors during the docs build, so easier to catch them early on by

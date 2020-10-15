@@ -31,7 +31,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
-from rasa.shared.core import events  # pytype: disable=pyi-error
+from rasa.shared.core import events  # rasa-16-to-rasa-17
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     LOOP_NAME,
@@ -42,8 +42,8 @@ from rasa.shared.core.constants import (
     TRIGGER_MESSAGE,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
-from rasa.shared.core.events import (  # pytype: disable=pyi-error
+from rasa.shared.core.conversation import Dialogue  # rasa-16-to-rasa-17
+from rasa.shared.core.events import (  # rasa-16-to-rasa-17
     UserUttered,
     ActionExecuted,
     Event,
@@ -56,7 +56,7 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
     SessionStarted,
     ActionExecutionRejected,
 )
-from rasa.shared.core.domain import Domain, State  # pytype: disable=pyi-error
+from rasa.shared.core.domain import Domain, State  # rasa-16-to-rasa-17
 from rasa.shared.core.slots import Slot
 
 if typing.TYPE_CHECKING:
@@ -759,7 +759,7 @@ class DialogueStateTracker:
         ]
         return new_slots
 
-    # pytype: disable=bad-return-type
+    # rasa-16-to-rasa-17
     @property
     def active_loop_name(self) -> Optional[Text]:
         """Get the name of the currently active loop.
@@ -771,7 +771,7 @@ class DialogueStateTracker:
 
         return self.active_loop.get(LOOP_NAME)
 
-    # pytype: enable=bad-return-type
+    # rasa-16-to-rasa-17
 
     @property
     def latest_action_name(self) -> Optional[Text]:
