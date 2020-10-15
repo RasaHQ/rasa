@@ -325,6 +325,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self._label_data: Optional[RasaModelData] = None
         self._data_example: Optional[Dict[Text, List[np.ndarray]]] = None
+        self._sentence_features = None
 
     @property
     def label_key(self) -> Optional[Text]:
@@ -887,6 +888,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         out = self._predict(message)
 
+        self._sentence_features = out["sentence_features"].numpy()
+
         if self.component_config[INTENT_CLASSIFICATION]:
             label, label_ranking = self._predict_label(out)
 
@@ -1117,6 +1120,7 @@ class DIET(TransformerRasaModel):
 
         self.all_labels_embed = None  # needed for efficient prediction
         self._prepare_layers()
+        self.sentence_features = None
 
     @staticmethod
     def _ordered_tag_specs(
@@ -1815,6 +1819,8 @@ class DIET(TransformerRasaModel):
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
+        # self.sentence_features = sentence_vector_embed.numpy()
+
         # pytype cannot infer that 'self._tf_layers[f"loss.{LABEL}"]' has methods
         # like '.sim' or '.confidence_from_sim'
         # pytype: disable=attribute-error
@@ -1827,7 +1833,7 @@ class DIET(TransformerRasaModel):
         )
         # pytype: enable=attribute-error
 
-        return {"i_scores": scores}
+        return {"i_scores": scores, "sentence_features": sentence_vector_embed}
 
 
 # pytype: enable=key-error
