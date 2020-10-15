@@ -460,7 +460,11 @@ def _lock_store_is_multi_worker_compatible(
         return True
 
     # `lock_store` is `None` or `EndpointConfig`
-    return lock_store is not None and lock_store.type != "in_memory"
+    return (
+        lock_store is not None
+        and isinstance(lock_store, EndpointConfig)
+        and lock_store.type != "in_memory"
+    )
 
 
 def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> int:
