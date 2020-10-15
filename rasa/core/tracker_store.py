@@ -64,10 +64,7 @@ class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
 
     def __init__(
-        self,
-        domain: Optional[Domain],
-        event_broker: Optional[EventBroker] = None,
-        retrieve_events_from_previous_conversation_sessions: bool = False,
+        self, domain: Optional[Domain], event_broker: Optional[EventBroker] = None,
     ) -> None:
         """Create a TrackerStore.
 
@@ -75,17 +72,10 @@ class TrackerStore:
             domain: The `Domain` to initialize the `DialogueStateTracker`.
             event_broker: An event broker to publish any new events to another
                 destination.
-            retrieve_events_from_previous_conversation_sessions: If `True`, `retrieve`
-                will return all events (even if they are from a previous conversation
-                session). This setting only applies to `TrackerStore`s which usually
-                would only return events for the latest session.
         """
         self.domain = domain
         self.event_broker = event_broker
         self.max_event_history = None
-        self.load_events_from_previous_conversation_sessions = (
-            retrieve_events_from_previous_conversation_sessions
-        )
 
     @staticmethod
     def create(
@@ -161,6 +151,22 @@ class TrackerStore:
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieve method that will be overridden by specific tracker"""
         raise NotImplementedError()
+
+    def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
+        """Retrieve method for fetching all tracker events across conversation sessions
+        that may be overridden by specific tracker.
+
+        The default implementation uses `self.retrieve()`.
+
+        Args:
+            conversation_id: The conversation ID to retrieve the tracker for.
+
+        Returns:
+            The fetch tracker containing all events across session starts.
+        """
+        return self.retrieve(conversation_id)
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker"""
@@ -531,14 +537,7 @@ class MongoTrackerStore(TrackerStore):
 
         return list(reversed(events_after_session_start))
 
-    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """
-        Args:
-            sender_id: the message owner ID
-
-        Returns:
-            `DialogueStateTracker`
-        """
+    def _retrieve(self, sender_id: Text, fetch_events_from_all_sessions: bool):
         stored = self.conversations.find_one({"sender_id": sender_id})
 
         # look for conversations which have used an `int` sender_id in the past
@@ -556,8 +555,34 @@ class MongoTrackerStore(TrackerStore):
             return
 
         events = self._events_from_serialized_tracker(stored)
-        if not self.load_events_from_previous_conversation_sessions:
+        if not fetch_events_from_all_sessions:
             events = self._events_since_last_session_start(events)
+
+        return events
+
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Retrieves tracker for the latest conversation session.
+
+        Args:
+            sender_id: the message owner ID
+
+        Returns:
+            `DialogueStateTracker`
+        """
+        events = self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+
+        return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
+
+    def retrieve_full_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Retrieves tracker containing all conversation sessions.
+
+        Args:
+            sender_id: the message owner ID
+
+        Returns:
+            `DialogueStateTracker`
+        """
+        events = self._retrieve(sender_id, fetch_events_from_all_sessions=True)
 
         return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
 
@@ -847,11 +872,39 @@ class SQLTrackerStore(TrackerStore):
             return [sender_id for (sender_id,) in sender_ids]
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Create a tracker from events in the latest conversation session.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+
+        Returns:
+            Tracker containing events from the latest conversation sessions.
+        """
+        return self._retrieve(sender_id, fetch_events_from_all_sessions=False)
+
+    def retrieve_full_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Retrieves tracker containing all conversation sessions.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+
+        Returns:
+            Tracker containing events from all conversation sessions.
+        """
+        return self._retrieve(sender_id, fetch_events_from_all_sessions=True)
+
+    def _retrieve(
+        self, sender_id: Text, fetch_events_from_all_sessions: bool
+    ) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
         with self.session_scope() as session:
 
-            serialised_events = self._event_query(session, sender_id).all()
+            serialised_events = self._event_query(
+                session,
+                sender_id,
+                fetch_events_from_all_sessions=fetch_events_from_all_sessions,
+            ).all()
 
             events = [json.loads(event.data) for event in serialised_events]
 
@@ -868,12 +921,17 @@ class SQLTrackerStore(TrackerStore):
                 )
                 return None
 
-    def _event_query(self, session: "Session", sender_id: Text) -> "Query":
+    def _event_query(
+        self, session: "Session", sender_id: Text, fetch_events_from_all_sessions: bool
+    ) -> "Query":
         """Provide the query to retrieve the conversation events for a specific sender.
 
         Args:
             session: Current database session.
             sender_id: Sender id whose conversation events should be retrieved.
+            fetch_events_from_all_sessions: Whether to fetch events from all
+                conversation sessions. If `False`, only fetch events from the
+                latest conversation session.
 
         Returns:
             Query to get the conversation events.
@@ -891,7 +949,7 @@ class SQLTrackerStore(TrackerStore):
         event_query = session.query(self.SQLEvent).filter(
             self.SQLEvent.sender_id == sender_id
         )
-        if not self.load_events_from_previous_conversation_sessions:
+        if fetch_events_from_all_sessions:
             event_query = event_query.filter(
                 # Find events after the latest `SessionStarted` event or return all
                 # events
@@ -1113,22 +1171,3 @@ def _load_from_module_name_in_endpoint_config(
             f"Using `InMemoryTrackerStore` instead."
         )
         return InMemoryTrackerStore(domain)
-
-
-@contextlib.contextmanager
-def tracker_store_with_full_conversation_retrieval(
-    tracker_store: "TrackerStore",
-) -> Generator[None, None, None]:
-    """Context manager that ensures `tracker_store` fetches all tracker sessions.
-
-    Args:
-        tracker_store: Tracker store to modify.
-    """
-    previous_value = tracker_store.load_events_from_previous_conversation_sessions
-
-    tracker_store.load_events_from_previous_conversation_sessions = True
-
-    try:
-        yield
-    finally:
-        tracker_store.load_events_from_previous_conversation_sessions = previous_value

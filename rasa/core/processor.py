@@ -219,7 +219,7 @@ class MessageProcessor:
         )
 
     def get_trackers_for_all_conversation_sessions(
-        self, conversation_id: Text,
+        self, conversation_id: Text
     ) -> List[DialogueStateTracker]:
         """Get all trackers for a conversation.
 
@@ -235,12 +235,7 @@ class MessageProcessor:
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
-        with rasa.core.tracker_store.tracker_store_with_full_conversation_retrieval(
-            self.tracker_store
-        ):
-            tracker = self.tracker_store.get_or_create_tracker(
-                conversation_id, append_action_listen=False
-            )
+        tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
 
         return rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
 
