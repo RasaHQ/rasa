@@ -384,7 +384,7 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[float], bool]:
+    ) -> Tuple[List[float], Optional[bool]]:
         """Predict the next action the bot should take.
         Return the list of probabilities for the next actions.
         """
