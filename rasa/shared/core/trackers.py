@@ -17,9 +17,8 @@ from typing import (
     Union,
     FrozenSet,
     Tuple,
+    TYPE_CHECKING,
 )
-
-import typing
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -31,7 +30,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
-from rasa.shared.core import events  # pytype: disable=pyi-error
+import rasa.shared.core.events  # pytype: disable=pyi-error
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     LOOP_NAME,
@@ -60,7 +59,7 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
 from rasa.shared.core.domain import Domain, State  # pytype: disable=pyi-error
 from rasa.shared.core.slots import Slot
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 
@@ -123,7 +122,7 @@ class DialogueStateTracker:
         The dump should be an array of dumped events. When restoring
         the tracker, these events will be replayed to recreate the state."""
 
-        evts = events.deserialise_events(events_as_dict)
+        evts = rasa.shared.core.events.deserialise_events(events_as_dict)
         return cls.from_events(sender_id, evts, slots, max_event_history)
 
     @classmethod
@@ -827,39 +826,19 @@ def get_trackers_for_conversation_sessions(
     Returns:
         The trackers split by conversation sessions.
     """
-    trackers: List["DialogueStateTracker"] = []
-    tracker_slots = tracker.slots
+    split_conversations = rasa.shared.core.events.split_events(
+        tracker.events,
+        ActionExecuted,
+        {"action_name": ACTION_SESSION_START_NAME},
+        include_splitting_event=True,
+    )
 
-    def _create_empty_tracker() -> DialogueStateTracker:
-        return DialogueStateTracker.from_events(
-            tracker.sender_id, [], tracker_slots, sender_source=tracker.sender_source,
+    return [
+        DialogueStateTracker.from_events(
+            tracker.sender_id,
+            events,
+            tracker.slots,
+            sender_source=tracker.sender_source,
         )
-
-    processed_first_session_start = False
-    current_tracker = _create_empty_tracker()
-
-    for i, event in enumerate(tracker.events):
-        is_session_started_event = (
-            isinstance(event, ActionExecuted)
-            and event.action_name == ACTION_SESSION_START_NAME
-        )
-
-        if is_session_started_event and not processed_first_session_start:
-            # first session start or restart
-            current_tracker.update(event)
-            processed_first_session_start = True
-        elif is_session_started_event:
-            # session start or restart, append to old one and start new tracker
-            trackers.append(current_tracker)
-
-            current_tracker = _create_empty_tracker()
-            current_tracker.update(event)
-        elif i == len(tracker.events) - 1:
-            # last event, append the tracker
-            current_tracker.update(event)
-            trackers.append(current_tracker)
-        else:
-            # ordinary event
-            current_tracker.update(event)
-
-    return trackers
+        for events in split_conversations
+    ]

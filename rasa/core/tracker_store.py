@@ -18,7 +18,6 @@ from typing import (
     Text,
     Union,
     TYPE_CHECKING,
-    Generator,
 )
 
 from boto3.dynamodb.conditions import Key
@@ -64,7 +63,10 @@ class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
 
     def __init__(
-        self, domain: Optional[Domain], event_broker: Optional[EventBroker] = None,
+        self,
+        domain: Optional[Domain],
+        event_broker: Optional[EventBroker] = None,
+        **kwargs: Any,
     ) -> None:
         """Create a TrackerStore.
 
