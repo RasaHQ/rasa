@@ -332,9 +332,9 @@ jobs:
         shell: bash
         run: |
           if [ -z "${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" ]; then
-            echo MERGE_TOKEN=${{ secrets.GITHUB_TOKEN }} >> $GITHUB_ENV
+            echo "MERGE_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
           else
-            echo MERGE_TOKEN=${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }} >> $GITHUB_ENV
+            echo "MERGE_TOKEN=${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" >> $GITHUB_ENV
           fi
       - uses: rasahq/merge-pal-action@master
         with:
