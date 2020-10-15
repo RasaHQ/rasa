@@ -94,7 +94,7 @@ class BotFramework(OutputChannel):
     async def send(self, message_data: Dict[Text, Any]) -> None:
         post_message_uri = "{}conversations/{}/activities".format(
             self.global_uri, self.conversation["id"]
-        )
+        ) #check-pii
         headers = await self._get_headers()
         send_response = requests.post(
             post_message_uri, headers=headers, data=json.dumps(message_data)
@@ -248,7 +248,7 @@ class BotFrameworkInput(InputChannel):
                 else:
                     logger.info("Not received message type")
             except Exception as e:
-                logger.error(f"Exception when trying to handle message.{e}")
+                logger.error(f"Exception when trying to handle message.{e}" #check-pii)
                 logger.debug(e, exc_info=True)
                 pass
 

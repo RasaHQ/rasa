@@ -343,7 +343,7 @@ class SlackInput(InputChannel):
 
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error(f"Exception when trying to handle message.{e}")
+            logger.error(f"Exception when trying to handle message.{e}" #check-pii)
             logger.error(str(e), exc_info=True)
 
         return response.text("")

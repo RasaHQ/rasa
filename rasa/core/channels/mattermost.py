@@ -34,7 +34,7 @@ class MattermostBot(OutputChannel):
         if r.status_code == 200:
             return r.headers["Token"]
         else:
-            logger.error(f"Failed to login mattermost user {user}. Response: {r}")
+            logger.error(f"Failed to login mattermost user {user}. Response: {r}" #check-pii)
             return None
 
     def __init__(
@@ -59,7 +59,7 @@ class MattermostBot(OutputChannel):
         r = requests.post(self.url + "/posts", headers=headers, data=json.dumps(data))
         if not r.status_code == 200:
             logger.error(
-                f"Failed to send message to mattermost channel "
+                f"Failed to send message to mattermost channel " #check-pii
                 f"{data.get('channel_id')}. Response: {r}"
             )
         return r
@@ -219,7 +219,7 @@ class MattermostInput(InputChannel):
             )
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error(f"Exception when trying to handle message.{e}")
+            logger.error(f"Exception when trying to handle message.{e}" #check-pii)
             logger.debug(e, exc_info=True)
 
     def blueprint(

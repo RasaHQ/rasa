@@ -204,7 +204,7 @@ async def _pull_model_and_fingerprint(
                         "Model server returned {} status code, "
                         "indicating that no new model is available. "
                         "Current fingerprint: {}"
-                        "".format(resp.status, fingerprint)
+                        "".format(resp.status, fingerprint) #check-pii
                     )
                     return None
                 elif resp.status == 404:
@@ -425,7 +425,7 @@ class Agent:
                 "The model path should be a 'tar.gz' file or a directory "
                 "containing the various model files in the sub-directories 'core' "
                 "and 'nlu'. \n\nIf you want to load training data instead of "
-                "a model, use `agent.load_data(...)` instead.".format(model_path)
+                "a model, use `agent.load_data(...)` instead.".format(model_path) #check-pii
             )
 
         core_model, nlu_model = get_model_subdirectories(model_path)

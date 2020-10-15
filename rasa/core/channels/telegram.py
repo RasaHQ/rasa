@@ -89,7 +89,7 @@ class TelegramOutput(Bot, OutputChannel):
         else:
             logger.error(
                 "Trying to send text with buttons for unknown "
-                "button type {}".format(button_type)
+                "button type {}".format(button_type) #check-pii
             )
             return
 
@@ -255,7 +255,7 @@ class TelegramInput(InputChannel):
                             )
                         )
                 except Exception as e:
-                    logger.error(f"Exception when trying to handle message.{e}")
+                    logger.error(f"Exception when trying to handle message.{e}" #check-pii)
                     logger.debug(e, exc_info=True)
                     if self.debug_mode:
                         raise

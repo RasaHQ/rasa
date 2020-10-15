@@ -76,7 +76,7 @@ class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpre
 
         if not self.endpoint_config:
             logger.error(
-                f"Failed to parse text '{text}' using rasa NLU over http. "
+                f"Failed to parse text '{text}' using rasa NLU over http. " #check-pii
                 f"No rasa NLU server specified!"
             )
             return None
@@ -101,14 +101,14 @@ class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpre
                     else:
                         response_text = await resp.text()
                         logger.error(
-                            f"Failed to parse text '{text}' using rasa NLU over "
+                            f"Failed to parse text '{text}' using rasa NLU over " #check-pii
                             f"http. Error: {response_text}"
                         )
                         return None
         except Exception:  # skipcq: PYL-W0703
             # need to catch all possible exceptions when doing http requests
             # (timeouts, value errors, parser errors, ...)
-            logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")
+            logger.exception(f"Failed to parse text '{text}' using rasa NLU over http." #check-pii)
             return None
 
 

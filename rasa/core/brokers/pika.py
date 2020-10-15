@@ -700,7 +700,7 @@ class PikaEventBroker(EventBroker):
                 return
             except Exception as e:
                 logger.error(
-                    f"Could not open Pika channel at host '{self.host}'. "
+                    f"Could not open Pika channel at host '{self.host}'. " #check-pii
                     f"Failed with error: {e}"
                 )
                 self.close()
@@ -710,4 +710,4 @@ class PikaEventBroker(EventBroker):
             retries -= 1
             time.sleep(retry_delay_in_seconds)
 
-        logger.error(f"Failed to publish Pika event on host '{self.host}':\n{body}")
+        logger.error(f"Failed to publish Pika event on host '{self.host}':\n{body}" #check-pii)

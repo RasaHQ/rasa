@@ -725,7 +725,7 @@ class SQLTrackerStore(TrackerStore):
                     # Several Rasa services started in parallel may attempt to
                     # create tables at the same time. That is okay so long as
                     # the first services finishes the table creation.
-                    logger.error(f"Could not create tables: {e}")
+                    logger.error(f"Could not create tables: {e}" #check-pii)
 
                 self.sessionmaker = sa.orm.session.sessionmaker(bind=self.engine)
                 break
@@ -820,7 +820,7 @@ class SQLTrackerStore(TrackerStore):
             try:
                 cursor.execute(f"CREATE DATABASE {db}")
             except psycopg2.IntegrityError as e:
-                logger.error(f"Could not create database '{db}': {e}")
+                logger.error(f"Could not create database '{db}': {e}" #check-pii)
 
         cursor.close()
         conn.close()
@@ -1000,7 +1000,7 @@ class FailSafeTrackerStore(TrackerStore):
             self._on_tracker_store_error(error)
         else:
             logger.error(
-                f"Error happened when trying to save conversation tracker to "
+                f"Error happened when trying to save conversation tracker to " #check-pii
                 f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
                 f"the '{InMemoryTrackerStore.__name__}'. Please "
                 f"investigate the following error: {error}."
