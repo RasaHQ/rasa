@@ -404,59 +404,6 @@ word vectors in your pipeline.
     ```
 
 
-  ### ConveRTTokenizer
-
-
-  * **Short**
-
-    Tokenizer using [ConveRT](https://github.com/PolyAI-LDN/polyai-models#convert) model.
-
-
-
-  * **Outputs**
-
-    `tokens` for user messages, responses (if present), and intents (if specified)
-
-
-
-  * **Requires**
-
-    Nothing
-
-
-
-  * **Description**
-
-    Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is used.
-
-    :::note
-    Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
-    be used if your training data is in English language.
-
-    :::
-
-    :::note
-    To use `ConveRTTokenizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
-
-    :::
-
-
-
-  * **Configuration**
-
-    ```yaml-rasa
-    pipeline:
-    - name: "ConveRTTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-      # Remote URL of hosted model
-      "model_url": TF_HUB_MODULE_URL
-    ```
-
 
 ## Featurizers
 
@@ -598,7 +545,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [ConveRTTokenizer](./components.mdx#converttokenizer)
+  `tokens`
 
 
 
@@ -2707,4 +2654,9 @@ The sentence features are represented by a matrix of size `(1 x feature-dimensio
 The `LanguageModelTokenizer` is deprecated. The [HFTransformersNLP](./components.mdx#hftransformersnlp) now implements
 its behaviour. Any [tokenizer](./components.mdx#tokenizers) can be used in its place; this must be placed before the
 [HFTransformersNLP](./components.mdx#hftransformersnlp) Component.
+:::
+
+:::caution Deprecated
+The `ConveRTokenizer` is deprecated. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer) now implements
+its behaviour. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
