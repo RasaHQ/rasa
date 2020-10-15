@@ -23,7 +23,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Bugfixes
 --------
 - `#6703 <https://github.com/rasahq/rasa/issues/6703>`_: Update Pika event broker to be a separate process and make it use a
-  `multiprocessing.Queue` to send and process messages. This change should help 
+  ``multiprocessing.Queue`` to send and process messages. This change should help 
   avoid situations when events stop being sent after a while.
 
 
