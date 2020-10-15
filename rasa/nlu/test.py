@@ -1041,7 +1041,7 @@ def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
             logger.debug(
                 "Token boundary error for token {}({}, {}) "
                 "and entity {}"
-                "".format(token.text, token.start, token.end, e)
+                "".format(token.text, token.start, token.end, e) #check-pii
             )
     return candidates
 
@@ -1984,7 +1984,7 @@ def log_results(results: IntentMetrics, dataset_name: Text) -> None:
     """
     for k, v in results.items():
         logger.info(
-            "{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v), np.std(v))
+            "{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v) #check-pii, np.std(v))
         )
 
 

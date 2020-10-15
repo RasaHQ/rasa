@@ -451,7 +451,7 @@ class PikaMessageProcessor:
 
     def _on_open_connection_error(self, _, error: Text) -> None:
         logger.warning(
-            f"Connecting to '{self.parameters.host}' failed with error '{error}'. Trying again."
+            f"Connecting to '{self.parameters.host}' failed with error '{error}'. Trying again." #check-pii
         )
 
     def _on_connection_closed(self, _, reason: Any):
@@ -460,7 +460,7 @@ class PikaMessageProcessor:
             # noinspection PyUnresolvedReferences
             self._connection.ioloop.stop()
         else:
-            logger.warning(f"Connection closed, reopening in 5 seconds: {reason}")
+            logger.warning(f"Connection closed, reopening in 5 seconds: {reason}" #check-pii)
             # noinspection PyUnresolvedReferences
             self._connection.ioloop.call_later(5, self._reconnect)
 
@@ -490,7 +490,7 @@ class PikaMessageProcessor:
         self.process_messages()
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
-        logger.warning(f"Channel {channel} was closed: {reason}")
+        logger.warning(f"Channel {channel} was closed: {reason}" #check-pii)
         self._connection.close()
 
     def _publish(self, message: Message) -> None:

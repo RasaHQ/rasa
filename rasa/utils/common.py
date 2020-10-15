@@ -215,7 +215,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
         rasa.shared.utils.io.write_yaml(c, rasa.constants.GLOBAL_USER_CONFIG_PATH)
         return True
     except Exception as e:
-        logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
+        logger.warning(f"Failed to write global config. Error: {e}. Skipping." #check-pii)
         return False
 
 
