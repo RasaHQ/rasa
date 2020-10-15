@@ -317,8 +317,19 @@ class FormAction(LoopAction):
     def extract_requested_slot(
         self, tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text,
     ) -> Dict[Text, Any]:
-        """Extract the value of requested slot from a user input
+        """
+        Extract the value of requested slot from a user input
         else return `None`.
+
+        Args:
+            tracker: a DialogueStateTracker instance
+            domain: the current domain
+            slot_to_fill: the name of the slot to fill
+
+        Returns:
+            a dictionary with one key being the name of the slot to fill
+            and its value being the slot value, or an empty dictionary
+            if no slot value was found.
         """
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
