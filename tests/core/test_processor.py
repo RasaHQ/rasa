@@ -7,7 +7,7 @@ import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable
+from typing import Optional, Text, List, Callable, Tuple
 from unittest.mock import patch, Mock
 from tests.utilities import latest_request
 
@@ -25,6 +25,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     Event,
     SlotSet,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -644,6 +645,7 @@ async def test_handle_message_with_session_start(
             [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
         ),
         SlotSet(entity, slot_1[entity]),
+        DefinePrevUserUtteredFeaturization(False),
         ActionExecuted("utter_greet"),
         BotUttered("hey there Core!", metadata={"template_name": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -665,6 +667,7 @@ async def test_handle_message_with_session_start(
             ],
         ),
         SlotSet(entity, slot_2[entity]),
+        DefinePrevUserUtteredFeaturization(False),
         ActionExecuted("utter_greet"),
         BotUttered(
             "hey there post-session start hello!",
@@ -707,9 +710,9 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs,
-    ) -> List[float]:
+    ) -> Tuple[List[float], Optional[bool]]:
         assert interpreter == test_interpreter
-        return [1, 0]
+        return [1, 0], None
 
     policy.predict_action_probabilities = predict_action_probabilities
     ensemble = SimplePolicyEnsemble(policies=[policy])
@@ -729,8 +732,8 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 @pytest.mark.parametrize(
     "predict_function",
     [
-        lambda tracker, domain, something_else: [1, 0, 2, 3],
-        lambda tracker, domain, some_bool=True: [1, 0],
+        lambda tracker, domain, something_else: ([1, 0, 2, 3], None),
+        lambda tracker, domain, some_bool=True: ([1, 0], None),
     ],
 )
 def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
