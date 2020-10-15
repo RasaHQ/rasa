@@ -224,17 +224,17 @@ def _verify_telemetry():
 
     if telemetry.is_telemetry_enabled():
         print(
-            f"Just so you know! "
-            f"You're currently sharing anonymous statistics with us.\n"
-            f"It helps us make Rasa better.\n"
-            f"Thanks! If you don't want to share data, run:\n\n"
-            f"rasa telemetry disable"
+            "Just so you know! "
+            "You're currently sharing anonymous statistics with us.\n"
+            "It helps us make Rasa better.\n"
+            "Thanks! If you don't want to share data, run:\n\n"
+            "rasa telemetry disable"
         )
     else:
         print(
-            f"Just so you know! "
-            f"You can share anonymous statistics with us.\n"
-            f"It will help us make Rasa better.\n"
-            f"To do this run:\n\n"
-            f"rasa telemetry enable"
+            "Just so you know! "
+            "You can share anonymous statistics with us.\n"
+            "It will help us make Rasa better.\n"
+            "To do this run:\n\n"
+            "rasa telemetry enable"
         )
