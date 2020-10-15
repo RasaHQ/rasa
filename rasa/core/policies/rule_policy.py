@@ -461,7 +461,7 @@ class RulePolicy(MemoizationPolicy):
         error_message = (
             f"- the prediction of the action '{gold_action_name}' in {tracker_type} "
             f"'{tracker.sender_id}' "
-            f"is contradicting with rules '{', '.join(contradicting_rules)}'"
+            f"is contradicting with rule(s) '{', '.join(contradicting_rules)}'"
         )
         # outputting predicted action 'action_default_fallback' is confusing
         if predicted_action_name != self._fallback_action_name:
