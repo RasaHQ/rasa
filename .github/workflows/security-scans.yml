@@ -25,3 +25,13 @@ jobs:
 
     - name: Gitleaks - detecting hardcoded secrets
       uses: zricethezav/gitleaks-action@v1.1.4
+
+    - name: Notify slack on failure
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+        status: FAILED
+        color: danger
