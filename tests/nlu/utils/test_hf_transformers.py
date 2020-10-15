@@ -9,12 +9,11 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.nlu.constants import (
     TOKENS_NAMES,
-    NUMBER_OF_SUB_TOKENS, LANGUAGE_MODEL_DOCS, TOKEN_IDS
+    NUMBER_OF_SUB_TOKENS,
+    LANGUAGE_MODEL_DOCS,
+    TOKEN_IDS,
 )
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT
-)
+from rasa.shared.nlu.constants import TEXT, INTENT
 
 
 @pytest.mark.parametrize(
@@ -131,6 +130,7 @@ def test_attention_mask(
 
     assert np.all(mask_ones == 1)
     assert np.all(mask_zeros == 0)
+
 
 # TODO: need to fix this failing test
 @pytest.mark.skip(reason="Results in random crashing of github action workers")
@@ -492,6 +492,7 @@ def test_hf_transformers_edge_cases(
         assert [t.end for t in tokens] == [i[1] for i in gt_indices]
         assert len(token_ids) == gt_num_indices
 
+
 @pytest.mark.parametrize(
     "text, expected_tokens",
     [
@@ -518,6 +519,7 @@ def test_hf_transformers_custom_intent_symbol(text, expected_tokens):
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
 
+
 @pytest.mark.parametrize(
     "text, expected_number_of_sub_tokens",
     [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
@@ -536,5 +538,5 @@ def test_hf_transformers_number_of_sub_tokens(text, expected_number_of_sub_token
     transformers_nlp.train(td)
 
     assert [
-               t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
-           ] == expected_number_of_sub_tokens
+        t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
+    ] == expected_number_of_sub_tokens
