@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.components import Component
@@ -51,10 +51,10 @@ class EntitySynonymMapper(EntityExtractor):
         message.set(ENTITIES, updated_entities, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-
+        model_dir = Path(model_dir)
         if self.synonyms:
             file_name = file_name + ".json"
-            entity_synonyms_file = os.path.join(model_dir, file_name)
+            entity_synonyms_file = model_dir / file_name
             write_json_to_file(
                 entity_synonyms_file, self.synonyms, separators=(",", ": ")
             )
@@ -77,13 +77,13 @@ class EntitySynonymMapper(EntityExtractor):
             synonyms = None
             return cls(meta, synonyms)
 
-        entity_synonyms_file = os.path.join(model_dir, file_name)
-        if os.path.isfile(entity_synonyms_file):
+        entity_synonyms_file = Path(model_dir) / file_name
+        if entity_synonyms_file.is_file():
             synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
             rasa.shared.utils.io.raise_warning(
-                f"Failed to load synonyms file from '{entity_synonyms_file}'.",
+                f"Failed to load synonyms file from '{str(entity_synonyms_file)}'.",
                 docs=DOCS_URL_TRAINING_DATA + "#synonyms",
             )
         return cls(meta, synonyms)

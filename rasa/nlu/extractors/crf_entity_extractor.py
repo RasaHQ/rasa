@@ -1,8 +1,7 @@
 import logging
-import os
 import typing
-
 import numpy as np
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Type, Callable
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
@@ -306,24 +305,25 @@ class CRFEntityExtractor(EntityExtractor):
 
         file_names = meta.get("files")
         entity_taggers = {}
+        model_dir = Path(model_dir)
 
         if not file_names:
             logger.debug(
                 f"Failed to load model for 'CRFEntityExtractor'. "
                 f"Maybe you did not provide enough training data and no model was "
-                f"trained or the path '{os.path.abspath(model_dir)}' doesn't exist?"
+                f"trained or the path '{model_dir.absolute()}' doesn't exist?"
             )
             return cls(component_config=meta)
 
         for name, file_name in file_names.items():
-            model_file = os.path.join(model_dir, file_name)
-            if os.path.exists(model_file):
-                entity_taggers[name] = joblib.load(model_file)
+            model_file = model_dir / file_name
+            if model_file.exists():
+                entity_taggers[name] = joblib.load(str(model_file))
             else:
                 logger.debug(
                     f"Failed to load model for tag '{name}' for 'CRFEntityExtractor'. "
                     f"Maybe you did not provide enough training data and no model was "
-                    f"trained or the path '{os.path.abspath(model_file)}' doesn't "
+                    f"trained or the path '{model_file.absolute()}' doesn't "
                     f"exist?"
                 )
 
@@ -341,8 +341,8 @@ class CRFEntityExtractor(EntityExtractor):
         if self.entity_taggers:
             for name, entity_tagger in self.entity_taggers.items():
                 file_name = f"{file_name}.{name}.pkl"
-                model_file_name = os.path.join(model_dir, file_name)
-                joblib.dump(entity_tagger, model_file_name)
+                model_file_name = Path(model_dir) / file_name
+                joblib.dump(entity_tagger, str(model_file_name))
                 file_names[name] = file_name
 
         return {"files": file_names}

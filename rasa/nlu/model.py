@@ -1,7 +1,7 @@
 import copy
 import datetime
 import logging
-import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
@@ -74,12 +74,12 @@ class Metadata:
         Returns:
             Metadata: A metadata object describing the model
         """
+        metadata_file = Path(model_dir) / "metadata.json"
         try:
-            metadata_file = os.path.join(model_dir, "metadata.json")
             data = rasa.shared.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
-            abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
+            abspath = metadata_file.absolute()
             raise InvalidModelError(
                 f"Failed to load model metadata from '{abspath}'. {e}"
             )
@@ -124,7 +124,7 @@ class Metadata:
             }
         )
 
-        filename = os.path.join(model_dir, "metadata.json")
+        filename = Path(model_dir) / "metadata.json"
         write_json_to_file(filename, metadata, indent=4)
 
 
@@ -233,9 +233,9 @@ class Trainer:
         else:
             model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
-        path = os.path.abspath(path)
-        dir_name = os.path.join(path, model_name)
-
+        path = Path(path).absolute()
+        dir_name = path / model_name
+        dir_name = str(dir_name)
         rasa.shared.utils.io.create_directory(dir_name)
 
         if self.training_data and persist_nlu_training_data:
@@ -256,7 +256,7 @@ class Trainer:
         if persistor is not None:
             persistor.persist(dir_name, model_name)
         logger.info(
-            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
+            "Successfully saved model into '{}'".format(Path(dir_name).absolute())
         )
         return dir_name
 

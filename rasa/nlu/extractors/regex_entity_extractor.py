@@ -1,6 +1,6 @@
 import logging
-import os
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.shared.utils.io
@@ -116,9 +116,9 @@ class RegexEntityExtractor(EntityExtractor):
     ) -> "RegexEntityExtractor":
 
         file_name = meta.get("file")
-        regex_file = os.path.join(model_dir, file_name)
+        regex_file = Path(model_dir) / file_name
 
-        if os.path.exists(regex_file):
+        if regex_file.exists():
             patterns = rasa.shared.utils.io.read_json_file(regex_file)
             return RegexEntityExtractor(meta, patterns=patterns)
 
@@ -127,8 +127,9 @@ class RegexEntityExtractor(EntityExtractor):
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
+
         file_name = f"{file_name}.json"
-        regex_file = os.path.join(model_dir, file_name)
+        regex_file = Path(model_dir) / file_name
         rasa.shared.utils.io.dump_obj_as_json_to_file(regex_file, self.patterns)
 
         return {"file": file_name}

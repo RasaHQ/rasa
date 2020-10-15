@@ -395,17 +395,12 @@ def dump_obj_as_yaml_to_string(
     return buffer.getvalue()
 
 
-def create_directory(directory_path: Text) -> None:
+def create_directory(directory_path: Union[Path, Text]) -> None:
     """Creates a directory and its super paths.
 
     Succeeds even if the path already exists."""
 
-    try:
-        os.makedirs(directory_path)
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
+    Path(directory_path).mkdir(parents=True, exist_ok=True)
 
 
 def raise_deprecation_warning(

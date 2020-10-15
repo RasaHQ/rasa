@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Any, Optional, Text
+from typing import Any, Optional, Text, Union
 from pathlib import Path
 
 import rasa.shared.utils.io
@@ -18,13 +18,12 @@ def module_path_from_object(o: Any) -> Text:
     return o.__class__.__module__ + "." + o.__class__.__name__
 
 
-def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
+def write_json_to_file(filename: Union[Path, Text], obj: Any, **kwargs: Any) -> None:
     """Write an object as a json string to a file."""
-
     write_to_file(filename, rasa.shared.utils.io.json_to_string(obj, **kwargs))
 
 
-def write_to_file(filename: Text, text: Any) -> None:
+def write_to_file(filename: Union[Path, Text], text: Any) -> None:
     """Write a text to a file."""
 
     rasa.shared.utils.io.write_text_file(str(text), filename)

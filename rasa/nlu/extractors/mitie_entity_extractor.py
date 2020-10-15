@@ -1,6 +1,6 @@
 import logging
-import os
 import typing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.constants import TOKENS_NAMES
@@ -158,9 +158,9 @@ class MitieEntityExtractor(EntityExtractor):
         if not file_name:
             return cls(meta)
 
-        classifier_file = os.path.join(model_dir, file_name)
-        if os.path.exists(classifier_file):
-            extractor = mitie.named_entity_extractor(classifier_file)
+        classifier_file = Path(model_dir) / file_name
+        if classifier_file.exists():
+            extractor = mitie.named_entity_extractor(str(classifier_file))
             return cls(meta, extractor)
         else:
             return cls(meta)
@@ -169,8 +169,8 @@ class MitieEntityExtractor(EntityExtractor):
 
         if self.ner:
             file_name = file_name + ".dat"
-            entity_extractor_file = os.path.join(model_dir, file_name)
-            self.ner.save_to_disk(entity_extractor_file, pure_model=True)
+            entity_extractor_file = Path(model_dir) / file_name
+            self.ner.save_to_disk(str(entity_extractor_file), pure_model=True)
             return {"file": file_name}
         else:
             return {"file": None}
