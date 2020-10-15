@@ -7,7 +7,7 @@ import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable
+from typing import Optional, Text, List, Callable, Type
 from unittest.mock import patch, Mock
 from tests.utilities import latest_request
 
@@ -587,12 +587,11 @@ async def test_update_tracker_session_with_slots(
     assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
 
 
-# noinspection PyProtectedMember
-async def test_get_tracker_with_session_start(
+async def test_fetch_tracker_and_update_session(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
-    tracker = await default_processor.get_tracker_with_session_start(
+    tracker = await default_processor.fetch_tracker_and_update_session(
         sender_id, default_channel
     )
 
@@ -602,6 +601,50 @@ async def test_get_tracker_with_session_start(
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
+
+@pytest.mark.parametrize(
+    "initial_events,final_events",
+    [
+        # tracker is initially not empty, and just contains these four events
+        # when fetched
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered("/greet", {INTENT_NAME_KEY: "greet", "confidence": 1.0}),
+            ],
+            [ActionExecuted, SessionStarted, ActionExecuted, UserUttered],
+        ),
+        # tracker is initially empty, and contains the session start sequence when
+        # fetched
+        ([], [ActionExecuted, SessionStarted, ActionExecuted]),
+    ],
+)
+async def test_fetch_tracker_with_initial_session(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    initial_events: List[Event],
+    final_events: List[Type[Event]],
+):
+    conversation_id = uuid.uuid4().hex
+
+    tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
+
+    default_processor.tracker_store.save(tracker)
+
+    tracker = await default_processor.fetch_tracker_with_initial_session(
+        conversation_id, default_channel
+    )
+
+    # the events in the fetched tracker are as expected
+    assert len(tracker.events) == len(final_events)
+
+    assert all(
+        isinstance(tracker_event, expected_event_type)
+        for tracker_event, expected_event_type in zip(tracker.events, final_events)
+    )
 
 
 async def test_handle_message_with_session_start(

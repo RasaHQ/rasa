@@ -254,7 +254,7 @@ async def get_tracker_with_session_start(
     Returns:
         The tracker for `conversation_id` with an updated conversation session.
     """
-    return await processor.get_tracker_with_session_start(conversation_id)
+    return await processor.fetch_tracker_and_update_session(conversation_id)
 
 
 def get_test_stories(
@@ -564,7 +564,9 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 processor = app.agent.create_processor()
-                tracker = processor.get_tracker(conversation_id)
+                tracker = await processor.fetch_tracker_with_initial_session(
+                    conversation_id
+                )
                 output_channel = _get_output_channel(request, tracker)
 
                 events = _get_events_from_request_body(request)
