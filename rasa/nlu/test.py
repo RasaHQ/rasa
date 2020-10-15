@@ -1984,7 +1984,7 @@ def log_results(results: IntentMetrics, dataset_name: Text) -> None:
     """
     for k, v in results.items():
         logger.info(
-            "{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v) #check-pii #check-pii, np.std(v))
+            "{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v) #check-pii, np.std(v))
         )
 
 

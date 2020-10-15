@@ -425,7 +425,7 @@ class Agent:
                 "The model path should be a 'tar.gz' file or a directory "
                 "containing the various model files in the sub-directories 'core' "
                 "and 'nlu'. \n\nIf you want to load training data instead of "
-                "a model, use `agent.load_data(...)` instead.".format(model_path) #check-pii #check-pii
+                "a model, use `agent.load_data(...)` instead.".format(model_path) #check-pii
             )
 
         core_model, nlu_model = get_model_subdirectories(model_path)
@@ -758,7 +758,7 @@ class Agent:
             logger.info(
                 "Model directory {} exists and contains old "
                 "model files. All files will be overwritten."
-                "".format(model_path) #check-pii #check-pii
+                "".format(model_path) #check-pii
             )
             shutil.rmtree(model_path)
         else:
@@ -783,7 +783,7 @@ class Agent:
         self.domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
         self.domain.persist_specification(model_path)
 
-        logger.info("Persisted model to '{}'".format(os.path.abspath(model_path) #check-pii #check-pii))
+        logger.info("Persisted model to '{}'".format(os.path.abspath(model_path) #check-pii))
 
     async def visualize(
         self,

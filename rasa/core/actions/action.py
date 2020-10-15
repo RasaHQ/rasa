@@ -633,7 +633,7 @@ class RemoteAction(Action):
                 logger.error(exception.message)
                 raise exception
             else:
-                raise Exception("Failed to execute custom action.") from e
+                raise Exception("Failed to execute custom action.") from e #check-pii
 
         except aiohttp.ClientConnectionError as e:
             logger.error(
