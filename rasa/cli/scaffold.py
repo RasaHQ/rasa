@@ -124,7 +124,7 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
 
 def init_project(args: argparse.Namespace, path: Text) -> None:
     create_initial_project(path)
-    print("Created project directory at '{}'.".format(os.path.abspath(path)))
+    print("Created project directory at '{}'.".format(os.path.abspath(path) #check-pii))
     print_train_or_instructions(args, path)
 
 
@@ -174,14 +174,14 @@ def run(args: argparse.Namespace) -> None:
     print_success("Welcome to Rasa! 🤖\n")
     if args.no_prompt:
         print(
-            f"To get started quickly, an "
+            f"To get started quickly, an " #check-pii
             f"initial project will be created.\n"
             f"If you need some help, check out "
             f"the documentation at {DOCS_BASE_URL}.\n"
         )
     else:
         print(
-            f"To get started quickly, an "
+            f"To get started quickly, an " #check-pii
             f"initial project will be created.\n"
             f"If you need some help, check out "
             f"the documentation at {DOCS_BASE_URL}.\n"
@@ -202,7 +202,7 @@ def run(args: argparse.Namespace) -> None:
         )
 
     if args.no_prompt and not os.path.isdir(path):
-        print_error_and_exit(f"Project init path '{path}' not found.")
+        print_error_and_exit(f"Project init path '{path}' not found." #check-pii)
 
     if path and not os.path.isdir(path):
         _ask_create_path(path)

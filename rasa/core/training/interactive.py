@@ -473,7 +473,7 @@ async def _print_history(conversation_id: Text, endpoint: EndpointConfig) -> Non
 
     if slot_strings:
         print("\n")
-        print(f"Current slots: \n\t{', '.join(slot_strings)}\n")
+        print(f"Current slots: \n\t{', '.join(slot_strings)}\n" #check-pii)
 
     print("------")
 
@@ -880,7 +880,7 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
-    nlu_format = _get_nlu_target_format(export_nlu_path)
+    nlu_format = _get_nlu_target_format(export_nlu_path) #check-pii
     if nlu_format == RASA_YAML:
         stringified_training_data = nlu_data.nlu_as_yaml()
     elif nlu_format == MARKDOWN:
@@ -1222,7 +1222,7 @@ async def _validate_user_text(
         )
 
     if intent is None:
-        print(f"The NLU classification for '{text}' returned '{intent}'")
+        print(f"The NLU classification for '{text}' returned '{intent}'" #check-pii)
         return False
     else:
         question = questionary.confirm(message)
