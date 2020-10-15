@@ -92,8 +92,7 @@ class KafkaEventBroker(EventBroker):
         import kafka
 
         if self.security_protocol == "PLAINTEXT":
-            self.producer = kafka.KafkaConsumer(
-                self.topic,
+            self.producer = kafka.KafkaProducer(
                 bootstrap_servers=self.url,
                 client_id=self.client_id,
                 group_id=self.group_id,
@@ -120,8 +119,7 @@ class KafkaEventBroker(EventBroker):
                 security_protocol=self.security_protocol,
             )
         elif self.security_protocol == "SASL_SSL":
-            self.producer = kafka.KafkaConsumer(
-                self.topic,
+            self.producer = kafka.KafkaProducer(
                 bootstrap_servers=self.url,
                 client_id=self.client_id,
                 group_id=self.group_id,
