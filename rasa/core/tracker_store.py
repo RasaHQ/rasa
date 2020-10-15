@@ -559,7 +559,9 @@ class MongoTrackerStore(TrackerStore):
 
         return list(reversed(events_after_session_start))
 
-    def _retrieve(self, sender_id: Text, fetch_events_from_all_sessions: bool):
+    def _retrieve(
+        self, sender_id: Text, fetch_events_from_all_sessions: bool
+    ) -> Optional[List[Dict[Text, Any]]]:
         stored = self.conversations.find_one({"sender_id": sender_id})
 
         # look for conversations which have used an `int` sender_id in the past
