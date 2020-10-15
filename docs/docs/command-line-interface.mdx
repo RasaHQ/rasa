@@ -341,41 +341,9 @@ it with us on the [Rasa Forum](https://forum.rasa.com/).
 
 You can use `rasa data validate` with additional arguments, e.g. to specify the location of your data and 
 domain files:
+
+```text [rasa data validate --help]
 ```
-usage: rasa data validate [-h] [-v] [-vv] [--quiet]
-                          [--max-history MAX_HISTORY] [--fail-on-warnings]
-                          [-d DOMAIN] [--data DATA]
-                          {stories} ...
-
-positional arguments:
-  {stories}
-    stories             Checks for inconsistencies in the story files.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --max-history MAX_HISTORY
-                        Number of turns taken into account for story structure
-                        validation. (default: None)
-  --fail-on-warnings    Fail validation on warnings and errors. If omitted
-                        only errors will result in a non zero exit code.
-                        (default: False)
-  -d DOMAIN, --domain DOMAIN
-                        Domain specification. This can be a single YAML file,
-                        or a directory that contains several files with domain
-                        specifications in it. The content of these files will
-                        be read and merged together. (default: domain.yml)
-  --data DATA           Path to the file or directory containing Rasa data.
-                        (default: data)
-
-Python Logging Options:
-  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
-                        None)
-  -vv, --debug          Print lots of debugging statements. Sets logging level
-                        to DEBUG. (default: None)
-  --quiet               Be quiet! Sets logging level to WARNING. (default:
-                        None)
-```
-
 
 ## rasa export
 
