@@ -4,9 +4,11 @@ from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
 import rasa.shared.utils.io
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
+from rasa.core.utils import get_dict_hash
+from rasa.utils import common
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.model import Metadata
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
@@ -17,6 +19,7 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
+    NUMBER_OF_SUB_TOKENS,
 )
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 import numpy as np
@@ -25,6 +28,10 @@ import tensorflow as tf
 import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
+
+TF_HUB_MODULE_URL = (
+    "https://github.com/connorbrinton/polyai-models/releases/download/v1.0/model.tar.gz"
+)
 
 
 class ConveRTFeaturizer(DenseFeaturizer):
@@ -37,7 +44,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
-        return [ConveRTTokenizer]
+        return [Tokenizer]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -46,6 +53,11 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
         super(ConveRTFeaturizer, self).__init__(component_config)
+        self.model_url = self.component_config.get("model_url", TF_HUB_MODULE_URL)
+
+        self.module = train_utils.load_tf_hub_model(self.model_url)
+
+        self.tokenize_signature = self.module.signatures["tokenize"]
 
     @staticmethod
     def __get_signature(signature: Text, module: Any) -> NoReturn:
@@ -92,7 +104,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
-            example.get(TOKENS_NAMES[attribute]) for example in batch_examples
+            self.tokenize(example, attribute) for example in batch_examples
         ]
 
         number_of_tokens_in_sentence = [
@@ -249,3 +261,53 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 self.component_config[FEATURIZER_CLASS_ALIAS],
             )
             example.add_features(_sentence_features)
+
+    @classmethod
+    def cache_key(
+        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
+    ) -> Optional[Text]:
+        _config = common.update_existing_keys(cls.defaults, component_meta)
+        return f"{cls.name}-{get_dict_hash(_config)}"
+
+    def provide_context(self) -> Dict[Text, Any]:
+        return {"tf_hub_module": self.module}
+
+    def _tokenize(self, sentence: Text) -> Any:
+
+        return self.tokenize_signature(tf.convert_to_tensor([sentence]))[
+            "default"
+        ].numpy()
+
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
+        """Tokenize the text using the ConveRT model.
+        ConveRT adds a special char in front of (some) words and splits words into
+        sub-words. To ensure the entity start and end values matches the token values,
+        tokenize the text first using the whitespace tokenizer. If individual tokens
+        are split up into multiple tokens, add this information to the
+        respected tokens.
+        """
+
+        tokens_in = message.get(TOKENS_NAMES[attribute])
+
+        tokens_out = []
+
+        for token in tokens_in:
+            # use ConveRT model to tokenize the text
+            split_token_strings = self._tokenize(token.text)[0]
+
+            # clean tokens (remove special chars and empty tokens)
+            split_token_strings = self._clean_tokens(split_token_strings)
+
+            token.set(NUMBER_OF_SUB_TOKENS, len(split_token_strings))
+
+            tokens_out.append(token)
+
+        message.set(TOKENS_NAMES[attribute], tokens_out)
+        return tokens_out
+
+    @staticmethod
+    def _clean_tokens(tokens: List[bytes]) -> List[Text]:
+        """Encode tokens and remove special char added by ConveRT."""
+
+        tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
+        return [string for string in tokens if string]
