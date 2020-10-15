@@ -30,7 +30,7 @@ import rasa.utils.train_utils as train_utils
 logger = logging.getLogger(__name__)
 
 TF_HUB_MODULE_URL = (
-    "https://github.com/connorbrinton/polyai-models/releases/download/v1.0/model.tar.gz"
+    "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
 )
 
 
