@@ -46,7 +46,7 @@
       },
       "text": "Hi my name is Peter",
       "timestamp": 1551953035.076376,
-      "use_text_for_featurization": null
+      "use_text_for_featurization": false
     },
     {
       "py/object": "rasa.shared.core.events.SlotSet",

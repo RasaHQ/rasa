@@ -34,7 +34,7 @@
       },
       "text":"Hi I'm desperate to talk to you",
       "timestamp":1551884050.259948,
-      "use_text_for_featurization": null
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
@@ -109,7 +109,7 @@
       },
       "text":"I'm looking for an indian restaurant...in Bombay",
       "timestamp":1551884090.9653602,
-      "use_text_for_featurization": null
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
@@ -171,7 +171,7 @@
       },
       "text":"Let's just pretend everything went correctly",
       "timestamp":1551884208.092693,
-      "use_text_for_featurization": null
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
