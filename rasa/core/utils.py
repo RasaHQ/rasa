@@ -38,6 +38,7 @@ from sanic import Sanic
 from sanic.views import CompositionView
 import rasa.cli.utils as cli_utils
 
+
 logger = logging.getLogger(__name__)
 
 
