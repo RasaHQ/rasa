@@ -248,10 +248,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = "*"
-version = "1.15.16"
+version = "1.15.17"
 
 [package.dependencies]
-botocore = ">=1.18.16,<1.19.0"
+botocore = ">=1.18.17,<1.19.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
@@ -261,7 +261,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = "*"
-version = "1.18.16"
+version = "1.18.17"
 
 [package.dependencies]
 jmespath = ">=0.7.1,<1.0.0"
@@ -363,7 +363,7 @@ description = "Extended pickling support for Python objects"
 name = "cloudpickle"
 optional = false
 python-versions = ">=3.5"
-version = "1.4.1"
+version = "1.6.0"
 
 [[package]]
 category = "dev"
@@ -2120,9 +2120,10 @@ description = "We have made you a wrapper you can't refuse"
 name = "python-telegram-bot"
 optional = false
 python-versions = "*"
-version = "12.8"
+version = "13.0"
 
 [package.dependencies]
+APScheduler = "3.6.3"
 certifi = "*"
 cryptography = "*"
 decorator = ">=4.4.0"
@@ -2288,11 +2289,6 @@ optional = false
 python-versions = "*"
 version = "1.4.0"
 
-[package.dependencies]
-[package.dependencies.idna]
-optional = true
-version = "*"
-
 [package.extras]
 idna2008 = ["idna"]
 
@@ -2411,7 +2407,7 @@ description = "JWT oauth flow for Sanic"
 name = "sanic-jwt"
 optional = false
 python-versions = "*"
-version = "1.4.1"
+version = "1.5.0"
 
 [package.dependencies]
 pyjwt = "*"
@@ -2913,7 +2909,7 @@ description = "Twilio API client and TwiML generator"
 name = "twilio"
 optional = false
 python-versions = "*"
-version = "6.45.4"
+version = "6.46.0"
 
 [package.dependencies]
 PyJWT = ">=1.4.2"
@@ -3140,8 +3136,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "70a2b9f3034d3e87e9f739029340503efd48a512d913a34568c6cc6362963a53"
-lock-version = "1.0"
+content-hash = "438aa60d044828b3525696aee49b913f4da15c62ee41980be4c54d8aabb2da0f"
 python-versions = ">=3.6,<3.9"
 
 [metadata.files]
@@ -3248,12 +3243,12 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-    {file = "boto3-1.15.16-py2.py3-none-any.whl", hash = "sha256:557320fe8b65cfc85953e6a63d2328e8efec95bf4ec383b92fa2d01119209716"},
-    {file = "boto3-1.15.16.tar.gz", hash = "sha256:454a8dfb7b367a058c7967ef6b4e2a192c318f10761769fd1003cf7f2f5a7db9"},
+    {file = "boto3-1.15.17-py2.py3-none-any.whl", hash = "sha256:1942f253323a959441b5eb38d1010ce4f314deaeb59c4e97464699e87e18bdeb"},
+    {file = "boto3-1.15.17.tar.gz", hash = "sha256:83fc4652eb102c0ff862061d65280bb1ee6f773043b5231d1badb77681267318"},
 ]
 botocore = [
-    {file = "botocore-1.18.16-py2.py3-none-any.whl", hash = "sha256:e586e4d6eddbca31e6447a25df9972329ea3de64b1fb0eb17e7ab0c9b91f7720"},
-    {file = "botocore-1.18.16.tar.gz", hash = "sha256:f0616d2c719691b94470307cee8adf89ceb1657b7b6f9aa1bf61f9de5543dbbb"},
+    {file = "botocore-1.18.17-py2.py3-none-any.whl", hash = "sha256:5b1c189a74e4ecc5fcc833b8c8a12c6040c03b5330401a8a8f459f0dba098826"},
+    {file = "botocore-1.18.17.tar.gz", hash = "sha256:4cdb114947391c88787df3e2f6a9f53ee15f1e2fef8691963e959858a034bb02"},
 ]
 cachetools = [
     {file = "cachetools-4.1.1-py3-none-any.whl", hash = "sha256:513d4ff98dd27f85743a8dc0e92f55ddb1b49e060c2d5961512855cda2c01a98"},
@@ -3318,8 +3313,8 @@ click = [
     {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
 ]
 cloudpickle = [
-    {file = "cloudpickle-1.4.1-py3-none-any.whl", hash = "sha256:ff31298eca781315e097bc1f222d8045208c14063a0102cc89bd5899adb4abef"},
-    {file = "cloudpickle-1.4.1.tar.gz", hash = "sha256:0b6258a20a143603d53b037a20983016d4e978f554ec4f36b3d0895b947099ae"},
+    {file = "cloudpickle-1.6.0-py3-none-any.whl", hash = "sha256:3a32d0eb0bc6f4d0c57fbc4f3e3780f7a81e6fee0fa935072884d58ae8e1cc7c"},
+    {file = "cloudpickle-1.6.0.tar.gz", hash = "sha256:9bc994f9e9447593bd0a45371f0e7ac7333710fcf64a4eb9834bf149f4ef2f32"},
 ]
 colorama = [
     {file = "colorama-0.4.3-py2.py3-none-any.whl", hash = "sha256:7d73d2a99753107a36ac6b455ee49046802e59d9d076ef8e47b61499fa29afff"},
@@ -4137,6 +4132,7 @@ psycopg2-binary = [
     {file = "psycopg2_binary-2.8.6-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:2dac98e85565d5688e8ab7bdea5446674a83a3945a8f416ad0110018d1501b94"},
     {file = "psycopg2_binary-2.8.6-cp38-cp38-win32.whl", hash = "sha256:bd1be66dde2b82f80afb9459fc618216753f67109b859a361cf7def5c7968729"},
     {file = "psycopg2_binary-2.8.6-cp38-cp38-win_amd64.whl", hash = "sha256:8cd0fb36c7412996859cb4606a35969dd01f4ea34d9812a141cd920c3b18be77"},
+    {file = "psycopg2_binary-2.8.6-cp39-cp39-macosx_10_9_x86_64.macosx_10_9_intel.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:89705f45ce07b2dfa806ee84439ec67c5d9a0ef20154e0e475e2b2ed392a5b83"},
     {file = "psycopg2_binary-2.8.6-cp39-cp39-manylinux1_i686.whl", hash = "sha256:42ec1035841b389e8cc3692277a0bd81cdfe0b65d575a2c8862cec7a80e62e52"},
     {file = "psycopg2_binary-2.8.6-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:7312e931b90fe14f925729cde58022f5d034241918a5c4f9797cac62f6b3a9dd"},
 ]
@@ -4353,8 +4349,8 @@ python-socketio = [
     {file = "python_socketio-4.6.0-py2.py3-none-any.whl", hash = "sha256:d437f797c44b6efba2f201867cf02b8c96b97dff26d4e4281ac08b45817cd522"},
 ]
 python-telegram-bot = [
-    {file = "python-telegram-bot-12.8.tar.gz", hash = "sha256:327186c56469216207dcdf8706892e58e0a62e51ef46f5143268e387bbb4edc3"},
-    {file = "python_telegram_bot-12.8-py2.py3-none-any.whl", hash = "sha256:7eebed539ccacf77896cff9e41d1f68746b8ff3ca4da1e2e59285e9c749cb050"},
+    {file = "python-telegram-bot-13.0.tar.gz", hash = "sha256:ca78a41626d728a8f51affa792270e210fa503ed298d395bed2bd1281842dca3"},
+    {file = "python_telegram_bot-13.0-py2.py3-none-any.whl", hash = "sha256:c9fdd77f303fe168bdf669fb2e2129567fde882cc9382a6171c1571d0ac99df4"},
 ]
 pytype = [
     {file = "pytype-2020.10.8-cp35-cp35m-macosx_10_14_x86_64.whl", hash = "sha256:3fefde51dafd443c06dccfde9d8b4937819421160fbd9a3486ac5457f51ff22b"},
@@ -4493,6 +4489,8 @@ rsa = [
     {file = "ruamel.yaml.clib-0.2.2-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:5254af7d8bdf4d5484c089f929cb7f5bafa59b4f01d4f48adda4be41e6d29f99"},
     {file = "ruamel.yaml.clib-0.2.2-cp38-cp38-win32.whl", hash = "sha256:74161d827407f4db9072011adcfb825b5258a5ccb3d2cd518dd6c9edea9e30f1"},
     {file = "ruamel.yaml.clib-0.2.2-cp38-cp38-win_amd64.whl", hash = "sha256:058a1cc3df2a8aecc12f983a48bda99315cebf55a3b3a5463e37bb599b05727b"},
+    {file = "ruamel.yaml.clib-0.2.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:c6ac7e45367b1317e56f1461719c853fd6825226f45b835df7436bb04031fd8a"},
+    {file = "ruamel.yaml.clib-0.2.2-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:b4b0d31f2052b3f9f9b5327024dc629a253a83d8649d4734ca7f35b60ec3e9e5"},
     {file = "ruamel.yaml.clib-0.2.2.tar.gz", hash = "sha256:2d24bd98af676f4990c4d715bcdc2a60b19c56a3fb3a763164d2d8ca0e806ba7"},
 ]
 s3transfer = [
@@ -4511,7 +4509,7 @@ sanic-cors = [
     {file = "Sanic_Cors-0.10.0.post3-py2.py3-none-any.whl", hash = "sha256:b919d65643de810ed1ed15657b8bc75c310fa1ac8eb491d59deaa9404756b745"},
 ]
 sanic-jwt = [
-    {file = "sanic-jwt-1.4.1.tar.gz", hash = "sha256:f55b8c50735340cf943af642cbdfedcf774ca3f9028e60d6784d26cd9be9246b"},
+    {file = "sanic-jwt-1.5.0.tar.gz", hash = "sha256:46fb02a7e12d29405aa3ab91394a2a315a0b754bddf968249da1db4de09dc356"},
 ]
 sanic-plugins-framework = [
     {file = "Sanic-Plugins-Framework-0.9.4.tar.gz", hash = "sha256:3722f37b3db7143c110b6b163f814cd48f724498e1fbd540c68c6d5d85bcd57a"},
@@ -4794,7 +4792,7 @@ transformers = [
     {file = "transformers-2.11.0.tar.gz", hash = "sha256:8de20f03a94ebf16d98610a7df0acc6ba68c80bd44605cf5ad4300c642a7b57a"},
 ]
 twilio = [
-    {file = "twilio-6.45.4.tar.gz", hash = "sha256:ccab1e0831486e5e3833e2aab5a677453ef2a88aed3d988b6831b876ebb0374d"},
+    {file = "twilio-6.46.0.tar.gz", hash = "sha256:9d591617b22e75b26cda11a10d353e2001d990a7ca1696d92e50abfc6ecdcb73"},
 ]
 typed-ast = [
     {file = "typed_ast-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:73d785a950fc82dd2a25897d525d003f6378d1cb23ab305578394694202a58c3"},
