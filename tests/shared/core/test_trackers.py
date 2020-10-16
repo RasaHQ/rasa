@@ -116,7 +116,7 @@ def test_tracker_duplicate():
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-def test_tracker_store_storage_and_retrieval(store):
+def test_tracker_store_storage_and_retrieval(store: TrackerStore):
     tracker = store.get_or_create_tracker("some-id")
     # the retrieved tracker should be empty
     assert tracker.sender_id == "some-id"

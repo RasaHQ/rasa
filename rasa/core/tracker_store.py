@@ -89,7 +89,7 @@ class TrackerStore:
             "retrieve_events_from_previous_conversation_sessions"
         )
 
-        if retrieve_events_from_previous_conversation_sessions:
+        if retrieve_events_from_previous_conversation_sessions is not None:
             rasa.shared.utils.io.raise_deprecation_warning(
                 f"Specifying the `retrieve_events_from_previous_conversation_sessions` "
                 f"kwarg for the `{self.__class__.__name__}` class is deprecated and "
@@ -172,7 +172,16 @@ class TrackerStore:
         raise NotImplementedError()
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Retrieve method that will be overridden by specific tracker"""
+        """Retrieves tracker for the latest conversation session.
+
+        This method will be overridden by the specific tracker store.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+
+        Returns:
+            Tracker containing events from the latest conversation sessions.
+        """
         raise NotImplementedError()
 
     def retrieve_full_tracker(
@@ -270,14 +279,6 @@ class InMemoryTrackerStore(TrackerStore):
         self.store[tracker.sender_id] = serialised
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker for the latest conversation session.
-
-        Args:
-            sender_id: Conversation ID to fetch the tracker for.
-
-        Returns:
-            Tracker containing events from the latest conversation sessions.
-        """
         if sender_id in self.store:
             logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
@@ -304,7 +305,7 @@ class RedisTrackerStore(TrackerStore):
         record_exp: Optional[float] = None,
         use_ssl: bool = False,
         **kwargs: Dict[Text, Any],
-    ):
+    ) -> None:
         import redis
 
         self.red = redis.StrictRedis(
@@ -324,15 +325,7 @@ class RedisTrackerStore(TrackerStore):
         serialised_tracker = self.serialise_tracker(tracker)
         self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
 
-    def retrieve(self, sender_id):
-        """Retrieves tracker for the latest conversation session.
-
-        Args:
-            sender_id: Conversation ID to fetch the tracker for.
-
-        Returns:
-            Tracker containing events from the latest conversation sessions.
-        """
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         stored = self.red.get(sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
@@ -354,7 +347,7 @@ class DynamoTrackerStore(TrackerStore):
         region: Text = "us-east-1",
         event_broker: Optional[EndpointConfig] = None,
         **kwargs: Dict[Text, Any],
-    ):
+    ) -> None:
         """Initialize `DynamoTrackerStore`.
 
         Args:
@@ -420,14 +413,6 @@ class DynamoTrackerStore(TrackerStore):
         return core_utils.replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker for the latest conversation session.
-
-        Args:
-            sender_id: Conversation ID to fetch the tracker for.
-
-        Returns:
-            Tracker containing events from the latest conversation sessions.
-        """
         # Retrieve dialogues for a sender_id in reverse-chronological order based on
         # the session_date sort key
         dialogues = self.db.query(
@@ -475,7 +460,7 @@ class MongoTrackerStore(TrackerStore):
         collection: Optional[Text] = "conversations",
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
-    ):
+    ) -> None:
         from pymongo.database import Database
         from pymongo import MongoClient
 
@@ -593,23 +578,16 @@ class MongoTrackerStore(TrackerStore):
             )
 
         if not stored:
-            return
+            return None
 
         events = self._events_from_serialized_tracker(stored)
+
         if not fetch_events_from_all_sessions:
             events = self._events_since_last_session_start(events)
 
         return events
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker for the latest conversation session.
-
-        Args:
-            sender_id: the message owner ID
-
-        Returns:
-            `DialogueStateTracker` containing the latest conversation session.
-        """
         # TODO: Remove this in Rasa Open Source 3.0 along with the
         # deprecation warning in the constructor
         if self.retrieve_events_from_previous_conversation_sessions:
@@ -617,20 +595,18 @@ class MongoTrackerStore(TrackerStore):
 
         events = self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
+        if not events:
+            return None
+
         return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
 
     def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker containing all conversation sessions.
-
-        Args:
-            conversation_id: the message owner ID
-
-        Returns:
-            `DialogueStateTracker` containing all conversation sessions.
-        """
         events = self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
+
+        if not events:
+            return None
 
         return DialogueStateTracker.from_dict(
             conversation_id, events, self.domain.slots
@@ -923,14 +899,6 @@ class SQLTrackerStore(TrackerStore):
             return [sender_id for (sender_id,) in sender_ids]
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker for the latest conversation session.
-
-        Args:
-            sender_id: Conversation ID to fetch the tracker for.
-
-        Returns:
-            Tracker containing events from the latest conversation sessions.
-        """
         # TODO: Remove this in Rasa Open Source 3.0 along with the
         # deprecation warning in the constructor
         if self.retrieve_events_from_previous_conversation_sessions:
@@ -941,14 +909,6 @@ class SQLTrackerStore(TrackerStore):
     def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Retrieves tracker containing all conversation sessions.
-
-        Args:
-            conversation_id: Conversation ID to fetch the tracker for.
-
-        Returns:
-            Tracker containing events from all conversation sessions.
-        """
         return self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
 
     def _retrieve(

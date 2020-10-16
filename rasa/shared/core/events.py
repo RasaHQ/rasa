@@ -145,7 +145,8 @@ def split_events(
 
         # there are further conditions - check those
         return all(
-            getattr(evt, k) == v for k, v in additional_splitting_conditions.items()
+            getattr(evt, k, None) == v
+            for k, v in additional_splitting_conditions.items()
         )
 
     for event in events:
