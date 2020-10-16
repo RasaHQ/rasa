@@ -108,7 +108,7 @@ def split_events(
     additional_splitting_conditions: Optional[Dict[Text, Any]] = None,
     include_splitting_event: bool = True,
 ) -> List[List["Event"]]:
-    """Split events according to event type and condition.
+    """Splits events according to an event type and condition.
 
     Examples:
         Splitting events according to the event type `ActionExecuted` and the
@@ -117,15 +117,16 @@ def split_events(
         >> _events = split_events(
                         events,
                         ActionExecuted,
-                        {"action_name": "action_session_start"}
-                    )
+                        {"action_name": "action_session_start"},
+                        True
+                     )
 
     Args:
         events: Events to split.
         event_type_to_split_on: The event type to split on.
         additional_splitting_conditions: Additional event attributes to split on.
         include_splitting_event: Whether the events of the type on which the split
-            is based should be included in the events that are returned.
+            is based should be included in the returned events.
 
     Returns:
         The split events.
@@ -134,10 +135,8 @@ def split_events(
     current = []
 
     def event_fulfills_splitting_condition(evt: "Event") -> bool:
-        is_correct_event_type = isinstance(evt, event_type_to_split_on)
-
         # event does not have the correct type
-        if not is_correct_event_type:
+        if not isinstance(evt, event_type_to_split_on):
             return False
 
         # the type is correct and there are no further conditions

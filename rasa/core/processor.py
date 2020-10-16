@@ -221,7 +221,7 @@ class MessageProcessor:
     def get_trackers_for_all_conversation_sessions(
         self, conversation_id: Text
     ) -> List[DialogueStateTracker]:
-        """Get all trackers for a conversation.
+        """Fetches all trackers for a conversation.
 
         Individual trackers are returned for each conversation session found
         for `conversation_id`.

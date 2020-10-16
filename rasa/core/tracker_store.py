@@ -74,24 +74,31 @@ class TrackerStore:
             domain: The `Domain` to initialize the `DialogueStateTracker`.
             event_broker: An event broker to publish any new events to another
                 destination.
+            kwargs: Additional kwargs.
         """
         self.domain = domain
         self.event_broker = event_broker
         self.max_event_history = None
-        self.retrieve_events_from_previous_conversation_sessions: Optional[bool] = None
-        self._emit_unused_kwarg_warning(kwargs)
 
-    def _emit_unused_kwarg_warning(self, kwargs: Dict[Text, Any]) -> None:
-        if "retrieve_events_from_previous_conversation_sessions" in kwargs:
+        # TODO: Remove this in Rasa Open Source 3.0
+        self.retrieve_events_from_previous_conversation_sessions: Optional[bool] = None
+        self._set_deprecated_kwargs_and_emit_warning(kwargs)
+
+    def _set_deprecated_kwargs_and_emit_warning(self, kwargs: Dict[Text, Any]) -> None:
+        retrieve_events_from_previous_conversation_sessions = kwargs.get(
+            "retrieve_events_from_previous_conversation_sessions"
+        )
+
+        if retrieve_events_from_previous_conversation_sessions:
             rasa.shared.utils.io.raise_deprecation_warning(
                 f"Specifying the `retrieve_events_from_previous_conversation_sessions` "
                 f"kwarg for the `{self.__class__.__name__}` class is deprecated and "
                 f"will be removed in Rasa Open Source 3.0. "
                 f"Please use the `retrieve_full_tracker()` method instead.",
             )
-            self.retrieve_events_from_previous_conversation_sessions = kwargs[
-                "retrieve_events_from_previous_conversation_sessions"
-            ]
+            self.retrieve_events_from_previous_conversation_sessions = (
+                retrieve_events_from_previous_conversation_sessions
+            )
 
     @staticmethod
     def create(
@@ -263,12 +270,13 @@ class InMemoryTrackerStore(TrackerStore):
         self.store[tracker.sender_id] = serialised
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """
+        """Retrieves tracker for the latest conversation session.
+
         Args:
-            sender_id: the message owner ID
+            sender_id: Conversation ID to fetch the tracker for.
 
         Returns:
-            DialogueStateTracker
+            Tracker containing events from the latest conversation sessions.
         """
         if sender_id in self.store:
             logger.debug(f"Recreating tracker for id '{sender_id}'")
@@ -317,12 +325,13 @@ class RedisTrackerStore(TrackerStore):
         self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
 
     def retrieve(self, sender_id):
-        """
+        """Retrieves tracker for the latest conversation session.
+
         Args:
-            sender_id: the message owner ID
+            sender_id: Conversation ID to fetch the tracker for.
 
         Returns:
-            DialogueStateTracker
+            Tracker containing events from the latest conversation sessions.
         """
         stored = self.red.get(sender_id)
         if stored is not None:
@@ -355,6 +364,7 @@ class DynamoTrackerStore(TrackerStore):
             region: The name of the region associated with the client.
                 A client is associated with a single region.
             event_broker: An event broker used to publish events.
+            kwargs: Additional kwargs.
         """
         import boto3
 
@@ -410,7 +420,14 @@ class DynamoTrackerStore(TrackerStore):
         return core_utils.replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Create a tracker from all previously stored events."""
+        """Retrieves tracker for the latest conversation session.
+
+        Args:
+            sender_id: Conversation ID to fetch the tracker for.
+
+        Returns:
+            Tracker containing events from the latest conversation sessions.
+        """
         # Retrieve dialogues for a sender_id in reverse-chronological order based on
         # the session_date sort key
         dialogues = self.db.query(
@@ -902,7 +919,7 @@ class SQLTrackerStore(TrackerStore):
             return [sender_id for (sender_id,) in sender_ids]
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Create a tracker from events in the latest conversation session.
+        """Retrieves tracker for the latest conversation session.
 
         Args:
             sender_id: Conversation ID to fetch the tracker for.
@@ -931,8 +948,6 @@ class SQLTrackerStore(TrackerStore):
     def _retrieve(
         self, sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> Optional[DialogueStateTracker]:
-        """Create a tracker from all previously stored events."""
-
         with self.session_scope() as session:
 
             serialised_events = self._event_query(
@@ -984,7 +999,7 @@ class SQLTrackerStore(TrackerStore):
         event_query = session.query(self.SQLEvent).filter(
             self.SQLEvent.sender_id == sender_id
         )
-        if fetch_events_from_all_sessions:
+        if not fetch_events_from_all_sessions:
             event_query = event_query.filter(
                 # Find events after the latest `SessionStarted` event or return all
                 # events
