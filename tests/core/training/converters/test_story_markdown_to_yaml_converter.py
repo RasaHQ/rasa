@@ -116,3 +116,27 @@ async def test_test_stories(tmpdir: Path):
             "  - action: respond_faq\n"
             "  - action: action_set_faq_slot\n"
         )
+
+
+async def test_test_stories_contains_number(tmpdir: Path):
+    converted_data_folder = tmpdir / "converted_data"
+    os.mkdir(converted_data_folder)
+
+    test_data_folder = tmpdir / "tests"
+    os.makedirs(test_data_folder, exist_ok=True)
+    test_data_file = Path(test_data_folder / "test_stories.md")
+
+    simple_story_md = """
+    ## story_id
+    * technical_question: how to download [7]{"entity": "number", "value": 7}
+        - action_docs_search
+    """
+
+    with open(test_data_file, "w") as f:
+        f.write(simple_story_md)
+
+    await StoryMarkdownToYamlConverter().convert_and_write(
+        test_data_file, converted_data_folder
+    )
+
+    assert len(os.listdir(converted_data_folder)) == 1
