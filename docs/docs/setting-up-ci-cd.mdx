@@ -38,35 +38,22 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### Validating Data and Stories
 
-Data validation verifies that there are no mistakes or
-major inconsistencies in your domain, NLU data, or conversation data. To validate
-your data, have your CI run this command:
+Data validation verifies that there are no mistakes or major inconsistencies in your domain, NLU 
+data, or conversation data. To validate your data, have your CI run this command:
 
 ```bash
 rasa data validate --fail-on-warnings --max-history <max_history>
 ```
 
-By default the validator searches only for errors in the data (e.g. the same
-example being listed as an example for two intents), but does not report other
-minor issues (such as unused intents, responses that are not listed as
-actions) that won't prevent training a model, but might indicate
-messy data.
+If you pass a `max_history` value to a Memoization policy in your `config.yml` file, provide the 
+same value in the above validator command. Otherwise, provide the default value of `5`.
 
 If data validation results in errors, training a model will also fail, so it's
 always good to run this check before training a model. By including the
 `--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
 
-Data validation also includes story structure validation.
-Story validation checks if you have any
-stories where different bot actions follow from the same dialogue history.
-Conflicts between stories will prevent a model from learning the correct
-pattern for a dialogue. Set the `--max-history` parameter to the value of `max_history` for the
-memoization policy in your `config.yml`. If you haven't set one, use the default of `5`.
-
-:::caution check your story names
-The `rasa data validate stories` command assumes that all your story names are unique!
-
-:::
+To read more about the validator and all of the available options, see [the documentation for 
+`rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
 
 ### Training a Model
 
