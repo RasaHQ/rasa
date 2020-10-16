@@ -325,7 +325,9 @@ You can also validate the story structure by running this command:
 rasa data validate stories
 This validator checks if you have any stories where different assistant actions follow from the same 
 dialogue history. Conflicts between stories will prevent a model from learning the correct
-pattern for a dialogue. If you have [Memoization Policy](./policies.mdx#memoization-policy) in your 
+pattern for a dialogue. 
+
+If you have a [Memoization Policy](./policies.mdx#memoization-policy) in your 
 `config.yml` file, run the validator with the `--max-history` argument and provide the `max_history` 
 value set in `config.yml`. If you didn't set `max_history` in the config file, provide the default value of `5`.
 
