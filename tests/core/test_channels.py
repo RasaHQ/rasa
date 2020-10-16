@@ -587,7 +587,7 @@ def test_slack_form_metadata():
     r.headers = header
     metadata = input_channel.get_metadata(request=r)
     assert metadata["out_channel"] == channel
-    assert metadata["users"] == authed_user
+    assert metadata["users"][0] == authed_user
     assert metadata["thread_id"] == ts
 
 
@@ -631,7 +631,7 @@ def test_slack_metadata_missing_keys():
     r.json = direct_message_event
     r.headers = header
     metadata = input_channel.get_metadata(request=r)
-    assert metadata["users"] is None
+    assert metadata["users"] == []
     assert metadata["out_channel"] == channel
     assert metadata["thread_id"] == ts
 
@@ -675,7 +675,7 @@ def test_slack_form_metadata_missing_keys():
     r.form = form_event
     r.headers = header
     metadata = input_channel.get_metadata(request=r)
-    assert metadata["users"] is None
+    assert metadata["users"] == []
     assert metadata["out_channel"] == channel
     assert metadata["thread_id"] == ts
 

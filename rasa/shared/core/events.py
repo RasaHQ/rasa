@@ -4,21 +4,20 @@ import re
 
 import jsonpickle
 import time
-import typing
 import uuid
 from dateutil import parser
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional
+from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterable
 
 import rasa.shared.utils.common
 from typing import Union
 
 from rasa.shared.core.constants import (
     LOOP_NAME,
-    LOOP_VALIDATE,
     EXTERNAL_MESSAGE_PREFIX,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     IS_EXTERNAL,
+    LOOP_INTERRUPTED,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -31,7 +30,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
 )
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
@@ -101,6 +100,70 @@ def first_key(d: Dict[Text, Any], default_key: Any) -> Any:
         return list(d.keys())[0]
     else:
         return None
+
+
+def split_events(
+    events: Iterable["Event"],
+    event_type_to_split_on: Type["Event"],
+    additional_splitting_conditions: Optional[Dict[Text, Any]] = None,
+    include_splitting_event: bool = True,
+) -> List[List["Event"]]:
+    """Splits events according to an event type and condition.
+
+    Examples:
+        Splitting events according to the event type `ActionExecuted` and the
+        `action_name` 'action_session_start' would look as follows:
+
+        >> _events = split_events(
+                        events,
+                        ActionExecuted,
+                        {"action_name": "action_session_start"},
+                        True
+                     )
+
+    Args:
+        events: Events to split.
+        event_type_to_split_on: The event type to split on.
+        additional_splitting_conditions: Additional event attributes to split on.
+        include_splitting_event: Whether the events of the type on which the split
+            is based should be included in the returned events.
+
+    Returns:
+        The split events.
+    """
+    sub_events = []
+    current = []
+
+    def event_fulfills_splitting_condition(evt: "Event") -> bool:
+        # event does not have the correct type
+        if not isinstance(evt, event_type_to_split_on):
+            return False
+
+        # the type is correct and there are no further conditions
+        if not additional_splitting_conditions:
+            return True
+
+        # there are further conditions - check those
+        return all(
+            getattr(evt, k, None) == v
+            for k, v in additional_splitting_conditions.items()
+        )
+
+    for event in events:
+        if event_fulfills_splitting_condition(event):
+            if current:
+                sub_events.append(current)
+
+            current = []
+            if include_splitting_event:
+                current.append(event)
+        else:
+            current.append(event)
+
+    if current:
+        sub_events.append(current)
+
+    return sub_events
 
 
 # noinspection PyProtectedMember
@@ -299,8 +362,9 @@ class UserUttered(Event):
             )
 
     def __str__(self) -> Text:
-        return "UserUttered(text: {}, intent: {}, entities: {})".format(
-            self.text, self.intent, self.entities
+        return (
+            f"UserUttered(text: {self.text}, intent: {self.intent}, "
+            f"entities: {self.entities})"
         )
 
     @staticmethod
@@ -981,7 +1045,7 @@ class ConversationPaused(Event):
     """Ignore messages from the user to let a human take over.
 
     As a side effect the ``Tracker``'s ``paused`` attribute will
-    be set to ``True``. """
+    be set to ``True``."""
 
     type_name = "pause"
 
@@ -1038,7 +1102,7 @@ class ActionExecuted(Event):
 
     def __init__(
         self,
-        action_name: Text,
+        action_name: Optional[Text] = None,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
         timestamp: Optional[float] = None,
@@ -1182,8 +1246,7 @@ class AgentUttered(Event):
 
 
 class ActiveLoop(Event):
-    """If `name` is not None: activates a loop with `name` else deactivates active loop.
-    """
+    """If `name` is not None: activates a loop with `name` else deactivates active loop."""
 
     type_name = "active_loop"
 
@@ -1249,9 +1312,60 @@ class LegacyForm(ActiveLoop):
         return d
 
 
-class FormValidation(Event):
+class LoopInterrupted(Event):
     """Event added by FormPolicy and RulePolicy to notify form action
-       whether or not to validate the user input."""
+    whether or not to validate the user input."""
+
+    type_name = "loop_interrupted"
+
+    def __init__(
+        self,
+        is_interrupted: bool,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        super().__init__(timestamp, metadata)
+        self.is_interrupted = is_interrupted
+
+    def __str__(self) -> Text:
+        return f"{LoopInterrupted.__name__}({self.is_interrupted})"
+
+    def __hash__(self) -> int:
+        return hash(self.is_interrupted)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, LoopInterrupted)
+            and self.is_interrupted == other.is_interrupted
+        )
+
+    def as_story_string(self) -> None:
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters) -> "LoopInterrupted":
+        return LoopInterrupted(
+            parameters.get(LOOP_INTERRUPTED, False),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        d = super().as_dict()
+        d.update({LOOP_INTERRUPTED: self.is_interrupted})
+        return d
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        tracker.interrupt_loop(self.is_interrupted)
+
+
+class LegacyFormValidation(LoopInterrupted):
+    """Legacy handler of old `FormValidation` events.
+
+    The `LoopInterrupted` event used to be called `FormValidation`. This class is there
+    to handle old legacy events which were stored with the old type name
+    `form_validation`.
+    """
 
     type_name = "form_validation"
 
@@ -1261,36 +1375,24 @@ class FormValidation(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
-        self.validate = validate
-        super().__init__(timestamp, metadata)
-
-    def __str__(self) -> Text:
-        return f"FormValidation({self.validate})"
-
-    def __hash__(self) -> int:
-        return hash(self.validate)
-
-    def __eq__(self, other) -> bool:
-        return isinstance(other, FormValidation)
-
-    def as_story_string(self) -> None:
-        return None
+        # `validate = True` is the same as `interrupted = False`
+        super().__init__(not validate, timestamp, metadata)
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "FormValidation":
-        return FormValidation(
-            parameters.get(LOOP_VALIDATE),
+    def _from_parameters(cls, parameters: Dict) -> "LoopInterrupted":
+        return LoopInterrupted(
+            # `validate = True` means `is_interrupted = False`
+            not parameters.get("validate", True),
             parameters.get("timestamp"),
             parameters.get("metadata"),
         )
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update({LOOP_VALIDATE: self.validate})
+        # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
+        # event type.
+        d["event"] = LoopInterrupted.type_name
         return d
-
-    def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker.set_form_validation(self.validate)
 
 
 class ActionExecutionRejected(Event):

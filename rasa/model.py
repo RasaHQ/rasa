@@ -1,3 +1,4 @@
+import copy
 import glob
 import hashlib
 import logging
@@ -148,6 +149,12 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
             )
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
+
+    try:
+        model_relative_path = os.path.relpath(model_path)
+    except ValueError:
+        model_relative_path = model_path
+    logger.info(f"Loading model {model_relative_path}...")
 
     return unpack_model(model_path)
 
@@ -305,6 +312,8 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
 
     responses = domain.templates
 
+    # Do a copy of the domain to not change the actual domain (shallow is enough)
+    domain = copy.copy(domain)
     # don't include the response texts in the fingerprint.
     # Their fingerprint is separate.
     domain.templates = []

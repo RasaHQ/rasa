@@ -26,7 +26,7 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,
     ActionExecutionRejected,
-    FormValidation,
+    LoopInterrupted,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -119,6 +119,188 @@ actions:
     forbidden_rule.is_rule_tracker = True
     with pytest.raises(InvalidRule):
         policy.train([forbidden_rule], domain, RegexInterpreter())
+
+
+def test_incomplete_rules_due_to_slots():
+    some_action = "some_action"
+    some_slot = "some_slot"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {some_action}
+slots:
+  {some_slot}:
+    type: text
+    """
+    )
+    policy = RulePolicy()
+    complete_rule = TrackerWithCachedStates.from_events(
+        "complete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_action),
+            SlotSet(some_slot, "bla"),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    incomplete_rule = TrackerWithCachedStates.from_events(
+        "incomplete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    with pytest.raises(InvalidRule) as execinfo:
+        policy.train([complete_rule, incomplete_rule], domain, RegexInterpreter())
+    assert all(
+        name in execinfo.value.message
+        for name in {some_action, incomplete_rule.sender_id,}
+    )
+
+    fixed_incomplete_rule = TrackerWithCachedStates.from_events(
+        "fixed_incomplete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_action),
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy.train([complete_rule, fixed_incomplete_rule], domain, RegexInterpreter())
+
+
+def test_no_incomplete_rules_due_to_slots_after_listen():
+    some_action = "some_action"
+    some_slot = "some_slot"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+actions:
+- {some_action}
+entities:
+- {some_slot}
+slots:
+  {some_slot}:
+    type: text
+    """
+    )
+    policy = RulePolicy()
+    complete_rule = TrackerWithCachedStates.from_events(
+        "complete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                intent={"name": GREET_INTENT_NAME},
+                entities=[{"entity": some_slot, "value": "bla"}],
+            ),
+            SlotSet(some_slot, "bla"),
+            ActionExecuted(some_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    potentially_incomplete_rule = TrackerWithCachedStates.from_events(
+        "potentially_incomplete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_action),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy.train(
+        [complete_rule, potentially_incomplete_rule], domain, RegexInterpreter()
+    )
+
+
+def test_incomplete_rules_due_to_loops():
+    some_form = "some_form"
+    domain = Domain.from_yaml(
+        f"""
+intents:
+- {GREET_INTENT_NAME}
+forms:
+- {some_form}
+    """
+    )
+    policy = RulePolicy()
+    complete_rule = TrackerWithCachedStates.from_events(
+        "complete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_form),
+            ActiveLoop(some_form),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    incomplete_rule = TrackerWithCachedStates.from_events(
+        "incomplete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_form),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    with pytest.raises(InvalidRule) as execinfo:
+        policy.train([complete_rule, incomplete_rule], domain, RegexInterpreter())
+    assert all(
+        name in execinfo.value.message
+        for name in {some_form, incomplete_rule.sender_id,}
+    )
+
+    fixed_incomplete_rule = TrackerWithCachedStates.from_events(
+        "fixed_incomplete_rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
+            ActionExecuted(some_form),
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy.train([complete_rule, fixed_incomplete_rule], domain, RegexInterpreter())
 
 
 def test_contradicting_rules():
@@ -783,8 +965,8 @@ async def test_form_unhappy_path_no_validation_from_rule():
         tracker, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, form_name)
-    # check that RulePolicy added FormValidation False event based on the training rule
-    assert tracker.events[-1] == FormValidation(False)
+    # check that RulePolicy entered unhappy path based on the training story
+    assert tracker.events[-1] == LoopInterrupted(True)
 
 
 async def test_form_unhappy_path_no_validation_from_story():
@@ -853,8 +1035,8 @@ async def test_form_unhappy_path_no_validation_from_story():
     )
     # there is no rule for next action
     assert max(action_probabilities) == policy._core_fallback_threshold
-    # check that RulePolicy added FormValidation False event based on the training story
-    assert tracker.events[-1] == FormValidation(False)
+    # check that RulePolicy entered unhappy path based on the training story
+    assert tracker.events[-1] == LoopInterrupted(True)
 
 
 async def test_form_unhappy_path_without_rule():

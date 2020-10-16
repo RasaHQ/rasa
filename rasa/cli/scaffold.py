@@ -174,18 +174,18 @@ def run(args: argparse.Namespace) -> None:
     print_success("Welcome to Rasa! 🤖\n")
     if args.no_prompt:
         print(
-            "To get started quickly, an "
-            "initial project will be created.\n"
-            "If you need some help, check out "
-            "the documentation at {}.\n".format(DOCS_BASE_URL)
+            f"To get started quickly, an "
+            f"initial project will be created.\n"
+            f"If you need some help, check out "
+            f"the documentation at {DOCS_BASE_URL}.\n"
         )
     else:
         print(
-            "To get started quickly, an "
-            "initial project will be created.\n"
-            "If you need some help, check out "
-            "the documentation at {}.\n"
-            "Now let's start! 👇🏽\n".format(DOCS_BASE_URL)
+            f"To get started quickly, an "
+            f"initial project will be created.\n"
+            f"If you need some help, check out "
+            f"the documentation at {DOCS_BASE_URL}.\n"
+            f"Now let's start! 👇🏽\n"
         )
 
     if args.init_dir is not None:

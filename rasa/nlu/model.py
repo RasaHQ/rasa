@@ -5,6 +5,7 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
@@ -31,7 +32,7 @@ from rasa.nlu.utils import write_json_to_file
 logger = logging.getLogger(__name__)
 
 
-class InvalidModelError(Exception):
+class InvalidModelError(RasaException):
     """Raised when a model failed to load.
 
     Attributes:
@@ -46,7 +47,7 @@ class InvalidModelError(Exception):
         return self.message
 
 
-class UnsupportedModelError(Exception):
+class UnsupportedModelError(RasaException):
     """Raised when a model is too old to be loaded.
 
     Attributes:
@@ -200,9 +201,6 @@ class Trainer:
         working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            if isinstance(component, (EntityExtractor, IntentClassifier)):
-                working_data = working_data.without_empty_e2e_examples()
-
             logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)
@@ -305,7 +303,7 @@ class Interpreter:
         """Create an interpreter based on a persisted model.
 
         Args:
-            skip_validation: If set to `True`, tries to check that all
+            skip_validation: If set to `True`, does not check that all
                 required packages for the components are installed
                 before loading them.
             model_dir: The path of the model to load

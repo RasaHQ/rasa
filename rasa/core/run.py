@@ -97,7 +97,6 @@ def configure_app(
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the agent."""
-    from rasa import server
 
     rasa.core.utils.configure_file_logging(logger, log_file)
 
@@ -168,7 +167,6 @@ def serve_application(
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the API entrypoint."""
-    from rasa import server
 
     if not channel and not credentials:
         channel = "cmdline"
@@ -293,11 +291,3 @@ async def load_agent_on_start(
 
     logger.info("Rasa server is up and running.")
     return app.agent
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.core.run` directly is no longer supported. "
-        "Please use `rasa run` to start a Rasa server or `rasa shell` to chat with "
-        "your bot on the command line."
-    )
