@@ -3,11 +3,16 @@ import logging
 from typing import Any, Dict, List, Optional, Text, Type
 
 import rasa.shared.core.constants
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_SLOTS
 
 logger = logging.getLogger(__name__)
+
+
+class InvalidSlotTypeException(RasaException):
+    """Raised if a slot type is invalid."""
 
 
 class Slot:
@@ -104,10 +109,11 @@ class Slot:
         try:
             return rasa.shared.utils.common.class_from_module_path(type_name)
         except (ImportError, AttributeError):
-            raise ValueError(
-                "Failed to find slot type, '{}' is neither a known type nor "
-                "user-defined. If you are creating your own slot type, make "
-                "sure its module path is correct.".format(type_name)
+            raise InvalidSlotTypeException(
+                f"Failed to find slot type, '{type_name}' is neither a known type nor "
+                f"user-defined. If you are creating your own slot type, make "
+                f"sure its module path is correct. "
+                f"You can find all build in types at {DOCS_URL_SLOTS}"
             )
 
     def persistence_info(self) -> Dict[str, Any]:

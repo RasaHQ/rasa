@@ -21,7 +21,7 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
-    INTENT_NAME,
+    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -131,16 +131,20 @@ class TrainingData:
         return list(OrderedDict.fromkeys(examples))
 
     @lazy_property
+    def nlu_examples(self) -> List[Message]:
+        return [ex for ex in self.training_examples if not ex.is_core_message()]
+
+    @lazy_property
     def intent_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get(INTENT)]
+        return [ex for ex in self.nlu_examples if ex.get(INTENT)]
 
     @lazy_property
     def response_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get(INTENT_RESPONSE_KEY)]
+        return [ex for ex in self.nlu_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if ex.get(ENTITIES)]
+        return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
     @lazy_property
     def intents(self) -> Set[Text]:
@@ -573,38 +577,23 @@ class TrainingData:
         """Checks if any training data was loaded."""
 
         lists_to_check = [
-            self._training_examples_without_empty_e2e_examples(),
+            self.training_examples,
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def without_empty_e2e_examples(self) -> "TrainingData":
-        """Removes training data examples from intent labels and action names which
-        were added for end-to-end training.
+    def can_train_nlu_model(self) -> bool:
+        """Checks if any NLU training data was loaded."""
 
-        Returns:
-            Itself but without training examples which don't have a text or intent.
-        """
-        training_examples = copy.deepcopy(self.training_examples)
-        entity_synonyms = self.entity_synonyms.copy()
-        regex_features = copy.deepcopy(self.regex_features)
-        lookup_tables = copy.deepcopy(self.lookup_tables)
-        responses = copy.deepcopy(self.responses)
-        copied = TrainingData(
-            training_examples, entity_synonyms, regex_features, lookup_tables, responses
-        )
-        copied.training_examples = self._training_examples_without_empty_e2e_examples()
-
-        return copied
-
-    def _training_examples_without_empty_e2e_examples(self) -> List[Message]:
-        return [
-            example
-            for example in self.training_examples
-            if not example.get(ACTION_NAME) and not example.get(INTENT_NAME)
+        lists_to_check = [
+            self.nlu_examples,
+            self.entity_synonyms,
+            self.regex_features,
+            self.lookup_tables,
         ]
+        return not any([len(lst) > 0 for lst in lists_to_check])
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:

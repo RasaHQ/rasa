@@ -5,11 +5,12 @@ from typing import Dict, List, Text, Any, Union, Set
 
 import pytest
 
+from rasa.shared.exceptions import YamlSyntaxException
 import rasa.shared.utils.io
-from rasa.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
+from rasa.shared.constants import DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.slots import TextSlot
+from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
 from rasa.shared.core.constants import (
     DEFAULT_INTENTS,
     SLOT_LISTED_ITEMS,
@@ -242,7 +243,7 @@ def test_custom_slot_type(tmpdir: Path):
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
     domain_path = str(tmpdir / "domain.yml")
     rasa.shared.utils.io.write_text_file(domain_unkown_slot_type, domain_path)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidSlotTypeException):
         Domain.load(domain_path)
 
 
@@ -283,8 +284,6 @@ def test_domain_to_dict():
 
 def test_domain_to_yaml():
     test_yaml = f"""
-%YAML 1.2
----
 actions:
 - action_save_world
 config:
@@ -299,13 +298,19 @@ responses:
 session_config:
   carry_over_slots_to_new_session: true
   session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
-slots: {{}}"""
+slots: {{}}
+version: '2.0'
+"""
 
-    domain = Domain.from_yaml(test_yaml)
+    with pytest.warns(None) as record:
+        domain = Domain.from_yaml(test_yaml)
+        actual_yaml = domain.as_yaml()
 
-    actual_yaml = domain.as_yaml()
+    assert not record
 
-    assert actual_yaml.strip() == test_yaml.strip()
+    expected = rasa.shared.utils.io.read_yaml(test_yaml)
+    actual = rasa.shared.utils.io.read_yaml(actual_yaml)
+    assert actual == expected
 
 
 def test_merge_yaml_domains():
@@ -692,22 +697,24 @@ def test_check_domain_sanity_on_invalid_domain():
         )
 
 
-def test_load_on_invalid_domain():
+def test_load_on_invalid_domain_duplicate_intents():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_intents.yml")
 
+
+def test_load_on_invalid_domain_duplicate_actions():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_actions.yml")
 
-    with pytest.raises(InvalidDomain):
+
+def test_load_on_invalid_domain_duplicate_templates():
+    with pytest.raises(YamlSyntaxException):
         Domain.load("data/test_domains/duplicate_templates.yml")
 
+
+def test_load_on_invalid_domain_duplicate_entities():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_entities.yml")
-
-    # Currently just deprecated
-    # with pytest.raises(InvalidDomain):
-    #     Domain.load("data/test_domains/missing_text_for_templates.yml")
 
 
 def test_is_empty():
@@ -928,3 +935,22 @@ def test_domain_deepcopy():
     assert new_domain._custom_actions is not domain._custom_actions
     assert new_domain.user_actions is not domain.user_actions
     assert new_domain.action_names is not domain.action_names
+
+
+@pytest.mark.parametrize(
+    "template_key, validation",
+    [("utter_chitchat/faq", True), ("utter_chitchat", False)],
+)
+def test_is_retrieval_intent_template(template_key, validation):
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    assert domain.is_retrieval_intent_template((template_key, [{}])) == validation
+
+
+def test_retrieval_intent_template_seggregation():
+    domain = Domain.load("data/test_domains/mixed_retrieval_intents.yml")
+    assert domain.templates != domain.retrieval_intent_templates
+    assert domain.templates and domain.retrieval_intent_templates
+    assert list(domain.retrieval_intent_templates.keys()) == [
+        "utter_chitchat/ask_weather",
+        "utter_chitchat/ask_name",
+    ]

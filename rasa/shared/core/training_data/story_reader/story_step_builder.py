@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class StoryStepBuilder:
-    def __init__(self, name: Text, source_name: Text, is_rule: bool = False) -> None:
+    def __init__(
+        self, name: Text, source_name: Optional[Text], is_rule: bool = False
+    ) -> None:
         self.name = name
         self.source_name = source_name
         self.story_steps = []
@@ -59,17 +61,17 @@ class StoryStepBuilder:
             return [Checkpoint(name) for name in end_names]
 
     def add_user_messages(
-        self, messages: List[UserUttered], unfold_or_utterances: bool = True
+        self, messages: List[UserUttered], is_used_for_conversion: bool = False
     ) -> None:
         """Adds next story steps with the user's utterances.
 
         Args:
             messages: User utterances.
-            unfold_or_utterances: Identifies if the user utterance is a part of
+            is_used_for_conversion: Identifies if the user utterance is a part of
               OR statement. This parameter is used only to simplify the conversation
               from MD story files. Don't use it other ways, because it ends up
               in a invalid story that cannot be user for real training.
-              Default value is `True`, which preserves the expected behavior
+              Default value is `False`, which preserves the expected behavior
               of the reader.
         """
         self.ensure_current_steps()
@@ -80,7 +82,7 @@ class StoryStepBuilder:
                 t.add_user_message(messages[0])
         else:
             # this simplifies conversion between formats, but breaks the logic
-            if not unfold_or_utterances:
+            if is_used_for_conversion:
                 for t in self.current_steps:
                     t.add_events(messages)
                 return

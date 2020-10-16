@@ -55,7 +55,7 @@ module.exports = {
   themeConfig: {
     announcementBar: {
       id: 'pre_release_notice', // Any value that will identify this message.
-      content: 'These docs are for version 2.0.0rc2 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the stable 1.x series can be found here.</a>',
+      content: 'These docs are for version 2.0 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the 1.x series can be found here.</a>',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
