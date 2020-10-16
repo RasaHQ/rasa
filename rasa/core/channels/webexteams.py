@@ -55,10 +55,7 @@ class WebexTeamsInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # rasa-16-to-rasa-17
         return cls(credentials.get("access_token"), credentials.get("room"))
-
-    # rasa-16-to-rasa-17
 
     def __init__(self, access_token: Text, room: Optional[Text] = None) -> None:
         """Create a Cisco Webex Teams input channel.

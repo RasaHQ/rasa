@@ -78,7 +78,7 @@ class NLGMarkdownReader(TrainingDataReader):
                     )
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
-                logger.error(msg, exc_info=1)  # rasa-16-to-rasa-17
+                logger.error(msg, exc_info=1)
                 raise ValueError(msg)
 
         # add last story

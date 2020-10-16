@@ -425,7 +425,7 @@ def _get_credentials_and_endpoints_paths(
 def run_locally(args: argparse.Namespace):
     try:
         # noinspection PyUnresolvedReferences
-        from rasax.community import local  # rasa-16-to-rasa-17
+        from rasax.community import local
     except ModuleNotFoundError:
         raise MissingDependencyException(
             f"Rasa X does not seem to be installed, but it is needed for this CLI command."

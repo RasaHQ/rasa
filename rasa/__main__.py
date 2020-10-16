@@ -77,7 +77,7 @@ def print_version() -> None:
 
     python_version, os_info = sys.version.split("\n")
     try:
-        from rasax.community.version import __version__  # rasa-16-to-rasa-17
+        from rasax.community.version import __version__
 
         rasa_x_info = __version__
     except ModuleNotFoundError:

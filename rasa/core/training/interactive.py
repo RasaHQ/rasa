@@ -1244,9 +1244,7 @@ async def _validate_nlu(
 
     latest_message = latest_user_message(tracker.get("events", [])) or {}
 
-    if latest_message.get("text", "").startswith(  # rasa-16-to-rasa-17
-        INTENT_MESSAGE_PREFIX
-    ):
+    if latest_message.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         valid = _validate_user_regex(latest_message, intents)
     else:
         valid = await _validate_user_text(latest_message, endpoint, conversation_id)
@@ -1727,5 +1725,5 @@ def run_interactive_learning(
     _serve_application(app, file_importer, skip_visualization, conversation_id, port)
 
     if not skip_visualization and p is not None:
-        p.terminate()  # rasa-16-to-rasa-17
-        p.join()  # rasa-16-to-rasa-17
+        p.terminate()
+        p.join()

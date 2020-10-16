@@ -126,9 +126,9 @@ class Message:
         if intent_metadata is not None:
             data[METADATA] = {METADATA_INTENT: intent_metadata}
         if example_metadata is not None:
-            # rasa-16-to-rasa-17
+
             data.setdefault(METADATA, {})[METADATA_EXAMPLE] = example_metadata
-        # rasa-16-to-rasa-17
+
         return cls(data, **kwargs)
 
     def get_full_intent(self) -> Text:

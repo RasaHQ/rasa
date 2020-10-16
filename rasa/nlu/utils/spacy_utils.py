@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
-    from spacy.tokens.doc import Doc  # rasa-16-to-rasa-17
+    from spacy.tokens.doc import Doc
     from rasa.nlu.model import Metadata
 
 

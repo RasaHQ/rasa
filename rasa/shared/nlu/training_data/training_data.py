@@ -262,9 +262,7 @@ class TrainingData:
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
-        from rasa.shared.nlu.training_data.formats import (  # rasa-16-to-rasa-17
-            RasaWriter,
-        )
+        from rasa.shared.nlu.training_data.formats import RasaWriter
 
         return RasaWriter().dumps(self, **kwargs)
 
@@ -272,9 +270,7 @@ class TrainingData:
         """Generates the markdown representation of the response phrases (NLG) of
         TrainingData."""
 
-        from rasa.shared.nlu.training_data.formats import (  # rasa-16-to-rasa-17
-            NLGMarkdownWriter,
-        )
+        from rasa.shared.nlu.training_data.formats import NLGMarkdownWriter
 
         return NLGMarkdownWriter().dumps(self)
 
@@ -284,9 +280,7 @@ class TrainingData:
         Returns:
             responses in yaml format as a string
         """
-        from rasa.shared.nlu.training_data.formats.rasa_yaml import (  # rasa-16-to-rasa-17
-            RasaYAMLWriter,
-        )
+        from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
         # only dump responses. at some point it might make sense to remove the
         # differentiation between dumping NLU and dumping responses. but we
@@ -295,16 +289,12 @@ class TrainingData:
 
     def nlu_as_markdown(self) -> Text:
         """Generates the markdown representation of the NLU part of TrainingData."""
-        from rasa.shared.nlu.training_data.formats import (  # rasa-16-to-rasa-17
-            MarkdownWriter,
-        )
+        from rasa.shared.nlu.training_data.formats import MarkdownWriter
 
         return MarkdownWriter().dumps(self)
 
     def nlu_as_yaml(self) -> Text:
-        from rasa.shared.nlu.training_data.formats.rasa_yaml import (  # rasa-16-to-rasa-17
-            RasaYAMLWriter,
-        )
+        from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
         # avoid dumping NLG data (responses). this is a workaround until we
         # can remove the distinction between nlu & nlg when converting to a string

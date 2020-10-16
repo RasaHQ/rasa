@@ -325,14 +325,11 @@ class FacebookInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # rasa-16-to-rasa-17
         return cls(
             credentials.get("verify"),
             credentials.get("secret"),
             credentials.get("page-access-token"),
         )
-
-    # rasa-16-to-rasa-17
 
     def __init__(self, fb_verify: Text, fb_secret: Text, fb_access_token: Text) -> None:
         """Create a facebook input channel.

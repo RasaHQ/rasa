@@ -94,14 +94,11 @@ class TwilioInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # rasa-16-to-rasa-17
         return cls(
             credentials.get("account_sid"),
             credentials.get("auth_token"),
             credentials.get("twilio_number"),
         )
-
-    # rasa-16-to-rasa-17
 
     def __init__(
         self,

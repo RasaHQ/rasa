@@ -19,7 +19,7 @@ from rasa.cli import utils as cli_utils
 from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 
 try:
-    from urlparse import urljoin  # rasa-16-to-rasa-17
+    from urlparse import urljoin
 except ImportError:
     from urllib.parse import urljoin
 
@@ -318,7 +318,7 @@ class CollectingOutputChannel(OutputChannel):
             return None
 
     async def _persist_message(self, message: Dict[Text, Any]) -> None:
-        self.messages.append(message)  # rasa-16-to-rasa-17
+        self.messages.append(message)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any

@@ -223,7 +223,7 @@ class PolicyEnsemble:
         for package_name in self.versioned_packages:
             try:
                 p = importlib.import_module(package_name)
-                v = p.__version__  # rasa-16-to-rasa-17
+                v = p.__version__
                 metadata[package_name] = v
             except ImportError:
                 pass

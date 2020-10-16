@@ -83,7 +83,7 @@ class RasaYAMLReader(TrainingDataReader):
         ):
             return TrainingData()
 
-        for key, value in yaml_content.items():  # rasa-16-to-rasa-17
+        for key, value in yaml_content.items():
             if key == KEY_NLU:
                 self._parse_nlu(value)
             elif key == KEY_RESPONSES:
@@ -171,14 +171,13 @@ class RasaYAMLReader(TrainingDataReader):
         if isinstance(examples, list):
             example_tuples = [
                 (
-                    # rasa-16-to-rasa-17
                     example.get(KEY_INTENT_TEXT, "").strip(STRIP_SYMBOLS),
                     example.get(KEY_METADATA),
                 )
                 for example in examples
                 if example
             ]
-        # rasa-16-to-rasa-17
+
         elif isinstance(examples, str):
             example_tuples = [
                 (example, None)

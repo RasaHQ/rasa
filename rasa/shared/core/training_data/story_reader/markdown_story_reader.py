@@ -105,7 +105,7 @@ class MarkdownStoryReader(StoryReader):
                     )
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
-                logger.error(msg, exc_info=1)  # rasa-16-to-rasa-17
+                logger.error(msg, exc_info=1)
                 raise ValueError(msg) from e
         self._add_current_stories_to_result()
         return self.story_steps

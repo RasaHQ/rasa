@@ -8,7 +8,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
-    from spacy.tokens.doc import Doc  # rasa-16-to-rasa-17
+    from spacy.tokens.doc import Doc
 
 
 class SpacyEntityExtractor(EntityExtractor):
