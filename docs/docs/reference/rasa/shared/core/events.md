@@ -34,6 +34,40 @@ Uses NLU parser information to generate a message with inline entity annotations
   Message with entities annotated inline, e.g.
   `I am from [Berlin]{&quot;entity&quot;: &quot;city&quot;}`.
 
+#### split\_events
+
+```python
+split_events(events: Iterable["Event"], event_type_to_split_on: Type["Event"], additional_splitting_conditions: Optional[Dict[Text, Any]] = None, include_splitting_event: bool = True) -> List[List["Event"]]
+```
+
+Splits events according to an event type and condition.
+
+**Examples**:
+
+  Splitting events according to the event type `ActionExecuted` and the
+  `action_name` &#x27;action_session_start&#x27; would look as follows:
+  
+  &gt;&gt; _events = split_events(
+  events,
+  ActionExecuted,
+- `{&quot;action_name&quot;` - &quot;action_session_start&quot;},
+  True
+  )
+  
+
+**Arguments**:
+
+- `events` - Events to split.
+- `event_type_to_split_on` - The event type to split on.
+- `additional_splitting_conditions` - Additional event attributes to split on.
+- `include_splitting_event` - Whether the events of the type on which the split
+  is based should be included in the returned events.
+  
+
+**Returns**:
+
+  The split events.
+
 ## Event Objects
 
 ```python

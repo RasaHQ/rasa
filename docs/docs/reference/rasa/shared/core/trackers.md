@@ -223,6 +223,10 @@ The resulting array is representing the trackers before each action.
 
 Returns all actions that should be applied - w/o reverted events.
 
+**Returns**:
+
+  The events applied to the tracker.
+
 #### replay\_events
 
 ```python
@@ -423,4 +427,21 @@ Check if action_listen is the previous executed action.
 **Returns**:
 
   boolean value indicating whether action_listen is previous action
+
+#### get\_trackers\_for\_conversation\_sessions
+
+```python
+get_trackers_for_conversation_sessions(tracker: DialogueStateTracker) -> List[DialogueStateTracker]
+```
+
+Generate trackers for `tracker` that are split by conversation sessions.
+
+**Arguments**:
+
+- `tracker` - Instance of `DialogueStateTracker` to split.
+  
+
+**Returns**:
+
+  The trackers split by conversation sessions.
 

@@ -6,8 +6,9 @@ from unittest.mock import Mock, ANY
 import requests
 import time
 import uuid
+import urllib.parse
 
-from typing import List, Text, Type, Generator, NoReturn, Dict
+from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
 from contextlib import ExitStack
 
 from _pytest import pathlib
@@ -25,6 +26,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.server
 from rasa.core import utils
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.shared.core import events
 from rasa.core.agent import Agent
 from rasa.core.channels import (
@@ -35,7 +37,16 @@ from rasa.core.channels import (
     CallbackInput,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.shared.core.events import Event, UserUttered, SlotSet, BotUttered
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.domain import Domain, SessionConfig
+from rasa.shared.core.events import (
+    Event,
+    UserUttered,
+    SlotSet,
+    BotUttered,
+    ActionExecuted,
+    SessionStarted,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -180,8 +191,6 @@ def background_server(
         return fake_model_path
 
     def run_server() -> NoReturn:
-        import rasa
-
         rasa.train = mocked_training_function
 
         from rasa import __main__
@@ -1320,3 +1329,213 @@ def test_app_when_app_has_no_input_channels():
         request, DialogueStateTracker.from_events("default", [])
     )
     assert isinstance(actual, CollectingOutputChannel)
+
+
+@pytest.mark.parametrize(
+    "conversation_events,until_time,fetch_all_sessions,expected",
+    # conversation with one session
+    [
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+            ],
+            None,
+            True,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet""",
+        ),
+        # conversation with multiple sessions
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("bye bye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
+            ],
+            None,
+            True,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID, story 1
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet
+- story: some-conversation-ID, story 2
+  steps:
+  - intent: goodbye
+    user: |-
+      bye bye
+  - action: utter_goodbye""",
+        ),
+        # conversation with multiple sessions, but setting `all_sessions=false`
+        # means only the last one is returned
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("bye bye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
+            ],
+            None,
+            False,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: goodbye
+    user: |-
+      bye bye
+  - action: utter_goodbye""",
+        ),
+        # the default for `all_sessions` is `false` - this test checks that
+        # only the latest session is returned in that case
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("bye bye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
+            ],
+            None,
+            None,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: goodbye
+    user: |-
+      bye bye
+  - action: utter_goodbye""",
+        ),
+        # `until` parameter means only the first session is returned
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+                SessionStarted(timestamp=2),
+                UserUttered("hi", {"name": "greet"}, timestamp=3),
+                ActionExecuted("utter_greet", timestamp=4),
+                ActionExecuted(ACTION_SESSION_START_NAME, timestamp=5),
+                SessionStarted(timestamp=6),
+                UserUttered("bye bye", {"name": "goodbye"}, timestamp=7),
+                ActionExecuted("utter_goodbye", timestamp=8),
+            ],
+            4,
+            True,
+            """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet""",
+        ),
+        # empty conversation
+        ([], None, True, 'version: "2.0"'),
+    ],
+)
+async def test_get_story(
+    rasa_app: SanicASGITestClient,
+    conversation_events: List[Event],
+    until_time: Optional[float],
+    fetch_all_sessions: Optional[bool],
+    expected: Text,
+):
+    conversation_id = "some-conversation-ID"
+
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
+
+    tracker_store.save(tracker)
+
+    rasa_app.app.agent.tracker_store = tracker_store
+
+    url = f"/conversations/{conversation_id}/story?"
+
+    query = {}
+
+    if fetch_all_sessions is not None:
+        query["all_sessions"] = fetch_all_sessions
+
+    if until_time is not None:
+        query["until"] = until_time
+
+    _, response = await rasa_app.get(url + urllib.parse.urlencode(query))
+
+    assert response.status == 200
+    assert response.content.decode().strip() == expected
+
+
+async def test_get_story_does_not_update_conversation_session(
+    rasa_app: SanicASGITestClient,
+):
+    conversation_id = "some-conversation-ID"
+
+    # domain with short session expiration time of one second
+    domain = Domain.empty()
+    domain.session_config = SessionConfig(
+        session_expiration_time=1 / 60, carry_over_slots=True
+    )
+
+    # conversation contains one session that has expired
+    now = time.time()
+    conversation_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=now - 10),
+        SessionStarted(timestamp=now - 9),
+        UserUttered("hi", {"name": "greet"}, timestamp=now - 8),
+        ActionExecuted("utter_greet", timestamp=now - 7),
+    ]
+
+    tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
+
+    tracker_store = InMemoryTrackerStore(domain)
+
+    tracker_store.save(tracker)
+
+    rasa_app.app.agent.tracker_store = tracker_store
+
+    _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
+
+    assert response.status == 200
+
+    # expected story is returned
+    assert (
+        response.content.decode().strip()
+        == """version: "2.0"
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet"""
+    )
+
+    # the tracker has the same number of events as were initially added
+    assert len(tracker.events) == len(conversation_events)
+
+    # the last event is still the same as before
+    assert tracker.events[-1].timestamp == conversation_events[-1].timestamp

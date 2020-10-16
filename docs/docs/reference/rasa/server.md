@@ -33,10 +33,60 @@ Create `EventVerbosity` object using request params if present.
 #### get\_tracker
 
 ```python
-async get_tracker(processor: "MessageProcessor", conversation_id: Text) -> DialogueStateTracker
+get_tracker(processor: "MessageProcessor", conversation_id: Text) -> DialogueStateTracker
 ```
 
-Get tracker object from `MessageProcessor`.
+Retrieves tracker from `processor` without updating the conversation session.
+
+**Arguments**:
+
+- `processor` - An instance of `MessageProcessor`.
+- `conversation_id` - Conversation ID to fetch the tracker for.
+  
+
+**Returns**:
+
+  The tracker for `conversation_id`.
+
+#### get\_tracker\_with\_session\_start
+
+```python
+async get_tracker_with_session_start(processor: "MessageProcessor", conversation_id: Text) -> DialogueStateTracker
+```
+
+Get tracker object from `MessageProcessor` and update the conversation session.
+
+**Arguments**:
+
+- `processor` - An instance of `MessageProcessor`.
+- `conversation_id` - Conversation ID to fetch the tracker for.
+  
+
+**Returns**:
+
+  The tracker for `conversation_id` with an updated conversation session.
+
+#### get\_test\_stories
+
+```python
+get_test_stories(processor: "MessageProcessor", conversation_id: Text, until_time: Optional[float], fetch_all_sessions: bool = False) -> Text
+```
+
+Retrieves test stories from `processor` for all conversation sessions for
+`conversation_id`.
+
+**Arguments**:
+
+- `processor` - An instance of `MessageProcessor`.
+- `conversation_id` - Conversation ID to fetch stories for.
+- `until_time` - Timestamp up to which to include events.
+- `fetch_all_sessions` - Whether to fetch stories for all conversation sessions.
+  If `False`, only the last conversation session is retrieved.
+  
+
+**Returns**:
+
+  The stories for `conversation_id` in test format.
 
 #### validate\_request\_body
 

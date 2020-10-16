@@ -20,7 +20,7 @@ Handle a single message with this processor.
 #### get\_tracker\_with\_session\_start
 
 ```python
- | async get_tracker_with_session_start(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> Optional[DialogueStateTracker]
+ | async get_tracker_with_session_start(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> DialogueStateTracker
 ```
 
 Get tracker for `sender_id` or create a new tracker for `sender_id`.
@@ -41,7 +41,7 @@ If a new tracker is created, `action_session_start` is run.
 #### get\_tracker
 
 ```python
- | get_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+ | get_tracker(conversation_id: Text) -> DialogueStateTracker
 ```
 
 Get the tracker for a conversation.
@@ -60,6 +60,27 @@ conversation.
 
   Tracker for the conversation. Creates an empty tracker in case it&#x27;s a new
   conversation.
+
+#### get\_trackers\_for\_all\_conversation\_sessions
+
+```python
+ | get_trackers_for_all_conversation_sessions(conversation_id: Text) -> List[DialogueStateTracker]
+```
+
+Fetches all trackers for a conversation.
+
+Individual trackers are returned for each conversation session found
+for `conversation_id`.
+
+**Arguments**:
+
+- `conversation_id` - The ID of the conversation for which the trackers should
+  be retrieved.
+  
+
+**Returns**:
+
+  Trackers for the conversation.
 
 #### log\_message
 
