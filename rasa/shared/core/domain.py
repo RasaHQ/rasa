@@ -254,7 +254,7 @@ class Domain:
 
         if override:
             config = domain_dict["config"]
-            for key, val in config.items():  # pytype: disable=attribute-error
+            for key, val in config.items():
                 combined["config"][key] = val
 
         if override or self.session_config == SessionConfig.default():
@@ -925,7 +925,7 @@ class Domain:
         domain_data.pop(KEY_E2E_ACTIONS, None)
 
         for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):
-            for name, intent in intent_info.items():  # pytype: disable=attribute-error
+            for name, intent in intent_info.items():
                 if intent.get(USE_ENTITIES_KEY) is True:
                     del intent[USE_ENTITIES_KEY]
                 if not intent.get(IGNORE_ENTITIES_KEY):
@@ -933,7 +933,7 @@ class Domain:
                 if len(intent) == 0:
                     domain_data[KEY_INTENTS][idx] = name
 
-        for slot in domain_data[KEY_SLOTS].values():  # pytype: disable=attribute-error
+        for slot in domain_data[KEY_SLOTS].values():
             if slot["initial_value"] is None:
                 del slot["initial_value"]
             if slot["auto_fill"]:
