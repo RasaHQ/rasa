@@ -84,7 +84,7 @@ rules:
 
 ```
 
-To specify your test stories, you need to put them into a separate file with the prefix `test_`:
+To specify your test stories, you need to put them into a separate file:
 ```yaml-rasa title="tests/test_stories.yml"
 stories:
 - story: greet and ask language
@@ -98,7 +98,8 @@ stories:
     intent: faq/language
   - action: utter_faq
 ```
-Test stories use the same format as the story training data.
+[Test stories](#test-stories) use the same format as the story training data and should be placed
+in a separate file with the prefix `test_`.
 
 ## NLU Training Data
 
