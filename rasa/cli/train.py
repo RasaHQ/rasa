@@ -7,7 +7,8 @@ from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
 import rasa.cli.utils
-import rasa.train
+import rasa.utils.common
+from rasa.core.train import do_compare_training
 from rasa.shared.utils.cli import print_error
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -17,8 +18,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
-
-import rasa.utils.common
+from rasa.train import train, train_core, train_nlu
 
 
 def add_subparser(
@@ -47,7 +47,7 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Trains a Rasa Core model using your stories.",
     )
-    train_core_parser.set_defaults(func=train_core)
+    train_core_parser.set_defaults(func=run_core_training)
 
     train_nlu_parser = train_subparsers.add_parser(
         "nlu",
@@ -55,17 +55,15 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Trains a Rasa NLU model using your NLU data.",
     )
-    train_nlu_parser.set_defaults(func=train_nlu)
+    train_nlu_parser.set_defaults(func=run_nlu_training)
 
-    train_parser.set_defaults(func=train)
+    train_parser.set_defaults(func=run_training)
 
     train_arguments.set_train_core_arguments(train_core_parser)
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
-def train(args: argparse.Namespace) -> Optional[Text]:
-    import rasa
-
+def run_training(args: argparse.Namespace) -> Optional[Text]:
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
@@ -79,7 +77,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
-    return rasa.train(
+    return train(
         domain=domain,
         config=config,
         training_files=training_files,
@@ -92,7 +90,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     )
 
 
-def train_core(
+def run_core_training(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
 
@@ -114,7 +112,7 @@ def train_core(
 
         config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
 
-        return rasa.train.train_core(
+        return train_core(
             domain=args.domain,
             config=config,
             stories=story_file,
@@ -124,14 +122,12 @@ def train_core(
             additional_arguments=additional_arguments,
         )
     else:
-        from rasa.core.train import do_compare_training
-
         rasa.utils.common.run_in_loop(
             do_compare_training(args, story_file, additional_arguments)
         )
 
 
-def train_nlu(
+def run_nlu_training(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
 
@@ -147,7 +143,7 @@ def train_nlu(
             args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
         )
 
-    return rasa.train.train_nlu(
+    return train_nlu(
         config=config,
         nlu_data=nlu_data,
         output=output,

@@ -62,7 +62,7 @@ def test_pass_arguments_to_rasa_train(
 
     # Mock actual training
     mock = Mock()
-    monkeypatch.setattr(train, "rasa_train", mock.method)
+    monkeypatch.setattr(train, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
     train.train(args)
@@ -91,7 +91,7 @@ def test_train_called_when_no_model_passed(
 
     # Mock actual training and interactive learning methods
     mock = Mock()
-    monkeypatch.setattr(train, "train", mock.train_model)
+    monkeypatch.setattr(train, "run_training", mock.train_model)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
@@ -123,13 +123,13 @@ def test_train_core_called_when_no_model_passed_and_core(
 
     # Mock actual training and interactive learning methods
     mock = Mock()
-    monkeypatch.setattr(train, "train_core", mock.train_core)
+    monkeypatch.setattr(train, "run_core_training", mock.run_core_training)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
 
     interactive.interactive(args)
-    mock.train_core.assert_called_once()
+    mock.run_core_training.assert_called_once()
 
 
 def test_no_interactive_without_core_data(
@@ -145,7 +145,7 @@ def test_no_interactive_without_core_data(
     interactive._set_not_required_args(args)
 
     mock = Mock()
-    monkeypatch.setattr(train, "train", mock.train_model)
+    monkeypatch.setattr(train, "run_training", mock.train_model)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )

@@ -65,7 +65,11 @@ def interactive(args: argparse.Namespace) -> None:
                 "data or a model containing core data."
             )
 
-        zipped_model = train.train_core(args) if args.core_only else train.train(args)
+        zipped_model = (
+            train.run_core_training(args)
+            if args.core_only
+            else train.run_training(args)
+        )
         if not zipped_model:
             rasa.shared.utils.cli.print_error_and_exit(
                 "Could not train an initial model. Either pass paths "
