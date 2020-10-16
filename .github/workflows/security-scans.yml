@@ -1,0 +1,37 @@
+name: Security Scans
+
+on: [push, pull_request]
+
+jobs:
+  cleanup_runs:
+    name: Cancel old branch builds
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+
+    steps:
+      - name: Find and cancel old builds of this branch
+        uses: rokroskar/workflow-run-cleanup-action@v0.2.2
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+  gitleaks:
+    name: Detecting hardcoded secrets
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        # Fetch all history for all tags and branches
+        fetch-depth: '0'
+
+    - name: Gitleaks - detecting hardcoded secrets
+      uses: zricethezav/gitleaks-action@v1.1.4
+
+    - name: Notify slack on failure
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+        status: FAILED
+        color: danger

@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 import uuid
 
@@ -400,7 +401,7 @@ class Agent:
     @classmethod
     def load(
         cls,
-        model_path: Text,
+        model_path: Union[Text, Path],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
@@ -417,7 +418,7 @@ class Agent:
             if not os.path.exists(model_path):
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
             if os.path.isfile(model_path):
-                model_path = get_model(model_path)
+                model_path = get_model(str(model_path))
         except ModelNotFound:
             raise ValueError(
                 "You are trying to load a MODEL from '{}', which is not possible. \n"

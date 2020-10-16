@@ -215,8 +215,8 @@ jobs:
           test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
             && echo "::set-output name=is_config_exists::false" && exit 0)
 
-          echo "::set-env name=DATASET::${DATASET}"
-          echo "::set-env name=CONFIG::${CONFIG}"
+          echo "DATASET=${DATASET}" >> $GITHUB_ENV
+          echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
@@ -227,7 +227,7 @@ jobs:
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
       - name: Install poetry 🦄
@@ -360,8 +360,8 @@ jobs:
           test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
             && echo "::set-output name=is_config_exists::false" && exit 0)
 
-          echo "::set-env name=DATASET::${DATASET}"
-          echo "::set-env name=CONFIG::${CONFIG}"
+          echo "DATASET=${DATASET}" >> $GITHUB_ENV
+          echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
@@ -372,7 +372,7 @@ jobs:
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
       - name: Install poetry 🦄
@@ -612,7 +612,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.2
+      - uses: GoogleCloudPlatform/github-actions@0.1.3
         with:
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}

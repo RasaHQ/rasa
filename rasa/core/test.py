@@ -464,8 +464,8 @@ def _collect_action_executed_predictions(
                 gold_action_name,
                 gold_action_text,
                 predicted,
-                event.policy,
-                event.confidence,
+                policy,
+                confidence,
                 event.timestamp,
             )
         )
@@ -486,7 +486,9 @@ def _collect_action_executed_predictions(
                 )
             raise ValueError(error_msg)
     else:
-        partial_tracker.update(event)
+        partial_tracker.update(
+            ActionExecuted(predicted, policy, confidence, event.timestamp)
+        )
 
     return action_executed_eval_store, policy, confidence
 
