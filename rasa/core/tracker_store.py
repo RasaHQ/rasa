@@ -619,18 +619,22 @@ class MongoTrackerStore(TrackerStore):
 
         return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
 
-    def retrieve_full_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
         """Retrieves tracker containing all conversation sessions.
 
         Args:
-            sender_id: the message owner ID
+            conversation_id: the message owner ID
 
         Returns:
             `DialogueStateTracker` containing all conversation sessions.
         """
-        events = self._retrieve(sender_id, fetch_events_from_all_sessions=True)
+        events = self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
 
-        return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
+        return DialogueStateTracker.from_dict(
+            conversation_id, events, self.domain.slots
+        )
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store"""
@@ -934,16 +938,18 @@ class SQLTrackerStore(TrackerStore):
 
         return self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
-    def retrieve_full_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    def retrieve_full_tracker(
+        self, conversation_id: Text
+    ) -> Optional[DialogueStateTracker]:
         """Retrieves tracker containing all conversation sessions.
 
         Args:
-            sender_id: Conversation ID to fetch the tracker for.
+            conversation_id: Conversation ID to fetch the tracker for.
 
         Returns:
             Tracker containing events from all conversation sessions.
         """
-        return self._retrieve(sender_id, fetch_events_from_all_sessions=True)
+        return self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
 
     def _retrieve(
         self, sender_id: Text, fetch_events_from_all_sessions: bool
