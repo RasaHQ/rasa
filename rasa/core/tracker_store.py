@@ -372,7 +372,7 @@ class DynamoTrackerStore(TrackerStore):
         self.region = region
         self.table_name = table_name
         self.db = self.get_or_create_table(table_name)
-        super().__init__(domain, event_broker, kwargs)
+        super().__init__(domain, event_broker, **kwargs)
 
     def get_or_create_table(
         self, table_name: Text
