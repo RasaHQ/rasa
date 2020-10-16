@@ -6,6 +6,9 @@ import sys
 
 from rasa_sdk import __version__ as rasa_sdk_version
 
+import rasa.telemetry
+import rasa.utils.io
+import rasa.utils.tensorflow.environment as tf_env
 from rasa import version
 from rasa.cli import (
     data,
@@ -24,10 +27,7 @@ from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_error
-import rasa.telemetry
 from rasa.utils.common import set_log_and_warnings_filters, set_log_level
-import rasa.utils.io
-import rasa.utils.tensorflow.environment as tf_env
 
 logger = logging.getLogger(__name__)
 

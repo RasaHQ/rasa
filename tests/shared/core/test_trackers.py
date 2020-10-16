@@ -201,10 +201,12 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
         None,
         "action_listen",
         "greet",
+        None,  # DefinePrevUserUtteredFeaturization
         "utter_greet",
         None,
         "action_listen",
         "greet",
+        None,  # DefinePrevUserUtteredFeaturization
         "utter_greet",
         None,
         "action_listen",
@@ -227,6 +229,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
         "session_started",
         "action",
         "user",
+        "user_featurization",
         "action",
         "bot",
         "action",

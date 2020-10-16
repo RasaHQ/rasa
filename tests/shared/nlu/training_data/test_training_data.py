@@ -639,5 +639,5 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
     training_data = await importer.get_nlu_data()
 
     assert training_data.training_examples
-    assert training_data.is_empty()
-    assert not training_data.nlu_examples()
+    assert not training_data.is_empty()
+    assert len(training_data.nlu_examples) == 0

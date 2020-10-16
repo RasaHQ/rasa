@@ -227,12 +227,10 @@ async def test_import_nlu_training_data_from_e2e_stories(
 
     # Check if the NLU training data was added correctly from the story training data
     expected_additional_messages = [
-        Message(data={TEXT: "greet_from_stories", INTENT: "greet_from_stories"}),
-        Message(data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: ""}),
-        Message(data={TEXT: "how are you doing?", INTENT: None}),
-        Message(
-            data={ACTION_NAME: "utter_greet_from_stories", ACTION_TEXT: "Hi Joey."}
-        ),
+        Message(data={INTENT: "greet_from_stories"}),
+        Message(data={ACTION_NAME: "utter_greet_from_stories"}),
+        Message(data={TEXT: "how are you doing?"}),
+        Message(data={ACTION_TEXT: "Hi Joey."}),
     ]
 
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)

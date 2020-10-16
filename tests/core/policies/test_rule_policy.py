@@ -425,7 +425,7 @@ actions:
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
         ],
     )
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         new_conversation, domain, RegexInterpreter()
     )
 
@@ -480,7 +480,7 @@ async def test_predict_form_action_if_in_form():
     )
 
     # RulePolicy triggers form again
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, form_name)
@@ -529,7 +529,7 @@ async def test_predict_form_action_if_multiple_turns():
     )
 
     # RulePolicy triggers form again
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, form_name)
@@ -573,7 +573,7 @@ async def test_predict_action_listen_after_form():
     )
 
     # RulePolicy predicts action listen
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, ACTION_LISTEN_NAME)
@@ -623,7 +623,7 @@ async def test_dont_predict_form_if_already_finished():
     )
 
     # RulePolicy triggers form again
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, UTTER_GREET_ACTION)
@@ -667,7 +667,7 @@ async def test_form_unhappy_path():
     )
 
     # RulePolicy doesn't trigger form but FAQ
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         unhappy_form_conversation, domain, RegexInterpreter()
     )
 
@@ -706,7 +706,7 @@ async def test_form_unhappy_path_from_general_rule():
         ActionExecutionRejected(form_name),
     ]
 
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -718,7 +718,7 @@ async def test_form_unhappy_path_from_general_rule():
 
     # Check that RulePolicy triggers form again after handling unhappy path
     conversation_events.append(ActionExecuted(UTTER_GREET_ACTION))
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -783,7 +783,7 @@ async def test_form_unhappy_path_from_in_form_rule():
         ActionExecutionRejected(form_name),
     ]
 
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -794,7 +794,7 @@ async def test_form_unhappy_path_from_in_form_rule():
 
     # Check that RulePolicy triggers form again after handling unhappy path
     conversation_events.append(ActionExecuted(handle_rejection_action_name))
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -856,7 +856,7 @@ async def test_form_unhappy_path_from_story():
         ActionExecutionRejected(form_name),
     ]
 
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -868,7 +868,7 @@ async def test_form_unhappy_path_from_story():
     # Check that RulePolicy doesn't trigger form or action_listen
     # after handling unhappy path
     conversation_events.append(ActionExecuted(handle_rejection_action_name))
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -936,7 +936,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
         ActionExecutionRejected(form_name),
     ]
 
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -947,7 +947,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
 
     # Check that RulePolicy predicts action_listen
     conversation_events.append(ActionExecuted(handle_rejection_action_name))
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -961,7 +961,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         tracker, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, form_name)
@@ -1030,7 +1030,7 @@ async def test_form_unhappy_path_no_validation_from_story():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         tracker, domain, RegexInterpreter()
     )
     # there is no rule for next action
@@ -1072,7 +1072,7 @@ async def test_form_unhappy_path_without_rule():
     ]
 
     # Unhappy path is not handled. No rule matches. Let's hope ML fixes our problems 🤞
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1112,7 +1112,7 @@ async def test_form_activation_rule():
     ]
 
     # RulePolicy correctly predicts the form action
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1151,7 +1151,7 @@ async def test_failing_form_activation_due_to_no_rule():
     ]
 
     # RulePolicy has no matching rule since no rule for form activation is given
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1207,7 +1207,7 @@ def test_form_submit_rule():
     )
 
     # RulePolicy predicts action which handles submit
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, submit_action_name)
@@ -1265,7 +1265,7 @@ def test_immediate_submit():
     )
 
     # RulePolicy predicts action which handles submit
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, submit_action_name)
@@ -1311,7 +1311,7 @@ async def test_rule_policy_slot_filling_from_text(
     )
 
     # RulePolicy predicts action which handles submit
-    action_probabilities = trained_rule_policy.predict_action_probabilities(
+    action_probabilities, _ = trained_rule_policy.predict_action_probabilities(
         form_conversation, trained_rule_policy_domain, RegexInterpreter()
     )
     assert_predicted_action(
@@ -1370,7 +1370,7 @@ async def test_one_stage_fallback_rule():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         tracker, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, ACTION_DEFAULT_FALLBACK_NAME)
@@ -1392,7 +1392,7 @@ async def test_one_stage_fallback_rule():
         "casd", evts=conversation_events, slots=domain.slots
     )
 
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         tracker, domain, RegexInterpreter()
     )
     assert_predicted_action(action_probabilities, domain, UTTER_GREET_ACTION)
@@ -1426,7 +1426,7 @@ actions:
             UserUttered("haha", {"name": intent_name}),
         ],
     )
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         new_conversation, domain, RegexInterpreter()
     )
 
@@ -1471,7 +1471,7 @@ def test_predict_core_fallback(
         ],
     )
 
-    action_probabilities = rule_policy.predict_action_probabilities(
+    action_probabilities, _ = rule_policy.predict_action_probabilities(
         new_conversation, domain, RegexInterpreter()
     )
 
@@ -1500,7 +1500,7 @@ def test_predict_nothing_if_fallback_disabled():
             UserUttered("haha", {"name": other_intent}),
         ],
     )
-    action_probabilities = policy.predict_action_probabilities(
+    action_probabilities, _ = policy.predict_action_probabilities(
         new_conversation, domain, RegexInterpreter()
     )
 
