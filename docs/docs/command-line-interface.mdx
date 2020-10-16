@@ -311,11 +311,8 @@ To validate your data, run this command:
 ```bash
 rasa data validate
 
-By default the validator searches only for errors in the data, e.g. the same
+By default, the validator searches only for errors in the data, e.g. the same training
 example being listed as an example for two intents.
-We recommend you to run this check before training a model because if data validation results
-in errors, training a model will fail as well.
-
 To catch minor issues that don't prevent training a model but might indicate messy data
 (e.g. unused intents), use the `--fail-on-warnings` flag.
 
