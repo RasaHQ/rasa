@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 def run_cmdline(
-    model_path: Text, component_builder: Optional["ComponentBuilder"] = None
+    model_path: Text, 
+    show_diagnostics: bool = False,
+    component_builder: Optional["ComponentBuilder"] = None
 ) -> None:
     interpreter = Interpreter.load(model_path, component_builder)
     regex_interpreter = RegexInterpreter()
@@ -33,6 +35,6 @@ def run_cmdline(
         if message.startswith(INTENT_MESSAGE_PREFIX):
             result = rasa.utils.common.run_in_loop(regex_interpreter.parse(message))
         else:
-            result = interpreter.parse(message)
+            result = interpreter.parse(message, show_diagnostics=show_diagnostics)
 
         print(json_to_string(result))

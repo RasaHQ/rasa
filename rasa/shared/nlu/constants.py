@@ -34,3 +34,6 @@ ENTITY_ATTRIBUTE_VALUE = "value"
 ENTITY_ATTRIBUTE_START = "start"
 ENTITY_ATTRIBUTE_END = "end"
 NO_ENTITY_TAG = "O"
+
+DIAGNOSTIC_DATA = "diagnostic_data"
+ATTENTION_WEIGHTS = "attention_weights"

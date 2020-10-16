@@ -201,7 +201,7 @@ def plot_curve(
 
 def plot_attention_weights(
     attention_weights: np.ndarray,
-    labels: Optional[List[Text]] = None,
+    title: Optional[Text] = None,
     output_file: Optional[Text] = None,
 ) -> None:
     # shape=(num_transformer_layers, 1, num_heads, length, length)
@@ -227,6 +227,7 @@ def plot_attention_weights(
             plt.imshow(
                 attention_weights[layer_index - 1][0][head_index - 1]
             )
+    plt.suptitle(title)
     
     if output_file:
         fig = plt.gcf()
