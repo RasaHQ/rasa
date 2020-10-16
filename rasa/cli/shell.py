@@ -120,7 +120,7 @@ def shell(args: argparse.Namespace):
 
         telemetry.track_shell_started("nlu")
 
-        rasa.nlu.run.run_cmdline(nlu_model)
+        rasa.nlu.run.run_cmdline(nlu_model, show_diagnostics=args.show_diagnostics)
     else:
         import rasa.cli.run
 

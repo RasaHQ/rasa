@@ -22,10 +22,12 @@ from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, EN
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
+from rasa.shared.constants import DIAGNOSTIC_DATA, ATTENTION_WEIGHTS
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
+from rasa.utils.plotting import plot_attention_weights
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
@@ -371,6 +373,7 @@ class TEDPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        show_diagnostics: bool = False,
         **kwargs: Any,
     ) -> List[float]:
         """Predict the next action the bot should take.
@@ -394,6 +397,13 @@ class TEDPolicy(Policy):
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
+
+        if show_diagnostics and DIAGNOSTIC_DATA in output and ATTENTION_WEIGHTS in output[DIAGNOSTIC_DATA]:
+            plot_attention_weights(
+                output[DIAGNOSTIC_DATA][ATTENTION_WEIGHTS],
+                title="TEDPolicy",
+                output_file="JOHANNES-TED.png"  # ToDo: Fix
+            )
 
         return confidence.tolist()
 
@@ -841,6 +851,6 @@ class TED(TransformerRasaModel):
         )
 
 
-        return {"action_scores": scores}
+        return {"action_scores": scores, DIAGNOSTIC_DATA: {ATTENTION_WEIGHTS: attention_weights}}
 
 # pytype: enable=key-error
