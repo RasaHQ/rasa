@@ -32,6 +32,41 @@ def test_session_start_is_not_serialised(default_domain: Domain):
     assert story.as_story_string(flat=True) == expected
 
 
+def test_as_story_string_or_statement():
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        YAMLStoryReader,
+    )
+
+    import rasa.shared.utils.io
+
+    stories = """
+    stories:
+    - story: hello world
+      steps:
+      - or:
+        - intent: intent1
+        - intent: intent2
+        - intent: intent3
+      - action: some_action
+    """
+
+    reader = YAMLStoryReader(is_used_for_conversion=True)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    assert len(steps) == 1
+
+    assert (
+        steps[0].as_story_string()
+        == """
+## hello world
+* intent1 OR intent2 OR intent3
+    - some_action
+"""
+    )
+
+
 def test_cap_length():
     assert (
         rasa.shared.core.training_data.structures._cap_length("mystring", 6) == "mys..."
