@@ -96,6 +96,7 @@ def configure_app(
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the agent."""
+    from rasa import server
 
     rasa.core.utils.configure_file_logging(logger, log_file)
 
@@ -166,6 +167,7 @@ def serve_application(
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the API entrypoint."""
+    from rasa import server
 
     if not channel and not credentials:
         channel = "cmdline"
