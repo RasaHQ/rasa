@@ -320,9 +320,9 @@ To catch minor issues that don't prevent training a model but might indicate mes
 (e.g. unused intents), use the `--fail-on-warnings` flag.
 
 You can also validate the story structure by running this command:
+
 ```bash
 rasa data validate stories
-```
 This validator checks if you have any stories where different assistant actions follow from the same 
 dialogue history. Conflicts between stories will prevent a model from learning the correct
 pattern for a dialogue. If you have [Memoization Policy](./policies.mdx#memoization-policy) in your 
