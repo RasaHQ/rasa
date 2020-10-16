@@ -3,15 +3,15 @@ id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
 abstract: Rasa Open Source lets you test dialogues end-to-end by running through
-  test conversations. In addition to full test conversations, you can
+  test stories. In addition to full test conversations, you can
   also test the dialogue management and the message processing (NLU)
   separately.
 ---
 
-## Writing Test Conversations
+## Writing Test Stories
 
-To test your assistant completely, the best approach is to write test conversations. These are like
-stories in your training data, but with the actual user utterance included as well.
+To test your assistant completely, the best approach is to write test stories. Test stories are like
+the stories in your training data, but include the actual user utterance as well.
 
 Here are some examples:
 
@@ -117,18 +117,18 @@ Here are some examples:
   </TabItem>
 </Tabs>
 
-Rasa Open Source looks for test conversations in all files with the prefix `test_`, e.g. `tests/test_stories.yml`.
+Rasa Open Source looks for test stories in all files with the prefix `test_`, e.g. `tests/test_stories.yml`.
 You can test your assistant against them by running:
 
 ```bash
 rasa test
 ```
 
-See the [CLI documentation on rasa test command](./command-line-interface.mdx#rasa-test) for
+See the [CLI documentation on `rasa test`](./command-line-interface.mdx#rasa-test) for
 more configuration options.
 
 :::caution Testing Custom Actions
-[Custom Actions](./custom-actions.mdx) are not executed as part of test conversations. If your custom
+[Custom Actions](./custom-actions.mdx) are not executed as part of test stories. If your custom
 actions append any events to the conversation, this has to be reflected in your test conversation
 (e.g. by adding `slot_was_set` events to your test conversation).
 
@@ -180,7 +180,7 @@ To further improve your model check out this
 To get the most out of your training data, you should train and evaluate your model on different pipelines
 and different amounts of training data.
 
-To do so, use:
+To do so, pass multiple configuration files to the `rasa test` command:
 
 ```bash {2}
 rasa test nlu --nlu data/nlu.yml
@@ -204,7 +204,7 @@ across all runs is plotted.
 The f1-score graph, along with all train/test sets, the trained models, classification and error reports,
 will be saved into a folder called `nlu_comparison_results`.
 
-Inspecting the f1-score graph can help in understanding if you have enough data for your NLU model.
+Inspecting the f1-score graph can help you understand if you have enough data for your NLU model.
 If the graph shows that f1-score is still improving when all of the training data is used,
 it may improve further with more data. But if f1-score has plateaued when all training data is used,
 adding more data may not help.
@@ -220,7 +220,8 @@ rasa test nlu --nlu data/nlu.yml
 ### Interpreting the Output
 #### Intent Classifiers
 
-The `rasa test` script will produce a report, confusion matrix, and confidence histogram for your intent classification model.
+The `rasa test` script will produce a report(`intent_report.json`), confusion matrix(`intent_confusion_matrix.png`)
+and confidence histogram(`intent_histogram.png`) for your intent classification model.
 
 The report logs [precision](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html),
 [recall](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html) and
@@ -233,12 +234,13 @@ Any samples which have been incorrectly predicted are logged and saved to a file
 The histogram allows you to visualize the confidence for all predictions,
 with the correct and incorrect predictions being displayed by blue and red bars respectively.
 Improving the quality of your training data will move the blue histogram bars to the right and the
-red histogram bars to the left of the plot.
+red histogram bars to the left of the plot. It should also help in reducing the number red histogram bars itself.
 
 #### Response Selectors
 
-In addition to intent classifiers, `rasa test` also evaluates response selectors, producing a
-report, confusion matrix, confidence histogram and errors.
+`rasa test` evaluates response selectors in the same way that it evaluates intent classifiers, producing a
+report(`response_selection_report.json`, confusion matrix(`response_selection_confusion_matrix.png`),
+confidence histogram(`response_selection_histogram.png`) and errors(`response_selection_errors.json`).
 If your pipeline includes multiple response selectors, they are evaluated in a single report.
 
 The report logs precision, recall and f1 measure for
@@ -247,10 +249,10 @@ You can save these reports as JSON files using the `--report` argument.
 
 #### Entity Extraction
 
-`rasa test` also reports recall, precision, and f1-score for each entity type that
+`rasa test` reports recall, precision, and f1-score for each entity type that
 your trainable entity extractors are trained to recognize.
 
-Only trainable entity extractors, such as the `DIETClassifier` and `CRFEntityExtractor` will be
+Only trainable entity extractors, such as the `DIETClassifier` and `CRFEntityExtractor` are
 evaluated by `rasa test`. Pretrained extractors like the `DucklingHTTPExtractor` are not evaluated.
 
 :::caution incorrect entity annotations
@@ -328,8 +330,8 @@ rasa train core -c config_1.yml config_2.yml \
   --out comparison_models --runs 3 --percentages 0 5 25 50 70 95
 ```
 
-Similar to how the NLU model was evaluated the above command trains the dialogue model
-on multiple configurations and different amounts of training data.
+Similar to how the [NLU model was evaluated](./testing-your-assistant.mdx#comparing-nlu-pipelines), the above
+command trains the dialogue model on multiple configurations and different amounts of training data.
 For each config file provided, Rasa Open Source will train dialogue models
 with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
 data. This is repeated three times to ensure consistent results.
@@ -356,4 +358,4 @@ somewhere in the background where it can't be interrupted.
 :::
 
 If you have any questions or problems, please share them with us in the dedicated
-[testing section on our forum](https://forum.rasa.com/tags/testing) !
+[testing section on our forum](https://forum.rasa.com/tags/testing)!
