@@ -53,12 +53,6 @@ def add_subparser(
 
     shell_nlu_subparser.set_defaults(func=shell_nlu)
 
-    shell_nlu_subparser.add_argument(
-        "--diagnostics",
-        action="store_true",
-        help="Output diagnostic data (s.a. attention weights)"
-    )
-
     arguments.set_shell_arguments(shell_parser)
     arguments.set_shell_nlu_arguments(shell_nlu_subparser)
 
