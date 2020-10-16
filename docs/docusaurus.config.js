@@ -16,27 +16,21 @@ const SWAP_URL = isDev ? 'http://localhost:3001' : SITE_URL;
 
 let existingVersions = [];
 try { existingVersions = require('./versions.json'); } catch (e) { console.info('no versions.json file found') }
-const currentVersionPath = isDev || isPreview ? '/' : `${existingVersions[0]}/`;
 
 const routeBasePath = '/';
-const existingVersionRE = new RegExp(
-  `${routeBasePath}/(${existingVersions.reduce((s, v, i) => `${s}${i > 0 ? '|' : ''}${v}`, '')}).?`,
-);
-const currentVersionRE = new RegExp(`(${routeBasePath})(.?)`);
 
 const versionLabels = {
   current: 'Master/Unreleased'
 };
 
 module.exports = {
-  onBrokenLinks: 'warn',
   customFields: {
     productLogo: '/img/logo-rasa-oss.png',
     versionLabels,
     legacyVersions: [{
       label: 'Legacy 1.x',
       href: 'https://legacy-docs-v1.rasa.com',
-      target: '_self',
+      target: '_blank',
     }],
     redocPages: [
       {
@@ -61,13 +55,13 @@ module.exports = {
   themeConfig: {
     announcementBar: {
       id: 'pre_release_notice', // Any value that will identify this message.
-      content: 'These docs are for v2.0.0-rc1 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the stable 1.x series can be found here.</a>',
+      content: 'These docs are for version 2.0 of Rasa Open Source. <a href="https://legacy-docs-v1.rasa.com/">Docs for the 1.x series can be found here.</a>',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      disabled: !isDev, // FIXME: remove this when our index is good
+      disabled: true, // FIXME: remove this when our index is good
       apiKey: '25626fae796133dc1e734c6bcaaeac3c', // FIXME: replace with values from our own index
       indexName: 'docsearch', // FIXME: replace with values from our own index
       inputSelector: '.search-bar',
@@ -159,16 +153,22 @@ module.exports = {
         ...themeRemarkPlugins,
         remarkProgramOutput,
       ],
-      lastVersion: isDev || isPreview || existingVersions.length < 1 ? 'current' : undefined, // aligns / to last versioned folder in production
-      // includeCurrentVersion: true, // default is true
+      lastVersion: existingVersions[0] || 'current', // aligns / to last versioned folder in production
       versions: {
         current: {
           label: versionLabels['current'],
-          path: isDev || isPreview || existingVersions.length < 1 ? '' : 'next',
+          path: existingVersions.length < 1 ? '' : 'next',
         },
       },
     }],
     ['@docusaurus/plugin-content-pages', {}],
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        sizes: [160, 226, 320, 452, 640, 906, 1280, 1810, 2560],
+        quality: 70,
+      },
+    ],
     ['@docusaurus/plugin-sitemap',
       {
         cacheTime: 600 * 1000, // 600 sec - cache purge period

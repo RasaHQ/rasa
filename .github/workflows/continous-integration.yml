@@ -69,7 +69,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -131,7 +131,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -139,8 +139,7 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Set up virtual environment (Windows)
-      if: matrix.os == 'windows-latest'
+    - name: Set up virtual environment
       # Poetry on Windows cannot pick up the virtual environments directory properly,
       # and it creates a new one every time the pipeline runs.
       # We want to  allow Poetry to create a venv directory if it doesn't
@@ -151,16 +150,7 @@ jobs:
       run: |
         poetry config virtualenvs.in-project true
 
-    - name: Load Poetry Cached Libraries (Linux) ⬇
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
-
-    - name: Load Poetry Cached Libraries (Windows) ⬇
-      if: matrix.os == 'windows-latest'
+    - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
         path: .venv
@@ -284,7 +274,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -342,9 +332,9 @@ jobs:
         shell: bash
         run: |
           if [ -z "${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" ]; then
-            echo ::set-env name=MERGE_TOKEN::${{ secrets.GITHUB_TOKEN }}
+            echo "MERGE_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
           else
-            echo ::set-env name=MERGE_TOKEN::${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}
+            echo "MERGE_TOKEN=${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" >> $GITHUB_ENV
           fi
       - uses: rasahq/merge-pal-action@master
         with:

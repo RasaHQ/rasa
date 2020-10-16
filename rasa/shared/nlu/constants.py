@@ -4,7 +4,6 @@ RESPONSE = "response"
 INTENT_RESPONSE_KEY = "intent_response_key"
 ACTION_TEXT = "action_text"
 ACTION_NAME = "action_name"
-INTENT_NAME = "intent_name"
 INTENT_NAME_KEY = "name"
 METADATA = "metadata"
 METADATA_INTENT = "intent"
@@ -19,7 +18,11 @@ FEATURE_TYPE_SEQUENCE = "sequence"
 VALID_FEATURE_TYPES = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
 
 EXTRACTOR = "extractor"
-PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
+PRETRAINED_EXTRACTORS = {
+    "DucklingEntityExtractor",
+    "SpacyEntityExtractor",
+    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
+}
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
 ENTITIES = "entities"

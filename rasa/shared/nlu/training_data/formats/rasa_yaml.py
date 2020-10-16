@@ -4,11 +4,12 @@ from pathlib import Path
 from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
 
 import rasa.shared.data
+from rasa.shared.exceptions import YamlException
 from rasa.shared.utils import validation
-from ruamel.yaml import YAMLError, StringIO
+from ruamel.yaml import StringIO
 
 from rasa.shared.constants import (
-    DOCS_URL_TRAINING_DATA_NLU,
+    DOCS_URL_TRAINING_DATA,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.nlu.training_data.formats.readerwriter import (
@@ -53,15 +54,15 @@ class RasaYAMLReader(TrainingDataReader):
         self.lookup_tables: List[Dict[Text, Any]] = []
         self.responses: Dict[Text, List[Dict[Text, Any]]] = {}
 
-    @staticmethod
-    def validate(string: Text) -> None:
+    def validate(self, string: Text) -> None:
         """Check if the string adheres to the NLU yaml data schema.
 
         If the string is not in the right format, an exception will be raised."""
         try:
             validation.validate_yaml_schema(string, NLU_SCHEMA_FILE)
-        except validation.InvalidYamlFileError as e:
-            raise ValueError from e
+        except YamlException as e:
+            e.filename = self.filename
+            raise e
 
     def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData in YAML format from a string.
@@ -108,7 +109,7 @@ class RasaYAMLReader(TrainingDataReader):
                     f"{nlu_item}\n"
                     f"Items under the '{KEY_NLU}' key must be YAML dictionaries. "
                     f"This block will be skipped.",
-                    docs=DOCS_URL_TRAINING_DATA_NLU,
+                    docs=DOCS_URL_TRAINING_DATA,
                 )
                 continue
 
@@ -128,7 +129,7 @@ class RasaYAMLReader(TrainingDataReader):
                     f"Supported keys are: '{KEY_INTENT}', '{KEY_SYNONYM}', "
                     f"'{KEY_REGEX}', '{KEY_LOOKUP}'. "
                     f"This section will be skipped.",
-                    docs=DOCS_URL_TRAINING_DATA_NLU,
+                    docs=DOCS_URL_TRAINING_DATA,
                 )
 
     def _parse_intent(self, intent_data: Dict[Text, Any]) -> None:
@@ -142,7 +143,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"The intent has an empty name. "
                 f"Intents should have a name defined under the {KEY_INTENT} key. "
                 f"It will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -189,7 +190,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"while processing intent '{intent}':\n"
                 f"{examples}\n"
                 f"This block will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return []
 
@@ -197,7 +198,7 @@ class RasaYAMLReader(TrainingDataReader):
             rasa.shared.utils.io.raise_warning(
                 f"Issue found while processing '{self.filename}': "
                 f"Intent '{intent}' has no examples.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
 
         results = []
@@ -217,7 +218,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"The synonym has an empty name. "
                 f"Synonyms should have a name defined under the {KEY_SYNONYM} key. "
                 f"It will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -228,7 +229,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Issue found while processing '{self.filename}': "
                 f"{KEY_SYNONYM}: {synonym_name} doesn't have any examples. "
                 f"It will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -237,7 +238,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Unexpected block found in '{self.filename}':\n"
                 f"{examples}\n"
                 f"It will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -252,7 +253,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"The regex has an empty name."
                 f"Regex should have a name defined under the '{KEY_REGEX}' key. "
                 f"It will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -262,7 +263,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Issue found while processing '{self.filename}': "
                 f"'{KEY_REGEX}: {regex_name}' doesn't have any examples. "
                 f"It will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -271,7 +272,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Unexpected block found in '{self.filename}':\n"
                 f"{examples}\n"
                 f"This block will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -288,7 +289,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"The lookup item has an empty name. "
                 f"Lookup items should have a name defined under the '{KEY_LOOKUP}' "
                 f"key. It will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -298,7 +299,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Issue found while processing '{self.filename}': "
                 f"'{KEY_LOOKUP}: {lookup_item_name}' doesn't have any examples. "
                 f"It will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -307,7 +308,7 @@ class RasaYAMLReader(TrainingDataReader):
                 f"Unexpected block found in '{self.filename}':\n"
                 f"{examples}\n"
                 f"This block will be skipped.",
-                docs=DOCS_URL_TRAINING_DATA_NLU,
+                docs=DOCS_URL_TRAINING_DATA,
             )
             return
 
@@ -325,7 +326,7 @@ class RasaYAMLReader(TrainingDataReader):
                     f"'{MULTILINE_TRAINING_EXAMPLE_LEADING_SYMBOL}' symbol: "
                     f"{example}\n"
                     f"This training example will be skipped.",
-                    docs=DOCS_URL_TRAINING_DATA_NLU,
+                    docs=DOCS_URL_TRAINING_DATA,
                 )
                 continue
             yield example[1:].strip(STRIP_SYMBOLS)
@@ -340,23 +341,17 @@ class RasaYAMLReader(TrainingDataReader):
         Returns:
             `True` if the `filename` is possibly a valid YAML NLU file,
             `False` otherwise.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
         if not rasa.shared.data.is_likely_yaml_file(filename):
             return False
 
-        try:
-            content = rasa.shared.utils.io.read_yaml_file(filename)
+        content = rasa.shared.utils.io.read_yaml_file(filename)
 
-            return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
-        except (YAMLError, Warning) as e:
-            logger.error(
-                f"Tried to check if '{filename}' is an NLU file, but failed to "
-                f"read it. If this file contains NLU data, you should "
-                f"investigate this error, otherwise it is probably best to "
-                f"move the file to a different location. "
-                f"Error: {e}"
-            )
-            return False
+        return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
 
 
 class RasaYAMLWriter(TrainingDataWriter):
@@ -377,17 +372,35 @@ class RasaYAMLWriter(TrainingDataWriter):
             target: Name of the target object to write the YAML to.
             training_data: TrainingData object.
         """
+        result = self.training_data_to_dict(training_data)
+
+        if result:
+            rasa.shared.utils.io.write_yaml(result, target, True)
+
+    @classmethod
+    def training_data_to_dict(
+        cls, training_data: "TrainingData"
+    ) -> Optional[OrderedDict]:
+        """Represents NLU training data to a dict/list structure ready to be
+        serialized as YAML.
+
+        Args:
+            training_data: `TrainingData` to convert.
+
+        Returns:
+            `OrderedDict` containing all training data.
+        """
         from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
         from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
         nlu_items = []
-        nlu_items.extend(self.process_intents(training_data))
-        nlu_items.extend(self.process_synonyms(training_data))
-        nlu_items.extend(self.process_regexes(training_data))
-        nlu_items.extend(self.process_lookup_tables(training_data))
+        nlu_items.extend(cls.process_intents(training_data))
+        nlu_items.extend(cls.process_synonyms(training_data))
+        nlu_items.extend(cls.process_regexes(training_data))
+        nlu_items.extend(cls.process_lookup_tables(training_data))
 
         if not any([nlu_items, training_data.responses]):
-            return
+            return None
 
         result = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
@@ -400,7 +413,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         if training_data.responses:
             result[KEY_RESPONSES] = training_data.responses
 
-        rasa.shared.utils.io.write_yaml(result, target, True)
+        return result
 
     @classmethod
     def process_intents(cls, training_data: "TrainingData") -> List[OrderedDict]:

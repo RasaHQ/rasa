@@ -6,6 +6,9 @@ from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 
+# TODO
+#   skip tests as the ConveRT model is not publicly available anymore (see https://github.com/RasaHQ/rasa/issues/6806)
+
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
@@ -22,7 +25,7 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
         ("ńöñàśçií", ["ńöñàśçií"], [(0, 8)]),
     ],
 )
-@pytest.mark.skip_on_windows
+@pytest.mark.skip
 def test_convert_tokenizer_edge_cases(
     component_builder, text, expected_tokens, expected_indices
 ):
@@ -42,7 +45,7 @@ def test_convert_tokenizer_edge_cases(
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
-@pytest.mark.skip_on_windows
+@pytest.mark.skip
 def test_custom_intent_symbol(component_builder, text, expected_tokens):
     tk = component_builder.create_component_from_class(
         ConveRTTokenizer, intent_tokenization_flag=True, intent_split_symbol="+"
@@ -60,7 +63,7 @@ def test_custom_intent_symbol(component_builder, text, expected_tokens):
     "text, expected_number_of_sub_tokens",
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
 )
-@pytest.mark.skip_on_windows
+@pytest.mark.skip
 def test_convert_tokenizer_number_of_sub_tokens(
     component_builder, text, expected_number_of_sub_tokens
 ):

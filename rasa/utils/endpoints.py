@@ -18,7 +18,7 @@ def read_endpoint_config(
 ) -> Optional["EndpointConfig"]:
     """Read an endpoint configuration file from disk and extract one
 
-    config. """
+    config."""
     if not filename:
         return None
 

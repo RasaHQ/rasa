@@ -35,7 +35,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
                 "LexicalSyntacticFeaturizer",
                 "CountVectorsFeaturizer",
                 "CRFEntityExtractor",
-                "DucklingHTTPExtractor",
+                "DucklingEntityExtractor",
                 "DIETClassifier",
                 "ResponseSelector",
                 "EntitySynonymMapper",
@@ -60,12 +60,6 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
                 "DIETClassifier",
             ),
         ),
-        (
-            "zh",
-            as_pipeline(
-                "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
-            ),
-        ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
     ]
 
@@ -78,7 +72,12 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
 
     # first is language followed by list of components
     return [
-        ("en", as_pipeline("ConveRTTokenizer", "ConveRTFeaturizer", "DIETClassifier")),
+        (
+            "en",
+            as_pipeline(
+                "SpacyNLP", "SpacyTokenizer", "SpacyFeaturizer", "DIETClassifier"
+            ),
+        ),
         (
             "en",
             as_pipeline(
@@ -87,6 +86,12 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
                 "MitieFeaturizer",
                 "MitieIntentClassifier",
                 "RegexEntityExtractor",
+            ),
+        ),
+        (
+            "zh",
+            as_pipeline(
+                "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
             ),
         ),
     ]
@@ -101,11 +106,17 @@ def test_all_components_are_in_at_least_one_test_pipeline():
     all_components = [c["name"] for _, p in all_pipelines for c in p]
 
     for cls in registry.component_classes:
+        if "convert" in cls.name.lower():
+            # TODO
+            #   skip ConveRTTokenizer and ConveRTFeaturizer as the ConveRT model is not publicly available anymore
+            #   (see https://github.com/RasaHQ/rasa/issues/6806)
+            continue
         assert (
             cls.name in all_components
         ), "`all_components` template is missing component."
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_persist_load_parse(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -125,6 +136,7 @@ async def test_train_persist_load_parse(language, pipeline, component_builder, t
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 async def test_train_persist_load_parse_non_windows(
@@ -147,6 +159,7 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 def test_train_model_without_data_non_windows(
@@ -155,6 +168,7 @@ def test_train_model_without_data_non_windows(
     test_train_model_without_data(language, pipeline, component_builder, tmpdir)
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 def test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -168,6 +182,7 @@ def test_load_and_persist_without_train(language, pipeline, component_builder, t
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 def test_load_and_persist_without_train_non_windows(

@@ -58,12 +58,12 @@ words ordered in a similar fashion, this can create confusion for the intent cla
 ### Splitting on Entities vs Intents
 
 Intent confusion often occurs when you want your assistant's response to be conditioned on
-information provided by the user. For example, 
+information provided by the user. For example,
 "How do I migrate to Rasa from IBM Watson?" versus "I want to migrate from Dialogflow."
 
 Since each of these messages will lead to a different response, your initial approach might be to create
 separate intents for each migration type, e.g. `watson_migration` and `dialogflow_migration`.
-However, these intents are trying to achieve the same goal (migrating to Rasa) and will 
+However, these intents are trying to achieve the same goal (migrating to Rasa) and will
 likely be phrased similarly, which may cause the model to confuse these intents.
 
 To avoid intent confusion, group these training examples into single `migration` intent and make
@@ -100,14 +100,14 @@ stories:
 ## Improving Entity Recognition
 
 With Rasa Open Source, you can define custom entities and annotate them in your training data
-to teach your model to recognize them. Rasa Open Source also provides components 
+to teach your model to recognize them. Rasa Open Source also provides components
 to extract pre-trained entities, as well as other forms of training data to help
 your model recognize and process entities.
 
 ### Pre-trained Entity Extractors
 
 Common entities such as names, addresses, and cities require a large amount of training
-data for an NLU model to generalize effectively. 
+data for an NLU model to generalize effectively.
 
 Rasa Open Source provides two great options for
 pre-trained extraction: [SpacyEntityExtractor](./components.mdx#SpacyEntityExtractor)
@@ -120,7 +120,7 @@ to extract the entities they support without annotating them in your training da
 Regexes are useful for performing entity extraction on structured patterns such as 5-digit
 U.S. zip codes. Regex patterns can be used to generate features for the NLU model to learn,
 or as a method of direct entity matching.
-See [Regular Expression Features](./training-data-format/#regular-expression-features)
+See [Regular Expression Features](./training-data-format.mdx#regular-expressions)
 for more information.
 
 ### Lookup Tables
@@ -130,7 +130,7 @@ entries exist in the training example. Similar to regexes, lookup tables can be 
 to provide features to the model to improve entity recognition, or used to perform
 match-based entity recognition. Examples of useful applications of lookup tables are
 flavors of ice cream, brands of bottled water, and even sock length styles
-(see [Lookup Tables](./training-data-format/#lookup-tables)).
+(see [Lookup Tables](./training-data-format.mdx#lookup-tables)).
 
 ### Synonyms
 
@@ -143,7 +143,7 @@ For example, in an assistant that asks users what insurance policies they're int
 in, they might respond with "my truck," "a car," or "I drive a batmobile."
 It would be a good idea to map `truck`, `car`, and `batmobile` to the normalized value
 `auto` so that the processing logic will only need to account for a narrow set of
-possibilities (see [Entity Synonyms](./training-data-format/#entity-synonyms)).
+possibilities (see [synonyms](./training-data-format.mdx#synonyms)).
 
 ## Handling Edge Cases
 
@@ -153,7 +153,7 @@ Coming across misspellings is inevitable, so your bot needs an effective way to
 handle this. Keep in mind that the goal is not to correct misspellings, but to
 correctly identify intents and entities. For this reason, while a spellchecker may
 seem like an obvious solution, adjusting your featurizers and training data is often
-sufficient to account for misspellings. 
+sufficient to account for misspellings.
 
 Adding a character-level featurizer provides
 an effective defense against spelling errors by accounting for parts of words, instead
@@ -162,12 +162,12 @@ using the `char_wb` analyzer for the `CountVectorsFeaturizer`, for example:
 
 ```yaml-rasa
 pipeline:
-# <other components> 
+# <other components>
 - name: CountVectorsFeaturizer
   analyze: char_wb
   min_ngram: 1
   max_ngram: 4
-# <other components> 
+# <other components>
 ```
 
 In addition to character-level featurization, you can add common misspellings to
