@@ -84,7 +84,7 @@ rules:
 
 ```
 
-If you want to specify your test stories, you need to put them into a separate file:
+To specify your test stories, you need to put them into a separate file with the prefix `test_`:
 ```yaml-rasa title="tests/test_stories.yml"
 stories:
 - story: greet and ask language
@@ -645,15 +645,14 @@ rules:
 
 For more information about writing rules, see [Rules](rules.mdx#writing-a-rule).
 
-## Test Conversations
+## Test Stories
 
-Test conversations use stories to test your bot. The tests check if a message is
-classified correctly as well as the action predictions.
+Test stories check if a message is classified correctly as well as the action predictions.
 
 Test stories use the same format as [stories](#stories),
 except that user message steps can include a `user` to specify the actual
 text and entity annotations of the user message. Here's an example of a
-test conversation:
+test story:
 
 ```yaml-rasa
 stories:
