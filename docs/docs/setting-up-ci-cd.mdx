@@ -45,6 +45,9 @@ data, or conversation data. To validate your data, have your CI run this command
 rasa data validate --fail-on-warnings --max-history <max_history>
 ```
 
+If you pass a `max_history` value to a Memoization policy in your `config.yml` file, provide the 
+same value in the above validator command. Otherwise, provide the default value of `5`.
+
 If data validation results in errors, training a model will also fail, so it's
 always good to run this check before training a model. By including the
 `--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
