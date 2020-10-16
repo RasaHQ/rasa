@@ -131,6 +131,13 @@ class StoryStep:
     def _bot_string(story_step_element: Event) -> Text:
         return f"    - {story_step_element.as_story_string()}\n"
 
+    @staticmethod
+    def _or_string(story_step_element: List[Event], e2e: bool) -> Text:
+        result = " OR ".join(
+            [element.as_story_string(e2e) for element in story_step_element]
+        )
+        return f"* {result}\n"
+
     def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
@@ -156,6 +163,11 @@ class StoryStep:
                 converted = s.as_story_string()  # pytype: disable=attribute-error
                 if converted:
                     result += self._bot_string(s)
+            elif isinstance(s, list):
+                # The story reader classes support reading stories in
+                # conversion mode.  When this mode is enabled, OR statements
+                # are represented as lists of events.
+                result += self._or_string(s, e2e)
             else:
                 raise Exception(f"Unexpected element in story step: {s}")
 

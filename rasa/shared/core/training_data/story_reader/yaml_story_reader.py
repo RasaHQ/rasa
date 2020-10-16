@@ -336,7 +336,9 @@ class YAMLStoryReader(StoryReader):
                 )
                 return
 
-        self.current_step_builder.add_user_messages(utterances)
+        self.current_step_builder.add_user_messages(
+            utterances, self.is_used_for_conversion
+        )
 
     def _user_intent_from_step(self, step: Dict[Text, Any]) -> Text:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
