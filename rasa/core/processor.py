@@ -574,10 +574,9 @@ class MessageProcessor:
             with rasa.otel.tracer.start_span("predict_next_action"):
                 action, policy, confidence = self.predict_next_action(tracker)
 
-            with rasa.otel.tracer.start_span("_run_action"):
-                should_predict_another_action = await self._run_action(
-                    action, tracker, output_channel, self.nlg, policy, confidence
-                )
+            should_predict_another_action = await self._run_action(
+                action, tracker, output_channel, self.nlg, policy, confidence
+            )
             num_predicted_actions += 1
 
         if self.is_action_limit_reached(
@@ -691,7 +690,12 @@ class MessageProcessor:
             # be passed to the SessionStart event. Otherwise the metadata will be lost.
             if action.name() == ACTION_SESSION_START_NAME:
                 action.metadata = metadata
-            events = await action.run(output_channel, nlg, tracker, self.domain)
+            if rasa.otel.tracer:
+                action_tracer = rasa.otel.Tracer("action")
+                with action.tracer.start_span("run_action"):
+                    events = await action.run(output_channel, nlg, tracker, self.domain)
+            else:
+                events = await action.run(output_channel, nlg, tracker, self.domain)
         except rasa.core.actions.action.ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])

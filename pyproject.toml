@@ -130,6 +130,7 @@ sentry-sdk = "^0.17.4"
 opentelemetry-api = "^0.13b0"
 opentelemetry-sdk = "^0.13b0"
 opentelemetry-instrumentation-sqlalchemy = "^0.13b0"
+jaeger-client = "^4.3.0"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"

@@ -1079,6 +1079,23 @@ six = "*"
 
 [[package]]
 category = "main"
+description = "Jaeger Python OpenTracing Tracer implementation"
+name = "jaeger-client"
+optional = false
+python-versions = "*"
+version = "4.3.0"
+
+[package.dependencies]
+opentracing = ">=2.1,<3.0"
+threadloop = ">=1,<2"
+thrift = "*"
+tornado = ">=4.3"
+
+[package.extras]
+tests = ["mock (1.0.1)", "pycurl (>=7.43,<8)", "pytest (>=3.7.0,<3.8.0)", "pytest-cov (2.5.1)", "coverage (<4.4)", "pytest-timeout (1.3.1)", "pytest-tornado", "pytest-benchmark (>=3.0.0rc1,<3.2)", "pytest-localserver", "flake8", "flake8-quotes", "codecov", "opentracing_instrumentation (>=3,<4)", "prometheus_client (0.3.1)", "tchannel (>=0.27)"]
+
+[[package]]
+category = "main"
 description = "Chinese Words Segmentation Utilities"
 name = "jieba"
 optional = true
@@ -1632,19 +1649,6 @@ wrapt = ">=1.0.0,<2.0.0"
 
 [[package]]
 category = "main"
-description = "OpenTelemetry aiohttp client instrumentation"
-name = "opentelemetry-instrumentation-aiohttp-client"
-optional = false
-python-versions = ">=3.5.3"
-version = "0.13b0"
-
-[package.dependencies]
-aiohttp = ">=3.0,<4.0"
-opentelemetry-api = ">=0.12.dev0"
-opentelemetry-instrumentation = "0.13b0"
-
-[[package]]
-category = "main"
 description = "OpenTelemetry SQLAlchemy instrumentation"
 name = "opentelemetry-instrumentation-sqlalchemy"
 optional = false
@@ -1670,6 +1674,17 @@ version = "0.13b0"
 
 [package.dependencies]
 opentelemetry-api = "0.13b0"
+
+[[package]]
+category = "main"
+description = "OpenTracing API for Python. See documentation at http://opentracing.io"
+name = "opentracing"
+optional = false
+python-versions = "*"
+version = "2.3.0"
+
+[package.extras]
+tests = ["doubles", "flake8", "flake8-quotes", "mock", "pytest", "pytest-cov", "pytest-mock", "sphinx", "sphinx-rtd-theme", "six (>=1.10.0,<2.0)", "gevent", "tornado"]
 
 [[package]]
 category = "main"
@@ -2865,11 +2880,38 @@ cuda92 = ["cupy-cuda92 (>=5.0.0b4)"]
 
 [[package]]
 category = "main"
+description = "Tornado IOLoop Backed Concurrent Futures"
+name = "threadloop"
+optional = false
+python-versions = "*"
+version = "1.0.2"
+
+[package.dependencies]
+tornado = "*"
+
+[[package]]
+category = "main"
 description = "threadpoolctl"
 name = "threadpoolctl"
 optional = false
 python-versions = ">=3.5"
 version = "2.1.0"
+
+[[package]]
+category = "main"
+description = "Python bindings for the Apache Thrift RPC system"
+name = "thrift"
+optional = false
+python-versions = "*"
+version = "0.13.0"
+
+[package.dependencies]
+six = ">=1.7.2"
+
+[package.extras]
+all = ["tornado (>=4.0)", "twisted"]
+tornado = ["tornado (>=4.0)"]
+twisted = ["twisted"]
 
 [[package]]
 category = "main"
@@ -3762,6 +3804,9 @@ isodate = [
     {file = "isodate-0.6.0-py2.py3-none-any.whl", hash = "sha256:aa4d33c06640f5352aca96e4b81afd8ab3b47337cc12089822d6f322ac772c81"},
     {file = "isodate-0.6.0.tar.gz", hash = "sha256:2e364a3d5759479cdb2d37cce6b9376ea504db2ff90252a2e5b7cc89cc9ff2d8"},
 ]
+jaeger-client = [
+    {file = "jaeger-client-4.3.0.tar.gz", hash = "sha256:7f72c341a21e3dcbc8498d1ed17c93e0eec71c5becc5c9333c4293793d4e6433"},
+]
 jieba = [
     {file = "jieba-0.42.1.tar.gz", hash = "sha256:055ca12f62674fafed09427f176506079bc135638a14e23e25be909131928db2"},
 ]
@@ -4049,10 +4094,6 @@ opentelemetry-instrumentation = [
     {file = "opentelemetry-instrumentation-0.13b0.tar.gz", hash = "sha256:68b7ca188045f62f4c8aece44465d6aa34fb211c007581737245a3875290689b"},
     {file = "opentelemetry_instrumentation-0.13b0-py3-none-any.whl", hash = "sha256:d6d181731cb60da45a58114c3eccbc882516a27a695473692f1b30556f1a2685"},
 ]
-opentelemetry-instrumentation-aiohttp-client = [
-    {file = "opentelemetry-instrumentation-aiohttp-client-0.13b0.tar.gz", hash = "sha256:55f4c07dda2d346646427dbb3a1b6b665f06f219849deebc835adef9bae351f4"},
-    {file = "opentelemetry_instrumentation_aiohttp_client-0.13b0-py3-none-any.whl", hash = "sha256:058b364bcda274d52375c132f811a5c00fd3b86ed7be52b9b7a31e927d71fadb"},
-]
 opentelemetry-instrumentation-sqlalchemy = [
     {file = "opentelemetry-instrumentation-sqlalchemy-0.13b0.tar.gz", hash = "sha256:a65fdc167aaee64969564a31e3f9ea9adfe65bdf0ca3e8d83ce39b1bdfa00741"},
     {file = "opentelemetry_instrumentation_sqlalchemy-0.13b0-py3-none-any.whl", hash = "sha256:13452bd13556cc4157e9fc48c81a8d9039de4a1cb1ce31b91fe0d10210863d57"},
@@ -4060,6 +4101,9 @@ opentelemetry-instrumentation-sqlalchemy = [
 opentelemetry-sdk = [
     {file = "opentelemetry-sdk-0.13b0.tar.gz", hash = "sha256:15f87b7e42551ccef3a3534ddf376fc323d0306d1233b9199eb4e9fe13d04c85"},
     {file = "opentelemetry_sdk-0.13b0-py3-none-any.whl", hash = "sha256:c6843290980e1023c3e05d387725b7d5fee3f2461d61ede0578b9b2e69519002"},
+]
+opentracing = [
+    {file = "opentracing-2.3.0.tar.gz", hash = "sha256:33b10634917a7496a7e3a18b18b7c055053d0a8da5101e2a95d454783cac9765"},
 ]
 opt-einsum = [
     {file = "opt_einsum-3.3.0-py3-none-any.whl", hash = "sha256:2455e59e3947d3c275477df7f5205b30635e266fe6dc300e3d9f9646bfcea147"},
@@ -4774,9 +4818,16 @@ thinc = [
     {file = "thinc-7.4.0-cp38-cp38-win_amd64.whl", hash = "sha256:5ac162b010f21f8fcc3fd10766025fad3ec670f6b2e0a72284912332d1ae292a"},
     {file = "thinc-7.4.0.tar.gz", hash = "sha256:523e9be1bfaa3ed1d03d406ce451b6b4793a9719d5b83d2ea6b3398b96bc58b8"},
 ]
+threadloop = [
+    {file = "threadloop-1.0.2-py2-none-any.whl", hash = "sha256:5c90dbefab6ffbdba26afb4829d2a9df8275d13ac7dc58dccb0e279992679599"},
+    {file = "threadloop-1.0.2.tar.gz", hash = "sha256:8b180aac31013de13c2ad5c834819771992d350267bddb854613ae77ef571944"},
+]
 threadpoolctl = [
     {file = "threadpoolctl-2.1.0-py3-none-any.whl", hash = "sha256:38b74ca20ff3bb42caca8b00055111d74159ee95c4370882bbff2b93d24da725"},
     {file = "threadpoolctl-2.1.0.tar.gz", hash = "sha256:ddc57c96a38beb63db45d6c159b5ab07b6bced12c45a1f07b2b92f272aebfa6b"},
+]
+thrift = [
+    {file = "thrift-0.13.0.tar.gz", hash = "sha256:9af1c86bf73433afc6010ed376a6c6aca2b54099cc0d61895f640870a9ae7d89"},
 ]
 tokenizers = [
     {file = "tokenizers-0.7.0-cp35-cp35m-macosx_10_10_x86_64.whl", hash = "sha256:c9edc043bc14462faf8b261b528661718e9c4f0b8424fb25be71cae26187432a"},
