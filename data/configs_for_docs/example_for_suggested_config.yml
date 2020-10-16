@@ -8,4 +8,3 @@ policies:
 - name: TEDPolicy
   max_history: 5
   epochs: 10
-- name: MappingPolicy

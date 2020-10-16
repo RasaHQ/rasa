@@ -31,7 +31,7 @@ from rasa.utils import common as common_utils
 from rasa import model
 from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
-    DOCS_URL_TRAINING_DATA_NLU,
+    DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
@@ -879,7 +879,9 @@ def create_app(
 
         data_path = os.path.abspath(test_data)
 
-        if not os.path.exists(eval_agent.model_directory):
+        if not eval_agent.model_directory or not os.path.exists(
+            eval_agent.model_directory
+        ):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory
@@ -1217,11 +1219,11 @@ def _model_output_directory(save_to_default_model_directory: bool) -> Text:
 
 def _validate_yaml_training_payload(yaml_text: Text) -> None:
     try:
-        RasaYAMLReader.validate(yaml_text)
+        RasaYAMLReader().validate(yaml_text)
     except Exception as e:
         raise ErrorResponse(
             400,
             "BadRequest",
             f"The request body does not contain valid YAML. Error: {e}",
-            help_url=DOCS_URL_TRAINING_DATA_NLU,
+            help_url=DOCS_URL_TRAINING_DATA,
         )

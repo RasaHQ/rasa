@@ -186,7 +186,7 @@ class MarkdownStoryReader(StoryReader):
             )
         parsed_messages = [self._parse_message(m, line_num) for m in messages]
         self.current_step_builder.add_user_messages(
-            parsed_messages, self.unfold_or_utterances
+            parsed_messages, self.is_used_for_conversion
         )
 
     def _add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
@@ -199,13 +199,12 @@ class MarkdownStoryReader(StoryReader):
 
         parsed_messages = []
         for m in e2e_messages:
-            message = self.parse_e2e_message(m)
-            parsed = self._parse_message(message.get(TEXT), line_num)
+            parsed = self._parse_message(m, line_num)
             parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
     @staticmethod
-    def parse_e2e_message(line: Text) -> Message:
+    def parse_e2e_message(line: Text, is_used_for_conversion: bool = False) -> Message:
         """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>`. For the
@@ -232,6 +231,11 @@ class MarkdownStoryReader(StoryReader):
         intent = match.group(2)
         message = match.group(4)
         example = entities_parser.parse_training_example(message, intent)
+        if is_used_for_conversion:
+            # In case this is a simple conversion from Markdown we should copy over
+            # the original text and not parse the entities
+            example.data[rasa.shared.nlu.constants.TEXT] = message
+            example.data[rasa.shared.nlu.constants.ENTITIES] = []
 
         # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
         # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
@@ -242,15 +246,24 @@ class MarkdownStoryReader(StoryReader):
         return example
 
     def _parse_message(self, message: Text, line_num: int) -> UserUttered:
-        parse_data = RegexInterpreter().synchronous_parse(message)
 
-        text = None
         if self.use_e2e:
-            text = parse_data.get("text")
+            parsed = self.parse_e2e_message(message, self.is_used_for_conversion)
+            text = parsed.get("text")
+            intent = {INTENT_NAME_KEY: parsed.get("intent")}
+            entities = parsed.get("entities")
+            parse_data = {
+                "text": text,
+                "intent": intent,
+                "intent_ranking": [{INTENT_NAME_KEY: parsed.get("intent")}],
+                "entities": entities,
+            }
+        else:
+            parse_data = RegexInterpreter().synchronous_parse(message)
+            text = None
+            intent = parse_data.get("intent")
 
-        utterance = UserUttered(
-            text, parse_data.get("intent"), parse_data.get("entities"), parse_data
-        )
+        utterance = UserUttered(text, intent, parse_data.get("entities"), parse_data)
 
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
@@ -265,7 +278,7 @@ class MarkdownStoryReader(StoryReader):
         return utterance
 
     @staticmethod
-    def is_markdown_story_file(file_path: Union[Text, Path]) -> bool:
+    def is_stories_file(file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in Markdown format.
 
         Args:
@@ -301,7 +314,7 @@ class MarkdownStoryReader(StoryReader):
             return False
 
     @staticmethod
-    def is_markdown_test_stories_file(file_path: Union[Text, Path]) -> bool:
+    def is_test_stories_file(file_path: Union[Text, Path]) -> bool:
         """Checks if a file contains test stories.
 
         Args:

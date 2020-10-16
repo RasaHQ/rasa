@@ -35,6 +35,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
 from rasa.shared.core.events import (
     UserUtteranceReverted,
@@ -661,7 +662,7 @@ class RemoteAction(Action):
         return self._name
 
 
-class ActionExecutionRejection(Exception):
+class ActionExecutionRejection(RasaException):
     """Raising this exception will allow other policies
     to predict a different action"""
 
@@ -682,7 +683,8 @@ class ActionRevertFallbackEvents(Action):
     This reverts user messages and bot utterances done during a fallback
     of the `TwoStageFallbackPolicy`. By doing so it is not necessary to
     write custom stories for the different paths, but only of the happy
-    path.
+    path. This is deprecated and can be removed once the
+    `TwoStageFallbackPolicy` is removed.
     """
 
     def name(self) -> Text:

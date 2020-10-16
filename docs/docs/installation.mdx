@@ -1,25 +1,19 @@
 ---
-id: installation
 sidebar_label: Installation
 title: Installation
-description: Install Rasa Open Source on premises to enable local and customizable Natural Lanaguage Understanding and Dialogue Management.
+description: Install Rasa Open Source on premises to enable local and customizable Natural Language Understanding and Dialogue Management.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import { Button } from '@theme/Button';
 
 ## Quick Installation
-:::info Release candidate
-This is the documentation for Rasa Open Source 2.0.0rc2. If you are looking for the
-production ready stable release, please head over to our
-[1.x documentation](https://legacy-docs-v1.rasa.com/user-guide/installation/).
-:::
 
 You can install Rasa Open Source using pip (requires Python 3.6, 3.7 or 3.8).
 
-<!-- TODO: REMOVE VERSION NUMBER FOR RASA 2.0 RELEASE -->
 ```bash
-pip3 install rasa==2.0.0rc2
+pip3 install rasa
 ```
 
 You are now ready to go! So what's next?
@@ -30,10 +24,10 @@ rasa init
 ```
 
 :::note Want to explore first?
-You can explore Rasa Open Source online using our prototyper without any installation.
+You can explore Rasa Open Source online using the Rasa Playground even before you install.
 At the end of the tutorial you can download the resulting assistant, install Rasa on
 your machine and continue development locally.
-<a className="button button--outline button button" href="prototype-an-assistant">Prototype an Assistant</a>
+<a className="button button--outline button button" href={useBaseUrl("/playground")}>Rasa Playground</a>
 :::
 
 ## Step-by-step Installation Guide
@@ -181,10 +175,10 @@ You can read more about how that data is pulled out and what it is used for in t
 
 **Congratulations! You have successfully installed Rasa Open Source!**
 
-Next step: Start prototyping your first assistant online and download it afterwards
+Next step: Use the Rasa Playground to prototype your first assistant in the browser and download it afterwards
 
 
-<Button as="a" href="prototype-an-assistant">Prototype an Assistant</Button>
+<Button as="a" href={useBaseUrl("/playground")}>Rasa Playground</Button>
 
 ## Building from Source
 
@@ -254,11 +248,11 @@ tell it where to find this file (in this example it was saved in the
 To upgrade your installed version of Rasa Open Source to the latest version from PyPI:
 
 ```bash
-pip install --upgrade rasa
+pip3 install --upgrade rasa
 ```
 
 To download a specific version, specify the version number:
 
 ```bash
-pip install rasa==1.8.3
+pip3 install rasa==1.8.3
 ```

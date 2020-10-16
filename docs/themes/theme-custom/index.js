@@ -11,6 +11,16 @@ module.exports = function() {
       return path.resolve(__dirname, './theme');
     },
 
+    // FIXME: this allows to disable searchbox shortcuts. It's a quickfix and shouldn't be located here,
+    //        but it's temporary and should be removed when we enable Algolia search
+    getClientModules() {
+      const modules = [
+        require.resolve('./styles.css')
+      ];
+
+      return modules;
+    },
+
     configureWebpack() {
       return {
         resolve: {
