@@ -180,7 +180,7 @@ class DialogueStateTracker:
         self.followup_action = ACTION_LISTEN_NAME
         self.latest_action = None
         # Stores the most recent message sent by the user
-        self.latest_message = None
+        self.latest_message: Optional[Event] = None
         self.latest_bot_utterance = None
         self._reset()
         self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
