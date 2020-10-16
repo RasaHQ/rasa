@@ -14,6 +14,7 @@ class KafkaEventBroker(EventBroker):
         url: Union[Text, List[Text], None],
         topic: Text = "rasa_core_events",
         client_id: Optional[Text] = None,
+        group_id: Optional[Text] = None,
         sasl_username: Optional[Text] = None,
         sasl_password: Optional[Text] = None,
         ssl_cafile: Optional[Text] = None,
@@ -62,6 +63,7 @@ class KafkaEventBroker(EventBroker):
         self.url = url
         self.topic = topic
         self.client_id = client_id
+        self.group_id = group_id
         self.security_protocol = security_protocol.upper()
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
@@ -90,16 +92,16 @@ class KafkaEventBroker(EventBroker):
         import kafka
 
         if self.security_protocol == "PLAINTEXT":
-            self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
+            self.producer = kafka.KafkaConsumer(
+                self.topic,
                 bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
-                security_protocol=self.security_protocol,
+                client_id=self.client_id,
+                group_id=self.group_id,
+                security_protocol="PLAINTEXT",
                 ssl_check_hostname=False,
             )
         elif self.security_protocol == "SASL_PLAINTEXT":
             self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
                 bootstrap_servers=self.url,
                 value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
                 sasl_plain_username=self.sasl_username,
@@ -109,7 +111,6 @@ class KafkaEventBroker(EventBroker):
             )
         elif self.security_protocol == "SSL":
             self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
                 bootstrap_servers=self.url,
                 value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
                 ssl_cafile=self.ssl_cafile,
@@ -119,18 +120,19 @@ class KafkaEventBroker(EventBroker):
                 security_protocol=self.security_protocol,
             )
         elif self.security_protocol == "SASL_SSL":
-            self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
+            self.producer = kafka.KafkaConsumer(
+                self.topic,
                 bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+                client_id=self.client_id,
+                group_id=self.group_id,
+                security_protocol="SASL_SSL",
+                sasl_mechanism="PLAIN",
                 sasl_plain_username=self.sasl_username,
                 sasl_plain_password=self.sasl_password,
                 ssl_cafile=self.ssl_cafile,
                 ssl_certfile=self.ssl_certfile,
                 ssl_keyfile=self.ssl_keyfile,
                 ssl_check_hostname=self.ssl_check_hostname,
-                security_protocol=self.security_protocol,
-                sasl_mechanism="PLAIN",
             )
         else:
             raise ValueError(

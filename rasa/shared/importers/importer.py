@@ -443,6 +443,7 @@ class E2EImporter(TrainingDataImporter):
         return original.merge(e2e_domain)
 
     async def _get_domain_with_e2e_actions(self) -> Domain:
+        from rasa.shared.core.events import ActionExecuted
 
         stories = await self.get_stories()
 

@@ -61,14 +61,11 @@ module.exports = {
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      // this is configured via DocSearch here:
-      // https://github.com/algolia/docsearch-configs/blob/master/configs/rasa.json
-      apiKey: '1f9e0efb89e98543f6613a60f847b176',
-      indexName: 'rasa',
+      disabled: true, // FIXME: remove this when our index is good
+      apiKey: '25626fae796133dc1e734c6bcaaeac3c', // FIXME: replace with values from our own index
+      indexName: 'docsearch', // FIXME: replace with values from our own index
       inputSelector: '.search-bar',
-      searchParameters: {
-        'facetFilters': ["tags:rasa"]
-      }
+      // searchParameters: {}, // Optional (if provided by Algolia)
     },
     navbar: {
       hideOnScroll: false,
