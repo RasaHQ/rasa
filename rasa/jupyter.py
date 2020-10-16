@@ -62,7 +62,7 @@ def chat(
 
 
 def _display_bot_response(response: Dict):
-    from IPython.display import Image, display  # rasa-16-to-rasa-17
+    from IPython.display import Image, display  # pytype: disable=import-error
 
     for response_type, value in response.items():
         if response_type == "text":

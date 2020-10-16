@@ -56,7 +56,7 @@ class SingleStateFeaturizer:
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.action_texts = domain.action_texts
 
-    # rasa-16-to-rasa-17
+    # pytype: disable=bad-return-type
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
     ) -> Dict[Text, int]:
@@ -78,7 +78,7 @@ class SingleStateFeaturizer:
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
 
-    # rasa-16-to-rasa-17
+    # pytype: enable=bad-return-type
 
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False

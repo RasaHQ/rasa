@@ -128,7 +128,7 @@ class SlackInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # rasa-16-to-rasa-17
+        # pytype: disable=attribute-error
         return cls(
             credentials.get("slack_token"),
             credentials.get("slack_channel"),
@@ -138,8 +138,7 @@ class SlackInput(InputChannel):
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
         )
-
-    # rasa-16-to-rasa-17
+        # pytype: enable=attribute-error
 
     def __init__(
         self,

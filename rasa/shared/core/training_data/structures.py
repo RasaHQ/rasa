@@ -8,15 +8,15 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Unio
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
-from rasa.shared.core.conversation import Dialogue  # rasa-16-to-rasa-17
-from rasa.shared.core.domain import Domain  # rasa-16-to-rasa-17
-from rasa.shared.core.events import (  # rasa-16-to-rasa-17
+from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
+from rasa.shared.core.domain import Domain  # pytype: disable=pyi-error
+from rasa.shared.core.events import (  # pytype: disable=pyi-error
     UserUttered,
     ActionExecuted,
     Event,
     SessionStarted,
 )
-from rasa.shared.core.trackers import DialogueStateTracker  # rasa-16-to-rasa-17
+from rasa.shared.core.trackers import DialogueStateTracker  # pytype: disable=pyi-error
 
 if typing.TYPE_CHECKING:
     import networkx as nx
@@ -153,7 +153,7 @@ class StoryStep:
             if isinstance(s, UserUttered):
                 result += self._user_string(s, e2e)
             elif isinstance(s, Event):
-                converted = s.as_story_string()  # rasa-16-to-rasa-17
+                converted = s.as_story_string()  # pytype: disable=attribute-error
                 if converted:
                     result += self._bot_string(s)
             else:
@@ -168,22 +168,20 @@ class StoryStep:
     def is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
-        # rasa-16-to-rasa-17
+        # pytype: disable=attribute-error
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
-
-    # rasa-16-to-rasa-17
+        # pytype: enable=attribute-error
 
     @staticmethod
     def is_action_session_start(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
-        # rasa-16-to-rasa-17
+        # pytype: disable=attribute-error
         return (
             type(event) == ActionExecuted
             and event.action_name == ACTION_SESSION_START_NAME
         )
-
-    # rasa-16-to-rasa-17
+        # pytype: enable=attribute-error
 
     def _add_action_listen(self, events: List[Event]) -> None:
         if not events or not self.is_action_listen(events[-1]):
@@ -208,7 +206,9 @@ class StoryStep:
                 self._add_action_listen(events)
                 events.append(e)
                 events.extend(
-                    domain.slots_for_entities(e.entities)  # rasa-16-to-rasa-17
+                    domain.slots_for_entities(
+                        e.entities  # pytype: disable=attribute-error
+                    )
                 )
             else:
                 events.append(e)

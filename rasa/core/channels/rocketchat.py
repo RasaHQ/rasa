@@ -108,14 +108,13 @@ class RocketChatInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # rasa-16-to-rasa-17
+        # pytype: disable=attribute-error
         return cls(
             credentials.get("user"),
             credentials.get("password"),
             credentials.get("server_url"),
         )
-
-    # rasa-16-to-rasa-17
+        # pytype: enable=attribute-error
 
     def __init__(self, user: Text, password: Text, server_url: Text) -> None:
 

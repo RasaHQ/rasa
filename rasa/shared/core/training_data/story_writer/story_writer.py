@@ -5,7 +5,7 @@ from typing import List, Text, Union
 from ruamel import yaml
 
 if typing.TYPE_CHECKING:
-    from rasa.shared.core.events import Event  # rasa-16-to-rasa-17
+    from rasa.shared.core.events import Event  # pytype: disable=pyi-error
     from rasa.shared.core.training_data.structures import StoryStep
 
 

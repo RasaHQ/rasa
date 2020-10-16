@@ -184,7 +184,7 @@ class HangoutsInput(InputChannel):
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
 
         if credentials:
-            return cls(credentials.get("project_id"))  # rasa-16-to-rasa-17
+            return cls(credentials.get("project_id"))  # pytype: disable=attribute-error
 
         return cls()
 

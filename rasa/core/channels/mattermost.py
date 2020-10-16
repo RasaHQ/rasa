@@ -132,7 +132,7 @@ class MattermostInput(InputChannel):
         if credentials is None:
             cls.raise_missing_credentials_exception()
 
-        # rasa-16-to-rasa-17
+        # pytype: disable=attribute-error
         if credentials.get("pw") is not None or credentials.get("user") is not None:
             rasa.shared.utils.io.raise_deprecation_warning(
                 "Mattermost recently switched to bot accounts. 'user' and 'pw' "
@@ -148,8 +148,7 @@ class MattermostInput(InputChannel):
             token = credentials.get("token")
 
         return cls(credentials.get("url"), token, credentials.get("webhook_url"))
-
-    # rasa-16-to-rasa-17
+        # pytype: enable=attribute-error
 
     def __init__(self, url: Text, token: Text, webhook_url: Text) -> None:
         """Create a Mattermost input channel.
