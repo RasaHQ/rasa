@@ -233,3 +233,6 @@ def plot_attention_weights(
         fig = plt.gcf()
         fig.set_size_inches(10, 10)
         fig.savefig(output_file, bbox_inches="tight")
+        # Delete the figure from memory since it's saved now
+        plt.clf()
+        plt.close()

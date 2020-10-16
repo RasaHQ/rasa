@@ -375,7 +375,6 @@ class Interpreter:
         text: Text,
         time: Optional[datetime.datetime] = None,
         only_output_properties: bool = True,
-        show_diagnostics: bool = False,
     ) -> Dict[Text, Any]:
         """Parse the input text, classify it and return pipeline result.
 
@@ -396,7 +395,7 @@ class Interpreter:
         message = Message(data=data, time=time)
 
         for component in self.pipeline:
-            component.process(message, show_diagnostics=show_diagnostics, **self.context)
+            component.process(message, **self.context)
 
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))

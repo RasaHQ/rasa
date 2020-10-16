@@ -373,7 +373,6 @@ class TEDPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-        show_diagnostics: bool = False,
         **kwargs: Any,
     ) -> List[float]:
         """Predict the next action the bot should take.
@@ -398,7 +397,7 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        if show_diagnostics and DIAGNOSTIC_DATA in output and ATTENTION_WEIGHTS in output[DIAGNOSTIC_DATA]:
+        if self.config[TENSORBOARD_LOG_DIR] and DIAGNOSTIC_DATA in output and ATTENTION_WEIGHTS in output[DIAGNOSTIC_DATA]:
             plot_attention_weights(
                 output[DIAGNOSTIC_DATA][ATTENTION_WEIGHTS],
                 title="TEDPolicy",
