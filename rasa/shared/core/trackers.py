@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
+from rasa.shared.core import events  # pytype: disable=pyi-error
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     LOOP_NAME,
@@ -120,9 +121,8 @@ class DialogueStateTracker:
 
         The dump should be an array of dumped events. When restoring
         the tracker, these events will be replayed to recreate the state."""
-        import rasa.shared.core.events
+        evts = events.deserialise_events(events_as_dict)
 
-        evts = rasa.shared.core.events.deserialise_events(events_as_dict)
         return cls.from_events(sender_id, evts, slots, max_event_history)
 
     @classmethod
@@ -828,9 +828,7 @@ def get_trackers_for_conversation_sessions(
     Returns:
         The trackers split by conversation sessions.
     """
-    import rasa.shared.core.events
-
-    split_conversations = rasa.shared.core.events.split_events(
+    split_conversations = events.split_events(
         tracker.events,
         ActionExecuted,
         {"action_name": ACTION_SESSION_START_NAME},
@@ -839,10 +837,7 @@ def get_trackers_for_conversation_sessions(
 
     return [
         DialogueStateTracker.from_events(
-            tracker.sender_id,
-            events,
-            tracker.slots,
-            sender_source=tracker.sender_source,
+            tracker.sender_id, evts, tracker.slots, sender_source=tracker.sender_source,
         )
-        for events in split_conversations
+        for evts in split_conversations
     ]
