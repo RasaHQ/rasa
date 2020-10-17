@@ -6,7 +6,6 @@ import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.utils import common as common_utils
 from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,

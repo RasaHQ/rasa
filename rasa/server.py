@@ -27,7 +27,6 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.utils import common as common_utils
 from rasa import model
 from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (

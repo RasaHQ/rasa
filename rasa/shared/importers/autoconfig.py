@@ -2,7 +2,6 @@ import copy
 import logging
 import os
 from enum import Enum
-from pathlib import Path
 from typing import Text, Dict, Any, List, Set, Optional
 
 import rasa.shared.constants
