@@ -632,7 +632,6 @@ def test_tracker_store_retrieve_with_events_from_previous_sessions(
     tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict
 ):
     tracker_store = tracker_store_type(Domain.empty(), **tracker_store_kwargs)
-    tracker_store.load_events_from_previous_conversation_sessions = True
 
     conversation_id = uuid.uuid4().hex
     tracker = DialogueStateTracker.from_events(
@@ -647,9 +646,34 @@ def test_tracker_store_retrieve_with_events_from_previous_sessions(
     )
     tracker_store.save(tracker)
 
-    actual = tracker_store.retrieve(conversation_id)
+    actual = tracker_store.retrieve_full_tracker(conversation_id)
 
     assert len(actual.events) == len(tracker.events)
+
+
+def test_tracker_store_deprecated_session_retrieval_kwarg():
+    tracker_store = SQLTrackerStore(
+        Domain.empty(), retrieve_events_from_previous_conversation_sessions=True
+    )
+
+    conversation_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+        ],
+    )
+
+    mocked_retrieve_full_tracker = Mock()
+    tracker_store.retrieve_full_tracker = mocked_retrieve_full_tracker
+
+    tracker_store.save(tracker)
+
+    _ = tracker_store.retrieve(conversation_id)
+
+    mocked_retrieve_full_tracker.assert_called_once()
 
 
 def test_session_scope_error(
@@ -830,19 +854,3 @@ def test_current_state_without_events(default_domain: Domain):
 
     # `events` key should not be in there
     assert state and "events" not in state
-
-
-@pytest.mark.parametrize("initial_value", [True, False])
-def test_tracker_store_with_full_conversation_retrieval(initial_value: bool):
-    tracker_store = InMemoryTrackerStore(Domain.empty())
-    tracker_store.load_events_from_previous_conversation_sessions = initial_value
-
-    with rasa.core.tracker_store.tracker_store_with_full_conversation_retrieval(
-        tracker_store
-    ):
-        assert tracker_store.load_events_from_previous_conversation_sessions
-
-    # the initial value is restored after leaving the context manager
-    assert (
-        tracker_store.load_events_from_previous_conversation_sessions == initial_value
-    )
