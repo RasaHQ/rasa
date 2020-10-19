@@ -126,7 +126,6 @@ class Message:
         if intent_metadata is not None:
             data[METADATA] = {METADATA_INTENT: intent_metadata}
         if example_metadata is not None:
-
             data.setdefault(METADATA, {})[METADATA_EXAMPLE] = example_metadata
 
         return cls(data, **kwargs)

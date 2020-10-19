@@ -511,10 +511,6 @@ class TEDPolicy(Policy):
         )
 
 
-# accessing _tf_layers with any key results in key-error, disable it
-# pytype: disable=key-error
-
-
 class TED(TransformerRasaModel):
     def __init__(
         self,
@@ -842,6 +838,3 @@ class TED(TransformerRasaModel):
         )
 
         return {"action_scores": scores}
-
-
-# pytype: enable=key-error

@@ -168,14 +168,12 @@ class StoryStep:
     def is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
-
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
 
     @staticmethod
     def is_action_session_start(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
-
         return (
             type(event) == ActionExecuted
             and event.action_name == ACTION_SESSION_START_NAME

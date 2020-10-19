@@ -32,6 +32,12 @@ fi
 # clone the $DOCS_BRANCH in a temp directory
 git clone --depth=1 --branch=$DOCS_BRANCH git@github.com:$GITHUB_REPOSITORY.git $TMP_DOCS_FOLDER
 
+if [ ! -z "$NEW_VERSION" ] && [ -d "$TMP_DOCS_FOLDER/docs/versioned_docs/version-$NEW_VERSION/" ]
+then
+    echo "Trying to create a new docs version, but the folder already exist. Updating the $NEW_VERSION version instead..."
+    EXISTING_VERSION=$NEW_VERSION
+fi
+
 if [ ! -z "$EXISTING_VERSION" ]
 then
     echo "Updating docs for existing version $EXISTING_VERSION..."

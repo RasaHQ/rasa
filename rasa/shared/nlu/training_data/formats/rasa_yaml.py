@@ -177,7 +177,6 @@ class RasaYAMLReader(TrainingDataReader):
                 for example in examples
                 if example
             ]
-
         elif isinstance(examples, str):
             example_tuples = [
                 (example, None)

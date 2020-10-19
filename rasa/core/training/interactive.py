@@ -750,21 +750,12 @@ def _split_conversation_at_restarts(
     """Split a conversation at restart events.
 
     Returns an array of event lists, without the restart events."""
+    deserialized_events = [Event.from_parameters(event) for event in events]
+    split_events = rasa.shared.core.events.split_events(
+        deserialized_events, Restarted, include_splitting_event=False
+    )
 
-    sub_conversations = []
-    current = []
-    for e in events:
-        if e.get("event") == "restart":
-            if current:
-                sub_conversations.append(current)
-            current = []
-        else:
-            current.append(e)
-
-    if current:
-        sub_conversations.append(current)
-
-    return sub_conversations
+    return [[event.as_dict() for event in events] for events in split_events]
 
 
 def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
