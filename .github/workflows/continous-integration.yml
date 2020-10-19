@@ -96,17 +96,18 @@ jobs:
         sudo apt-get -y install libpq-dev
         make install-full install-docs
 
-    - name: Lint Code 🎎
-      run: make lint
-
     - name: Checkout target branch to be able to diff
       if: github.event_name == 'pull_request'
       run: |
         git fetch --depth=1 origin ${{ github.base_ref }}
+        echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
 
-    - name: Check Docstring conventions 📃
-      if: github.event_name == 'pull_request'
-      run: make lint-docs branch=origin/${{ github.base_ref }}
+    - name: Lint Code 🎎
+      run: |
+        # If it's not a pull request, $DOCSTRING_DIFF_BRANCH is unset.
+        # This will result in an empty diff, which effictively means that
+        # make lint-docstrings will be skipped for other events than `pull_request`
+        make lint BRANCH=$DOCSTRING_DIFF_BRANCH
 
     - name: Check Types 📚
       run: make types
