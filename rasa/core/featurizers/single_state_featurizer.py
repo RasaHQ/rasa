@@ -56,7 +56,6 @@ class SingleStateFeaturizer:
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.action_texts = domain.action_texts
 
-    # pytype: disable=bad-return-type
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
     ) -> Dict[Text, int]:
@@ -77,8 +76,6 @@ class SingleStateFeaturizer:
                 f"Given attribute '{attribute}' is not supported. "
                 f"It must be one of '{self._default_feature_states.keys()}'."
             )
-
-    # pytype: enable=bad-return-type
 
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
