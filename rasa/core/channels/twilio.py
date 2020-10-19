@@ -94,13 +94,11 @@ class TwilioInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # pytype: disable=attribute-error
         return cls(
             credentials.get("account_sid"),
             credentials.get("auth_token"),
             credentials.get("twilio_number"),
         )
-        # pytype: enable=attribute-error
 
     def __init__(
         self,
