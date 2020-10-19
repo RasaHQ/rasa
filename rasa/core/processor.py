@@ -663,12 +663,12 @@ class MessageProcessor:
 
     async def _run_action(
         self,
-        action,
-        tracker,
-        output_channel,
-        nlg,
-        policy=None,
-        confidence=None,
+        action: rasa.core.actions.action.Action,
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
@@ -733,7 +733,12 @@ class MessageProcessor:
                         )
 
     def _log_action_on_tracker(
-        self, tracker, action_name, events, policy, confidence
+        self,
+        tracker: DialogueStateTracker,
+        action_name: Text,
+        events: Optional[List[Event]],
+        policy: Optional[Text],
+        confidence: Optional[float],
     ) -> None:
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
