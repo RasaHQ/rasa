@@ -127,6 +127,7 @@ oauth2client = "4.1.3"
 regex = ">=2020.6,<2020.10"
 joblib = "^0.15.1"
 sentry-sdk = ">=0.17.0,<0.20.0"
+colorama = {version = "^0.4.4", markers = "sys_platform == 'win32'"}
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
