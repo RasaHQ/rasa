@@ -292,6 +292,23 @@ class Policy:
 
         return [0.0] * domain.num_actions
 
+    def format_tracker_states(self, states: List[Dict]) -> Text:
+        """Format tracker states to human readable format on debug log
+
+        Args: 
+            states: list of tracker states dicts
+        Returns:
+            the string of the states with user intents and actions
+        """
+        formatted_states = [""]
+        for index, state in enumerate(states):
+            if state:
+                formatted_states.append(
+                    f"[state {str(index)}] previous action: {str(state['prev_action']['action_name'])} | "
+                    f"user intent: {str(state['user']['intent'])}"
+                )
+        return "\n".join(formatted_states)
+
 
 def confidence_scores_for(
     action_name: Text, value: float, domain: Domain

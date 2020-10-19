@@ -226,8 +226,7 @@ class MemoizationPolicy(Policy):
 
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
-        current_states = ' '.join(self.format_tracker_states(states))
-        logger.debug(f"Current tracker state:{current_states}")
+        logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
         predicted_action_name = self.recall(states, tracker, domain)
         if predicted_action_name is not None:
             logger.debug(f"There is a memorised next action '{predicted_action_name}'")
@@ -236,17 +235,6 @@ class MemoizationPolicy(Policy):
             logger.debug("There is no memorised next action")
 
         return result
-
-    def format_tracker_states(self, states):
-        """Format tracker states to human readable format on debug log"""
-        formatted_states = []
-        for index, state in enumerate(states):
-            if state:
-                formatted_states.append('\n')
-                formatted_states.append(
-                    f"[state {str(index)}] previous action: {str(state['prev_action']['action_name'])} |"
-                    f"user intent: {str(state['user']['intent'])}")
-        return formatted_states
 
     def _metadata(self) -> Dict[Text, Any]:
         return {
