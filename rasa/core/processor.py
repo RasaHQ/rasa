@@ -14,6 +14,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+import rasa.core.utils
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -42,7 +43,8 @@ from rasa.shared.constants import (
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.tracker_store import TrackerStore
+import rasa.core.tracker_store
+import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
@@ -58,7 +60,7 @@ class MessageProcessor:
         interpreter: NaturalLanguageInterpreter,
         policy_ensemble: PolicyEnsemble,
         domain: Domain,
-        tracker_store: TrackerStore,
+        tracker_store: rasa.core.tracker_store.TrackerStore,
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
@@ -175,7 +177,7 @@ class MessageProcessor:
         sender_id: Text,
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
         If a new tracker is created, `action_session_start` is run.
@@ -190,14 +192,12 @@ class MessageProcessor:
         """
 
         tracker = self.get_tracker(sender_id)
-        if not tracker:
-            return None
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
 
-    def get_tracker(self, conversation_id: Text) -> Optional[DialogueStateTracker]:
+    def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
         In contrast to `get_tracker_with_session_start` this does not add any
@@ -213,9 +213,31 @@ class MessageProcessor:
             conversation.
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
+
         return self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
+
+    def get_trackers_for_all_conversation_sessions(
+        self, conversation_id: Text
+    ) -> List[DialogueStateTracker]:
+        """Fetches all trackers for a conversation.
+
+        Individual trackers are returned for each conversation session found
+        for `conversation_id`.
+
+        Args:
+            conversation_id: The ID of the conversation for which the trackers should
+                be retrieved.
+
+        Returns:
+            Trackers for the conversation.
+        """
+        conversation_id = conversation_id or DEFAULT_SENDER_ID
+
+        tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
+
+        return rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
