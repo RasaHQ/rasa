@@ -5,11 +5,10 @@ import multiprocessing
 import os
 import tempfile
 import traceback
-import typing
 from functools import reduce, wraps
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Text, Union, Dict
+from typing import Any, Callable, List, Optional, Text, Union, Dict, TYPE_CHECKING
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -27,7 +26,6 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.utils import common as common_utils
 from rasa import model
 from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
@@ -55,7 +53,7 @@ from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from ssl import SSLContext
     from rasa.core.processor import MessageProcessor
 

@@ -37,7 +37,7 @@ from rasa.core.channels import (
     CallbackInput,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     Event,
@@ -75,6 +75,13 @@ test_events = [
     SlotSet("cuisine", "34"),
     SlotSet("location", None),
     SlotSet("location", [34, "34", None]),
+]
+
+# sequence of events expected at the beginning of trackers
+session_start_sequence: List[Event] = [
+    ActionExecuted(ACTION_SESSION_START_NAME),
+    SessionStarted(),
+    ActionExecuted(ACTION_LISTEN_NAME),
 ]
 
 
@@ -896,12 +903,15 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
     tracker = tracker_response.json()
     assert tracker is not None
 
-    assert len(tracker.get("events")) == 1
+    assert len(tracker.get("events")) == 4
 
-    evt = tracker.get("events")[0]
-    deserialised_event = Event.from_parameters(evt)
-    assert deserialised_event == event
-    assert deserialised_event.timestamp > time_before_adding_events
+    deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
+
+    # there is an initial session start sequence at the beginning of the tracker
+    assert deserialized_events[:3] == session_start_sequence
+
+    assert deserialized_events[3] == event
+    assert deserialized_events[3].timestamp > time_before_adding_events
 
 
 async def test_push_multiple_events(rasa_app: SanicASGITestClient):
@@ -923,12 +933,15 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
     tracker = tracker_response.json()
     assert tracker is not None
 
-    # there is also an `ACTION_LISTEN` event at the start
-    assert tracker.get("events") == events
+    # there is an initial session start sequence at the beginning
+    assert [
+        Event.from_parameters(event) for event in tracker.get("events")
+    ] == session_start_sequence + test_events
 
 
 @pytest.mark.parametrize(
-    "params", ["?execute_side_effects=true&output_channel=callback", ""],
+    "params",
+    ["?execute_side_effects=true&output_channel=callback", ""],
 )
 async def test_pushing_event_while_executing_side_effects(
     rasa_server: Sanic, params: Text
@@ -984,8 +997,10 @@ async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
     tracker = tracker_response.json()
     assert tracker is not None
 
-    # there is also an `ACTION_LISTEN` event at the start
-    assert tracker.get("events") == events
+    # there is a session start sequence at the start
+    assert [
+        Event.from_parameters(event) for event in tracker.get("events")
+    ] == session_start_sequence + test_events
 
 
 async def test_put_tracker(rasa_app: SanicASGITestClient):
