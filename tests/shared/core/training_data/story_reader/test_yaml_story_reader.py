@@ -370,6 +370,8 @@ def test_or_statement_conversion_mode():
         - intent: intent1
         - intent: intent2
       - action: some_action
+      - intent: intent3
+      - action: other_action
     """
 
     reader = YAMLStoryReader(is_used_for_conversion=True)
@@ -379,8 +381,13 @@ def test_or_statement_conversion_mode():
 
     assert len(steps) == 1
 
+    assert len(steps[0].events) == 4  # 4 events in total
+    assert len(steps[0].start_checkpoints) == 1
+    assert steps[0].start_checkpoints[0].name == "STORY_START"
+    assert steps[0].end_checkpoints == []
+
     or_statement = steps[0].events[0]
-    assert isinstance(or_statement, list)
+    assert isinstance(or_statement, list)  # But first one is a list (OR)
 
     assert or_statement[0].intent["name"] == "intent1"
     assert or_statement[1].intent["name"] == "intent2"

@@ -133,6 +133,10 @@ class StoryStep:
 
     @staticmethod
     def _or_string(story_step_element: List[Event], e2e: bool) -> Text:
+        for event in story_step_element:
+            if not isinstance(event, UserUttered):
+                raise ValueError("OR statement events must be of type `UserUttered`.")
+
         result = " OR ".join(
             [element.as_story_string(e2e) for element in story_step_element]
         )
