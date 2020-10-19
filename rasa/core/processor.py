@@ -181,9 +181,8 @@ class MessageProcessor:
             sender_id: Conversation ID for which to fetch the tracker.
 
         Returns:
-              Tracker for `sender_id` if available.
+              Tracker for `sender_id`.
         """
-
         tracker = self.get_tracker(sender_id)
 
         await self._update_tracker_session(tracker, output_channel, metadata)
@@ -266,7 +265,6 @@ class MessageProcessor:
         can be skipped if the tracker returned by this method is used for further
         processing and saved at a later stage.
         """
-
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.fetch_tracker_and_update_session(

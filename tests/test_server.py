@@ -940,8 +940,7 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
 
 
 @pytest.mark.parametrize(
-    "params",
-    ["?execute_side_effects=true&output_channel=callback", ""],
+    "params", ["?execute_side_effects=true&output_channel=callback", ""],
 )
 async def test_pushing_event_while_executing_side_effects(
     rasa_server: Sanic, params: Text

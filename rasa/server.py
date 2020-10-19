@@ -796,6 +796,7 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 tracker = await app.agent.log_message(user_message)
+
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())

@@ -541,10 +541,10 @@ class Agent:
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         **kwargs: Any,
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
-
         processor = self.create_processor(message_preprocessor)
+
         return await processor.log_message(message)
 
     async def execute_action(
