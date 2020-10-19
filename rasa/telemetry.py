@@ -645,6 +645,13 @@ def initialize_error_reporting() -> None:
         with configure_scope() as scope:
             scope.set_user({"id": telemetry_id})
 
+            default_context = _default_context_fields()
+            if "os" in default_context:
+                # os is a nested dict, hence we report it separately
+                scope.set_context("Operating System", default_context["os"])
+                del default_context["os"]
+            scope.set_context("Environment", default_context)
+
 
 @async_generator.asynccontextmanager
 async def track_model_training(
