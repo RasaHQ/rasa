@@ -39,7 +39,7 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
     return failed_imports
 
 
-def validate_requirements(component_names: List[Text]) -> None:
+def validate_requirements(component_names: List[Optional[Text]]) -> None:
     """Validates that all required importable python packages are installed.
 
     Args:
@@ -51,6 +51,11 @@ def validate_requirements(component_names: List[Text]) -> None:
     # Validate that all required packages are installed
     failed_imports = {}
     for component_name in component_names:
+        if component_name is None:
+            raise InvalidConfigError(
+                "Your pipeline configuration contains a component that is missing "
+                "a name. Please double check your configuration."
+            )
         component_class = registry.get_component_class(component_name)
         unavailable_packages = find_unavailable_packages(
             component_class.required_packages()

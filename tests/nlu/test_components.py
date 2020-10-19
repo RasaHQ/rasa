@@ -2,7 +2,7 @@ import pytest
 
 from rasa.nlu import registry, train
 from rasa.nlu.components import find_unavailable_packages
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Metadata
 
 
@@ -172,3 +172,17 @@ def test_can_handle_language_guard_clause(
     with pytest.raises(RasaException) as excinfo:
         SampleComponent.can_handle_language("random_string")
     assert expected_exec_msg in str(excinfo.value)
+
+
+async def test_validate_requirements_raises_exception_on_component_without_name(
+    tmp_path,
+):
+    _config = RasaNLUModelConfig(
+        # config with a component that does not have a `name` property
+        {"pipeline": [{"parameter": 4}]}
+    )
+
+    with pytest.raises(InvalidConfigError):
+        await train(
+            _config, data="./data/examples/rasa/demo-rasa.json", path=str(tmp_path),
+        )
