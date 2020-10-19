@@ -752,7 +752,10 @@ class MessageProcessor:
 
         self._warn_about_new_slots(tracker, action_name, events)
 
-        if action_name is not None:
+        action_was_rejected_manually = any(
+            isinstance(event, ActionExecutionRejected) for event in events
+        )
+        if action_name is not None and not action_was_rejected_manually:
             # log the action and its produced events
             tracker.update(ActionExecuted(action_name, policy, confidence))
 
