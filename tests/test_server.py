@@ -940,8 +940,7 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
 
 
 @pytest.mark.parametrize(
-    "params",
-    ["?execute_side_effects=true&output_channel=callback", ""],
+    "params", ["?execute_side_effects=true&output_channel=callback", ""],
 )
 async def test_pushing_event_while_executing_side_effects(
     rasa_server: Sanic, params: Text
@@ -1514,6 +1513,7 @@ async def test_get_story_does_not_update_conversation_session(
     domain.session_config = SessionConfig(
         session_expiration_time=1 / 60, carry_over_slots=True
     )
+    rasa_app.app.agent.domain = domain
 
     # conversation contains one session that has expired
     now = time.time()
@@ -1525,6 +1525,9 @@ async def test_get_story_does_not_update_conversation_session(
     ]
 
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
+
+    # the conversation session has expired
+    assert rasa_app.app.agent.create_processor()._has_session_expired(tracker)
 
     tracker_store = InMemoryTrackerStore(domain)
 

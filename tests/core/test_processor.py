@@ -604,10 +604,10 @@ async def test_fetch_tracker_and_update_session(
 
 
 @pytest.mark.parametrize(
-    "initial_events,final_events",
+    "initial_events,expected_event_types",
     [
-        # tracker is initially not empty, and just contains these four events
-        # when fetched
+        # tracker is initially not empty - when it is fetched, it will just contain
+        # these four events
         (
             [
                 ActionExecuted(ACTION_SESSION_START_NAME),
@@ -626,7 +626,7 @@ async def test_fetch_tracker_with_initial_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     initial_events: List[Event],
-    final_events: List[Type[Event]],
+    expected_event_types: List[Type[Event]],
 ):
     conversation_id = uuid.uuid4().hex
 
@@ -639,12 +639,52 @@ async def test_fetch_tracker_with_initial_session(
     )
 
     # the events in the fetched tracker are as expected
-    assert len(tracker.events) == len(final_events)
+    assert len(tracker.events) == len(expected_event_types)
 
     assert all(
         isinstance(tracker_event, expected_event_type)
-        for tracker_event, expected_event_type in zip(tracker.events, final_events)
+        for tracker_event, expected_event_type in zip(
+            tracker.events, expected_event_types
+        )
     )
+
+
+async def test_fetch_tracker_with_initial_session_does_not_update_session(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+):
+    conversation_id = uuid.uuid4().hex
+
+    # the domain has a session expiration time of one second
+    default_processor.tracker_store.domain.session_config = SessionConfig(
+        carry_over_slots=True, session_expiration_time=1 / 60
+    )
+
+    now = time.time()
+
+    # the tracker initially contains events
+    initial_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=now - 10),
+        SessionStarted(timestamp=now - 9),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=now - 8),
+        UserUttered(
+            "/greet", {INTENT_NAME_KEY: "greet", "confidence": 1.0}, timestamp=now - 7
+        ),
+    ]
+
+    tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
+
+    default_processor.tracker_store.save(tracker)
+
+    tracker = await default_processor.fetch_tracker_with_initial_session(
+        conversation_id, default_channel
+    )
+
+    # the conversation session has expired, but calling
+    # `fetch_tracker_with_initial_session()` did not update it
+    assert default_processor._has_session_expired(tracker)
+    assert [event.as_dict() for event in tracker.events] == [
+        event.as_dict() for event in initial_events
+    ]
 
 
 async def test_handle_message_with_session_start(

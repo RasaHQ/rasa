@@ -178,7 +178,7 @@ class MessageProcessor:
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
     ) -> DialogueStateTracker:
-        """Get tracker for `sender_id` or create a new tracker for `sender_id`.
+        """Fetch tracker for `sender_id` and update its conversation session.
 
         If a new tracker is created, `action_session_start` is run.
 
@@ -188,7 +188,7 @@ class MessageProcessor:
             sender_id: Conversation ID for which to fetch the tracker.
 
         Returns:
-              Tracker for `sender_id` if available, `None` otherwise.
+              Tracker for `sender_id` if available.
         """
 
         tracker = self.get_tracker(sender_id)
@@ -211,9 +211,8 @@ class MessageProcessor:
             sender_id: Conversation ID for which to fetch the tracker.
 
         Returns:
-              Tracker for `sender_id` if available, `None` otherwise.
+              Tracker for `sender_id`.
         """
-
         tracker = self.get_tracker(sender_id)
 
         # run session start only if the tracker is empty
@@ -815,7 +814,6 @@ class MessageProcessor:
         Returns:
             `True` if the session in `tracker` has expired, `False` otherwise.
         """
-
         if not self.domain.session_config.are_sessions_enabled():
             # tracker has never expired if sessions are disabled
             return False
