@@ -327,7 +327,7 @@ def test_rule_policy_without_fallback_action_present(
             policies=PolicyEnsemble.from_dict(policy_config),
         )
 
-    assert RulePolicy.__name__ in execinfo.value.message
+    assert RulePolicy.__name__ in str(execinfo.value)
 
 
 @pytest.mark.parametrize(

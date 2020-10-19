@@ -8,7 +8,8 @@ slots:
   query:
     type: text
   requested_slot:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
 
 responses:
   utter_ask_username:

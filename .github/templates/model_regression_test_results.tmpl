@@ -5,7 +5,38 @@ as an artifact in the model regression tests workflow) and returns
 a markdown table with a summary of the tests.
 
 */ -}}
+{{- /*
+
+The accuracy_tpl template returns data for the accuracy field.
+
+*/ -}}
+{{ define "accuracy_tpl" -}}
+{{- if has .master "accuracy" -}}
+{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" (.master.accuracy | math.Sub .branch.accuracy) }})
+{{- else -}}
+{{ printf "%.4f" .branch.accuracy }} (`no data`)
+{{- end -}}
+{{- end -}}
+{{- /*
+
+The micro_avg_tpl template returns data for the "micro avg" field.
+
+*/ -}}
+{{ define "micro_avg_tpl" -}}
+{{- if has (index .master "micro avg") "f1-score" -}}
+{{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index .master "micro avg") "f1-score") | math.Sub (index (index .branch "micro avg") "f1-score")) }})
+{{- else -}}
+{{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} (`no data`)
+{{- end -}}
+{{- end -}}
+{{- /*
+
+Render Markdown with results.
+
+*/ -}}
+{{- $results_master := (datasource "results_master") -}}
 {{ range $dataset, $config := (datasource "data")}}
+{{- $dataset_master := (index $results_master $dataset) -}}
 Dataset: `{{$dataset}}`
 
 | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
@@ -13,20 +44,35 @@ Dataset: `{{$dataset}}`
 {{ range $config_name, $config_data := $config -}}
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}` |
 {{- if has $config_data "intent_classification" -}}
+{{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
+{{- $intent_class_master := $config_data.intent_classification -}}
+{{- if has $dataset_master $config_name -}}
+{{- $intent_class_master = (index $dataset_master $config_name).intent_classification -}}
+{{- end -}}
 {{- $intent_class := index $config_data.intent_classification -}}
-{{- if (has (index $intent_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $intent_class "micro avg") "f1-score") }}{{- else if (has $intent_class "accuracy") -}}{{ printf "%.4f" $intent_class.accuracy }}{{- else -}}`no data`{{- end -}} |
+{{- if has (index $intent_class "micro avg") "f1-score" -}}{{ template "micro_avg_tpl" (dict "branch" $intent_class "master" $intent_class_master) }}{{- else if has $intent_class "accuracy" -}}{{ template "accuracy_tpl" (dict "branch" $intent_class "master" $intent_class_master) }}{{- else -}}`no data`{{- end -}} |
 {{- else -}}
 `no data`|
 {{- end -}}
 {{- if has $config_data "entity_prediction" -}}
+{{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
+{{- $entity_class_master := index $config_data.entity_prediction -}}
+{{- if has $dataset_master $config_name -}}
+{{- $entity_class_master = (index $dataset_master $config_name).entity_prediction -}}
+{{- end -}}
 {{- $entity_class := $config_data.entity_prediction -}}
-{{- if (has (index $entity_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $entity_class "micro avg") "f1-score") }}{{- else if (has $entity_class "accuracy") -}}{{ printf "%.4f" $entity_class.accuracy }}{{- else -}}`no data`{{- end -}} |
+{{- if has (index $entity_class "micro avg") "f1-score" -}}{{ template "micro_avg_tpl" (dict "branch" $entity_class "master" $entity_class_master) }}{{- else if has $entity_class "accuracy" -}}{{ template "accuracy_tpl" (dict "branch" $entity_class "master" $entity_class_master) }}{{- else -}}`no data`{{- end -}} |
 {{- else -}}
 `no data`|
 {{- end -}}
 {{- if has $config_data "response_selection" -}}
+{{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
+{{- $response_class_master := index $config_data.response_selection -}}
+{{- if has $dataset_master $config_name -}}
+{{- $response_class_master = (index $dataset_master $config_name).response_selection -}}
+{{- end -}}
 {{- $response_class := $config_data.response_selection -}}
-{{- if (has (index $response_class "micro avg") "f1-score") -}}{{ printf "%.4f" (index (index $response_class "micro avg") "f1-score") }}{{- else if (has $response_class "accuracy") -}}{{ printf "%.4f" $response_class.accuracy }}{{- else -}}`no data`{{- end -}} |
+{{- if has (index $response_class "micro avg") "f1-score" -}}{{ template "micro_avg_tpl" (dict "branch" $response_class "master" $response_class_master) }}{{- else if has $response_class "accuracy" -}}{{ template "accuracy_tpl" (dict "branch" $response_class "master" $response_class_master) }}{{- else -}}`no data`{{- end -}} |
 {{- else -}}
 `no data`|
 {{- end }}

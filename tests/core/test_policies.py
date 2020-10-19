@@ -8,6 +8,9 @@ import pytest
 from rasa.core import training
 import rasa.core.actions.action
 from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
+    MarkdownStoryWriter,
+)
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
@@ -901,7 +904,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "greet" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories() == (
+        assert tracker.export_stories(MarkdownStoryWriter()) == (
             "## sender\n* greet\n    - utter_hello\n* greet\n"
         )
 
@@ -937,7 +940,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories() == "## sender\n* bye\n"
+        assert tracker.export_stories(MarkdownStoryWriter()) == "## sender\n* bye\n"
 
     def test_affirm_rephrased_intent(self, trained_policy, default_domain):
         events = [
@@ -977,7 +980,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories() == "## sender\n* bye\n"
+        assert tracker.export_stories(MarkdownStoryWriter()) == "## sender\n* bye\n"
 
     def test_denied_rephrasing_affirmation(self, trained_policy, default_domain):
         events = [
@@ -1017,7 +1020,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories() == (
+        assert tracker.export_stories(MarkdownStoryWriter()) == (
             "## sender\n* greet\n    - utter_hello\n* bye\n"
         )
 

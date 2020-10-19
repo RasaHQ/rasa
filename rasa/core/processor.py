@@ -14,11 +14,13 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+import rasa.core.utils
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     REQUESTED_SLOT,
+    SLOTS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -41,7 +43,8 @@ from rasa.shared.constants import (
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.tracker_store import TrackerStore
+import rasa.core.tracker_store
+import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
@@ -57,7 +60,7 @@ class MessageProcessor:
         interpreter: NaturalLanguageInterpreter,
         policy_ensemble: PolicyEnsemble,
         domain: Domain,
-        tracker_store: TrackerStore,
+        tracker_store: rasa.core.tracker_store.TrackerStore,
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
@@ -174,7 +177,7 @@ class MessageProcessor:
         sender_id: Text,
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
         If a new tracker is created, `action_session_start` is run.
@@ -189,14 +192,12 @@ class MessageProcessor:
         """
 
         tracker = self.get_tracker(sender_id)
-        if not tracker:
-            return None
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
 
-    def get_tracker(self, conversation_id: Text) -> Optional[DialogueStateTracker]:
+    def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
         In contrast to `get_tracker_with_session_start` this does not add any
@@ -212,9 +213,31 @@ class MessageProcessor:
             conversation.
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
+
         return self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
+
+    def get_trackers_for_all_conversation_sessions(
+        self, conversation_id: Text
+    ) -> List[DialogueStateTracker]:
+        """Fetches all trackers for a conversation.
+
+        Individual trackers are returned for each conversation session found
+        for `conversation_id`.
+
+        Args:
+            conversation_id: The ID of the conversation for which the trackers should
+                be retrieved.
+
+        Returns:
+            Trackers for the conversation.
+        """
+        conversation_id = conversation_id or DEFAULT_SENDER_ID
+
+        tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
+
+        return rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
@@ -328,7 +351,6 @@ class MessageProcessor:
         reminder_event: ReminderScheduled,
         sender_id: Text,
         output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
@@ -534,7 +556,7 @@ class MessageProcessor:
         """Check whether the maximum number of predictions has been met.
 
         Args:
-            num_predictes_actions: Number of predicted actions.
+            num_predicted_actions: Number of predicted actions.
             should_predict_another_action: Whether the last executed action allows
             for more actions to be predicted or not.
 
@@ -593,6 +615,19 @@ class MessageProcessor:
 
         return action_name not in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME)
 
+    async def execute_side_effects(
+        self,
+        events: List[Event],
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+    ) -> None:
+        """Send bot messages, schedule and cancel reminders that are logged
+        in the events array."""
+
+        await self._send_bot_messages(events, tracker, output_channel)
+        await self._schedule_reminders(events, tracker, output_channel)
+        await self._cancel_reminders(events, tracker)
+
     @staticmethod
     async def _send_bot_messages(
         events: List[Event],
@@ -612,7 +647,6 @@ class MessageProcessor:
         events: List[Event],
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
     ) -> None:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
@@ -627,7 +661,7 @@ class MessageProcessor:
                 self.handle_reminder,
                 "date",
                 run_date=e.trigger_date_time,
-                args=[e, tracker.sender_id, output_channel, nlg],
+                args=[e, tracker.sender_id, output_channel],
                 id=e.name,
                 replace_existing=True,
                 name=e.scheduled_job_name(tracker.sender_id),
@@ -671,14 +705,13 @@ class MessageProcessor:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
-        except Exception as e:
-            logger.error(
-                f"Encountered an exception while running action '{action.name()}'. "
+        except Exception:
+            logger.exception(
+                f"Encountered an exception while running action '{action.name()}'."
                 "Bot will continue, but the actions events are lost. "
                 "Please check the logs of your action server for "
                 "more information."
             )
-            logger.debug(e, exc_info=True)
             events = []
 
         self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
@@ -687,9 +720,7 @@ class MessageProcessor:
         ):
             self._log_slots(tracker)
 
-        await self._send_bot_messages(events, tracker, output_channel)
-        await self._schedule_reminders(events, tracker, output_channel, nlg)
-        await self._cancel_reminders(events, tracker)
+        await self.execute_side_effects(events, tracker, output_channel)
 
         return self.should_predict_another_action(action.name())
 
@@ -703,7 +734,7 @@ class MessageProcessor:
             return
 
         fp = self.policy_ensemble.action_fingerprints[action_name]
-        slots_seen_during_train = fp.get("slots", set())
+        slots_seen_during_train = fp.get(SLOTS, set())
         for e in events:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)

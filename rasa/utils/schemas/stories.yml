@@ -86,7 +86,7 @@ mapping:
                 allowempty: False
               slot_was_set: *slot_was_set_seq_value
           - type: "map"
-            mapping:
+            mapping: &or_statement
               or:
                 type: "seq"
                 matching: "any"
@@ -114,6 +114,8 @@ mapping:
             mapping: *active_loop
           - type: "map"
             mapping: *slot_was_set_seq
+          - type: "map"
+            mapping: *or_statement
         condition:
           type: "seq"
           matching: "any"

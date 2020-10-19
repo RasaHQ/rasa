@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 from collections import deque
 from enum import Enum
 from typing import (
@@ -16,9 +17,8 @@ from typing import (
     Union,
     FrozenSet,
     Tuple,
+    TYPE_CHECKING,
 )
-
-import typing
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -37,9 +37,10 @@ from rasa.shared.core.constants import (
     SHOULD_NOT_BE_SET,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    LOOP_VALIDATE,
     LOOP_REJECTED,
     TRIGGER_MESSAGE,
+    LOOP_INTERRUPTED,
+    ACTION_SESSION_START_NAME,
 )
 from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.shared.core.events import (  # pytype: disable=pyi-error
@@ -58,8 +59,10 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
 from rasa.shared.core.domain import Domain, State  # pytype: disable=pyi-error
 from rasa.shared.core.slots import Slot
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
+    from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +121,8 @@ class DialogueStateTracker:
 
         The dump should be an array of dumped events. When restoring
         the tracker, these events will be replayed to recreate the state."""
-
         evts = events.deserialise_events(events_as_dict)
+
         return cls.from_events(sender_id, evts, slots, max_event_history)
 
     @classmethod
@@ -127,13 +130,15 @@ class DialogueStateTracker:
         cls,
         sender_id: Text,
         evts: List[Event],
-        slots: Optional[List[Slot]] = None,
+        slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
     ):
         tracker = cls(sender_id, slots, max_event_history, sender_source)
+
         for e in evts:
             tracker.update(e)
+
         return tracker
 
     def __init__(
@@ -255,7 +260,7 @@ class DialogueStateTracker:
         if loop_name is not None:
             self.active_loop = {
                 LOOP_NAME: loop_name,
-                LOOP_VALIDATE: True,
+                LOOP_INTERRUPTED: False,
                 LOOP_REJECTED: False,
                 TRIGGER_MESSAGE: self.latest_message.parse_data,
             }
@@ -271,9 +276,22 @@ class DialogueStateTracker:
         )
         self.change_loop_to(form_name)
 
+    def interrupt_loop(self, is_interrupted: bool) -> None:
+        """Interrupt loop and mark that we entered an unhappy path in the conversation.
+        Args:
+            is_interrupted: `True` if the loop was run after an unhappy path.
+        """
+        self.active_loop[LOOP_INTERRUPTED] = is_interrupted
+
     def set_form_validation(self, validate: bool) -> None:
-        """Toggle form validation"""
-        self.active_loop[LOOP_VALIDATE] = validate
+        rasa.shared.utils.io.raise_warning(
+            "`set_form_validation` is deprecated and will be removed "
+            "in future versions. Please use `interrupt_loop` "
+            "instead.",
+            category=DeprecationWarning,
+        )
+        # `validate = True` means `is_interrupted = False`
+        self.interrupt_loop(not validate)
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected"""
@@ -282,12 +300,12 @@ class DialogueStateTracker:
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
         """Set latest action name
-            and reset form validation and rejection parameters
+        and reset form validation and rejection parameters
         """
         self.latest_action = action
         if self.active_loop_name:
             # reset form validation if some loop is active
-            self.active_loop[LOOP_VALIDATE] = True
+            self.active_loop[LOOP_INTERRUPTED] = False
 
         if action.get(ACTION_NAME) == self.active_loop_name:
             # reset loop rejection if it was predicted again
@@ -332,8 +350,8 @@ class DialogueStateTracker:
             x.get(ENTITY_ATTRIBUTE_VALUE)
             for x in self.latest_message.entities
             if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
-            and (entity_group is None or x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group)
-            and (entity_role is None or x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role)
+            and x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group
+            and x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role
         )
 
     def get_latest_input_channel(self) -> Optional[Text]:
@@ -392,8 +410,11 @@ class DialogueStateTracker:
         yield tracker
 
     def applied_events(self) -> List[Event]:
-        """Returns all actions that should be applied - w/o reverted events."""
+        """Returns all actions that should be applied - w/o reverted events.
 
+        Returns:
+            The events applied to the tracker.
+        """
         loop_names = [
             event.name
             for event in self.events
@@ -581,22 +602,38 @@ class DialogueStateTracker:
         )
         return Story.from_events(self.applied_events(), story_name)
 
-    def export_stories(self, e2e: bool = False, include_source: bool = False) -> Text:
+    def export_stories(
+        self,
+        writer: "StoryWriter",
+        e2e: bool = False,
+        include_source: bool = False,
+        should_append_stories: bool = False,
+    ) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns:
             The dumped tracker as a string.
         """
+
         # TODO: we need to revisit all usages of this, the caller needs to specify
         #       the format. this likely points to areas where we are not properly
         #       handling markdown vs yaml
         story = self.as_story(include_source)
-        return story.as_story_string(flat=True, e2e=e2e)
 
-    def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
+        return writer.dumps(
+            story.story_steps, is_appendable=should_append_stories, is_test_story=e2e
+        )
+
+    def export_stories_to_file(self, export_path: Text = "debug_stories.yml") -> None:
         """Dump the tracker as a story to a file."""
+        from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+            YAMLStoryWriter,
+        )
+
+        append = not os.path.exists(export_path)
+
         rasa.shared.utils.io.write_text_file(
-            self.export_stories() + "\n", export_path, append=True
+            self.export_stories(YAMLStoryWriter()) + "\n", export_path, append=append
         )
 
     def get_last_event_for(
@@ -727,7 +764,6 @@ class DialogueStateTracker:
         ]
         return new_slots
 
-    # pytype: disable=bad-return-type
     @property
     def active_loop_name(self) -> Optional[Text]:
         """Get the name of the currently active loop.
@@ -737,9 +773,7 @@ class DialogueStateTracker:
         if not self.active_loop or self.active_loop.get(LOOP_NAME) == SHOULD_NOT_BE_SET:
             return None
 
-        return self.active_loop.get(LOOP_NAME)
-
-    # pytype: enable=bad-return-type
+        return self.active_loop.get(LOOP_NAME)  # pytype: disable=bad-return-type
 
     @property
     def latest_action_name(self) -> Optional[Text]:
@@ -781,3 +815,29 @@ def is_prev_action_listen_in_state(state: State) -> bool:
     """
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME
+
+
+def get_trackers_for_conversation_sessions(
+    tracker: DialogueStateTracker,
+) -> List[DialogueStateTracker]:
+    """Generate trackers for `tracker` that are split by conversation sessions.
+
+    Args:
+        tracker: Instance of `DialogueStateTracker` to split.
+
+    Returns:
+        The trackers split by conversation sessions.
+    """
+    split_conversations = events.split_events(
+        tracker.events,
+        ActionExecuted,
+        {"action_name": ACTION_SESSION_START_NAME},
+        include_splitting_event=True,
+    )
+
+    return [
+        DialogueStateTracker.from_events(
+            tracker.sender_id, evts, tracker.slots, sender_source=tracker.sender_source,
+        )
+        for evts in split_conversations
+    ]

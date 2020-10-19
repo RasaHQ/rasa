@@ -50,9 +50,6 @@ class Exporter:
     ) -> None:
         self.endpoints_path = endpoints_path
         self.tracker_store = tracker_store
-        # The `TrackerStore` should return all events on `retrieve` and not just the
-        # ones from the last session.
-        self.tracker_store.load_events_from_previous_conversation_sessions = True
 
         self.event_broker = event_broker
         self.requested_conversation_ids = requested_conversation_ids
@@ -215,7 +212,7 @@ class Exporter:
         events = []
 
         for conversation_id in tqdm(conversation_ids_to_process, "conversation IDs"):
-            tracker = self.tracker_store.retrieve(conversation_id)
+            tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
             if not tracker:
                 logger.info(
                     f"Could not retrieve tracker for conversation ID "
