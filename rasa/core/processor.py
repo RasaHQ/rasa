@@ -189,6 +189,36 @@ class MessageProcessor:
 
         return tracker
 
+    async def get_tracker_with_session_start(
+        self,
+        sender_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None,
+    ) -> DialogueStateTracker:
+        """Fetches tracker for `sender_id` and updates its conversation session.
+
+        If a new tracker is created, `action_session_start` is run.
+
+        Args:
+            metadata: Data sent from client associated with the incoming user message.
+            output_channel: Output channel associated with the incoming user message.
+            sender_id: Conversation ID for which to fetch the tracker.
+
+        Returns:
+              Tracker for `sender_id`.
+        """
+        # TODO: Remove in Rasa Open Source 3.0
+        rasa.shared.utils.io.raise_warning(
+            "`get_tracker_with_session_start()` is deprecated and will be removed "
+            "in Rasa Open Source version 3.0. Please use "
+            "`fetch_tracker_and_update_session()` instead.",
+            category=DeprecationWarning,
+        )
+
+        return await self.fetch_tracker_and_update_session(
+            sender_id, output_channel, metadata
+        )
+
     async def fetch_tracker_with_initial_session(
         self,
         sender_id: Text,
