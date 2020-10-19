@@ -8,7 +8,17 @@ import traceback
 from functools import reduce, wraps
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Text, Union, Dict, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    Text,
+    Union,
+    Dict,
+    TYPE_CHECKING,
+    NoReturn,
+)
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -225,36 +235,6 @@ def event_verbosity_parameter(
         )
 
 
-def get_tracker(
-    processor: "MessageProcessor", conversation_id: Text
-) -> DialogueStateTracker:
-    """Retrieves tracker from `processor` without updating the conversation session.
-
-    Args:
-        processor: An instance of `MessageProcessor`.
-        conversation_id: Conversation ID to fetch the tracker for.
-
-    Returns:
-        The tracker for `conversation_id`.
-    """
-    return processor.get_tracker(conversation_id)
-
-
-async def get_tracker_with_session_start(
-    processor: "MessageProcessor", conversation_id: Text
-) -> DialogueStateTracker:
-    """Get tracker object from `MessageProcessor` and update the conversation session.
-
-    Args:
-        processor: An instance of `MessageProcessor`.
-        conversation_id: Conversation ID to fetch the tracker for.
-
-    Returns:
-        The tracker for `conversation_id` with an updated conversation session.
-    """
-    return await processor.fetch_tracker_and_update_session(conversation_id)
-
-
 def get_test_stories(
     processor: "MessageProcessor",
     conversation_id: Text,
@@ -306,13 +286,13 @@ def get_test_stories(
     return YAMLStoryWriter().dumps(story_steps, is_test_story=True)
 
 
-def validate_request_body(request: Request, error_message: Text):
+def validate_request_body(request: Request, error_message: Text) -> None:
     """Check if `request` has a body."""
     if not request.body:
         raise ErrorResponse(400, "BadRequest", error_message)
 
 
-async def authenticate(request: Request):
+async def authenticate(request: Request) -> NoReturn:
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "
@@ -530,8 +510,8 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await get_tracker_with_session_start(
-            app.agent.create_processor(), conversation_id
+        tracker = await app.agent.create_processor().fetch_tracker_with_initial_session(
+            conversation_id
         )
 
         try:
@@ -684,9 +664,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker_with_session_start(
-                    app.agent.create_processor(), conversation_id
+                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
+                    conversation_id
                 )
+
                 output_channel = _get_output_channel(request, tracker)
                 await app.agent.execute_action(
                     conversation_id,
@@ -702,9 +683,6 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-        tracker = await get_tracker_with_session_start(
-            app.agent.create_processor(), conversation_id
-        )
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -735,8 +713,8 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker_with_session_start(
-                    app.agent.create_processor(), conversation_id
+                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
+                    conversation_id
                 )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:

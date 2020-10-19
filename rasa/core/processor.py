@@ -84,8 +84,6 @@ class MessageProcessor:
 
         # preprocess message if necessary
         tracker = await self.log_message(message, should_save_tracker=False)
-        if not tracker:
-            return None
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
@@ -104,19 +102,14 @@ class MessageProcessor:
 
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
-        else:
-            return None
+
+        return None
 
     async def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.fetch_tracker_and_update_session(sender_id)
-        if not tracker:
-            logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
-            )
-            return None
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
@@ -178,7 +171,7 @@ class MessageProcessor:
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
     ) -> DialogueStateTracker:
-        """Fetch tracker for `sender_id` and update its conversation session.
+        """Fetches tracker for `sender_id` and updates its conversation session.
 
         If a new tracker is created, `action_session_start` is run.
 
@@ -203,7 +196,8 @@ class MessageProcessor:
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
     ) -> DialogueStateTracker:
-        """Fetch tracker for `sender_id` and run a session start if it's a new tracker.
+        """Fetches tracker for `sender_id` and runs a session start if it's a new
+        tracker.
 
         Args:
             metadata: Data sent from client associated with the incoming user message.
@@ -265,7 +259,7 @@ class MessageProcessor:
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Log `message` on tracker belonging to the message's conversation_id.
 
         Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
@@ -279,17 +273,12 @@ class MessageProcessor:
             message.sender_id, message.output_channel, message.metadata
         )
 
-        if tracker:
-            await self._handle_message_with_tracker(message, tracker)
+        await self._handle_message_with_tracker(message, tracker)
 
-            if should_save_tracker:
-                # save tracker state to continue conversation from this state
-                self._save_tracker(tracker)
-        else:
-            logger.warning(
-                f"Failed to retrieve or create tracker for conversation ID "
-                f"'{message.sender_id}'."
-            )
+        if should_save_tracker:
+            # save tracker state to continue conversation from this state
+            self._save_tracker(tracker)
+
         return tracker
 
     async def execute_action(
@@ -305,19 +294,13 @@ class MessageProcessor:
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
-        if tracker:
-            action = self._get_action(action_name)
-            await self._run_action(
-                action, tracker, output_channel, nlg, policy, confidence
-            )
 
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-        else:
-            logger.warning(
-                f"Failed to retrieve or create tracker for conversation ID "
-                f"'{sender_id}'."
-            )
+        action = self._get_action(action_name)
+        await self._run_action(action, tracker, output_channel, nlg, policy, confidence)
+
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
+
         return tracker
 
     def predict_next_action(
@@ -366,8 +349,10 @@ class MessageProcessor:
         for e in reversed(tracker.events):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return False
-            elif isinstance(e, UserUttered) and e.text:
+
+            if isinstance(e, UserUttered) and e.text:
                 return True
+
         return True  # tracker has probably been restarted
 
     async def handle_reminder(
@@ -379,12 +364,6 @@ class MessageProcessor:
         """Handle a reminder that is triggered asynchronously."""
 
         tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
-
-        if not tracker:
-            logger.warning(
-                f"Failed to retrieve tracker for conversation ID '{sender_id}'."
-            )
-            return None
 
         if (
             reminder_event.kill_on_user_message

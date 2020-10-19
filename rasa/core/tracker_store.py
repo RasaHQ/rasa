@@ -125,12 +125,15 @@ class TrackerStore:
             max_event_history: Value to update the tracker store's max event history to.
             append_action_listen: Whether or not to append an initial `action_listen`.
         """
-        tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
+
+        tracker = self.retrieve(sender_id)
+
         if tracker is None:
             tracker = self.create_tracker(
                 sender_id, append_action_listen=append_action_listen
             )
+
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
@@ -154,16 +157,13 @@ class TrackerStore:
 
         Returns:
             The newly created tracker for `sender_id`.
-
         """
-
         tracker = self.init_tracker(sender_id)
 
-        if tracker:
-            if append_action_listen:
-                tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+        if append_action_listen:
+            tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-            self.save(tracker)
+        self.save(tracker)
 
         return tracker
 
@@ -212,6 +212,7 @@ class TrackerStore:
     def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""
         old_tracker = self.retrieve(sender_id)
+
         return len(old_tracker.events) if old_tracker else 0
 
     def keys(self) -> Iterable[Text]:
@@ -229,13 +230,13 @@ class TrackerStore:
     def _deserialise_dialogue_from_pickle(
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
-
         rasa.shared.utils.io.raise_deprecation_warning(
             f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
             f"trackers is deprecated. Rasa will perform any "
             f"future save operations of this tracker using json serialisation."
         )
+
         return pickle.loads(serialised_tracker)
 
     def deserialise_tracker(
@@ -244,8 +245,6 @@ class TrackerStore:
         """Deserializes the tracker and returns it."""
 
         tracker = self.init_tracker(sender_id)
-        if not tracker:
-            return None
 
         try:
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
@@ -282,9 +281,9 @@ class InMemoryTrackerStore(TrackerStore):
         if sender_id in self.store:
             logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
-        else:
-            logger.debug(f"Creating a new tracker for id '{sender_id}'.")
-            return None
+
+        logger.debug(f"Creating a new tracker for id '{sender_id}'.")
+        return None
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Tracker Store in memory"""
