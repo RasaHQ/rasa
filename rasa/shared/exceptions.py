@@ -57,3 +57,11 @@ class YamlSyntaxException(YamlException):
             "YAML syntax of your file."
         )
         return exception_text
+
+
+class FileNotFoundException(RasaException, FileNotFoundError):
+    """Raised when a file, expected to exist, doesn't exist."""
+
+
+class FileIOException(RasaException):
+    """Raised if there is an error while doing file IO."""
