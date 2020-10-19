@@ -151,10 +151,19 @@ def _ask_create_path(path: Text) -> None:
     should_create = questionary.confirm(
         f"Path '{path}' does not exist 🧐. Create path?"
     ).ask()
+
     if should_create:
-        os.makedirs(path)
+        try:
+            os.makedirs(path)
+        except (PermissionError, OSError, FileExistsError) as e:
+            print_error_and_exit(
+                f"Failed to create project path at '{path}'. " f"Error: {e}"
+            )
     else:
-        print_success("Ok. You can continue setting up by running " "'rasa init' 🙋🏽‍♀️")
+        print_success(
+            "Ok, will exit for now. You can continue setting up by "
+            "running 'rasa init' again 🙋🏽‍♀️"
+        )
         sys.exit(0)
 
 
