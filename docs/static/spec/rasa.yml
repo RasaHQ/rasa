@@ -245,6 +245,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/until'
+      - $ref: '#/components/parameters/all_sessions'
       responses:
         200:
           $ref: '#/components/responses/200Story'
@@ -786,6 +787,15 @@ components:
       in: query
       name: e2e
       description: Perform an end-to-end evaluation on the posted stories.
+      example: false
+      schema:
+        type: boolean
+        default: false
+      required: false
+    all_sessions:
+      in: query
+      name: all_sessions
+      description: Fetch test stories for all conversation sessions
       example: false
       schema:
         type: boolean
