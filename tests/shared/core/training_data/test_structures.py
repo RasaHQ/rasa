@@ -50,7 +50,7 @@ def test_as_story_string_or_statement():
       - action: some_action
     """
 
-    reader = YAMLStoryReader(is_used_for_conversion=True)
+    reader = YAMLStoryReader(is_used_for_training=False)
     yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     steps = reader.read_from_parsed_yaml(yaml_content)

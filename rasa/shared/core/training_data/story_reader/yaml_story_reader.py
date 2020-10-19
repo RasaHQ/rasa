@@ -66,7 +66,7 @@ class YAMLStoryReader(StoryReader):
             reader.template_variables,
             reader.use_e2e,
             reader.source_name,
-            reader.is_used_for_conversion,
+            reader.is_used_for_training,
         )
 
     def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
@@ -337,7 +337,7 @@ class YAMLStoryReader(StoryReader):
                 return
 
         self.current_step_builder.add_user_messages(
-            utterances, self.is_used_for_conversion
+            utterances, self._is_used_for_training
         )
 
     def _user_intent_from_step(self, step: Dict[Text, Any]) -> Text:
