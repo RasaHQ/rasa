@@ -195,11 +195,10 @@ def run(args: argparse.Namespace) -> None:
             questionary.text(
                 "Please enter a path where the project will be "
                 "created [default: current directory]",
-                default=".",
             )
             .skip_if(args.no_prompt, default=".")
             .ask()
-        )
+        ) or "."
 
     if args.no_prompt and not os.path.isdir(path):
         print_error_and_exit(f"Project init path '{path}' not found.")
