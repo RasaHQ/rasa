@@ -17,6 +17,7 @@ from typing import (
     Union,
     FrozenSet,
     Tuple,
+    TypedDict,
     TYPE_CHECKING,
 )
 
@@ -68,6 +69,18 @@ logger = logging.getLogger(__name__)
 
 # same as State but with Dict[...] substituted with FrozenSet[Tuple[...]]
 FrozenState = FrozenSet[Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text]]]]]]
+
+# precise type definition for `DialogueStateTracker.active_loop`
+TrackerActiveLoop = TypedDict(
+    "TrackerActiveLoop",
+    {
+        LOOP_NAME: Text,
+        LOOP_INTERRUPTED: bool,
+        LOOP_REJECTED: bool,
+        TRIGGER_MESSAGE: Dict,
+    },
+    total=False,
+)
 
 
 class EventVerbosity(Enum):
@@ -185,7 +198,7 @@ class DialogueStateTracker:
         self.latest_message: Optional[Event] = None
         self.latest_bot_utterance = None
         self._reset()
-        self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
+        self.active_loop: TrackerActiveLoop = {}
 
     ###
     # Public tracker interface
