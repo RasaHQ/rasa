@@ -152,7 +152,6 @@ class BotFramework(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-
         json_message.setdefault("type", "message")
         json_message.setdefault("recipient", {}).setdefault("id", recipient_id)
         json_message.setdefault("from", self.bot)
