@@ -8,7 +8,7 @@ from typing import Callable, Text, List, Set, Any
 import pytest
 
 import rasa.shared
-from rasa.shared.exceptions import FileIOException
+from rasa.shared.exceptions import FileIOException, FileNotFoundException
 import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.shared.utils.io import raise_deprecation_warning
@@ -44,7 +44,7 @@ def test_raise_deprecation():
 
 
 def test_read_file_with_not_existing_path():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundException):
         rasa.shared.utils.io.read_file("some path")
 
 

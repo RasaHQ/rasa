@@ -13,6 +13,10 @@ class RasaXTermsError(RasaException):
     """Error in case the user didn't accept the Rasa X terms."""
 
 
+class InvalidParameterException(RasaException, ValueError):
+    """Raised when an invalid parameter is used."""
+
+
 class YamlException(RasaException):
     """Raised if there is an error reading yaml."""
 
