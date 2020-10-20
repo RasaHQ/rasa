@@ -54,10 +54,6 @@ class StoryReader:
         self._is_used_for_training = is_used_for_training
         self._is_parsing_conditions = False
 
-    @property
-    def is_used_for_training(self) -> bool:
-        return self._is_used_for_training
-
     def read_from_file(self, filename: Text) -> List[StoryStep]:
         raise NotImplementedError
 

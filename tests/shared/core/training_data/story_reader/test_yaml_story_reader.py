@@ -361,7 +361,7 @@ def test_read_mixed_training_data_file(default_domain: Domain):
         assert not len(record)
 
 
-def test_or_statement_conversion_mode():
+def test_or_statement_if_not_training_mode():
     stories = """
     stories:
     - story: hello world

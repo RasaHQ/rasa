@@ -17,6 +17,7 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
     SessionStarted,
 )
 from rasa.shared.core.trackers import DialogueStateTracker  # pytype: disable=pyi-error
+from rasa.shared.exceptions import RasaCoreException
 
 if typing.TYPE_CHECKING:
     import networkx as nx
@@ -39,6 +40,13 @@ FORM_PREFIX = "form: "
 # prefix for storystep ID to get reproducible sorting results
 # will get increased with each new instance
 STEP_COUNT = 1
+
+
+class EventTypeError(RasaCoreException, ValueError):
+    """Represents an error caused by a Rasa Core event not being of the expected
+    type.
+
+    """
 
 
 class Checkpoint:
@@ -135,7 +143,9 @@ class StoryStep:
     def _or_string(story_step_element: List[Event], e2e: bool) -> Text:
         for event in story_step_element:
             if not isinstance(event, UserUttered):
-                raise ValueError("OR statement events must be of type `UserUttered`.")
+                raise EventTypeError(
+                    "OR statement events must be of type `UserUttered`."
+                )
 
         result = " OR ".join(
             [element.as_story_string(e2e) for element in story_step_element]
