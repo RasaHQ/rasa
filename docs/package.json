@@ -111,6 +111,10 @@
           "gotOptions": {
             "headers": {
               "user-agent": "curl/7.64.1"
+            },
+            "retry": {
+              "limit": 4,
+              "statusCodes": [404, 408, 413, 429, 500, 502, 503, 504, 521, 522, 524]
             }
           }
         }
