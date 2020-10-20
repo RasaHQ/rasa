@@ -58,13 +58,12 @@ DEFAULT_ACTION_MAPPINGS = {
 
 RULES = "rules"
 RULES_FOR_LOOP_UNHAPPY_PATH = "rules_for_loop_unhappy_path"
-RULES_SOURCES = "rules_sources"
 
 DO_NOT_VALIDATE_LOOP = "do_not_validate_loop"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
-DEFAULT_RULES = "default_rules"
-LOOP_RULES = "loop_rules"
+DEFAULT_RULES = "predicting default action"
+LOOP_RULES = "handling active loops and forms"
 
 
 class InvalidRule(RasaException):
@@ -134,6 +133,7 @@ class RulePolicy(MemoizationPolicy):
         self._check_for_contradictions = check_for_contradictions
 
         self._prediction_source = None
+        self._rules_sources = None
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
@@ -441,8 +441,14 @@ class RulePolicy(MemoizationPolicy):
         if collect_sources:
             # we need to remember which action should be predicted by the rule
             # in order to correctly output the names of the contradicting rules
-            self.lookup[RULES_SOURCES][self._prediction_source].append(
-                (tracker.sender_id, gold_action_name)
+            rule_name = tracker.sender_id
+            if self._prediction_source in {DEFAULT_RULES, LOOP_RULES}:
+                # the real gold action contradict the one in the rules in this case
+                gold_action_name = predicted_action_name
+                rule_name = self._prediction_source
+
+            self._rules_sources[self._prediction_source].append(
+                (rule_name, gold_action_name)
             )
             return
 
@@ -452,9 +458,7 @@ class RulePolicy(MemoizationPolicy):
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
         contradicting_rules = {
             rule_name
-            for rule_name, action_name in self.lookup[RULES_SOURCES][
-                self._prediction_source
-            ]
+            for rule_name, action_name in self._rules_sources[self._prediction_source]
             if action_name != gold_action_name
         }
 
@@ -477,7 +481,7 @@ class RulePolicy(MemoizationPolicy):
         collect_sources: bool,
     ) -> List[Text]:
         if collect_sources:
-            self.lookup[RULES_SOURCES] = defaultdict(list)
+            self._rules_sources = defaultdict(list)
 
         error_messages = []
         pbar = tqdm(
@@ -795,6 +799,8 @@ class RulePolicy(MemoizationPolicy):
         else:
             logger.debug("There is no applicable rule.")
 
+        # if we didn't predict anything from the rules, then the feature key created
+        # from states can be used as an indicator that this state will lead to fallback
         return predicted_action_name, best_rule_key or self._create_feature_key(states)
 
     def predict_action_probabilities(
