@@ -770,7 +770,7 @@ class RulePolicy(MemoizationPolicy):
         if default_action_name and not rules_action_name_from_text:
             return self._prediction_result(default_action_name, tracker, domain), False
 
-        # A loop has priority over any other rule.
+        # A loop has priority over any other rule except defaults.
         # The rules or any other prediction will be applied only if a loop was rejected.
         # If we are in a loop, and the loop didn't run previously or rejected, we can
         # simply force predict the loop.

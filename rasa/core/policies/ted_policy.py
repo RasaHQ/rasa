@@ -71,9 +71,13 @@ from rasa.utils.tensorflow.constants import (
     ENCODING_DIMENSION,
     UNIDIRECTIONAL_ENCODER,
     SEQUENCE,
+    SEQUENCE_LENGTH,
     SENTENCE,
     DENSE_DIMENSION,
     E2E_CONFIDENCE_THRESHOLD,
+    SPARSE_INPUT_DROPOUT,
+    DENSE_INPUT_DROPOUT,
+    MASKED_LM,
 )
 
 
@@ -89,6 +93,7 @@ LABEL_SUB_KEY = "ids"
 LENGTH = "length"
 POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE]
 FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
+SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT]
 LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 
@@ -190,6 +195,13 @@ class TEDPolicy(Policy):
         DROP_RATE_ATTENTION: 0,
         # Sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
+        # If 'True' apply dropout to sparse input tensors
+        SPARSE_INPUT_DROPOUT: True,
+        # If 'True' apply dropout to dense input tensors
+        DENSE_INPUT_DROPOUT: True,
+        # If 'True' random tokens of the input message will be masked and the model
+        # should predict those tokens.
+        MASKED_LM: False,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.
@@ -320,6 +332,8 @@ class TEDPolicy(Policy):
         model_data.add_lengths(
             DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), MASK
         )
+        model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
+        model_data.add_lengths(ACTION_TEXT, SEQUENCE_LENGTH, ACTION_TEXT, SEQUENCE)
 
         return model_data
 
@@ -623,7 +637,10 @@ class TED(TransformerRasaModel):
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
-            self._prepare_encoding_layers(name)
+            if name in SEQUENCE_FEATURES_TO_ENCODE:
+                self._prepare_sequence_layers(name)
+            else:
+                self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
@@ -756,11 +773,30 @@ class TED(TransformerRasaModel):
             A tensor combining  all features for `attribute`
         """
 
-        if not tf_batch_data[attribute]:
-            return None
-
         attribute_mask = tf_batch_data[attribute][MASK][0]
-        # TODO transformer has to be used to process sequence features
+
+        if attribute in SEQUENCE_FEATURES_TO_ENCODE:
+            batch_dim = self._get_batch_dim(tf_batch_data)
+            mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
+            sequence_lengths = self._get_sequence_lengths(
+                tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
+            )
+            mask_text = self._compute_mask(sequence_lengths)
+
+            attribute_features, _, _, _ = self._create_sequence(
+                tf_batch_data[TEXT][SEQUENCE],
+                tf_batch_data[TEXT][SENTENCE],
+                mask_sequence_text,
+                mask_text,
+                attribute,
+                sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
+                dense_dropout=self.config[DENSE_INPUT_DROPOUT],
+                masked_lm_loss=self.config[MASKED_LM],
+                sequence_ids=True,
+            )
+            # TODO entities
+            return self._last_token(attribute_features, sequence_lengths) * attribute_mask
+
         attribute_features = self._combine_sparse_dense_features(
             tf_batch_data[attribute][SENTENCE],
             f"{attribute}_{SENTENCE}",

@@ -1,6 +1,7 @@
 import datetime
 
 import tensorflow as tf
+import tensorflow_addons as tfa
 import numpy as np
 import logging
 import os
@@ -26,6 +27,7 @@ import rasa.utils.io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     SEQUENCE,
+    SENTENCE,
     TENSORBOARD_LOG_LEVEL,
     RANDOM_SEED,
     TENSORBOARD_LOG_DIR,
@@ -47,6 +49,11 @@ from rasa.utils.tensorflow.constants import (
     MAX_NEG_SIM,
     USE_MAX_NEG_SIM,
     NEGATIVE_MARGIN_SCALE,
+    HIDDEN_LAYERS_SIZES,
+    DROP_RATE,
+    DENSE_DIMENSION,
+    CONCAT_DIMENSION,
+    DROP_RATE_ATTENTION,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -153,7 +160,7 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         loading: bool = False,
-        eager: bool = False,
+        eager: bool = True,
     ) -> None:
         """Fit model data"""
 
@@ -767,6 +774,39 @@ class TransformerRasaModel(RasaModel):
                     units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
                 )
 
+    def _prepare_input_layers(self, name: Text) -> None:
+        self._prepare_ffnn_layer(
+            name, self.config[HIDDEN_LAYERS_SIZES][name], self.config[DROP_RATE]
+        )
+
+        for feature_type in [SENTENCE, SEQUENCE]:
+            if (
+                name not in self.data_signature
+                or feature_type not in self.data_signature[name]
+            ):
+                continue
+
+            self._prepare_sparse_dense_dropout_layers(
+                f"{name}_{feature_type}", self.config[DROP_RATE]
+            )
+            self._prepare_sparse_dense_layers(
+                self.data_signature[name][feature_type],
+                f"{name}_{feature_type}",
+                self.config[DENSE_DIMENSION][name],
+            )
+            self._prepare_ffnn_layer(
+                f"{name}_{feature_type}",
+                [self.config[CONCAT_DIMENSION][name]],
+                self.config[DROP_RATE],
+                prefix="concat_layer",
+            )
+
+    def _prepare_sequence_layers(self, name: Text) -> None:
+        self._prepare_input_layers(name)
+        self._prepare_transformer_layer(
+            name, self.config[DROP_RATE], self.config[DROP_RATE_ATTENTION]
+        )
+
     def _combine_sparse_dense_features(
         self,
         features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
@@ -806,6 +846,113 @@ class TransformerRasaModel(RasaModel):
 
         return tf.concat(dense_features, axis=-1) * mask
 
+    def _combine_sequence_sentence_features(
+        self,
+        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        mask_sequence: tf.Tensor,
+        mask_text: tf.Tensor,
+        name: Text,
+        sparse_dropout: bool = False,
+        dense_dropout: bool = False,
+    ) -> tf.Tensor:
+        sequence_x = self._combine_sparse_dense_features(
+            sequence_features,
+            f"{name}_{SEQUENCE}",
+            mask_sequence,
+            sparse_dropout,
+            dense_dropout,
+        )
+        sentence_x = self._combine_sparse_dense_features(
+            sentence_features, f"{name}_{SENTENCE}", None, sparse_dropout, dense_dropout
+        )
+
+        if sequence_x is not None and sentence_x is None:
+            return sequence_x
+
+        if sequence_x is None and sentence_x is not None:
+            return sentence_x
+
+        if sequence_x is not None and sentence_x is not None:
+            return self._concat_sequence_sentence_features(
+                sequence_x, sentence_x, name, mask_text
+            )
+
+        raise ValueError(
+            "No features are present. Please check your configuration file."
+        )
+
+    def _features_as_seq_ids(
+        self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
+    ) -> Optional[tf.Tensor]:
+        """Creates dense labels for negative sampling."""
+
+        # if there are dense features - we can use them
+        for f in features:
+            if not isinstance(f, tf.SparseTensor):
+                seq_ids = tf.stop_gradient(f)
+                # add a zero to the seq dimension for the sentence features
+                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
+                return seq_ids
+
+        # use additional sparse to dense layer
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                seq_ids = tf.stop_gradient(
+                    self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
+                )
+                # add a zero to the seq dimension for the sentence features
+                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
+                return seq_ids
+
+        return None
+
+    def _create_sequence(
+        self,
+        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        mask_sequence: tf.Tensor,
+        mask: tf.Tensor,
+        name: Text,
+        sparse_dropout: bool = False,
+        dense_dropout: bool = False,
+        masked_lm_loss: bool = False,
+        sequence_ids: bool = False,
+    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+        if sequence_ids:
+            seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
+        else:
+            seq_ids = None
+
+        inputs = self._combine_sequence_sentence_features(
+            sequence_features,
+            sentence_features,
+            mask_sequence,
+            mask,
+            name,
+            sparse_dropout,
+            dense_dropout,
+        )
+        inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
+
+        if masked_lm_loss:
+            transformer_inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
+                inputs, mask, self._training
+            )
+        else:
+            transformer_inputs = inputs
+            lm_mask_bool = None
+
+        outputs = self._tf_layers[f"transformer.{name}"](
+            transformer_inputs, 1 - mask, self._training
+        )
+
+        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+            # apply activation
+            outputs = tfa.activations.gelu(outputs)
+
+        return outputs, inputs, seq_ids, lm_mask_bool
+
     @staticmethod
     def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
         mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
@@ -832,6 +979,22 @@ class TransformerRasaModel(RasaModel):
 
         sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
         return self._compute_mask(sequence_lengths)
+
+    @staticmethod
+    def _get_sequence_lengths(
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        key: Text,
+        sub_key: Text,
+        batch_dim: int = 1,
+    ) -> tf.Tensor:
+        # sentence features have a sequence lengths of 1
+        # if sequence features are present we add the sequence lengths of those
+
+        sequence_lengths = tf.ones([batch_dim], dtype=tf.int32)
+        if key in tf_batch_data and sub_key in tf_batch_data[key]:
+            sequence_lengths += tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
+
+        return sequence_lengths
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]

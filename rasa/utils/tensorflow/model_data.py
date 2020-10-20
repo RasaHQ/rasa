@@ -455,6 +455,7 @@ class RasaModelData:
         self.data[key][sub_key] = []
 
         for data in self.data[from_key][from_sub_key]:
+            print(data)
             if len(data) > 0:
                 lengths = np.array([x.shape[0] for x in data])
                 self.data[key][sub_key].extend(
