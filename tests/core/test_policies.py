@@ -914,7 +914,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "greet" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories(MarkdownStoryWriter()) == (
+        assert tracker.export_stories(MarkdownStoryWriter(), e2e=True) == (
             "## sender\n* greet: Random\n    - utter_hello\n* greet: Random\n"
         )
 
@@ -1036,7 +1036,7 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"][INTENT_NAME_KEY]
-        assert tracker.export_stories(MarkdownStoryWriter()) == (
+        assert tracker.export_stories(MarkdownStoryWriter(), e2e=True) == (
             "## sender\n* greet: Random\n    - utter_hello\n* bye: Random\n"
         )
 

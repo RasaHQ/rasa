@@ -460,10 +460,11 @@ class DialogueStateTracker:
         return applied_events
 
     @staticmethod
-    def _define_user_featurization(future_events: List[Event]) -> Optional[bool]:
+    def _define_user_featurization(future_events: List[Event]) -> bool:
         for future_event in future_events:
             if isinstance(future_event, ActionExecuted):
-                return
+                # use intent by default
+                return False
             elif isinstance(future_event, DefinePrevUserUtteredFeaturization):
                 return future_event.use_text_for_featurization
 

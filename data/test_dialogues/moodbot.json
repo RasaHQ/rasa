@@ -60,7 +60,7 @@
       },
       "text":"Hi talk to me",
       "timestamp":1551883971.410778,
-      "use_text_for_featurization": null
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
@@ -148,7 +148,7 @@
       },
       "text":"Super sad",
       "timestamp":1551883982.540276,
-      "use_text_for_featurization": null
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
@@ -246,7 +246,7 @@
       },
       "text":"No",
       "timestamp":1551883989.0720608,
-      "use_text_for_featurization": null
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
