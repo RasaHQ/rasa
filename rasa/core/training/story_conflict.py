@@ -302,8 +302,8 @@ def _get_previous_event(
         return previous_event_type, previous_event_name
 
     # A typical state is, for example,
-    # `{'prev_action_listen': 1.0, 'intent_greet': 1.0, 'slot_cuisine_0': 1.0}`.
-    # We need to look out for `prev_` and `intent_` prefixes in the labels.
+    # `{'user': {'intent': 'greet'}, 'prev_action': {'action_name': 'action_listen'}}`.
+    # We need to look out for the `prev_` prefix or a user event.
     for origin, substate in state.items():
         if origin == PREVIOUS_ACTION:
             if (
@@ -311,11 +311,15 @@ def _get_previous_event(
                 and substate["action_name"] != ACTION_LISTEN_NAME
             ):
                 # The `prev_...` was an action that was NOT `action_listen`
-                assert isinstance(substate["action_name"], str)
+                if not isinstance(substate["action_name"], str):
+                    # While the Substate type doesn't restrict the value of `action_name` to be a string, it always should be
+                    raise TypeError(f"The value '{substate['action_name']}' of `action_name` should be a string, not {type(substate['action_name'])}. Did you modify Rasa source code?")
                 return "action", substate["action_name"]
             elif "action_text" in substate:
                 # The `prev_...` was a a free form utterance action
-                assert isinstance(substate["action_text"], str)
+                if not isinstance(substate["action_text"], str):
+                    # While the Substate type doesn't restrict the value of `action_text` to be a string, it always should be
+                    raise TypeError(f"The value '{substate['action_text']}' of `action_text` should be a string, not {type(substate['action_text'])}. Did you modify Rasa source code?")
                 return "bot uttered", substate["action_text"]
         elif origin == USER:
             # We found an intent, but it is only the previous event if
