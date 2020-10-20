@@ -312,7 +312,7 @@ def _get_previous_event(
         previous_event_name = state[PREVIOUS_ACTION]["action_name"]
     elif PREVIOUS_ACTION in state.keys() and "action_text" in state[PREVIOUS_ACTION]:
         previous_event_type = "bot utterance"
-        previous_event_name = substate["action_text"]
+        previous_event_name = state[PREVIOUS_ACTION]["action_text"]
     elif USER in state.keys():
         if "intent" in state[USER]:
             previous_event_type = "intent"
