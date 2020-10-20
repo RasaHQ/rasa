@@ -205,9 +205,16 @@ def run(args: argparse.Namespace) -> None:
                 "Please enter a path where the project will be "
                 "created [default: current directory]",
             )
-            .skip_if(args.no_prompt, default=".")
+            .skip_if(args.no_prompt, default="")
             .ask()
-        ) or "."
+        )
+        # set the default directory. we can't use the `default` property
+        # in questionary as we want to avoid showing the "." in the prompt as the
+        # initial value. users tend to overlook it and it leads to invalid
+        # paths like: ".C:\mydir".
+        # Can't use `if not path` either, as `None` will be handled differently (abort)
+        if path == "":
+            path = "."
 
     if args.no_prompt and not os.path.isdir(path):
         print_error_and_exit(f"Project init path '{path}' not found.")
