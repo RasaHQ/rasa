@@ -359,3 +359,35 @@ def test_read_mixed_training_data_file(default_domain: Domain):
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
         assert not len(record)
+
+
+def test_or_statement_if_not_training_mode():
+    stories = """
+    stories:
+    - story: hello world
+      steps:
+      - or:
+        - intent: intent1
+        - intent: intent2
+      - action: some_action
+      - intent: intent3
+      - action: other_action
+    """
+
+    reader = YAMLStoryReader(is_used_for_training=False)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    assert len(steps) == 1
+
+    assert len(steps[0].events) == 4  # 4 events in total
+    assert len(steps[0].start_checkpoints) == 1
+    assert steps[0].start_checkpoints[0].name == "STORY_START"
+    assert steps[0].end_checkpoints == []
+
+    or_statement = steps[0].events[0]
+    assert isinstance(or_statement, list)  # But first one is a list (OR)
+
+    assert or_statement[0].intent["name"] == "intent1"
+    assert or_statement[1].intent["name"] == "intent2"
