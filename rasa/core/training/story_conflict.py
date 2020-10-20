@@ -286,7 +286,7 @@ def _get_previous_event(
     """Returns previous event type and name.
 
     Returns the type and name of the event (action or intent) previous to the
-    given state.
+    given state (excluding action_listen).
 
     Args:
         state: Element of sliced states.
@@ -295,45 +295,36 @@ def _get_previous_event(
         Tuple of (type, name) strings of the prior event.
     """
 
-    previous_event_type = None
-    previous_event_name = None
+    previous_event_type: Optional[Text] = None
+    previous_event_name: Optional[Text] = None
 
-    if not state:
-        return previous_event_type, previous_event_name
-
-    # A typical state is, for example,
+    # A typical state might be
     # `{'user': {'intent': 'greet'}, 'prev_action': {'action_name': 'action_listen'}}`.
-    # We need to look out for the `prev_` prefix or a user event.
-    for origin, substate in state.items():
-        if origin == PREVIOUS_ACTION:
-            if (
-                "action_name" in substate
-                and substate["action_name"] != ACTION_LISTEN_NAME
-            ):
-                # The `prev_...` was an action that was NOT `action_listen`
-                if not isinstance(substate["action_name"], str):
-                    # While the Substate type doesn't restrict the value of `action_name` to be a string, it always should be
-                    raise TypeError(
-                        f"The value '{substate['action_name']}' of `action_name` should be a string, not {type(substate['action_name'])}. Did you modify Rasa source code?"
-                    )
-                return "action", substate["action_name"]
-            elif "action_text" in substate:
-                # The `prev_...` was a a free form utterance action
-                if not isinstance(substate["action_text"], str):
-                    # While the Substate type doesn't restrict the value of `action_text` to be a string, it always should be
-                    raise TypeError(
-                        f"The value '{substate['action_text']}' of `action_text` should be a string, not {type(substate['action_text'])}. Did you modify Rasa source code?"
-                    )
-                return "bot uttered", substate["action_text"]
-        elif origin == USER:
-            # We found an intent, but it is only the previous event if
-            # the `prev_...` was `prev_action_listen`, so we don't return.
-            if "intent" in substate:
-                previous_event_type = "intent"
-                previous_event_name = substate["intent"]
-            elif "text" in substate:
-                previous_event_type = "user utterance"
-                previous_event_name = substate["text"]
+    if not state:
+        previous_event_type = None
+        previous_event_name = None
+    elif (
+        PREVIOUS_ACTION in state.keys()
+        and "action_name" in state[PREVIOUS_ACTION]
+        and state[PREVIOUS_ACTION]["action_name"] != ACTION_LISTEN_NAME
+    ):
+        previous_event_type = "action"
+        previous_event_name = state[PREVIOUS_ACTION]["action_name"]
+    elif PREVIOUS_ACTION in state.keys() and "action_text" in state[PREVIOUS_ACTION]:
+        previous_event_type = "bot utterance"
+        previous_event_name = substate["action_text"]
+    elif USER in state.keys():
+        if "intent" in state[USER]:
+            previous_event_type = "intent"
+            previous_event_name = state[USER]["intent"]
+        elif "text" in state[USER]:
+            previous_event_type = "user utterance"
+            previous_event_name = state[USER]["text"]
 
-    assert isinstance(previous_event_name, (str, type(None)))
+    if not isinstance(previous_event_name, (str, type(None))):
+        # While the Substate type doesn't restrict the value of `action_text` / `intent`, etc. to be a string, it always should be
+        raise TypeError(
+            f"The value '{previous_event_name}' in the substate should be a string or None, not {type(previous_event_name)}. Did you modify Rasa source code?"
+        )
+
     return previous_event_type, previous_event_name
