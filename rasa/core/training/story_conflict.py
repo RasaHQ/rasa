@@ -295,8 +295,8 @@ def _get_previous_event(
         Tuple of (type, name) strings of the prior event.
     """
 
-    previous_event_type: Optional[Text] = None
-    previous_event_name: Optional[Text] = None
+    previous_event_type = None
+    previous_event_name = None
 
     # A typical state might be
     # `{'user': {'intent': 'greet'}, 'prev_action': {'action_name': 'action_listen'}}`.
