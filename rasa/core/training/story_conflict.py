@@ -313,13 +313,17 @@ def _get_previous_event(
                 # The `prev_...` was an action that was NOT `action_listen`
                 if not isinstance(substate["action_name"], str):
                     # While the Substate type doesn't restrict the value of `action_name` to be a string, it always should be
-                    raise TypeError(f"The value '{substate['action_name']}' of `action_name` should be a string, not {type(substate['action_name'])}. Did you modify Rasa source code?")
+                    raise TypeError(
+                        f"The value '{substate['action_name']}' of `action_name` should be a string, not {type(substate['action_name'])}. Did you modify Rasa source code?"
+                    )
                 return "action", substate["action_name"]
             elif "action_text" in substate:
                 # The `prev_...` was a a free form utterance action
                 if not isinstance(substate["action_text"], str):
                     # While the Substate type doesn't restrict the value of `action_text` to be a string, it always should be
-                    raise TypeError(f"The value '{substate['action_text']}' of `action_text` should be a string, not {type(substate['action_text'])}. Did you modify Rasa source code?")
+                    raise TypeError(
+                        f"The value '{substate['action_text']}' of `action_text` should be a string, not {type(substate['action_text'])}. Did you modify Rasa source code?"
+                    )
                 return "bot uttered", substate["action_text"]
         elif origin == USER:
             # We found an intent, but it is only the previous event if
