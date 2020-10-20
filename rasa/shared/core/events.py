@@ -4,11 +4,10 @@ import re
 
 import jsonpickle
 import time
-import typing
 import uuid
 from dateutil import parser
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional
+from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterable
 
 import rasa.shared.utils.common
 from typing import Union
@@ -34,7 +33,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
 )
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
@@ -104,6 +103,70 @@ def first_key(d: Dict[Text, Any], default_key: Any) -> Any:
         return list(d.keys())[0]
     else:
         return None
+
+
+def split_events(
+    events: Iterable["Event"],
+    event_type_to_split_on: Type["Event"],
+    additional_splitting_conditions: Optional[Dict[Text, Any]] = None,
+    include_splitting_event: bool = True,
+) -> List[List["Event"]]:
+    """Splits events according to an event type and condition.
+
+    Examples:
+        Splitting events according to the event type `ActionExecuted` and the
+        `action_name` 'action_session_start' would look as follows:
+
+        >> _events = split_events(
+                        events,
+                        ActionExecuted,
+                        {"action_name": "action_session_start"},
+                        True
+                     )
+
+    Args:
+        events: Events to split.
+        event_type_to_split_on: The event type to split on.
+        additional_splitting_conditions: Additional event attributes to split on.
+        include_splitting_event: Whether the events of the type on which the split
+            is based should be included in the returned events.
+
+    Returns:
+        The split events.
+    """
+    sub_events = []
+    current = []
+
+    def event_fulfills_splitting_condition(evt: "Event") -> bool:
+        # event does not have the correct type
+        if not isinstance(evt, event_type_to_split_on):
+            return False
+
+        # the type is correct and there are no further conditions
+        if not additional_splitting_conditions:
+            return True
+
+        # there are further conditions - check those
+        return all(
+            getattr(evt, k, None) == v
+            for k, v in additional_splitting_conditions.items()
+        )
+
+    for event in events:
+        if event_fulfills_splitting_condition(event):
+            if current:
+                sub_events.append(current)
+
+            current = []
+            if include_splitting_event:
+                current.append(event)
+        else:
+            current.append(event)
+
+    if current:
+        sub_events.append(current)
+
+    return sub_events
 
 
 # noinspection PyProtectedMember
