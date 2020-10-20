@@ -166,7 +166,7 @@ Merge existing domain with properties of retrieval intents in NLU data.
  | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
-Update NLU data with response templates defined in the domain
+Update NLU data with response templates for retrieval intents defined in the domain
 
 ## E2EImporter Objects
 

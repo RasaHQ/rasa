@@ -3,6 +3,15 @@ sidebar_label: rasa.shared.core.training_data.structures
 title: rasa.shared.core.training_data.structures
 ---
 
+## EventTypeError Objects
+
+```python
+class EventTypeError(RasaCoreException,  ValueError)
+```
+
+Represents an error caused by a Rasa Core event not being of the expected
+type.
+
 ## Checkpoint Objects
 
 ```python

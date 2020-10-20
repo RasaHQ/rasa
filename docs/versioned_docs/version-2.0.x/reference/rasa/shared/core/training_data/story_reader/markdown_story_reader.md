@@ -23,7 +23,7 @@ Given a md file reads the contained stories.
 
 ```python
  | @staticmethod
- | parse_e2e_message(line: Text, is_used_for_conversion: bool = False) -> Message
+ | parse_e2e_message(line: Text, is_used_for_training: bool = True) -> Message
 ```
 
 Parses an md list item line based on the current section type.
