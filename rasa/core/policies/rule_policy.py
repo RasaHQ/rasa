@@ -442,7 +442,7 @@ class RulePolicy(MemoizationPolicy):
             # we need to remember which action should be predicted by the rule
             # in order to correctly output the names of the contradicting rules
             self.lookup[RULES_SOURCES][self._prediction_source].append(
-                [tracker.sender_id, gold_action_name]
+                (tracker.sender_id, gold_action_name)
             )
             return
 
