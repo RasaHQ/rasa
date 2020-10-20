@@ -450,13 +450,13 @@ class RulePolicy(MemoizationPolicy):
             return
 
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
-        contradicting_rules = set(
+        contradicting_rules = {
             rule_name
             for rule_name, action_name in self.lookup[RULES_SOURCES][
                 self._prediction_source
             ]
             if action_name != gold_action_name
-        )
+        }
 
         error_message = (
             f"- the prediction of the action '{gold_action_name}' in {tracker_type} "
