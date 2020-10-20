@@ -1,0 +1,33 @@
+---
+id: architecture
+sidebar_label: Rasa Architecture
+title: Rasa Architecture
+description: Check the architecture to understand how Rasa uses machine learning, context and state of the conversation to predict the next action of the AI Assistant.
+---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+## Message Handling
+
+This diagram shows the basic steps of how an assistant built with Rasa
+responds to a message:
+
+import archImage from './architecture-img.png';
+
+<Image img={archImage} caption="Rasa Open Source architecture" alt="A visual representation of the steps that follow."/>
+
+The steps are:
+
+1. The message is received and passed to an `Interpreter`, which
+   converts it into a dictionary including the original text, the intent,
+   and any entities that were found. This part is handled by NLU.
+
+2. The message is passed from the `Interpreter` to the `Tracker`.
+   The `Tracker` is the object which keeps track of conversation state.
+
+3. The current state of the tracker is sent to each policy.
+
+4. Each policy chooses which action to take next.
+
+5. The chosen action is logged by the tracker.
+
+6. A response is sent to the user.

@@ -1,0 +1,28 @@
+---
+id: microsoft-bot-framework
+sidebar_label: Microsoft Bot Framework
+title: Microsoft Bot Framework
+description: Build a Rasa Chat Bot on Microsoft Bot Framework
+---
+
+You first have to create a Microsoft app to get credentials.
+Once you have them you can add these to your `credentials.yml`.
+
+The endpoint URL that Microsoft Bot Framework should send messages to will
+look like `http://<host>:<port>/webhooks/botframework/webhook`, replacing
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
+
+
+## Running on Microsoft Bot Framework
+
+Add the Botframework credentials to your `credentials.yml`:
+
+```yaml-rasa
+botframework:
+  app_id: "MICROSOFT_APP_ID"
+  app_password: "MICROSOFT_APP_PASSWORD"
+```
+
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available for Microsoft Bot Framework to send messages to.
