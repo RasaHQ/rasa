@@ -7,6 +7,8 @@ from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.nlu.interpreter import RegexInterpreter
 import scipy.sparse
 
+from shared.core.slots import Slot
+
 
 def test_single_state_featurizer_without_interpreter_state_not_with_action_listen():
     """This test are for encoding state without a trained interpreter.
@@ -112,6 +114,31 @@ def test_single_state_featurizer_correctly_encodes_non_existing_value():
 
     assert list(encoded.keys()) == [INTENT, ACTION_NAME]
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[0, 0]])).nnz == 0
+
+
+def test_single_state_featurizer_prepare_from_domain():
+    domain = Domain(
+        intents=["greet"],
+        entities=["name"],
+        slots=[Slot("name")],
+        templates={},
+        forms=[],
+        action_names=["utter_greet", "action_check_weather"],
+    )
+
+    f = SingleStateFeaturizer()
+    f.prepare_from_domain(domain)
+
+    assert len(f._default_feature_states[INTENT]) > 1
+    assert "greet" in f._default_feature_states[INTENT]
+    assert len(f._default_feature_states[ENTITIES]) == 1
+    assert f._default_feature_states[ENTITIES]["name"] == 0
+    assert len(f._default_feature_states[SLOTS]) == 1
+    assert f._default_feature_states[SLOTS]["name_0"] == 0
+    assert len(f._default_feature_states[ACTION_NAME]) > 2
+    assert "utter_greet" in f._default_feature_states[ACTION_NAME]
+    assert "action_check_weather" in f._default_feature_states[ACTION_NAME]
+    assert len(f._default_feature_states[ACTIVE_LOOP]) == 0
 
 
 def test_single_state_featurizer_creates_encoded_all_actions():

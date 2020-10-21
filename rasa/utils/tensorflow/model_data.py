@@ -15,7 +15,6 @@ from typing import (
     Union,
     Generator,
     NamedTuple,
-    ValuesView,
     ItemsView,
 )
 from collections import defaultdict, OrderedDict
