@@ -396,7 +396,7 @@ class TEDPolicy(Policy):
         """
 
         if self.model is None:
-            return self._default_predictions(domain)
+            return self._default_predictions(domain), None
 
         # create model data from tracker
         tracker_state_features = self.featurizer.create_state_features(
