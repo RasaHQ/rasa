@@ -1,5 +1,4 @@
 from typing import Text
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import Domain
 import numpy as np
@@ -7,10 +6,6 @@ from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, ENTITIES, TEXT, 
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.nlu.interpreter import RegexInterpreter
 import scipy.sparse
-
-
-def test_fail_to_load_non_existent_featurizer():
-    assert TrackerFeaturizer.load("non_existent_class") is None
 
 
 def test_single_state_featurizer_without_interpreter_state_not_with_action_listen():
