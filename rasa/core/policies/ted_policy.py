@@ -702,7 +702,7 @@ class TED(TransformerRasaModel):
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
-        return dialogue_embed, mask, attention_weights  # ToDo: ?, ?, (num_layers, batch_size, num_heads, length, length)
+        return dialogue_embed, mask, attention_weights
 
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
