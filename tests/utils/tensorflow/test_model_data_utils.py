@@ -25,7 +25,7 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
+from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 shape = 100
 
