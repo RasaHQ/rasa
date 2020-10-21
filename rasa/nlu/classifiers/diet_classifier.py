@@ -21,7 +21,6 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
-from rasa.utils.plotting import plot_attention_weights
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature

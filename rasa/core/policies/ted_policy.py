@@ -27,7 +27,6 @@ from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.utils import train_utils
-from rasa.utils.plotting import plot_attention_weights
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
