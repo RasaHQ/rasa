@@ -640,4 +640,3 @@ class TransformerEncoder(tf.keras.layers.Layer):
             x,
             tf.stack(layer_attention_weights),
         )  # (batch_size, length, units), (num_layers, batch_size, num_heads, length, length)
-

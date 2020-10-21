@@ -516,7 +516,7 @@ class RasaModel(tf.keras.models.Model):
 
         Batch contains any number of batch data. The order is equal to the
         key-value pairs in session data. As sparse data were converted into (indices,
-        data, shape) before, this method converts them into sparse tensors. Dense 
+        data, shape) before, this method converts them into sparse tensors. Dense
         data is kept.
         """
 

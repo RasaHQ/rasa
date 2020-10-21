@@ -392,7 +392,6 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> Tuple[List[float], Optional[Dict[Text, Any]]]:
         """Predict the next action the bot should take.
-        
         Return the list of probabilities for the next actions and
         diagnostic data.
         """
@@ -861,4 +860,3 @@ class TED(TransformerRasaModel):
             "action_scores": scores,
             DIAGNOSTIC_DATA: {ATTENTION_WEIGHTS: attention_weights},
         }
-
