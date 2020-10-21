@@ -45,6 +45,7 @@ from rasa.model import (
 )
 from rasa.exceptions import ModelNotFound
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_MAPPING
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 
 
 def test_get_latest_model(trained_rasa_model: str):
@@ -106,7 +107,7 @@ def _fingerprint(
     nlg: Optional[Any] = None,
     stories: Optional[Any] = None,
     nlu: Optional[Any] = None,
-    rasa_version: Text = "1.0",
+    rasa_version: Text = MINIMUM_COMPATIBLE_VERSION,
 ):
     return {
         FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
