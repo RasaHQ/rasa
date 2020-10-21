@@ -76,7 +76,7 @@ def print_version() -> None:
     """Prints version information of rasa tooling and python."""
 
     info = sys.version.split("\n")
-    python_version, os_info = info if len(info) == 2 else info, ""
+    python_version, os_info = info if len(info) == 2 else info, ""  # noqa: F841
 
     try:
         from rasax.community.version import __version__  # pytype: disable=import-error
