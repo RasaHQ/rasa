@@ -520,10 +520,6 @@ class TEDPolicy(Policy):
         )
 
 
-# accessing _tf_layers with any key results in key-error, disable it
-# pytype: disable=key-error
-
-
 class TED(TransformerRasaModel):
     def __init__(
         self,
@@ -550,7 +546,8 @@ class TED(TransformerRasaModel):
         self.action_acc = tf.keras.metrics.Mean(name="acc")
         self.metrics_to_log += ["loss", "acc"]
 
-        self.all_labels_embed = None  # needed for efficient prediction
+        # needed for efficient prediction
+        self.all_labels_embed: Optional[tf.Tensor] = None
 
         self._prepare_layers()
 
@@ -849,7 +846,4 @@ class TED(TransformerRasaModel):
             sim_all, self.config[SIMILARITY_TYPE]
         )
 
-
         return {"action_scores": scores, DIAGNOSTIC_DATA: {ATTENTION_WEIGHTS: attention_weights}}
-
-# pytype: enable=key-error
