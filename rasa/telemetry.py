@@ -648,8 +648,7 @@ def initialize_error_reporting() -> None:
             default_context = _default_context_fields()
             if "os" in default_context:
                 # os is a nested dict, hence we report it separately
-                scope.set_context("Operating System", default_context["os"])
-                del default_context["os"]
+                scope.set_context("Operating System", default_context.pop("os"))
             scope.set_context("Environment", default_context)
 
 
