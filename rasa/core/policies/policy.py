@@ -235,7 +235,10 @@ class Policy:
              diagnostic data (or None).
         """
 
-        return self.predict_action_probabilities(tracker, domain, interpreter, **kwargs), None
+        return (
+            self.predict_action_probabilities(tracker, domain, interpreter, **kwargs),
+            None,
+        )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
         """Returns this policy's attributes that should be persisted.

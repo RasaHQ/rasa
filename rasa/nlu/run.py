@@ -16,8 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_cmdline(
-    model_path: Text, 
-    component_builder: Optional["ComponentBuilder"] = None
+    model_path: Text, component_builder: Optional["ComponentBuilder"] = None
 ) -> None:
     interpreter = Interpreter.load(model_path, component_builder)
     regex_interpreter = RegexInterpreter()

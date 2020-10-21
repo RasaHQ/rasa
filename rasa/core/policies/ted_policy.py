@@ -379,7 +379,9 @@ class TEDPolicy(Policy):
         Return the list of probabilities for the next actions.
         """
 
-        action_probabilities, _ = self.predict_action_probabilities_with_diagnostics(tracker, domain, interpreter, **kwargs)
+        action_probabilities, _ = self.predict_action_probabilities_with_diagnostics(
+            tracker, domain, interpreter, **kwargs
+        )
         return action_probabilities
 
     def predict_action_probabilities_with_diagnostics(
@@ -688,9 +690,9 @@ class TED(TransformerRasaModel):
 
         mask = self._compute_mask(sequence_lengths)
 
-        dialogue_transformed, attention_weights = self._tf_layers[f"transformer.{DIALOGUE}"](
-            dialogue_in, 1 - mask, self._training
-        )
+        dialogue_transformed, attention_weights = self._tf_layers[
+            f"transformer.{DIALOGUE}"
+        ](dialogue_in, 1 - mask, self._training)
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         if self.max_history_tracker_featurizer_used:
@@ -855,4 +857,8 @@ class TED(TransformerRasaModel):
             sim_all, self.config[SIMILARITY_TYPE]
         )
 
-        return {"action_scores": scores, DIAGNOSTIC_DATA: {ATTENTION_WEIGHTS: attention_weights}}
+        return {
+            "action_scores": scores,
+            DIAGNOSTIC_DATA: {ATTENTION_WEIGHTS: attention_weights},
+        }
+

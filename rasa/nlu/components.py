@@ -550,7 +550,9 @@ class Component(metaclass=ComponentMetaclass):
 
         pass
 
-    def process_with_diagnostics(self, message: Message, **kwargs: Any) -> Optional[Dict[Text, Any]]:
+    def process_with_diagnostics(
+        self, message: Message, **kwargs: Any
+    ) -> Optional[Dict[Text, Any]]:
         """Process an incoming message and return diagnostic data.
 
         This is the same as :meth:`rasa.nlu.components.Component.process`

@@ -889,8 +889,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self.process_with_diagnostics(message, **kwargs)
 
-    
-    def process_with_diagnostics(self, message: Message, **kwargs: Any) -> Optional[Dict[Text, Any]]:
+    def process_with_diagnostics(
+        self, message: Message, **kwargs: Any
+    ) -> Optional[Dict[Text, Any]]:
         """Augment the message with intents and entities and return diagnostic data."""
 
         out = self._predict(message)
@@ -907,7 +908,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.set(ENTITIES, entities, add_to_output=True)
 
         return out.get(DIAGNOSTIC_DATA)
-
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -1456,7 +1456,13 @@ class DIET(TransformerRasaModel):
         dense_dropout: bool = False,
         masked_lm_loss: bool = False,
         sequence_ids: bool = False,
-    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor], Optional[tf.Tensor]]:
+    ) -> Tuple[
+        tf.Tensor,
+        tf.Tensor,
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+    ]:
         if sequence_ids:
             seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
         else:
