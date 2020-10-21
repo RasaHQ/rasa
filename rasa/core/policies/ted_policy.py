@@ -74,6 +74,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
     DENSE_DIMENSION,
     E2E_CONFIDENCE_THRESHOLD,
+    MASK,
 )
 
 
@@ -83,7 +84,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MASK = "mask"
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = "ids"
 LENGTH = "length"

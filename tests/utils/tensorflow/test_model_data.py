@@ -483,3 +483,33 @@ def test_scipy_matrix_to_values(
     indices, data, shape = RasaModelData._scipy_matrix_to_values(incoming_data)
 
     assert np.all(shape == expected_shape)
+
+
+def test_sort(model_data: RasaModelData):
+    assert list(model_data.data.keys()) == [
+        "text",
+        "action_text",
+        "dialogue",
+        "label",
+        "entities",
+    ]
+
+    model_data.sort()
+
+    assert list(model_data.data.keys()) == [
+        "action_text",
+        "dialogue",
+        "entities",
+        "label",
+        "text",
+    ]
+
+
+def test_update_key(model_data: RasaModelData):
+    assert model_data.does_feature_exist("label", "ids")
+
+    model_data.update_key("label", "ids", "intent", "ids")
+
+    assert not model_data.does_feature_exist("label", "ids")
+    assert model_data.does_feature_exist("intent", "ids")
+    assert "label" not in model_data.data

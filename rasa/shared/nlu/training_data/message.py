@@ -215,6 +215,14 @@ class Message:
 
         return sequence_features, sentence_features
 
+    def get_all_features(
+        self, attribute: Text, featurizers: Optional[List[Text]] = None
+    ) -> List["Features"]:
+        sparse_features = self.get_sparse_features(attribute, featurizers)
+        dense_features = self.get_dense_features(attribute, featurizers)
+
+        return [f for f in sparse_features + dense_features if f is not None]
+
     def features_present(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> bool:
