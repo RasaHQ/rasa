@@ -65,6 +65,16 @@ jobs:
           kubectl apply -f runner_deployment.yaml
           kubectl -n github-runner rollout status --timeout=15m deployment/github-runner-$GITHUB_RUN_ID
 
+      - name: Notify slack on failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+          status: FAILED
+          color: danger
+
   model_regression_test_gpu:
     name: Model Regression Tests - GPU
     continue-on-error: true

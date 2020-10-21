@@ -1,7 +1,0 @@
-.DocSearch-Button-Key {
-    display: none !important;
-}
-
-.DocSearch-Button-Placeholder::after {
-    content: " (coming soon)";
-}
