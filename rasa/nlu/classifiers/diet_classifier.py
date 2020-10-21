@@ -1087,10 +1087,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
 
-# accessing _tf_layers with any key results in key-error, disable it
-# pytype: disable=key-error
-
-
 class DIET(TransformerRasaModel):
     def __init__(
         self,
@@ -1115,7 +1111,9 @@ class DIET(TransformerRasaModel):
         self._create_metrics()
         self._update_metrics_to_log()
 
-        self.all_labels_embed = None  # needed for efficient prediction
+        # needed for efficient prediction
+        self.all_labels_embed: Optional[tf.Tensor] = None
+
         self._prepare_layers()
 
     @staticmethod
@@ -1560,13 +1558,10 @@ class DIET(TransformerRasaModel):
 
         # should call first to build weights
         pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
-        # pytype cannot infer that 'self._tf_layers["crf"]' has the method '.loss'
-        # pytype: disable=attribute-error
         loss = self._tf_layers[f"crf.{tag_name}"].loss(
             logits, tag_ids, sequence_lengths
         )
         f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
-        # pytype: enable=attribute-error
 
         return loss, f1, logits
 
@@ -1815,9 +1810,6 @@ class DIET(TransformerRasaModel):
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
-        # pytype cannot infer that 'self._tf_layers[f"loss.{LABEL}"]' has methods
-        # like '.sim' or '.confidence_from_sim'
-        # pytype: disable=attribute-error
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
@@ -1825,9 +1817,5 @@ class DIET(TransformerRasaModel):
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
         )
-        # pytype: enable=attribute-error
 
         return {"i_scores": scores}
-
-
-# pytype: enable=key-error

@@ -9,7 +9,7 @@ from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarStri
 import rasa.shared.utils.io
 import rasa.shared.core.constants
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.core.events import (  # pytype: disable=pyi-error
+from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     SlotSet,
@@ -17,7 +17,7 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
     Event,
 )
 
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import (  # pytype: disable=pyi-error
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_STORIES,
     KEY_STORY_NAME,
     KEY_USER_INTENT,
@@ -124,6 +124,7 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_STORIES] = stories
         if rules:
             result[KEY_RULES] = rules
+
         return result
 
     def process_story_step(self, story_step: StoryStep) -> OrderedDict:
