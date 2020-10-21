@@ -78,6 +78,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     DENSE_INPUT_DROPOUT,
     MASKED_LM,
+    MASK,
 )
 
 
@@ -87,7 +88,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MASK = "mask"
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = "ids"
 LENGTH = "length"
@@ -777,7 +777,9 @@ class TED(TransformerRasaModel):
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
             batch_dim = self._get_batch_dim(tf_batch_data)
-            mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
+            mask_sequence_text = self._get_mask_for(
+                tf_batch_data, TEXT, SEQUENCE_LENGTH
+            )
             sequence_lengths = self._get_sequence_lengths(
                 tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
             )
@@ -795,7 +797,9 @@ class TED(TransformerRasaModel):
                 sequence_ids=True,
             )
             # TODO entities
-            return self._last_token(attribute_features, sequence_lengths) * attribute_mask
+            return (
+                self._last_token(attribute_features, sequence_lengths) * attribute_mask
+            )
 
         attribute_features = self._combine_sparse_dense_features(
             tf_batch_data[attribute][SENTENCE],

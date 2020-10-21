@@ -233,6 +233,8 @@ async def test_import_nlu_training_data_from_e2e_stories(
         Message(data={ACTION_TEXT: "Hi Joey."}),
     ]
 
+    print([t.data for t in nlu_data.training_examples])
+
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
 
 

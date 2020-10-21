@@ -16,7 +16,7 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME_KEY
-from rasa.utils.tensorflow.model_data_utils import surface_attributes
+from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
 
 @pytest.mark.parametrize(
@@ -252,8 +252,8 @@ async def test_load_multi_file_training_data(
     # we check for intents, action names and entities -- the features which
     # are included in the story files
 
-    data = surface_attributes(data)
-    data_mul = surface_attributes(data_mul)
+    data = _surface_attributes(data)
+    data_mul = _surface_attributes(data_mul)
 
     for attribute in [INTENT, ACTION_NAME, ENTITIES]:
         if attribute not in data or attribute not in data_mul:

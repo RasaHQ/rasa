@@ -18,7 +18,7 @@ from typing import (
     ValuesView,
     ItemsView,
 )
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class FeatureArray(np.ndarray):
     """
 
     def __new__(
-        cls, input_array: np.ndarray, number_of_dimensions: int,
+        cls, input_array: np.ndarray, number_of_dimensions: int
     ) -> "FeatureArray":
         FeatureArray._validate_number_of_dimensions(number_of_dimensions, input_array)
 
@@ -204,19 +204,19 @@ class FeatureArray(np.ndarray):
 
 
 class FeatureSignature(NamedTuple):
-    """Stores the shape, the type (sparse vs dense), and the number of dimensions of features."""
+    """Stores the number of units, the type (sparse vs dense), and the number of dimensions of features."""
 
     is_sparse: bool
     units: Optional[int]
     number_of_dimensions: int
 
 
-# Mapping of attribute name and feature name to a list of numpy arrays representing
+# Mapping of attribute name and feature name to a list of feature arrays representing
 # the actual features
 # For example:
 # "text" -> { "sentence": [
-#   "numpy array containing dense features for every training example",
-#   "numpy array containing sparse features for every training example"
+#   "feature array containing dense features for every training example",
+#   "feature array containing sparse features for every training example"
 # ]}
 Data = Dict[Text, Dict[Text, List[FeatureArray]]]
 
@@ -250,9 +250,7 @@ class RasaModelData:
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
-    ) -> Union[
-        Dict[Text, List[FeatureArray]], List[FeatureArray],
-    ]:
+    ) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]:
         """Get the data under the given keys.
 
         Args:
@@ -278,7 +276,7 @@ class RasaModelData:
         """
         return self.data.items()
 
-    def values(self) -> ValuesView[Dict[Text, List[FeatureArray]]]:
+    def values(self) -> Any:
         """Return the values of the data attribute.
 
         Returns:
@@ -303,6 +301,12 @@ class RasaModelData:
 
         return []
 
+    def sort(self):
+        """Sorts data according to its keys."""
+        for key, attribute_data in self.data.items():
+            self.data[key] = OrderedDict(sorted(attribute_data.items()))
+        self.data = OrderedDict(sorted(self.data.items()))
+
     def first_data_example(self) -> Data:
         """Return the data with just one feature example per key, sub-key.
 
@@ -315,6 +319,9 @@ class RasaModelData:
             for sub_key, features in attribute_data.items():
                 out_data[key][sub_key] = [feature[:1] for feature in features]
         return out_data
+
+    def does_feature_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
+        return not self.does_feature_not_exist(key, sub_key)
 
     def does_feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
         """Check if feature key (and sub-key) is present and features are available.
@@ -411,8 +418,30 @@ class RasaModelData:
                 else:
                     self.add_features(key, sub_key, features)
 
+    def update_key(
+        self, from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text
+    ) -> None:
+        """Copies the features under the given keys to the new keys and deletes the old keys.
+
+        Args:
+            from_key: current feature key
+            from_sub_key: current feature sub-key
+            to_key: new key for feature
+            to_sub_key: new sub-key for feature
+        """
+        if from_key not in self.data or from_sub_key not in self.data[from_key]:
+            return
+
+        if to_key not in self.data:
+            self.data[to_key] = {}
+        self.data[to_key][to_sub_key] = self.get(from_key, from_sub_key)
+        del self.data[from_key][from_sub_key]
+
+        if not self.data[from_key]:
+            del self.data[from_key]
+
     def add_features(
-        self, key: Text, sub_key: Text, features: Optional[List[FeatureArray]],
+        self, key: Text, sub_key: Text, features: Optional[List[FeatureArray]]
     ) -> None:
         """Add list of features to data under specified key.
 
@@ -439,7 +468,7 @@ class RasaModelData:
     def add_lengths(
         self, key: Text, sub_key: Text, from_key: Text, from_sub_key: Text
     ) -> None:
-        """Adds np.array of lengths of sequences to data under given key.
+        """Adds a feature array of lengths of sequences to data under given key.
 
         Args:
             key: The key to add the lengths to
@@ -454,10 +483,12 @@ class RasaModelData:
 
         self.data[key][sub_key] = []
 
-        for data in self.data[from_key][from_sub_key]:
-            print(data)
-            if len(data) > 0:
-                lengths = np.array([x.shape[0] for x in data])
+        for features in self.data[from_key][from_sub_key]:
+            if len(features) > 0:
+                if features.number_of_dimensions == 4:
+                    lengths = np.array([x[0].shape[0] for x in features])
+                else:
+                    lengths = np.array([x.shape[0] for x in features])
                 self.data[key][sub_key].extend(
                     [FeatureArray(lengths, number_of_dimensions=1)]
                 )
@@ -475,11 +506,10 @@ class RasaModelData:
         Returns:
             A tuple of train and test RasaModelData.
         """
-
         self._check_label_key()
 
         if self.label_key is None or self.label_sub_key is None:
-            # randomly split data as no label key is split
+            # randomly split data as no label key is set
             multi_values = [
                 v
                 for attribute_data in self.data.values()
@@ -1120,7 +1150,7 @@ class RasaModelData:
         indices = np.hstack(
             [
                 np.vstack(
-                    [i * np.ones_like(x.row), j * np.ones_like(x.row), x.row, x.col,]
+                    [i * np.ones_like(x.row), j * np.ones_like(x.row), x.row, x.col]
                 )
                 for i, array_of_sparse in enumerate(array_of_array_of_sparse)
                 for j, x in enumerate(array_of_sparse)
