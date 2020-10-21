@@ -379,6 +379,22 @@ class TEDPolicy(Policy):
         Return the list of probabilities for the next actions.
         """
 
+        action_probabilities, _ = self.predict_action_probabilities_with_diagnostics(tracker, domain, interpreter, **kwargs)
+        return action_probabilities
+
+    def predict_action_probabilities_with_diagnostics(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> Tuple[List[float], Optional[Dict[Text, Any]]]:
+        """Predict the next action the bot should take.
+        
+        Return the list of probabilities for the next actions and
+        diagnostic data.
+        """
+
         if self.model is None:
             return self._default_predictions(domain)
 
@@ -397,14 +413,7 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        if self.config[TENSORBOARD_LOG_DIR] and DIAGNOSTIC_DATA in output and ATTENTION_WEIGHTS in output[DIAGNOSTIC_DATA]:
-            plot_attention_weights(
-                output[DIAGNOSTIC_DATA][ATTENTION_WEIGHTS],
-                title="TEDPolicy",
-                output_file="JOHANNES-TED.png"  # ToDo: Fix
-            )
-
-        return confidence.tolist()
+        return confidence.tolist(), output.get(DIAGNOSTIC_DATA)
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""

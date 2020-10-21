@@ -885,7 +885,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return predicted_tags, confidence_values
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        """Return the most likely label and its similarity to the input."""
+        """Augment the message with intents and entities."""
+
+        self.process_with_diagnostics(message, **kwargs)
+
+    
+    def process_with_diagnostics(self, message: Message, **kwargs: Any) -> Optional[Dict[Text, Any]]:
+        """Augment the message with intents and entities and return diagnostic data."""
 
         out = self._predict(message)
 
@@ -900,12 +906,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             message.set(ENTITIES, entities, add_to_output=True)
 
-        if self.component_config[TENSORBOARD_LOG_DIR] and DIAGNOSTIC_DATA in out and ATTENTION_WEIGHTS in out[DIAGNOSTIC_DATA]:
-            plot_attention_weights(
-                out[DIAGNOSTIC_DATA][ATTENTION_WEIGHTS],
-                title="DIETClassifier",
-                output_file="JOHANNES.png"  # ToDo: Fix
-            )
+        return out.get(DIAGNOSTIC_DATA)
 
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:

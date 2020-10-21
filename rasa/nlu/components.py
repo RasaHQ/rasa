@@ -550,6 +550,23 @@ class Component(metaclass=ComponentMetaclass):
 
         pass
 
+    def process_with_diagnostics(self, message: Message, **kwargs: Any) -> Optional[Dict[Text, Any]]:
+        """Process an incoming message and return diagnostic data.
+
+        This is the same as :meth:`rasa.nlu.components.Component.process`
+        but returns diagnostic data that may be used for debugging.
+
+        Args:
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
+
+        Returns:
+            A dictionary of diagnostic data such as attention weights, or None.
+
+        """
+
+        self.process(message, **kwargs)
+        return None
+
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this component to disk for future loading.
 
