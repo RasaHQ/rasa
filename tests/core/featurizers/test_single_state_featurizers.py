@@ -10,7 +10,8 @@ import scipy.sparse
 
 def test_single_state_featurizer_without_interpreter_state_not_with_action_listen():
     """This test are for encoding state without a trained interpreter.
-    action_name is not action_listen, so, INTENT, TEXT and ENTITIES should not be featurized
+    action_name is not action_listen, so, INTENT, TEXT and ENTITIES should not be
+    featurized.
     """
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
@@ -27,6 +28,7 @@ def test_single_state_featurizer_without_interpreter_state_not_with_action_liste
         },
         interpreter=RegexInterpreter(),
     )
+
     # user input is ignored as prev action is not action_listen
     assert list(encoded.keys()) == [ACTION_NAME, ACTIVE_LOOP, SLOTS]
     assert (
@@ -39,8 +41,7 @@ def test_single_state_featurizer_without_interpreter_state_not_with_action_liste
 
 
 def test_single_state_featurizer_without_interpreter_state_with_action_listen():
-    """
-    This test are for encoding state without a trained interpreter.
+    """This test are for encoding state without a trained interpreter.
     action_name is action_listen, so, INTENT and ENTITIES should be featurized
     while text shouldn't because we don't have an interpreter.
     """
@@ -59,6 +60,7 @@ def test_single_state_featurizer_without_interpreter_state_with_action_listen():
         },
         interpreter=RegexInterpreter(),
     )
+
     # we featurize all the features except for *_text ones because NLU wasn't trained
     assert list(encoded.keys()) == [INTENT, ACTION_NAME, ACTIVE_LOOP, SLOTS]
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[1, 0]])).nnz == 0
@@ -77,7 +79,9 @@ def test_single_state_featurizer_without_interpreter_state_no_intent_no_action_n
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, "action_listen": 2}
     f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
     f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
-    # check that no intent / action_name features are added when the interpreter isn't there and
+
+    # check that no intent / action_name features are added when the interpreter
+    # isn't there and
     # intent / action_name not in input
     encoded = f.encode_state(
         {
@@ -88,6 +92,7 @@ def test_single_state_featurizer_without_interpreter_state_no_intent_no_action_n
         },
         interpreter=RegexInterpreter(),
     )
+
     assert list(encoded.keys()) == [ACTIVE_LOOP, SLOTS]
     assert (
         encoded[ACTIVE_LOOP][0].features != scipy.sparse.coo_matrix([[0, 0, 0, 1]])
@@ -99,10 +104,12 @@ def test_single_state_featurizer_correctly_encodes_non_existing_value():
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1}
+
     encoded = f.encode_state(
         {"user": {"intent": "e"}, "prev_action": {"action_name": "action_listen"}},
         interpreter=RegexInterpreter(),
     )
+
     assert list(encoded.keys()) == [INTENT, ACTION_NAME]
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[0, 0]])).nnz == 0
 
@@ -116,9 +123,11 @@ def test_single_state_featurizer_creates_encoded_all_actions():
         forms=[],
         action_names=["a", "b", "c", "d"],
     )
+
     f = SingleStateFeaturizer()
     f.prepare_from_domain(domain)
     encoded_actions = f.encode_all_actions(domain, RegexInterpreter())
+
     assert len(encoded_actions) == len(domain.action_names)
     assert all(
         [
@@ -133,6 +142,7 @@ def test_single_state_featurizer_uses_dtype_float():
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1}
     f._default_feature_states[ENTITIES] = {"c": 0}
+
     encoded = f.encode_state(
         {
             "user": {"intent": "a", "entities": ["c"]},
@@ -140,6 +150,7 @@ def test_single_state_featurizer_uses_dtype_float():
         },
         interpreter=RegexInterpreter(),
     )
+
     assert encoded[ACTION_NAME][0].features.dtype == np.float32
 
 
@@ -156,6 +167,7 @@ def test_single_state_featurizer_with_interpreter_state_with_action_listen(
     f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
     f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
     f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
+
     encoded = f.encode_state(
         {
             "user": {"text": "a ball", "intent": "b", "entities": ["c"]},
@@ -168,7 +180,9 @@ def test_single_state_featurizer_with_interpreter_state_with_action_listen(
         },
         interpreter=interpreter,
     )
-    # check all the features are encoded and *_text features are encoded by a densefeaturizer
+
+    # check all the features are encoded and *_text features are encoded by a
+    # dense featurizer
     assert sorted(list(encoded.keys())) == sorted(
         [TEXT, ENTITIES, ACTION_NAME, SLOTS, ACTIVE_LOOP, INTENT, ACTION_TEXT]
     )
@@ -198,6 +212,7 @@ def test_single_state_featurizer_with_interpreter_state_not_with_action_listen(
     f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
     f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
     f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
+
     encoded = f.encode_state(
         {
             "user": {"text": "a ball", "intent": "b", "entities": ["c"]},
@@ -207,6 +222,7 @@ def test_single_state_featurizer_with_interpreter_state_not_with_action_listen(
         },
         interpreter=interpreter,
     )
+
     # check user input is ignored when action is not action_listen
     assert list(encoded.keys()) == [ACTION_TEXT, ACTION_NAME, ACTIVE_LOOP, SLOTS]
     assert encoded[ACTION_TEXT][0].features.shape[-1] == 300
@@ -229,12 +245,14 @@ def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
     from rasa.core.agent import Agent
 
     interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
+
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ENTITIES] = {"c": 0}
     f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
     f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
     f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
+
     encoded = f.encode_state(
         {
             "user": {"text": "a ball", "intent": "b", "entities": ["c"]},
@@ -244,6 +262,7 @@ def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
         },
         interpreter=interpreter,
     )
+
     assert list(encoded.keys()) == [ACTION_TEXT, ACTIVE_LOOP, SLOTS]
     assert encoded[ACTION_TEXT][0].features.shape[-1] == 300
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
