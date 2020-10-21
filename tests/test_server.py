@@ -41,7 +41,6 @@ from rasa.core.channels import (
     SlackInput,
     CallbackInput,
 )
-from rasa.shared.core.domain import Domain
 from rasa.core.channels.slack import SlackBot
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain, SessionConfig
@@ -1562,8 +1561,8 @@ stories:
         ("md", "md"),
     ],
 )
-def test_convert_nlu_data(
-    rasa_app: SanicTestClient, input_format: Text, output_format: Text,
+async def test_convert_nlu_data(
+    rasa_app: SanicASGITestClient, input_format: Text, output_format: Text,
 ):
     gold = rasa.shared.nlu.training_data.loading.load_data(
         f"data/examples/rasa/demo-rasa.{output_format}"
@@ -1573,7 +1572,7 @@ def test_convert_nlu_data(
         if input_format == "json"
         else rasa.shared.utils.io.read_file
     )
-    _, response = rasa_app.post(
+    _, response = await rasa_app.post(
         "/data/convert/nlu",
         json={
             "data": parser(f"data/examples/rasa/demo-rasa.{input_format}"),
@@ -1584,7 +1583,7 @@ def test_convert_nlu_data(
 
     assert response.status == 200
 
-    result = response.json.get("data")
+    result = response.json().get("data")
     writer = (
         rasa.shared.utils.io.dump_obj_as_json_to_file
         if type(result) is dict
@@ -1602,9 +1601,8 @@ def test_convert_nlu_data(
 @pytest.mark.parametrize(
     "input_format, output_format", [("yml", "yml"), ("md", "yml")],
 )
-def test_convert_core_data(
-    rasa_app: SanicTestClient,
-    event_loop: AbstractEventLoop,
+async def test_convert_core_data(
+    rasa_app: SanicASGITestClient,
     input_format: Text,
     output_format: Text,
 ):
@@ -1623,12 +1621,10 @@ def test_convert_core_data(
             ],
         }
     )
-    gold = event_loop.run_until_complete(
-        rasa.shared.core.training_data.loading.load_data_from_files(
-            [get_path(output_format)], domain
-        )
+    gold = await rasa.shared.core.training_data.loading.load_data_from_files(
+        [get_path(output_format)], domain
     )
-    _, response = rasa_app.post(
+    _, response = await rasa_app.post(
         "/data/convert/core",
         json={
             "data": rasa.shared.utils.io.read_file(get_path(input_format)),
@@ -1639,13 +1635,11 @@ def test_convert_core_data(
 
     assert response.status == 200
 
-    result = response.json.get("data")
+    result = response.json().get("data")
     result_path = os.path.join(tempfile.mkdtemp(), f"out.{output_format}")
     rasa.shared.utils.io.write_text_file(result, result_path)
-    result_loaded = event_loop.run_until_complete(
-        rasa.shared.core.training_data.loading.load_data_from_files(
-            [result_path], domain
-        )
+    result_loaded = await rasa.shared.core.training_data.loading.load_data_from_files(
+        [result_path], domain
     )
 
     assert not deepdiff.DeepDiff(
