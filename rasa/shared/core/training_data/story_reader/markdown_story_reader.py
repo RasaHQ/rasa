@@ -250,12 +250,16 @@ class MarkdownStoryReader(StoryReader):
         if self.use_e2e:
             parsed = self.parse_e2e_message(message, self.is_used_for_conversion)
             text = parsed.get("text")
-            intent = {INTENT_NAME_KEY: parsed.get("intent")}
+            intent = {
+                INTENT_NAME_KEY: parsed.get(
+                    "intent_response_key", default=parsed.get("intent")
+                )
+            }
             entities = parsed.get("entities")
             parse_data = {
                 "text": text,
                 "intent": intent,
-                "intent_ranking": [{INTENT_NAME_KEY: parsed.get("intent")}],
+                "intent_ranking": [intent],
                 "entities": entities,
             }
         else:
