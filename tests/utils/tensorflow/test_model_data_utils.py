@@ -25,7 +25,7 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from utils.tensorflow.model_data_utils import ENTITY_TAG_ORIGIN
+from utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 shape = 100
 
@@ -66,8 +66,14 @@ def test_surface_attributes():
                 features=np.random.rand(shape),
                 attribute=INTENT,
                 feature_type=SENTENCE,
-                origin=[],
-            )
+                origin="featuirzer-a",
+            ),
+            Features(
+                features=np.random.rand(shape),
+                attribute=INTENT,
+                feature_type=SENTENCE,
+                origin="featurizer-b",
+            ),
         ]
     }
 
@@ -78,7 +84,7 @@ def test_surface_attributes():
                 features=action_name_features,
                 attribute=ACTION_NAME,
                 feature_type=SENTENCE,
-                origin=[],
+                origin="featurizer-c",
             )
         ]
     }
@@ -86,7 +92,9 @@ def test_surface_attributes():
     state_features.update(copy.deepcopy(action_name_features))
     # test on 2 dialogs -- one with dialog length 3 the other one with dialog length 2
     dialogs = [[state_features, intent_features, {}], [{}, action_name_features]]
-    surfaced_features = model_data_utils._surface_attributes(dialogs)
+    surfaced_features = model_data_utils._surface_attributes(
+        dialogs, featurizers=["featurizer-a", "featurizer-c"]
+    )
     assert INTENT in surfaced_features and ACTION_NAME in surfaced_features
     # check that number of lists corresponds to number of dialogs
     assert (
@@ -279,10 +287,7 @@ def test_convert_training_examples(
         (
             [
                 Features(
-                    np.random.rand(5, 14),
-                    FEATURE_TYPE_SEQUENCE,
-                    "role",
-                    ENTITY_TAG_ORIGIN,
+                    np.random.rand(5, 14), FEATURE_TYPE_SEQUENCE, "role", TAG_ID_ORIGIN
                 ),
                 Features(
                     np.random.rand(5, 14),
@@ -294,10 +299,7 @@ def test_convert_training_examples(
             ["featurizer-b"],
             [
                 Features(
-                    np.random.rand(5, 14),
-                    FEATURE_TYPE_SEQUENCE,
-                    "role",
-                    ENTITY_TAG_ORIGIN,
+                    np.random.rand(5, 14), FEATURE_TYPE_SEQUENCE, "role", TAG_ID_ORIGIN
                 ),
                 Features(
                     np.random.rand(5, 14),

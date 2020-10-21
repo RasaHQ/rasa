@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
 
 
-ENTITY_TAG_ORIGIN = "origin_entity_tag_ids"
+TAG_ID_ORIGIN = "tag_id_origin"
 
 
 def convert_training_examples(
@@ -88,7 +88,7 @@ def _get_tag_ids(
 
     # transpose to have seq_len x 1
     return Features(
-        np.array([_tags]).T, FEATURE_TYPE_SEQUENCE, tag_spec.tag_name, ENTITY_TAG_ORIGIN
+        np.array([_tags]).T, FEATURE_TYPE_SEQUENCE, tag_spec.tag_name, TAG_ID_ORIGIN
     )
 
 
@@ -155,11 +155,11 @@ def _filter_features(features: Optional[List["Features"]], featurizers: List[Tex
     if features is None or not featurizers:
         return features
 
-    # it might be that the list of features also contains the tag_ids
-    # the origin of the tag_ids is set to ENTITY_TAG_ORIGIN
-    # add ENTITY_TAG_ORIGIN to the list of featurizers to make sure that we keep the
+    # it might be that the list of features also contains some tag_ids
+    # the origin of the tag_ids is set to TAG_ID_ORIGIN
+    # add TAG_ID_ORIGIN to the list of featurizers to make sure that we keep the
     # tag_ids
-    featurizers.append(ENTITY_TAG_ORIGIN)
+    featurizers.append(TAG_ID_ORIGIN)
 
     # filter the features
     return [f for f in features if f.origin in featurizers]
