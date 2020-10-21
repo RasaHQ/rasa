@@ -128,7 +128,7 @@ async def test_test_stories_response_key(tmpdir: Path):
 
     simple_story_md = """
     ## id
-    
+
     * out_of_scope/other: hahaha
         - utter_out_of_scope/other
     """
