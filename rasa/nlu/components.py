@@ -42,6 +42,12 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 def validate_requirements(component_names: List[Optional[Text]]) -> None:
     """Validates that all required importable python packages are installed.
 
+    Raises:
+        InvalidConfigError: If one of the component names is `None`, likely
+            indicates that a custom implementation is missing this property
+            or that there is an invalid configuration file that we did not
+            catch earlier.
+
     Args:
         component_names: The list of component names.
     """
@@ -54,7 +60,9 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
         if component_name is None:
             raise InvalidConfigError(
                 "Your pipeline configuration contains a component that is missing "
-                "a name. Please double check your configuration."
+                "a name. Please double check your configuration or if this is a "
+                "custom component make sure to implement the name property for "
+                "the component."
             )
         component_class = registry.get_component_class(component_name)
         unavailable_packages = find_unavailable_packages(
