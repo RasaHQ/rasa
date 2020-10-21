@@ -1602,9 +1602,7 @@ async def test_convert_nlu_data(
     "input_format, output_format", [("yml", "yml"), ("md", "yml")],
 )
 async def test_convert_core_data(
-    rasa_app: SanicASGITestClient,
-    input_format: Text,
-    output_format: Text,
+    rasa_app: SanicASGITestClient, input_format: Text, output_format: Text,
 ):
     get_path = (
         lambda format: f"data/test_multifile{'_yaml_' if format == 'yml' else '_'}stories/stories_part_2.{format}"
