@@ -23,6 +23,9 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
 
 
+ENTITY_TAG_ORIGIN = "origin_entity_tag_ids"
+
+
 def convert_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
@@ -84,11 +87,14 @@ def _get_tag_ids(
             _tags.append(tag_spec.tags_to_ids[_tag])
 
     # transpose to have seq_len x 1
-    return Features(np.array([_tags]).T, FEATURE_TYPE_SEQUENCE, tag_spec.tag_name, "")
+    return Features(
+        np.array([_tags]).T, FEATURE_TYPE_SEQUENCE, tag_spec.tag_name, ENTITY_TAG_ORIGIN
+    )
 
 
 def _surface_attributes(
-    features: List[List[Dict[Text, List["Features"]]]]
+    features: List[List[Dict[Text, List["Features"]]]],
+    featurizers: Optional[List[Text]] = None,
 ) -> Dict[Text, List[List[List["Features"]]]]:
     """Restructure the input.
 
@@ -102,6 +108,7 @@ def _surface_attributes(
     Args:
         features: a dictionary of attributes to a list of features for all
             examples in the training data
+        featurizers: the featurizers to consider
 
     Returns:
         A dictionary of attributes to a list of features for all examples.
@@ -120,15 +127,42 @@ def _surface_attributes(
         intermediate_features = defaultdict(list)
         for attribute_to_features in list_of_attribute_to_features:
             for attribute in attributes:
+                features = attribute_to_features.get(attribute)
+                if featurizers:
+                    featurizers = _filter_features(features, featurizers)
+
                 # if attribute is not present in the example, populate it with None
-                intermediate_features[attribute].append(
-                    attribute_to_features.get(attribute)
-                )
+                intermediate_features[attribute].append(features)
 
         for key, value in intermediate_features.items():
             output[key].append(value)
 
     return output
+
+
+def _filter_features(features: Optional[List["Features"]], featurizers: List[Text]):
+    """Filter the given features.
+
+    Return only those features that are coming from one of the given featurizers.
+
+    Args:
+        features: list of features
+        featurizers: names of featurizers to consider
+
+    Returns:
+        The filtered list of features.
+    """
+    if features is None or not featurizers:
+        return features
+
+    # it might be that the list of features also contains the tag_ids
+    # the origin of the tag_ids is set to ENTITY_TAG_ORIGIN
+    # add ENTITY_TAG_ORIGIN to the list of featurizers to make sure that we keep the
+    # tag_ids
+    featurizers.append(ENTITY_TAG_ORIGIN)
+
+    # filter the features
+    return [f for f in features if f.origin in featurizers]
 
 
 def _create_zero_features(
@@ -177,6 +211,7 @@ def convert_to_data_format(
     ],
     zero_features: Optional[Dict[Text, List["Features"]]] = None,
     consider_dialogue_dimension: bool = True,
+    featurizers: Optional[List[Text]] = None,
 ) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
     """Converts the input into "Data" format.
 
@@ -193,6 +228,7 @@ def convert_to_data_format(
         zero_features: Contains default feature values for attributes
         consider_dialogue_dimension: If set to false the dialogue dimension will be
             removed from the resulting sequence features.
+        featurizers: the featurizers to consider
 
     Returns:
         Input in "Data" format and zero features
@@ -206,7 +242,7 @@ def convert_to_data_format(
     if isinstance(features[0], Dict):
         features = [[dicts] for dicts in features]
 
-    attribute_to_features = _surface_attributes(features)
+    attribute_to_features = _surface_attributes(features, featurizers)
 
     attribute_data = {}
 

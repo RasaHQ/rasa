@@ -15,10 +15,17 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.constants import ACTION_NAME, TEXT, ENTITIES
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    TEXT,
+    ENTITIES,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
 from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from utils.tensorflow.model_data_utils import ENTITY_TAG_ORIGIN
 
 shape = 100
 
@@ -218,3 +225,103 @@ def test_convert_training_examples(
     if ENTITIES in attributes:
         # we will just have space sentence features
         assert len(output[0][ENTITIES]) == len(entity_tag_spec)
+
+
+@pytest.mark.parametrize(
+    "features, featurizers, expected_features",
+    [
+        ([], None, []),
+        (None, ["featurizer-a"], None),
+        (
+            [
+                Features(
+                    np.random.rand(5, 14), FEATURE_TYPE_SENTENCE, TEXT, "featurizer-a"
+                )
+            ],
+            None,
+            [
+                Features(
+                    np.random.rand(5, 14), FEATURE_TYPE_SENTENCE, TEXT, "featurizer-a"
+                )
+            ],
+        ),
+        (
+            [
+                Features(
+                    np.random.rand(5, 14), FEATURE_TYPE_SENTENCE, TEXT, "featurizer-a"
+                )
+            ],
+            ["featurizer-b"],
+            [],
+        ),
+        (
+            [
+                Features(
+                    np.random.rand(5, 14), FEATURE_TYPE_SENTENCE, TEXT, "featurizer-a"
+                ),
+                Features(
+                    np.random.rand(5, 14),
+                    FEATURE_TYPE_SEQUENCE,
+                    ACTION_NAME,
+                    "featurizer-b",
+                ),
+            ],
+            ["featurizer-b"],
+            [
+                Features(
+                    np.random.rand(5, 14),
+                    FEATURE_TYPE_SEQUENCE,
+                    ACTION_NAME,
+                    "featurizer-b",
+                )
+            ],
+        ),
+        (
+            [
+                Features(
+                    np.random.rand(5, 14),
+                    FEATURE_TYPE_SEQUENCE,
+                    "role",
+                    ENTITY_TAG_ORIGIN,
+                ),
+                Features(
+                    np.random.rand(5, 14),
+                    FEATURE_TYPE_SEQUENCE,
+                    ACTION_NAME,
+                    "featurizer-b",
+                ),
+            ],
+            ["featurizer-b"],
+            [
+                Features(
+                    np.random.rand(5, 14),
+                    FEATURE_TYPE_SEQUENCE,
+                    "role",
+                    ENTITY_TAG_ORIGIN,
+                ),
+                Features(
+                    np.random.rand(5, 14),
+                    FEATURE_TYPE_SEQUENCE,
+                    ACTION_NAME,
+                    "featurizer-b",
+                ),
+            ],
+        ),
+    ],
+)
+def test_filter_features(
+    features: Optional[List["Features"]],
+    featurizers: Optional[List[Text]],
+    expected_features: Optional[List["Features"]],
+):
+    actual_features = model_data_utils._filter_features(features, featurizers)
+
+    if expected_features is None:
+        assert actual_features is None
+        return
+
+    assert len(actual_features) == len(expected_features)
+    for actual_feature, expected_feature in zip(actual_features, expected_features):
+        assert expected_feature.origin == actual_feature.origin
+        assert expected_feature.type == actual_feature.type
+        assert expected_feature.attribute == actual_feature.attribute
