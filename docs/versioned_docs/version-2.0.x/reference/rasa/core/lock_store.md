@@ -6,7 +6,7 @@ title: rasa.core.lock_store
 ## LockError Objects
 
 ```python
-class LockError(Exception)
+class LockError(RasaException)
 ```
 
 Exception that is raised when a lock cannot be acquired.
