@@ -1,16 +1,15 @@
 from typing import Text
+import numpy as np
+import scipy.sparse
 
 import pytest
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import Domain
-import numpy as np
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, ENTITIES, TEXT, INTENT
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.nlu.interpreter import RegexInterpreter
-import scipy.sparse
-
-from shared.core.slots import Slot
+from rasa.shared.core.slots import Slot
 
 
 def test_single_state_featurizer_without_interpreter_state_not_with_action_listen():
