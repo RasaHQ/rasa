@@ -1,0 +1,4 @@
+# target all pages
+/*
+  # set noindex, no follow
+  X-Robots-Tag: noindex, no follow
