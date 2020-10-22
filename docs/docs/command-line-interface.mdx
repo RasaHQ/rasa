@@ -310,6 +310,7 @@ To validate your data, run this command:
 
 ```bash
 rasa data validate
+```
 
 By default, the validator searches only for errors in the data, e.g. the same training
 example being listed as an example for two intents.
@@ -320,6 +321,8 @@ You can also validate the story structure by running this command:
 
 ```bash
 rasa data validate stories
+```
+
 This validator checks if you have any stories where different assistant actions follow from the same 
 dialogue history. Conflicts between stories will prevent a model from learning the correct
 pattern for a dialogue. 
