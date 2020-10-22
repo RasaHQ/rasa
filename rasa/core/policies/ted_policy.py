@@ -795,25 +795,25 @@ class TED(TransformerRasaModel):
                 for x in tf_batch_data[attribute][SEQUENCE]
             ]
             sentence_shape = [
-                [tf.shape(x)[0], tf.shape(x)[1], x.shape[-1]]
+                [tf.shape(x)[0], tf.shape(x)[1], 1, x.shape[-1]]
                 for x in tf_batch_data[attribute][SENTENCE]
             ]
 
             sequence = [
-                tf.sparse.reshape(x, (-1, shape[2], shape[3]))
+                tf.sparse.reshape(x, (-1, shape[2], shape[-1]))
                 if isinstance(x, tf.SparseTensor)
-                else tf.reshape(x, (-1, shape[2], shape[3]))
+                else tf.reshape(x, (-1, shape[2], shape[-1]))
                 for x, shape in zip(tf_batch_data[attribute][SEQUENCE], sequence_shape)
             ]
             sentence = [
-                tf.sparse.reshape(x, (-1, 1, shape[2]))
+                tf.sparse.reshape(x, (-1, shape[2], shape[-1]))
                 if isinstance(x, tf.SparseTensor)
-                else tf.reshape(x, (-1, shape[2]))
+                else tf.reshape(x, (-1, shape[2], shape[-1]))
                 for x, shape in zip(tf_batch_data[attribute][SENTENCE], sentence_shape)
             ]
             sequence = [
                 tf.SparseTensor(
-                    x.indices, x.values, (tf.shape(x)[0], tf.shape(x)[1], shape[3])
+                    x.indices, x.values, (tf.shape(x)[0], tf.shape(x)[1], shape[-1])
                 )
                 if isinstance(x, tf.SparseTensor)
                 else x
@@ -821,7 +821,7 @@ class TED(TransformerRasaModel):
             ]
             sentence = [
                 tf.SparseTensor(
-                    x.indices, x.values, (tf.shape(x)[0], tf.shape(x)[1], shape[2])
+                    x.indices, x.values, (tf.shape(x)[0], tf.shape(x)[1], shape[-1])
                 )
                 if isinstance(x, tf.SparseTensor)
                 else x
