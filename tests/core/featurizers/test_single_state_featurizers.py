@@ -6,10 +6,19 @@ import pytest
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import Domain
-from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, ENTITIES, TEXT, INTENT
+from rasa.shared.nlu.constants import (
+    ACTION_TEXT,
+    ACTION_NAME,
+    ENTITIES,
+    TEXT,
+    INTENT,
+    FEATURE_TYPE_SEQUENCE,
+    FEATURE_TYPE_SENTENCE,
+)
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.core.slots import Slot
+from rasa.shared.nlu.training_data.features import Features
 
 
 def test_single_state_featurizer_without_interpreter_state_not_with_action_listen():
@@ -305,3 +314,22 @@ def test_state_features_for_attribute_raises_on_not_supported_attribute():
 
     with pytest.raises(ValueError):
         f._state_features_for_attribute({}, "not-supported-attribute")
+
+
+def test_to_sparse_sentence_features():
+    features = [
+        Features(
+            scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+            FEATURE_TYPE_SEQUENCE,
+            TEXT,
+            "some-featurizer",
+        )
+    ]
+
+    sentence_features = SingleStateFeaturizer._to_sparse_sentence_features(features)
+
+    assert len(sentence_features) == 1
+    assert FEATURE_TYPE_SENTENCE == sentence_features[0].type
+    assert features[0].origin == sentence_features[0].origin
+    assert features[0].attribute == sentence_features[0].attribute
+    assert sentence_features[0].features.shape == (1, 10)
