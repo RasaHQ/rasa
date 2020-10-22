@@ -484,15 +484,27 @@ class RasaModelData:
         self.data[key][sub_key] = []
 
         for features in self.data[from_key][from_sub_key]:
-            if len(features) > 0:
-                if features.number_of_dimensions == 4:
-                    lengths = np.array([x[0].shape[0] for x in features])
-                else:
-                    lengths = np.array([x.shape[0] for x in features])
-                self.data[key][sub_key].extend(
-                    [FeatureArray(lengths, number_of_dimensions=1)]
+            if len(features) == 0:
+                continue
+
+            if features.number_of_dimensions == 4:
+                lengths = FeatureArray(
+                    np.array(
+                        [
+                            # add one more dim so that dialogue dim
+                            # would be a sequence
+                            np.array([[[x.shape[0]]] for x in _features])
+                            for _features in features
+                        ]
+                    ),
+                    number_of_dimensions=4,
                 )
-                break
+            else:
+                lengths = FeatureArray(
+                    np.array([x.shape[0] for x in features]), number_of_dimensions=1
+                )
+            self.data[key][sub_key].extend([lengths])
+            break
 
     def split(
         self, number_of_test_examples: int, random_seed: int
