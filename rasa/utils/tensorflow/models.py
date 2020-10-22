@@ -160,7 +160,7 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         loading: bool = False,
-        eager: bool = True,
+        eager: bool = False,
     ) -> None:
         """Fit model data"""
 
@@ -882,6 +882,39 @@ class TransformerRasaModel(RasaModel):
             "No features are present. Please check your configuration file."
         )
 
+    def _concat_sequence_sentence_features(
+        self,
+        sequence_x: tf.Tensor,
+        sentence_x: tf.Tensor,
+        name: Text,
+        mask_text: tf.Tensor,
+    ):
+        if sequence_x.shape[-1] != sentence_x.shape[-1]:
+            sequence_x = self._tf_layers[f"concat_layer.{name}_{SEQUENCE}"](
+                sequence_x, self._training
+            )
+            sentence_x = self._tf_layers[f"concat_layer.{name}_{SENTENCE}"](
+                sentence_x, self._training
+            )
+
+        # we need to concatenate the sequence features with the sentence features
+        # we cannot use tf.concat as the sequence features are padded
+
+        # (1) get position of sentence features in mask
+        last = mask_text * tf.math.cumprod(
+            1 - mask_text, axis=1, exclusive=True, reverse=True
+        )
+        # (2) multiply by sentence features so that we get a matrix of
+        #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
+        #     for the sentence features
+        sentence_x = last * sentence_x
+
+        # (3) add a zero to the end of sequence matrix to match the final shape
+        sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
+
+        # (4) sum up sequence features and sentence features
+        return sequence_x + sentence_x
+
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
     ) -> Optional[tf.Tensor]:
@@ -994,7 +1027,14 @@ class TransformerRasaModel(RasaModel):
         if key in tf_batch_data and sub_key in tf_batch_data[key]:
             sequence_lengths += tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
 
-        return sequence_lengths
+        return tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32) + 1
+
+    @staticmethod
+    def _get_batch_dim(attribute_data: Dict[Text, List[tf.Tensor]]) -> int:
+        if SEQUENCE in attribute_data:
+            return tf.shape(attribute_data[SEQUENCE][0])[0]
+
+        return tf.shape(attribute_data[SENTENCE][0])[0]
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]

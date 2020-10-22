@@ -93,7 +93,8 @@ class FeatureArray(np.ndarray):
             "at": ufunc.at,
             "__call__": ufunc,
         }
-        # convert the inputs to np.ndarray to prevent recursion, call the function, then cast it back as FeatureArray
+        # convert the inputs to np.ndarray to prevent recursion, call the function,
+        # then cast it back as FeatureArray
         output = FeatureArray(
             f[method](*(i.view(np.ndarray) for i in inputs), **kwargs),
             number_of_dimensions=kwargs["number_of_dimensions"],
@@ -141,20 +142,21 @@ class FeatureArray(np.ndarray):
                 dim = i
                 break
 
-        # If the resulting sub_array is sparse, the remaining number of dimensions should be at least 2
+        # If the resulting sub_array is sparse, the remaining number of dimensions
+        # should be at least 2
         if isinstance(_sub_array, scipy.sparse.spmatrix):
             if dim > 2:
                 raise ValueError(
-                    f"Given number of dimensions '{number_of_dimensions}' does not match dimensiona of given input "
-                    f"array: {input_array}."
+                    f"Given number of dimensions '{number_of_dimensions}' does not "
+                    f"match dimensiona of given input array: {input_array}."
                 )
         # If the resulting sub_array is dense, the sub_array should be a single number
         elif not np.issubdtype(type(_sub_array), np.integer) and not isinstance(
             _sub_array, (np.float32, np.float64)
         ):
             raise ValueError(
-                f"Given number of dimensions '{number_of_dimensions}' does not match dimensiona of given input "
-                f"array: {input_array}."
+                f"Given number of dimensions '{number_of_dimensions}' does not match "
+                f"dimensions of given input array: {input_array}."
             )
 
     def get_shape_type_info(
@@ -486,12 +488,22 @@ class RasaModelData:
         for features in self.data[from_key][from_sub_key]:
             if len(features) > 0:
                 if features.number_of_dimensions == 4:
-                    lengths = np.array([x[0].shape[0] for x in features])
+                    lengths = FeatureArray(
+                        np.array(
+                            [
+                                # add one more dim so that dialogue dim
+                                # would be a sequence
+                                np.array([[[x.shape[0]]] for x in _features])
+                                for _features in features
+                            ]
+                        ),
+                        number_of_dimensions=4,
+                    )
                 else:
-                    lengths = np.array([x.shape[0] for x in features])
-                self.data[key][sub_key].extend(
-                    [FeatureArray(lengths, number_of_dimensions=1)]
-                )
+                    lengths = FeatureArray(
+                        np.array([x.shape[0] for x in features]), number_of_dimensions=1
+                    )
+                self.data[key][sub_key].extend([lengths])
                 break
 
     def split(

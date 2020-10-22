@@ -1318,39 +1318,6 @@ class DIET(TransformerRasaModel):
                 f"tags.{name}",
             )
 
-    def _concat_sequence_sentence_features(
-        self,
-        sequence_x: tf.Tensor,
-        sentence_x: tf.Tensor,
-        name: Text,
-        mask_text: tf.Tensor,
-    ):
-        if sequence_x.shape[-1] != sentence_x.shape[-1]:
-            sequence_x = self._tf_layers[f"concat_layer.{name}_{SEQUENCE}"](
-                sequence_x, self._training
-            )
-            sentence_x = self._tf_layers[f"concat_layer.{name}_{SENTENCE}"](
-                sentence_x, self._training
-            )
-
-        # we need to concatenate the sequence features with the sentence features
-        # we cannot use tf.concat as the sequence features are padded
-
-        # (1) get position of sentence features in mask
-        last = mask_text * tf.math.cumprod(
-            1 - mask_text, axis=1, exclusive=True, reverse=True
-        )
-        # (2) multiply by sentence features so that we get a matrix of
-        #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
-        #     for the sentence features
-        sentence_x = last * sentence_x
-
-        # (3) add a zero to the end of sequence matrix to match the final shape
-        sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
-
-        # (4) sum up sequence features and sentence features
-        return sequence_x + sentence_x
-
     def _create_bow(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
@@ -1462,19 +1429,17 @@ class DIET(TransformerRasaModel):
 
         return loss, f1, logits
 
-    @staticmethod
-    def _get_batch_dim(tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]) -> int:
-        if TEXT in tf_batch_data and SEQUENCE in tf_batch_data[TEXT]:
-            return tf.shape(tf_batch_data[TEXT][SEQUENCE][0])[0]
-
-        return tf.shape(tf_batch_data[TEXT][SENTENCE][0])[0]
-
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-
-        batch_dim = self._get_batch_dim(tf_batch_data)
+        for k, v in tf_batch_data.items():
+            print(k)
+            for _k, _v in v.items():
+                print("  ", _k)
+                for __v in _v:
+                    print("    ", __v.shape)
+        batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
         sequence_lengths = self._get_sequence_lengths(
             tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim

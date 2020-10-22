@@ -74,11 +74,13 @@ from rasa.utils.tensorflow.constants import (
     SEQUENCE_LENGTH,
     SENTENCE,
     DENSE_DIMENSION,
+    CONCAT_DIMENSION,
     E2E_CONFIDENCE_THRESHOLD,
     SPARSE_INPUT_DROPOUT,
     DENSE_INPUT_DROPOUT,
     MASKED_LM,
     MASK,
+    HIDDEN_LAYERS_SIZES,
 )
 
 
@@ -125,7 +127,20 @@ class TEDPolicy(Policy):
         # The number of hidden layers is equal to the length of the corresponding
         # list.
         # TODO add 2 parallel NNs: transformer for text and ffnn for names
-        DENSE_DIMENSION: 20,
+        # Hidden layer sizes for layers before the embedding layers for user message
+        # and labels.
+        # The number of hidden layers is equal to the length of the corresponding
+        # list.
+        HIDDEN_LAYERS_SIZES: {TEXT: [], ACTION_TEXT: []},
+        DENSE_DIMENSION: {
+            TEXT: 128,
+            ACTION_TEXT: 128,
+            f"{LABEL}_{ACTION_TEXT}": 20,
+            INTENT: 20,
+            ACTION_NAME: 20,
+            f"{LABEL}_{ACTION_NAME}": 20,
+        },
+        CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128},
         ENCODING_DIMENSION: 50,
         # Number of units in transformer
         TRANSFORMER_SIZE: 128,
@@ -639,8 +654,7 @@ class TED(TransformerRasaModel):
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
             if name in SEQUENCE_FEATURES_TO_ENCODE:
                 self._prepare_sequence_layers(name)
-            else:
-                self._prepare_encoding_layers(name)
+            self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
@@ -679,7 +693,7 @@ class TED(TransformerRasaModel):
             self._prepare_sparse_dense_layers(
                 signature[name][feature_type],
                 f"{name}_{feature_type}",
-                self.config[DENSE_DIMENSION],
+                self.config[DENSE_DIMENSION][name],
             )
 
     def _prepare_encoding_layers(self, name: Text) -> None:
@@ -704,7 +718,7 @@ class TED(TransformerRasaModel):
             return
 
         self._prepare_ffnn_layer(
-            f"{name}_{feature_type}",
+            f"{name}",
             [self.config[ENCODING_DIMENSION]],
             self.config[DROP_RATE_DIALOGUE],
         )
@@ -776,39 +790,56 @@ class TED(TransformerRasaModel):
         attribute_mask = tf_batch_data[attribute][MASK][0]
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
-            batch_dim = self._get_batch_dim(tf_batch_data)
-            mask_sequence_text = self._get_mask_for(
-                tf_batch_data, TEXT, SEQUENCE_LENGTH
+            sequence_shape = [tf.shape(x) for x in tf_batch_data[attribute][SEQUENCE]]
+            sentence_shape = [tf.shape(x) for x in tf_batch_data[attribute][SENTENCE]]
+
+            sequence = [
+                tf.sparse.reshape(x, (-1, shape[2], shape[3]))
+                if isinstance(x, tf.SparseTensor)
+                else tf.reshape(x, (-1, shape[2], shape[3]))
+                for x, shape in zip(tf_batch_data[attribute][SEQUENCE], sequence_shape)
+            ]
+            sentence = [
+                tf.sparse.reshape(x, (-1, 1, shape[2]))
+                if isinstance(x, tf.SparseTensor)
+                else tf.reshape(x, (-1, shape[2]))
+                for x, shape in zip(tf_batch_data[attribute][SENTENCE], sentence_shape)
+            ]
+
+            _sequence_lengths = tf.cast(
+                tf_batch_data[attribute][SEQUENCE_LENGTH][0], dtype=tf.int32
             )
-            sequence_lengths = self._get_sequence_lengths(
-                tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
-            )
+            _sequence_lengths = tf.reshape(_sequence_lengths, (-1,))
+            mask_sequence_text = self._compute_mask(_sequence_lengths)
+            sequence_lengths = _sequence_lengths + 1
             mask_text = self._compute_mask(sequence_lengths)
 
             attribute_features, _, _, _ = self._create_sequence(
-                tf_batch_data[TEXT][SEQUENCE],
-                tf_batch_data[TEXT][SENTENCE],
+                sequence,
+                sentence,
                 mask_sequence_text,
                 mask_text,
                 attribute,
                 sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
                 dense_dropout=self.config[DENSE_INPUT_DROPOUT],
                 masked_lm_loss=self.config[MASKED_LM],
-                sequence_ids=True,
+                sequence_ids=False,
             )
             # TODO entities
-            return (
-                self._last_token(attribute_features, sequence_lengths) * attribute_mask
+            last_token = self._last_token(attribute_features, sequence_lengths)
+            attribute_features = tf.reshape(
+                last_token, (sequence_shape[0][0], sequence_shape[0][1], -1)
             )
 
-        attribute_features = self._combine_sparse_dense_features(
-            tf_batch_data[attribute][SENTENCE],
-            f"{attribute}_{SENTENCE}",
-            mask=attribute_mask,
-        )
+        else:
+            attribute_features = self._combine_sparse_dense_features(
+                tf_batch_data[attribute][SENTENCE],
+                f"{attribute}_{SENTENCE}",
+                mask=attribute_mask,
+            )
 
         if attribute in FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
-            attribute_features = self._tf_layers[f"ffnn.{attribute}_{SENTENCE}"](
+            attribute_features = self._tf_layers[f"ffnn.{attribute}"](
                 attribute_features
             )
 
@@ -879,7 +910,13 @@ class TED(TransformerRasaModel):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-
+        for k, v in tf_batch_data.items():
+            print(k)
+            for _k, _v in v.items():
+                print("  ", _k)
+                for __v in _v:
+                    print("    ", __v.shape)
+        # exit()
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
