@@ -643,13 +643,17 @@ def initialize_error_reporting() -> None:
 
     if telemetry_id:
         with configure_scope() as scope:
-            scope.set_user({"id": telemetry_id})
+            # sentry added these more recently, just a protection in a case where a
+            # user has installed an older version of sentry
+            if hasattr(scope, "set_user"):
+                scope.set_user({"id": telemetry_id})
 
             default_context = _default_context_fields()
-            if "os" in default_context:
-                # os is a nested dict, hence we report it separately
-                scope.set_context("Operating System", default_context.pop("os"))
-            scope.set_context("Environment", default_context)
+            if hasattr(scope, "set_context"):
+                if "os" in default_context:
+                    # os is a nested dict, hence we report it separately
+                    scope.set_context("Operating System", default_context.pop("os"))
+                scope.set_context("Environment", default_context)
 
 
 @async_generator.asynccontextmanager
