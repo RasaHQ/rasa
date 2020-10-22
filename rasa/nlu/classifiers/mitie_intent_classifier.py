@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
@@ -103,8 +103,8 @@ class MitieIntentClassifier(IntentClassifier):
 
         if not file_name:
             return cls(meta)
-        classifier_file = os.path.join(model_dir, file_name)
-        if os.path.exists(classifier_file):
+        classifier_file = Path(model_dir) / file_name
+        if Path(classifier_file).exists():
             classifier = mitie.text_categorizer(classifier_file)
             return cls(meta, classifier)
         else:
@@ -114,7 +114,7 @@ class MitieIntentClassifier(IntentClassifier):
 
         if self.clf:
             file_name = file_name + ".dat"
-            classifier_file = os.path.join(model_dir, file_name)
+            classifier_file = Path(model_dir) / file_name
             self.clf.save_to_disk(classifier_file, pure_model=True)
             return {"file": file_name}
         else:

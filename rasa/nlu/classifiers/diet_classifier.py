@@ -4,7 +4,6 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-import os
 import scipy.sparse
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -954,7 +953,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             logger.debug(
                 f"Failed to load model for '{cls.__name__}'. "
                 f"Maybe you did not provide enough training data and no model was "
-                f"trained or the path '{os.path.abspath(model_dir)}' doesn't exist?"
+                f"trained or the path '{Path(model_dir).resolve()}' doesn't exist?"
             )
             return cls(component_config=meta)
 
@@ -1031,7 +1030,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir: Text,
     ) -> "RasaModel":
         file_name = meta.get("file")
-        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
+        tf_model_file = file_name + ".tf_model"
+        tf_model_file = Path(model_dir) / tf_model_file
 
         label_key = LABEL_KEY if meta[INTENT_CLASSIFICATION] else None
         label_sub_key = LABEL_SUB_KEY if meta[INTENT_CLASSIFICATION] else None

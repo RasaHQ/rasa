@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import logging
 import re
 from typing import Any, Dict, Optional, Text
@@ -128,7 +128,7 @@ class KeywordIntentClassifier(IntentClassifier):
         """
 
         file_name = file_name + ".json"
-        keyword_file = os.path.join(model_dir, file_name)
+        keyword_file = Path(model_dir) / file_name
         utils.write_json_to_file(keyword_file, self.intent_keyword_map)
 
         return {"file": file_name}
@@ -145,8 +145,8 @@ class KeywordIntentClassifier(IntentClassifier):
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
-            keyword_file = os.path.join(model_dir, file_name)
-            if os.path.exists(keyword_file):
+            keyword_file = Path(model_dir) / file_name
+            if Path(keyword_file).exists():
                 intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
             else:
                 rasa.shared.utils.io.raise_warning(
@@ -158,5 +158,5 @@ class KeywordIntentClassifier(IntentClassifier):
         else:
             raise Exception(
                 f"Failed to load keyword intent classifier model. "
-                f"Path {os.path.abspath(meta.get('file'))} doesn't exist."
+                f"Path {Path(meta.get('files')).resolve()} doesn't exist."
             )

@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 import typing
 import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
@@ -232,11 +232,9 @@ class SklearnIntentClassifier(IntentClassifier):
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
         if self.clf and self.le:
+            io_utils.json_pickle(Path(model_dir) / encoder_file_name, self.le.classes_)
             io_utils.json_pickle(
-                os.path.join(model_dir, encoder_file_name), self.le.classes_
-            )
-            io_utils.json_pickle(
-                os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
+                Path(model_dir) / classifier_file_name, self.clf.best_estimator_
             )
         return {"classifier": classifier_file_name, "encoder": encoder_file_name}
 
@@ -251,10 +249,10 @@ class SklearnIntentClassifier(IntentClassifier):
     ) -> "SklearnIntentClassifier":
         from sklearn.preprocessing import LabelEncoder
 
-        classifier_file = os.path.join(model_dir, meta.get("classifier"))
-        encoder_file = os.path.join(model_dir, meta.get("encoder"))
+        classifier_file = Path(model_dir) / meta.get("classifier")
+        encoder_file = Path(model_dir) / meta.get("encoder")
 
-        if os.path.exists(classifier_file):
+        if Path(classifier_file).exists():
             classifier = io_utils.json_unpickle(classifier_file)
             classes = io_utils.json_unpickle(encoder_file)
             encoder = LabelEncoder()
