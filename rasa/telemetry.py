@@ -633,7 +633,7 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=telemetry_id or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt, RasaException],
+        ignore_errors=[KeyboardInterrupt, RasaException, NotImplementedError],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
@@ -644,6 +644,12 @@ def initialize_error_reporting() -> None:
     if telemetry_id:
         with configure_scope() as scope:
             scope.set_user({"id": telemetry_id})
+
+            default_context = _default_context_fields()
+            if "os" in default_context:
+                # os is a nested dict, hence we report it separately
+                scope.set_context("Operating System", default_context.pop("os"))
+            scope.set_context("Environment", default_context)
 
 
 @async_generator.asynccontextmanager

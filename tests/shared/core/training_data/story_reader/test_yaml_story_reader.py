@@ -3,7 +3,7 @@ from typing import Text, List
 
 import pytest
 
-from rasa.shared.exceptions import YamlSyntaxException
+from rasa.shared.exceptions import FileNotFoundException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
@@ -316,7 +316,7 @@ def test_is_not_test_story_file_if_it_doesnt_contain_stories(tmp_path: Path):
 
 def test_is_not_test_story_file_raises_if_file_does_not_exist(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundException):
         YAMLStoryReader.is_test_stories_file(path)
 
 
