@@ -227,14 +227,16 @@ class TrackerStore:
         return json.dumps(dialogue.as_dict())
 
     @staticmethod
-    def _deserialise_dialogue_from_pickle(
+    def _deserialize_dialogue_from_pickle(
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
+        # TODO: Remove in Rasa Open Source 3.0
         rasa.shared.utils.io.raise_deprecation_warning(
             f"Found pickled tracker for "
-            f"conversation ID '{sender_id}'. Deserialisation of pickled "
-            f"trackers is deprecated. Rasa will perform any "
-            f"future save operations of this tracker using json serialisation."
+            f"conversation ID '{sender_id}'. Deserialization of pickled "
+            f"trackers is deprecated and will be removed in Rasa Open Source 3.0. Rasa "
+            f"will perform any future save operations of this tracker using json "
+            f"serialisation."
         )
 
         return pickle.loads(serialised_tracker)
@@ -249,7 +251,7 @@ class TrackerStore:
         try:
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
         except UnicodeDecodeError:
-            dialogue = self._deserialise_dialogue_from_pickle(
+            dialogue = self._deserialize_dialogue_from_pickle(
                 sender_id, serialised_tracker
             )
 
@@ -282,7 +284,8 @@ class InMemoryTrackerStore(TrackerStore):
             logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
 
-        logger.debug(f"Creating a new tracker for id '{sender_id}'.")
+        logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+
         return None
 
     def keys(self) -> Iterable[Text]:

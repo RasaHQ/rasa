@@ -650,13 +650,17 @@ async def test_fetch_tracker_with_initial_session(
 
 
 async def test_fetch_tracker_with_initial_session_does_not_update_session(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     conversation_id = uuid.uuid4().hex
 
     # the domain has a session expiration time of one second
-    default_processor.tracker_store.domain.session_config = SessionConfig(
-        carry_over_slots=True, session_expiration_time=1 / 60
+    monkeypatch.setattr(
+        default_processor.tracker_store.domain,
+        "session_config",
+        SessionConfig(carry_over_slots=True, session_expiration_time=1 / 60),
     )
 
     now = time.time()

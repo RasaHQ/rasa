@@ -45,7 +45,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
 )
-from rasa.shared.core.domain import InvalidDomain
+from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
@@ -53,6 +53,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+import rasa.shared.core.events
 from rasa.shared.core.events import Event
 from rasa.core.lock_store import LockStore
 from rasa.core.test import test
@@ -286,13 +287,41 @@ def get_test_stories(
     return YAMLStoryWriter().dumps(story_steps, is_test_story=True)
 
 
+async def fetch_tracker_and_update_with_events(
+    conversation_id: Text,
+    processor: "MessageProcessor",
+    domain: Domain,
+    events: List[Event],
+) -> DialogueStateTracker:
+    """Fetches or creates a tracker for `conversation_id` and appends `events` to it.
+
+    Args:
+        conversation_id: The ID of the conversation to update the tracker for.
+        processor: An instance of `MessageProcessor`.
+        domain: The domain associated with the current `Agent`.
+        events: The events to append to the tracker.
+
+    Returns:
+        The tracker for `conversation_id` with the updated events.
+    """
+    if rasa.shared.core.events.do_events_begin_with_session_start(events):
+        tracker = processor.get_tracker(conversation_id)
+    else:
+        tracker = await processor.fetch_tracker_with_initial_session(conversation_id)
+
+    for event in events:
+        tracker.update(event, domain)
+
+    return tracker
+
+
 def validate_request_body(request: Request, error_message: Text) -> None:
     """Check if `request` has a body."""
     if not request.body:
         raise ErrorResponse(400, "BadRequest", error_message)
 
 
-async def authenticate(request: Request) -> NoReturn:
+async def authenticate(_: Request) -> NoReturn:
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "
@@ -542,21 +571,21 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 processor = app.agent.create_processor()
-                tracker = await processor.fetch_tracker_with_initial_session(
-                    conversation_id
-                )
-                output_channel = _get_output_channel(request, tracker)
-
                 events = _get_events_from_request_body(request)
 
-                for event in events:
-                    tracker.update(event, app.agent.domain)
+                tracker = await fetch_tracker_and_update_with_events(
+                    conversation_id, processor, app.agent.domain, events
+                )
+
+                output_channel = _get_output_channel(request, tracker)
+
                 if rasa.utils.endpoints.bool_arg(
                     request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
                 ):
                     await processor.execute_side_effects(
                         events, tracker, output_channel
                     )
+
                 app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
