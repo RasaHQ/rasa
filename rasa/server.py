@@ -967,7 +967,7 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request) -> HTTPResponse:
-        """ Given a list of events, predicts the next action"""
+        """Given a list of events, predicts the next action."""
         validate_request_body(
             request,
             "No events defined in request_body. Add events to request body in order to "

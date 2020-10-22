@@ -794,10 +794,9 @@ class Agent:
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
+        """Visualize the loaded training data from the resource."""
         from rasa.shared.core.training_data.visualization import visualize_stories
         from rasa.shared.core.training_data import loading
-
-        """Visualize the loaded training data from the resource."""
 
         # if the user doesn't provide a max history, we will use the
         # largest value from any policy
