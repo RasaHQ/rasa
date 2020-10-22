@@ -471,7 +471,8 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
     """Get the number of Sanic workers to use in `app.run()`.
 
     If the environment variable constants.ENV_SANIC_WORKERS is set and is not equal to
-    1, that value will only be permitted if the used lock store is not the `InMemoryLockStore`.
+    1, that value will only be permitted if the used lock store is not the 
+    `InMemoryLockStore`.
     """
 
     def _log_and_get_default_number_of_workers():
