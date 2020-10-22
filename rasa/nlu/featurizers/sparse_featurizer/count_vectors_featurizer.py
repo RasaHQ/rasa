@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
@@ -595,7 +595,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             attribute_vocabularies = self._collect_vectorizer_vocabularies()
             if self._is_any_model_trained(attribute_vocabularies):
                 # Definitely need to persist some vocabularies
-                featurizer_file = os.path.join(model_dir, file_name)
+                featurizer_file = Path(model_dir) / file_name
 
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and
@@ -675,9 +675,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> "CountVectorsFeaturizer":
 
         file_name = meta.get("file")
-        featurizer_file = os.path.join(model_dir, file_name)
+        featurizer_file = Path(model_dir) / file_name
 
-        if not os.path.exists(featurizer_file):
+        if not Path(featurizer_file).exists():
             return cls(meta)
 
         vocabulary = io_utils.json_unpickle(featurizer_file)

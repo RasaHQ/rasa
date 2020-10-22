@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
 
@@ -161,9 +161,9 @@ class RegexFeaturizer(SparseFeaturizer):
     ) -> "RegexFeaturizer":
 
         file_name = meta.get("file")
-        regex_file = os.path.join(model_dir, file_name)
+        regex_file = Path(model_dir) / file_name
 
-        if os.path.exists(regex_file):
+        if Path(regex_file).exists():
             known_patterns = rasa.shared.utils.io.read_json_file(regex_file)
             return RegexFeaturizer(meta, known_patterns=known_patterns)
         else:
@@ -173,7 +173,7 @@ class RegexFeaturizer(SparseFeaturizer):
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
         file_name = file_name + ".pkl"
-        regex_file = os.path.join(model_dir, file_name)
+        regex_file = Path(model_dir) / file_name
         utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
 
         return {"file": file_name}
