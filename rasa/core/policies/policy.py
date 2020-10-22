@@ -300,6 +300,7 @@ class Policy:
         Returns:
             the string of the states with user intents and actions
         """
+        # empty string to insert line break before first state
         formatted_states = [""]
         for index, state in enumerate(states):
             if state:
