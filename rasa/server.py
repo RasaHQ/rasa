@@ -256,9 +256,7 @@ def get_test_stories(
         The stories for `conversation_id` in test format.
     """
     if fetch_all_sessions:
-        trackers: List[
-            DialogueStateTracker
-        ] = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
     else:
         trackers = [processor.get_tracker(conversation_id)]
 
