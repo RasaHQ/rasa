@@ -86,7 +86,3 @@ def user_uttered(
 
 def get_tracker(events: List[Event]) -> DialogueStateTracker:
     return DialogueStateTracker.from_events("sender", events, [], 20)
-
-
-class CustomRedisLockStore(RedisLockStore):
-    pass

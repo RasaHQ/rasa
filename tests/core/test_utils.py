@@ -13,7 +13,10 @@ from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
-from tests.core.utilities import CustomRedisLockStore
+
+
+class CustomRedisLockStore(RedisLockStore):
+    pass
 
 
 def test_is_int():
@@ -133,7 +136,7 @@ def test_replace_decimals_with_floats(_input: Any, expected: Any):
         (5, "in_memory", 1),
         (2, None, 1),
         (0, "in_memory", 1),
-        (3, "tests/core/utilities.CustomRedisLockStore", 3),
+        (3, "tests/core/test_utils.CustomRedisLockStore", 3),
         (3, RedisLockStore(), 3),
         (2, InMemoryLockStore(), 1),
         (3, CustomRedisLockStore(), 3),
