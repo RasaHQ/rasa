@@ -2174,7 +2174,7 @@ category = "main"
 description = "YAML parser and emitter for Python"
 name = "pyyaml"
 optional = false
-python-versions = "*"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "5.3.1"
 
 [[package]]
@@ -2211,7 +2211,7 @@ description = "A configurable sidebar-enabled Sphinx theme"
 name = "rasabaster"
 optional = false
 python-versions = "*"
-version = "0.7.34"
+version = "0.7.35"
 
 [package.dependencies]
 "ruamel.yaml" = ">=0.16.10,<0.17.0"
@@ -3366,7 +3366,6 @@ transformers = ["transformers"]
 
 [metadata]
 content-hash = "23c99b1378288b2648e2a06866bd4e62b305362465c51a5114722467fdc74bf6"
-lock-version = "1.0"
 python-versions = ">=3.6,<3.8"
 
 [metadata.files]
