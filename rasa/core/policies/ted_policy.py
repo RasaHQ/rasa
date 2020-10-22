@@ -790,8 +790,14 @@ class TED(TransformerRasaModel):
         attribute_mask = tf_batch_data[attribute][MASK][0]
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
-            sequence_shape = [tf.shape(x) for x in tf_batch_data[attribute][SEQUENCE]]
-            sentence_shape = [tf.shape(x) for x in tf_batch_data[attribute][SENTENCE]]
+            sequence_shape = [
+                [tf.shape(x)[0], tf.shape(x)[1], tf.shape(x)[2], x.shape[-1]]
+                for x in tf_batch_data[attribute][SEQUENCE]
+            ]
+            sentence_shape = [
+                [tf.shape(x)[0], tf.shape(x)[1], x.shape[-1]]
+                for x in tf_batch_data[attribute][SENTENCE]
+            ]
 
             sequence = [
                 tf.sparse.reshape(x, (-1, shape[2], shape[3]))
@@ -804,6 +810,22 @@ class TED(TransformerRasaModel):
                 if isinstance(x, tf.SparseTensor)
                 else tf.reshape(x, (-1, shape[2]))
                 for x, shape in zip(tf_batch_data[attribute][SENTENCE], sentence_shape)
+            ]
+            sequence = [
+                tf.SparseTensor(
+                    x.indices, x.values, (tf.shape(x)[0], tf.shape(x)[1], shape[3])
+                )
+                if isinstance(x, tf.SparseTensor)
+                else x
+                for x, shape in zip(sequence, sequence_shape)
+            ]
+            sentence = [
+                tf.SparseTensor(
+                    x.indices, x.values, (tf.shape(x)[0], tf.shape(x)[1], shape[2])
+                )
+                if isinstance(x, tf.SparseTensor)
+                else x
+                for x, shape in zip(sentence, sentence_shape)
             ]
 
             _sequence_lengths = tf.cast(
