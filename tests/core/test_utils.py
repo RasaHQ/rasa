@@ -16,7 +16,7 @@ from tests.conftest import write_endpoint_config_to_yaml
 
 
 class CustomRedisLockStore(RedisLockStore):
-    pass
+    """Test class used to test the behavior of custom lock stores."""
 
 
 def test_is_int():
