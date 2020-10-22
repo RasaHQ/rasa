@@ -12,6 +12,7 @@ from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
 from contextlib import ExitStack
 
 from _pytest import pathlib
+from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
 import pytest
@@ -37,7 +38,7 @@ from rasa.core.channels import (
     CallbackInput,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     Event,
@@ -75,6 +76,13 @@ test_events = [
     SlotSet("cuisine", "34"),
     SlotSet("location", None),
     SlotSet("location", [34, "34", None]),
+]
+
+# sequence of events expected at the beginning of trackers
+session_start_sequence: List[Event] = [
+    ActionExecuted(ACTION_SESSION_START_NAME),
+    SessionStarted(),
+    ActionExecuted(ACTION_LISTEN_NAME),
 ]
 
 
@@ -896,12 +904,15 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
     tracker = tracker_response.json()
     assert tracker is not None
 
-    assert len(tracker.get("events")) == 1
+    assert len(tracker.get("events")) == 4
 
-    evt = tracker.get("events")[0]
-    deserialised_event = Event.from_parameters(evt)
-    assert deserialised_event == event
-    assert deserialised_event.timestamp > time_before_adding_events
+    deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
+
+    # there is an initial session start sequence at the beginning of the tracker
+    assert deserialized_events[:3] == session_start_sequence
+
+    assert deserialized_events[3] == event
+    assert deserialized_events[3].timestamp > time_before_adding_events
 
 
 async def test_push_multiple_events(rasa_app: SanicASGITestClient):
@@ -923,8 +934,10 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
     tracker = tracker_response.json()
     assert tracker is not None
 
-    # there is also an `ACTION_LISTEN` event at the start
-    assert tracker.get("events") == events
+    # there is an initial session start sequence at the beginning
+    assert [
+        Event.from_parameters(event) for event in tracker.get("events")
+    ] == session_start_sequence + test_events
 
 
 @pytest.mark.parametrize(
@@ -984,8 +997,10 @@ async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
     tracker = tracker_response.json()
     assert tracker is not None
 
-    # there is also an `ACTION_LISTEN` event at the start
-    assert tracker.get("events") == events
+    # there is a session start sequence at the start
+    assert [
+        Event.from_parameters(event) for event in tracker.get("events")
+    ] == session_start_sequence + test_events
 
 
 async def test_put_tracker(rasa_app: SanicASGITestClient):
@@ -1459,6 +1474,7 @@ stories:
 )
 async def test_get_story(
     rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
     conversation_events: List[Event],
     until_time: Optional[float],
     fetch_all_sessions: Optional[bool],
@@ -1471,7 +1487,7 @@ async def test_get_story(
 
     tracker_store.save(tracker)
 
-    rasa_app.app.agent.tracker_store = tracker_store
+    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
 
     url = f"/conversations/{conversation_id}/story?"
 
@@ -1490,7 +1506,7 @@ async def test_get_story(
 
 
 async def test_get_story_does_not_update_conversation_session(
-    rasa_app: SanicASGITestClient,
+    rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
 ):
     conversation_id = "some-conversation-ID"
 
@@ -1499,6 +1515,8 @@ async def test_get_story_does_not_update_conversation_session(
     domain.session_config = SessionConfig(
         session_expiration_time=1 / 60, carry_over_slots=True
     )
+
+    monkeypatch.setattr(rasa_app.app.agent, "domain", domain)
 
     # conversation contains one session that has expired
     now = time.time()
@@ -1511,11 +1529,14 @@ async def test_get_story_does_not_update_conversation_session(
 
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
+    # the conversation session has expired
+    assert rasa_app.app.agent.create_processor()._has_session_expired(tracker)
+
     tracker_store = InMemoryTrackerStore(domain)
 
     tracker_store.save(tracker)
 
-    rasa_app.app.agent.tracker_store = tracker_store
+    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
 
@@ -1539,3 +1560,79 @@ stories:
 
     # the last event is still the same as before
     assert tracker.events[-1].timestamp == conversation_events[-1].timestamp
+
+
+@pytest.mark.parametrize(
+    "initial_tracker_events,events_to_append,expected_events",
+    [
+        (
+            # the tracker is initially empty, and no events are appended
+            # so we'll just expect the session start sequence with an `action_listen`
+            [],
+            [],
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+        ),
+        (
+            # the tracker is initially empty, and a user utterance is appended
+            # we expect a tracker with a session start sequence and a user utterance
+            [],
+            [UserUttered("/greet", {"name": "greet", "confidence": 1.0})],
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
+            ],
+        ),
+        (
+            # the tracker is initially empty, and a session start sequence is appended
+            # we'll just expect the session start sequence
+            [],
+            [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()],
+            [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()],
+        ),
+        (
+            # the tracker already contains some events - we can simply append events
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
+            ],
+            [ActionExecuted("utter_greet")],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
+                ActionExecuted("utter_greet"),
+            ],
+        ),
+    ],
+)
+async def test_update_conversation_with_events(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    initial_tracker_events: List[Event],
+    events_to_append: List[Event],
+    expected_events: List[Event],
+):
+    conversation_id = "some-conversation-ID"
+    domain = Domain.empty()
+    tracker_store = InMemoryTrackerStore(domain)
+    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
+
+    if initial_tracker_events:
+        tracker = DialogueStateTracker.from_events(
+            conversation_id, initial_tracker_events
+        )
+        tracker_store.save(tracker)
+
+    fetched_tracker = await rasa.server.update_conversation_with_events(
+        conversation_id,
+        rasa_app.app.agent.create_processor(),
+        domain,
+        events_to_append,
+    )
+
+    assert list(fetched_tracker.events) == expected_events

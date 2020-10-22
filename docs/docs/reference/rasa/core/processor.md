@@ -17,13 +17,13 @@ class MessageProcessor()
 
 Handle a single message with this processor.
 
-#### get\_tracker\_with\_session\_start
+#### fetch\_tracker\_and\_update\_session
 
 ```python
- | async get_tracker_with_session_start(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> DialogueStateTracker
+ | async fetch_tracker_and_update_session(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> DialogueStateTracker
 ```
 
-Get tracker for `sender_id` or create a new tracker for `sender_id`.
+Fetches tracker for `sender_id` and updates its conversation session.
 
 If a new tracker is created, `action_session_start` is run.
 
@@ -36,7 +36,27 @@ If a new tracker is created, `action_session_start` is run.
 
 **Returns**:
 
-  Tracker for `sender_id` if available, `None` otherwise.
+  Tracker for `sender_id`.
+
+#### fetch\_tracker\_with\_initial\_session
+
+```python
+ | async fetch_tracker_with_initial_session(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> DialogueStateTracker
+```
+
+Fetches tracker for `sender_id` and runs a session start if it&#x27;s a new
+tracker.
+
+**Arguments**:
+
+- `metadata` - Data sent from client associated with the incoming user message.
+- `output_channel` - Output channel associated with the incoming user message.
+- `sender_id` - Conversation ID for which to fetch the tracker.
+  
+
+**Returns**:
+
+  Tracker for `sender_id`.
 
 #### get\_tracker
 
@@ -46,7 +66,7 @@ If a new tracker is created, `action_session_start` is run.
 
 Get the tracker for a conversation.
 
-In contrast to `get_tracker_with_session_start` this does not add any
+In contrast to `fetch_tracker_and_update_session` this does not add any
 `action_session_start` or `session_start` events at the beginning of a
 conversation.
 
@@ -85,7 +105,7 @@ for `conversation_id`.
 #### log\_message
 
 ```python
- | async log_message(message: UserMessage, should_save_tracker: bool = True) -> Optional[DialogueStateTracker]
+ | async log_message(message: UserMessage, should_save_tracker: bool = True) -> DialogueStateTracker
 ```
 
 Log `message` on tracker belonging to the message&#x27;s conversation_id.

@@ -103,7 +103,7 @@ Handle a single message.
 #### log\_message
 
 ```python
- | async log_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> Optional[DialogueStateTracker]
+ | async log_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> DialogueStateTracker
 ```
 
 Append a message to a dialogue - does not predict actions.
@@ -195,6 +195,14 @@ Train the policies / policy ensemble using dialogue data from file.
 ```
 
 Persists this agent into a directory for later loading and usage.
+
+#### visualize
+
+```python
+ | async visualize(resource_name: Text, output_file: Text, max_history: Optional[int] = None, nlu_training_data: Optional[TrainingData] = None, should_merge_nodes: bool = True, fontsize: int = 12) -> None
+```
+
+Visualize the loaded training data from the resource.
 
 #### create\_processor
 

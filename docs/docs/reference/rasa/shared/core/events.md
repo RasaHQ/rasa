@@ -68,6 +68,26 @@ Splits events according to an event type and condition.
 
   The split events.
 
+#### do\_events\_begin\_with\_session\_start
+
+```python
+do_events_begin_with_session_start(events: List["Event"]) -> bool
+```
+
+Determines whether `events` begins with a session start sequence.
+
+A session start sequence is a sequence of two events: an executed
+`action_session_start` as well as a logged `session_started`.
+
+**Arguments**:
+
+- `events` - The events to inspect.
+  
+
+**Returns**:
+
+  Whether or not `events` begins with a session start sequence.
+
 ## Event Objects
 
 ```python
