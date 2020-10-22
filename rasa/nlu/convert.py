@@ -1,6 +1,6 @@
 import argparse
-import os
 from typing import Text
+from pathlib import Path
 
 from rasa.shared.utils.cli import print_error
 import rasa.shared.nlu.training_data.loading
@@ -10,7 +10,7 @@ from rasa.nlu.utils import write_to_file
 def convert_training_data(
     data_file: Text, out_file: Text, output_format: Text, language: Text
 ):
-    if not os.path.exists(data_file):
+    if not Path(data_file).exists():
         print_error(
             "Data file '{}' does not exist. Provide a valid NLU data file using "
             "the '--data' argument.".format(data_file)

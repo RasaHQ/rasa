@@ -1,7 +1,7 @@
 import copy
 import logging
-import os
 import ruamel.yaml as yaml
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
 
 from rasa.shared.exceptions import RasaException
@@ -28,7 +28,7 @@ def load(
         return _load_from_dict(config, **kwargs)
 
     file_config = {}
-    if config is None and os.path.isfile(DEFAULT_CONFIG_PATH):
+    if config is None and Path(DEFAULT_CONFIG_PATH).is_file():
         config = DEFAULT_CONFIG_PATH
 
     if config is not None:

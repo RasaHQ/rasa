@@ -1,13 +1,14 @@
 import glob
 import logging
-import os
 import shutil
 import typing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.io import create_directory
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,7 @@ class JiebaTokenizer(Tokenizer):
 
         # get real path of dictionary path, if any
         if relative_dictionary_path is not None:
-            dictionary_path = os.path.join(model_dir, relative_dictionary_path)
+            dictionary_path = Path(model_dir) / relative_dictionary_path
 
             meta["dictionary_path"] = dictionary_path
 
@@ -93,9 +94,7 @@ class JiebaTokenizer(Tokenizer):
 
     @staticmethod
     def copy_files_dir_to_dir(input_dir: Text, output_dir: Text) -> None:
-        # make sure target path exists
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        create_directory(output_dir)
 
         target_file_list = glob.glob(f"{input_dir}/*")
         for target_file in target_file_list:
@@ -106,7 +105,7 @@ class JiebaTokenizer(Tokenizer):
 
         # copy custom dictionaries to model dir, if any
         if self.dictionary_path is not None:
-            target_dictionary_path = os.path.join(model_dir, file_name)
+            target_dictionary_path = Path(model_dir) / file_name
             self.copy_files_dir_to_dir(self.dictionary_path, target_dictionary_path)
 
             return {"dictionary_path": file_name}

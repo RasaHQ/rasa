@@ -77,7 +77,7 @@ class Metadata:
             data = rasa.shared.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
-            abspath = metadata_file.absolute()
+            abspath = metadata_file.resolve()
             raise InvalidModelError(
                 f"Failed to load model metadata from '{abspath}'. {e}"
             )
@@ -231,9 +231,8 @@ class Trainer:
         else:
             model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
-        path = Path(path).absolute()
-        dir_name = path / model_name
-        dir_name = str(dir_name)
+        dir_path = Path(path).resolve() / model_name
+        dir_name = str(dir_path)
         rasa.shared.utils.io.create_directory(dir_name)
 
         if self.training_data and persist_nlu_training_data:
@@ -253,9 +252,7 @@ class Trainer:
 
         if persistor is not None:
             persistor.persist(dir_name, model_name)
-        logger.info(
-            "Successfully saved model into '{}'".format(Path(dir_name).absolute())
-        )
+        logger.info("Successfully saved model into '{}'".format(dir_path))
         return dir_name
 
 

@@ -311,7 +311,7 @@ class CRFEntityExtractor(EntityExtractor):
             logger.debug(
                 f"Failed to load model for 'CRFEntityExtractor'. "
                 f"Maybe you did not provide enough training data and no model was "
-                f"trained or the path '{model_dir.absolute()}' doesn't exist?"
+                f"trained or the path '{model_dir.resolve()}' doesn't exist?"
             )
             return cls(component_config=meta)
 
@@ -323,7 +323,7 @@ class CRFEntityExtractor(EntityExtractor):
                 logger.debug(
                     f"Failed to load model for tag '{name}' for 'CRFEntityExtractor'. "
                     f"Maybe you did not provide enough training data and no model was "
-                    f"trained or the path '{model_file.absolute()}' doesn't "
+                    f"trained or the path '{model_file.resolve()}' doesn't "
                     f"exist?"
                 )
 

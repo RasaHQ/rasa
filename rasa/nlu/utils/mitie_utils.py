@@ -1,5 +1,5 @@
-import os
 import typing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
@@ -15,7 +15,7 @@ class MitieNLP(Component):
     defaults = {
         # name of the language model to load - this contains
         # the MITIE feature extractor
-        "model": os.path.join("data", "total_word_feature_extractor.dat")
+        "model": str(Path("data") / "total_word_feature_extractor.dat")
     }
 
     def __init__(
@@ -61,7 +61,7 @@ class MitieNLP(Component):
 
         mitie_file = component_meta.get("model", None)
         if mitie_file is not None:
-            return cls.name + "-" + str(os.path.abspath(mitie_file))
+            return cls.name + "-" + str(Path(mitie_file).resolve())
         else:
             return None
 

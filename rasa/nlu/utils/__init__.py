@@ -1,7 +1,6 @@
-import os
 import re
 from typing import Any, Optional, Text, Union
-from pathlib import Path
+from pathlib import Path, PurePath
 
 import rasa.shared.utils.io
 
@@ -9,7 +8,7 @@ import rasa.shared.utils.io
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]:
     """Return the path of file relative to `path`."""
     if f is not None:
-        return Path(os.path.relpath(f, path))
+        return PurePath(f).relative_to(path)
     return None
 
 
@@ -35,11 +34,16 @@ def is_model_dir(model_dir: Text) -> bool:
     specifically checks if the directory has no subdirectories and
     if all files have an appropriate ending."""
     allowed_extensions = {".json", ".pkl", ".dat"}
-    dir_tree = list(os.walk(model_dir))
-    if len(dir_tree) != 1:
+
+    dir_tree = Path(model_dir)
+    if not dir_tree.is_dir():
         return False
-    model_dir, child_dirs, files = dir_tree[0]
-    file_extenstions = [os.path.splitext(f)[1] for f in files]
+
+    iter_dir = [d for d in dir_tree.iterdir()]
+    if [d for d in iter_dir if d.is_dir()]:  # look for subdirectories
+        return False
+
+    file_extenstions = [PurePath(f).suffix for f in iter_dir]
     only_valid_files = all([ext in allowed_extensions for ext in file_extenstions])
     return only_valid_files
 

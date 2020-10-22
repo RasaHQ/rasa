@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import tarfile
+from pathlib import Path
 from typing import List, Optional, Text, Tuple
 
 import rasa.shared.utils.common
@@ -49,7 +50,8 @@ class Persistor:
     def persist(self, model_directory: Text, model_name: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
-        if not os.path.isdir(model_directory):
+        model_directory = Path(model_directory)
+        if not model_directory.is_dir():
             raise ValueError(f"Target directory '{model_directory}' not found.")
 
         file_key, tar_path = self._compress(model_directory, model_name)
@@ -65,7 +67,7 @@ class Persistor:
             tar_name = self._tar_name(model_name)
 
         self._retrieve_tar(tar_name)
-        self._decompress(os.path.basename(tar_name), target_path)
+        self._decompress(Path(tar_name).name, target_path)
 
     def list_models(self) -> List[Text]:
         """Lists all the trained models."""
@@ -89,12 +91,9 @@ class Persistor:
         dirpath = tempfile.mkdtemp()
         base_name = self._tar_name(model_name, include_extension=False)
         tar_name = shutil.make_archive(
-            os.path.join(dirpath, base_name),
-            "gztar",
-            root_dir=model_directory,
-            base_dir=".",
+            Path(dirpath) / base_name, "gztar", root_dir=model_directory, base_dir=".",
         )
-        file_key = os.path.basename(tar_name)
+        file_key = Path(tar_name).name
         return file_key, tar_name
 
     @staticmethod
@@ -177,7 +176,7 @@ class AWSPersistor(Persistor):
 
     def _retrieve_tar(self, model_path: Text) -> None:
         """Downloads a model that has previously been persisted to s3."""
-        tar_name = os.path.basename(model_path)
+        tar_name = Path(model_path).name
         with open(tar_name, "wb") as f:
             self.bucket.download_fileobj(model_path, f)
 
