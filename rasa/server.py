@@ -285,7 +285,7 @@ def get_test_stories(
     return YAMLStoryWriter().dumps(story_steps, is_test_story=True)
 
 
-async def fetch_tracker_and_update_with_events(
+async def update_conversation_with_events(
     conversation_id: Text,
     processor: "MessageProcessor",
     domain: Domain,
@@ -571,7 +571,7 @@ def create_app(
                 processor = app.agent.create_processor()
                 events = _get_events_from_request_body(request)
 
-                tracker = await fetch_tracker_and_update_with_events(
+                tracker = await update_conversation_with_events(
                     conversation_id, processor, app.agent.domain, events
                 )
 
