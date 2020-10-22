@@ -1,4 +1,7 @@
 from typing import Text
+
+import pytest
+
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import Domain
 import numpy as np
@@ -296,3 +299,10 @@ def test_single_state_featurizer_with_interpreter_state_with_no_action_name(
     assert (
         encoded[ACTIVE_LOOP][0].features != scipy.sparse.coo_matrix([[0, 0, 0, 1]])
     ).nnz == 0
+
+
+def test_state_features_for_attribute_raises_on_not_supported_attribute():
+    f = SingleStateFeaturizer()
+
+    with pytest.raises(ValueError):
+        f._state_features_for_attribute({}, "not-supported-attribute")
