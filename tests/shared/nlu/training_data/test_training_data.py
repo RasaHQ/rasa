@@ -228,34 +228,56 @@ def test_train_test_split(filepaths: List[Text]):
         "utter_chitchat/ask_weather",
     }
 
-    assert len(trainingdata.training_examples) == 46
-    assert len(trainingdata.intent_examples) == 46
+    NUM_TRAIN_EXAMPLES = 46
+    NUM_RESPONSE_EXAMPLES = 4
+
+    assert len(trainingdata.training_examples) == NUM_TRAIN_EXAMPLES
+    assert len(trainingdata.intent_examples) == NUM_TRAIN_EXAMPLES
     assert len(trainingdata.response_examples) == 4
 
-    trainingdata_train, trainingdata_test = trainingdata.train_test_split(
-        train_frac=0.8
-    )
+    for train_percent in range(50, 95, 5):
+        train_frac = train_percent / 100.0
+        trainingdata_train, trainingdata_test = trainingdata.train_test_split(
+            train_frac
+        )
 
-    assert (
-        len(trainingdata_test.training_examples)
-        + len(trainingdata_train.training_examples)
-        == 46
-    )
-    assert len(trainingdata_train.training_examples) == 34
-    assert len(trainingdata_test.training_examples) == 12
+        assert (
+            len(trainingdata_test.training_examples)
+            + len(trainingdata_train.training_examples)
+            == NUM_TRAIN_EXAMPLES
+        )
 
-    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
-        trainingdata_test.number_of_examples_per_intent.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
-        trainingdata_train.number_of_examples_per_intent.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
-        trainingdata_test.number_of_examples_per_response.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
-        trainingdata_train.number_of_examples_per_response.keys()
-    )
+        num_classes = (
+            len(trainingdata.number_of_examples_per_intent.keys())
+            + -len(trainingdata.retrieval_intents)
+            + len(trainingdata.number_of_examples_per_response)
+        )
+
+        expected_num_train_examples_floor = int(train_frac * NUM_TRAIN_EXAMPLES)
+        if NUM_TRAIN_EXAMPLES - expected_num_train_examples_floor < num_classes:
+            expected_num_train_examples_floor = NUM_TRAIN_EXAMPLES - num_classes - 1
+
+        assert (
+            len(trainingdata_train.training_examples)
+            >= expected_num_train_examples_floor
+        )
+        assert (
+            len(trainingdata_train.training_examples)
+            <= expected_num_train_examples_floor + 1
+        )
+
+        assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
+            trainingdata_test.number_of_examples_per_intent.keys()
+        )
+        assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
+            trainingdata_train.number_of_examples_per_intent.keys()
+        )
+        assert len(trainingdata.number_of_examples_per_response.keys()) == len(
+            trainingdata_test.number_of_examples_per_response.keys()
+        )
+        assert len(trainingdata.number_of_examples_per_response.keys()) == len(
+            trainingdata_train.number_of_examples_per_response.keys()
+        )
 
 
 @pytest.mark.parametrize(
