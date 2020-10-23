@@ -19,6 +19,8 @@ from rasa.shared.core.constants import (
     IS_EXTERNAL,
     LOOP_INTERRUPTED,
     ENTITY_LABEL_SEPARATOR,
+    ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -167,6 +169,24 @@ def split_events(
         sub_events.append(current)
 
     return sub_events
+
+
+def do_events_begin_with_session_start(events: List["Event"]) -> bool:
+    """Determines whether `events` begins with a session start sequence.
+
+    A session start sequence is a sequence of two events: an executed
+    `action_session_start` as well as a logged `session_started`.
+
+    Args:
+        events: The events to inspect.
+
+    Returns:
+        Whether or not `events` begins with a session start sequence.
+    """
+    return len(events) > 1 and events[:2] == [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+    ]
 
 
 # noinspection PyProtectedMember
@@ -670,8 +690,6 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        from rasa.shared.core.constants import ACTION_LISTEN_NAME
-
         tracker._reset()
         tracker.trigger_followup_action(ACTION_LISTEN_NAME)
 
