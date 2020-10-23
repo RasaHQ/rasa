@@ -297,10 +297,6 @@ class TEDPolicy(Policy):
         """
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
-        # TODO:
-        #  pad_data should convert 4D to 3D (sum up batch and dialogue dimension)
-        #  inside batch_loss after the transformer convert 3D back to 4D
-
         if label_ids is not None and encoded_all_labels is not None:
 
             label_ids = np.array(
@@ -733,11 +729,15 @@ class TED(TransformerRasaModel):
         """Create dialogue level embedding and mask."""
 
         mask = self._compute_mask(sequence_lengths)
+        # remove the additional dimensions that were added due to 4D shape
+        mask = tf.squeeze(tf.squeeze(mask, axis=-1), axis=-1)
 
         dialogue_transformed = self._tf_layers[f"transformer.{DIALOGUE}"](
             dialogue_in, 1 - mask, self._training
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
+
+        # TODO transform back to original 4D shape
 
         if self.max_history_tracker_featurizer_used:
             # pick last vector if max history featurizer is used
