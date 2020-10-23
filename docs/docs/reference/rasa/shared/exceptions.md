@@ -27,6 +27,14 @@ class RasaXTermsError(RasaException)
 
 Error in case the user didn&#x27;t accept the Rasa X terms.
 
+## InvalidParameterException Objects
+
+```python
+class InvalidParameterException(RasaException,  ValueError)
+```
+
+Raised when an invalid parameter is used.
+
 ## YamlException Objects
 
 ```python
@@ -54,4 +62,20 @@ class YamlSyntaxException(YamlException)
 ```
 
 Raised when a YAML file can not be parsed properly due to a syntax error.
+
+## FileNotFoundException Objects
+
+```python
+class FileNotFoundException(RasaException,  FileNotFoundError)
+```
+
+Raised when a file, expected to exist, doesn&#x27;t exist.
+
+## FileIOException Objects
+
+```python
+class FileIOException(RasaException)
+```
+
+Raised if there is an error while doing file IO.
 

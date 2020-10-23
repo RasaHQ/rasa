@@ -23,10 +23,18 @@ Tries to import all package names and returns the packages where it failed.
 #### validate\_requirements
 
 ```python
-validate_requirements(component_names: List[Text]) -> None
+validate_requirements(component_names: List[Optional[Text]]) -> None
 ```
 
 Validates that all required importable python packages are installed.
+
+**Raises**:
+
+- `InvalidConfigError` - If one of the component names is `None`, likely
+  indicates that a custom implementation is missing this property
+  or that there is an invalid configuration file that we did not
+  catch earlier.
+  
 
 **Arguments**:
 

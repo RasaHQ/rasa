@@ -38,7 +38,7 @@ async def test_simple_story(
 ):
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_md_file, is_used_for_conversion=True
+        default_domain, None, False, input_md_file, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
@@ -67,7 +67,7 @@ async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
     input_md_file = "data/test_stories/stories.md"
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_md_file, is_used_for_conversion=True
+        default_domain, None, False, input_md_file, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
@@ -78,7 +78,7 @@ async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
 
 async def test_forms_are_converted(default_domain: Domain):
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, is_used_for_conversion=True
+        default_domain, None, False, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(
         "data/test_stories/stories_form.md"
