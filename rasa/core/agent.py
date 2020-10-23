@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 import uuid
 
@@ -401,7 +402,7 @@ class Agent:
     @classmethod
     def load(
         cls,
-        model_path: Text,
+        model_path: Union[Text, Path],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
@@ -418,7 +419,7 @@ class Agent:
             if not os.path.exists(model_path):
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
             if os.path.isfile(model_path):
-                model_path = get_model(model_path)
+                model_path = get_model(str(model_path))
         except ModelNotFound as e:
             raise ModelNotFound(
                 f"You are trying to load a model from '{model_path}', "
@@ -536,10 +537,10 @@ class Agent:
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         **kwargs: Any,
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
-
         processor = self.create_processor(message_preprocessor)
+
         return await processor.log_message(message)
 
     async def execute_action(
@@ -779,10 +780,9 @@ class Agent:
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
+        """Visualize the loaded training data from the resource."""
         from rasa.shared.core.training_data.visualization import visualize_stories
         from rasa.shared.core.training_data import loading
-
-        """Visualize the loaded training data from the resource."""
 
         # if the user doesn't provide a max history, we will use the
         # largest value from any policy
