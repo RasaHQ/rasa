@@ -531,7 +531,7 @@ class TrainingData:
         # helper to simulate the traversal of all examples in a single class
         def _split_class(
             _examples: List[Message], _running_count: int, _running_train_count: int
-        ) -> (int, int):
+        ) -> Tuple[int, int]:
             if random_seed is not None:
                 random.Random(random_seed).shuffle(_examples)
             else:
