@@ -526,6 +526,9 @@ class RasaModel(tf.keras.models.Model):
         for key, values in data_signature.items():
             for sub_key, signature in values.items():
                 for is_sparse, feature_dimension, number_of_dimensions in signature:
+                    number_of_dimensions = (
+                        number_of_dimensions if number_of_dimensions != 4 else 3
+                    )
                     if is_sparse:
                         # explicitly substitute last dimension in shape with known
                         # static value

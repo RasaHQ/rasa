@@ -178,13 +178,13 @@ class FeatureArray(np.ndarray):
             A list of type tuples.
         """
         if self.is_sparse:
+            # 4D tensors were converted into 3D tensors during padding
+            number_of_dimensions = (
+                self.number_of_dimensions if self.number_of_dimensions != 4 else 3
+            )
             # scipy matrix is converted into indices, data, shape
             return (
-                [
-                    (None, self.number_of_dimensions),
-                    (None,),
-                    (self.number_of_dimensions),
-                ],
+                [(None, number_of_dimensions), (None,), (number_of_dimensions)],
                 [tf.int64, tf.float32, tf.int64],
             )
 
@@ -198,13 +198,15 @@ class FeatureArray(np.ndarray):
             return [(None, None, self.units)], [tf.float32]
 
         if self.number_of_dimensions == 4:
-            return [(None, None, None, self.units)], [tf.float32]
+            # 4D tensors were converted into 3D tensors during padding
+            return [(None, None, self.units)], [tf.float32]
 
         return [], []
 
 
 class FeatureSignature(NamedTuple):
-    """Stores the number of units, the type (sparse vs dense), and the number of dimensions of features."""
+    """Stores the number of units, the type (sparse vs dense), and the number of
+    dimensions of features."""
 
     is_sparse: bool
     units: Optional[int]
@@ -1068,8 +1070,15 @@ class RasaModelData:
     def _pad_4d_dense_data(array_of_array_of_dense: FeatureArray) -> np.ndarray:
         # in case of dialogue data we may have 4 dimensions
         # batch size x dialogue history length x sequence length x number of features
-        data_size = len(array_of_array_of_dense)
-        max_dialogue_len = max(
+
+        # as transformers cannot handle 4D tensors pad and reshape the data
+        # so that the resulting tensor is 3D
+        # the shape is (sum of dialogue history length for all tensors in the
+        # batch x max sequence length x number of features)
+        # the original shape is passed on the model via the data signature, the
+        # original shape can be used to transform the 3D tensor back into 4D
+
+        sum_dialogue_len = sum(
             len(array_of_dense) for array_of_dense in array_of_array_of_dense
         )
         max_seq_len = max(
@@ -1081,18 +1090,15 @@ class RasaModelData:
         )
 
         data_padded = np.zeros(
-            [
-                data_size,
-                max_dialogue_len,
-                max_seq_len,
-                array_of_array_of_dense[0][0].shape[-1],
-            ],
+            [sum_dialogue_len, max_seq_len, array_of_array_of_dense[0][0].shape[-1]],
             dtype=array_of_array_of_dense[0][0].dtype,
         )
 
+        current_sum_dialogue_len = 0
         for i, array_of_dense in enumerate(array_of_array_of_dense):
             for j, dense in enumerate(array_of_dense):
-                data_padded[i, j, : dense.shape[0], :] = dense
+                data_padded[current_sum_dialogue_len + j, : dense.shape[0], :] = dense
+            current_sum_dialogue_len += len(array_of_dense)
 
         return data_padded.astype(np.float32)
 
@@ -1136,9 +1142,18 @@ class RasaModelData:
         ]
 
     @staticmethod
-    def _4d_scipy_matrix_to_values(array_of_array_of_sparse: FeatureArray):
+    def _4d_scipy_matrix_to_values(
+        array_of_array_of_sparse: FeatureArray,
+    ) -> List[np.ndarray]:
         # in case of dialogue data we may have 4 dimensions
         # batch size x dialogue history length x sequence length x number of features
+
+        # as transformers cannot handle 4D tensors pad and reshape the data
+        # so that the resulting tensor is 3D
+        # the shape is (sum of dialogue history length for all tensors in the
+        # batch x max sequence length x number of features)
+        # the original shape is passed on the model via the data signature, the
+        # original shape can be used to transform the 3D tensor back into 4D
 
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
@@ -1148,8 +1163,8 @@ class RasaModelData:
                 for array_of_sparse in array_of_array_of_sparse
             ]
 
-        max_dialogue_len = max(
-            [len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse]
+        max_dialogue_len = sum(
+            len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse
         )
         max_seq_len = max(
             [
@@ -1162,7 +1177,15 @@ class RasaModelData:
         indices = np.hstack(
             [
                 np.vstack(
-                    [i * np.ones_like(x.row), j * np.ones_like(x.row), x.row, x.col]
+                    [
+                        sum(
+                            len(array_of_sparse)
+                            for array_of_sparse in array_of_array_of_sparse[:i]
+                        )
+                        + j * np.ones_like(x.row),
+                        x.row,
+                        x.col,
+                    ]
                 )
                 for i, array_of_sparse in enumerate(array_of_array_of_sparse)
                 for j, x in enumerate(array_of_sparse)
@@ -1178,14 +1201,7 @@ class RasaModelData:
         )
 
         number_of_features = array_of_array_of_sparse[0][0].shape[-1]
-        shape = np.array(
-            (
-                len(array_of_array_of_sparse),
-                max_dialogue_len,
-                max_seq_len,
-                number_of_features,
-            )
-        )
+        shape = np.array((max_dialogue_len, max_seq_len, number_of_features))
 
         return [
             indices.astype(np.int64),
