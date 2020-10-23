@@ -9,7 +9,7 @@ def print_color(*args: Any, color: Text) -> None:
     try:
         # colorama is used to fix a regression where colors can not be printed on
         # windows. https://github.com/RasaHQ/rasa/issues/7053
-        from colorama import AnsiToWin32  # type:ignore
+        from colorama import AnsiToWin32
 
         stream = AnsiToWin32(sys.stdout).stream
         print(output, file=stream)
