@@ -23,10 +23,10 @@ async def visualize(
 
     try:
         policies = config.load(config_path)
-    except ValueError as e:
+    except Exception as e:
         print_error(
-            "Could not load config due to: '{}'. To specify a valid config file use "
-            "the '--config' argument.".format(e)
+            f"Could not load config due to: '{e}'. To specify a valid config file use "
+            f"the '--config' argument."
         )
         return
 
@@ -34,8 +34,8 @@ async def visualize(
         agent = Agent(domain=domain_path, policies=policies)
     except InvalidDomain as e:
         print_error(
-            "Could not load domain due to: '{}'. To specify a valid domain path use "
-            "the '--domain' argument.".format(e)
+            f"Could not load domain due to: '{e}'. To specify a valid domain path use "
+            f"the '--domain' argument."
         )
         return
 
