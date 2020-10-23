@@ -70,6 +70,7 @@ module.exports = {
             'components',
             'policies',
             'training-data-importers',
+            'language-support',
           ],
         },
         {
