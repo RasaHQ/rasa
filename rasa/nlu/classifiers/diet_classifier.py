@@ -90,6 +90,7 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     SEQUENCE,
     SENTENCE,
+    SEQUENCE_LENGTH,
     DENSE_DIMENSION,
     MASK,
 )
@@ -99,7 +100,6 @@ logger = logging.getLogger(__name__)
 
 SPARSE = "sparse"
 DENSE = "dense"
-SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = "ids"
 TAG_IDS = "tag_ids"

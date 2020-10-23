@@ -68,6 +68,7 @@ BALANCED = "balanced"
 
 SEQUENCE = "sequence"
 SENTENCE = "sentence"
+SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
 
 POOLING = "pooling"
 MAX_POOLING = "max"

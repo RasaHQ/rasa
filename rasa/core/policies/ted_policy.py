@@ -72,6 +72,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     SEQUENCE,
     SENTENCE,
+    SEQUENCE_LENGTH,
     DENSE_DIMENSION,
     E2E_CONFIDENCE_THRESHOLD,
     MASK,
@@ -297,8 +298,6 @@ class TEDPolicy(Policy):
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
         # TODO:
-        #  sentence features should also be 4D
-        #  sequence length should be 4D
         #  pad_data should convert 4D to 3D (sum up batch and dialogue dimension)
         #  inside batch_loss after the transformer convert 3D back to 4D
 
@@ -326,6 +325,7 @@ class TEDPolicy(Policy):
         model_data.add_lengths(
             DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), MASK
         )
+        model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
 
         return model_data
 
@@ -845,6 +845,13 @@ class TED(TransformerRasaModel):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+
+        for key, values in tf_batch_data.items():
+            print(key)
+            for sub_key, tensors in values.items():
+                print(f"   {sub_key}")
+                for t in tensors:
+                    print(f"     {t.shape}")
 
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 

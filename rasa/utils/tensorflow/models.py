@@ -153,7 +153,7 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         loading: bool = False,
-        eager: bool = False,
+        eager: bool = True,
     ) -> None:
         """Fit model data"""
 
@@ -285,7 +285,7 @@ class RasaModel(tf.keras.models.Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     def build_for_predict(
-        self, predict_data: RasaModelData, eager: bool = False
+        self, predict_data: RasaModelData, eager: bool = True
     ) -> None:
         self._training = False  # needed for tf graph mode
         self._predict_function = self._get_tf_call_model_function(
@@ -533,7 +533,7 @@ class RasaModel(tf.keras.models.Model):
                             batch[idx + 2][i] for i in range(number_of_dimensions - 1)
                         ] + [feature_dimension]
                         batch_data[key][sub_key].append(
-                            tf.SparseTensor(batch[idx], batch[idx + 1], shape,)
+                            tf.SparseTensor(batch[idx], batch[idx + 1], shape)
                         )
                         idx += 3
                     else:
