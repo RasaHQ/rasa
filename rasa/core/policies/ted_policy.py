@@ -749,17 +749,6 @@ class TED(TransformerRasaModel):
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         # TODO transform back to original 4D shape
-        output = tf.zeros(
-            (
-                dialogue_3d_lengths.shape[0],
-                dialogue_3d_lengths.shape[1],
-                dialogue_transformed.shape[1],
-                dialogue_transformed.shape[2],
-            )
-        )
-
-        # output shape 32, 29, 1, 128
-        # dialogue_transformed shape 647, 1, 128
 
         if self.max_history_tracker_featurizer_used:
             # pick last vector if max history featurizer is used
@@ -775,11 +764,13 @@ class TED(TransformerRasaModel):
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Optional[tf.Tensor]:
-        """
-        Encodes features for a given attribute
+        """Encodes features for a given attribute
+
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks
-            attribute: the attribute we will encode features for (e.g., ACTION_NAME, INTENT)
+            attribute: the attribute we will encode features for
+            (e.g., ACTION_NAME, INTENT)
+
         Returns:
             A tensor combining  all features for `attribute`
         """
@@ -805,9 +796,12 @@ class TED(TransformerRasaModel):
     def _process_batch_data(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> tf.Tensor:
-        """Encodes batch data; combines intent and text and action name and action text if both are present
+        """Encodes batch data; combines intent and text and action name and action
+        text if both are present.
+
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks
+
         Returns:
              Tensor: encoding of all features in the batch, combined;
         """
@@ -817,7 +811,8 @@ class TED(TransformerRasaModel):
             for key in tf_batch_data.keys()
             if LABEL_KEY not in key and DIALOGUE not in key
         }
-        # if both action text and action name are present, combine them; otherwise, return the one which is present
+        # if both action text and action name are present, combine them; otherwise,
+        # return the one which is present
 
         if (
             batch_encoded.get(ACTION_TEXT) is not None
@@ -868,13 +863,6 @@ class TED(TransformerRasaModel):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        for key, values in tf_batch_data.items():
-            print(key)
-            for sub_key, tensors in values.items():
-                print(f"   {sub_key}")
-                for t in tensors:
-                    print(f"     {t.shape}")
-
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
         dialogue_3d_lengths = tf.cast(
             tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32
@@ -913,13 +901,16 @@ class TED(TransformerRasaModel):
         )
 
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
+        dialogue_3d_lengths = tf.cast(
+            tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32
+        )
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
         dialogue_in = self._process_batch_data(tf_batch_data)
         dialogue_embed, dialogue_mask = self._emebed_dialogue(
-            dialogue_in, dialogue_lengths
+            dialogue_in, dialogue_lengths, dialogue_3d_lengths
         )
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
