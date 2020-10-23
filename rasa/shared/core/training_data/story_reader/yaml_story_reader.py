@@ -302,7 +302,14 @@ class YAMLStoryReader(StoryReader):
             self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
+
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
+
+        # check if this is a retrieval intent
+        # TODO: should this also check if the response key is correct?
+        # since it is not specified in the domain
+        if "/" in intent_name:
+            intent_name = intent_name.split("/")[0]
 
         if not self.domain:
             logger.debug(
