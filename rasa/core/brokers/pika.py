@@ -261,7 +261,6 @@ class PikaMessageProcessor:
     def __init__(
         self,
         parameters: "Parameters",
-        get_message: Callable[[], Message],
         queues: Union[List[Text], Tuple[Text], Text, None],
         **kwargs: Any,
     ) -> None:
@@ -274,10 +273,10 @@ class PikaMessageProcessor:
 
         self.parameters: "Parameters" = parameters
         self.queues: List[Text] = self._get_queues_from_args(queues, kwargs)
-        self.get_message: Callable[[], Message] = get_message
 
         self._connection: Optional["SelectConnection"] = None
         self._channel: Optional["Channel"] = None
+        self._queue: Optional[multiprocessing.Queue] = None
         self._closing = False
 
     def __del__(self) -> None:
@@ -464,7 +463,15 @@ class PikaMessageProcessor:
             self._channel.queue_declare(queue=queue, durable=True)
             self._channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
-        self.process_messages()
+        try:
+            self.process_messages()
+        except EOFError:
+            # Will most likely happen when shutting down Rasa X.
+            logger.debug(
+                "Pika message queue of worker was closed. Stopping to listen for more "
+                "messages on this worker."
+            )
+
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
@@ -479,31 +486,30 @@ class PikaMessageProcessor:
             body=body.encode(DEFAULT_ENCODING),
             properties=self._get_message_properties(headers),
         )
+        logger.debug(
+            f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
+            f"'{self.parameters.host}':\n{message[0]}"
+        )
 
     def process_messages(self) -> None:
         """Start to process messages."""
 
-        try:
-            while True:
-                message = self.get_message()
-                self._publish(message)
-                logger.debug(
-                    f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-                    f"'{self.parameters.host}':\n{message[0]}"
-                )
-        except EOFError:
-            # Will most likely happen when shutting down Rasa X.
-            logger.debug(
-                "Pika message queue of worker was closed. Stopping to listen for more "
-                "messages on this worker."
-            )
+        import queue
 
-    def run(self):
+        while True:
+            try:
+                message = self._queue.get()
+                self._publish(message)
+            except queue.Empty:
+                continue
+
+    def run(self, queue: multiprocessing.Queue):
         """Run the message processor by connecting to RabbitMQ and then
         starting the IOLoop to block and allow the SelectConnection to operate.
         This function is blocking and indefinite thus it
         should be started in a separate process.
         """
+        self._queue = queue
         self._connection = self._connect()
 
         # noinspection PyUnresolvedReferences
@@ -605,8 +611,7 @@ class PikaEventBroker(EventBroker):
         self.process_queue = self._get_mp_context().Queue()
         self.pika_message_processor = PikaMessageProcessor(
             parameters,
-            queues=self.queues,
-            get_message=lambda: self.process_queue.get(),
+            queues=self.queues
         )
 
         self.process = self._start_pika_process()
@@ -617,7 +622,7 @@ class PikaEventBroker(EventBroker):
     def _start_pika_process(self) -> Optional[multiprocessing.Process]:
         if self.pika_message_processor:
             process = multiprocessing.Process(
-                target=self.pika_message_processor.run, daemon=True
+                target=self.pika_message_processor.run, args=(self.process_queue, ), daemon=True
             )
             process.start()
             return process
