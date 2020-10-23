@@ -296,6 +296,12 @@ class TEDPolicy(Policy):
         """
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
+        # TODO:
+        #  sentence features should also be 4D
+        #  sequence length should be 4D
+        #  pad_data should convert 4D to 3D (sum up batch and dialogue dimension)
+        #  inside batch_loss after the transformer convert 3D back to 4D
+
         if label_ids is not None and encoded_all_labels is not None:
 
             label_ids = np.array(
