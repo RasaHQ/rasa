@@ -233,7 +233,7 @@ def test_train_test_split(filepaths: List[Text]):
 
     assert len(trainingdata.training_examples) == NUM_TRAIN_EXAMPLES
     assert len(trainingdata.intent_examples) == NUM_TRAIN_EXAMPLES
-    assert len(trainingdata.response_examples) == 4
+    assert len(trainingdata.response_examples) == NUM_RESPONSE_EXAMPLES
 
     for train_percent in range(50, 95, 5):
         train_frac = train_percent / 100.0
