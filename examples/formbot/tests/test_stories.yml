@@ -11,7 +11,8 @@ stories:
   - action: restaurant_form
   - active_loop: restaurant_form
   - active_loop: null
-  - action: action_restaurant
+  - action: utter_submit
+  - action: utter_slots_values
   - user: |
       thanks
     intent: thankyou
@@ -33,7 +34,8 @@ stories:
     intent: inform
   - action: restaurant_form
   - active_loop: null
-  - action: action_restaurant
+  - action: utter_submit
+  - action: utter_slots_values
   - user: |
       thanks
     intent: thankyou
@@ -56,7 +58,8 @@ stories:
   - action: utter_chitchat
   - action: restaurant_form
   - active_loop: null
-  - action: action_restaurant
+  - action: utter_submit
+  - action: utter_slots_values
   - user: |
       thanks
     intent: thankyou

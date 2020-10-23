@@ -85,7 +85,6 @@ responses:
     - text: "restarted"
 
 actions:
-- action_restaurant
 - validate_restaurant_form
 
 forms:

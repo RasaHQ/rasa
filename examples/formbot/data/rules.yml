@@ -32,4 +32,5 @@ rules:
     steps:
       - action: restaurant_form
       - active_loop: null
-      - action: action_restaurant
+      - action: utter_submit
+      - action: utter_slots_values

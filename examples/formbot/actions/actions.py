@@ -8,21 +8,6 @@ from rasa_sdk.events import (
     EventType,
 )
 
-
-class ActionRestaurant(Action):
-    """Example of a custom form action."""
-
-    def name(self) -> Text:
-        return "action_restaurant"
-
-    async def run(self, dispatcher, tracker, domain) -> List[EventType]:
-        """Define what the form has to do after all required slots are filled."""
-
-        dispatcher.utter_message(template="utter_submit")
-        dispatcher.utter_message(template="utter_slots_values")
-        return []
-
-
 class ValidateRestaurantForm(Action):
     def name(self) -> Text:
         return "validate_restaurant_form"
