@@ -2,6 +2,7 @@ import re
 from typing import Any, Optional, Text, Union
 from pathlib import Path, PurePath
 
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 
 
@@ -65,7 +66,8 @@ def remove_model(model_dir: Text) -> bool:
         shutil.rmtree(model_dir)
         return True
     else:
-        raise ValueError(
-            "Cannot remove {}, it seems it is not a model "
-            "directory".format(model_dir)
+        raise RasaException(
+            f"Failed to remove {model_dir}, it seems it is not a model "
+            f"directory. E.g. a directory which contains sub directories "
+            f"is considered unsafe to remove."
         )
