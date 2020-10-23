@@ -550,6 +550,26 @@ class Domain:
 
         return len(self.input_states)
 
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the templates which are defined for retrieval intents"""
+
+        return dict(
+            filter(
+                lambda x: self.is_retrieval_intent_template(x), self.templates.items()
+            )
+        )
+
+    @staticmethod
+    def is_retrieval_intent_template(
+        template: Tuple[Text, List[Dict[Text, Any]]]
+    ) -> bool:
+        """Check if the response template is for a retrieval intent.
+
+        These templates have a `/` symbol in their name. Use that to filter them from the rest.
+        """
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
+
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
 

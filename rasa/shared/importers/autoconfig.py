@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Text, Dict, Any, List, Set, Optional
 
 import rasa.shared.constants
+from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -192,7 +193,7 @@ def _is_config_file_as_expected(
 ) -> bool:
     try:
         content = rasa.shared.utils.io.read_config_file(config_file_path)
-    except ValueError:
+    except FileNotFoundException:
         content = ""
 
     return (

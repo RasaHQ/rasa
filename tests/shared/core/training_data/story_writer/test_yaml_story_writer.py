@@ -38,7 +38,7 @@ async def test_simple_story(
 ):
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_md_file, is_used_for_conversion=True
+        default_domain, None, False, input_md_file, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
@@ -67,7 +67,7 @@ async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
     input_md_file = "data/test_stories/stories.md"
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_md_file, is_used_for_conversion=True
+        default_domain, None, False, input_md_file, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
@@ -78,7 +78,7 @@ async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
 
 async def test_forms_are_converted(default_domain: Domain):
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, is_used_for_conversion=True
+        default_domain, None, False, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(
         "data/test_stories/stories_form.md"
@@ -167,3 +167,18 @@ async def test_action_start_action_listen_are_not_dumped():
 
     assert ACTION_SESSION_START_NAME not in dump
     assert ACTION_LISTEN_NAME not in dump
+
+
+def test_yaml_writer_stories_to_yaml(default_domain: Domain):
+    from collections import OrderedDict
+
+    reader = YAMLStoryReader(default_domain, None, False)
+    writer = YAMLStoryWriter()
+    steps = reader.read_from_file(
+        "data/test_yaml_stories/simple_story_with_only_end.yml"
+    )
+
+    result = writer.stories_to_yaml(steps)
+    assert isinstance(result, OrderedDict)
+    assert "stories" in result
+    assert len(result["stories"]) == 1
