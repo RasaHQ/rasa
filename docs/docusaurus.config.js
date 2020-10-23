@@ -25,6 +25,7 @@ const versionLabels = {
 
 module.exports = {
   customFields: {
+    rootEditUrl: 'https://github.com/rasahq/rasa/', // NOTE: this could be directed to a specfic README or a heading within a README
     productLogo: '/img/logo-rasa-oss.png',
     versionLabels,
     legacyVersions: [{
