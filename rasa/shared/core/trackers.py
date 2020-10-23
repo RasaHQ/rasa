@@ -250,7 +250,7 @@ class DialogueStateTracker:
         """
         return domain.states_for_tracker_history(self)
 
-    def change_loop_to(self, loop_name: Text) -> None:
+    def change_loop_to(self, loop_name: Optional[Text]) -> None:
         """Set the currently active loop.
 
         Args:
