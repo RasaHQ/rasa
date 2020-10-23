@@ -282,36 +282,22 @@ def _features_for_attribute(
     sparse_features = {}
     dense_features = {}
 
-    # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():
-        if key == SEQUENCE:
-            if consider_dialogue_dimension:
-                sparse_features[key] = FeatureArray(
-                    np.array(values), number_of_dimensions=4
-                )
-            else:
-                sparse_features[key] = FeatureArray(
-                    np.array([v[0] for v in values]), number_of_dimensions=3
-                )
-        else:
-            features = [scipy.sparse.vstack(value) for value in values]
+        if consider_dialogue_dimension:
             sparse_features[key] = FeatureArray(
-                np.array(features), number_of_dimensions=3
+                np.array(values), number_of_dimensions=4
             )
-    for key, values in _dense_features.items():
-        if key == SEQUENCE:
-            if consider_dialogue_dimension:
-                dense_features[key] = FeatureArray(
-                    np.array(values), number_of_dimensions=4
-                )
-            else:
-                dense_features[key] = FeatureArray(
-                    np.array([v[0] for v in values]), number_of_dimensions=3
-                )
         else:
-            features = [np.vstack(value) for value in values]
+            sparse_features[key] = FeatureArray(
+                np.array([v[0] for v in values]), number_of_dimensions=3
+            )
+
+    for key, values in _dense_features.items():
+        if consider_dialogue_dimension:
+            dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
+        else:
             dense_features[key] = FeatureArray(
-                np.array(features), number_of_dimensions=3
+                np.array([v[0] for v in values]), number_of_dimensions=3
             )
 
     attribute_to_feature_arrays = {
