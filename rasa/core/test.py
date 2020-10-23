@@ -360,7 +360,17 @@ def _collect_user_uttered_predictions(
     user_uttered_eval_store = EvaluationStore()
 
     intent_gold = event.intent.get("name")
-    predicted_intent = predicted.get(INTENT, {}).get("name")
+
+    # check for retrieval intents
+    if "/" in intent_gold:
+        try:
+            predicted_intent = predicted["response_selector"]["default"]["response"][
+                "intent_response_key"
+            ]
+        except:
+            predicted_intent = predicted.get(INTENT, {}).get("name")
+    else:
+        predicted_intent = predicted.get(INTENT, {}).get("name")
 
     user_uttered_eval_store.add_to_store(
         intent_predictions=[predicted_intent], intent_targets=[intent_gold]
@@ -374,6 +384,10 @@ def _collect_user_uttered_predictions(
             entity_targets=_clean_entity_results(event.text, entity_gold),
             entity_predictions=_clean_entity_results(event.text, predicted_entities),
         )
+
+    # update event intent
+    base_intent = event.intent.get("name").split("/")[0]
+    event.intent["name"] = base_intent
 
     if user_uttered_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
