@@ -625,10 +625,12 @@ class DialogueStateTracker:
             YAMLStoryWriter,
         )
 
-        append = not os.path.exists(export_path)
+        append = os.path.exists(export_path)
 
         rasa.shared.utils.io.write_text_file(
-            self.export_stories(YAMLStoryWriter()) + "\n", export_path, append=append
+            self.export_stories(YAMLStoryWriter(), should_append_stories=append) + "\n",
+            export_path,
+            append=append,
         )
 
     def get_last_event_for(
