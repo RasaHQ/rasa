@@ -529,6 +529,8 @@ class PikaEventBroker(EventBroker):
             self._channel.queue_declare(queue=queue, durable=True)
             self._channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
+        self._publish_unpublished_messages()
+
     def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
         self._channel = None
@@ -540,7 +542,27 @@ class PikaEventBroker(EventBroker):
             self._connection.ioloop.stop()
         self._run_pika_io_loop_in_thread()
 
+    def _publish_unpublished_messages(self) -> None:
+        while self._unpublished_messages:
+            # Send unpublished messages
+            message = self._unpublished_messages.popleft()
+            self._publish(message)
+            logger.debug(
+                f"Published message from queue of unpublished messages. "
+                f"Remaining unpublished messages: {len(self._unpublished_messages)}."
+            )
+
     def _publish(self, body: Text, headers: MessageHeaders = None) -> None:
+        if not self.is_connected and self.should_keep_unpublished_messages:
+            logger.warning(
+                f"RabbitMQ channel has not been assigned. Adding message to "
+                f"list of unpublished messages and trying to publish them "
+                f"later. Current number of unpublished messages is "
+                f"{len(self._unpublished_messages)}."
+            )
+            self._unpublished_messages.append(body)
+            return
+
         self._channel.basic_publish(
             exchange=RABBITMQ_EXCHANGE,
             routing_key="",
