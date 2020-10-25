@@ -2,7 +2,6 @@ from typing import Dict, Text, Any
 
 import rasa.shared.utils.io
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 
 
 class LanguageModelTokenizer(WhitespaceTokenizer):
@@ -20,5 +19,4 @@ class LanguageModelTokenizer(WhitespaceTokenizer):
             f"will be removed in the future. "
             f"It is recommended to use the '{WhitespaceTokenizer.__name__}' instead.",
             category=DeprecationWarning,
-            docs=DOCS_URL_MIGRATION_GUIDE,
         )

@@ -1,13 +1,16 @@
 import logging
-from typing import Any, Dict, List, Text, Tuple, Optional, Type
+from typing import Any, Dict, List, Text, Tuple, Optional
 
 from rasa.core.utils import get_dict_hash
 from rasa.nlu.model import Metadata
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token
+import rasa.shared.utils.io
 import rasa.utils.train_utils as train_utils
 import numpy as np
 
@@ -16,7 +19,6 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKEN_IDS,
     TOKENS,
-    TOKENS_NAMES,
     SENTENCE_FEATURES,
     SEQUENCE_FEATURES,
     NUMBER_OF_SUB_TOKENS,
@@ -43,6 +45,8 @@ class HFTransformersNLP(Component):
     is used to load pre-trained language models like BERT, GPT-2, etc.
     The component also tokenizes and featurizes dense featurizable attributes of each
     message.
+
+    This Component is deprecated; use the LanguageModelFeaturizer in its place.
     """
 
     defaults = {
@@ -55,10 +59,6 @@ class HFTransformersNLP(Component):
         "cache_dir": None,
     }
 
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [Tokenizer]
-
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -68,6 +68,14 @@ class HFTransformersNLP(Component):
 
         self._load_model_metadata()
         self._load_model_instance(skip_model_load)
+        self.whitespace_tokenizer = WhitespaceTokenizer()
+        rasa.shared.utils.io.raise_warning(
+            f"'{self.__class__.__name__}' is deprecated and "
+            f"will be removed in the future. "
+            f"It is recommended to use the '{LanguageModelFeaturizer.__name__}'"
+            f"instead.",
+            category=DeprecationWarning,
+        )
 
     def _load_model_metadata(self) -> None:
 
@@ -244,7 +252,7 @@ class HFTransformersNLP(Component):
 
         Many language models add a special char in front of (some) words and split
         words into sub-words. To ensure the entity start and end values matches the
-        token values, use the tokens produced by the Tokenizer component. If
+        token values, tokenize the text first using the whitespace tokenizer. If
         individual tokens are split up into multiple tokens, we add this information
         to the respected token.
 
@@ -258,7 +266,8 @@ class HFTransformersNLP(Component):
             message.
         """
 
-        tokens_in = message.get(TOKENS_NAMES[attribute])
+        tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
+
         tokens_out = []
 
         token_ids_out = []

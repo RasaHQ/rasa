@@ -6,14 +6,8 @@ import logging
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    NUMBER_OF_SUB_TOKENS,
-    LANGUAGE_MODEL_DOCS,
-    TOKEN_IDS,
-)
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.nlu.constants import TEXT
 
 
 @pytest.mark.parametrize(
@@ -485,58 +479,7 @@ def test_hf_transformers_edge_cases(
         tokens = whitespace_tokenizer.tokenize(message, TEXT)
         message.set(TOKENS_NAMES[TEXT], tokens)
         transformers_nlp.process(message)
-        token_ids = message.get(LANGUAGE_MODEL_DOCS[TEXT])[TOKEN_IDS]
 
         assert [t.text for t in tokens] == gt_tokens
         assert [t.start for t in tokens] == [i[0] for i in gt_indices]
         assert [t.end for t in tokens] == [i[1] for i in gt_indices]
-        assert len(token_ids) == gt_num_indices
-
-
-@pytest.mark.parametrize(
-    "text, expected_tokens",
-    [
-        ("Forecast_for_LUNCH", ["Forecast_for_LUNCH"]),
-        ("Forecast for LUNCH", ["Forecast for LUNCH"]),
-        ("Forecast+for+LUNCH", ["Forecast", "for", "LUNCH"]),
-    ],
-)
-@pytest.mark.skip_on_windows
-def test_hf_transformers_custom_intent_symbol(text, expected_tokens):
-
-    transformers_config = {"model_name": "bert"}  # Test for one should be enough
-
-    transformers_nlp = HFTransformersNLP(transformers_config)
-    whitespace_tokenizer = WhitespaceTokenizer()
-
-    message = Message.build(text=text)
-    message.set(INTENT, text)
-
-    td = TrainingData([message])
-
-    whitespace_tokenizer.train(td)
-    transformers_nlp.train(td)
-
-    assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
-
-
-@pytest.mark.parametrize(
-    "text, expected_number_of_sub_tokens",
-    [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
-)
-@pytest.mark.skip_on_windows
-def test_hf_transformers_number_of_sub_tokens(text, expected_number_of_sub_tokens):
-    transformers_config = {"model_name": "bert"}  # Test for one should be enough
-
-    transformers_nlp = HFTransformersNLP(transformers_config)
-    whitespace_tokenizer = WhitespaceTokenizer()
-
-    message = Message.build(text=text)
-
-    td = TrainingData([message])
-    whitespace_tokenizer.train(td)
-    transformers_nlp.train(td)
-
-    assert [
-        t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
-    ] == expected_number_of_sub_tokens
