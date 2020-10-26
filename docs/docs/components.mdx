@@ -2691,18 +2691,6 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | Requires `evaluate_on_number_of_examples > 0` and            |
 |                                 |                   | `evaluate_every_number_of_epochs > 0`                        |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| split_entities_by_comma         | True             | Splits a list of extracted entities by comma to treat each    |
-|                                 |                  | one of them as a single entity. Can either be `True`/`False   |
-|                                 |                  | globally, or set per entity type, such as:                    |
-|                                 |                  | ```                                                           |
-|                                 |                  | ...                                                           |
-|                                 |                  | - name: DIETClassifier                                        |
-|                                 |                  |   split_entities_by_comma:                                    |
-|                                 |                  |     address: True                                             |
-|                                 |                  |     ...                                                       |
-|                                 |                  | ...                                                           |
-|                                 |                  | ```                                                           |
-+---------------------------------+------------------+---------------------------------------------------------------+
 ```
 
 :::note
