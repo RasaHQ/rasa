@@ -2,6 +2,7 @@ import copy
 import os
 from typing import Optional, Text, List, Dict, Union, Tuple, Any, TYPE_CHECKING
 
+from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.core.constants import (
@@ -41,10 +42,9 @@ def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
     if not config_file:
-        raise ValueError(
-            "You have to provide a valid path to a config file. "
-            "The file '{}' could not be found."
-            "".format(os.path.abspath(config_file))
+        raise FileNotFoundException(
+            f"The provided configuration file path does not seem to be valid. "
+            f"The file '{os.path.abspath(config_file)}' could not be found."
         )
 
     config_data = {}

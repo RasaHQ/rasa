@@ -16,6 +16,26 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.0.2] - 2020-10-22
+                       
+
+### Bugfixes
+- [#6691](https://github.com/rasahq/rasa/issues/6691): Fix description of previous event in output of `rasa data validate stories`
+- [#7053](https://github.com/rasahq/rasa/issues/7053): Fixed command line coloring for windows command lines running an encoding other than `utf-8`.
+
+### Miscellaneous internal changes
+- [#7057](https://github.com/rasahq/rasa/issues/7057)
+
+
+## [2.0.1] - 2020-10-20
+                       
+
+### Bugfixes
+- [#7018](https://github.com/rasahq/rasa/issues/7018): Create correct `KafkaProducer` for `PLAINTEXT` and `SASL_SSL` security protocols.
+- [#7033](https://github.com/rasahq/rasa/issues/7033): - Fix `YAMLStoryReader` not being able to represent [`OR` statements](stories.mdx#or-statements) in conversion mode.
+  - Fix `MarkdownStoryWriter` not being able to write stories with `OR` statements (when loaded in conversion mode).
+
+
 ## [2.0.0] - 2020-10-07
                        
 
