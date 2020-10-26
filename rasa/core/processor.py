@@ -85,14 +85,14 @@ class MessageProcessor:
         """Handle a single message with this processor."""
 
         # preprocess message if 
-        with rasa.otel.tracer.start_span("log_message"):
+        with rasa.otel.start_span("log_message"):
             tracker = await self.log_message(message, should_save_tracker=False)
             if not tracker:
                 return None
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            with rasa.otel.tracer.start_span("save_tracker"):
+            with rasa.otel.start_span("save_tracker"):
                 self._save_tracker(tracker)
                 rasa.shared.utils.io.raise_warning(
                     "No policy ensemble or domain set. Skipping action prediction "
@@ -101,15 +101,15 @@ class MessageProcessor:
                 )
                 return None
 
-        with rasa.otel.tracer.start_span("_predict_and_execute_next_action", attributes={"intent_name": tracker.latest_message.intent_name}):
+        with rasa.otel.start_span("_predict_and_execute_next_action", attributes={"intent_name": tracker.latest_message.intent_name}):
             await self._predict_and_execute_next_action(message.output_channel, tracker)
 
         # save tracker state to continue conversation from this state
-        with rasa.otel.tracer.start_span("save_tracker"):
+        with rasa.otel.start_span("save_tracker"):
             self._save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
-            with rasa.otel.tracer.start_span("output_channel"):
+            with rasa.otel.start_span("output_channel"):
                 return message.output_channel.messages
         else:
             return None
@@ -492,7 +492,7 @@ class MessageProcessor:
         """
         # preprocess message if necessary
         if self.message_preprocessor is not None:
-            with rasa.otel.tracer.start_span("message_preprocessor"):
+            with rasa.otel.start_span("message_preprocessor"):
                 text = self.message_preprocessor(message.text)
         else:
             text = message.text
@@ -501,12 +501,12 @@ class MessageProcessor:
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
         if text.startswith(INTENT_MESSAGE_PREFIX):
-            with rasa.otel.tracer.start_span("RegexInterpreter.parse"):
+            with rasa.otel.start_span("RegexInterpreter.parse"):
                 parse_data = await RegexInterpreter().parse(
                     text, message.message_id, tracker
                 )
         else:
-            with rasa.otel.tracer.start_span("interpreter.parse"):
+            with rasa.otel.start_span("interpreter.parse"):
                 parse_data = await self.interpreter.parse(
                     text, message.message_id, tracker, metadata=message.metadata
                 )
@@ -518,7 +518,7 @@ class MessageProcessor:
             )
         )
 
-        with rasa.otel.tracer.start_span("_check_for_unseen_features"):
+        with rasa.otel.start_span("_check_for_unseen_features"):
             self._check_for_unseen_features(parse_data)
 
         return parse_data
@@ -530,7 +530,7 @@ class MessageProcessor:
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            with rasa.otel.tracer.start_span("parse_message"):
+            with rasa.otel.start_span("parse_message"):
                 parse_data = await self.parse_message(message, tracker)
 
         # don't ever directly mutate the tracker
@@ -594,7 +594,7 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
-            with rasa.otel.tracer.start_span("predict_next_action"):
+            with rasa.otel.start_span("predict_next_action"):
                 action, policy, confidence = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
@@ -714,8 +714,8 @@ class MessageProcessor:
             if action.name() == ACTION_SESSION_START_NAME:
                 action.metadata = metadata
             if rasa.otel.tracer:
-                action_tracer = rasa.otel.Tracer("action")
-                with action.tracer.start_span("run_action"):
+                #action_tracer = rasa.otel.Tracer("jaeger", "action", "localhost", 6831)
+                with rasa.otel.start_span("run_action"):
                     events = await action.run(output_channel, nlg, tracker, self.domain)
             else:
                 events = await action.run(output_channel, nlg, tracker, self.domain)

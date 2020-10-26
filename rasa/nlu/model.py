@@ -395,7 +395,7 @@ class Interpreter:
         message = Message(data=data, time=time)
 
         for component in self.pipeline:
-            with rasa.otel.tracer.start_span(component.name):
+            with rasa.otel.start_span(component.name):
                 component.process(message, **self.context)
 
         output = self.default_output_attributes()
@@ -413,7 +413,7 @@ class Interpreter:
 
         for component in self.pipeline:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
-                with rasa.otel.tracer.start_span(component.name):
+                with rasa.otel.start_span(component.name):
 
                     component.process(message, **self.context)
         return message

@@ -82,8 +82,8 @@ def register(
     input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]
 ) -> None:
     async def handler(*args, **kwargs):
-        with rasa.otel.tracer.start_span("channel.handler", attributes={"channel": args[0].input_channel, "sender_id": args[0].sender_id, "message_id": args[0].message_id}):
-        #with rasa.otel.tracer.start_span("channel.handler"):
+        with rasa.otel.start_span(f"channel.{args[0].input_channel}", attributes={"channel": args[0].input_channel, "sender_id": args[0].sender_id, "message_id": args[0].message_id}):
+        #with rasa.otel.start_span("channel.handler"):
             await app.agent.handle_message(*args, **kwargs)
 
     for channel in input_channels:

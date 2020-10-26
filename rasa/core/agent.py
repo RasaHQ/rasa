@@ -524,10 +524,10 @@ class Agent:
 
         processor = self.create_processor(message_preprocessor)
 
-        with rasa.otel.tracer.start_span("lock_store", attributes={"channel": message.input_channel, "sender_id": message.sender_id, "message_id": message.message_id}):
-        #with rasa.otel.tracer.start_span("lock_store"):
+        with rasa.otel.start_span("lock_store", attributes={"channel": message.input_channel, "sender_id": message.sender_id, "message_id": message.message_id}):
+        #with rasa.otel.start_span("lock_store"):
             async with self.lock_store.lock(message.sender_id):
-                with rasa.otel.tracer.start_span("handle_message"):
+                with rasa.otel.start_span("handle_message"):
                     return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal
