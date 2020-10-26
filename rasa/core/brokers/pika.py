@@ -276,18 +276,16 @@ class PikaMessageProcessor:
         self.queues: List[Text] = self._get_queues_from_args(queues, kwargs)
         self.get_message: Callable[[], Message] = get_message
 
-        self._connection: Optional["SelectConnection"] = None
-        self._channel: Optional["Channel"] = None
-        self._closing = False
+        self.pika_connection: Optional["SelectConnection"] = None
+        self.channel: Optional["Channel"] = None
 
     def __del__(self) -> None:
-        if self._channel:
-            logger.warning("Closing connection...")
-            close_pika_channel(self._channel)
-            close_pika_connection(self._channel.connection)
+        if self.channel:
+            close_pika_channel(self.channel)
+            close_pika_connection(self.channel.connection)
 
         if self.is_connected:
-            self._connection.close()
+            self.pika_connection.close()
 
     def close(self) -> None:
         """Close the Pika connection."""
@@ -388,20 +386,24 @@ class PikaMessageProcessor:
     @property
     def is_connected(self) -> bool:
         """Indicates if Pika is connected and the channel is initialized.
+
         Returns:
             A boolean value indicating if the connection is established.
         """
-        return self._connection and self._channel
+        return self.pika_connection and self.pika_connection.is_open and self.channel
 
     def is_ready(
         self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
     ) -> bool:
         """Spin until the connector is ready to process messages.
+
         It typically takes 50 ms or so for the pika channel to open. We'll wait up
         to 10 seconds just in case.
+
         Args:
             attempts: Number of retries.
             wait_time_between_attempts_in_seconds: Wait time between retries.
+
         Returns:
             `True` if the channel is available, `False` otherwise.
         """
@@ -413,17 +415,18 @@ class PikaMessageProcessor:
 
         return False
 
-    def _connect(self) -> "SelectConnection":
+    def connect(self):
         """Establish a connection to Pika."""
-        return initialise_pika_select_connection(
+        self.pika_connection = initialise_pika_select_connection(
             self.parameters, self._on_open_connection, self._on_open_connection_error
         )
+        # noinspection PyUnresolvedReferences
+        self.pika_connection.ioloop.start()
 
     def _on_open_connection(self, connection: "SelectConnection") -> None:
         logger.debug(
             f"RabbitMQ connection to '{self.parameters.host}' was established."
         )
-        connection.add_on_close_callback(self._on_connection_closed)
         connection.channel(on_open_callback=self._on_channel_open)
 
     def _on_open_connection_error(self, _, error: Text) -> None:
@@ -431,49 +434,23 @@ class PikaMessageProcessor:
             f"Connecting to '{self.parameters.host}' failed with error '{error}'. Trying again."
         )
 
-    def _on_connection_closed(self, _, reason: Any):
-        self._channel = None
-        if self._closing:
-            # noinspection PyUnresolvedReferences
-            self._connection.ioloop.stop()
-        else:
-            logger.warning(f"Connection closed, reopening in 5 seconds: {reason}")
-            # noinspection PyUnresolvedReferences
-            self._connection.ioloop.call_later(5, self._reconnect)
-
-    def _reconnect(self):
-        # noinspection PyUnresolvedReferences
-        self._connection.ioloop.stop()
-
-        if not self._closing:
-            self._connection = self._connect()
-            # noinspection PyUnresolvedReferences
-            self._connection.ioloop.start()
-
     def _on_channel_open(self, channel: "Channel") -> None:
         logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
 
-        self._channel = channel
-        self._channel.add_on_close_callback(self._on_channel_closed)
-
         # declare exchange of type 'fanout' in order to publish to multiple queues
         # (https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
-        self._channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
+        channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
 
         for queue in self.queues:
-            self._channel.queue_declare(queue=queue, durable=True)
-            self._channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
+            channel.queue_declare(queue=queue, durable=True)
+            channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
-        self.process_messages()
-
-    def _on_channel_closed(self, channel: "Channel", reason: Any):
-        logger.warning(f"Channel {channel} was closed: {reason}")
-        self._connection.close()
+        self.channel = channel
 
     def _publish(self, message: Message) -> None:
         body, headers = message
 
-        self._channel.basic_publish(
+        self.channel.basic_publish(
             exchange=RABBITMQ_EXCHANGE,
             routing_key="",
             body=body.encode(DEFAULT_ENCODING),
@@ -481,7 +458,12 @@ class PikaMessageProcessor:
         )
 
     def process_messages(self) -> None:
-        """Start to process messages."""
+        """Start to process messages. This process is indefinite thus it should
+        be started in a separate process.
+        """
+        if not self.is_ready():
+            logger.warning("RabbitMQ channel cannot be opened.")
+            return
 
         try:
             while True:
@@ -497,17 +479,6 @@ class PikaMessageProcessor:
                 "Pika message queue of worker was closed. Stopping to listen for more "
                 "messages on this worker."
             )
-
-    def run(self):
-        """Run the message processor by connecting to RabbitMQ and then
-        starting the IOLoop to block and allow the SelectConnection to operate.
-        This function is blocking and indefinite thus it
-        should be started in a separate process.
-        """
-        self._connection = self._connect()
-
-        # noinspection PyUnresolvedReferences
-        self._pika_connection.ioloop.start()
 
 
 class PikaEventBroker(EventBroker):
@@ -614,34 +585,38 @@ class PikaEventBroker(EventBroker):
     def _get_mp_context(self) -> multiprocessing.context.BaseContext:
         return multiprocessing.get_context(self.MP_CONTEXT)
 
-    def _start_pika_process(self) -> Optional[multiprocessing.Process]:
-        if self.pika_message_processor:
-            process = multiprocessing.Process(
-                target=self.pika_message_processor.run, daemon=True
-            )
-            process.start()
-            return process
+    def _start_pika_process(self) -> multiprocessing.Process:
+        if not self.pika_message_processor.is_connected:
+            self.pika_message_processor.connect()
 
-        return None
+        process = multiprocessing.Process(
+            target=self.pika_message_processor.process_messages, args=(), daemon=True
+        )
+        process.start()
+        return process
 
     def _publish(self, body: Text, headers: MessageHeaders = None) -> None:
         if not self.pika_message_processor:
             self._connect()
 
         if (
-            self.process and self.process.is_alive()
-        ) or self.should_keep_unpublished_messages:
+            self.pika_message_processor.is_connected
+            or self.should_keep_unpublished_messages
+        ):
             self.process_queue.put((body, headers))
 
     def is_ready(
         self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
     ) -> bool:
         """Spin until Pika is ready to process messages.
+
         It typically takes 50 ms or so for the pika channel to open. We'll wait up
         to 10 seconds just in case.
+
         Args:
             attempts: Number of retries.
             wait_time_between_attempts_in_seconds: Wait time between retries.
+
         Returns:
             `True` if the channel is available, `False` otherwise.
         """
@@ -657,6 +632,7 @@ class PikaEventBroker(EventBroker):
         headers: Optional[Dict[Text, Text]] = None,
     ) -> None:
         """Publish `event` into Pika queue.
+
         Args:
             event: Serialised event to be published.
             retries: Number of retries if publishing fails
@@ -676,7 +652,7 @@ class PikaEventBroker(EventBroker):
                     f"Could not open Pika channel at host '{self.host}'. "
                     f"Failed with error: {e}"
                 )
-                self.close()
+                self.pika_message_processor = None
                 if self.raise_on_failure:
                     raise e
 
