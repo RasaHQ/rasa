@@ -22,7 +22,7 @@ from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, EN
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
-from rasa.shared.constants import DIAGNOSTIC_DATA, ATTENTION_WEIGHTS
+from rasa.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -857,5 +857,5 @@ class TED(TransformerRasaModel):
 
         return {
             "action_scores": scores,
-            DIAGNOSTIC_DATA: {ATTENTION_WEIGHTS: attention_weights},
+            DIAGNOSTIC_DATA: {"attention_weights": attention_weights},
         }

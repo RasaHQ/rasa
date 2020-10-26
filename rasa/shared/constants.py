@@ -72,6 +72,3 @@ DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
 DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
-
-DIAGNOSTIC_DATA = "diagnostic_data"
-ATTENTION_WEIGHTS = "attention_weights"
