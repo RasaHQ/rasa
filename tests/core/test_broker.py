@@ -13,7 +13,6 @@ from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import (
     PikaEventBroker,
-    PikaMessageProcessor,
     DEFAULT_QUEUE_NAME,
 )
 from rasa.core.brokers.sql import SQLEventBroker
