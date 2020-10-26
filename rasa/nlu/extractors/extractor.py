@@ -114,11 +114,14 @@ class EntityExtractor(Component):
 
         return filtered
 
-    def convert_predictions_into_entities(self, text: Text,
-                                          tokens: List[Token], tags: Dict[Text, List[Text]],
-                                          split_entities_config: Dict[Text, bool] = None,
-                                          confidences: Optional[Dict[Text, List[float]]] = None
-                                ) -> List[Dict[Text, Any]]:
+    def convert_predictions_into_entities(
+        self,
+        text: Text,
+        tokens: List[Token],
+        tags: Dict[Text, List[Text]],
+        split_entities_config: Dict[Text, bool] = None,
+        confidences: Optional[Dict[Text, List[float]]] = None,
+    ) -> List[Dict[Text, Any]]:
         """
         Convert predictions into entities.
 
@@ -286,7 +289,9 @@ class EntityExtractor(Component):
         interleaving_text = text[last_token_end : token.start]
         tokens_separated_by_allowed_chars = all(
             filter(
-                lambda char: True if char in SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET else False,
+                lambda char: True
+                if char in SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET
+                else False,
                 interleaving_text,
             )
         )
