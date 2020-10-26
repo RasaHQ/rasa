@@ -3,7 +3,6 @@ import logging
 import os
 import sys
 import time
-import typing
 import multiprocessing
 from contextlib import contextmanager
 from typing import (
@@ -16,6 +15,7 @@ from typing import (
     List,
     Tuple,
     Generator,
+    typing,
 )
 
 from rasa.constants import (
