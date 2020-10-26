@@ -15,6 +15,10 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
 
 
+class CustomRedisLockStore(RedisLockStore):
+    """Test class used to test the behavior of custom lock stores."""
+
+
 def test_is_int():
     assert utils.is_int(1)
     assert utils.is_int(1.0)
@@ -132,8 +136,10 @@ def test_replace_decimals_with_floats(_input: Any, expected: Any):
         (5, "in_memory", 1),
         (2, None, 1),
         (0, "in_memory", 1),
+        (3, "tests/core/test_utils.CustomRedisLockStore", 3),
         (3, RedisLockStore(), 3),
         (2, InMemoryLockStore(), 1),
+        (3, CustomRedisLockStore(), 3),
     ],
 )
 def test_get_number_of_sanic_workers(
@@ -168,16 +174,19 @@ def test_get_number_of_sanic_workers(
         (EndpointConfig(type="redis"), True),
         (RedisLockStore(), True),
         (EndpointConfig(type="in_memory"), False),
-        (EndpointConfig(type="random_store"), False),
+        (EndpointConfig(type="custom_lock_store"), True),
         (None, False),
         (InMemoryLockStore(), False),
+        (CustomRedisLockStore(), True),
     ],
 )
-def test_lock_store_is_redis_lock_store(
+def test_lock_store_is_multi_worker_compatible(
     lock_store: Union[EndpointConfig, LockStore, None], expected: bool
 ):
     # noinspection PyProtectedMember
-    assert rasa.core.utils._lock_store_is_redis_lock_store(lock_store) == expected
+    assert (
+        rasa.core.utils._lock_store_is_multi_worker_compatible(lock_store) == expected
+    )
 
 
 def test_read_endpoints_from_path(tmp_path: Path):

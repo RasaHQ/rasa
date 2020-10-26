@@ -271,7 +271,7 @@ def test_deprecated_pickle_deserialisation():
         assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
     assert len(record) == 1
     assert (
-        "Deserialisation of pickled trackers is deprecated" in record[0].message.args[0]
+        "Deserialization of pickled trackers is deprecated" in record[0].message.args[0]
     )
 
 
