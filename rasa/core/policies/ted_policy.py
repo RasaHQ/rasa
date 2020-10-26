@@ -748,14 +748,31 @@ class TED(TransformerRasaModel):
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
-        # TODO transform back to original 4D shape
-
         if self.max_history_tracker_featurizer_used:
             # pick last vector if max history featurizer is used
             dialogue_transformed = tf.expand_dims(
-                self._last_token(dialogue_transformed, sequence_lengths), 1
+                self._last_token(dialogue_transformed, tf.squeeze(sequence_lengths)), 1
             )
-            mask = tf.expand_dims(self._last_token(mask, sequence_lengths), 1)
+            mask = tf.expand_dims(
+                self._last_token(mask, tf.squeeze(sequence_lengths)), 1
+            )
+
+        # transform dialogue tensor back to original 4D shape
+        indices = []
+        for batch_dim in range(dialogue_3d_lengths.shape[0]):
+            for dialogue_dim in range(dialogue_3d_lengths.shape[1]):
+                if dialogue_3d_lengths[batch_dim][dialogue_dim] > 0:
+                    indices.append([batch_dim, dialogue_dim])
+        indices = tf.constant(indices)
+        shape = tf.constant(
+            [
+                dialogue_3d_lengths.shape[0],
+                dialogue_3d_lengths.shape[1],
+                dialogue_transformed.shape[1],
+                dialogue_transformed.shape[2],
+            ]
+        )
+        dialogue_transformed = tf.scatter_nd(indices, dialogue_transformed, shape)
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
