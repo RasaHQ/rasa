@@ -306,10 +306,9 @@ class YAMLStoryReader(StoryReader):
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
         # check if this is a retrieval intent
-        # TODO: should this also check if the response key is correct?
-        # since it is not specified in the domain
-        if "/" in intent_name:
-            intent_name = intent_name.split("/")[0]
+        # in this case check only for the base intent in domain
+        if INTENT_MESSAGE_PREFIX in intent_name:
+            intent_name = intent_name.split(INTENT_MESSAGE_PREFIX)[0]
 
         if not self.domain:
             logger.debug(

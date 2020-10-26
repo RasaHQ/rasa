@@ -28,6 +28,7 @@ from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -351,6 +352,10 @@ def _clean_entity_results(
     return cleaned_entities
 
 
+def intent_response_key_from_parsed_data(parsed: Dict[Text, Any]) -> Text:
+    return parsed["response_selector"]["default"]["response"]["intent_response_key"]
+
+
 def _collect_user_uttered_predictions(
     event: UserUttered,
     predicted: Dict[Text, Any],
@@ -361,12 +366,10 @@ def _collect_user_uttered_predictions(
 
     intent_gold = event.intent.get("name")
 
-    # check for retrieval intents
-    if "/" in intent_gold:
+    # check if retrieval intent is specified
+    if INTENT_MESSAGE_PREFIX in intent_gold:
         try:
-            predicted_intent = predicted["response_selector"]["default"]["response"][
-                "intent_response_key"
-            ]
+            predicted_intent = intent_response_key_from_parsed_data(predicted)
         except:
             predicted_intent = predicted.get(INTENT, {}).get("name")
     else:
@@ -386,7 +389,8 @@ def _collect_user_uttered_predictions(
         )
 
     # update event intent
-    base_intent = event.intent.get("name").split("/")[0]
+    # TODO: find a better place for this, we still want to accress full retrieval intent
+    base_intent = event.intent.get("name").split(INTENT_MESSAGE_PREFIX)[0]
     event.intent["name"] = base_intent
 
     if user_uttered_eval_store.has_prediction_target_mismatch():
@@ -560,7 +564,8 @@ async def _predict_tracker_actions(
             # Indirectly that means that the test story was in YAML format.
             if not event.text:
                 predicted = event.parse_data
-            # Indirectly that means that the test story was in Markdown format.
+            # Indirectly that means that the test story was either:
+            # in YAML format containing a user message, or in Markdown format.
             # Leaving that as it is because Markdown is in legacy mode.
             else:
                 predicted = await processor.parse_message(UserMessage(event.text))
