@@ -25,6 +25,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
+    SPLIT_ENTITIES_BY_COMMA,
 )
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
@@ -138,6 +139,13 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._validate_configuration()
 
+        split_entities_config = self.component_config[SPLIT_ENTITIES_BY_COMMA]
+        if isinstance(split_entities_config, bool):
+            split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
+        else:
+            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[SPLIT_ENTITIES_BY_COMMA]
+        self.split_entities_config = split_entities_config
+
     def _validate_configuration(self) -> None:
         if len(self.component_config.get("features", [])) % 2 != 1:
             raise ValueError(
@@ -220,7 +228,7 @@ class CRFEntityExtractor(EntityExtractor):
         tags, confidences = self._tag_confidences(tokens, predictions)
 
         return self.convert_predictions_into_entities(
-            message.get(TEXT), tokens, tags, confidences
+            message.get(TEXT), tokens, tags, confidences, self.split_entities_config
         )
 
     def _add_tag_to_crf_token(
