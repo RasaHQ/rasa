@@ -11,6 +11,7 @@ from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
 
 import rasa.core
+from rasa.exceptions import ModelNotFound
 import rasa.shared.utils.common
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -149,7 +150,7 @@ def test_agent_wrong_use_of_load():
         "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ModelNotFound):
         # try to load a model file from a data path, which is nonsense and
         # should fail properly
         agent.load(training_data_file)
@@ -396,5 +397,5 @@ async def test_load_agent_on_not_existing_path():
     ],
 )
 async def test_agent_load_on_invalid_model_path(model_path: Optional[Text]):
-    with pytest.raises(ValueError):
+    with pytest.raises(ModelNotFound):
         Agent.load(model_path)
