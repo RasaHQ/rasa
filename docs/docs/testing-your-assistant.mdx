@@ -3,7 +3,7 @@ id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
 abstract: Rasa Open Source lets you test dialogues end-to-end by running through
-  test stories. In addition to full test conversations, you can
+  test stories. In addition, you can
   also test the dialogue management and the message processing (NLU)
   separately.
 ---
@@ -62,7 +62,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml" {5,9,14,20}
   stories:
-  - story: A test conversation with a form
+  - story: A test story with a form
     steps:
     - user: |
         hi
@@ -90,7 +90,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml" {5,9,14,21}
   stories:
-  - story: A test conversation with unexpected input during a form
+  - story: A test story with unexpected input during a form
     steps:
     - user: |
         hi
