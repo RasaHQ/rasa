@@ -218,7 +218,7 @@ def prepare_namespace_and_mocked_tracker_store_with_events(
     # mock tracker store
     tracker_store = Mock()
     tracker_store.keys.return_value = all_conversation_ids
-    tracker_store.retrieve.side_effect = _get_tracker
+    tracker_store.retrieve_full_tracker.side_effect = _get_tracker
 
     monkeypatch.setattr(export, "_get_tracker_store", lambda _: tracker_store)
 
