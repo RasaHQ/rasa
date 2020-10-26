@@ -17,9 +17,10 @@ from typing import (
 
 from rasa.cli import utils as cli_utils
 from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
+from rasa.shared.exceptions import RasaException
 
 try:
-    from urlparse import urljoin  # pytype: disable=import-error
+    from urlparse import urljoin
 except ImportError:
     from urllib.parse import urljoin
 
@@ -117,7 +118,7 @@ class InputChannel:
 
     @classmethod
     def raise_missing_credentials_exception(cls) -> NoReturn:
-        raise Exception(
+        raise RasaException(
             f"To use the {cls.name()} input channel, you need to "
             f"pass a credentials file using '--credentials'. "
             f"The argument should be a file path pointing to "
@@ -318,7 +319,7 @@ class CollectingOutputChannel(OutputChannel):
             return None
 
     async def _persist_message(self, message: Dict[Text, Any]) -> None:
-        self.messages.append(message)  # pytype: disable=bad-return-type
+        self.messages.append(message)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any

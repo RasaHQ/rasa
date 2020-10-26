@@ -13,6 +13,10 @@ class RasaXTermsError(RasaException):
     """Error in case the user didn't accept the Rasa X terms."""
 
 
+class InvalidParameterException(RasaException, ValueError):
+    """Raised when an invalid parameter is used."""
+
+
 class YamlException(RasaException):
     """Raised if there is an error reading yaml."""
 
@@ -57,3 +61,11 @@ class YamlSyntaxException(YamlException):
             "YAML syntax of your file."
         )
         return exception_text
+
+
+class FileNotFoundException(RasaException, FileNotFoundError):
+    """Raised when a file, expected to exist, doesn't exist."""
+
+
+class FileIOException(RasaException):
+    """Raised if there is an error while doing file IO."""
