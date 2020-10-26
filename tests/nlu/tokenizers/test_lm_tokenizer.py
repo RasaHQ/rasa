@@ -403,7 +403,7 @@ def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
 
 @pytest.mark.parametrize(
     "text, expected_number_of_sub_tokens",
-    [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
+    [("sentence embeddings", [1, 2]), ("this is a test", [1, 1, 1, 1])],
 )
 @pytest.mark.skip_on_windows
 def test_lm_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
