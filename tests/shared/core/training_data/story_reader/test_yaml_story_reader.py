@@ -3,7 +3,7 @@ from typing import Text, List
 
 import pytest
 
-from rasa.shared.exceptions import YamlSyntaxException
+from rasa.shared.exceptions import FileNotFoundException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core import training
@@ -316,7 +316,7 @@ def test_is_not_test_story_file_if_it_doesnt_contain_stories(tmp_path: Path):
 
 def test_is_not_test_story_file_raises_if_file_does_not_exist(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundException):
         YAMLStoryReader.is_test_stories_file(path)
 
 
@@ -359,3 +359,35 @@ def test_read_mixed_training_data_file(default_domain: Domain):
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
         assert not len(record)
+
+
+def test_or_statement_if_not_training_mode():
+    stories = """
+    stories:
+    - story: hello world
+      steps:
+      - or:
+        - intent: intent1
+        - intent: intent2
+      - action: some_action
+      - intent: intent3
+      - action: other_action
+    """
+
+    reader = YAMLStoryReader(is_used_for_training=False)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    assert len(steps) == 1
+
+    assert len(steps[0].events) == 4  # 4 events in total
+    assert len(steps[0].start_checkpoints) == 1
+    assert steps[0].start_checkpoints[0].name == "STORY_START"
+    assert steps[0].end_checkpoints == []
+
+    or_statement = steps[0].events[0]
+    assert isinstance(or_statement, list)  # But first one is a list (OR)
+
+    assert or_statement[0].intent["name"] == "intent1"
+    assert or_statement[1].intent["name"] == "intent2"
