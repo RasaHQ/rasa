@@ -283,7 +283,7 @@ class EntityExtractor(Component):
         interleaving_text = text[last_token_end : token.start]
         tokens_separated_by_allowed_chars = all(
             filter(
-                lambda char: True if char in {".", ",", " "} else False,
+                lambda char: True if char in SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET else False,
                 interleaving_text,
             )
         )
@@ -293,8 +293,6 @@ class EntityExtractor(Component):
         split_current_entity_type = split_entities_config.get(
             current_entity_tag, default_value
         )
-
-        # matching_entity_types = True # TODO: Check the current entity tag matches the pre-configured one form current_entitiy_tag and the split_entities_config dict
 
         return (
             tokens_within_range
