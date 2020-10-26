@@ -24,7 +24,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
-    SPLIT_ENTITIES_BY_COMMA
+    SPLIT_ENTITIES_BY_COMMA,
 )
 
 
@@ -120,7 +120,7 @@ class EntityExtractor(Component):
         tokens: List[Token],
         tags: Dict[Text, List[Text]],
         confidences: Optional[Dict[Text, List[float]]] = None,
-        split_entities_config: Optional[Dict[Text, bool]] = None
+        split_entities_config: Optional[Dict[Text, bool]] = None,
     ) -> List[Dict[Text, Any]]:
         """
         Convert predictions into entities.
@@ -211,7 +211,9 @@ class EntityExtractor(Component):
                 if confidences is not None:
                     self._update_confidence_values(entities, confidences, idx)
 
-            elif self._check_is_single_entity(text, token, last_token_end, split_entities_config, current_entity_tag):
+            elif self._check_is_single_entity(
+                text, token, last_token_end, split_entities_config, current_entity_tag
+            ):
                 # current token has the same entity tag as the token before and
                 # the two tokens are separated by at most 3 symbols, where each
                 # of the symbols has to bei either punctuation (e.g. "." or ",")
@@ -267,24 +269,38 @@ class EntityExtractor(Component):
             )
 
     @staticmethod
-    def _check_is_single_entity(text: Text, token: Token, last_token_end: int,
-                                split_entities_config: Dict[Text, bool], current_entity_tag: Text):
+    def _check_is_single_entity(
+        text: Text,
+        token: Token,
+        last_token_end: int,
+        split_entities_config: Dict[Text, bool],
+        current_entity_tag: Text,
+    ):
         # Tokens need to be no further than 3 positions apart
         tokens_within_range = token.start - last_token_end <= 3
 
         # The interleaving tokens *must* be a full stop, a comma, or a whitespace
-        interleaving_text = text[last_token_end:token.start]
+        interleaving_text = text[last_token_end : token.start]
         tokens_separated_by_allowed_chars = all(
-            filter(lambda char: True if char in {'.', ',', ' '} else False, interleaving_text)
+            filter(
+                lambda char: True if char in {".", ",", " "} else False,
+                interleaving_text,
+            )
         )
 
         # The current entity type must match with the config (default value is True)
         default_value = split_entities_config[SPLIT_ENTITIES_BY_COMMA]
-        split_current_entity_type = split_entities_config.get(current_entity_tag, default_value)
+        split_current_entity_type = split_entities_config.get(
+            current_entity_tag, default_value
+        )
 
-        #matching_entity_types = True # TODO: Check the current entity tag matches the pre-configured one form current_entitiy_tag and the split_entities_config dict
+        # matching_entity_types = True # TODO: Check the current entity tag matches the pre-configured one form current_entitiy_tag and the split_entities_config dict
 
-        return (tokens_within_range and tokens_separated_by_allowed_chars and not split_current_entity_type)
+        return (
+            tokens_within_range
+            and tokens_separated_by_allowed_chars
+            and not split_current_entity_type
+        )
 
     @staticmethod
     def get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text:

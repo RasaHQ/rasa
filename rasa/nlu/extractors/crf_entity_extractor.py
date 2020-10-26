@@ -143,7 +143,9 @@ class CRFEntityExtractor(EntityExtractor):
         if isinstance(split_entities_config, bool):
             split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
         else:
-            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[SPLIT_ENTITIES_BY_COMMA]
+            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[
+                SPLIT_ENTITIES_BY_COMMA
+            ]
         self.split_entities_config = split_entities_config
 
     def _validate_configuration(self) -> None:

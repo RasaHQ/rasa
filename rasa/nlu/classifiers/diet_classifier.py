@@ -34,7 +34,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
-    SPLIT_ENTITIES_BY_COMMA
+    SPLIT_ENTITIES_BY_COMMA,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -334,7 +334,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if isinstance(split_entities_config, bool):
             split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
         else:
-            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[SPLIT_ENTITIES_BY_COMMA]
+            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[
+                SPLIT_ENTITIES_BY_COMMA
+            ]
         self.split_entities_config = split_entities_config
 
     @property
@@ -864,7 +866,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.get(TOKENS_NAMES[TEXT], []),
             predicted_tags,
             confidence_values,
-            self.split_entities_config
+            self.split_entities_config,
         )
 
         entities = self.add_extractor_name(entities)
