@@ -439,6 +439,8 @@ class PikaEventBroker(EventBroker):
         self._run_pika_io_loop_in_thread()
 
     def _connect(self) -> None:
+        import pika
+
         parameters = _get_pika_parameters(
             self.host, self.username, self.password, self.port
         )
