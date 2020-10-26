@@ -114,14 +114,11 @@ class EntityExtractor(Component):
 
         return filtered
 
-    def convert_predictions_into_entities(
-        self,
-        text: Text,
-        tokens: List[Token],
-        tags: Dict[Text, List[Text]],
-        confidences: Optional[Dict[Text, List[float]]] = None,
-        split_entities_config: Optional[Dict[Text, bool]] = None,
-    ) -> List[Dict[Text, Any]]:
+    def convert_predictions_into_entities(self, text: Text,
+                                          tokens: List[Token], tags: Dict[Text, List[Text]],
+                                          split_entities_config: Dict[Text, bool] = None,
+                                          confidences: Optional[Dict[Text, List[float]]] = None
+                                ) -> List[Dict[Text, Any]]:
         """
         Convert predictions into entities.
 
@@ -129,6 +126,7 @@ class EntityExtractor(Component):
             text: The text message.
             tokens: Message tokens without CLS token.
             tags: Predicted tags.
+            split_entities_config: config for handling splitting a list of entities
             confidences: Confidences of predicted tags.
 
         Returns:
@@ -225,7 +223,8 @@ class EntityExtractor(Component):
             else:
                 # the token has the same entity tag as the token before but the two
                 # tokens are separated by at least 2 symbols (e.g. multiple spaces,
-                # a comma and a space, etc.)
+                # a comma and a space, etc.) and also shouldn't be represented as a
+                # single entity
                 entity = self._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
@@ -277,6 +276,10 @@ class EntityExtractor(Component):
         current_entity_tag: Text,
     ):
         # Tokens need to be no further than 3 positions apart
+        # The magic number 3 is chosen such that the following two cases can be extracted
+        #   - Schönhauser Allee 175, 10119 Berlin (address compounds separated by 2 tokens (", "))
+        #   - 22 Powderhall Rd., EH7 4GB (abbreviated "Rd." results in a separation of 3 tokens ("., "))
+        # More than 3 might already introduce cases that shouldn't be considered by this logic
         tokens_within_range = token.start - last_token_end <= 3
 
         # The interleaving tokens *must* be a full stop, a comma, or a whitespace

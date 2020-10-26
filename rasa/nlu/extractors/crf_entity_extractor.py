@@ -229,9 +229,8 @@ class CRFEntityExtractor(EntityExtractor):
         # convert predictions into a list of tags and a list of confidences
         tags, confidences = self._tag_confidences(tokens, predictions)
 
-        return self.convert_predictions_into_entities(
-            message.get(TEXT), tokens, tags, confidences, self.split_entities_config
-        )
+        return self.convert_predictions_into_entities(message.get(TEXT), tokens, tags, self.split_entities_config,
+                                                      confidences)
 
     def _add_tag_to_crf_token(
         self,
