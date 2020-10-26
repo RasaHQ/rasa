@@ -255,15 +255,14 @@ MessageHeaders = Optional[Dict[Text, Text]]
 Message = Tuple[Text, MessageHeaders]
 
 
-class PikaMessageProcessor:
-    """A class that holds all the Pika connection details and processes Pika messages."""
+class PikaEventBroker(EventBroker):
+    """Pika-based event broker for publishing messages to RabbitMQ."""
 
     def __init__(
         self,
         parameters: "Parameters",
         get_message: Callable[[], Message],
         queues: Union[List[Text], Tuple[Text], Text, None],
-        **kwargs: Any,
     ) -> None:
         """Initialise Pika connector.
 
@@ -271,9 +270,10 @@ class PikaMessageProcessor:
             parameters: Pika connection parameters
             queues: Pika queues to declare and publish to
         """
+        logging.getLogger("pika").setLevel(log_level)
 
         self.parameters: "Parameters" = parameters
-        self.queues: List[Text] = self._get_queues_from_args(queues, kwargs)
+        self.queues: List[Text] = self._get_queues_from_args(queues)
         self.get_message: Callable[[], Message] = get_message
 
         self.pika_connection: Optional["SelectConnection"] = None
@@ -420,7 +420,6 @@ class PikaMessageProcessor:
         self.pika_connection = initialise_pika_select_connection(
             self.parameters, self._on_open_connection, self._on_open_connection_error
         )
-        logger.error(f"IOLOOP: {type(self.pika_connection.ioloop)}")
         # noinspection PyUnresolvedReferences
         self.pika_connection.ioloop.start()
 
