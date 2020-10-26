@@ -302,7 +302,7 @@ def test_rocketchat_channel():
 # USED FOR DOCS - don't rename without changing in the docs
 @pytest.mark.filterwarnings("ignore:unclosed file.*:ResourceWarning")
 # telegram channel will try to set a webhook, so we need to mock the api
-@patch.object(TelegramOutput, "setWebhook", noop)
+@patch.object(TelegramOutput, "set_webhook", noop)
 def test_telegram_channel():
     # START DOC INCLUDE
     from rasa.core.channels.telegram import TelegramInput
