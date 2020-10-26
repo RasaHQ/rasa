@@ -3382,7 +3382,6 @@ transformers = ["transformers"]
 
 [metadata]
 content-hash = "23c99b1378288b2648e2a06866bd4e62b305362465c51a5114722467fdc74bf6"
-lock-version = "1.0"
 python-versions = ">=3.6,<3.8"
 
 [metadata.files]
