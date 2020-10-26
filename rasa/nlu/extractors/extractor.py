@@ -216,7 +216,7 @@ class EntityExtractor(Component):
             ):
                 # current token has the same entity tag as the token before and
                 # the two tokens are separated by at most 3 symbols, where each
-                # of the symbols has to bei either punctuation (e.g. "." or ",")
+                # of the symbols has to be either punctuation (e.g. "." or ",")
                 # and a whitespace.
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidences is not None:
