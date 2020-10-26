@@ -39,14 +39,10 @@ logger = logging.getLogger(__name__)
 
 
 class HFTransformersNLP(Component):
-    """Utility Component for interfacing between Transformers library and Rasa OS.
+    """
+    This component is deprecated and will be removed in the future.
 
-    The transformers(https://github.com/huggingface/transformers) library
-    is used to load pre-trained language models like BERT, GPT-2, etc.
-    The component also tokenizes and featurizes dense featurizable attributes of each
-    message.
-
-    This Component is deprecated; use the LanguageModelFeaturizer in its place.
+    Use the LanguageModelFeaturizer instead.
     """
 
     defaults = {
@@ -72,7 +68,7 @@ class HFTransformersNLP(Component):
         rasa.shared.utils.io.raise_warning(
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in the future. "
-            f"It is recommended to use the '{LanguageModelFeaturizer.__name__}'"
+            f"It is recommended to use the '{LanguageModelFeaturizer.__name__}' "
             f"instead.",
             category=DeprecationWarning,
         )
@@ -89,7 +85,7 @@ class HFTransformersNLP(Component):
         if self.model_name not in model_class_dict:
             raise KeyError(
                 f"'{self.model_name}' not a valid model name. Choose from "
-                f"{str(list(model_class_dict.keys()))} or create"
+                f"{str(list(model_class_dict.keys()))} or create "
                 f"a new class inheriting from this class to support your model."
             )
 
@@ -109,7 +105,8 @@ class HFTransformersNLP(Component):
         """Try loading the model instance
 
         Args:
-            skip_model_load: Skip loading the model instances to save time. This should be True only for pytests
+            skip_model_load: Skip loading the model instances to save time.
+            This should be True only for pytests
         """
 
         if skip_model_load:

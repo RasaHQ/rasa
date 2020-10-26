@@ -45,10 +45,12 @@ logger = logging.getLogger(__name__)
 
 
 class LanguageModelFeaturizer(DenseFeaturizer):
-    """Featurizer using transformer based language models.
+    """Featurizer using transformer-based language models.
 
-    Uses the output of HFTransformersNLP component to set the sequence and sentence
-    level representations for dense featurizable attributes of each message object.
+    The transformers(https://github.com/huggingface/transformers) library
+    is used to load pre-trained language models like BERT, GPT-2, etc.
+    The component also tokenizes and featurizes dense featurizable attributes of each
+    message.
     """
 
     defaults = {
