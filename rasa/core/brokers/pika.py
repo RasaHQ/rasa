@@ -209,36 +209,6 @@ def initialise_pika_select_connection(
     )
 
 
-def initialise_pika_channel(
-    host: Text,
-    queue: Text,
-    username: Text,
-    password: Text,
-    port: Union[Text, int] = 5672,
-    connection_attempts: int = 20,
-    retry_delay_in_seconds: float = 5,
-) -> "BlockingChannel":
-    """Initialise a Pika channel with a durable queue.
-
-    Args:
-        host: Pika host.
-        queue: Pika queue to declare.
-        username: Username for authentication with Pika host.
-        password: Password for authentication with Pika host.
-        port: port of the Pika host.
-        connection_attempts: Number of channel attempts before giving up.
-        retry_delay_in_seconds: Delay in seconds between channel attempts.
-
-    Returns:
-        Pika `BlockingChannel` with declared queue.
-    """
-    connection = initialise_pika_connection(
-        host, username, password, port, connection_attempts, retry_delay_in_seconds
-    )
-
-    return _declare_pika_channel_with_queue(connection, queue)
-
-
 def _declare_pika_channel_with_queue(
     connection: "BlockingConnection", queue: Text
 ) -> "BlockingChannel":
