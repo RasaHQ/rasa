@@ -60,11 +60,31 @@ override is `True`, in which case they are taken from `domain`.
 
 List retrieval intents present in the domain.
 
+#### collect\_entity\_properties
+
+```python
+ | @classmethod
+ | collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]
+```
+
+Get entity properties for a domain from what is provided by a domain file.
+
+**Arguments**:
+
+- `domain_entities` - The entities as provided by a domain file.
+  
+
+**Returns**:
+
+  A list of entity names.
+  A dictionary of entity names to roles.
+  A dictionary of entity names to groups.
+
 #### collect\_intent\_properties
 
 ```python
  | @classmethod
- | collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]) -> Dict[Text, Dict[Text, Union[bool, List]]]
+ | collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text], roles: Dict[Text, List[Text]], groups: Dict[Text, List[Text]]) -> Dict[Text, Dict[Text, Union[bool, List]]]
 ```
 
 Get intent properties for a domain from what is provided by a domain file.
@@ -73,6 +93,8 @@ Get intent properties for a domain from what is provided by a domain file.
 
 - `intents` - The intents as provided by a domain file.
 - `entities` - All entities as provided by a domain file.
+- `roles` - The roles of entities as provided by a domain file.
+- `groups` - The groups of entities as provided by a domain file.
   
 
 **Returns**:
@@ -198,6 +220,37 @@ Look up which action index corresponds to this action name.
 ```
 
 Returns all available slot state strings.
+
+#### entity\_states
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | entity_states() -> List[Text]
+```
+
+Returns all available entity state strings.
+
+#### concatenate\_entity\_labels
+
+```python
+ | @staticmethod
+ | concatenate_entity_labels(entity_labels: Dict[Text, List[Text]], entity: Optional[Text] = None) -> List[Text]
+```
+
+Concatenates the given entity labels with their corresponding sub-labels.
+
+If a specific entity label is given, only this entity label will be
+concatenated with its corresponding sub-labels.
+
+**Arguments**:
+
+- `entity_labels` - A map of an entity label to its sub-label list.
+- `entity` - If present, only this entity will be considered.
+  
+
+**Returns**:
+
+  A list of labels.
 
 #### input\_state\_map
 
