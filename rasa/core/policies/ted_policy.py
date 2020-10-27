@@ -776,13 +776,12 @@ class TED(TransformerRasaModel):
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         if self.max_history_tracker_featurizer_used:
+            dialogue_lengths = tf.squeeze(tf.reduce_sum(sequence_lengths, axis=1))
             # pick last vector if max history featurizer is used
             dialogue_transformed = tf.expand_dims(
-                self._last_token(dialogue_transformed, sequence_lengths), 1
+                self._last_token(dialogue_transformed, dialogue_lengths), 1
             )
-            mask = tf.expand_dims(
-                self._last_token(mask, tf.squeeze(sequence_lengths)), 1
-            )
+            mask = tf.expand_dims(self._last_token(mask, dialogue_lengths), 1)
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
@@ -940,12 +939,12 @@ class TED(TransformerRasaModel):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-        for k, v in tf_batch_data.items():
-            print(k)
-            for _k, _v in v.items():
-                print("  ", _k)
-                for __v in _v:
-                    print("    ", __v.shape)
+        # for k, v in tf_batch_data.items():
+        #     print(k)
+        #     for _k, _v in v.items():
+        #         print("  ", _k)
+        #         for __v in _v:
+        #             print("    ", __v.shape)
         # exit()
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32)
 
