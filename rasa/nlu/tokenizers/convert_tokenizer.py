@@ -58,8 +58,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         for file_path in files_to_check:
             if not os.path.exists(file_path):
                 raise RasaException(
-                    f"""File {file_path} does not exist. 
-                    Re-check the files inside the directory {model_directory}. 
+                    f"""File {file_path} does not exist.
+                    Re-check the files inside the directory {model_directory}.
                     It should contain the following model files - {files_to_check}"""
                 )
 
@@ -76,9 +76,9 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         model_url = self.component_config.get("model_url", None)
         if not model_url:
             raise RasaException(
-                """Parameter "model_url" was not specified in the configuration of "ConveRTTokenizer". 
-                You can either use a community hosted URL of the model 
-                or if you have a local copy of the model, pass the 
+                """Parameter "model_url" was not specified in the configuration of "ConveRTTokenizer".
+                You can either use a community hosted URL of the model
+                or if you have a local copy of the model, pass the
                 path to the directory containing the model files."""
             )
 
@@ -87,30 +87,30 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             if model_url == ORIGINAL_TF_HUB_MODULE_URL:
                 # Can't use the originally hosted URL
                 raise RasaException(
-                    f"""Parameter "model_url" of "ConveRTTokenizer" was 
-                    set to "{model_url}" which does not contain the model any longer. 
-                    You can either use a community hosted URL or if you have a 
-                    local copy of the model, pass the path to the directory 
+                    f"""Parameter "model_url" of "ConveRTTokenizer" was
+                    set to "{model_url}" which does not contain the model any longer.
+                    You can either use a community hosted URL or if you have a
+                    local copy of the model, pass the path to the directory
                     containing the model files."""
                 )
 
             if model_url == RESTRICTED_ACCESS_URL:
                 # Can't use the URL that is reserved for tests only
                 raise RasaException(
-                    f"""Parameter "model_url" of "ConveRTTokenizer" was 
-                    set to "{model_url}" which is strictly reserved for pytests of Rasa Open Source only. 
-                    Due to licensing issues you are not allowed to use the model from this URL. 
-                    You can either use a community hosted URL or if you have a 
-                    local copy of the model, pass the path to the directory 
+                    f"""Parameter "model_url" of "ConveRTTokenizer" was
+                    set to "{model_url}" which is strictly reserved for pytests of Rasa Open Source only.
+                    Due to licensing issues you are not allowed to use the model from this URL.
+                    You can either use a community hosted URL or if you have a
+                    local copy of the model, pass the path to the directory
                     containing the model files."""
                 )
 
         elif os.path.isfile(model_url):
             # Definitely invalid since the specified path should be a directory
             raise RasaException(
-                """Parameter "model_url" of "ConveRTTokenizer" was set to 
-                the path of a file which is invalid. You can either use a community hosted URL or if you have a 
-                local copy of the model, pass the path to the directory 
+                """Parameter "model_url" of "ConveRTTokenizer" was set to
+                the path of a file which is invalid. You can either use a community hosted URL or if you have a
+                local copy of the model, pass the path to the directory
                 containing the model files."""
             )
 
@@ -124,10 +124,10 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         else:
             raise RasaException(
-                f"""{model_url} is neither a valid remote URL 
-                nor a local directory. You can either use a 
-                community hosted URL or if you have a 
-                local copy of the model, pass the path to 
+                f"""{model_url} is neither a valid remote URL
+                nor a local directory. You can either use a
+                community hosted URL or if you have a
+                local copy of the model, pass the path to
                 the directory containing the model files."""
             )
         return model_url
