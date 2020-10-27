@@ -645,6 +645,7 @@ class TED(TransformerRasaModel):
             for key in self.tf_label_data.keys()
             if key != LABEL_KEY
         }
+        print("all_labels_encoded", all_labels_encoded)
 
         if (
             all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None

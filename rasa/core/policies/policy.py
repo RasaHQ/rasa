@@ -161,6 +161,13 @@ class Policy:
               trackers
         """
 
+        for tracker in training_trackers:
+            print(tracker.is_rule_tracker)
+            for event in tracker.events:
+                event.print()
+                # print(event.as_dict())
+            print("------------")
+
         state_features, label_ids = self.featurizer.featurize_trackers(
             training_trackers, domain, interpreter
         )

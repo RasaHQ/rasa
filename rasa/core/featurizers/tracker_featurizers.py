@@ -11,7 +11,7 @@ import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
@@ -65,13 +65,22 @@ class TrackerFeaturizer:
         trackers_as_states: List[List[State]],
         interpreter: NaturalLanguageInterpreter,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-        return [
-            [
-                self.state_featurizer.encode_state(state, interpreter)
-                for state in tracker_states
-            ]
-            for tracker_states in trackers_as_states
-        ]
+        # return [
+        #     [
+        #         self.state_featurizer.encode_state(state, interpreter)
+        #         for state in tracker_states
+        #     ]
+        #     for tracker_states in trackers_as_states
+        # ]
+        featurized = []
+        for tracker_states in trackers_as_states:
+            state_features = []
+            for state in tracker_states:
+                state_features.append(
+                    self.state_featurizer.encode_state(state, interpreter)
+                )
+            featurized.append(state_features)
+        return featurized
 
     @staticmethod
     def _convert_labels_to_ids(
@@ -456,3 +465,247 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                     del state[USER][TEXT]
 
         return trackers_as_states
+
+
+class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
+    def training_states_and_actions(
+        self, trackers: List[DialogueStateTracker], domain: Domain
+    ) -> Tuple[List[List[State]], List[List[Text]]]:
+        """Transforms list of trackers to lists of states and actions.
+        Training data is padded up to the max_history with -1.
+        """
+
+        trackers_as_states = []
+        trackers_as_actions = []
+
+        # from multiple states that create equal featurizations
+        # we only need to keep one.
+        hashed_examples = set()
+
+        logger.debug(
+            "Creating states and action examples from "
+            "collected trackers (by {}({}))..."
+            "".format(type(self).__name__, type(self.state_featurizer).__name__)
+        )
+        # print(len(trackers))
+
+        pbar = tqdm(
+            trackers,
+            desc="Processed trackers",
+            disable=rasa.shared.utils.io.is_logging_disabled(),
+        )
+        for tracker in pbar:
+
+            # print(len(tracker.events))
+            # for event in tracker.events:
+            #     # print(event).as_dict()
+            #     print(event)
+            states = self._create_states(tracker, domain)
+            # print(states)
+            # exit(0)
+            # print('Created states: ', states)
+            states_length_for_intent = 0
+            for event in tracker.applied_events():
+                # print('--------')
+                # print("Event dets")
+                # event.print()
+                # print('---------')
+                if isinstance(event, ActionExecuted):
+                    states_length_for_intent += 1
+                # print(event)
+                if isinstance(event, UserUttered):
+                    # print('user uttered')
+                    # print('user event: ', event.intent['name'])
+                    # if not event.unpredictable:
+
+                    # only actions which can be
+                    # predicted at a stories start
+                    sliced_states = self.slice_state_history(
+                        states[:states_length_for_intent], self.max_history
+                    )
+                    # print('index: ', idx)
+                    # print('sliced states: ', sliced_states)
+                    # print('name', event.intent['name'])
+                    # TODO: If there are duplicate tracker states with different intents,
+                    #  then collect all intents here itself to construct the list of multiple labels
+                    if self.remove_duplicates:
+                        hashed = self._hash_example(
+                            sliced_states, event.intent["name"], tracker
+                        )
+
+                        # only continue with tracker_states that created a
+                        # hashed_featurization we haven't observed
+                        if hashed not in hashed_examples:
+                            hashed_examples.add(hashed)
+                            trackers_as_states.append(sliced_states)
+                            trackers_as_actions.append([event.intent["name"]])
+                    else:
+                        trackers_as_states.append(sliced_states)
+                        trackers_as_actions.append([event.intent["name"]])
+
+                    pbar.set_postfix(
+                        {"# actions": "{:d}".format(len(trackers_as_actions))}
+                    )
+
+            # exit(0)
+            # print('----------------------------------')
+
+        for s, a in zip(trackers_as_states, trackers_as_actions):
+            print(s, a)
+
+        logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
+
+        return trackers_as_states, trackers_as_actions
+
+    @staticmethod
+    def _convert_labels_to_ids(
+        trackers_as_intents: List[List[Text]], domain: Domain
+    ) -> np.ndarray:
+        # store labels in numpy arrays so that it corresponds to np arrays of input features
+        return np.array(
+            [
+                np.array(
+                    [domain.index_for_intent(intent) for intent in tracker_intents]
+                )
+                for tracker_intents in trackers_as_intents
+            ]
+        )
+
+    def prediction_states(
+        self, trackers: List[DialogueStateTracker], domain: Domain
+    ) -> List[List[Dict[Text, float]]]:
+        """Transforms list of trackers to lists of states for prediction."""
+
+        copy_trackers = copy.deepcopy(trackers)
+
+        # print(len(trackers[0].events), len(copy_trackers[0].events))
+
+        # tracker length is always 1 at prediction time
+        # popped_event = copy_trackers[0].events.pop()
+
+        # print(len(trackers[0].events), len(copy_trackers[0].events))
+
+        trackers_as_states = [
+            self._create_states(tracker, domain) for tracker in copy_trackers
+        ]
+        # print(trackers_as_states)
+
+        # remove last state because we expect latest UserUttered event to have been added to incoming tracker also.
+        # TODO: add a None in the beginning as well, otherwise effectively max history is reduced by 1 here
+        trackers_as_states = [
+            self.slice_state_history(states, self.max_history)[:-1]
+            for states in trackers_as_states
+        ]
+
+        # print('sliced states for prediction', trackers_as_states)
+
+        return trackers_as_states
+
+    # def featurize_trackers(
+    #     self, trackers: List[DialogueStateTracker], domain: Domain,
+    #     interpreter: NaturalLanguageInterpreter,
+    # ) -> DialogueTrainingData:
+    #     """Create training data."""
+    #
+    #     if self.state_featurizer is None:
+    #         raise ValueError(
+    #             "Variable 'state_featurizer' is not set. Provide "
+    #             "'SingleStateFeaturizer' class to featurize trackers."
+    #         )
+    #
+    #     self.state_featurizer.prepare_from_domain(domain)
+    #
+    #     (trackers_as_states, trackers_as_actions) = self.training_states_and_actions(
+    #         trackers, domain
+    #     )
+    #
+    #     # noinspection PyPep8Naming
+    #     X, true_lengths = self._featurize_states(trackers_as_states)
+    #     y = self._featurize_labels(trackers_as_actions, domain)
+    #
+    #     return MultiLabelDialogueTrainingData(X, y, true_lengths)
+
+    def _serialize_state_feature(self, features_list):
+
+        feats = []
+        for state in features_list:
+            new_state = {}
+            for key, val in state.items():
+                new_state[key] = []
+                for feat in val:
+                    new_state[key].append(feat.features.toarray().tolist())
+            feats.append(new_state)
+        return feats
+
+    def _collect_multiple_labels(self, tracker_state_features, label_ids) -> np.ndarray:
+
+        multi_labels = []
+
+        for i in range(len(tracker_state_features)):
+            current_tracker_state_feature = self._serialize_state_feature(
+                tracker_state_features[i]
+            )
+            all_labels = []
+
+            print(current_tracker_state_feature)
+
+            for j in range(len(tracker_state_features)):
+                next_label_id = label_ids[j][0]
+                next_tracker_state_feature = self._serialize_state_feature(
+                    tracker_state_features[j]
+                )
+
+                if current_tracker_state_feature == next_tracker_state_feature:
+                    all_labels.append(next_label_id)
+            multi_labels.append(all_labels)
+
+        return np.array(multi_labels)
+
+    def featurize_trackers(
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
+        """Featurize the training trackers.
+
+        Args:
+            trackers: list of training trackers
+            domain: the domain
+            interpreter: the interpreter
+
+        Returns:
+            - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
+              turns in all training trackers
+            - the label ids (e.g. action ids) for every dialuge turn in all training
+              trackers
+        """
+        if self.state_featurizer is None:
+            raise ValueError(
+                f"Instance variable 'state_featurizer' is not set. "
+                f"During initialization set 'state_featurizer' to an instance of "
+                f"'{SingleStateFeaturizer.__class__.__name__}' class "
+                f"to get numerical features for trackers."
+            )
+
+        self.state_featurizer.prepare_from_domain(domain)
+
+        trackers_as_states, trackers_as_actions = self.training_states_and_actions(
+            trackers, domain
+        )
+
+        print("Featurizing states")
+
+        tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
+
+        print("Featurizing labels")
+        label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
+
+        label_ids = self._collect_multiple_labels(tracker_state_features, label_ids)
+
+        print(domain.intents)
+        print(domain.action_names)
+        print(label_ids)
+
+        return tracker_state_features, label_ids

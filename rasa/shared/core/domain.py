@@ -623,6 +623,14 @@ class Domain:
                 if s not in slot_names:
                     self.slots.append(TextSlot(s, influence_conversation=False))
 
+    def index_for_intent(self, intent_name: Text) -> Optional[int]:
+        """Look up which intent index corresponds to this intent name."""
+
+        try:
+            return self.intents.index(intent_name)
+        except ValueError:
+            self.raise_intent_not_found_exception(intent_name)
+
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Look up which action index corresponds to this action name."""
 
@@ -638,6 +646,15 @@ class Domain:
             f"as that name is not a registered "
             f"action for this domain. "
             f"Available actions are: \n{action_names}"
+        )
+
+    def raise_intent_not_found_exception(self, intent_name: Text) -> NoReturn:
+        intent_names = "\n".join([f"\t - {a}" for a in self.intents])
+        raise ActionNotFoundException(
+            f"Cannot access action '{intent_name}', "
+            f"as that name is not a registered "
+            f"intent for this domain. "
+            f"Available intents are: \n{intent_names}"
         )
 
     def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
