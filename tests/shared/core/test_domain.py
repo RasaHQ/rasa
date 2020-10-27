@@ -17,6 +17,7 @@ from rasa.shared.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
+    ENTITY_LABEL_SEPARATOR,
 )
 from rasa.shared.core.domain import (
     InvalidDomain,
@@ -27,7 +28,6 @@ from rasa.shared.core.domain import (
     IGNORE_ENTITIES_KEY,
     State,
     Domain,
-    ENTITY_LABEL_SEPARATOR,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -838,10 +838,7 @@ def test_transform_entities_for_file_default():
     domain = Domain.load(domain_path)
     transformed = domain._transform_entities_for_file()
 
-    expected = [
-        {"GPE": {ENTITY_ROLES_KEY: ["destination", "origin"]}},
-        "name",
-    ]
+    expected = [{"GPE": {ENTITY_ROLES_KEY: ["destination", "origin"]}}, "name"]
 
     assert transformed == expected
 

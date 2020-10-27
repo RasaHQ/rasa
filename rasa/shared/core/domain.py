@@ -810,12 +810,14 @@ class Domain:
         entity_names = (
             set(entity["entity"] for entity in entities if "entity" in entity.keys())
             | set(
-                f"{entity['entity']}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
+                f"{entity['entity']}"
+                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
                 for entity in entities
                 if "entity" in entity.keys() and "role" in entity.keys()
             )
             | set(
-                f"{entity['entity']}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
+                f"{entity['entity']}"
+                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
                 for entity in entities
                 if "entity" in entity.keys() and "group" in entity.keys()
             )
