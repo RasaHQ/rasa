@@ -402,7 +402,8 @@ class Domain:
                         groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
             else:
                 raise InvalidDomain(
-                    f"Invalid domain. Entity is invalid, type not supported: {entity}"
+                    f"Invalid domain. Entity is invalid, type of entity '{entity}' "
+                    f"not supported: '{type(entity).__name__}'"
                 )
 
         return entities, roles, groups
