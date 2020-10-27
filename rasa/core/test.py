@@ -383,8 +383,8 @@ def _collect_user_uttered_predictions(
             entity_predictions=_clean_entity_results(event.text, predicted_entities),
         )
 
-    base_intent = event.intent.get("name").split("/")[0]
-    event.intent["name"] = base_intent
+    # base_intent = event.intent.get("name").split("/")[0]
+    # event.intent["name"] = base_intent
     if user_uttered_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyClassifiedUserUtterance(event, user_uttered_eval_store)
