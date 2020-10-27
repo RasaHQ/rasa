@@ -111,6 +111,7 @@ def main() -> None:
         if hasattr(cmdline_arguments, "func"):
             rasa.utils.io.configure_colored_logging(log_level)
             set_log_and_warnings_filters()
+            rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
