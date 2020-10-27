@@ -4,8 +4,8 @@ intents:
     use_entities:
       - GPE
  - greet:
-    ignore_entities:
-      - GPE
+     ignore_entities:
+       - GPE
 
 entities:
   - GPE:
