@@ -40,7 +40,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         "intent_split_symbol": "_",
         # Regular expression to detect tokens
         "token_pattern": None,
-        # Remote URL of hosted model
+        # Remote URL/Local path to model files
         "model_url": None,
     }
 
