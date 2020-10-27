@@ -385,7 +385,10 @@ def test_lm_tokenizer_edge_cases(
 def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    transformers_config = {"model_name": "bert"}  # Test for one should be enough
+    transformers_config = {
+        "model_name": "bert",
+        "model_weights": "bert-base-uncased",
+    }  # Test for one should be enough
 
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer(component_config)
@@ -403,11 +406,14 @@ def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
 
 @pytest.mark.parametrize(
     "text, expected_number_of_sub_tokens",
-    [("sentence embeddings", [1, 2]), ("this is a test", [1, 1, 1, 1])],
+    [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
 )
 @pytest.mark.skip_on_windows
 def test_lm_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
-    transformers_config = {"model_name": "bert"}  # Test for one should be enough
+    transformers_config = {
+        "model_name": "bert",
+        "model_weights": "bert-base-uncased",
+    }  # Test for one should be enough
 
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer()
