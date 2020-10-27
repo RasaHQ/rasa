@@ -7,7 +7,7 @@ from rasa.nlu.model import Interpreter, Trainer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu.conftest import DEFAULT_DATA_PATH
-from typing import Any, Dict, List, Tuple, Text, Union
+from typing import Any, Dict, List, Tuple, Text, Union, Optional
 
 COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1},
