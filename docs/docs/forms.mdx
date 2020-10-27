@@ -225,8 +225,11 @@ forms:
 
 Your users will not always respond with the information you ask of them.
 Typically, users will ask questions, make chitchat, change their mind, or otherwise
-stray from the happy path. The way this works with forms is that a form will
-automatically raise an `ActionExecutionRejection` if
+stray from the happy path. 
+
+While a form is active, if a user's input does not fill the requested slot, the execution of 
+the form action will be rejected i.e. the form will automatically raise an `ActionExecutionRejection`. 
+These are the specific scenarios in which a form will raise an `ActionExecutionRejection`:
 
 * a slot was requested, but the user didn't fill the slot with their last message and
   you didn't define a custom action for
