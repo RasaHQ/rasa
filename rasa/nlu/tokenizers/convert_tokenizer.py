@@ -21,9 +21,7 @@ ORIGINAL_TF_HUB_MODULE_URL = (
 
 # Warning: This URL is only intended for running pytests on ConveRT
 # related components. This URL should not be allowed to be used by the user.
-RESTRICTED_ACCESS_URL = (
-    "https://storage.googleapis.com/tensorflow-model-storage/convert_tf2.tar.gz"
-)
+RESTRICTED_ACCESS_URL = "https://storage.googleapis.com/continuous-integration-model-storage/convert_tf2.tar.gz"
 
 
 class ConveRTTokenizer(WhitespaceTokenizer):
