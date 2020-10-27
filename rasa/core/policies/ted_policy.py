@@ -780,7 +780,9 @@ class TED(TransformerRasaModel):
             dialogue_transformed = tf.expand_dims(
                 self._last_token(dialogue_transformed, sequence_lengths), 1
             )
-            mask = tf.expand_dims(self._last_token(mask, sequence_lengths), 1)
+            mask = tf.expand_dims(
+                self._last_token(mask, tf.squeeze(sequence_lengths)), 1
+            )
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
@@ -821,11 +823,26 @@ class TED(TransformerRasaModel):
                 masked_lm_loss=self.config[MASKED_LM],
                 sequence_ids=False,
             )
+
             # TODO entities
-            last_token = self._last_token(
+
+            attribute_features = self._last_token(
                 attribute_features, tf.squeeze(sequence_lengths)
             )
 
+        else:
+            attribute_features = self._combine_sparse_dense_features(
+                tf_batch_data[attribute][SENTENCE],
+                f"{attribute}_{SENTENCE}",
+                mask=attribute_mask,
+            )
+
+        if attribute in FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
+            attribute_features = self._tf_layers[f"ffnn.{attribute}"](
+                attribute_features
+            )
+
+        if attribute in FEATURES_TO_ENCODE:
             # transform attribute features back to original
             # batch x dialogue length x units
             indices = []
@@ -841,25 +858,15 @@ class TED(TransformerRasaModel):
                 [
                     dialogue_lengths.shape[0],
                     dialogue_lengths.shape[1],
-                    last_token.shape[-1],
+                    attribute_features.shape[-1],
                 ]
             )
-            attribute_features = tf.scatter_nd(indices, last_token, shape)
+            attribute_features = tf.scatter_nd(
+                indices, tf.squeeze(attribute_features), shape
+            )
 
             attribute_mask = tf.expand_dims(
                 tf.squeeze(self._compute_mask(tf.squeeze(dialogue_lengths))), axis=-1
-            )
-
-        else:
-            attribute_features = self._combine_sparse_dense_features(
-                tf_batch_data[attribute][SENTENCE],
-                f"{attribute}_{SENTENCE}",
-                mask=attribute_mask,
-            )
-
-        if attribute in FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
-            attribute_features = self._tf_layers[f"ffnn.{attribute}"](
-                attribute_features
             )
 
         return attribute_features * attribute_mask
@@ -940,7 +947,7 @@ class TED(TransformerRasaModel):
                 for __v in _v:
                     print("    ", __v.shape)
         # exit()
-        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
+        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32)
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
