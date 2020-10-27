@@ -12,7 +12,7 @@ class ValidateRestaurantForm(Action):
     def name(self) -> Text:
         return "validate_restaurant_form"
 
-    async def run(self, dispatcher, tracker, domain) -> List[EventType]:
+    async def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Domain) -> List[EventType]:
         extracted_slots = tracker.slots_to_validate()
         validation_events = []
 
