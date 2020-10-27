@@ -762,10 +762,7 @@ class TED(TransformerRasaModel):
         return all_label_ids, all_labels_embed
 
     def _emebed_dialogue(
-        self,
-        dialogue_in: tf.Tensor,
-        sequence_lengths: tf.Tensor,
-        dialogue_3d_lengths: tf.Tensor,
+        self, dialogue_in: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
 
@@ -781,28 +778,9 @@ class TED(TransformerRasaModel):
         if self.max_history_tracker_featurizer_used:
             # pick last vector if max history featurizer is used
             dialogue_transformed = tf.expand_dims(
-                self._last_token(dialogue_transformed, tf.squeeze(sequence_lengths)), 1
+                self._last_token(dialogue_transformed, sequence_lengths), 1
             )
-            mask = tf.expand_dims(
-                self._last_token(mask, tf.squeeze(sequence_lengths)), 1
-            )
-
-        # transform dialogue tensor back to original 4D shape
-        indices = []
-        for batch_dim in range(dialogue_3d_lengths.shape[0]):
-            for dialogue_dim in range(dialogue_3d_lengths.shape[1]):
-                if dialogue_3d_lengths[batch_dim][dialogue_dim] > 0:
-                    indices.append([batch_dim, dialogue_dim])
-        indices = tf.constant(indices)
-        shape = tf.constant(
-            [
-                dialogue_3d_lengths.shape[0],
-                dialogue_3d_lengths.shape[1],
-                dialogue_transformed.shape[1],
-                dialogue_transformed.shape[2],
-            ]
-        )
-        dialogue_transformed = tf.scatter_nd(indices, dialogue_transformed, shape)
+            mask = tf.expand_dims(self._last_token(mask, sequence_lengths), 1)
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
@@ -825,55 +803,16 @@ class TED(TransformerRasaModel):
         attribute_mask = tf_batch_data[attribute][MASK][0]
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
-            sequence_shape = [
-                [tf.shape(x)[0], tf.shape(x)[1], tf.shape(x)[2], x.shape[-1]]
-                for x in tf_batch_data[attribute][SEQUENCE]
-            ]
-            sentence_shape = [
-                [tf.shape(x)[0], tf.shape(x)[1], 1, x.shape[-1]]
-                for x in tf_batch_data[attribute][SENTENCE]
-            ]
-
-            sequence = [
-                tf.sparse.reshape(x, (-1, shape[2], shape[-1]))
-                if isinstance(x, tf.SparseTensor)
-                else tf.reshape(x, (-1, shape[2], shape[-1]))
-                for x, shape in zip(tf_batch_data[attribute][SEQUENCE], sequence_shape)
-            ]
-            sentence = [
-                tf.sparse.reshape(x, (-1, shape[2], shape[-1]))
-                if isinstance(x, tf.SparseTensor)
-                else tf.reshape(x, (-1, shape[2], shape[-1]))
-                for x, shape in zip(tf_batch_data[attribute][SENTENCE], sentence_shape)
-            ]
-            sequence = [
-                tf.SparseTensor(
-                    x.indices, x.values, (tf.shape(x)[0], tf.shape(x)[1], shape[-1])
-                )
-                if isinstance(x, tf.SparseTensor)
-                else x
-                for x, shape in zip(sequence, sequence_shape)
-            ]
-            sentence = [
-                tf.SparseTensor(
-                    x.indices, x.values, (tf.shape(x)[0], tf.shape(x)[1], shape[-1])
-                )
-                if isinstance(x, tf.SparseTensor)
-                else x
-                for x, shape in zip(sentence, sentence_shape)
-            ]
-
             _sequence_lengths = tf.cast(
                 tf_batch_data[attribute][SEQUENCE_LENGTH][0], dtype=tf.int32
             )
-            _sequence_lengths = tf.reshape(_sequence_lengths, (-1,))
-            mask_sequence_text = self._compute_mask(_sequence_lengths)
+            mask_sequence_text = self._compute_mask(tf.squeeze(_sequence_lengths))
             sequence_lengths = _sequence_lengths + 1
-            mask_text = self._compute_mask(sequence_lengths)
+            mask_text = self._compute_mask(tf.squeeze(sequence_lengths))
 
             attribute_features, _, _, _ = self._create_sequence(
-                sequence,
-                sentence,
+                tf_batch_data[attribute][SEQUENCE],
+                tf_batch_data[attribute][SENTENCE],
                 mask_sequence_text,
                 mask_text,
                 attribute,
@@ -883,9 +822,32 @@ class TED(TransformerRasaModel):
                 sequence_ids=False,
             )
             # TODO entities
-            last_token = self._last_token(attribute_features, sequence_lengths)
-            attribute_features = tf.reshape(
-                last_token, (sequence_shape[0][0], sequence_shape[0][1], -1)
+            last_token = self._last_token(
+                attribute_features, tf.squeeze(sequence_lengths)
+            )
+
+            # transform attribute features back to original
+            # batch x dialogue length x units
+            indices = []
+            dialogue_lengths = tf.cast(
+                tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32
+            )
+            for batch_dim in range(dialogue_lengths.shape[0]):
+                for dialogue_dim in range(dialogue_lengths.shape[1]):
+                    if dialogue_lengths[batch_dim][dialogue_dim] > 0:
+                        indices.append([batch_dim, dialogue_dim])
+            indices = tf.constant(indices)
+            shape = tf.constant(
+                [
+                    dialogue_lengths.shape[0],
+                    dialogue_lengths.shape[1],
+                    last_token.shape[-1],
+                ]
+            )
+            attribute_features = tf.scatter_nd(indices, last_token, shape)
+
+            attribute_mask = tf.expand_dims(
+                tf.squeeze(self._compute_mask(tf.squeeze(dialogue_lengths))), axis=-1
             )
 
         else:
@@ -979,9 +941,6 @@ class TED(TransformerRasaModel):
                     print("    ", __v.shape)
         # exit()
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
-        dialogue_3d_lengths = tf.cast(
-            tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32
-        )
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
@@ -990,7 +949,7 @@ class TED(TransformerRasaModel):
 
         dialogue_in = self._process_batch_data(tf_batch_data)
         dialogue_embed, dialogue_mask = self._emebed_dialogue(
-            dialogue_in, dialogue_lengths, dialogue_3d_lengths
+            dialogue_in, dialogue_lengths
         )
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
