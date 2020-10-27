@@ -17,6 +17,7 @@ mapping:
     - type: "str"
   entities:
     type: "seq"
+    matching: "any"
     sequence:
       - type: "map"
         mapping:

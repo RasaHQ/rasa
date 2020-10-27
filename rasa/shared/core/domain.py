@@ -18,9 +18,6 @@ from typing import (
 )
 from pathlib import Path
 
-from ruamel.yaml import YAMLError
-
-from rasa.shared.core.constants import ENTITY_LABEL_SEPARATOR
 import rasa.shared.constants
 import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException, YamlException
@@ -324,16 +321,16 @@ class Domain:
 
         # `use_entities` is either a list of explicitly included entities
         # or `True` if all should be included
-        # if the listed entities have a role or group label, concatenate the entity label with the
-        # corresponding role or group label to make sure roles and groups can also influence
-        # the dialogue predictions
+        # if the listed entities have a role or group label, concatenate the entity
+        # label with the corresponding role or group label to make sure roles and
+        # groups can also influence the dialogue predictions
         if properties[USE_ENTITIES_KEY] is True:
             included_entities = set(entities)
             included_entities.update(Domain.concatenate_entity_labels(roles))
             included_entities.update(Domain.concatenate_entity_labels(groups))
         else:
             included_entities = set(properties[USE_ENTITIES_KEY])
-            for entity in set(properties[USE_ENTITIES_KEY]):
+            for entity in list(included_entities):
                 included_entities.update(
                     Domain.concatenate_entity_labels(roles, entity)
                 )
@@ -341,7 +338,7 @@ class Domain:
                     Domain.concatenate_entity_labels(groups, entity)
                 )
         excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
-        for entity in set(properties[IGNORE_ENTITIES_KEY]):
+        for entity in list(excluded_entities):
             excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
             excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
         used_entities = list(included_entities - excluded_entities)
@@ -396,7 +393,7 @@ class Domain:
         for entity in domain_entities:
             if isinstance(entity, str):
                 entities.append(entity)
-            elif isinstance(entity, Dict):
+            elif isinstance(entity, dict):
                 for _entity, sub_labels in entity.items():
                     entities.append(_entity)
                     if ENTITY_ROLES_KEY in sub_labels:
@@ -408,7 +405,7 @@ class Domain:
                     f"Invalid domain. Entity is invalid, type not supported: {entity}"
                 )
 
-        return entities, roles, groups  # pytype: disable=bad-return-type
+        return entities, roles, groups
 
     @classmethod
     def collect_intent_properties(
@@ -743,9 +740,11 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available entity state strings."""
+
         entity_states = copy.deepcopy(self.entities)
         entity_states.extend(Domain.concatenate_entity_labels(self.roles))
         entity_states.extend(Domain.concatenate_entity_labels(self.groups))
+
         return entity_states
 
     @staticmethod
@@ -754,8 +753,8 @@ class Domain:
     ) -> List[Text]:
         """Concatenates the given entity labels with their corresponding sub-labels.
 
-        If a specific entity label is given, only this entity label will be concatenated with its
-        corresponding sub-labels.
+        If a specific entity label is given, only this entity label will be
+        concatenated with its corresponding sub-labels.
 
         Args:
             entity_labels: A map of an entity label to its sub-label list.
@@ -769,12 +768,12 @@ class Domain:
 
         if entity:
             return [
-                f"{entity}{ENTITY_LABEL_SEPARATOR}{sub_label}"
+                f"{entity}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{sub_label}"
                 for sub_label in entity_labels[entity]
             ]
 
         return [
-            f"{entity_label}{ENTITY_LABEL_SEPARATOR}{entity_sub_label}"
+            f"{entity_label}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity_sub_label}"
             for entity_label, entity_sub_labels in entity_labels.items()
             for entity_sub_label in entity_sub_labels
         ]
@@ -803,28 +802,29 @@ class Domain:
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
 
-        # If Entity Roles and Groups is used, we also need to make sure the roles and groups get featurized.
-        # We concatenate the entity label with the role/group label using a special separator to make
-        # sure that the resulting label is unique (as you can have the same role/group label for different entities).
+        # If Entity Roles and Groups is used, we also need to make sure the roles and
+        # groups get featurized. We concatenate the entity label with the role/group
+        # label using a special separator to make sure that the resulting label is
+        # unique (as you can have the same role/group label for different entities).
         entity_names = (
             set(entity["entity"] for entity in entities if "entity" in entity.keys())
             | set(
-                f"{entity['entity']}{ENTITY_LABEL_SEPARATOR}{entity['role']}"
+                f"{entity['entity']}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
                 for entity in entities
                 if "entity" in entity.keys() and "role" in entity.keys()
             )
             | set(
-                f"{entity['entity']}{ENTITY_LABEL_SEPARATOR}{entity['group']}"
+                f"{entity['entity']}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
                 for entity in entities
                 if "entity" in entity.keys() and "group" in entity.keys()
             )
         )
 
-        # the USED_ENTITIES_KEY of an intent also contains the entity labels and the concatenated entity labels with
-        # their corresponding roles and groups labels
+        # the USED_ENTITIES_KEY of an intent also contains the entity labels and the
+        # concatenated entity labels with their corresponding roles and groups labels
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
-        return entity_names.intersection(wanted_entities)
+        return entity_names & wanted_entities
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
@@ -1033,14 +1033,13 @@ class Domain:
             ):
                 # Default intents should be not dumped with the domain
                 continue
-            # `use_entities` and `ignore_entities` in the domain file do not consider the role and group labels
-            # remove them from the list to make sure to not put them into the domain file
+            # `use_entities` and `ignore_entities` in the domain file do not consider
+            # the role and group labels remove them from the list to make sure to not
+            # put them into the domain file
             use_entities = set(
-                [
-                    entity
-                    for entity in intent_props[USED_ENTITIES_KEY]
-                    if ENTITY_LABEL_SEPARATOR not in entity
-                ]
+                entity
+                for entity in intent_props[USED_ENTITIES_KEY]
+                if rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR not in entity
             )
             ignore_entities = set(self.entities) - use_entities
             if len(use_entities) == len(self.entities):
@@ -1055,7 +1054,7 @@ class Domain:
         return intents_for_file
 
     def _transform_entities_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
-        """Transform entity properties for displaying or writing into a domain file.
+        """Transform entity properties for displaying or writing to a domain file.
 
         Returns:
             The entity properties as they are used in domain files.
@@ -1078,7 +1077,7 @@ class Domain:
                 )
             elif entity in self.groups:
                 entities_for_file.append(
-                    {entity: {ENTITY_GROUPS_KEY: self.groups[entity],}}
+                    {entity: {ENTITY_GROUPS_KEY: self.groups[entity]}}
                 )
             else:
                 entities_for_file.append(entity)

@@ -418,18 +418,20 @@ class UserUttered(Event):
         """
         entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
         entities.extend(
-            [
-                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
-                for entity in self.entities
-                if ENTITY_ATTRIBUTE_ROLE in entity
-            ]
+            (
+                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
+                f"{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
+            )
+            for entity in self.entities
+            if ENTITY_ATTRIBUTE_ROLE in entity
         )
         entities.extend(
-            [
-                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
-                for entity in self.entities
-                if ENTITY_ATTRIBUTE_GROUP in entity
-            ]
+            (
+                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
+                f"{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
+            )
+            for entity in self.entities
+            if ENTITY_ATTRIBUTE_GROUP in entity
         )
 
         out = {}
@@ -482,10 +484,10 @@ class UserUttered(Event):
                     self.text, self.intent.get(INTENT_NAME_KEY), self.entities
                 )
                 return f"{self.intent.get(INTENT_NAME_KEY)}: {message}"
-            else:
-                return parse_string
-        else:
-            return self.text
+
+            return parse_string
+
+        return self.text
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.latest_message = self
