@@ -239,11 +239,11 @@ These are the specific scenarios in which a form will raise an `ActionExecutionR
   [validating slots](forms.mdx#validating-form-input) or
   [extracting slots](forms.mdx#custom-slot-mappings) didn't return any `SlotSet` events.
 
-In addition you can also return an `ActionExecutionRejected` event as part of your
-custom validations or slot mappings to reject the form execution.
+To intentionally reject the form execution, you can also return an `ActionExecutionRejected` event as part of your
+custom validations or slot mappings.
 
-You need to handle actions that might cause `ActionExecutionRejection` errors
-with rules or stories. For example, if you expect your users to chitchat with your bot,
+To handle situations that might cause a form's execution to be rejected, you can write rules
+or stories that include the expected interruptions. For example, if you expect your users to chitchat with your bot,
 you could add a rule to handle this:
 
 ```yaml-rasa
