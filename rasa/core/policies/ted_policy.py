@@ -825,11 +825,15 @@ class TED(TransformerRasaModel):
 
             # TODO entities
 
+            # resulting attribute features will have shape
+            # combined batch dimension and dialogue length x sequence length x units
             attribute_features = self._last_token(
                 attribute_features, tf.squeeze(sequence_lengths)
             )
 
         else:
+            # resulting attribute features will have shape
+            # combined batch dimension and dialogue length x 1 x units
             attribute_features = self._combine_sparse_dense_features(
                 tf_batch_data[attribute][SENTENCE],
                 f"{attribute}_{SENTENCE}",
@@ -864,6 +868,8 @@ class TED(TransformerRasaModel):
                 indices, tf.squeeze(attribute_features), shape
             )
 
+            # create a attribute mask that has the shape
+            # batch x dialogue length
             attribute_mask = tf.expand_dims(
                 tf.squeeze(self._compute_mask(tf.squeeze(dialogue_lengths))), axis=-1
             )
