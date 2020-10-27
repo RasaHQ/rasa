@@ -353,7 +353,13 @@ def _clean_entity_results(
 
 
 def intent_response_key_from_parsed_data(parsed: Dict[Text, Any]) -> Text:
-    return parsed["response_selector"]["default"]["response"]["intent_response_key"]
+    try:
+        predicted_intent = parsed["response_selector"]["default"]["response"][
+            "intent_response_key"
+        ]
+    except:
+        predicted_intent = parsed.get(INTENT, {}).get("name")
+    return predicted_intent
 
 
 def _collect_user_uttered_predictions(
@@ -365,15 +371,13 @@ def _collect_user_uttered_predictions(
     user_uttered_eval_store = EvaluationStore()
 
     intent_gold = event.intent.get("name")
+    predicted_intent = predicted.get(INTENT, {}).get("name")
 
-    # check if retrieval intent is specified
-    if INTENT_MESSAGE_PREFIX in intent_gold:
-        try:
-            predicted_intent = intent_response_key_from_parsed_data(predicted)
-        except:
-            predicted_intent = predicted.get(INTENT, {}).get("name")
-    else:
-        predicted_intent = predicted.get(INTENT, {}).get("name")
+    # test stories may specify full retrieval intents
+    # in case they only specify base intents this will be skipped
+    # in any other case we are interested in the full retrieval intent
+    if intent_gold != predicted_intent:
+        predicted_intent = intent_response_key_from_parsed_data(predicted)
 
     user_uttered_eval_store.add_to_store(
         intent_predictions=[predicted_intent], intent_targets=[intent_gold]
@@ -388,10 +392,10 @@ def _collect_user_uttered_predictions(
             entity_predictions=_clean_entity_results(event.text, predicted_entities),
         )
 
-    # update event intent
-    # TODO: find a better place for this, we still want to accress full retrieval intent
-    base_intent = event.intent.get("name").split(INTENT_MESSAGE_PREFIX)[0]
-    event.intent["name"] = base_intent
+    # # update event intent
+    # # TODO: find a better place for this, we still want to accress full retrieval intent
+    # base_intent = event.intent.get("name").split(INTENT_MESSAGE_PREFIX)[0]
+    # event.intent["name"] = base_intent
 
     if user_uttered_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
