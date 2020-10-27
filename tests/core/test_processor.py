@@ -7,7 +7,7 @@ import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable, Any
+from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
 
 from rasa.core.actions.action import ActionUtterTemplate
@@ -584,12 +584,11 @@ async def test_update_tracker_session_with_slots(
     assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
 
 
-# noinspection PyProtectedMember
-async def test_get_tracker_with_session_start(
+async def test_fetch_tracker_and_update_session(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
-    tracker = await default_processor.get_tracker_with_session_start(
+    tracker = await default_processor.fetch_tracker_and_update_session(
         sender_id, default_channel
     )
 
@@ -598,6 +597,94 @@ async def test_get_tracker_with_session_start(
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+
+@pytest.mark.parametrize(
+    "initial_events,expected_event_types",
+    [
+        # tracker is initially not empty - when it is fetched, it will just contain
+        # these four events
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered("/greet", {INTENT_NAME_KEY: "greet", "confidence": 1.0}),
+            ],
+            [ActionExecuted, SessionStarted, ActionExecuted, UserUttered],
+        ),
+        # tracker is initially empty, and contains the session start sequence when
+        # fetched
+        ([], [ActionExecuted, SessionStarted, ActionExecuted]),
+    ],
+)
+async def test_fetch_tracker_with_initial_session(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    initial_events: List[Event],
+    expected_event_types: List[Type[Event]],
+):
+    conversation_id = uuid.uuid4().hex
+
+    tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
+
+    default_processor.tracker_store.save(tracker)
+
+    tracker = await default_processor.fetch_tracker_with_initial_session(
+        conversation_id, default_channel
+    )
+
+    # the events in the fetched tracker are as expected
+    assert len(tracker.events) == len(expected_event_types)
+
+    assert all(
+        isinstance(tracker_event, expected_event_type)
+        for tracker_event, expected_event_type in zip(
+            tracker.events, expected_event_types
+        )
+    )
+
+
+async def test_fetch_tracker_with_initial_session_does_not_update_session(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    conversation_id = uuid.uuid4().hex
+
+    # the domain has a session expiration time of one second
+    monkeypatch.setattr(
+        default_processor.tracker_store.domain,
+        "session_config",
+        SessionConfig(carry_over_slots=True, session_expiration_time=1 / 60),
+    )
+
+    now = time.time()
+
+    # the tracker initially contains events
+    initial_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=now - 10),
+        SessionStarted(timestamp=now - 9),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=now - 8),
+        UserUttered(
+            "/greet", {INTENT_NAME_KEY: "greet", "confidence": 1.0}, timestamp=now - 7
+        ),
+    ]
+
+    tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
+
+    default_processor.tracker_store.save(tracker)
+
+    tracker = await default_processor.fetch_tracker_with_initial_session(
+        conversation_id, default_channel
+    )
+
+    # the conversation session has expired, but calling
+    # `fetch_tracker_with_initial_session()` did not update it
+    assert default_processor._has_session_expired(tracker)
+    assert [event.as_dict() for event in tracker.events] == [
+        event.as_dict() for event in initial_events
     ]
 
 

@@ -89,9 +89,7 @@ def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
             self.caching_object = caching_object
             self.cache = getattr(caching_object, self._cache_name(), {})
             # noinspection PyUnresolvedReferences
-            self.cache_key = functools._make_key(  # pytype: disable=module-attr
-                args, kwargs, typed=False
-            )
+            self.cache_key = functools._make_key(args, kwargs, typed=False)
 
         def _cache_name(self) -> Text:
             return f"_cached_{self.caching_object.__class__.__name__}_{f.__name__}"
