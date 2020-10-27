@@ -183,7 +183,7 @@ jobs:
 
     - name: Test Code 🔍
       env:
-        JOBS: 1
+        JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
         make test
