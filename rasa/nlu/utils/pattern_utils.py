@@ -6,7 +6,8 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def _convert_lookup_tables_to_regex(
-    training_data: TrainingData, use_only_entities: bool = False
+    training_data: TrainingData, use_only_entities: bool = False,
+    config_language: Text = None,
 ) -> List[Dict[Text, Text]]:
     """Convert the lookup tables from the training data to regex patterns.
     Args:
@@ -21,13 +22,16 @@ def _convert_lookup_tables_to_regex(
     for table in training_data.lookup_tables:
         if use_only_entities and table["name"] not in training_data.entities:
             continue
-        regex_pattern = _generate_lookup_regex(table)
+        regex_pattern = _generate_lookup_regex(table,config_language=config_language)
         lookup_regex = {"name": table["name"], "pattern": regex_pattern}
         patterns.append(lookup_regex)
     return patterns
 
 
-def _generate_lookup_regex(lookup_table: Dict[Text, Union[Text, List[Text]]]) -> Text:
+def _generate_lookup_regex(
+        lookup_table: Dict[Text, Union[Text, List[Text]]],
+        config_language: Text = None,
+) -> Text:
     """Creates a regex pattern from the given lookup table.
 
     The lookup table is either a file or a list of entries.
@@ -49,7 +53,9 @@ def _generate_lookup_regex(lookup_table: Dict[Text, Union[Text, List[Text]]]) ->
 
     # sanitize the regex, escape special characters
     elements_sanitized = [re.escape(e) for e in elements_to_regex]
-
+    not_boundary_language = ["zh", "ja", "th"]
+    if config_language in not_boundary_language:
+        return "(" + "|".join(elements_sanitized) + ")"
     # regex matching elements with word boundaries on either side
     return "(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"
 
@@ -108,6 +114,7 @@ def extract_patterns(
     use_lookup_tables: bool = True,
     use_regexes: bool = True,
     use_only_entities: bool = False,
+    config_language: Text = None,
 ) -> List[Dict[Text, Text]]:
     """Extract a list of patterns from the training data.
 
@@ -133,7 +140,7 @@ def extract_patterns(
         patterns.extend(_collect_regex_features(training_data, use_only_entities))
     if use_lookup_tables:
         patterns.extend(
-            _convert_lookup_tables_to_regex(training_data, use_only_entities)
+            _convert_lookup_tables_to_regex(training_data, use_only_entities,config_language=config_language)
         )
 
     return patterns
