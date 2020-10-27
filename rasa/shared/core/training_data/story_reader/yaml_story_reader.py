@@ -398,8 +398,27 @@ class YAMLStoryReader(StoryReader):
         final_entities = []
         for entity in raw_entities:
             if isinstance(entity, dict):
+                _entity_type = None
+                _entity_value = None
+                _entity_role = None
+                _entity_group = None
                 for key, value in entity.items():
-                    final_entities.append({"entity": key, "value": value})
+                    if key == "role":
+                        _entity_role = value
+                    elif key == "group":
+                        _entity_group = value
+                    else:
+                        _entity_type = key
+                        _entity_value = value
+
+                _entity_dict = {
+                    "entity": _entity_type,
+                    "value": _entity_value,
+                    "role": _entity_role,
+                    "group": _entity_group,
+                }
+                _entity_dict = {k: v for k, v in _entity_dict.items() if v is not None}
+                final_entities.append(_entity_dict)
             else:
                 final_entities.append({"entity": entity, "value": ""})
 
