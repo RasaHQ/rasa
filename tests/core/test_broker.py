@@ -215,7 +215,7 @@ def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
             "localhost", "user", "password", connection_attempts=1
         )
 
-    assert len(caplog.records) == 0
+        assert len(caplog.records) == 0
 
 
 def test_pika_logs_in_debug_mode(caplog: LogCaptureFixture, monkeypatch: MonkeyPatch):
