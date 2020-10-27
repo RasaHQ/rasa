@@ -37,6 +37,10 @@ mapping:
                   mapping:
                     regex;(.*):
                       type: "any"
+                    role:
+                      type: "str"
+                    group:
+                      type: "str"
                 - type: "str"
           - type: "map"
             mapping: &active_loop

@@ -75,3 +75,5 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 # represent the origin of a `SubState`
 USER = "user"
 SLOTS = "slots"
+
+ENTITY_LABEL_SEPARATOR = "#"
