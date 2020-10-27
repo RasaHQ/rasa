@@ -575,7 +575,6 @@ policies:
   - name: TEDPolicy
     featurizer:
     - name: SingleStateFeaturizer
-
 ```
 
 BinarySingleStateFeaturizer is deprecated and will be removed in the future.
@@ -594,8 +593,22 @@ policies:
   - name: TEDPolicy
     featurizer:
     - name: SingleStateFeaturizer
-
 ```
+
+### Class changes
+
+The following classes have moved from `rasa.core` to `rasa.shared.core`:
+
+| Rasa 1.0                             | Rasa 2.0                          |
+| ------------------------------------ | --------------------------------- |
+| rasa.core.events                     | rasa.shared.core.events           |
+| rasa.core.trackers                   | rasa.shared.core.trackers         |
+| rasa.core.channels.channel.RestInput | rasa.core.channels.rest.RestInput |
+| Rasa 1.0                             | Rasa 2.0                          |
+| ------------------------------------ | --------------------------------- |
+| rasa.core.events                     | rasa.shared.core.events           |
+| rasa.core.trackers                   | rasa.shared.core.trackers         |
+| rasa.core.channels.channel.RestInput | rasa.core.channels.rest.RestInput |
 
 ### Deprecations
 
