@@ -215,6 +215,7 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     """
     # allows us to use the decorator for async and non async functions
     if asyncio.iscoroutinefunction(f):
+
         @wraps(f)
         async def decorated(*args, **kwargs):
             if is_telemetry_enabled():
