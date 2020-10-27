@@ -1,8 +1,8 @@
 # all hashtags are comments :)
 intents:
  - inform:
-    use_entities:
-      - GPE
+     use_entities:
+       - GPE
  - greet:
      ignore_entities:
        - GPE
