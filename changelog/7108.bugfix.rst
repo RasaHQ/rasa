@@ -1,0 +1,1 @@
+Update example formbot to use `FormValidationAction` for slot validation
