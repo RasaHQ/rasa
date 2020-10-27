@@ -106,6 +106,9 @@ mapping:
         rule:
           type: "str"
           allowempty: False
+        metadata:
+          type: "any"
+          required: False
         steps:
           type: "seq"
           matching: "any"
