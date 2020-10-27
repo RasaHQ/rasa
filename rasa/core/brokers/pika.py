@@ -41,6 +41,8 @@ logger = logging.getLogger(__name__)
 
 RABBITMQ_EXCHANGE = "rasa-exchange"
 DEFAULT_QUEUE_NAME = "rasa_core_events"
+MessageHeaders = Optional[Dict[Text, Text]]
+Message = Tuple[Text, MessageHeaders]
 
 
 def initialise_pika_connection(
@@ -52,7 +54,6 @@ def initialise_pika_connection(
     retry_delay_in_seconds: float = 5,
 ) -> "BlockingConnection":
     """Create a Pika `BlockingConnection`.
-
     Args:
         host: Pika host
         username: username for authentication with Pika host
@@ -60,7 +61,6 @@ def initialise_pika_connection(
         port: port of the Pika host
         connection_attempts: number of channel attempts before giving up
         retry_delay_in_seconds: delay in seconds between channel attempts
-
     Returns:
         `pika.BlockingConnection` with provided parameters
     """
@@ -76,10 +76,8 @@ def initialise_pika_connection(
 @contextmanager
 def _pika_log_level(temporary_log_level: int) -> Generator[None, None, None]:
     """Change the log level of the `pika` library.
-
     The log level will remain unchanged if the current log level is 10 (`DEBUG`) or
     lower.
-
     Args:
         temporary_log_level: Temporary log level for pika. Will be reverted to
         previous log level when context manager exits.
@@ -169,36 +167,6 @@ def initialise_pika_select_connection(
     )
 
 
-def initialise_pika_channel(
-    host: Text,
-    queue: Text,
-    username: Text,
-    password: Text,
-    port: Union[Text, int] = 5672,
-    connection_attempts: int = 20,
-    retry_delay_in_seconds: float = 5,
-) -> "BlockingChannel":
-    """Initialise a Pika channel with a durable queue.
-
-    Args:
-        host: Pika host.
-        queue: Pika queue to declare.
-        username: Username for authentication with Pika host.
-        password: Password for authentication with Pika host.
-        port: port of the Pika host.
-        connection_attempts: Number of channel attempts before giving up.
-        retry_delay_in_seconds: Delay in seconds between channel attempts.
-
-    Returns:
-        Pika `BlockingChannel` with declared queue.
-    """
-    connection = initialise_pika_connection(
-        host, username, password, port, connection_attempts, retry_delay_in_seconds
-    )
-
-    return _declare_pika_channel_with_queue(connection, queue)
-
-
 def _declare_pika_channel_with_queue(
     connection: "BlockingConnection", queue: Text
 ) -> "BlockingChannel":
@@ -251,10 +219,6 @@ def close_pika_connection(connection: "Connection") -> None:
         logger.debug("Successfully closed Pika connection with host.")
     except AMQPError:
         logger.exception("Failed to close Pika connection with host.")
-
-
-MessageHeaders = Optional[Dict[Text, Text]]
-Message = Tuple[Text, MessageHeaders]
 
 
 def _get_queues_from_args(
@@ -314,17 +278,14 @@ def _get_queues_from_args(
 
 def _get_message_properties(headers: MessageHeaders = None) -> "BasicProperties":
     """Create RabbitMQ message `BasicProperties`.
-
     The `app_id` property is set to the value of `RASA_ENVIRONMENT` env variable
     if present, and the message delivery mode is set to 2 (persistent).
     In addition, the `headers` property is set if supplied.
-
     Args:
         headers: Message headers to add to the message properties of the
             published message (key-value dictionary). The headers can be retrieved
             in the consumer from the `headers` attribute of the message's
             `BasicProperties`.
-
     Returns:
         `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
         as the properties' `app_id` value, `delivery_mode=2` and `headers` as the
@@ -363,7 +324,6 @@ class PikaEventBroker(EventBroker):
         **kwargs: Any,
     ) -> None:
         """Initialise RabbitMQ event broker.
-
         Args:
             host: Pika host.
             username: Username for authentication with Pika host.
@@ -409,7 +369,6 @@ class PikaEventBroker(EventBroker):
     @property
     def is_connected(self) -> bool:
         """Indicates if Pika is connected and the channel is initialized.
-
         Returns:
             A boolean value indicating if the connection is established.
         """
@@ -420,10 +379,8 @@ class PikaEventBroker(EventBroker):
         cls, broker_config: Optional["EndpointConfig"]
     ) -> Optional["PikaEventBroker"]:
         """Initialise `PikaEventBroker` from `EndpointConfig`.
-
         Args:
-            broker_config: `EndpointConfig` to read.
-
+            broker_config: `EndpointConfig` to read._pika_connection
         Returns:
             `PikaEventBroker` if `broker_config` was supplied, else `None`.
         """
@@ -528,7 +485,7 @@ class PikaEventBroker(EventBroker):
         self._channel.basic_publish(
             exchange=RABBITMQ_EXCHANGE,
             routing_key="",
-            body=body.encode(rasa.shared.utils.io.DEFAULT_ENCODING),
+            body=body.encode(DEFAULT_ENCODING),
             properties=_get_message_properties(headers),
         )
         logger.debug(
