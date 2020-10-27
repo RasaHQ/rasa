@@ -13,8 +13,16 @@ import tensorflow as tf
 import os
 
 
+# URL to the old remote location of the model which
+# users might use. The model is not longer hosted here.
 ORIGINAL_TF_HUB_MODULE_URL = (
     "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
+)
+
+# Warning: This URL is only intended for running pytests on ConveRT
+# related components. This URL should not be allowed to be used by the user.
+RESTRICTED_ACCESS_URL = (
+    "https://storage.googleapis.com/tensorflow-model-storage/convert_tf2.tar.gz"
 )
 
 
@@ -76,7 +84,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                 path to the directory containing the model files."""
             )
 
-        if io.is_remote_url(model_url):
+        if io.is_valid_remote_url(model_url):
 
             if model_url == ORIGINAL_TF_HUB_MODULE_URL:
                 # Can't use the originally hosted URL
@@ -88,13 +96,24 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                     containing the model files."""
                 )
 
+            if model_url == RESTRICTED_ACCESS_URL:
+                # Can't use the URL that is reserved for tests only
+                raise RasaException(
+                    f"""Parameter "model_url" of "ConveRTTokenizer" was 
+                    set to "{model_url}" which is strictly reserved for pytests of Rasa Open Source only. 
+                    Due to licensing issues you are not allowed to use the model from this URL. 
+                    You can either use a community hosted URL or if you have a 
+                    local copy of the model, pass the path to the directory 
+                    containing the model files."""
+                )
+
         elif os.path.isfile(model_url):
             # Definitely invalid since the specified path should be a directory
             raise RasaException(
                 """Parameter "model_url" of "ConveRTTokenizer" was set to 
                 the path of a file which is invalid. You can either use a community hosted URL or if you have a 
-                    local copy of the model, pass the path to the directory 
-                    containing the model files."""
+                local copy of the model, pass the path to the directory 
+                containing the model files."""
             )
 
         elif os.path.isdir(model_url):
@@ -108,10 +127,10 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         else:
             raise RasaException(
                 f"""{model_url} is neither a valid remote URL 
-                                nor a local directory. You can either use a 
-                                community hosted URL or if you have a 
-                                local copy of the model, pass the path to 
-                                the directory containing the model files."""
+                nor a local directory. You can either use a 
+                community hosted URL or if you have a 
+                local copy of the model, pass the path to 
+                the directory containing the model files."""
             )
         return model_url
 

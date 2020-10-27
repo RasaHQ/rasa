@@ -4,10 +4,14 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.shared.nlu.constants import TEXT, INTENT
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
-
-# TODO
-#   skip tests as the ConveRT model is not publicly available anymore (see https://github.com/RasaHQ/rasa/issues/6806)
+from rasa.nlu.tokenizers.convert_tokenizer import (
+    ConveRTTokenizer,
+    RESTRICTED_ACCESS_URL,
+    ORIGINAL_TF_HUB_MODULE_URL,
+)
+from rasa.exceptions import RasaException
+import rasa.utils.io as io
+from typing import Text
 
 
 @pytest.mark.parametrize(
@@ -25,13 +29,12 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
         ("ńöñàśçií", ["ńöñàśçií"], [(0, 8)]),
     ],
 )
-@pytest.mark.skip
-def test_convert_tokenizer_edge_cases(
-    component_builder, text, expected_tokens, expected_indices
-):
-    tk = component_builder.create_component_from_class(ConveRTTokenizer)
+def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
 
-    tokens = tk.tokenize(Message(data={TEXT: text}), attribute=TEXT)
+    component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
+    tokenizer = ConveRTTokenizer(component_config)
+
+    tokens = tokenizer.tokenize(Message(data={TEXT: text}), attribute=TEXT)
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
@@ -45,16 +48,21 @@ def test_convert_tokenizer_edge_cases(
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
-@pytest.mark.skip
-def test_custom_intent_symbol(component_builder, text, expected_tokens):
-    tk = component_builder.create_component_from_class(
-        ConveRTTokenizer, intent_tokenization_flag=True, intent_split_symbol="+"
-    )
+def test_custom_intent_symbol(text, expected_tokens):
+
+    component_config = {
+        "name": "ConveRTTokenizer",
+        "model_url": RESTRICTED_ACCESS_URL,
+        "intent_tokenization": True,
+        "intent_split_symbol": "+",
+    }
+
+    tokenizer = ConveRTTokenizer(component_config)
 
     message = Message(data={TEXT: text})
     message.set(INTENT, text)
 
-    tk.train(TrainingData([message]))
+    tokenizer.train(TrainingData([message]))
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
 
@@ -63,17 +71,78 @@ def test_custom_intent_symbol(component_builder, text, expected_tokens):
     "text, expected_number_of_sub_tokens",
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
 )
-@pytest.mark.skip
-def test_convert_tokenizer_number_of_sub_tokens(
-    component_builder, text, expected_number_of_sub_tokens
-):
-    tk = component_builder.create_component_from_class(ConveRTTokenizer)
+def test_convert_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
+    component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
+    tokenizer = ConveRTTokenizer(component_config)
 
     message = Message(data={TEXT: text})
     message.set(INTENT, text)
 
-    tk.train(TrainingData([message]))
+    tokenizer.train(TrainingData([message]))
 
     assert [
         t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
     ] == expected_number_of_sub_tokens
+
+
+def test_raise_no_url():
+
+    component_config = {"name": "ConveRTTokenizer"}
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTTokenizer(component_config)
+
+    assert (
+        """Parameter "model_url" was not specified in the configuration of "ConveRTTokenizer"""
+        in str(excinfo.value)
+    )
+
+
+@pytest.mark.parametrize(
+    "model_url, exception_phrase",
+    [
+        (ORIGINAL_TF_HUB_MODULE_URL, "which does not contain the model any longer"),
+        (
+            RESTRICTED_ACCESS_URL,
+            "which is reserved for pytests of Rasa Open Source only",
+        ),
+    ],
+)
+def test_raise_invalid_urls(model_url: Text, exception_phrase: Text):
+
+    component_config = {"name": "ConveRTTokenizer", "model_url": model_url}
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTTokenizer(component_config)
+
+    assert exception_phrase in str(excinfo.value)
+
+
+def test_raise_wrong_model_directory():
+
+    temp_dir = io.create_temporary_directory()
+    component_config = {"name": "ConveRTTokenizer", "model_url": temp_dir}
+
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTTokenizer(component_config)
+
+    assert "Re-check the files inside the directory" in str(excinfo.value)
+
+
+def test_raise_wrong_model_file():
+
+    io.create_path("saved_model,pb")
+    component_config = {"name": "ConveRTTokenizer", "model_url": "saved_model.pb"}
+
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTTokenizer(component_config)
+
+    assert "set to the path of a file which is invalid" in str(excinfo.value)
+
+
+def test_raise_invalid_path():
+
+    component_config = {"name": "ConveRTTokenizer", "model_url": "saved_model.pb"}
+
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTTokenizer(component_config)
+
+    assert "neither a valid remote URL nor a local directory" in str(excinfo.value)

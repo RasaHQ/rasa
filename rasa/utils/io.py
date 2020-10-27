@@ -215,7 +215,7 @@ def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
     rasa.shared.utils.io.write_text_file(jsonpickle.dumps(obj), file_name)
 
 
-def is_remote_url(url: Text) -> bool:
+def is_valid_remote_url(url: Text) -> bool:
     """Check whether the url specified is a well formed one.
 
     Regex taken from https://stackoverflow.com/a/7160778/3001665
