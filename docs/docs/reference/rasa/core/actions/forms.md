@@ -121,7 +121,7 @@ else return `None`.
 #### validate\_slots
 
 ```python
- | async validate_slots(slot_dict: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Event]
+ | async validate_slots(slot_candidates: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Event]
 ```
 
 Validate the extracted slots.
@@ -131,7 +131,7 @@ them. Otherwise there is no validation.
 
 **Arguments**:
 
-- `slot_dict` - Extracted slots which are candidates to fill the slots required
+- `slot_candidates` - Extracted slots which are candidates to fill the slots required
   by the form.
 - `tracker` - The current conversation tracker.
 - `domain` - The current model domain.
