@@ -246,8 +246,41 @@ For example, you should  include examples like `fly TO y FROM x`, not only `fly 
 To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
 [forms](forms.mdx) or use [custom actions](custom-actions.mdx) to extract the corresponding entity directly from the tracker.
 
+### Entity Roles and Groups influencing dialogue predictions
 
-### BILOU Entity Tagging
+If you want to influence the dialogue predictions by roles or groups, you need to modify your stories to contain
+the desired role or group label. You also need to list the corresponding roles and groups of an entity in your
+[domain file](./domain.mdx#entities).
+
+Let's assume you want to output a different sentence depending on what the user's location is. E.g.
+if the user just arrived from London, you might want to ask how the trip to London was. But if the user is on the way
+to Madrid, you might want to wish the user a good stay. You can achieve this with the
+following two stories:
+
+```yaml-rasa
+stories:
+- story: The user just arrived from another city.
+  steps:
+    - intent: greet
+    - action: utter_greet
+    - intent: inform_location
+      entities:
+        - city: London
+          role: from
+    - action: utter_ask_about_trip
+
+- story: The user is going to another city.
+  steps:
+    - intent: greet
+    - action: utter_greet
+    - intent: inform_location
+      entities:
+        - city: Madrid
+          role: to
+    - action: utter_wish_pleasant_stay
+```
+
+## BILOU Entity Tagging
 
 The [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor)
 have the option `BILOU_flag`, which refers to a tagging schema that can be

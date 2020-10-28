@@ -1,0 +1,183 @@
+## CONTENT 301 REDIRECTIONS
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/running-rasa-with-docker/"
+  to = "/docs/rasa/user-guide/docker/building-in-docker/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/running-the-server/"
+  to = "/docs/rasa/user-guide/configuring-http-api/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/running-rasa-with-docker/#adding-custom-actions"
+  to = "/docs/rasa/user-guide/how-to-deploy/#deploying-your-action-server"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/how-to-deploy/#adding-custom-actions"
+  to = "/docs/rasa/user-guide/how-to-deploy/#deploying-your-action-server"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/how-to-deploy/#using-docker-compose-to-run-multiple-services"
+  to = "/docs/rasa/user-guide/docker/deploying-in-docker-compose/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/evaluating-models/"
+  to = "/docs/rasa/user-guide/testing-your-assistant/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/evaluating-models/#end-to-end-evaluation"
+  to = "/docs/rasa/user-guide/testing-your-assistant/#end-to-end-testing"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/installation/"
+  to = "/docs/rasa/installation/"
+
+[[redirects]]
+  from = "/docs/rasa/nlu/training-data-format/"
+  to = "/docs/rasa/nlu-training-data/"
+
+[[redirects]]
+  from = "/docs/rasa/core/domains/"
+  to = "/docs/rasa/domain/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/testing-your-assistant/"
+  to = "/docs/rasa/testing-your-assistant/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/command-line-interface/"
+  to = "/docs/rasa/command-line-interface/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/setting-up-ci-cd/"
+  to = "/docs/rasa/setting-up-ci-cd/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/rasa-tutorial/"
+  to = "/docs/rasa/prototype-an-assistant/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/building-assistants/"
+  to = "/docs/rasa/chitchat-faqs/"
+
+[[redirects]]
+  from = "/docs/rasa/core/stories/"
+  to = "/docs/rasa/stories/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/messaging-and-voice-channels/"
+  to = "/docs/rasa/messaging-and-voice-channels/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/configuring-http-api/"
+  to = "/docs/rasa/http-api/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/how-to-deploy/"
+  to = "/docs/rasa/how-to-deploy/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/cloud-storage/"
+  to = "/docs/rasa/model-storage/"
+
+[[redirects]]
+  from = "/docs/rasa/nlu/choosing-a-pipeline/"
+  to = "/docs/rasa/tuning-your-model/"
+
+[[redirects]]
+  from = "/docs/rasa/nlu/components/"
+  to = "/docs/rasa/components/"
+
+[[redirects]]
+  from = "/docs/rasa/user-guide/connectors/*"
+  to = "/docs/rasa/connectors/:splat"
+
+[[redirects]]
+  from = "/docs/rasa/nlu/entity-extraction/"
+  to = "/docs/rasa/nlu-training-data/"
+
+[[redirects]]
+  from = "/docs/rasa/core/responses/"
+  to = "/docs/rasa/domain/#responses"
+
+[[redirects]]
+  from = "/docs/rasa/core/actions/"
+  to = "/docs/rasa/actions/"
+
+[[redirects]]
+  from = "/docs/rasa/core/reminders-and-external-events/"
+  to = "/docs/rasa/reaching-out-to-user/"
+
+[[redirects]]
+  from = "/docs/rasa/core/policies/"
+  to = "/docs/rasa/policies/"
+
+[[redirects]]
+  from = "/docs/rasa/core/slots/"
+  to = "/docs/rasa/domain/#slots"
+
+[[redirects]]
+  from = "/docs/rasa/core/retrieval-actions/"
+  to = "/docs/rasa/retrieval-actions/"
+
+[[redirects]]
+  from = "/docs/rasa/core/forms/"
+  to = "/docs/rasa/forms/"
+
+[[redirects]]
+  from = "/docs/rasa/core/interactive-learning/"
+  to = "/docs/rasa/writing-stories/#using-interactive-learning"
+
+[[redirects]]
+  from = "/docs/rasa/core/fallback-actions/"
+  to = "/docs/rasa/fallback-handoff/#fallbacks"
+
+[[redirects]]
+  from = "/docs/rasa/dialogue-elements/small-talk/"
+  to = "/docs/rasa/chitchat-faqs/"
+
+[[redirects]]
+  from = "/docs/rasa/api/action-server/"
+  to = "/docs/rasa/pages/action-server-api/"
+
+[[redirects]]
+  from = "/docs/rasa/api/http-api/"
+  to = "/docs/rasa/pages/http-api/"
+
+[[redirects]]
+  from = "/docs/rasa/api/jupyter-notebooks/"
+  to = "/docs/rasa/jupyter-notebooks/"
+
+[[redirects]]
+  from = "/docs/rasa/api/custom-nlu-components/"
+  to = "/docs/rasa/components/#custom-components"
+
+[[redirects]]
+  from = "/docs/rasa/api/tracker-stores/"
+  to = "/docs/rasa/tracker-stores/"
+
+[[redirects]]
+  from = "/docs/rasa/api/event-brokers/"
+  to = "/docs/rasa/event-brokers/"
+
+[[redirects]]
+  from = "/docs/rasa/api/lock-stores/"
+  to = "/docs/rasa/lock-stores/"
+
+[[redirects]]
+  from = "/docs/rasa/api/training-data-importers/"
+  to = "/docs/rasa/training-data-importers/"
+
+[[redirects]]
+  from = "/docs/rasa/retrieval-actions"
+  to = "/docs/rasa/chitchat-faqs/"
+
+[[redirects]]
+  from = "/docs/rasa/prototype-an-assistant"
+  to = "/docs/rasa/playground/"
+
+# FIXME: this requires some feedback as to the 404, like in the website
+[[redirects]]
+  from = "/docs/rasa/*"
+  to = "/docs/rasa/index.html"
+  status = 404
