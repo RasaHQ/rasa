@@ -13,9 +13,9 @@ from rasa.nlu.tokenizers.convert_tokenizer import (
     ORIGINAL_TF_HUB_MODULE_URL,
 )
 from rasa.exceptions import RasaException
-import rasa.utils.io as io
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
     [
@@ -43,6 +43,7 @@ def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
     assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "text, expected_tokens",
     [
@@ -69,6 +70,7 @@ def test_custom_intent_symbol(text, expected_tokens):
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "text, expected_number_of_sub_tokens",
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
@@ -87,6 +89,7 @@ def test_convert_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tok
     ] == expected_number_of_sub_tokens
 
 
+@pytest.mark.skip_on_windows
 def test_raise_no_url():
 
     component_config = {"name": "ConveRTTokenizer"}
@@ -99,6 +102,7 @@ def test_raise_no_url():
     )
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "model_url, exception_phrase",
     [
@@ -118,6 +122,7 @@ def test_raise_invalid_urls(model_url: Text, exception_phrase: Text):
     assert exception_phrase in str(excinfo.value)
 
 
+@pytest.mark.skip_on_windows
 def test_raise_wrong_model_directory():
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -130,6 +135,7 @@ def test_raise_wrong_model_directory():
         assert "Re-check the files inside the directory" in str(excinfo.value)
 
 
+@pytest.mark.skip_on_windows
 def test_raise_wrong_model_file():
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -146,6 +152,7 @@ def test_raise_wrong_model_file():
         assert "set to the path of a file which is invalid" in str(excinfo.value)
 
 
+@pytest.mark.skip_on_windows
 def test_raise_invalid_path():
 
     component_config = {"name": "ConveRTTokenizer", "model_url": "saved_model.pb"}

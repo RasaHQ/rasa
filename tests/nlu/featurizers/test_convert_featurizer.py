@@ -13,6 +13,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 
 
+@pytest.mark.skip_on_windows
 def test_convert_featurizer_process(component_builder):
 
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
@@ -41,6 +42,7 @@ def test_convert_featurizer_process(component_builder):
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
 
+@pytest.mark.skip_on_windows
 def test_convert_featurizer_train(component_builder):
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
     tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
@@ -88,6 +90,7 @@ def test_convert_featurizer_train(component_builder):
     assert sent_vecs is None
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "sentence, expected_text",
     [
