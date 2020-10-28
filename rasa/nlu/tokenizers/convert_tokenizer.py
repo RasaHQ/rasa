@@ -14,7 +14,7 @@ import os
 
 
 # URL to the old remote location of the model which
-# users might use. The model is not longer hosted here.
+# users might use. The model is no longer hosted here.
 ORIGINAL_TF_HUB_MODULE_URL = (
     "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
 )
