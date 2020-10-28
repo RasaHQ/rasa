@@ -76,7 +76,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         self._load_model_instance(skip_model_load)
 
     def _load_model_metadata(self) -> None:
-
+        """Load the metadata for the specified model and sets these properties.
+        This includes the model name, model weights, cache directory and the
+        maximum sequence length the model can handle.
+        """
         from rasa.nlu.utils.hugging_face.registry import (
             model_class_dict,
             model_weights_defaults,
@@ -96,8 +99,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         if not self.model_weights:
             logger.info(
-                f"Model weights not specified. Will choose default model weights: "
-                f"{model_weights_defaults[self.model_name]}"
+                f"Model weights not specified. Will choose default model "
+                f"weights: {model_weights_defaults[self.model_name]}"
             )
             self.model_weights = model_weights_defaults[self.model_name]
 
@@ -107,9 +110,9 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         """Try loading the model instance
 
         Args:
-            skip_model_load: Skip loading the model instances to save time. This should be True only for pytests
+            skip_model_load: Skip loading the model instances to save time. This
+            should be True only for pytests
         """
-
         if skip_model_load:
             # This should be True only during pytests
             return
@@ -140,7 +143,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: Metadata
     ) -> Optional[Text]:
-
         weights = component_meta.get("model_weights") or {}
 
         return f"{cls.name}-{component_meta.get('model_name')}-{get_dict_hash(weights)}"
@@ -273,9 +275,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             # use lm specific tokenizer to further tokenize the text
             split_token_ids, split_token_strings = self._lm_tokenize(token.text)
 
-            split_token_ids, split_token_strings = self._lm_specific_token_cleanup(
-                split_token_ids, split_token_strings
-            )
+            (
+                split_token_ids,
+                split_token_strings,
+            ) = self._lm_specific_token_cleanup(split_token_ids, split_token_strings)
 
             token_ids_out += split_token_ids
 
@@ -351,7 +354,17 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
     ) -> Tuple[List[int], int]:
+        """Extracts the sequence length for each example, as well as the maximum
+        sequence length across examples.
 
+        Args:
+            batch_token_ids: List of token ids for each example in the batch.
+
+        Returns:
+            Tuple consisting of: the actual sequence lengths for each example,
+            and the maximum input sequence length (taking into account the
+            maximum sequence length that the model can handle.
+        """
         # Compute max length across examples
         max_input_sequence_length = 0
         actual_sequence_lengths = []
@@ -427,7 +440,9 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         return np.array(nonpadded_sequence_embeddings)
 
     def _compute_batch_sequence_features(
-        self, batch_attention_mask: np.ndarray, padded_token_ids: List[List[int]]
+        self,
+        batch_attention_mask: np.ndarray,
+        padded_token_ids: List[List[int]],
     ) -> np.ndarray:
         """Feed the padded batch to the language model.
 
@@ -441,7 +456,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             Sequence level representations from the language model.
         """
         model_outputs = self.model(
-            np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
+            np.array(padded_token_ids),
+            attention_mask=np.array(batch_attention_mask),
         )
 
         # sequence hidden states is always the first output from all models
@@ -483,17 +499,18 @@ class LanguageModelFeaturizer(DenseFeaturizer):
                         f"shorten the message or use a model which has no "
                         f"restriction on input sequence length like XLNet."
                     )
-                else:
-                    logger.debug(
-                        f"The sequence length of '{example.get(attribute)[:20]}...' "
-                        f"is too long({sequence_length} tokens) for the "
-                        f"model chosen {self.model_name} which has a maximum "
-                        f"sequence length of {self.max_model_sequence_length} tokens. "
-                        f"Downstream model predictions may be affected because of this."
-                    )
+                logger.debug(
+                    f"The sequence length of '{example.get(attribute)[:20]}...' "
+                    f"is too long({sequence_length} tokens) for the "
+                    f"model chosen {self.model_name} which has a maximum "
+                    f"sequence length of {self.max_model_sequence_length} tokens. "
+                    f"Downstream model predictions may be affected because of this."
+                )
 
     def _add_extra_padding(
-        self, sequence_embeddings: np.ndarray, actual_sequence_lengths: List[int]
+        self,
+        sequence_embeddings: np.ndarray,
+        actual_sequence_lengths: List[int],
     ) -> np.ndarray:
         """
         Add extra zero padding to match the original sequence length.
@@ -670,7 +687,11 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             batch_sentence_features,
             batch_sequence_features,
         ) = self._get_model_features_for_batch(
-            batch_token_ids, batch_tokens, batch_examples, attribute, inference_mode
+            batch_token_ids,
+            batch_tokens,
+            batch_examples,
+            attribute,
+            inference_mode,
         )
 
         # A doc consists of

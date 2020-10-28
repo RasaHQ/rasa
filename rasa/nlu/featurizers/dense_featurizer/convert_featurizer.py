@@ -74,7 +74,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def _compute_features(
         self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
     ) -> Tuple[np.ndarray, np.ndarray]:
-
         sentence_encodings = self._compute_sentence_encodings(
             batch_examples, module, attribute
         )
@@ -227,7 +226,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def process(
         self, message: Message, *, tf_hub_module: Any = None, **kwargs: Any
     ) -> None:
-
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
             if message.get(attribute):
                 sequence_features, sentence_features = self._compute_features(
@@ -286,7 +284,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
         are split up into multiple tokens, add this information to the
         respected tokens.
         """
-
         tokens_in = message.get(TOKENS_NAMES[attribute])
 
         tokens_out = []
@@ -308,6 +305,5 @@ class ConveRTFeaturizer(DenseFeaturizer):
     @staticmethod
     def _clean_tokens(tokens: List[bytes]) -> List[Text]:
         """Encode tokens and remove special char added by ConveRT."""
-
         tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
         return [string for string in tokens if string]

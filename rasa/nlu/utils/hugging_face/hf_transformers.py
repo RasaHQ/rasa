@@ -137,7 +137,6 @@ class HFTransformersNLP(Component):
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: Metadata
     ) -> Optional[Text]:
-
         weights = component_meta.get("model_weights") or {}
 
         return f"{cls.name}-{component_meta.get('model_name')}-{get_dict_hash(weights)}"
@@ -349,7 +348,17 @@ class HFTransformersNLP(Component):
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
     ) -> Tuple[List[int], int]:
+        """Extracts the sequence length for each example, as well as the maximum
+        sequence length across examples.
 
+        Args:
+            batch_token_ids: List of token ids for each example in the batch.
+
+        Returns:
+            Tuple consisting of: the actual sequence lengths for each example,
+            and the maximum input sequence length (taking into account the
+            maximum sequence length that the model can handle.
+        """
         # Compute max length across examples
         max_input_sequence_length = 0
         actual_sequence_lengths = []
