@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Text, Set
 from collections import defaultdict
 
 import rasa.shared.utils.io
+from nlu.constants import TOKENS_NAMES
 from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
@@ -16,9 +17,12 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     INTENT,
+    FEATURE_TYPE_SEQUENCE,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
+from utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +104,32 @@ class SingleStateFeaturizer:
             features, FEATURE_TYPE_SENTENCE, attribute, self.__class__.__name__
         )
         return [features]
+
+    def _create_entity_tag_features(
+        self, sub_state: SubState, interpreter: NaturalLanguageInterpreter
+    ) -> List["Features"]:
+        from rasa.nlu.test import determine_token_labels
+
+        # TODO what about roles and groups
+
+        parsed_text = interpreter.featurize_message(Message({TEXT: sub_state[TEXT]}))
+        entities = [dict(entity) for entity in sub_state[ENTITIES]]
+
+        _tags = []
+        for token in parsed_text.get(TOKENS_NAMES[TEXT]):
+            _tag = determine_token_labels(token, entities, attribute_key="entity")
+            if _tag in self._default_feature_states[ENTITIES]:
+                # +1 to keep the 0 for the NO ENTITY TAG
+                _tags.append(self._default_feature_states[ENTITIES][_tag] + 1)
+            else:
+                _tags.append(0)
+
+        # transpose to have seq_len x 1
+        return [
+            Features(
+                np.array([_tags]).T, FEATURE_TYPE_SEQUENCE, "entity", TAG_ID_ORIGIN
+            )
+        ]
 
     @staticmethod
     def _to_sparse_sentence_features(
@@ -207,10 +237,9 @@ class SingleStateFeaturizer:
                     self._extract_state_features(sub_state, interpreter, sparse=True)
                 )
                 if sub_state.get(ENTITIES):
-                    # TODO entities is a frozenset
                     state_features[ENTITIES] = self._create_features(
                         sub_state, ENTITIES, sparse=True
-                    )
+                    ) + self._create_entity_tag_features(sub_state, interpreter)
 
             if state_type in {SLOTS, ACTIVE_LOOP}:
                 state_features[state_type] = self._create_features(
