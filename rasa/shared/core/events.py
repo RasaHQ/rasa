@@ -355,7 +355,7 @@ class UserUttered(Event):
         if self.intent_name and not self.use_text_for_featurization:
             out[INTENT] = self.intent_name
         if entities:
-            out[ENTITIES] = entities
+            out[ENTITIES] = self.entities
 
         return out
 

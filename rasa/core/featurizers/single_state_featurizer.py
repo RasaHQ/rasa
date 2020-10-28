@@ -207,6 +207,7 @@ class SingleStateFeaturizer:
                     self._extract_state_features(sub_state, interpreter, sparse=True)
                 )
                 if sub_state.get(ENTITIES):
+                    # TODO entities is a frozenset
                     state_features[ENTITIES] = self._create_features(
                         sub_state, ENTITIES, sparse=True
                     )

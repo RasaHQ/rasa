@@ -229,15 +229,19 @@ class DialogueStateTracker:
 
     @staticmethod
     def freeze_current_state(state: State) -> FrozenState:
-        frozen_state = frozenset(
-            {
-                key: frozenset(values.items())
-                if isinstance(values, Dict)
-                else frozenset(values)
-                for key, values in state.items()
-            }.items()
-        )
-        return frozen_state
+        state_copy = copy.deepcopy(state)
+        frozen_state = {}
+        for key, values in state_copy.items():
+            if isinstance(values, dict):
+                if "entities" in values and isinstance(values["entities"][0], dict):
+                    values["entities"] = tuple(
+                        [frozenset(e.items()) for e in values["entities"]]
+                    )
+                frozen_state[key] = frozenset(values.items())
+            else:
+                frozen_state[key] = frozenset(values)
+
+        return frozenset(frozen_state.items())
 
     def past_states(self, domain: Domain) -> List[State]:
         """Generate the past states of this tracker based on the history.

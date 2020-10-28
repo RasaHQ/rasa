@@ -676,7 +676,9 @@ class Domain:
             + self.form_names
         )
 
-    def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
+    def _get_featurized_entities(
+        self, latest_message: UserUttered
+    ) -> List[Dict[Text, Any]]:
         intent_name = latest_message.intent.get(
             rasa.shared.nlu.constants.INTENT_NAME_KEY
         )
@@ -688,7 +690,11 @@ class Domain:
 
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
-        return entity_names.intersection(wanted_entities)
+        return [
+            entity
+            for entity in latest_message.entities
+            if entity["entity"] in wanted_entities
+        ]
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
