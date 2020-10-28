@@ -225,11 +225,25 @@ forms:
 
 Your users will not always respond with the information you ask of them.
 Typically, users will ask questions, make chitchat, change their mind, or otherwise
-stray from the happy path. The way this works with forms is that a form will raise
-an `ActionExecutionRejection` if the user didn't provide the requested information.
+stray from the happy path. 
 
-You need to handle events that might cause `ActionExecutionRejection` errors
-with rules or stories. For example, if you expect your users to chitchat with your bot,
+While a form is active, if a user's input does not fill the requested slot, the execution of 
+the form action will be rejected i.e. the form will automatically raise an `ActionExecutionRejection`. 
+These are the specific scenarios in which a form will raise an `ActionExecutionRejection`:
+
+* a slot was requested, but the user didn't fill the slot with their last message and
+  you didn't define a custom action for
+  [validating slots](forms.mdx#validating-form-input) or
+  [extracting slots](forms.mdx#custom-slot-mappings).
+* a slot was requested, but your custom action for
+  [validating slots](forms.mdx#validating-form-input) or
+  [extracting slots](forms.mdx#custom-slot-mappings) didn't return any `SlotSet` events.
+
+To intentionally reject the form execution, you can also return an `ActionExecutionRejected` event as part of your
+custom validations or slot mappings.
+
+To handle situations that might cause a form's execution to be rejected, you can write rules
+or stories that include the expected interruptions. For example, if you expect your users to chitchat with your bot,
 you could add a rule to handle this:
 
 ```yaml-rasa
@@ -283,10 +297,7 @@ Forms are fully customizable using [Custom Actions](./actions.mdx#custom-actions
 
 After extracting a slot value from user input, you can validate the extracted slots.
 By default Rasa Open Source only validates if any slot was filled after requesting
-a slot. If nothing is extracted from the user’s utterance for any of the required slots,
-an `ActionExecutionRejection` error will be raised, meaning the action execution was
-rejected and therefore Rasa Open Source will fall back onto a different policy to
-predict another action.
+a slot.
 
 You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_{form_name}`
 to validate any extracted slots. Make sure to add this action to the `actions`
@@ -310,7 +321,6 @@ which validates that the slot named `cuisine` is valid.
 from typing import Text, List, Any, Dict
 
 from rasa_sdk import Tracker, FormValidationAction
-from rasa_sdk.events import SlotSet
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.types import DomainDict
 
