@@ -3,16 +3,13 @@ from typing import Text, List
 import pytest
 
 import rasa.shared.utils.io
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.loading import (
-    guess_format,
-    UNK,
-    load_data,
-)
+from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
     template_key_to_intent_response_key,
@@ -38,11 +35,11 @@ def test_wit_data():
     td = load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 4
-    assert len(td.intent_examples) == 4
-    assert len(td.training_examples) == 4
+    assert len(td.intent_examples) == 5
+    assert len(td.training_examples) == 5
     assert td.entity_synonyms == {}
-    assert td.intents == {"flight_booking"}
-    assert td.entities == {"location", "datetime"}
+    assert td.intents == {"flight_booking", USER_INTENT_OUT_OF_SCOPE}
+    assert td.entities == {"location", "wit$datetime"}
 
 
 def test_dialogflow_data():
@@ -556,10 +553,7 @@ def test_training_data_conversion(
             rasa.shared.data.yaml_file_extension(),
         ),
         ("data/examples", rasa.shared.data.yaml_file_extension()),
-        (
-            "data/examples/rasa/demo-rasa.md",
-            rasa.shared.data.markdown_file_extension(),
-        ),
+        ("data/examples/rasa/demo-rasa.md", rasa.shared.data.markdown_file_extension()),
         ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],
 )
