@@ -862,12 +862,16 @@ class TED(TransformerRasaModel):
                 mask=attribute_mask,
             )
 
-        if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
+        if attribute in set(
+            SEQUENCE_FEATURES_TO_ENCODE
+            + SEQUENCE_FEATURES_TO_ENCODE
+            + LABEL_FEATURES_TO_ENCODE
+        ):
             attribute_features = self._tf_layers[f"ffnn.{attribute}"](
                 attribute_features
             )
 
-        if attribute in SENTENCE_FEATURES_TO_ENCODE:
+        if attribute in set(SEQUENCE_FEATURES_TO_ENCODE + SEQUENCE_FEATURES_TO_ENCODE):
             dialogue_lengths = tf.cast(
                 tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32
             )
