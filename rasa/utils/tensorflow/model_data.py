@@ -1149,7 +1149,7 @@ class RasaModelData:
         # in case of dialogue data we may have 4 dimensions
         # batch size x dialogue history length x sequence length x number of features
 
-        # as transformers cannot handle 4D tensors pad and reshape the data
+        # transformers cannot handle 4D tensors, therefore pad and reshape the data
         # so that the resulting tensor is 3D
         # the shape is (sum of dialogue history length for all tensors in the
         # batch x max sequence length x number of features)
