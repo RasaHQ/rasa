@@ -1,5 +1,22 @@
 {
   "luis_schema_version": "7.0.0",
+  "versionId": "0.1",
+  "name": "demo-restaurants",
+  "desc": "",
+  "culture": "en-us",
+  "tokenizerVersion": "1.0.0",
+  "patternAnyEntities": [],
+  "regex_entities": [
+    {
+      "name": "flightNumber",
+      "regexPattern": "flight [A-Z]{2} [0-9]{4}",
+      "roles": []
+    }
+  ],
+  "phraselists": [],
+  "regex_features": [],
+  "patterns": [],
+  "settings": [],
   "intents": [
     {
       "name": "affirm",
@@ -10,11 +27,31 @@
       "features": []
     },
     {
+      "name": "inform",
+      "features": []
+    },
+    {
       "name": "None",
       "features": []
     }
   ],
-  "entities": [],
+  "entities": [
+    {
+      "name": "cuisine",
+      "children": [],
+      "roles": [],
+      "features": []
+    },
+    {
+      "name": "location",
+      "children": [],
+      "roles": [
+        "to",
+        "from"
+      ],
+      "features": []
+    }
+  ],
   "hierarchicals": [],
   "composites": [],
   "closedLists": [],
@@ -36,6 +73,49 @@
       "entities": []
     },
     {
+      "text": "i'm looking for a place in the north of town",
+      "intent": "inform",
+      "entities": [
+        {
+          "entity": "location",
+          "role": "to",
+          "startPos": 31,
+          "endPos": 35,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "show me a mexican place in the centre",
+      "intent": "inform",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 10,
+          "endPos": 16,
+          "children": []
+        },
+        {
+          "entity": "location",
+          "startPos": 31,
+          "endPos": 36,
+          "children": []
+        }
+      ]
+    },
+    {
+      "text": "show me chinese restaurants",
+      "intent": "greet",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 8,
+          "endPos": 14,
+          "children": []
+        }
+      ]
+    },
+    {
       "text": "yeah",
       "intent": "affirm",
       "entities": []
@@ -50,16 +130,5 @@
       "intent": "affirm",
       "entities": []
     }
-  ],
-  "versionId": "0.1",
-  "name": "demo-restaurants",
-  "desc": "",
-  "culture": "en-us",
-  "tokenizerVersion": "1.0.0",
-  "patternAnyEntities": [],
-  "regex_entities": [],
-  "phraselists": [],
-  "regex_features": [],
-  "patterns": [],
-  "settings": []
+  ]
 }
