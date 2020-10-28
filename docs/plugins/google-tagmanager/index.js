@@ -20,19 +20,14 @@ module.exports = function (context, options) {
     );
   }
 
-  const isProd = process.env.NODE_ENV === 'production';
-
   return {
     name: 'google-tagmanager',
 
     getClientModules() {
-      return isProd ? [path.resolve(__dirname, './client')] : [];
+      return [path.resolve(__dirname, './client')];
     },
 
     injectHtmlTags() {
-      if (!isProd) {
-        return {};
-      }
       return {
         headTags: [
           {
@@ -50,23 +45,47 @@ module.exports = function (context, options) {
             },
           },
           {
-            tagName: 'script',
+            tagName: 'link',
             attributes: {
-              async: true,
-              src: `https://www.googletagmanager.com/gtm.js?id=${containerID}`,
+              rel: 'stylesheet',
+              href: 'https://assets.rasa.com/styles/klaro.css',
             },
           },
           {
             tagName: 'script',
-            innerHTML: `(function(w,d,l){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'}); })(window,document,'dataLayer');`,
+            attributes: {
+              'type': 'opt-in',
+              'data-type': 'text/javascript',
+              'data-name': 'analytics',
+            },
+            innerHTML: `
+window.dataLayer = window.dataLayer || [{
+  deployContext: (window.netlifyMeta && window.netlifyMeta.CONTEXT) || 'development',
+  branchName: window.netlifyMeta && window.netlifyMeta.BRANCH,
+}];
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${containerID}');
+            `,
           },
-        ],
-        preBodyTags: [
           {
-            tagName: 'noscript',
-            innerHTML: `<iframe src="https://www.googletagmanager.com/ns.html?id=${containerID}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`,
+            tagName: 'script',
+            attributes: {
+              defer: true,
+              src: 'https://assets.rasa.com/scripts/klaro_config.js'
+            }
+          },
+          {
+            tagName: 'script',
+            attributes: {
+              defer: true,
+              src: 'https://assets.rasa.com/scripts/klaro.js'
+            }
           },
         ],
+        preBodyTags: [],
         postBodyTags: [],
       };
     },

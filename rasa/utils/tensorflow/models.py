@@ -533,7 +533,7 @@ class RasaModel(tf.keras.models.Model):
                             batch[idx + 2][i] for i in range(number_of_dimensions - 1)
                         ] + [feature_dimension]
                         batch_data[key][sub_key].append(
-                            tf.SparseTensor(batch[idx], batch[idx + 1], shape,)
+                            tf.SparseTensor(batch[idx], batch[idx + 1], shape)
                         )
                         idx += 3
                     else:
@@ -661,7 +661,7 @@ class TransformerRasaModel(RasaModel):
         )
 
         # set up tf layers
-        self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
 
     def _check_data(self) -> None:
         raise NotImplementedError
