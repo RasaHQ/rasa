@@ -23,7 +23,7 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa data convert`     |Converts training data between different formats.                                                                                         |
 |`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                                             |
 |`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
-|`rasa x`                |Launches Rasa X locally.                                                                                                                  |
+|`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
 
 ## rasa init
@@ -87,7 +87,11 @@ The following arguments can be used to configure the training process:
 
 ## rasa interactive
 
-To start an interactive learning session with your assistant, run:
+You can use Rasa X in local mode to do interactive learning in a UI,
+check out the [docs](https://rasa.com/docs/rasa-x/user-guide/test-assistant#talk-to-your-bot)
+for more details.
+
+If you'd rather use the command line, you can start an interactive learning session by running:
 
 ```bash
 rasa interactive
@@ -114,7 +118,11 @@ The following arguments can be used to configure the interactive learning sessio
 
 ## rasa shell
 
-To start a chat session with your assistant on the command line, run:
+You can use Rasa X in local mode to talk to your assistant in a UI,
+check out the [docs](https://rasa.com/docs/rasa-x/user-guide/test-assistant#talk-to-your-bot)
+for more details.
+
+If you'd rather use the command line, you can start a chat session by running:
 
 ```bash
 rasa shell
@@ -370,8 +378,8 @@ them. Read more about [importing conversations into Rasa X](https://rasa.com/doc
 
 ## rasa x
 
-Rasa X is a toolset that helps you leverage conversations to improve your assistant.
-You can find more information about it <a className="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.You can start Rasa X locally by executing
+Rasa X is a tool for practicing conversation-driven development..
+You can find more information about it <a className="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.You can start Rasa X in local mode by executing
 
 ```bash
 rasa x
