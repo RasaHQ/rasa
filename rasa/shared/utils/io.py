@@ -19,7 +19,11 @@ from rasa.shared.constants import (
     ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
 )
-from rasa.shared.exceptions import YamlSyntaxException
+from rasa.shared.exceptions import (
+    FileIOException,
+    FileNotFoundException,
+    YamlSyntaxException,
+)
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -117,7 +121,16 @@ def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) ->
         with open(filename, encoding=encoding) as f:
             return f.read()
     except FileNotFoundError:
-        raise ValueError(f"File '{filename}' does not exist.")
+        raise FileNotFoundException(
+            f"Failed to read file, " f"'{os.path.abspath(filename)}' does not exist."
+        )
+    except UnicodeDecodeError:
+        raise FileIOException(
+            f"Failed to read file '{os.path.abspath(filename)}', "
+            f"could not read the file using {encoding} to decode "
+            f"it. Please make sure the file is stored with this "
+            f"encoding."
+        )
 
 
 def read_json_file(filename: Union[Text, Path]) -> Any:
@@ -126,9 +139,8 @@ def read_json_file(filename: Union[Text, Path]) -> Any:
     try:
         return json.loads(content)
     except ValueError as e:
-        raise ValueError(
-            "Failed to read json from '{}'. Error: "
-            "{}".format(os.path.abspath(filename), e)
+        raise FileIOException(
+            f"Failed to read json from '{os.path.abspath(filename)}'. Error: {e}"
         )
 
 
@@ -140,8 +152,7 @@ def list_directory(path: Text) -> List[Text]:
 
     if not isinstance(path, str):
         raise ValueError(
-            "`resource_name` must be a string type. "
-            "Got `{}` instead".format(type(path))
+            f"`resource_name` must be a string type. " f"Got `{type(path)}` instead"
         )
 
     if os.path.isfile(path):
@@ -159,9 +170,7 @@ def list_directory(path: Text) -> List[Text]:
             results.extend(os.path.join(base, f) for f in good_directories)
         return results
     else:
-        raise ValueError(
-            "Could not locate the resource '{}'.".format(os.path.abspath(path))
-        )
+        raise ValueError(f"Could not locate the resource '{os.path.abspath(path)}'.")
 
 
 def list_files(path: Text) -> List[Text]:

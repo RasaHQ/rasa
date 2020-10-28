@@ -5,9 +5,11 @@ import pytz
 import time
 from datetime import datetime
 from dateutil import parser
-from typing import Type, Optional, Text
+from typing import Type, Optional, Text, List, Any, Dict
 
 import rasa.shared.utils.common
+import rasa.shared.core.events
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.shared.core.events import (
     Event,
     UserUttered,
@@ -28,6 +30,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     md_format_message,
 )
+from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 
 
 @pytest.mark.parametrize(
@@ -352,4 +355,155 @@ def test_md_format_message_using_long_entity_syntax():
     assert (
         formatted
         == """I am from [Berlin](city) in [Germany]{"entity": "country", "role": "destination"}."""
+    )
+
+
+@pytest.mark.parametrize(
+    (
+        "events_to_split,event_type_to_split_on,additional_splitting_conditions,"
+        "n_resulting_lists,include_splitting_event"
+    ),
+    [
+        # splitting on an action that is not contained in the list results in
+        # the same list of events
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+            ],
+            BotUttered,
+            {},
+            1,
+            False,
+        ),
+        # splitting on UserUttered in general results in two lists
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+            ],
+            UserUttered,
+            {},
+            2,
+            True,
+        ),
+        # we have the same number of lists when not including the event we're
+        # splitting on
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+            ],
+            UserUttered,
+            {},
+            2,
+            False,
+        ),
+        # splitting on a specific UserUttered event does not result in a split
+        # if it does not match
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+            ],
+            UserUttered,
+            {"intent": "wrong-intent"},
+            1,
+            True,
+        ),
+        # splitting on the right UserUttered event does result in the right split
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+            ],
+            UserUttered,
+            {"intent": {"name": GREET_INTENT_NAME}},
+            2,
+            True,
+        ),
+        # splitting on a specific ActionExecuted works as well
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+            ],
+            ActionExecuted,
+            {"action_name": UTTER_GREET_ACTION},
+            2,
+            True,
+        ),
+    ],
+)
+def test_split_events(
+    events_to_split: List[Event],
+    event_type_to_split_on: Type[Event],
+    additional_splitting_conditions: Dict[Text, Any],
+    n_resulting_lists: int,
+    include_splitting_event: bool,
+):
+    split_events = rasa.shared.core.events.split_events(
+        events_to_split,
+        event_type_to_split_on,
+        additional_splitting_conditions,
+        include_splitting_event=include_splitting_event,
+    )
+    assert len(split_events) == n_resulting_lists
+
+    # if we're not including the splitting event, that event type should not be
+    # contained in the resulting events
+    if not include_splitting_event:
+        assert all(
+            not any(isinstance(event, event_type_to_split_on) for event in events)
+            for events in split_events
+        )
+
+    # make sure the event we're splitting on is the first one if a split happened
+    if len(split_events) > 1 and include_splitting_event:
+        assert all(
+            isinstance(events[0], event_type_to_split_on) for events in split_events[1:]
+        )
+
+
+@pytest.mark.parametrize(
+    "test_events,begin_with_session_start",
+    [
+        # a typical session start
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            True,
+        ),
+        # also a session start, but with timestamps
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+                SessionStarted(timestamp=2),
+                ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+            ],
+            True,
+        ),
+        # providing a single `action_listen` is not a session start
+        ([ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)], False,),
+        # providing a single `action_session_start` is not a session start
+        ([ActionExecuted(ACTION_SESSION_START_NAME)], False,),
+        # providing no events is not a session start
+        ([], False,),
+    ],
+)
+def test_events_begin_with_session_start(
+    test_events: List[Event], begin_with_session_start: bool,
+):
+    assert (
+        rasa.shared.core.events.do_events_begin_with_session_start(test_events)
+        == begin_with_session_start
     )
