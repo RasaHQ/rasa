@@ -1077,8 +1077,8 @@ class RasaModelData:
         # so that the resulting tensor is 3D
         # the shape is (sum of dialogue history length for all tensors in the
         # batch x max sequence length x number of features)
-        # the original shape is passed on the model via the data signature, the
-        # original shape can be used to transform the 3D tensor back into 4D
+        # the original shape and the original dialogue length is passed on to the model
+        # it can be used to transform the 3D tensor back into 4D
 
         sum_dialogue_len = sum(
             len(array_of_dense) for array_of_dense in array_of_array_of_dense
@@ -1154,8 +1154,8 @@ class RasaModelData:
         # so that the resulting tensor is 3D
         # the shape is (sum of dialogue history length for all tensors in the
         # batch x max sequence length x number of features)
-        # the original shape is passed on the model via the data signature, the
-        # original shape can be used to transform the 3D tensor back into 4D
+        # the original shape and the original dialogue length is passed on to the model
+        # it can be used to transform the 3D tensor back into 4D
 
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)

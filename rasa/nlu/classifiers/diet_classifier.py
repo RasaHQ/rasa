@@ -1434,12 +1434,7 @@ class DIET(TransformerRasaModel):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-        # for k, v in tf_batch_data.items():
-        #     print(k)
-        #     for _k, _v in v.items():
-        #         print("  ", _k)
-        #         for __v in _v:
-        #             print("    ", __v.shape)
+
         batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
         sequence_lengths = self._get_sequence_lengths(
