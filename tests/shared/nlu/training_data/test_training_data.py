@@ -237,13 +237,10 @@ def test_train_test_split(filepaths: List[Text]):
 
     for train_percent in range(50, 95, 5):
         train_frac = train_percent / 100.0
-        train_split, test_split = training_data.train_test_split(
-            train_frac
-        )
+        train_split, test_split = training_data.train_test_split(train_frac)
 
         assert (
-            len(test_split.training_examples)
-            + len(train_split.training_examples)
+            len(test_split.training_examples) + len(train_split.training_examples)
             == NUM_TRAIN_EXAMPLES
         )
 
@@ -257,13 +254,9 @@ def test_train_test_split(filepaths: List[Text]):
         if NUM_TRAIN_EXAMPLES - expected_num_train_examples_floor < num_classes:
             expected_num_train_examples_floor = NUM_TRAIN_EXAMPLES - num_classes - 1
 
+        assert len(train_split.training_examples) >= expected_num_train_examples_floor
         assert (
-            len(train_split.training_examples)
-            >= expected_num_train_examples_floor
-        )
-        assert (
-            len(train_split.training_examples)
-            <= expected_num_train_examples_floor + 1
+            len(train_split.training_examples) <= expected_num_train_examples_floor + 1
         )
 
         assert len(training_data.number_of_examples_per_intent.keys()) == len(
