@@ -16,7 +16,7 @@ from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeat
 def test_convert_featurizer_process(component_builder):
 
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
-    tokenizer = ConveRTTokenizer(component_config)
+    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
 
     sentence = "Hey how are you today ?"
@@ -43,7 +43,7 @@ def test_convert_featurizer_process(component_builder):
 
 def test_convert_featurizer_train(component_builder):
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
-    tokenizer = ConveRTTokenizer(component_config)
+    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
 
     sentence = "Hey how are you today ?"
@@ -100,7 +100,7 @@ def test_convert_featurizer_train(component_builder):
 )
 def test_convert_featurizer_tokens_to_text(sentence, expected_text):
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
-    tokenizer = ConveRTTokenizer(component_config)
+    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
     tokens = tokenizer.tokenize(Message(data={TEXT: sentence}), attribute=TEXT)
 
     actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]

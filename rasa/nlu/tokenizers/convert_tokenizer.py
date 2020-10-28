@@ -63,17 +63,24 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                     It should contain the following model files - {files_to_check}"""
                 )
 
-    def _get_validated_model_url(self) -> Text:
+    def _get_validated_model_url(self, ignore_exceptions: bool) -> Text:
         """Validates the specified model_url parameter.
         The model_url parameter cannot be left empty. It can either
         be set to a remote URL where the model is hosted or it can be
         path to a local directory.
+
+        Args:
+            ignore_exceptions: Whether to ignore all exception checks. This
+            is strictly only for pytests.
 
         Returns:
             Validated path to model
         """
 
         model_url = self.component_config.get("model_url", None)
+        if ignore_exceptions:
+            return model_url
+
         if not model_url:
             raise RasaException(
                 """Parameter "model_url" was not specified in the configuration of "ConveRTTokenizer".
@@ -108,8 +115,9 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         elif os.path.isfile(model_url):
             # Definitely invalid since the specified path should be a directory
             raise RasaException(
-                """Parameter "model_url" of "ConveRTTokenizer" was set to
-                the path of a file which is invalid. You can either use a community hosted URL or if you have a
+                """Parameter "model_url" of "ConveRTTokenizer" was
+                set to the path of a file which is invalid. You
+                can either use a community hosted URL or if you have a
                 local copy of the model, pass the path to the directory
                 containing the model files."""
             )
@@ -124,20 +132,27 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         else:
             raise RasaException(
-                f"""{model_url} is neither a valid remote URL
-                nor a local directory. You can either use a
-                community hosted URL or if you have a
+                f"""{model_url} is neither a valid remote URL nor a local directory.
+                You can either use a community hosted URL or if you have a
                 local copy of the model, pass the path to
                 the directory containing the model files."""
             )
         return model_url
 
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
-        """Construct a new tokenizer using the WhitespaceTokenizer framework."""
+    def __init__(
+        self, component_config: Dict[Text, Any] = None, ignore_exceptions: bool = False
+    ) -> None:
+        """Construct a new tokenizer using the WhitespaceTokenizer framework.
+
+        Args:
+            component_config: User configuration for the component
+            ignore_exceptions: Whether to ignore all exception checks. This
+            is strictly only for pytests.
+        """
 
         super().__init__(component_config)
 
-        self.model_url = self._get_validated_model_url()
+        self.model_url = self._get_validated_model_url(ignore_exceptions)
 
         self.module = train_utils.load_tf_hub_model(self.model_url)
 
