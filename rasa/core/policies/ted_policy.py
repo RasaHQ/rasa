@@ -17,7 +17,15 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, ENTITIES
+from rasa.shared.nlu.constants import (
+    ACTION_TEXT,
+    ACTION_NAME,
+    INTENT,
+    TEXT,
+    ENTITIES,
+    VALID_FEATURE_TYPES,
+    FEATURE_TYPE_SENTENCE,
+)
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
@@ -71,7 +79,6 @@ from rasa.utils.tensorflow.constants import (
     ENCODING_DIMENSION,
     UNIDIRECTIONAL_ENCODER,
     SEQUENCE,
-    SEQUENCE_LENGTH,
     SENTENCE,
     SEQUENCE_LENGTH,
     DENSE_DIMENSION,
@@ -95,7 +102,6 @@ logger = logging.getLogger(__name__)
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = "ids"
 LENGTH = "length"
-POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE]
 SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT]
 LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
@@ -702,7 +708,7 @@ class TED(TransformerRasaModel):
             name: the attribute name
             signature: data signature
         """
-        for feature_type in POSSIBLE_FEATURE_TYPES:
+        for feature_type in VALID_FEATURE_TYPES:
             if name not in signature or feature_type not in signature[name]:
                 # features for feature type are not present
                 continue
@@ -725,20 +731,19 @@ class TED(TransformerRasaModel):
         Args:
             name: attribute name
         """
-        feature_type = SENTENCE
         # create encoding layers only for the features which should be encoded;
         if name not in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
             return
         # check that there are SENTENCE features for the attribute name in data
         if (
             name in SENTENCE_FEATURES_TO_ENCODE
-            and feature_type not in self.data_signature[name]
+            and FEATURE_TYPE_SENTENCE not in self.data_signature[name]
         ):
             return
         #  same for label_data
         if (
             name in LABEL_FEATURES_TO_ENCODE
-            and feature_type not in self.label_signature[name]
+            and FEATURE_TYPE_SENTENCE not in self.label_signature[name]
         ):
             return
 
