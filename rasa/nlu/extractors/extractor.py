@@ -205,14 +205,6 @@ class EntityExtractor(Component):
                     confidences,
                 )
                 entities.append(entity)
-            elif token.start - last_token_end <= 1:
-                # current token has the same entity tag as the token before and
-                # the two tokens are only separated by at most one symbol (e.g. space,
-                # dash, etc.)
-                entities[-1][ENTITY_ATTRIBUTE_END] = token.end
-                if confidences is not None:
-                    self._update_confidence_values(entities, confidences, idx)
-
             elif self._check_is_single_entity(
                 text, token, last_token_end, split_entities_config, current_entity_tag
             ):
@@ -279,6 +271,12 @@ class EntityExtractor(Component):
         split_entities_config: Dict[Text, bool],
         current_entity_tag: Text,
     ):
+        # current token has the same entity tag as the token before and
+        # the two tokens are only separated by at most one symbol (e.g. space,
+        # dash, etc.)
+        if token.start - last_token_end <= 1:
+            return True
+
         # Tokens need to be no further than 3 positions apart
         # The magic number 3 is chosen such that the following two cases can be extracted
         #   - Schönhauser Allee 175, 10119 Berlin (address compounds separated by 2 tokens (", "))
