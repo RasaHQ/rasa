@@ -341,10 +341,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @property
     def label_key(self) -> Optional[Text]:
+        """Return key if intent classification is activated"""
         return LABEL_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @property
     def label_sub_key(self) -> Optional[Text]:
+        """Return sub key if intent classification is activated"""
         return LABEL_SUB_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod

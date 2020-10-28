@@ -123,8 +123,7 @@ class EntityExtractor(Component):
         split_entities_config: Dict[Text, bool] = None,
         confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> List[Dict[Text, Any]]:
-        """
-        Convert predictions into entities.
+        """Convert predictions into entities.
 
         Args:
             text: The text message.
