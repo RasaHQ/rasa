@@ -26,6 +26,7 @@ RESTRICTED_ACCESS_URL = "https://storage.googleapis.com/continuous-integration-m
 
 class ConveRTTokenizer(WhitespaceTokenizer):
     """Tokenizer using ConveRT model.
+
     Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
     model from TFHub and computes sub-word tokens for dense
     featurizable attributes of each message object.
@@ -43,7 +44,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
     }
 
     def _validate_model_files_exist(self, model_directory: Text) -> None:
-        """Check if essential model files exist inside the model_directory
+        """Check if essential model files exist inside the model_directory.
 
         Args:
             model_directory: Directory to investigate
@@ -65,6 +66,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
     def _get_validated_model_url(self, ignore_exceptions: bool) -> Text:
         """Validates the specified model_url parameter.
+
         The model_url parameter cannot be left empty. It can either
         be set to a remote URL where the model is hosted or it can be
         path to a local directory.
@@ -76,7 +78,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         Returns:
             Validated path to model
         """
-
         model_url = self.component_config.get("model_url", None)
         if ignore_exceptions:
             return model_url
@@ -149,7 +150,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             ignore_exceptions: Whether to ignore all exception checks. This
             is strictly only for pytests.
         """
-
         super().__init__(component_config)
 
         self.model_url = self._get_validated_model_url(ignore_exceptions)
