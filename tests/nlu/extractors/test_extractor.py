@@ -234,6 +234,7 @@ def test_convert_tags_to_entities(
     actual_entities = extractor.convert_predictions_into_entities(text, tokens, tags, split_entities_config, confidences)
     assert actual_entities == expected_entities
 
+
 @pytest.mark.parametrize(
     "text, tags, confidences, expected_entities",
     [
@@ -360,6 +361,7 @@ def test_split_entities_by_comma(
     actual_entities = extractor.convert_predictions_into_entities(text, tokens, tags, split_entities_config, confidences)
 
     assert actual_entities == expected_entities
+
 
 @pytest.mark.parametrize(
     "text, warnings",
