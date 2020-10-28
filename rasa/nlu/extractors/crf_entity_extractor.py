@@ -66,6 +66,9 @@ class CRFEntityExtractor(EntityExtractor):
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
         BILOU_FLAG: True,
+        # Split entities by comma, this makes sense e.g. for a list of ingredients
+        # in a recipie, but it doesn't make sense for the parts of an address
+        SPLIT_ENTITIES_BY_COMMA: True,
         # crf_features is [before, token, after] array with before, token,
         # after holding keys about which features to use for each token,
         # for example, 'title' in array before will have the feature
