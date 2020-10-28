@@ -253,18 +253,6 @@ def test_kafka_broker_security_protocols(file: Text, exception: Exception):
         actual._create_producer()
 
 
-def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
-    from rasa.core.brokers import pika
-
-    with caplog.at_level(logging.INFO):
-        with pytest.raises(Exception):
-            pika.initialise_pika_connection(
-                "localhost", "user", "password", connection_attempts=1
-            )
-
-    assert len(caplog.records) == 0
-
-
 def test_pika_logs_in_debug_mode(caplog: LogCaptureFixture, monkeypatch: MonkeyPatch):
     from rasa.core.brokers.pika import _pika_log_level
 

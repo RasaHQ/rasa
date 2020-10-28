@@ -6,7 +6,6 @@ from threading import Thread
 from collections import deque
 from contextlib import contextmanager
 from typing import (
-    Callable,
     Dict,
     Deque,
     Optional,
@@ -27,8 +26,7 @@ from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 
 if TYPE_CHECKING:
     import pika
-    from pika.adapters.blocking_connection import BlockingChannel
-    from pika import SelectConnection, BlockingConnection, BasicProperties
+    from pika import SelectConnection, BasicProperties
     from pika.channel import Channel
     from pika.connection import Parameters, Connection
 
@@ -38,36 +36,6 @@ RABBITMQ_EXCHANGE = "rasa-exchange"
 DEFAULT_QUEUE_NAME = "rasa_core_events"
 MessageHeaders = Optional[Dict[Text, Text]]
 Message = Tuple[Text, MessageHeaders]
-
-
-def initialise_pika_connection(
-    host: Text,
-    username: Text,
-    password: Text,
-    port: Union[Text, int] = 5672,
-    connection_attempts: int = 20,
-    retry_delay_in_seconds: float = 5,
-) -> "BlockingConnection":
-    """Create a Pika `BlockingConnection`.
-
-    Args:
-        host: Pika host
-        username: username for authentication with Pika host
-        password: password for authentication with Pika host
-        port: port of the Pika host
-        connection_attempts: number of channel attempts before giving up
-        retry_delay_in_seconds: delay in seconds between channel attempts
-
-    Returns:
-        `pika.BlockingConnection` with provided parameters
-    """
-    import pika
-
-    with _pika_log_level(logging.CRITICAL):
-        parameters = _get_pika_parameters(
-            host, username, password, port, connection_attempts, retry_delay_in_seconds
-        )
-        return pika.BlockingConnection(parameters)
 
 
 @contextmanager
@@ -182,41 +150,6 @@ def _get_pika_parameters(
         )
 
     return parameters
-
-
-def initialise_pika_select_connection(
-    parameters: "Parameters",
-    on_open_callback: Callable[["SelectConnection"], None],
-    on_open_error_callback: Callable[["SelectConnection", Text], None],
-) -> "SelectConnection":
-    """Create a non-blocking Pika `SelectConnection`.
-
-    Args:
-        parameters: Parameters which should be used to connect.
-        on_open_callback: Callback which is called when the connection was established.
-        on_open_error_callback: Callback which is called when connecting to the broker
-            failed.
-
-    Returns:
-        A callback-based connection to the RabbitMQ event broker.
-    """
-    import pika
-
-    return pika.SelectConnection(
-        parameters,
-        on_open_callback=on_open_callback,
-        on_open_error_callback=on_open_error_callback,
-    )
-
-
-def _declare_pika_channel_with_queue(
-    connection: "BlockingConnection", queue: Text
-) -> "BlockingChannel":
-    """Declare a durable queue on Pika channel."""
-    channel = connection.channel()
-    channel.queue_declare(queue, durable=True)
-
-    return channel
 
 
 def close_pika_channel(
