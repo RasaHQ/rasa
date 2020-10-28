@@ -2,8 +2,7 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
-from rasa.shared.nlu.constants import TEXT
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.constants import TEXT, SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -229,9 +228,138 @@ def test_convert_tags_to_entities(
     message = Message(data={TEXT: text})
     tokens = tokenizer.tokenize(message, TEXT)
 
-    actual_entities = extractor.convert_predictions_into_entities(text, tokens, tags, {}, confidences)
+    split_entities_config = {
+        SPLIT_ENTITIES_BY_COMMA: True
+    }
+    actual_entities = extractor.convert_predictions_into_entities(text, tokens, tags, split_entities_config, confidences)
     assert actual_entities == expected_entities
 
+@pytest.mark.parametrize(
+    "text, tags, confidences, expected_entities",
+    [
+        (
+            "I live at 22 Powderhall Rd., EH7 4GB, Edinburgh, UK",
+            {
+                "entity": ["O", "O", "O", "address", "address", "address", "address", "address", "address", "address"],
+            },
+            {
+                "entity": [1.0, 1.0, 1.0, 1.0, 0.98, 0.78, 1.0, 0.89, 1.0, 1.0, 1.0],
+            },
+            [
+                {
+                    "entity": "address",
+                    "start": 10,
+                    "end": 51,
+                    "value": "22 Powderhall Rd., EH7 4GB, Edinburgh, UK",
+                    "confidence_entity": 0.78
+                }
+            ],
+        ),
+        (
+            "The address is Schönhauser Allee 175, 10119 Berlin, DE",
+            {
+                "entity": ["O", "O", "O", "address", "address", "address", "address", "address", "address"]
+            },
+            {
+                "entity": [1.0, 1.0, 1.0, 1.0, 1.0, 0.67, 0.77, 1.0, 0.98]
+            },
+            [
+                {
+                    "entity": "address",
+                    "start": 15,
+                    "end": 54,
+                    "value": "Schönhauser Allee 175, 10119 Berlin, DE",
+                    "confidence_entity": 0.67
+                }
+            ]
+
+        ),
+        (
+            "We need to get more of tofu, cauliflower, avocado",
+            {
+                "entity": ["O", "O", "O", "O", "O", "O", "ingredient", "ingredient", "ingredient"]
+            },
+            {
+                "entity": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.78]
+            },
+            [
+                {
+                    "entity": "ingredient",
+                    "start": 23,
+                    "end": 27,
+                    "value": "tofu",
+                    "confidence_entity": 1.0
+                },
+                {
+                    "entity": "ingredient",
+                    "start": 29,
+                    "end": 40,
+                    "value": "cauliflower",
+                    "confidence_entity": 0.9
+                },
+                {
+                    "entity": "ingredient",
+                    "start": 42,
+                    "end": 49,
+                    "value": "avocado",
+                    "confidence_entity": 0.78
+                }
+            ]
+        ),
+        (
+            "So the list of drinks to get is coffee, Club Mate, Ottakringer",
+            {
+                "entity": ["O", "O", "O", "O", "O", "O", "O", "O", "beverage", "beverage", "beverage", "beverage"]
+            },
+            {
+                "entity": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.69, 0.88, 0.84, 0.79]
+            },
+            [
+                {
+                    "entity": "beverage",
+                    "start": 32,
+                    "end": 38,
+                    "value": "coffee",
+                    "confidence_entity": 0.69
+                },
+                {
+                    "entity": "beverage",
+                    "start": 40,
+                    "end": 49,
+                    "value": "Club Mate",
+                    "confidence_entity": 0.84
+                },
+                {
+                    "entity": "beverage",
+                    "start": 51,
+                    "end": 62,
+                    "value": "Ottakringer",
+                    "confidence_entity": 0.79
+                }
+            ]
+        )
+    ]
+)
+def test_split_entities_by_comma(
+        text: Text,
+        tags: Dict[Text, List[Text]],
+        confidences: Dict[Text, List[float]],
+        expected_entities: List[Dict[Text, Any]],
+):
+    extractor = EntityExtractor()
+    tokenizer = WhitespaceTokenizer()
+
+    message = Message(data={TEXT: text})
+    tokens = tokenizer.tokenize(message, TEXT)
+
+    split_entities_config = {
+        SPLIT_ENTITIES_BY_COMMA: True,
+        'address': False,
+        'ingredient': True
+    }
+    actual_entities = extractor.convert_predictions_into_entities(text, tokens, tags, split_entities_config, confidences)
+
+    assert actual_entities == expected_entities
 
 @pytest.mark.parametrize(
     "text, warnings",
