@@ -111,7 +111,7 @@ def run_core_test(args: argparse.Namespace) -> None:
         test_core_models(args.model, stories, output)
 
     rasa.shared.utils.cli.print_info(
-        f"Failed stories written to '{output}/{FAILED_STORIES_FILE}'"
+        f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
     )
 
 
