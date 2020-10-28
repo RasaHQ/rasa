@@ -9,6 +9,7 @@ from rasa.nlu.constants import (
     NUMBER_OF_SUB_TOKENS,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
+    LANGUAGE_MODEL_DOCS,
 )
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -770,6 +771,7 @@ def test_preserve_sentence_and_sequence_features_old_config():
     lm_featurizer = LanguageModelFeaturizer({"model_name": "gpt2"})
     lm_featurizer.process(message)
 
+    message.set(LANGUAGE_MODEL_DOCS[attribute], None)
     lm_docs = lm_featurizer._get_docs_for_batch(
         [message], attribute=attribute, inference_mode=True
     )[0]

@@ -17,8 +17,6 @@ import numpy as np
 from rasa.nlu.constants import (
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    TOKEN_IDS,
-    TOKENS,
     SENTENCE_FEATURES,
     SEQUENCE_FEATURES,
     NUMBER_OF_SUB_TOKENS,
@@ -666,8 +664,6 @@ class HFTransformersNLP(Component):
         batch_docs = []
         for index in range(len(batch_examples)):
             doc = {
-                TOKEN_IDS: batch_token_ids[index],
-                TOKENS: batch_tokens[index],
                 SEQUENCE_FEATURES: batch_sequence_features[index],
                 SENTENCE_FEATURES: np.reshape(batch_sentence_features[index], (1, -1)),
             }

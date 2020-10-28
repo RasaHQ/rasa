@@ -19,8 +19,6 @@ from rasa.nlu.constants import (
     FEATURIZER_CLASS_ALIAS,
     NO_LENGTH_RESTRICTION,
     NUMBER_OF_SUB_TOKENS,
-    TOKEN_IDS,
-    TOKENS,
     TOKENS_NAMES,
     LANGUAGE_MODEL_DOCS,
 )
@@ -651,6 +649,19 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             List of language model docs for each message in batch.
         """
 
+        hf_transformers_doc = batch_examples[0].get(LANGUAGE_MODEL_DOCS[attribute])
+        if hf_transformers_doc:
+            # This should only be the case if the deprecated
+            # HFTransformersNLP component is used in the pipeline
+            # TODO: remove this when HFTransformersNLP is removed for good
+            logging.debug(
+                f"{LANGUAGE_MODEL_DOCS[attribute]} set: this "
+                f"indicates you're using the deprecated component "
+                f"HFTransformersNLP, please remove it from your "
+                f"pipeline."
+            )
+            return [ex.get(LANGUAGE_MODEL_DOCS[attribute]) for ex in batch_examples]
+
         batch_tokens, batch_token_ids = self._get_token_ids_for_batch(
             batch_examples, attribute
         )
@@ -668,8 +679,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         batch_docs = []
         for index in range(len(batch_examples)):
             doc = {
-                TOKEN_IDS: batch_token_ids[index],
-                TOKENS: batch_tokens[index],
                 SEQUENCE_FEATURES: batch_sequence_features[index],
                 SENTENCE_FEATURES: np.reshape(batch_sentence_features[index], (1, -1)),
             }
@@ -737,21 +746,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
                     attribute,
                 )
 
-    def _set_lm_features(self, doc, message: Message, attribute: Text = TEXT) -> None:
+    def _set_lm_features(
+        self, doc: Dict[Text, Any], message: Message, attribute: Text = TEXT
+    ) -> None:
         """Adds the precomputed word vectors to the messages features."""
-
-        hf_transformers_doc = message.get(LANGUAGE_MODEL_DOCS[attribute])
-        if hf_transformers_doc:
-            # This should only be the case if the deprecated
-            # HFTransformersNLP component is used in the pipeline
-            # TODO: remove this when HFTransformersNLP is removed for good
-            logging.debug(
-                f"{LANGUAGE_MODEL_DOCS[attribute]} set: this "
-                f"indicates you're using the deprecated component "
-                f"HFTransformersNLP, please remove it from your "
-                f"pipeline."
-            )
-            doc = hf_transformers_doc
 
         sequence_features = doc[SEQUENCE_FEATURES]
         sentence_features = doc[SENTENCE_FEATURES]
