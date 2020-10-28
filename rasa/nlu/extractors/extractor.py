@@ -25,6 +25,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
 )
 
 
