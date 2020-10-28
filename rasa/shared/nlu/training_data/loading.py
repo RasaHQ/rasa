@@ -33,7 +33,7 @@ JSON = "json"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
 _json_format_heuristics = {
-    WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
+    WIT: lambda js, fn: "utterances" in js,
     LUIS: lambda js, fn: "luis_schema_version" in js,
     RASA: lambda js, fn: "rasa_nlu_data" in js,
     DIALOGFLOW_AGENT: lambda js, fn: "supportedLanguages" in js,

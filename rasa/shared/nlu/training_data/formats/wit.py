@@ -1,7 +1,8 @@
 import logging
 from typing import Any, Dict, Text
 
-from rasa.shared.nlu.constants import INTENT, ENTITIES, TEXT
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.shared.nlu.constants import INTENT, ENTITIES, TEXT, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_TYPE
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -15,22 +16,20 @@ class WitReader(JsonTrainingDataReader):
         """Loads training data stored in the WIT.ai data format."""
         training_examples = []
 
-        for s in js["data"]:
+        for s in js["utterances"]:
             entities = s.get(ENTITIES)
             if entities is None:
                 continue
             text = s.get(TEXT)
-            intents = [e["value"] for e in entities if e["entity"] == INTENT]
-            intent = intents[0].strip('"') if intents else None
+            intent = s.get("intent", USER_INTENT_OUT_OF_SCOPE)
 
-            entities = [
-                e
-                for e in entities
-                if ("start" in e and "end" in e and e["entity"] != INTENT)
-            ]
             for e in entities:
-                # for some reason wit adds additional quotes around entities
-                e["value"] = e["value"].strip('"')
+                entity_name = e["entity"]
+                if ":" not in entity_name:
+                    continue
+                (name, role) = entity_name.rsplit(":", 1)
+                e[ENTITY_ATTRIBUTE_TYPE] = name
+                e[ENTITY_ATTRIBUTE_ROLE] = role
 
             data = {}
             if intent:
