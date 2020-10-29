@@ -32,11 +32,18 @@ from rasa.exceptions import RasaException
     ],
 )
 def test_convert_tokenizer_edge_cases(
-    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+    text: Text,
+    expected_tokens: List[Text],
+    expected_indices: List[Tuple[int]],
+    monkeypatch,
 ):
 
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
+
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
-    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
+    tokenizer = ConveRTTokenizer(component_config)
 
     tokens = tokenizer.tokenize(Message(data={TEXT: text}), attribute=TEXT)
 
@@ -53,7 +60,11 @@ def test_convert_tokenizer_edge_cases(
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
-def test_custom_intent_symbol(text: Text, expected_tokens: List[Text]):
+def test_custom_intent_symbol(text: Text, expected_tokens: List[Text], monkeypatch):
+
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
 
     component_config = {
         "name": "ConveRTTokenizer",
@@ -62,7 +73,7 @@ def test_custom_intent_symbol(text: Text, expected_tokens: List[Text]):
         "intent_split_symbol": "+",
     }
 
-    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
+    tokenizer = ConveRTTokenizer(component_config)
 
     message = Message(data={TEXT: text})
     message.set(INTENT, text)
@@ -78,10 +89,13 @@ def test_custom_intent_symbol(text: Text, expected_tokens: List[Text]):
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
 )
 def test_convert_tokenizer_number_of_sub_tokens(
-    text: Text, expected_number_of_sub_tokens: List[int]
+    text: Text, expected_number_of_sub_tokens: List[int], monkeypatch
 ):
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
-    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
+    tokenizer = ConveRTTokenizer(component_config)
 
     message = Message(data={TEXT: text})
     message.set(INTENT, text)

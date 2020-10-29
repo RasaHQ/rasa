@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from typing import Text
 
 from rasa.nlu.tokenizers.convert_tokenizer import (
     ConveRTTokenizer,
@@ -14,10 +15,14 @@ from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeat
 
 
 @pytest.mark.skip_on_windows
-def test_convert_featurizer_process(component_builder):
+def test_convert_featurizer_process(component_builder, monkeypatch):
+
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
 
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
-    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
+    tokenizer = ConveRTTokenizer(component_config)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
 
     sentence = "Hey how are you today ?"
@@ -43,9 +48,13 @@ def test_convert_featurizer_process(component_builder):
 
 
 @pytest.mark.skip_on_windows
-def test_convert_featurizer_train(component_builder):
+def test_convert_featurizer_train(component_builder, monkeypatch):
+
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
-    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
+    tokenizer = ConveRTTokenizer(component_config)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
 
     sentence = "Hey how are you today ?"
@@ -101,9 +110,15 @@ def test_convert_featurizer_train(component_builder):
         ("ńöñàśçií", "ńöñàśçií"),
     ],
 )
-def test_convert_featurizer_tokens_to_text(sentence, expected_text):
+def test_convert_featurizer_tokens_to_text(
+    sentence: Text, expected_text: Text, monkeypatch
+):
+
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
-    tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
+    tokenizer = ConveRTTokenizer(component_config)
     tokens = tokenizer.tokenize(Message(data={TEXT: sentence}), attribute=TEXT)
 
     actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]
