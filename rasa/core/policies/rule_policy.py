@@ -853,7 +853,9 @@ class RulePolicy(MemoizationPolicy):
                 None,
             )
 
-        rules_action_name, source = self._find_action_from_rules(tracker, domain)
+        rules_action_name, source = self._find_action_from_rules(
+            tracker, domain, use_text_for_last_user_input=False
+        )
         # we want to remember the source even if rules didn't predict any action
         self._prediction_source = source
         if rules_action_name:
