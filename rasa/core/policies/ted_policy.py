@@ -875,28 +875,36 @@ class TED(TransformerRasaModel):
                 attribute_features
             )
 
+        attribute_features = attribute_features * attribute_mask
+
         if attribute in set(
             SENTENCE_FEATURES_TO_ENCODE
             + SEQUENCE_FEATURES_TO_ENCODE
             + STATE_LEVEL_FEATURES
         ):
-            dialogue_lengths = tf.cast(
-                tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32
-            )
             attribute_features = self._convert_to_original_shape(
-                attribute_features, dialogue_lengths
+                attribute_features, tf_batch_data
             )
 
-            attribute_mask = tf_batch_data[attribute][MASK_3D][0]
-
-        return attribute_features * attribute_mask
+        return attribute_features
 
     @staticmethod
     def _convert_to_original_shape(
-        attribute_features: tf.Tensor, dialogue_lengths: tf.Tensor
+        attribute_features: tf.Tensor,
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> tf.Tensor:
-        # transform attribute features back to original shape:
-        # batch x dialogue length x units
+        """Transform attribute features back to original shape:
+        batch x dialogue length x units
+
+        Args:
+            attribute_features: the features to convert
+            tf_batch_data: the batch data
+
+        Returns:
+            The converted attribute features
+        """
+        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32)
+
         indices = []
         for batch_dim in range(dialogue_lengths.shape[0]):
             for dialogue_dim in range(dialogue_lengths.shape[1]):

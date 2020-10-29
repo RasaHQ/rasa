@@ -338,13 +338,7 @@ def _features_for_attribute(
 
     if consider_dialogue_dimension:
         attribute_to_feature_arrays = {
-            MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=4)],
-            MASK_3D: [
-                FeatureArray(
-                    np.array([np.squeeze(mask, -1) for mask in attribute_masks]),
-                    number_of_dimensions=3,
-                )
-            ],
+            MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=4)]
         }
     else:
         attribute_to_feature_arrays = {
