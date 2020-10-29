@@ -43,7 +43,26 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         "model_url": None,
     }
 
-    def _validate_model_files_exist(self, model_directory: Text) -> None:
+    def __init__(
+        self, component_config: Dict[Text, Any] = None, ignore_exceptions: bool = False
+    ) -> None:
+        """Construct a new tokenizer using the WhitespaceTokenizer framework.
+
+        Args:
+            component_config: User configuration for the component
+            ignore_exceptions: Whether to ignore all exception checks. This
+            is strictly only for pytests.
+        """
+        super().__init__(component_config)
+
+        self.model_url = self._get_validated_model_url(ignore_exceptions)
+
+        self.module = train_utils.load_tf_hub_model(self.model_url)
+
+        self.tokenize_signature = self.module.signatures["tokenize"]
+
+    @staticmethod
+    def _validate_model_files_exist(model_directory: Text) -> None:
         """Check if essential model files exist inside the model_directory.
 
         Args:
@@ -61,15 +80,16 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                 raise RasaException(
                     f"""File {file_path} does not exist.
                     Re-check the files inside the directory {model_directory}.
-                    It should contain the following model files - {files_to_check}"""
+                    It should contain the following model 
+                    files - [{", ".join(files_to_check)}]"""
                 )
 
     def _get_validated_model_url(self, ignore_exceptions: bool) -> Text:
-        """Validates the specified model_url parameter.
+        """Validates the specified `model_url` parameter.
 
-        The model_url parameter cannot be left empty. It can either
+        The `model_url` parameter cannot be left empty. It can either
         be set to a remote URL where the model is hosted or it can be
-        path to a local directory.
+        a path to a local directory.
 
         Args:
             ignore_exceptions: Whether to ignore all exception checks. This
@@ -139,24 +159,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                 the directory containing the model files."""
             )
         return model_url
-
-    def __init__(
-        self, component_config: Dict[Text, Any] = None, ignore_exceptions: bool = False
-    ) -> None:
-        """Construct a new tokenizer using the WhitespaceTokenizer framework.
-
-        Args:
-            component_config: User configuration for the component
-            ignore_exceptions: Whether to ignore all exception checks. This
-            is strictly only for pytests.
-        """
-        super().__init__(component_config)
-
-        self.model_url = self._get_validated_model_url(ignore_exceptions)
-
-        self.module = train_utils.load_tf_hub_model(self.model_url)
-
-        self.tokenize_signature = self.module.signatures["tokenize"]
 
     @classmethod
     def cache_key(

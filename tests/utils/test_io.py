@@ -99,10 +99,13 @@ def test_write_utf_8_yaml_file(tmp_path: Path):
     [
         ("a/b/c", False),
         ("a", False),
+        ("https://192.168.1.1", True),
+        ("http://192.168.1.1", True),
         ("https://google.com", True),
         ("https://www.google.com", True),
         ("http://google.com", True),
         ("http://www.google.com", True),
+        ("http://a/b/c", False),
     ],
 )
 def test_is_valid_remote_url(url: Text, result: bool):

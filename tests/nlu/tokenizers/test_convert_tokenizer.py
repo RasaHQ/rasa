@@ -1,7 +1,7 @@
 import pytest
-from typing import Text
+from typing import Text, List, Tuple, Optional
+from pathlib import Path
 import os
-import tempfile
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -31,7 +31,9 @@ from rasa.exceptions import RasaException
         ("ńöñàśçií", ["ńöñàśçií"], [(0, 8)]),
     ],
 )
-def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
+def test_convert_tokenizer_edge_cases(
+    text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
+):
 
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
     tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
@@ -51,7 +53,7 @@ def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
-def test_custom_intent_symbol(text, expected_tokens):
+def test_custom_intent_symbol(text: Text, expected_tokens: List[Text]):
 
     component_config = {
         "name": "ConveRTTokenizer",
@@ -75,7 +77,9 @@ def test_custom_intent_symbol(text, expected_tokens):
     "text, expected_number_of_sub_tokens",
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
 )
-def test_convert_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
+def test_convert_tokenizer_number_of_sub_tokens(
+    text: Text, expected_number_of_sub_tokens: List[int]
+):
     component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
     tokenizer = ConveRTTokenizer(component_config, ignore_exceptions=True)
 
@@ -90,19 +94,6 @@ def test_convert_tokenizer_number_of_sub_tokens(text, expected_number_of_sub_tok
 
 
 @pytest.mark.skip_on_windows
-def test_raise_no_url():
-
-    component_config = {"name": "ConveRTTokenizer"}
-    with pytest.raises(RasaException) as excinfo:
-        _ = ConveRTTokenizer(component_config)
-
-    assert (
-        """Parameter "model_url" was not specified in the configuration of "ConveRTTokenizer"""
-        in str(excinfo.value)
-    )
-
-
-@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "model_url, exception_phrase",
     [
@@ -111,9 +102,10 @@ def test_raise_no_url():
             RESTRICTED_ACCESS_URL,
             "which is strictly reserved for pytests of Rasa Open Source only",
         ),
+        (None, """"model_url" was not specified in the configuration"""),
     ],
 )
-def test_raise_invalid_urls(model_url: Text, exception_phrase: Text):
+def test_raise_invalid_urls(model_url: Optional[Text], exception_phrase: Text):
 
     component_config = {"name": "ConveRTTokenizer", "model_url": model_url}
     with pytest.raises(RasaException) as excinfo:
@@ -123,33 +115,29 @@ def test_raise_invalid_urls(model_url: Text, exception_phrase: Text):
 
 
 @pytest.mark.skip_on_windows
-def test_raise_wrong_model_directory():
+def test_raise_wrong_model_directory(tmp_path: Path):
 
-    with tempfile.TemporaryDirectory() as temp_dir:
+    component_config = {"name": "ConveRTTokenizer", "model_url": str(tmp_path)}
 
-        component_config = {"name": "ConveRTTokenizer", "model_url": temp_dir}
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTTokenizer(component_config)
 
-        with pytest.raises(RasaException) as excinfo:
-            _ = ConveRTTokenizer(component_config)
-
-        assert "Re-check the files inside the directory" in str(excinfo.value)
+    assert "Re-check the files inside the directory" in str(excinfo.value)
 
 
 @pytest.mark.skip_on_windows
-def test_raise_wrong_model_file():
+def test_raise_wrong_model_file(tmp_path: Path):
 
-    with tempfile.TemporaryDirectory() as temp_dir:
+    # create a dummy file
+    temp_file = os.path.join(tmp_path, "saved_model.pb")
+    f = open(temp_file, "wb")
+    f.close()
+    component_config = {"name": "ConveRTTokenizer", "model_url": temp_file}
 
-        # create a dummy file
-        temp_file = os.path.join(temp_dir, "saved_model.pb")
-        f = open(temp_file, "wb")
-        f.close()
-        component_config = {"name": "ConveRTTokenizer", "model_url": temp_file}
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTTokenizer(component_config)
 
-        with pytest.raises(RasaException) as excinfo:
-            _ = ConveRTTokenizer(component_config)
-
-        assert "set to the path of a file which is invalid" in str(excinfo.value)
+    assert "set to the path of a file which is invalid" in str(excinfo.value)
 
 
 @pytest.mark.skip_on_windows
