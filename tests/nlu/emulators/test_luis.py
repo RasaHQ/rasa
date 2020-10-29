@@ -24,21 +24,24 @@ def test_luis_response():
     norm = em.normalise_response_json(data)
     assert norm == {
         "query": data["text"],
-        "topScoringIntent": {"intent": "restaurant_search", "score": 0.737014589341683},
-        "intents": [
-            {"intent": "restaurant_search", "score": 0.737014589341683},
-            {"intent": "goodbye", "score": 0.11605464483122209},
-            {"intent": "greet", "score": 0.08816417744097163},
-            {"intent": "affirm", "score": 0.058766588386123204},
-        ],
-        "entities": [
-            {
-                "entity": e["value"],
-                "type": e["entity"],
-                "startIndex": None,
-                "endIndex": None,
-                "score": None,
-            }
-            for e in data["entities"]
-        ],
+        "prediction": {
+            "topIntent": {"intent": "restaurant_search", "score": 0.737014589341683},
+            "intents": [
+                {"intent": "restaurant_search", "score": 0.737014589341683},
+                {"intent": "goodbye", "score": 0.11605464483122209},
+                {"intent": "greet", "score": 0.08816417744097163},
+                {"intent": "affirm", "score": 0.058766588386123204},
+            ],
+            "entities": [
+                {
+                    "entity": e["value"],
+                    "type": e["entity"],
+                    "startIndex": None,
+                    "endIndex": None,
+                    "score": None,
+                    "role": None,
+                }
+                for e in data["entities"]
+            ]
+        },
     }

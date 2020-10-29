@@ -4,7 +4,8 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
+from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY, ENTITY_ATTRIBUTE_START, ENTITY_ATTRIBUTE_END, \
+    ENTITY_ATTRIBUTE_VALUE, ENTITY_ATTRIBUTE_TYPE, ENTITIES
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -20,7 +21,7 @@ import rasa.shared.data
 
 
 def test_luis_data():
-    td = load_data("data/examples/luis/demo-restaurants_v5.json")
+    td = load_data("data/examples/luis/demo-restaurants_v7.json")
 
     assert not td.is_empty()
     assert len(td.entity_examples) == 8
@@ -392,7 +393,7 @@ def test_multiword_entities(tmp_path):
 def test_nonascii_entities(tmp_path):
     data = """
 {
-  "luis_schema_version": "5.0",
+  "luis_schema_version": "7.0",
   "utterances" : [
     {
       "text": "I am looking for a ßäæ ?€ö) item",
@@ -412,13 +413,14 @@ def test_nonascii_entities(tmp_path):
     td = load_data(str(f))
     assert len(td.entity_examples) == 1
     example = td.entity_examples[0]
-    entities = example.get("entities")
+    entities = example.get(ENTITIES)
+    print(entities)
     assert len(entities) == 1
     entity = entities[0]
-    assert entity["value"] == "ßäæ ?€ö)"
-    assert entity["start"] == 19
-    assert entity["end"] == 27
-    assert entity["entity"] == "description"
+    assert entity[ENTITY_ATTRIBUTE_VALUE] == "ßäæ ?€ö)"
+    assert entity[ENTITY_ATTRIBUTE_START] == 19
+    assert entity[ENTITY_ATTRIBUTE_END] == 27
+    assert entity[ENTITY_ATTRIBUTE_TYPE] == "description"
 
 
 def test_entities_synonyms(tmp_path):
@@ -494,7 +496,7 @@ def cmp_dict_list(firsts, seconds):
             None,
         ),
         (
-            "data/examples/luis/demo-restaurants_v5.json",
+            "data/examples/luis/demo-restaurants_v7.json",
             "data/test/luis_converted_to_rasa.json",
             "json",
             None,
@@ -564,7 +566,7 @@ def test_training_data_conversion(
     "data_file,expected_format",
     [
         (
-            "data/examples/luis/demo-restaurants_v5.json",
+            "data/examples/luis/demo-restaurants_v7.json",
             rasa.shared.data.yaml_file_extension(),
         ),
         ("data/examples", rasa.shared.data.yaml_file_extension()),
