@@ -302,12 +302,15 @@ class Policy:
         """
         # empty string to insert line break before first state
         formatted_states = [""]
-        for index, state in enumerate(states):
-            if state:
-                formatted_states.append(
-                    f"[state {str(index)}] previous action: {str(state['prev_action']['action_name'])} | "
-                    f"user intent: {str(state['user']['intent'])}"
-                )
+        if states:
+            for index, state in enumerate(states):
+                if state:
+                    formatted_states.append(
+                        f"[state {str(index)}] previous action: "
+                        f"{str(state['prev_action']['action_name']) if not state['prev_action'] == 'action_text' else str(state['prev_action']['action_text'])} | "
+                        f"user intent: {str(state['user']['intent'])} | "
+                        f"user text: {'not provided' if not state['user'] == 'text' else str(state['user']['text'])} | "
+                        f"user entities: {'not provided' if not state['user'] == 'entities' else str(state['user']['entities'])}")
         return "\n".join(formatted_states)
 
 
