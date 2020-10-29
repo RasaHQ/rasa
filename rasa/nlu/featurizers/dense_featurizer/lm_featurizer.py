@@ -695,8 +695,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         )
 
         # A doc consists of
-        # {'token_ids': ..., 'tokens': ..., 'sequence_features': ...,
-        # 'sentence_features': ...}
+        # {'sequence_features': ..., 'sentence_features': ...}
         batch_docs = []
         for index in range(len(batch_examples)):
             doc = {
