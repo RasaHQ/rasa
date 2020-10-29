@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Any, Text
+from typing import List, Any, Text, Optional
 
 import pytest
 import copy
@@ -9,7 +9,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.events import UserUttered, ActiveLoop, Event
+from rasa.shared.core.events import UserUttered, ActiveLoop, Event, SlotSet
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import Policy, PolicyPrediction
@@ -75,11 +75,20 @@ def test_policy_loading_simple(tmp_path: Path):
 
 class ConstantPolicy(Policy):
     def __init__(
-        self, priority: int = None, predict_index: int = None, confidence: float = 1
+        self,
+        priority: int = None,
+        predict_index: int = None,
+        confidence: float = 1,
+        is_end_to_end_prediction: bool = False,
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
     ) -> None:
         super().__init__(priority=priority)
         self.predict_index = predict_index
         self.confidence = confidence
+        self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.events = events or []
+        self.optional_events = optional_events or []
 
     @classmethod
     def load(cls, _) -> Policy:
@@ -107,7 +116,13 @@ class ConstantPolicy(Policy):
         result = [0.0] * domain.num_actions
         result[self.predict_index] = self.confidence
 
-        return PolicyPrediction(result, policy_priority=self.priority)
+        return PolicyPrediction(
+            result,
+            policy_priority=self.priority,
+            is_end_to_end_prediction=self.is_end_to_end_prediction,
+            events=self.events,
+            optional_events=self.optional_events,
+        )
 
 
 def test_policy_priority():
@@ -440,3 +455,80 @@ def test_mutual_exclusion_of_rule_policy_and_old_rule_like_policies(
     policy_config = [{"name": policy_name} for policy_name in policies]
     with pytest.warns(UserWarning):
         PolicyEnsemble.from_dict({"policies": policy_config})
+
+
+def test_end_to_end_prediction_supersedes_others(default_domain: Domain):
+    expected_action_index = 2
+    expected_confidence = 0.5
+    ensemble = SimplePolicyEnsemble(
+        [
+            ConstantPolicy(priority=100, predict_index=0),
+            ConstantPolicy(
+                priority=1,
+                predict_index=expected_action_index,
+                confidence=expected_confidence,
+                is_end_to_end_prediction=True,
+            ),
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    prediction, winning_policy = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+
+    assert max(prediction) == expected_confidence
+    assert prediction.index(max(prediction)) == expected_action_index
+    assert winning_policy == f"policy_1_{ConstantPolicy.__name__}"
+
+
+def test_prediction_applies_must_have_policy_events(default_domain: Domain):
+    must_have_events = [ActionExecuted("my action")]
+
+    ensemble = SimplePolicyEnsemble(
+        [
+            ConstantPolicy(priority=10, predict_index=1),
+            ConstantPolicy(priority=1, predict_index=2, events=must_have_events),
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    prediction, winning_policy = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+
+    # Policy 0 won due to higher prio
+    assert winning_policy == f"policy_0_{ConstantPolicy.__name__}"
+
+    # Events of losing policy were applied nevertheless
+    assert list(tracker.events) == must_have_events
+
+
+def test_prediction_applies_optional_policy_events(default_domain: Domain):
+    optional_events = [ActionExecuted("my action")]
+    must_have_events = [SlotSet("some slot", "some value")]
+
+    ensemble = SimplePolicyEnsemble(
+        [
+            ConstantPolicy(
+                priority=10,
+                predict_index=1,
+                events=must_have_events,
+                optional_events=optional_events,
+            ),
+            ConstantPolicy(priority=1, predict_index=2),
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    prediction, winning_policy = ensemble.probabilities_using_best_policy(
+        tracker, default_domain, RegexInterpreter()
+    )
+
+    # Policy 0 won due to higher prio
+    assert winning_policy == f"policy_0_{ConstantPolicy.__name__}"
+
+    # Events of losing policy were applied nevertheless
+    assert len(tracker.events) == len(optional_events) + len(must_have_events)
+    assert all(event in tracker.events for event in optional_events)
+    assert all(event in tracker.events for event in must_have_events)

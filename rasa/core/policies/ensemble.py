@@ -476,7 +476,10 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return policy_name.endswith("_" + FormPolicy.__name__)
 
     def _pick_best_policy(
-        self, predictions: Dict[Text, PolicyPrediction]
+        self,
+        predictions: Dict[Text, PolicyPrediction],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Tuple[List[float], Optional[Text]]:
         """Picks the best policy prediction based on probabilities and policy priority.
 
@@ -500,7 +503,14 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         form_confidence = None
         form_policy_name = None
 
+        use_only_end_to_end = any(
+            prediction.is_end_to_end_prediction for prediction in predictions.values()
+        )
+
         for policy_name, prediction in predictions.items():
+            if prediction.is_end_to_end_prediction != use_only_end_to_end:
+                continue
+
             confidence = (max(prediction.probabilities), prediction.policy_priority)
             if self._is_form_policy(policy_name):
                 # store form prediction separately
@@ -517,6 +527,14 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             # if mapping didn't win, check form policy predictions
             if form_confidence > best_confidence:
                 best_policy_name = form_policy_name
+
+        for policy_name, prediction in predictions.items():
+            policy_events = prediction.events.copy()
+            if policy_name == best_policy_name:
+                policy_events += prediction.optional_events
+
+            for event in policy_events:
+                tracker.update(event, domain)
 
         return predictions[best_policy_name].probabilities, best_policy_name
 
@@ -572,7 +590,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     domain.index_for_action(rejected_action_name)
                 ] = 0.0
 
-        return self._pick_best_policy(predictions)
+        return self._pick_best_policy(predictions, tracker, domain)
 
     @staticmethod
     def _get_prediction(
