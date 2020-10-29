@@ -61,8 +61,7 @@ class EntityExtractor(Component):
 
     @staticmethod
     def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
-        """Only return dimensions the user configured"""
-
+        """Only return dimensions the user configured."""
         if requested_dimensions:
             return [
                 entity
