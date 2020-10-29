@@ -10,14 +10,14 @@ Let's get started with migrating your application from LUIS to Rasa:
 
 ## Step 1: Export your Training Data from LUIS
 
-Go to your list of [LUIS applications](https://www.luis.ai/applications) and click
-on the three dots menu next to the app you want to export.
+Go to your list of [LUIS conversation apps](https://www.luis.ai/conversations/applications) and select the application
+you want to export.
 
 import luisImage from './luis_export.png';
 
-<Image img={luisImage} caption="Selecting Export a" alt="Opening the menu in the top right corner of LUIS Applications reveals the Export app option." />
+<Image img={luisImage} caption="Export menu" alt="Opening the menu reveals the 'Export to JSON' option." />
 
-Select 'Export App'. This will download a file with a `.json` extension that can be imported directly into Rasa.
+Select 'Export' > 'Export as JSON'. This will download a file with a `.json` extension that can be imported directly into Rasa.
 
 ## Step 2: Create a Rasa Project
 
@@ -79,7 +79,7 @@ You can also leave it out to get the result in the usual Rasa format.
 
 ## Terminology:
 
-The words `intent`, `entity`, and `utterance` have the same meaning in Rasa as they do
+The words `intent`, `entity`, `role`, and `utterance` have the same meaning in Rasa as they do
 in LUIS.
 LUIS's `patterns` feature is very similar to Rasa NLU's [regex features](./training-data-format.mdx#regular-expressions)
 LUIS's `phrase lists` feature does not currently have an equivalent in Rasa NLU.
