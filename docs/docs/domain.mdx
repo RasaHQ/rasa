@@ -31,7 +31,7 @@ used in your [NLU data](./nlu-training-data.mdx) and [conversation training data
 ### Ignoring entities for certain intents
 
 To ignore all entities for certain intents, you can
-add the `use_entities: []` parameter to the intent in your `Domain`
+add the `use_entities: []` parameter to the intent in your domain
 file like this:
 
 ```yaml-rasa
@@ -145,7 +145,6 @@ slots:
 ```
 
 ### Slot Types
-
 
 
 #### Text Slot
@@ -335,7 +334,7 @@ for up to 6 people. In this case you want the *value* of the
 slot to influence the next selected action (and not just whether
 it's been specified). You can do this by defining a custom slot class.
 
-In the code below, you can see a slot class called `NumberOfPeopleSlot`.
+The code below defines a custom slot class called `NumberOfPeopleSlot`.
 The featurization defines how the value of this slot gets converted to a vector
 so Rasa Open Source machine learning model can deal with it.
 The `NumberOfPeopleSlot` has three possible “values”, which can be represented with
@@ -365,7 +364,7 @@ class NumberOfPeopleSlot(Slot):
         return r
 ```
 
-Now Rasa Core needs some training stories to learn from how to handle the
+Rasa Open Source needs some training stories to learn from how to handle the
 different situations:
 
 ```yaml-rasa
@@ -505,6 +504,7 @@ Conversation sessions can begin in three ways:
 
 You can define the period of inactivity after which a new conversation
 session is triggered in the domain under the `session_config` key.
+
 Available parameters are:
 - `session_expiration_time` defines the time of inactivity in minutes after which a
 new session will begin.
