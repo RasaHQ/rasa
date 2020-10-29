@@ -25,6 +25,10 @@ const versionLabels = {
 
 module.exports = {
   customFields: {
+    // FIXME: this is a simplistic solution to https://github.com/RasaHQ/rasa/issues/7011
+    // either (A): create a more sophisticated solution to link the precise branch and doc to be edited, according to branch settings
+    // or (B): create a README document (or a section in the main README) which explains how to contribute docs fixes, and link all edit links to this
+    rootEditUrl: 'https://github.com/rasahq/rasa/',
     productLogo: '/img/logo-rasa-oss.png',
     versionLabels,
     legacyVersions: [{
