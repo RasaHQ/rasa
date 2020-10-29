@@ -32,11 +32,12 @@ from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
-from rasa.core.lock_store import LockStore, RedisLockStore
+from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
 from sanic.views import CompositionView
 import rasa.cli.utils as cli_utils
+
 
 logger = logging.getLogger(__name__)
 
@@ -450,25 +451,29 @@ def replace_decimals_with_floats(obj: Any) -> Any:
     return json.loads(json.dumps(obj, cls=DecimalEncoder))
 
 
-def _lock_store_is_redis_lock_store(
+def _lock_store_is_multi_worker_compatible(
     lock_store: Union[EndpointConfig, LockStore, None]
 ) -> bool:
+    if isinstance(lock_store, InMemoryLockStore):
+        return False
+
     if isinstance(lock_store, RedisLockStore):
         return True
 
-    if isinstance(lock_store, LockStore):
-        return False
-
     # `lock_store` is `None` or `EndpointConfig`
-    return lock_store is not None and lock_store.type == "redis"
+    return (
+        lock_store is not None
+        and isinstance(lock_store, EndpointConfig)
+        and lock_store.type != "in_memory"
+    )
 
 
 def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> int:
     """Get the number of Sanic workers to use in `app.run()`.
 
     If the environment variable constants.ENV_SANIC_WORKERS is set and is not equal to
-    1, that value will only be permitted if the used lock store supports shared
-    resources across multiple workers (e.g. ``RedisLockStore``).
+    1, that value will only be permitted if the used lock store is not the
+    `InMemoryLockStore`.
     """
 
     def _log_and_get_default_number_of_workers():
@@ -496,12 +501,12 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
         )
         return _log_and_get_default_number_of_workers()
 
-    if _lock_store_is_redis_lock_store(lock_store):
+    if _lock_store_is_multi_worker_compatible(lock_store):
         logger.debug(f"Using {env_value} Sanic workers.")
         return env_value
 
     logger.debug(
         f"Unable to assign desired number of Sanic workers ({env_value}) as "
-        f"no `RedisLockStore` endpoint configuration has been found."
+        f"no `RedisLockStore` or custom `LockStore` endpoint configuration has been found."
     )
     return _log_and_get_default_number_of_workers()

@@ -25,6 +25,10 @@ const versionLabels = {
 
 module.exports = {
   customFields: {
+    // FIXME: this is a simplistic solution to https://github.com/RasaHQ/rasa/issues/7011
+    // either (A): create a more sophisticated solution to link the precise branch and doc to be edited, according to branch settings
+    // or (B): create a README document (or a section in the main README) which explains how to contribute docs fixes, and link all edit links to this
+    rootEditUrl: 'https://github.com/rasahq/rasa/',
     productLogo: '/img/logo-rasa-oss.png',
     versionLabels,
     legacyVersions: [{
@@ -61,11 +65,14 @@ module.exports = {
       // isCloseable: false, // Defaults to `true`.
     },
     algolia: {
-      disabled: true, // FIXME: remove this when our index is good
-      apiKey: '25626fae796133dc1e734c6bcaaeac3c', // FIXME: replace with values from our own index
-      indexName: 'docsearch', // FIXME: replace with values from our own index
+      // this is configured via DocSearch here:
+      // https://github.com/algolia/docsearch-configs/blob/master/configs/rasa.json
+      apiKey: '1f9e0efb89e98543f6613a60f847b176',
+      indexName: 'rasa',
       inputSelector: '.search-bar',
-      // searchParameters: {}, // Optional (if provided by Algolia)
+      searchParameters: {
+        'facetFilters': ["tags:rasa"]
+      }
     },
     navbar: {
       hideOnScroll: false,
@@ -77,12 +84,13 @@ module.exports = {
           position: 'left',
         },
         {
+          target: '_self',
           label: 'Rasa X',
           position: 'left',
           href: `${SWAP_URL}/docs/rasa-x/`,
-          target: '_self',
         },
         {
+          target: '_self',
           label: 'Rasa Action Server',
           position: 'left',
           href: 'https://rasa.com/docs/action-server',

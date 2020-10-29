@@ -73,6 +73,8 @@ parameter for slots with the same name.
 The `entities` section lists all entities that can be
 extracted by any [entity extractor](./components.mdx) in your
 NLU pipeline.
+If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
+need to list the roles and groups of an entity in this section.
 
 For example:
 
@@ -82,6 +84,18 @@ entities:
    - time             # entity extracted by DucklingEntityExtractor
    - membership_type  # custom entity extracted by DIETClassifier
    - priority         # custom entity extracted by DIETClassifier
+   - city:            # custom entity extracted by DIETClassifier
+       roles:
+       - from
+       - to
+   - topping:         # custom entity extracted by DIETClassifier
+       groups:
+       - 1
+       - 2
+   - size:            # custom entity extracted by DIETClassifier
+       groups:
+       - 1
+       - 2
 ```
 
 ## Slots

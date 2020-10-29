@@ -271,7 +271,7 @@ def test_deprecated_pickle_deserialisation():
         assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
     assert len(record) == 1
     assert (
-        "Deserialisation of pickled trackers is deprecated" in record[0].message.args[0]
+        "Deserialization of pickled trackers is deprecated" in record[0].message.args[0]
     )
 
 
@@ -632,7 +632,6 @@ def test_tracker_store_retrieve_with_events_from_previous_sessions(
     tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict
 ):
     tracker_store = tracker_store_type(Domain.empty(), **tracker_store_kwargs)
-    tracker_store.load_events_from_previous_conversation_sessions = True
 
     conversation_id = uuid.uuid4().hex
     tracker = DialogueStateTracker.from_events(
@@ -647,9 +646,34 @@ def test_tracker_store_retrieve_with_events_from_previous_sessions(
     )
     tracker_store.save(tracker)
 
-    actual = tracker_store.retrieve(conversation_id)
+    actual = tracker_store.retrieve_full_tracker(conversation_id)
 
     assert len(actual.events) == len(tracker.events)
+
+
+def test_tracker_store_deprecated_session_retrieval_kwarg():
+    tracker_store = SQLTrackerStore(
+        Domain.empty(), retrieve_events_from_previous_conversation_sessions=True
+    )
+
+    conversation_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+        ],
+    )
+
+    mocked_retrieve_full_tracker = Mock()
+    tracker_store.retrieve_full_tracker = mocked_retrieve_full_tracker
+
+    tracker_store.save(tracker)
+
+    _ = tracker_store.retrieve(conversation_id)
+
+    mocked_retrieve_full_tracker.assert_called_once()
 
 
 def test_session_scope_error(
