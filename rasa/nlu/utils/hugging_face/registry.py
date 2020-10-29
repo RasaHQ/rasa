@@ -55,7 +55,7 @@ model_tokenizer_dict = {
     "roberta": RobertaTokenizer,
 }
 model_weights_defaults = {
-    "bert": "bert-base-uncased",
+    "bert": "rasa/LaBSE",
     "gpt": "openai-gpt",
     "gpt2": "gpt2",
     "xlnet": "xlnet-base-cased",
