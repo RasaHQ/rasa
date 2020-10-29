@@ -1,8 +1,16 @@
 import logging
 from typing import Any, Dict, List, Text
 
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES, ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, \
-    ENTITY_ATTRIBUTE_VALUE, ENTITY_ATTRIBUTE_START, ENTITY_ATTRIBUTE_END
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+)
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 import rasa.shared.utils.io
 
@@ -58,7 +66,7 @@ class LuisReader(JsonTrainingDataReader):
                         ENTITY_ATTRIBUTE_VALUE: val,
                         ENTITY_ATTRIBUTE_START: start,
                         ENTITY_ATTRIBUTE_END: end,
-                        ENTITY_ATTRIBUTE_ROLE: e.get("role")
+                        ENTITY_ATTRIBUTE_ROLE: e.get("role"),
                     }
                 )
 
@@ -69,4 +77,6 @@ class LuisReader(JsonTrainingDataReader):
 
             training_examples.append(Message(data=data))
 
-        return TrainingData(training_examples, regex_features=self._extract_regex_features(js))
+        return TrainingData(
+            training_examples, regex_features=self._extract_regex_features(js)
+        )

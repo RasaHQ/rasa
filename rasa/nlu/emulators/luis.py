@@ -11,7 +11,9 @@ from rasa.shared.nlu.constants import (
     INTENT_RANKING_KEY,
     TEXT,
     INTENT,
-    INTENT_NAME_KEY, PREDICTED_CONFIDENCE_KEY)
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+)
 from typing import List, Optional
 
 
@@ -58,9 +60,11 @@ class LUISEmulator(Emulator):
                         "entity": e[ENTITY_ATTRIBUTE_VALUE],
                         "type": e[ENTITY_ATTRIBUTE_TYPE],
                         "startIndex": e.get(ENTITY_ATTRIBUTE_START),
-                        "endIndex": (e[ENTITY_ATTRIBUTE_END] - 1) if ENTITY_ATTRIBUTE_END in e else None,
+                        "endIndex": (e[ENTITY_ATTRIBUTE_END] - 1)
+                        if ENTITY_ATTRIBUTE_END in e
+                        else None,
                         "score": e.get(PREDICTED_CONFIDENCE_KEY),
-                        "role": e.get(ENTITY_ATTRIBUTE_ROLE)
+                        "role": e.get(ENTITY_ATTRIBUTE_ROLE),
                     }
                     for e in data[ENTITIES]
                 ]
