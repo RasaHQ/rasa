@@ -722,7 +722,7 @@ class TransformerRasaModel(RasaModel):
             )
         else:
             # create lambda so that it can be used later without the check
-            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: x
+            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: x, None
 
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
