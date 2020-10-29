@@ -200,3 +200,17 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
         await train(
             _config, data="./data/examples/rasa/demo-rasa.json", path=str(tmp_path),
         )
+
+
+async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: Path,):
+    _config = RasaNLUModelConfig(
+        # config with a component that does not have a `name` property
+        {"pipeline": [{"name": "WhitespaceTokenizer", "confidence_threshold": 0.7}]}
+    )
+
+    with pytest.warns(UserWarning) as record:
+        await train(
+            _config, data="./data/examples/rasa/demo-rasa.json", path=str(tmp_path),
+        )
+
+    assert "You have provided an invalid key" in record[0].message.args[0]

@@ -153,6 +153,7 @@ class Trainer:
         # required packages are available
         if not self.skip_validation:
             components.validate_requirements(cfg.component_names)
+            components.validate_component_keys(cfg.pipeline)
 
         # build pipeline
         self.pipeline = self._build_pipeline(cfg, component_builder)
@@ -338,6 +339,7 @@ class Interpreter:
         # lets check if all required packages are available
         if not skip_validation:
             components.validate_requirements(model_metadata.component_classes)
+            components.validate_component_keys(model_metadata)
 
         for i in range(model_metadata.number_of_components):
             component_meta = model_metadata.for_component(i)
