@@ -47,6 +47,7 @@ class EntityExtractor(Component):
         return entity
 
     def init_split_entities(self):
+        """Initialise the behaviour for splitting entities by comma (or not)."""
         split_entities_config = self.component_config.get(
             SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
