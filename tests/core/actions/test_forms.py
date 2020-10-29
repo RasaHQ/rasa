@@ -10,7 +10,7 @@ from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import (
     ActiveLoop,
     SlotSet,
@@ -19,6 +19,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Restarted,
     Event,
+    ActionExecutionRejected,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -291,6 +292,16 @@ async def test_action_rejection():
                 ActiveLoop(None),
             ],
         ),
+        # User rejected manually
+        (
+            [{"event": "action_execution_rejected", "name": "my form"}],
+            [
+                ActionExecutionRejected("my form"),
+                SlotSet("num_tables", 5),
+                SlotSet("num_people", "hi"),
+                SlotSet(REQUESTED_SLOT, None),
+            ],
+        ),
     ],
 )
 async def test_validate_slots(
@@ -339,6 +350,46 @@ async def test_validate_slots(
             domain,
         )
         assert events == expected_events
+
+
+async def test_no_slots_extracted_with_custom_slot_mappings():
+    form_name = "my form"
+    events = [
+        ActiveLoop(form_name),
+        SlotSet(REQUESTED_SLOT, "num_tables"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("off topic"),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
+
+    domain = f"""
+    slots:
+      num_tables:
+        type: any
+    forms:
+      {form_name}:
+        num_tables:
+        - type: from_entity
+          entity: num_tables
+    actions:
+    - validate_{form_name}
+    """
+    domain = Domain.from_yaml(domain)
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(action_server_url, payload={"events": []})
+
+        action_server = EndpointConfig(action_server_url)
+        action = FormAction(form_name, action_server)
+
+        with pytest.raises(ActionExecutionRejection):
+            await action.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.templates),
+                tracker,
+                domain,
+            )
 
 
 async def test_validate_slots_on_activation_with_other_action_after_user_utterance():
@@ -810,7 +861,7 @@ def test_invalid_slot_mapping():
         {"forms": {form_name: {slot_name: [{"type": "invalid"}]}}}
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidDomain):
         form.extract_requested_slot(tracker, domain)
 
 

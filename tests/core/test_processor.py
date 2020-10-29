@@ -7,8 +7,10 @@ import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable
+from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
+
+from rasa.core.actions.action import ActionUtterTemplate
 from tests.utilities import latest_request
 
 from rasa.core import jobs
@@ -25,6 +27,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     Event,
     SlotSet,
+    ActionExecutionRejected,
 )
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -169,9 +172,7 @@ async def test_reminder_scheduled(
 
     default_processor.tracker_store.save(tracker)
 
-    await default_processor.handle_reminder(
-        reminder, sender_id, default_channel,
-    )
+    await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
@@ -219,9 +220,7 @@ async def test_reminder_aborted(
     tracker.update(UserUttered("test"))  # cancels the reminder
 
     default_processor.tracker_store.save(tracker)
-    await default_processor.handle_reminder(
-        reminder, sender_id, default_channel,
-    )
+    await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
@@ -266,7 +265,7 @@ async def test_reminder_cancelled_multi_user(
     for tracker in trackers:
         default_processor.tracker_store.save(tracker)
         await default_processor._schedule_reminders(
-            tracker.events, tracker, default_channel,
+            tracker.events, tracker, default_channel
         )
     # check that the jobs were added
     assert len((await jobs.scheduler()).get_jobs()) == 2
@@ -357,7 +356,7 @@ async def test_reminder_cancelled_by_name(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel,
+        tracker.events, tracker, default_channel
     )
 
     # cancel the sixth reminder
@@ -373,7 +372,7 @@ async def test_reminder_cancelled_by_entities(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel,
+        tracker.events, tracker, default_channel
     )
 
     # cancel the fourth reminder
@@ -393,7 +392,7 @@ async def test_reminder_cancelled_by_intent(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel,
+        tracker.events, tracker, default_channel
     )
 
     # cancel the third, fifth, and sixth reminder
@@ -409,7 +408,7 @@ async def test_reminder_cancelled_all(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel,
+        tracker.events, tracker, default_channel
     )
 
     # cancel all reminders
@@ -433,9 +432,7 @@ async def test_reminder_restart(
     tracker.update(UserUttered("test"))
 
     default_processor.tracker_store.save(tracker)
-    await default_processor.handle_reminder(
-        reminder, sender_id, default_channel,
-    )
+    await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
@@ -587,12 +584,11 @@ async def test_update_tracker_session_with_slots(
     assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
 
 
-# noinspection PyProtectedMember
-async def test_get_tracker_with_session_start(
+async def test_fetch_tracker_and_update_session(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
-    tracker = await default_processor.get_tracker_with_session_start(
+    tracker = await default_processor.fetch_tracker_and_update_session(
         sender_id, default_channel
     )
 
@@ -601,6 +597,94 @@ async def test_get_tracker_with_session_start(
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+
+@pytest.mark.parametrize(
+    "initial_events,expected_event_types",
+    [
+        # tracker is initially not empty - when it is fetched, it will just contain
+        # these four events
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered("/greet", {INTENT_NAME_KEY: "greet", "confidence": 1.0}),
+            ],
+            [ActionExecuted, SessionStarted, ActionExecuted, UserUttered],
+        ),
+        # tracker is initially empty, and contains the session start sequence when
+        # fetched
+        ([], [ActionExecuted, SessionStarted, ActionExecuted]),
+    ],
+)
+async def test_fetch_tracker_with_initial_session(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    initial_events: List[Event],
+    expected_event_types: List[Type[Event]],
+):
+    conversation_id = uuid.uuid4().hex
+
+    tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
+
+    default_processor.tracker_store.save(tracker)
+
+    tracker = await default_processor.fetch_tracker_with_initial_session(
+        conversation_id, default_channel
+    )
+
+    # the events in the fetched tracker are as expected
+    assert len(tracker.events) == len(expected_event_types)
+
+    assert all(
+        isinstance(tracker_event, expected_event_type)
+        for tracker_event, expected_event_type in zip(
+            tracker.events, expected_event_types
+        )
+    )
+
+
+async def test_fetch_tracker_with_initial_session_does_not_update_session(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    conversation_id = uuid.uuid4().hex
+
+    # the domain has a session expiration time of one second
+    monkeypatch.setattr(
+        default_processor.tracker_store.domain,
+        "session_config",
+        SessionConfig(carry_over_slots=True, session_expiration_time=1 / 60),
+    )
+
+    now = time.time()
+
+    # the tracker initially contains events
+    initial_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME, timestamp=now - 10),
+        SessionStarted(timestamp=now - 9),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=now - 8),
+        UserUttered(
+            "/greet", {INTENT_NAME_KEY: "greet", "confidence": 1.0}, timestamp=now - 7
+        ),
+    ]
+
+    tracker = DialogueStateTracker.from_events(conversation_id, initial_events)
+
+    default_processor.tracker_store.save(tracker)
+
+    tracker = await default_processor.fetch_tracker_with_initial_session(
+        conversation_id, default_channel
+    )
+
+    # the conversation session has expired, but calling
+    # `fetch_tracker_with_initial_session()` did not update it
+    assert default_processor._has_session_expired(tracker)
+    assert [event.as_dict() for event in tracker.events] == [
+        event.as_dict() for event in initial_events
     ]
 
 
@@ -754,3 +838,31 @@ def test_get_next_action_probabilities_pass_policy_predictions_without_interpret
                 "lala", [ActionExecuted(ACTION_LISTEN_NAME)]
             )
         )
+
+
+async def test_handle_message_if_action_manually_rejects(
+    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
+):
+    conversation_id = "test"
+    message = UserMessage("/greet", sender_id=conversation_id)
+
+    rejection_events = [
+        SlotSet("my_slot", "test"),
+        ActionExecutionRejected("utter_greet"),
+        SlotSet("some slot", "some value"),
+    ]
+
+    async def mocked_run(self, *args: Any, **kwargs: Any) -> List[Event]:
+        return rejection_events
+
+    monkeypatch.setattr(
+        ActionUtterTemplate, ActionUtterTemplate.run.__name__, mocked_run
+    )
+    await default_processor.handle_message(message)
+
+    tracker = default_processor.tracker_store.retrieve(conversation_id)
+
+    logged_events = list(tracker.events)
+
+    assert ActionExecuted("utter_greet") not in logged_events
+    assert all(event in logged_events for event in rejection_events)
