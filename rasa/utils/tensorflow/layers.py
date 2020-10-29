@@ -1233,13 +1233,16 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         all_preds = tf.concat([sim_pos, sim_neg], axis=-1, name="acc_concat_preds")
         all_preds_sigmoid = tf.nn.sigmoid(all_preds)
-        all_pred_labels = tf.math.round(all_preds_sigmoid)
+        all_pred_labels = tf.squeeze(tf.math.round(all_preds_sigmoid), 1)
 
         complete_gt = tf.concat(
             [tf.squeeze(tf.ones_like(sim_pos), axis=-1), pos_neg_labels],
             axis=-1,
             name="acc_concat_gt",
         )
+
+        # tf.print(all_pred_labels)
+        # tf.print(complete_gt)
 
         acc = tf.reduce_mean(
             tf.cast(tf.math.equal(all_pred_labels, complete_gt), tf.float32)
