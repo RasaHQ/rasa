@@ -360,7 +360,6 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             batch_label_ids,
             batch_action_name_mask,
-            batch_action_name_mask_3d,
             batch_action_name_sentence_1,
             batch_action_name_sentence_2,
             batch_action_name_sentence_3,
