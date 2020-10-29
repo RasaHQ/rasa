@@ -220,7 +220,7 @@ Split the training data into a train and test set.
 **Arguments**:
 
 - `train_frac` - percentage of examples to add to the training set.
-- `random_seed` - random seed
+- `random_seed` - random seed used to shuffle examples.
   
 
 **Returns**:
