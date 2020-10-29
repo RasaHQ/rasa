@@ -74,6 +74,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
     CHECKPOINT_MODEL,
+    FEATURIZERS,
 )
 from rasa.core.policies.ted_policy import LENGTH
 from rasa.shared.nlu.constants import INTENT
@@ -197,6 +198,9 @@ class IntentTEDPolicy(TEDPolicy):
         TENSORBOARD_LOG_LEVEL: "epoch",
         # Perform model checkpointing
         CHECKPOINT_MODEL: False,
+        # Specify what features to use as sequence and sentence features.
+        # By default all features in the pipeline are used.
+        FEATURIZERS: [],
     }
 
     @staticmethod
