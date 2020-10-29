@@ -187,7 +187,7 @@ word vectors in your pipeline.
   | Language Model | Parameter    | Default value for       |
   |                | "model_name" | "model_weights"         |
   +----------------+--------------+-------------------------+
-  | BERT           | bert         | bert-base-uncased       |
+  | BERT           | bert         | rasa/LaBSE              |
   +----------------+--------------+-------------------------+
   | GPT            | gpt          | openai-gpt              |
   +----------------+--------------+-------------------------+
@@ -209,7 +209,7 @@ word vectors in your pipeline.
       # Name of the language model to use
       model_name: "bert"
       # Pre-Trained weights to be loaded
-      model_weights: "bert-base-uncased"
+      model_weights: "rasa/LaBSE"
 
       # An optional path to a specific directory to download and cache the pre-trained model weights.
       # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
