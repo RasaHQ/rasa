@@ -33,7 +33,7 @@ from rasa.shared.core.events import ActionExecutionRejected, ActionExecuted
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.policies.policy import Policy, SupportedData
+from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -449,13 +449,6 @@ class PolicyEnsemble:
             )
 
 
-class Prediction(NamedTuple):
-    """Stores the probabilities and the priority of the prediction."""
-
-    probabilities: List[float]
-    priority: int
-
-
 class SimplePolicyEnsemble(PolicyEnsemble):
     @staticmethod
     def is_not_memo_policy(
@@ -483,7 +476,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return policy_name.endswith("_" + FormPolicy.__name__)
 
     def _pick_best_policy(
-        self, predictions: Dict[Text, Prediction]
+        self, predictions: Dict[Text, PolicyPrediction]
     ) -> Tuple[List[float], Optional[Text]]:
         """Picks the best policy prediction based on probabilities and policy priority.
 
@@ -498,7 +491,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         best_confidence = (-1, -1)
         best_policy_name = None
-
         # form and mapping policies are special:
         # form should be above fallback
         # mapping should be below fallback
@@ -509,7 +501,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         form_policy_name = None
 
         for policy_name, prediction in predictions.items():
-            confidence = (max(prediction.probabilities), prediction.priority)
+            confidence = (max(prediction.probabilities), prediction.policy_priority)
             if self._is_form_policy(policy_name):
                 # store form prediction separately
                 form_confidence = confidence
@@ -588,7 +580,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Prediction:
+    ) -> PolicyPrediction:
         number_of_arguments_in_rasa_1_0 = 2
         arguments = rasa.shared.utils.common.arguments_of(
             policy.predict_action_probabilities
@@ -597,22 +589,21 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             len(arguments) > number_of_arguments_in_rasa_1_0
             and "interpreter" in arguments
         ):
-            probabilities = policy.predict_action_probabilities(
-                tracker, domain, interpreter
-            )
-        else:
-            rasa.shared.utils.io.raise_warning(
-                "The function `predict_action_probabilities` of "
-                "the `Policy` interface was changed to support "
-                "additional parameters. Please make sure to "
-                "adapt your custom `Policy` implementation.",
-                category=DeprecationWarning,
-            )
-            probabilities = policy.predict_action_probabilities(
-                tracker, domain, RegexInterpreter()
-            )
+            return policy.predict_action_probabilities(tracker, domain, interpreter)
 
-        return Prediction(probabilities, policy.priority)
+        # TODO: Deprecation warning if list of floats is returned
+        rasa.shared.utils.io.raise_warning(
+            "The function `predict_action_probabilities` of "
+            "the `Policy` interface was changed to support "
+            "additional parameters. Please make sure to "
+            "adapt your custom `Policy` implementation.",
+            category=DeprecationWarning,
+        )
+        probabilities = policy.predict_action_probabilities(
+            tracker, domain, RegexInterpreter()
+        )
+
+        return probabilities
 
     def _fallback_after_listen(
         self, domain: Domain, probabilities: List[float], policy_name: Text

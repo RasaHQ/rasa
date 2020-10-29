@@ -11,6 +11,7 @@ from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
 
 from rasa.core.actions.action import ActionUtterTemplate
+from rasa.core.policies.policy import PolicyPrediction
 from tests.utilities import latest_request
 
 from rasa.core import jobs
@@ -791,9 +792,9 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         assert interpreter == test_interpreter
-        return [1, 0]
+        return PolicyPrediction([1, 0], policy_priority=1)
 
     policy.predict_action_probabilities = predict_action_probabilities
     ensemble = SimplePolicyEnsemble(policies=[policy])
@@ -813,8 +814,12 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 @pytest.mark.parametrize(
     "predict_function",
     [
-        lambda tracker, domain, something_else: [1, 0, 2, 3],
-        lambda tracker, domain, some_bool=True: [1, 0],
+        lambda tracker, domain, something_else: PolicyPrediction(
+            [1, 0, 2, 3], policy_priority=1
+        ),
+        lambda tracker, domain, some_bool=True: PolicyPrediction(
+            [1, 0], policy_priority=1
+        ),
     ],
 )
 def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(

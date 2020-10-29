@@ -12,7 +12,7 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.events import UserUttered, ActiveLoop, Event
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
     InvalidPolicyConfig,
@@ -57,7 +57,7 @@ class WorkingPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         pass
 
     def __eq__(self, other: Any) -> bool:
@@ -74,9 +74,12 @@ def test_policy_loading_simple(tmp_path: Path):
 
 
 class ConstantPolicy(Policy):
-    def __init__(self, priority: int = None, predict_index: int = None) -> None:
+    def __init__(
+        self, priority: int = None, predict_index: int = None, confidence: float = 1
+    ) -> None:
         super().__init__(priority=priority)
         self.predict_index = predict_index
+        self.confidence = confidence
 
     @classmethod
     def load(cls, _) -> Policy:
@@ -100,10 +103,11 @@ class ConstantPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         result = [0.0] * domain.num_actions
-        result[self.predict_index] = 1.0
-        return result
+        result[self.predict_index] = self.confidence
+
+        return PolicyPrediction(result, policy_priority=self.priority)
 
 
 def test_policy_priority():
@@ -125,14 +129,14 @@ def test_policy_priority():
         tracker, domain, RegexInterpreter()
     )
     assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
-    assert result == priority_2_result
+    assert result == priority_2_result.probabilities
 
     i = 0  # index of priority_2 in ensemble_1
     result, best_policy = policy_ensemble_1.probabilities_using_best_policy(
         tracker, domain, RegexInterpreter()
     )
     assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
-    assert result == priority_2_result
+    assert result == priority_2_result.probabilities
 
 
 def test_fallback_mapping_restart():

@@ -139,11 +139,13 @@ class PolicyTestCollection:
             )
             assert predicted_probabilities == actual_probabilities
 
-    def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
+    def test_prediction_on_empty_tracker(
+        self, trained_policy: Policy, default_domain: Domain
+    ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        )
+        ).probabilities
         assert len(probabilities) == default_domain.num_actions
         assert max(probabilities) <= 1.0
         assert min(probabilities) >= 0.0
@@ -158,12 +160,12 @@ class PolicyTestCollection:
         assert loaded is not None
 
     @staticmethod
-    def _get_next_action(policy, events, domain):
+    def _get_next_action(policy: Policy, events: List[Event], domain: Domain) -> Text:
         tracker = get_tracker(events)
 
         scores = policy.predict_action_probabilities(
             tracker, domain, RegexInterpreter()
-        )
+        ).probabilities
         index = scores.index(max(scores))
         return domain.action_names[index]
 
@@ -259,7 +261,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         )
         predicted_probabilities = policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        )
+        ).probabilities
 
         assert len(predicted_probabilities) == default_domain.num_actions
         assert np.allclose(sum(predicted_probabilities), 1.0)
@@ -317,11 +319,17 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_ranking_length(self, trained_policy):
         assert trained_policy.config[RANKING_LENGTH] == 10
 
-    def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
+    def test_normalization(
+        self,
+        trained_policy: TEDPolicy,
+        tracker: DialogueStateTracker,
+        default_domain: Domain,
+        monkeypatch: MonkeyPatch,
+    ):
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        )
+        ).probabilities
         # count number of non-zero confidences
         assert (
             sum([confidence > 0 for confidence in predicted_probabilities])
@@ -463,11 +471,17 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
     def test_ranking_length(self, trained_policy):
         assert trained_policy.config[RANKING_LENGTH] == 0
 
-    def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
+    def test_normalization(
+        self,
+        trained_policy: Policy,
+        tracker: DialogueStateTracker,
+        default_domain: Domain,
+        monkeypatch: MonkeyPatch,
+    ):
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        )
+        ).probabilities
         # there should be no normalization
         assert all([confidence > 0 for confidence in predicted_probabilities])
 
@@ -789,7 +803,7 @@ class TestMappingPolicy(PolicyTestCollection):
         tracker = get_tracker(events)
         scores = policy.predict_action_probabilities(
             tracker, domain_with_mapping, RegexInterpreter()
-        )
+        ).probabilities
         index = scores.index(max(scores))
         action_planned = domain_with_mapping.action_names[index]
         assert action_planned == ACTION_LISTEN_NAME
@@ -807,7 +821,7 @@ class TestMappingPolicy(PolicyTestCollection):
         tracker = get_tracker(events)
         scores = policy.predict_action_probabilities(
             tracker, domain_with_mapping, RegexInterpreter()
-        )
+        ).probabilities
         assert scores == [0] * domain_with_mapping.num_actions
 
 

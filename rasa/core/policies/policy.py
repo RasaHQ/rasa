@@ -16,6 +16,7 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
+from rasa.shared.core.events import Event
 
 import rasa.shared.utils.common
 import rasa.utils.common
@@ -213,7 +214,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> "PolicyPrediction":
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
@@ -351,6 +352,34 @@ class Policy:
                     formatted_states.append(state_formatted)
 
         return "\n".join(formatted_states)
+
+
+class PolicyPrediction:
+    def __init__(
+        self,
+        probabilities: List[float],
+        policy_priority: int,
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
+        is_end_to_end_prediction: bool = False,
+    ) -> None:
+        self.probabilities = probabilities
+        self.policy_priority = (policy_priority,)
+        self.events = events or []
+        self.optional_events = optional_events or []
+        self.is_end_to_end_prediction = is_end_to_end_prediction
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, PolicyPrediction):
+            return False
+
+        return (
+            self.probabilities == other.probabilities
+            and self.policy_priority == other.policy_priority
+            and self.events == other.events
+            and self.optional_events == other.events
+            and self.is_end_to_end_prediction == other.is_end_to_end_prediction
+        )
 
 
 def confidence_scores_for(

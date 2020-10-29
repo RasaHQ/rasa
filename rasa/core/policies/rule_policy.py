@@ -13,7 +13,7 @@ from rasa.shared.core.events import LoopInterrupted, UserUttered, ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.policy import SupportedData
+from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     get_active_loop_name,
@@ -343,7 +343,7 @@ class RulePolicy(MemoizationPolicy):
         return error_messages
 
     def _check_for_incomplete_rules(
-        self, rule_trackers: List[TrackerWithCachedStates], domain: Domain,
+        self, rule_trackers: List[TrackerWithCachedStates], domain: Domain
     ) -> None:
         logger.debug("Started checking if some rules are incomplete.")
         # we need to use only fingerprints from rules
@@ -405,7 +405,9 @@ class RulePolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
     ) -> Optional[Text]:
-        probabilities = self.predict_action_probabilities(tracker, domain, interpreter)
+        probabilities = self.predict_action_probabilities(
+            tracker, domain, interpreter
+        ).probabilities
         # do not raise an error if RulePolicy didn't predict anything for stories;
         # however for rules RulePolicy should always predict an action
         predicted_action_name = None
@@ -810,7 +812,7 @@ class RulePolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
 
         result = self._default_predictions(domain)
 
@@ -820,7 +822,10 @@ class RulePolicy(MemoizationPolicy):
         default_action_name = self._find_action_from_default_actions(tracker)
         if default_action_name:
             self._prediction_source = DEFAULT_RULES
-            return self._prediction_result(default_action_name, tracker, domain)
+            return PolicyPrediction(
+                self._prediction_result(default_action_name, tracker, domain),
+                policy_priority=self.priority,
+            )
 
         # A loop has priority over any other rule.
         # The rules or any other prediction will be applied only if a loop was rejected.
@@ -829,15 +834,21 @@ class RulePolicy(MemoizationPolicy):
         loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
             self._prediction_source = LOOP_RULES
-            return self._prediction_result(loop_happy_path_action_name, tracker, domain)
+            return PolicyPrediction(
+                self._prediction_result(loop_happy_path_action_name, tracker, domain),
+                policy_priority=self.priority,
+            )
 
         rules_action_name, source = self._find_action_from_rules(tracker, domain)
         # we want to remember the source even if rules didn't predict any action
         self._prediction_source = source
         if rules_action_name:
-            return self._prediction_result(rules_action_name, tracker, domain)
+            return PolicyPrediction(
+                self._prediction_result(rules_action_name, tracker, domain),
+                policy_priority=self.priority,
+            )
 
-        return result
+        return PolicyPrediction(result, policy_priority=self.priority)
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)
