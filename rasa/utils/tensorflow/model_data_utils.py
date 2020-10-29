@@ -7,7 +7,7 @@ from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
-from rasa.utils.tensorflow.constants import SEQUENCE, MASK
+from rasa.utils.tensorflow.constants import SEQUENCE, MASK, MASK_3D
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -338,7 +338,13 @@ def _features_for_attribute(
 
     if consider_dialogue_dimension:
         attribute_to_feature_arrays = {
-            MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=4)]
+            MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=4)],
+            MASK_3D: [
+                FeatureArray(
+                    np.array([np.squeeze(mask, -1) for mask in attribute_masks]),
+                    number_of_dimensions=3,
+                )
+            ],
         }
     else:
         attribute_to_feature_arrays = {

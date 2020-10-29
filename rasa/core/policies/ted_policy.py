@@ -90,6 +90,7 @@ from rasa.utils.tensorflow.constants import (
     MASK,
     HIDDEN_LAYERS_SIZES,
     FEATURIZERS,
+    MASK_3D,
 )
 
 
@@ -824,7 +825,6 @@ class TED(TransformerRasaModel):
         Returns:
             A tensor combining  all features for `attribute`
         """
-
         attribute_mask = tf_batch_data[attribute][MASK][0]
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
@@ -883,16 +883,11 @@ class TED(TransformerRasaModel):
             dialogue_lengths = tf.cast(
                 tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32
             )
-
             attribute_features = self._convert_to_original_shape(
                 attribute_features, dialogue_lengths
             )
 
-            # create a attribute mask that has the shape
-            # batch x dialogue length x 1
-            attribute_mask = tf.squeeze(
-                self._compute_mask(tf.squeeze(dialogue_lengths, axis=-1)), axis=-1
-            )
+            attribute_mask = tf_batch_data[attribute][MASK_3D][0]
 
         return attribute_features * attribute_mask
 

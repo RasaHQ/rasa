@@ -360,18 +360,22 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             batch_label_ids,
             batch_action_name_mask,
+            batch_action_name_mask_3d,
             batch_action_name_sentence_1,
             batch_action_name_sentence_2,
             batch_action_name_sentence_3,
             batch_entities_mask,
+            batch_entities_mask_3d,
             batch_entities_sentence_1,
             batch_entities_sentence_2,
             batch_entities_sentence_3,
             batch_intent_mask,
+            batch_intent_mask_3d,
             batch_intent_sentence_1,
             batch_intent_sentence_2,
             batch_intent_sentence_3,
             batch_slots_mask,
+            batch_slots_mask_3d,
             batch_slots_sentence_1,
             batch_slots_sentence_2,
             batch_slots_sentence_3,
@@ -391,6 +395,12 @@ class TestTEDPolicy(PolicyTestCollection):
             and batch_action_name_mask.shape[0] == 3
         )
         assert (
+            batch_slots_mask_3d.shape[0] == batch_size
+            and batch_intent_mask_3d.shape[0] == batch_size
+            and batch_entities_mask_3d.shape[0] == batch_size
+            and batch_action_name_mask_3d.shape[0] == batch_size
+        )
+        assert (
             batch_intent_sentence_3[1]
             == batch_action_name_sentence_3[1]
             == batch_entities_sentence_3[1]
@@ -400,18 +410,22 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             batch_label_ids,
             batch_entities_mask,
+            batch_entities_mask_3d,
             batch_entities_sentence_1,
             batch_entities_sentence_2,
             batch_entities_sentence_3,
             batch_intent_mask,
+            batch_intent_mask_3d,
             batch_intent_sentence_1,
             batch_intent_sentence_2,
             batch_intent_sentence_3,
             batch_slots_mask,
+            batch_slots_mask_3d,
             batch_slots_sentence_1,
             batch_slots_sentence_2,
             batch_slots_sentence_3,
             batch_action_name_mask,
+            batch_action_name_mask_3d,
             batch_action_name_sentence_1,
             batch_action_name_sentence_2,
             batch_action_name_sentence_3,
