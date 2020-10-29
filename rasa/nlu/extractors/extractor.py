@@ -25,6 +25,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
 )
 
@@ -44,6 +45,18 @@ class EntityExtractor(Component):
             entity["processors"] = [self.name]
 
         return entity
+
+    def init_split_entities(self):
+        split_entities_config = self.component_config.get(
+            SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        )
+        if isinstance(split_entities_config, bool):
+            split_entities_config = {SPLIT_ENTITIES_BY_COMMA: split_entities_config}
+        else:
+            split_entities_config[SPLIT_ENTITIES_BY_COMMA] = self.defaults[
+                SPLIT_ENTITIES_BY_COMMA
+            ]
+        return split_entities_config
 
     @staticmethod
     def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
