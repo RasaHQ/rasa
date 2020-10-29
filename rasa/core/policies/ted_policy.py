@@ -75,6 +75,7 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     E2E_CONFIDENCE_THRESHOLD,
     MASK,
+    FEATURIZERS,
 )
 
 if TYPE_CHECKING:
@@ -211,6 +212,9 @@ class TEDPolicy(Policy):
         CHECKPOINT_MODEL: False,
         # Only pick e2e prediction if the policy is confident enough
         E2E_CONFIDENCE_THRESHOLD: 0.5,
+        # Specify what features to use as sequence and sentence features.
+        # By default all features in the pipeline are used.
+        FEATURIZERS: [],
     }
 
     @staticmethod
@@ -264,7 +268,9 @@ class TEDPolicy(Policy):
         state_featurizer = self.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
 
-        attribute_data, _ = convert_to_data_format(encoded_all_labels)
+        attribute_data, _ = convert_to_data_format(
+            encoded_all_labels, featurizers=self.config[FEATURIZERS]
+        )
 
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
@@ -316,12 +322,14 @@ class TEDPolicy(Policy):
             )
 
             attribute_data, self.zero_state_features = convert_to_data_format(
-                tracker_state_features
+                tracker_state_features, featurizers=self.config[FEATURIZERS]
             )
         else:
             # method is called during prediction
             attribute_data, _ = convert_to_data_format(
-                tracker_state_features, self.zero_state_features
+                tracker_state_features,
+                self.zero_state_features,
+                featurizers=self.config[FEATURIZERS],
             )
 
         model_data.add_data(attribute_data)
@@ -578,10 +586,6 @@ class TEDPolicy(Policy):
         )
 
 
-# accessing _tf_layers with any key results in key-error, disable it
-# pytype: disable=key-error
-
-
 class TED(TransformerRasaModel):
     def __init__(
         self,
@@ -608,7 +612,8 @@ class TED(TransformerRasaModel):
         self.action_acc = tf.keras.metrics.Mean(name="acc")
         self.metrics_to_log += ["loss", "acc"]
 
-        self.all_labels_embed = None  # needed for efficient prediction
+        # needed for efficient prediction
+        self.all_labels_embed: Optional[tf.Tensor] = None
 
         self._prepare_layers()
 
