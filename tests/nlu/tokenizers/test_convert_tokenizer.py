@@ -103,6 +103,7 @@ def test_convert_tokenizer_number_of_sub_tokens(
             "which is strictly reserved for pytests of Rasa Open Source only",
         ),
         (None, """"model_url" was not specified in the configuration"""),
+        ("", """"model_url" was not specified in the configuration"""),
     ],
 )
 def test_raise_invalid_urls(model_url: Optional[Text], exception_phrase: Text):
