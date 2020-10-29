@@ -672,7 +672,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             # HFTransformersNLP component is used in the pipeline
             # TODO: remove this when HFTransformersNLP is removed for good
             logging.debug(
-                f"{LANGUAGE_MODEL_DOCS[attribute]} set: this "
+                f"'{LANGUAGE_MODEL_DOCS[attribute]}' set: this "
                 f"indicates you're using the deprecated component "
                 f"HFTransformersNLP, please remove it from your "
                 f"pipeline."
