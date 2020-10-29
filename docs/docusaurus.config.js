@@ -84,12 +84,13 @@ module.exports = {
           position: 'left',
         },
         {
+          target: '_self',
           label: 'Rasa X',
           position: 'left',
           href: `${SWAP_URL}/docs/rasa-x/`,
-          target: '_self',
         },
         {
+          target: '_self',
           label: 'Rasa Action Server',
           position: 'left',
           href: 'https://rasa.com/docs/action-server',
