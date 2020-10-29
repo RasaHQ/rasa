@@ -10,6 +10,7 @@ class ConveRTTokenizer(WhitespaceTokenizer)
 ```
 
 Tokenizer using ConveRT model.
+
 Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
 model from TFHub and computes sub-word tokens for dense
 featurizable attributes of each message object.
@@ -21,6 +22,26 @@ featurizable attributes of each message object.
 ```
 
 Construct a new tokenizer using the WhitespaceTokenizer framework.
+
+**Arguments**:
+
+- `component_config` - User configuration for the component
+
+#### cache\_key
+
+```python
+ | @classmethod
+ | cache_key(cls, component_meta: Dict[Text, Any], model_metadata: Metadata) -> Optional[Text]
+```
+
+Cache the component for future use.
+
+**Arguments**:
+
+- `component_meta` - configuration for the component.
+- `model_metadata` - configuration for the whole pipeline.
+  
+- `Returns` - key of the cache for future retrievals.
 
 #### tokenize
 
