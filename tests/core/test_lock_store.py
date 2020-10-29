@@ -14,7 +14,7 @@ from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
-from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisLockStore
+from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisLockStore, DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
 
 
 class FakeRedisLockStore(RedisLockStore):
@@ -27,13 +27,8 @@ class FakeRedisLockStore(RedisLockStore):
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
-
-<<<<<<< HEAD
-        # Defined in RedisLockStore but needs to be added for the FakedRedisLockStore
-=======
-        # an optional configuration defined in endpoints.yml
->>>>>>> 0a07e1116e59dd752d73834476b0b4271adfc22a
-        self.prefix = "lock:"
+        
+        self.key_prefix = DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
 
         super(RedisLockStore, self).__init__()
 
@@ -280,6 +275,44 @@ async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
         lock_store.get_or_create_lock.__name__,
         Mock(side_effect=redis.exceptions.TimeoutError),
     )
+
+    with pytest.raises(LockError):
+        async with lock_store.lock("some sender"):
+            pass
+
+async def test_redis_lock_store_with_invalid_prefix(monkeypatch: MonkeyPatch):
+    import redis.exceptions
+
+    lock_store = FakeRedisLockStore()
+
+    prefix = "!asdf234 34#"
+    lock_store._set_key_prefix(prefix)
+    assert lock_store._get_key_prefix() == DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+    
+    monkeypatch.setattr(
+        lock_store,
+        lock_store.get_or_create_lock.__name__,
+        Mock(side_effect=redis.exceptions.TimeoutError),
+    )
+
+    with pytest.raises(LockError):
+        async with lock_store.lock("some sender"):
+            pass
+
+async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
+    import redis.exceptions
+
+    lock_store = FakeRedisLockStore()
+
+    prefix = "chatbot42"
+    lock_store._set_key_prefix(prefix)
+    assert lock_store._get_key_prefix() == prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+    
+    monkeypatch.setattr(
+        lock_store,
+        lock_store.get_or_create_lock.__name__,
+        Mock(side_effect=redis.exceptions.TimeoutError),
+    )  
 
     with pytest.raises(LockError):
         async with lock_store.lock("some sender"):

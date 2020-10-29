@@ -14,7 +14,7 @@ tracker_store:
   port: 6379
   db: 0
   password: password
-  prefix: conversation
+  key_prefix: conversation
   record_exp: 30000
 # example of mongoDB external tracker store config
 #tracker_store:

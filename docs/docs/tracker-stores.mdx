@@ -196,7 +196,7 @@ USER 1001`}</code></pre>
         url: <url of the redis instance, e.g. localhost>
         port: <port of your redis instance, usually 6379>
         db: <number of your database within redis, e.g. 0>
-        prefix: <alphanumeric value to prepend to tracker store keys>
+        key_prefix: <alphanumeric value to prepend to tracker store keys>
         password: <password used for authentication>
         use_ssl: <whether or not the communication is encrypted, default `false`>
      ```
@@ -224,7 +224,7 @@ USER 1001`}</code></pre>
         url: <url of the redis instance, e.g. localhost>
         port: <port of your redis instance, usually 6379>
         db: <number of your database within redis, e.g. 0>
-        prefix: <alphanumeric value to prepend to tracker store keys>
+        key_prefix: <alphanumeric value to prepend to tracker store keys>
         password: <password used for authentication>
         use_ssl: <whether or not the communication is encrypted, default `false`>
      ```
@@ -239,7 +239,7 @@ USER 1001`}</code></pre>
 
   * `db` (default: `0`): The number of your redis database
 
-  * `prefix` (default: `None`): The prefix to prepend to tracker store keys. Must
+  * `key_prefix` (default: `None`): The prefix to prepend to tracker store keys. Must
      be alphanumeric
 
   * `password` (default: `None`): Password used for authentication

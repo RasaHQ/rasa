@@ -57,7 +57,7 @@ address the same node when sending messages for a given conversation ID.
          port: <port of your redis instance, usually 6379>
          password: <password used for authentication>
          db: <number of your database within redis, e.g. 0>
-         prefix: <alphanumeric value to prepend to lock store keys>
+         key_prefix: <alphanumeric value to prepend to lock store keys>
      ```
 
   3. To start the Rasa Core server using your Redis backend, add the `--endpoints`
@@ -77,7 +77,7 @@ address the same node when sending messages for a given conversation ID.
 
   * `db` (default: `1`): The number of your redis database
 
-  * `prefix` (default: `None`): The prefix to prepend to lock store keys. Must
+  * `key_prefix` (default: `None`): The prefix to prepend to lock store keys. Must
      be alphanumeric
 
   * `password` (default: `None`): Password used for authentication

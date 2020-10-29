@@ -52,6 +52,7 @@ logger = logging.getLogger(__name__)
 POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
 POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
+DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
@@ -263,7 +264,7 @@ class RedisTrackerStore(TrackerStore):
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
-        prefix: Optional[Text] = None,
+        key_prefix: Optional[Text] = None,
         use_ssl: bool = False,
     ):
         import redis
@@ -273,17 +274,25 @@ class RedisTrackerStore(TrackerStore):
         )
         self.record_exp = record_exp
 
-        if not prefix:
-            self.prefix = "tracker:"
-        elif isinstance(prefix, str) and prefix.isalnum():
-            self.prefix = prefix + ":tracker:"
-        else:
-            self.prefix = "tracker:"
-            logger.warning(
-                f"Omitting provided non-alphanumeric key prefix: '{prefix}'."
-            )
+        self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        if key_prefix:
+            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            self._set_key_prefix(key_prefix)
 
         super().__init__(domain, event_broker)
+
+    def _set_key_prefix(self, key_prefix: Text) -> None:
+        if isinstance(key_prefix, str) and key_prefix.isalnum():
+            self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        else:
+            logger.warning(
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+            )
+
+    def _get_key_prefix(self) -> "Key prefix":
+        return self.key_prefix
+
+
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
