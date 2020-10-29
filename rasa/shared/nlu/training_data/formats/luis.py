@@ -1,7 +1,8 @@
 import logging
 from typing import Any, Dict, List, Text
 
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES, ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, \
+    ENTITY_ATTRIBUTE_VALUE, ENTITY_ATTRIBUTE_START, ENTITY_ATTRIBUTE_END
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 import rasa.shared.utils.io
 
@@ -22,6 +23,8 @@ class LuisReader(JsonTrainingDataReader):
                     {"name": r.get("name"), "pattern": r.get("pattern")}
                 )
 
+        # LUIS removed `regex_features` and exports regular expressions in `regex_entities` now:
+        # https://stackoverflow.com/questions/48170631/what-happened-to-the-regex-features
         for r in js.get("regex_entities", []):
             regex_features.append(
                 {"name": r.get("name"), "pattern": r.get("regexPattern")}
@@ -42,8 +45,6 @@ class LuisReader(JsonTrainingDataReader):
                 f"Training may not be performed correctly. "
             )
 
-        regex_features = self._extract_regex_features(js)
-
         for s in js["utterances"]:
             text = s.get("text")
             intent = s.get("intent")
@@ -52,12 +53,20 @@ class LuisReader(JsonTrainingDataReader):
                 start, end = e["startPos"], e["endPos"] + 1
                 val = text[start:end]
                 entities.append(
-                    {"entity": e["entity"], "value": val, "start": start, "end": end}
+                    {
+                        ENTITY_ATTRIBUTE_TYPE: e.get("entity"),
+                        ENTITY_ATTRIBUTE_VALUE: val,
+                        ENTITY_ATTRIBUTE_START: start,
+                        ENTITY_ATTRIBUTE_END: end,
+                        ENTITY_ATTRIBUTE_ROLE: e.get("role")
+                    }
                 )
 
             data = {ENTITIES: entities}
             if intent:
                 data[INTENT] = intent
             data[TEXT] = text
+
             training_examples.append(Message(data=data))
-        return TrainingData(training_examples, regex_features=regex_features)
+
+        return TrainingData(training_examples, regex_features=self._extract_regex_features(js))
