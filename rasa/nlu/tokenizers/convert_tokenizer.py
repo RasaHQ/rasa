@@ -6,7 +6,8 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.message import Message
-from rasa.utils import common, io
+from rasa.utils import common
+from rasa.nlu import utils as nlu_utils
 import rasa.utils.train_utils as train_utils
 from rasa.exceptions import RasaException
 import tensorflow as tf
@@ -76,7 +77,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                 raise RasaException(
                     f"""File {file_path} does not exist.
                     Re-check the files inside the directory {model_directory}.
-                    It should contain the following model 
+                    It should contain the following model
                     files - [{", ".join(files_to_check)}]"""
                 )
 
@@ -94,61 +95,61 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         if not model_url:
             raise RasaException(
-                """Parameter "model_url" was not specified in the configuration of "ConveRTTokenizer".
+                f"""Parameter "model_url" was not specified in the configuration
+                of "{ConveRTTokenizer.__name__}".
                 You can either use a community hosted URL of the model
                 or if you have a local copy of the model, pass the
                 path to the directory containing the model files."""
             )
 
-        if io.is_valid_remote_url(model_url):
+        if model_url == ORIGINAL_TF_HUB_MODULE_URL:
+            # Can't use the originally hosted URL
+            raise RasaException(
+                f"""Parameter "model_url" of "{ConveRTTokenizer.__name__}" was
+                set to "{model_url}" which does not contain the model any longer.
+                You can either use a community hosted URL or if you have a
+                local copy of the model, pass the path to the directory
+                containing the model files."""
+            )
 
-            if model_url == ORIGINAL_TF_HUB_MODULE_URL:
-                # Can't use the originally hosted URL
-                raise RasaException(
-                    f"""Parameter "model_url" of "ConveRTTokenizer" was
-                    set to "{model_url}" which does not contain the model any longer.
-                    You can either use a community hosted URL or if you have a
-                    local copy of the model, pass the path to the directory
-                    containing the model files."""
-                )
+        if model_url == RESTRICTED_ACCESS_URL:
+            # Can't use the URL that is reserved for tests only
+            raise RasaException(
+                f"""Parameter "model_url" of "{ConveRTTokenizer.__name__}" was
+                set to "{model_url}" which is strictly reserved for pytests of Rasa Open Source only.
+                Due to licensing issues you are not allowed to use the model from this URL.
+                You can either use a community hosted URL or if you have a
+                local copy of the model, pass the path to the directory
+                containing the model files."""
+            )
 
-            if model_url == RESTRICTED_ACCESS_URL:
-                # Can't use the URL that is reserved for tests only
-                raise RasaException(
-                    f"""Parameter "model_url" of "ConveRTTokenizer" was
-                    set to "{model_url}" which is strictly reserved for pytests of Rasa Open Source only.
-                    Due to licensing issues you are not allowed to use the model from this URL.
-                    You can either use a community hosted URL or if you have a
-                    local copy of the model, pass the path to the directory
-                    containing the model files."""
-                )
-
-        elif os.path.isfile(model_url):
+        if os.path.isfile(model_url):
             # Definitely invalid since the specified path should be a directory
             raise RasaException(
-                """Parameter "model_url" of "ConveRTTokenizer" was
+                f"""Parameter "model_url" of "{ConveRTTokenizer.__name__}" was
                 set to the path of a file which is invalid. You
                 can either use a community hosted URL or if you have a
                 local copy of the model, pass the path to the directory
                 containing the model files."""
             )
 
-        elif os.path.isdir(model_url):
+        if nlu_utils.is_url(model_url):
+            return model_url
+
+        if os.path.isdir(model_url):
             # Looks like a local directory. Inspect the directory
             # to see if model files exist.
             self._validate_model_files_exist(model_url)
             # Convert the path to an absolute one since
             # TFHUB doesn't like relative paths
-            model_url = os.path.abspath(model_url)
+            return os.path.abspath(model_url)
 
-        else:
-            raise RasaException(
-                f"""{model_url} is neither a valid remote URL nor a local directory.
-                You can either use a community hosted URL or if you have a
-                local copy of the model, pass the path to
-                the directory containing the model files."""
-            )
-        return model_url
+        raise RasaException(
+            f"""{model_url} is neither a valid remote URL nor a local directory.
+            You can either use a community hosted URL or if you have a
+            local copy of the model, pass the path to
+            the directory containing the model files."""
+        )
 
     @classmethod
     def cache_key(

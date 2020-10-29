@@ -2,6 +2,7 @@ import pytest
 from typing import Text, List, Tuple, Optional
 from pathlib import Path
 import os
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -35,7 +36,7 @@ def test_convert_tokenizer_edge_cases(
     text: Text,
     expected_tokens: List[Text],
     expected_indices: List[Tuple[int]],
-    monkeypatch,
+    monkeypatch: MonkeyPatch,
 ):
 
     monkeypatch.setattr(
@@ -60,7 +61,9 @@ def test_convert_tokenizer_edge_cases(
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
-def test_custom_intent_symbol(text: Text, expected_tokens: List[Text], monkeypatch):
+def test_custom_intent_symbol(
+    text: Text, expected_tokens: List[Text], monkeypatch: MonkeyPatch
+):
 
     monkeypatch.setattr(
         ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
@@ -89,7 +92,7 @@ def test_custom_intent_symbol(text: Text, expected_tokens: List[Text], monkeypat
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
 )
 def test_convert_tokenizer_number_of_sub_tokens(
-    text: Text, expected_number_of_sub_tokens: List[int], monkeypatch
+    text: Text, expected_number_of_sub_tokens: List[int], monkeypatch: MonkeyPatch
 ):
     monkeypatch.setattr(
         ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL

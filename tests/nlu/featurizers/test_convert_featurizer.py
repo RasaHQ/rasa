@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from typing import Text
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.nlu.tokenizers.convert_tokenizer import (
     ConveRTTokenizer,
@@ -15,7 +16,7 @@ from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeat
 
 
 @pytest.mark.skip_on_windows
-def test_convert_featurizer_process(component_builder, monkeypatch):
+def test_convert_featurizer_process(component_builder, monkeypatch: MonkeyPatch):
 
     monkeypatch.setattr(
         ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
@@ -48,7 +49,7 @@ def test_convert_featurizer_process(component_builder, monkeypatch):
 
 
 @pytest.mark.skip_on_windows
-def test_convert_featurizer_train(component_builder, monkeypatch):
+def test_convert_featurizer_train(component_builder, monkeypatch: MonkeyPatch):
 
     monkeypatch.setattr(
         ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
@@ -111,7 +112,7 @@ def test_convert_featurizer_train(component_builder, monkeypatch):
     ],
 )
 def test_convert_featurizer_tokens_to_text(
-    sentence: Text, expected_text: Text, monkeypatch
+    sentence: Text, expected_text: Text, monkeypatch: MonkeyPatch
 ):
 
     monkeypatch.setattr(

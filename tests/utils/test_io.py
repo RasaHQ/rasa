@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError
-from typing import Text
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
@@ -92,21 +91,3 @@ def test_write_utf_8_yaml_file(tmp_path: Path):
 
     rasa.shared.utils.io.write_yaml(data, file_path)
     assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
-
-
-@pytest.mark.parametrize(
-    "url, result",
-    [
-        ("a/b/c", False),
-        ("a", False),
-        ("https://192.168.1.1", True),
-        ("http://192.168.1.1", True),
-        ("https://google.com", True),
-        ("https://www.google.com", True),
-        ("http://google.com", True),
-        ("http://www.google.com", True),
-        ("http://a/b/c", False),
-    ],
-)
-def test_is_valid_remote_url(url: Text, result: bool):
-    assert result == io_utils.is_valid_remote_url(url)
