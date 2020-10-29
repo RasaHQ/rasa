@@ -81,6 +81,10 @@ class ActionNotFoundException(ValueError, RasaException):
     """Raised when an action name could not be found."""
 
 
+class IntentNotFoundException(ValueError, RasaException):
+    """Raised when an intent name could not be found."""
+
+
 class SessionConfig(NamedTuple):
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
@@ -623,6 +627,14 @@ class Domain:
                 if s not in slot_names:
                     self.slots.append(TextSlot(s, influence_conversation=False))
 
+    def index_for_intent(self, intent_name: Text) -> Optional[int]:
+        """Look up which intent index corresponds to this intent name."""
+
+        try:
+            return self.intents.index(intent_name)
+        except ValueError:
+            self.raise_intent_not_found_exception(intent_name)
+
     def index_for_action(self, action_name: Text) -> Optional[int]:
         """Look up which action index corresponds to this action name."""
 
@@ -630,6 +642,16 @@ class Domain:
             return self.action_names.index(action_name)
         except ValueError:
             self.raise_action_not_found_exception(action_name)
+
+    def raise_intent_not_found_exception(self, intent_name: Text) -> NoReturn:
+
+        intent_names = "\n".join([f"\t - {a}" for a in self.intents])
+        raise IntentNotFoundException(
+            f"Cannot access intent '{intent_name}', "
+            f"as that name is not a registered "
+            f"intent for this domain. "
+            f"Available intents are: \n{intent_names}"
+        )
 
     def raise_action_not_found_exception(self, action_name) -> NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])

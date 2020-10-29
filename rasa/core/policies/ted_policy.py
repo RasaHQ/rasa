@@ -77,7 +77,6 @@ from rasa.utils.tensorflow.constants import (
     MASK,
 )
 
-
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
@@ -89,7 +88,11 @@ LABEL_SUB_KEY = "ids"
 LENGTH = "length"
 POSSIBLE_FEATURE_TYPES = [SEQUENCE, SENTENCE]
 FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
-LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
+LABEL_FEATURES_TO_ENCODE = [
+    f"{LABEL}_{ACTION_NAME}",
+    f"{LABEL}_{ACTION_TEXT}",
+    f"{LABEL}_{INTENT}",
+]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
@@ -296,6 +299,11 @@ class TEDPolicy(Policy):
         """
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
+        print("Inside create model data")
+
+        print("Label ids", label_ids)
+        print("Encoded_all_labels", encoded_all_labels)
+
         if label_ids is not None and encoded_all_labels is not None:
 
             label_ids = np.array(
@@ -320,6 +328,8 @@ class TEDPolicy(Policy):
         model_data.add_lengths(
             DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), MASK
         )
+
+        print("-------------")
 
         return model_data
 
@@ -347,6 +357,8 @@ class TEDPolicy(Policy):
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
+
+        print("Label data signature", self._label_data.get_signature())
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(

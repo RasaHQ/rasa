@@ -254,9 +254,13 @@ class RasaModel(tf.keras.models.Model):
 
         # calculate supervision and regularization losses separately
         with tf.GradientTape(persistent=True) as tape:
-            prediction_loss = self.batch_loss(batch_in)
+            prediction_loss, sim_pos, sim_neg_il = self.batch_loss(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
             total_loss = prediction_loss + regularization_loss
+
+            # print("Sim Pos", sim_pos.result())
+            # print("Sim Neg", sim_neg_il.result())
+            # print("----------------------------")
 
         self.total_loss.update_state(total_loss)
 
@@ -533,7 +537,7 @@ class RasaModel(tf.keras.models.Model):
                             batch[idx + 2][i] for i in range(number_of_dimensions - 1)
                         ] + [feature_dimension]
                         batch_data[key][sub_key].append(
-                            tf.SparseTensor(batch[idx], batch[idx + 1], shape,)
+                            tf.SparseTensor(batch[idx], batch[idx + 1], shape)
                         )
                         idx += 3
                     else:
@@ -723,6 +727,21 @@ class TransformerRasaModel(RasaModel):
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
         self._tf_layers[f"{prefix}.{name}"] = layers.DotProductLoss(
+            self.config[NUM_NEG],
+            self.config[LOSS_TYPE],
+            self.config[MAX_POS_SIM],
+            self.config[MAX_NEG_SIM],
+            self.config[USE_MAX_NEG_SIM],
+            self.config[NEGATIVE_MARGIN_SCALE],
+            scale_loss,
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
+        )
+
+    def _prepare_multi_label_dot_product_loss(
+        self, name: Text, scale_loss: bool, prefix: Text = "loss"
+    ) -> None:
+        self._tf_layers[f"{prefix}.{name}"] = layers.MultiLabelDotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MAX_POS_SIM],

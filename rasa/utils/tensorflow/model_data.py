@@ -575,16 +575,31 @@ class RasaModelData:
         if not data:
             data = self.data
 
-        return {
-            key: {
-                sub_key: [
-                    FeatureSignature(f.is_sparse, f.units, f.number_of_dimensions)
-                    for f in features
-                ]
-                for sub_key, features in attribute_data.items()
-            }
-            for key, attribute_data in data.items()
-        }
+        signature = {}
+        for key, attribute_data in data.items():
+            signature[key] = {}
+            for sub_key, features in attribute_data.items():
+                s = []
+                for f in features:
+                    # print(key, sub_key, f)
+                    s.append(
+                        FeatureSignature(f.is_sparse, f.units, f.number_of_dimensions)
+                    )
+
+                signature[key][sub_key] = s
+
+        return signature
+
+        # return {
+        #     key: {
+        #         sub_key: [
+        #             FeatureSignature(f.is_sparse, f.units, f.number_of_dimensions)
+        #             for f in features
+        #         ]
+        #         for sub_key, features in attribute_data.items()
+        #     }
+        #     for key, attribute_data in data.items()
+        # }
 
     def as_tf_dataset(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False

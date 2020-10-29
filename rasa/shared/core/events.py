@@ -219,6 +219,16 @@ class Event:
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         pass
 
+    # TODO: Remove this, just a helper method
+    def print(self):
+        try:
+            if self.as_dict()["event"] == "action":
+                print(self.as_dict()["name"])
+            else:
+                print(self.as_dict()["parse_data"]["intent"]["name"])
+        except Exception as e:
+            print(self.as_dict())
+
 
 # noinspection PyProtectedMember
 class UserUttered(Event):
