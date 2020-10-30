@@ -172,7 +172,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ${{ env.CHOCO_CACHE_LOCATION }}
-        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.nuspec') }}
+        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.txt') }}
         restore-keys: ${{ runner.os }}-system
 
     - name: Install Dependencies (Linux) 📦
