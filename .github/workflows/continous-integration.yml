@@ -160,12 +160,24 @@ jobs:
       run: |
         poetry config virtualenvs.in-project true
 
+    - name: Setup choco cache location (Windows) 🍫
+      if: matrix.os == 'windows-latest'
+      run: choco config set cacheLocation .system_dependencies_cache
+
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+
+    - name: Load System Cached Dependencies ⬇ (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: actions/cache@v1
+      with:
+        path: .system_dependencies_cache
+        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.xml') }}
+        restore-keys: ${{ runner.os }}-system
 
     - name: Install Dependencies (Linux) 📦
       if: matrix.os == 'ubuntu-latest'
