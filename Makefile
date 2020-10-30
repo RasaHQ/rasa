@@ -97,7 +97,7 @@ types:
 	--disable-error-code func-returns-value
 
 prepare-tests-windows-dependencies:
-	choco install ./system_test_dependencies/windows.xml
+	choco install ./system_test_dependencies/windows.nuspec
 
 prepare-tests-macos-dependencies:
 	# FIXME: why do we do '|| true' ?

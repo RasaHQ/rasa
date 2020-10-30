@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>rasa</id>
+        <version>2</version>
+        <description>rasa</description>
+        <authors>RasaHQ</authors>
+        <dependencies>
+            <dependency id="graphviz" version="2.38.0.20190211" />
+        </dependencies>
+    </metadata>
+</package>
