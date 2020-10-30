@@ -500,7 +500,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```yaml-rasa
   pipeline:
   - name: "ConveRTFeaturizer"
+    # Remote URL/Local directory of model files(Required)
+    "model_url": None
   ```
+
+  :::note
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 
 ### LanguageModelFeaturizer
@@ -568,7 +576,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   | Language Model | Parameter    | Default value for       |
   |                | "model_name" | "model_weights"         |
   +----------------+--------------+-------------------------+
-  | BERT           | bert         | bert-base-uncased       |
+  | BERT           | bert         | rasa/LaBSE              |
   +----------------+--------------+-------------------------+
   | GPT            | gpt          | openai-gpt              |
   +----------------+--------------+-------------------------+
@@ -590,7 +598,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
       # Name of the language model to use
       model_name: "bert"
       # Pre-Trained weights to be loaded
-      model_weights: "bert-base-uncased"
+      model_weights: "rasa/LaBSE"
 
       # An optional path to a specific directory to download and cache the pre-trained model weights.
       # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
@@ -1361,6 +1369,18 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
 |                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
 +---------------------------------+------------------+--------------------------------------------------------------+
+| split_entities_by_comma         | True             | Splits a list of extracted entities by comma to treat each   |
+|                                 |                  | one of them as a single entity. Can either be `True`/`False` |
+|                                 |                  | globally, or set per entity type, such as:                   |
+|                                 |                  | ```                                                          |
+|                                 |                  | ...                                                          |
+|                                 |                  | - name: DIETClassifier                                       |
+|                                 |                  |   split_entities_by_comma:                                   |
+|                                 |                  |     address: True                                            |
+|                                 |                  |     ...                                                      |
+|                                 |                  | ...                                                          |
+|                                 |                  | ```                                                          |
++---------------------------------+------------------+--------------------------------------------------------------+
 ```
 
 :::note
@@ -1712,6 +1732,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     # Name of dense featurizers to use.
     # If list is empty all available dense features are used.
     "featurizers": []
+    # Indicated whether a list of extracted entities should be split into individual entities for a given entity type
+    "split_entities_by_comma":
+        address: False
+        email: True
   ```
 
   :::note

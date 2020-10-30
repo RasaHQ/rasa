@@ -76,7 +76,10 @@ def test_input_padding(
     resulting_length: int,
     padding_added: bool,
 ):
-    component = HFTransformersNLP({"model_name": "bert"}, skip_model_load=True)
+    component = HFTransformersNLP(
+        {"model_name": "bert", "model_weights": "bert-base-uncased"},
+        skip_model_load=True,
+    )
     component.pad_token_id = 0
     padded_input = component._add_padding_to_batch(token_ids, max_sequence_length_model)
     assert len(padded_input[0]) == resulting_length
@@ -89,11 +92,13 @@ def test_input_padding(
     "sequence_length, model_name, should_overflow",
     [(1000, "bert", True), (256, "bert", False)],
 )
-@pytest.mark.skip_on_windows
 def test_log_longer_sequence(
     sequence_length: int, model_name: Text, should_overflow: bool, caplog
 ):
-    transformers_config = {"model_name": model_name}
+    transformers_config = {
+        "model_name": model_name,
+        "model_weights": "bert-base-uncased",
+    }
 
     transformers_nlp = HFTransformersNLP(transformers_config)
 
@@ -114,7 +119,10 @@ def test_log_longer_sequence(
 def test_attention_mask(
     actual_sequence_length: int, max_input_sequence_length: int, zero_start_index: int
 ):
-    component = HFTransformersNLP({"model_name": "bert"}, skip_model_load=True)
+    component = HFTransformersNLP(
+        {"model_name": "bert", "model_weights": "bert-base-uncased"},
+        skip_model_load=True,
+    )
 
     attention_mask = component._compute_attention_mask(
         [actual_sequence_length], max_input_sequence_length

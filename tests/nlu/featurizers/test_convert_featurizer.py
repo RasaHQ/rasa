@@ -1,5 +1,9 @@
 import numpy as np
 import pytest
+from typing import Text, Optional, List, Tuple
+from pathlib import Path
+import os
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -7,18 +11,23 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import (
+    ConveRTFeaturizer,
+    RESTRICTED_ACCESS_URL,
+    ORIGINAL_TF_HUB_MODULE_URL,
+)
+from rasa.exceptions import RasaException
 
 
-# TODO
-#   skip tests as the ConveRT model is not publicly available anymore (see
-#   https://github.com/RasaHQ/rasa/issues/6806)
-
-
-@pytest.mark.skip
-def test_convert_featurizer_process(component_builder):
+@pytest.mark.skip_on_windows
+def test_convert_featurizer_process(monkeypatch: MonkeyPatch):
     tokenizer = WhitespaceTokenizer()
-    featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
+
+    monkeypatch.setattr(
+        ConveRTFeaturizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
+    component_config = {"name": "ConveRTFeaturizer", "model_url": RESTRICTED_ACCESS_URL}
+    featurizer = ConveRTFeaturizer(component_config)
     sentence = "Hey how are you today ?"
     message = Message.build(text=sentence)
 
@@ -43,10 +52,15 @@ def test_convert_featurizer_process(component_builder):
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
 
-@pytest.mark.skip
-def test_convert_featurizer_train(component_builder):
+@pytest.mark.skip_on_windows
+def test_convert_featurizer_train(monkeypatch: MonkeyPatch):
     tokenizer = WhitespaceTokenizer()
-    featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
+
+    monkeypatch.setattr(
+        ConveRTFeaturizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
+    component_config = {"name": "ConveRTFeaturizer", "model_url": RESTRICTED_ACCESS_URL}
+    featurizer = ConveRTFeaturizer(component_config)
 
     sentence = "Hey how are you today ?"
     message = Message(data={TEXT: sentence})
@@ -93,6 +107,7 @@ def test_convert_featurizer_train(component_builder):
     assert sent_vecs is None
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "sentence, expected_text",
     [
@@ -103,10 +118,16 @@ def test_convert_featurizer_train(component_builder):
         ("ńöñàśçií", "ńöñàśçií"),
     ],
 )
-@pytest.mark.skip
-def test_convert_featurizer_tokens_to_text(component_builder, sentence, expected_text):
+def test_convert_featurizer_tokens_to_text(
+    sentence: Text, expected_text: Text, monkeypatch: MonkeyPatch
+):
     tokenizer = WhitespaceTokenizer()
-    featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
+
+    monkeypatch.setattr(
+        ConveRTFeaturizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
+    component_config = {"name": "ConveRTFeaturizer", "model_url": RESTRICTED_ACCESS_URL}
+    featurizer = ConveRTFeaturizer(component_config)
     message = Message.build(text=sentence)
     td = TrainingData([message])
     tokenizer.train(td)
@@ -117,6 +138,7 @@ def test_convert_featurizer_tokens_to_text(component_builder, sentence, expected
     assert expected_text == actual_text
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
     [
@@ -132,12 +154,19 @@ def test_convert_featurizer_tokens_to_text(component_builder, sentence, expected
         ("ńöñàśçií", ["ńöñàśçií"], [(0, 8)]),
     ],
 )
-@pytest.mark.skip
 def test_convert_featurizer_token_edge_cases(
-    component_builder, text, expected_tokens, expected_indices
+    text: Text,
+    expected_tokens: List[Text],
+    expected_indices: List[Tuple[int]],
+    monkeypatch: MonkeyPatch,
 ):
     tokenizer = WhitespaceTokenizer()
-    featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
+
+    monkeypatch.setattr(
+        ConveRTFeaturizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
+    component_config = {"name": "ConveRTFeaturizer", "model_url": RESTRICTED_ACCESS_URL}
+    featurizer = ConveRTFeaturizer(component_config)
     message = Message.build(text=text)
     td = TrainingData([message])
     tokenizer.train(td)
@@ -148,16 +177,21 @@ def test_convert_featurizer_token_edge_cases(
     assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "text, expected_number_of_sub_tokens",
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
 )
-@pytest.mark.skip
 def test_convert_featurizer_number_of_sub_tokens(
-    component_builder, text, expected_number_of_sub_tokens
+    text: Text, expected_number_of_sub_tokens: List[int], monkeypatch: MonkeyPatch
 ):
     tokenizer = WhitespaceTokenizer()
-    featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
+
+    monkeypatch.setattr(
+        ConveRTFeaturizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
+    component_config = {"name": "ConveRTFeaturizer", "model_url": RESTRICTED_ACCESS_URL}
+    featurizer = ConveRTFeaturizer(component_config)
 
     message = Message.build(text=text)
     td = TrainingData([message])
@@ -168,3 +202,62 @@ def test_convert_featurizer_number_of_sub_tokens(
     assert [
         t.get(NUMBER_OF_SUB_TOKENS) for t in tokens
     ] == expected_number_of_sub_tokens
+
+
+@pytest.mark.skip_on_windows
+@pytest.mark.parametrize(
+    "model_url, exception_phrase",
+    [
+        (ORIGINAL_TF_HUB_MODULE_URL, "which does not contain the model any longer"),
+        (
+            RESTRICTED_ACCESS_URL,
+            "which is strictly reserved for pytests of Rasa Open Source only",
+        ),
+        (None, """"model_url" was not specified in the configuration"""),
+        ("", """"model_url" was not specified in the configuration"""),
+    ],
+)
+def test_raise_invalid_urls(model_url: Optional[Text], exception_phrase: Text):
+
+    component_config = {"name": "ConveRTFeaturizer", "model_url": model_url}
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTFeaturizer(component_config)
+
+    assert exception_phrase in str(excinfo.value)
+
+
+@pytest.mark.skip_on_windows
+def test_raise_wrong_model_directory(tmp_path: Path):
+
+    component_config = {"name": "ConveRTFeaturizer", "model_url": str(tmp_path)}
+
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTFeaturizer(component_config)
+
+    assert "Re-check the files inside the directory" in str(excinfo.value)
+
+
+@pytest.mark.skip_on_windows
+def test_raise_wrong_model_file(tmp_path: Path):
+
+    # create a dummy file
+    temp_file = os.path.join(tmp_path, "saved_model.pb")
+    f = open(temp_file, "wb")
+    f.close()
+    component_config = {"name": "ConveRTFeaturizer", "model_url": temp_file}
+
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTFeaturizer(component_config)
+
+    assert "set to the path of a file which is invalid" in str(excinfo.value)
+
+
+@pytest.mark.skip_on_windows
+def test_raise_invalid_path():
+
+    component_config = {"name": "ConveRTFeaturizer", "model_url": "saved_model.pb"}
+
+    with pytest.raises(RasaException) as excinfo:
+        _ = ConveRTFeaturizer(component_config)
+
+    assert "neither a valid remote URL nor a local directory" in str(excinfo.value)

@@ -350,6 +350,29 @@ stories:
     )
 
 
+def test_end_to_end_story_with_entities():
+    story = """
+stories:
+- story: my story
+  steps:
+  - intent: greet
+    entities:
+    - city: Berlin
+      role: from
+    """
+
+    story_as_yaml = rasa.shared.utils.io.read_yaml(story)
+
+    steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
+    user_uttered = steps[0].events[0]
+
+    assert user_uttered == UserUttered(
+        None,
+        intent={"name": "greet"},
+        entities=[{"entity": "city", "value": "Berlin", "role": "from"}],
+    )
+
+
 def test_read_mixed_training_data_file(default_domain: Domain):
     training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
 

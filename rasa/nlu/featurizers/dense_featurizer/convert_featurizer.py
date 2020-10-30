@@ -2,6 +2,7 @@ import logging
 
 from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 from tqdm import tqdm
+import os
 
 import rasa.shared.utils.io
 from rasa.core.utils import get_dict_hash
@@ -21,7 +22,14 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
 )
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.constants import (
+    TEXT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    ACTION_TEXT,
+)
+from rasa.exceptions import RasaException
+import rasa.nlu.utils
 import numpy as np
 import tensorflow as tf
 
@@ -29,9 +37,15 @@ import rasa.utils.train_utils as train_utils
 
 logger = logging.getLogger(__name__)
 
-TF_HUB_MODULE_URL = (
+# URL to the old remote location of the model which
+# users might use. The model is no longer hosted here.
+ORIGINAL_TF_HUB_MODULE_URL = (
     "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
 )
+
+# Warning: This URL is only intended for running pytests on ConveRT
+# related components. This URL should not be allowed to be used by the user.
+RESTRICTED_ACCESS_URL = "https://storage.googleapis.com/continuous-integration-model-storage/convert_tf2.tar.gz"
 
 
 class ConveRTFeaturizer(DenseFeaturizer):
@@ -41,6 +55,11 @@ class ConveRTFeaturizer(DenseFeaturizer):
     model from TFHub and computes sentence and sequence level feature representations
     for dense featurizable attributes of each message object.
     """
+
+    defaults = {
+        # Remote URL/Local path to model files
+        "model_url": None
+    }
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
@@ -53,14 +72,111 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
         super(ConveRTFeaturizer, self).__init__(component_config)
-        self.model_url = self.component_config.get("model_url", TF_HUB_MODULE_URL)
+        self.model_url = self._get_validated_model_url()
 
         self.module = train_utils.load_tf_hub_model(self.model_url)
 
-        self.tokenize_signature = self.module.signatures["tokenize"]
+        self.tokenize_signature = self._get_signature("tokenize", self.module)
+        self.sequence_encoding_signature = self._get_signature(
+            "encode_sequence", self.module
+        )
+        self.sentence_encoding_signature = self._get_signature("default", self.module)
 
     @staticmethod
-    def __get_signature(signature: Text, module: Any) -> NoReturn:
+    def _validate_model_files_exist(model_directory: Text) -> None:
+        """Check if essential model files exist inside the model_directory.
+
+        Args:
+            model_directory: Directory to investigate
+        """
+        files_to_check = [
+            os.path.join(model_directory, "saved_model.pb"),
+            os.path.join(model_directory, "variables/variables.index"),
+            os.path.join(model_directory, "variables/variables.data-00001-of-00002"),
+            os.path.join(model_directory, "variables/variables.data-00000-of-00002"),
+        ]
+
+        for file_path in files_to_check:
+            if not os.path.exists(file_path):
+                raise RasaException(
+                    f"""File {file_path} does not exist.
+                        Re-check the files inside the directory {model_directory}.
+                        It should contain the following model
+                        files - [{", ".join(files_to_check)}]"""
+                )
+
+    def _get_validated_model_url(self) -> Text:
+        """Validates the specified `model_url` parameter.
+
+        The `model_url` parameter cannot be left empty. It can either
+        be set to a remote URL where the model is hosted or it can be
+        a path to a local directory.
+
+        Returns:
+            Validated path to model
+        """
+        model_url = self.component_config.get("model_url", None)
+
+        if not model_url:
+            raise RasaException(
+                f"""Parameter "model_url" was not specified in the configuration
+                of "{ConveRTFeaturizer.__name__}". It is mandatory to pass a value for this parameter.
+                You can either use a community hosted URL of the model
+                or if you have a local copy of the model, pass the
+                path to the directory containing the model files."""
+            )
+
+        if model_url == ORIGINAL_TF_HUB_MODULE_URL:
+            # Can't use the originally hosted URL
+            raise RasaException(
+                f"""Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was
+                set to "{model_url}" which does not contain the model any longer.
+                You can either use a community hosted URL or if you have a
+                local copy of the model, pass the path to the directory
+                containing the model files."""
+            )
+
+        if model_url == RESTRICTED_ACCESS_URL:
+            # Can't use the URL that is reserved for tests only
+            raise RasaException(
+                f"""Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was
+                set to "{model_url}" which is strictly reserved for pytests of Rasa Open Source only.
+                Due to licensing issues you are not allowed to use the model from this URL.
+                You can either use a community hosted URL or if you have a
+                local copy of the model, pass the path to the directory
+                containing the model files."""
+            )
+
+        if os.path.isfile(model_url):
+            # Definitely invalid since the specified path should be a directory
+            raise RasaException(
+                f"""Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was
+                set to the path of a file which is invalid. You
+                can either use a community hosted URL or if you have a
+                local copy of the model, pass the path to the directory
+                containing the model files."""
+            )
+
+        if rasa.nlu.utils.is_url(model_url):
+            return model_url
+
+        if os.path.isdir(model_url):
+            # Looks like a local directory. Inspect the directory
+            # to see if model files exist.
+            self._validate_model_files_exist(model_url)
+            # Convert the path to an absolute one since
+            # TFHUB doesn't like relative paths
+            return os.path.abspath(model_url)
+
+        raise RasaException(
+            f"""{model_url} is neither a valid remote URL nor a local directory.
+            You can either use a community hosted URL or if you have a
+            local copy of the model, pass the path to
+            the directory containing the model files."""
+        )
+
+    @staticmethod
+    def _get_signature(signature: Text, module: Any) -> NoReturn:
         """Retrieve a signature from a (hopefully loaded) TF model."""
 
         if not module:
@@ -72,35 +188,31 @@ class ConveRTFeaturizer(DenseFeaturizer):
         return module.signatures[signature]
 
     def _compute_features(
-        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> Tuple[np.ndarray, np.ndarray]:
-        sentence_encodings = self._compute_sentence_encodings(
-            batch_examples, module, attribute
-        )
+        sentence_encodings = self._compute_sentence_encodings(batch_examples, attribute)
 
         (
             sequence_encodings,
             number_of_tokens_in_sentence,
-        ) = self._compute_sequence_encodings(batch_examples, module, attribute)
+        ) = self._compute_sequence_encodings(batch_examples, attribute)
 
         return self._get_features(
             sentence_encodings, sequence_encodings, number_of_tokens_in_sentence
         )
 
     def _compute_sentence_encodings(
-        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> np.ndarray:
         # Get text for attribute of each example
         batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
-        sentence_encodings = self._sentence_encoding_of_text(
-            batch_attribute_text, module
-        )
+        sentence_encodings = self._sentence_encoding_of_text(batch_attribute_text)
 
         # convert them to a sequence of 1
         return np.reshape(sentence_encodings, (len(batch_examples), 1, -1))
 
     def _compute_sequence_encodings(
-        self, batch_examples: List[Message], module: Any, attribute: Text = TEXT
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
             self.tokenize(example, attribute) for example in batch_examples
@@ -114,7 +226,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         # the returned embeddings from ConveRT matches the length of the tokens
         # (including sub-tokens)
         tokenized_texts = self._tokens_to_text(list_of_tokens)
-        token_features = self._sequence_encoding_of_text(tokenized_texts, module)
+        token_features = self._sequence_encoding_of_text(tokenized_texts)
 
         # ConveRT might split up tokens into sub-tokens
         # take the mean of the sub-token vectors and use that as the token vector
@@ -165,21 +277,22 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         return texts
 
-    def _sentence_encoding_of_text(self, batch: List[Text], module: Any) -> np.ndarray:
-        signature = self.__get_signature("default", module)
-        return signature(tf.convert_to_tensor(batch))["default"].numpy()
+    def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
 
-    def _sequence_encoding_of_text(self, batch: List[Text], module: Any) -> np.ndarray:
-        signature = self.__get_signature("encode_sequence", module)
+        return self.sentence_encoding_signature(tf.convert_to_tensor(batch))[
+            "default"
+        ].numpy()
 
-        return signature(tf.convert_to_tensor(batch))["sequence_encoding"].numpy()
+    def _sequence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
+
+        return self.sequence_encoding_signature(tf.convert_to_tensor(batch))[
+            "sequence_encoding"
+        ].numpy()
 
     def train(
         self,
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
-        *,
-        tf_hub_module: Any = None,
         **kwargs: Any,
     ) -> None:
         if config is not None and config.language != "en":
@@ -214,7 +327,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 (
                     batch_sequence_features,
                     batch_sentence_features,
-                ) = self._compute_features(batch_examples, tf_hub_module, attribute)
+                ) = self._compute_features(batch_examples, attribute)
 
                 self._set_features(
                     batch_examples,
@@ -223,13 +336,11 @@ class ConveRTFeaturizer(DenseFeaturizer):
                     attribute,
                 )
 
-    def process(
-        self, message: Message, *, tf_hub_module: Any = None, **kwargs: Any
-    ) -> None:
-        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+    def process(self, message: Message, **kwargs: Any) -> None:
+        for attribute in {TEXT, ACTION_TEXT}:
             if message.get(attribute):
                 sequence_features, sentence_features = self._compute_features(
-                    [message], tf_hub_module, attribute=attribute
+                    [message], attribute=attribute
                 )
 
                 self._set_features(
@@ -264,6 +375,14 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: Metadata
     ) -> Optional[Text]:
+        """Cache the component for future use.
+
+        Args:
+            component_meta: configuration for the component.
+            model_metadata: configuration for the whole pipeline.
+
+        Returns: key of the cache for future retrievals.
+        """
         _config = common.update_existing_keys(cls.defaults, component_meta)
         return f"{cls.name}-{get_dict_hash(_config)}"
 

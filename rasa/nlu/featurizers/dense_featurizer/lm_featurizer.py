@@ -275,10 +275,9 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             # use lm specific tokenizer to further tokenize the text
             split_token_ids, split_token_strings = self._lm_tokenize(token.text)
 
-            (
-                split_token_ids,
-                split_token_strings,
-            ) = self._lm_specific_token_cleanup(split_token_ids, split_token_strings)
+            (split_token_ids, split_token_strings) = self._lm_specific_token_cleanup(
+                split_token_ids, split_token_strings
+            )
 
             token_ids_out += split_token_ids
 
@@ -440,9 +439,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         return np.array(nonpadded_sequence_embeddings)
 
     def _compute_batch_sequence_features(
-        self,
-        batch_attention_mask: np.ndarray,
-        padded_token_ids: List[List[int]],
+        self, batch_attention_mask: np.ndarray, padded_token_ids: List[List[int]]
     ) -> np.ndarray:
         """Feed the padded batch to the language model.
 
@@ -456,8 +453,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             Sequence level representations from the language model.
         """
         model_outputs = self.model(
-            np.array(padded_token_ids),
-            attention_mask=np.array(batch_attention_mask),
+            np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
         )
 
         # sequence hidden states is always the first output from all models
@@ -508,9 +504,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
                 )
 
     def _add_extra_padding(
-        self,
-        sequence_embeddings: np.ndarray,
-        actual_sequence_lengths: List[int],
+        self, sequence_embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
         """
         Add extra zero padding to match the original sequence length.
@@ -687,11 +681,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             batch_sentence_features,
             batch_sequence_features,
         ) = self._get_model_features_for_batch(
-            batch_token_ids,
-            batch_tokens,
-            batch_examples,
-            attribute,
-            inference_mode,
+            batch_token_ids, batch_tokens, batch_examples, attribute, inference_mode
         )
 
         # A doc consists of

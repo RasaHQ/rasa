@@ -720,9 +720,11 @@ def test_lm_featurizer_edge_cases(
     "text, expected_number_of_sub_tokens",
     [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
 )
-@pytest.mark.skip_on_windows
 def test_hf_transformers_number_of_sub_tokens(text, expected_number_of_sub_tokens):
-    config = {"model_name": "bert"}  # Test for one should be enough
+    config = {
+        "model_name": "bert",
+        "model_weights": "bert-base-uncased",
+    }  # Test for one should be enough
 
     lm_featurizer = LanguageModelFeaturizer(config)
     whitespace_tokenizer = WhitespaceTokenizer()
@@ -738,15 +740,13 @@ def test_hf_transformers_number_of_sub_tokens(text, expected_number_of_sub_token
     ] == expected_number_of_sub_tokens
 
 
-@pytest.mark.parametrize(
-    "text",
-    [("hi there")],
-)
-@pytest.mark.skip_on_windows
+@pytest.mark.parametrize("text", [("hi there")])
 def test_log_deprecation_warning_with_old_config(text, caplog):
     message = Message.build(text)
 
-    transformers_nlp = HFTransformersNLP()
+    transformers_nlp = HFTransformersNLP(
+        {"model_name": "bert", "model_weights": "bert-base-uncased"}
+    )
     transformers_nlp.process(message)
 
     caplog.set_level(logging.DEBUG)
@@ -758,12 +758,13 @@ def test_log_deprecation_warning_with_old_config(text, caplog):
     assert "deprecated component HFTransformersNLP" in caplog.text
 
 
-@pytest.mark.skip_on_windows
 def test_preserve_sentence_and_sequence_features_old_config():
     attribute = "text"
     message = Message.build("hi there")
 
-    transformers_nlp = HFTransformersNLP({"model_name": "bert"})
+    transformers_nlp = HFTransformersNLP(
+        {"model_name": "bert", "model_weights": "bert-base-uncased"}
+    )
     transformers_nlp.process(message)
     lm_tokenizer = LanguageModelTokenizer()
     lm_tokenizer.process(message)

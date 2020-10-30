@@ -6,8 +6,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 class ConveRTTokenizer(WhitespaceTokenizer):
-    """
-    This tokenizer is deprecated and will be removed in the future.
+    """This tokenizer is deprecated and will be removed in the future.
 
     The ConveRTFeaturizer component now sets the sub-token information
     for dense featurizable attributes of each message object.
