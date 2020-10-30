@@ -48,11 +48,8 @@ install:
 	poetry run python -m pip install -U pip
 	poetry install
 
-install-mitie:
-	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
-
-install-full: install install-mitie
-	poetry install -E full
+install-full: install
+	poetry install -E mitie -E full
 
 install-docs:
 	cd docs/ && yarn install
