@@ -140,3 +140,75 @@ async def test_test_stories_contains_number(tmpdir: Path):
     )
 
     assert len(os.listdir(converted_data_folder)) == 1
+
+
+async def test_test_stories_conversion_response_key(tmpdir: Path):
+    converted_data_folder = tmpdir / "converted_data"
+    os.mkdir(converted_data_folder)
+
+    test_data_folder = tmpdir / "tests"
+    os.makedirs(test_data_folder, exist_ok=True)
+    test_data_file = Path(test_data_folder / "test_stories.md")
+
+    simple_story_md = """
+    ## id
+
+    * out_of_scope/other: hahaha
+        - utter_out_of_scope/other
+    """
+
+    with open(test_data_file, "w") as f:
+        f.write(simple_story_md)
+
+    await StoryMarkdownToYamlConverter().convert_and_write(
+        test_data_file, converted_data_folder
+    )
+
+    assert len(os.listdir(converted_data_folder)) == 1
+    with open(f"{converted_data_folder}/test_stories_converted.yml", "r") as f:
+        content = f.read()
+        assert content == (
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+            "stories:\n"
+            "- story: id\n"
+            "  steps:\n"
+            "  - intent: out_of_scope/other\n"
+            "    user: |-\n"
+            "      hahaha\n"
+            "  - action: utter_out_of_scope/other\n"
+        )
+
+
+async def test_stories_conversion_response_key(tmpdir: Path):
+    converted_data_folder = tmpdir / "converted_data"
+    os.mkdir(converted_data_folder)
+
+    training_data_folder = tmpdir / "data/core"
+    os.makedirs(training_data_folder, exist_ok=True)
+    training_data_file = Path(training_data_folder / "stories.md")
+
+    simple_story_md = """
+    ## id
+    * out_of_scope/other
+        - utter_out_of_scope/other
+    """
+
+    with open(training_data_file, "w") as f:
+        f.write(simple_story_md)
+
+    await StoryMarkdownToYamlConverter().convert_and_write(
+        training_data_file, converted_data_folder
+    )
+
+    assert len(os.listdir(converted_data_folder)) == 1
+
+    with open(f"{converted_data_folder}/stories_converted.yml", "r") as f:
+        content = f.read()
+        assert content == (
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+            "stories:\n"
+            "- story: id\n"
+            "  steps:\n"
+            "  - intent: out_of_scope/other\n"
+            "  - action: utter_out_of_scope/other\n"
+        )

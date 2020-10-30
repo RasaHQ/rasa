@@ -453,9 +453,15 @@ word vectors in your pipeline.
       "intent_split_symbol": "_"
       # Regular expression to detect tokens
       "token_pattern": None
-      # Remote URL of hosted model
-      "model_url": TF_HUB_MODULE_URL
+      # Remote URL/Local directory of model files(Required)
+      "model_url": None
     ```
+
+  :::note
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 
   ### LanguageModelTokenizer
