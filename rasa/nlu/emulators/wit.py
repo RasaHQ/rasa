@@ -17,8 +17,8 @@ from rasa.shared.nlu.constants import (
 class WitEmulator(Emulator):
     """Emulates the response format of this wit.ai endpoint.
 
-     More information about the endpoint: hhttps://wit.ai/docs/http/20200513/#get__message_link
-     """
+    More information about the endpoint: https://wit.ai/docs/http/20200513/#get__message_link
+    """
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         """Transform response JSON to wit.ai format.
