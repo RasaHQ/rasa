@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, Text
 
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.shared.nlu.constants import (
@@ -15,11 +15,18 @@ from rasa.shared.nlu.constants import (
 
 
 class WitEmulator(Emulator):
-    """Emulates the response format of this wit.ai endpoint:
-    https://wit.ai/docs/http/20200513/#get__message_link
+    """Emulates the response format of this wit.ai endpoint: https://wit.ai/docs/http/20200513/#get__message_link
     """
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Transform response JSON to wit.ai format.
+
+        Args:
+            data: input JSON data as a dictionary.
+
+        Returns:
+            The transformed input data.
+        """
         entities = defaultdict(list)
         for entity in data[ENTITIES]:
             entity_name = entity[ENTITY_ATTRIBUTE_TYPE]

@@ -2,8 +2,8 @@ from typing import Any, Dict, Text
 
 
 class Emulator:
-    """Emulator specifies how requests and responses are getting transformed when
-    Rasa server is running in emulation mode."""
+    """Emulator specifies how requests and responses are getting transformed.
+    """
 
     @classmethod
     def name(cls) -> Text:
@@ -41,8 +41,8 @@ class Emulator:
         Returns:
             The transformed input data.
         """
-
         raise NotImplementedError
 
     def __str__(self) -> Text:
+        """Return the string representation of the emulator."""
         return "Emulator('{}')".format(self.name())
