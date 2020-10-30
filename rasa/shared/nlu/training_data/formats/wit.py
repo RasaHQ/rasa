@@ -2,7 +2,13 @@ import logging
 from typing import Any, Dict, Text
 
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.shared.nlu.constants import INTENT, ENTITIES, TEXT, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_TYPE
+from rasa.shared.nlu.constants import (
+    INTENT,
+    ENTITIES,
+    TEXT,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+)
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
