@@ -29,7 +29,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
-from rasa.shared.core.events import ActionExecutionRejected
+from rasa.shared.core.events import ActionExecutionRejected, ActionExecuted
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -223,7 +223,7 @@ class PolicyEnsemble:
         for package_name in self.versioned_packages:
             try:
                 p = importlib.import_module(package_name)
-                v = p.__version__  # pytype: disable=attribute-error
+                v = p.__version__
                 metadata[package_name] = v
             except ImportError:
                 pass
@@ -546,14 +546,22 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             probabilities: the list of probabilities for the next actions
             policy_name: the name of the picked policy
         """
-
         # find rejected action before running the policies
         # because some of them might add events
         rejected_action_name = None
+        last_action_event = next(
+            (
+                event
+                for event in reversed(tracker.events)
+                if isinstance(event, (ActionExecutionRejected, ActionExecuted))
+            ),
+            None,
+        )
+
         if len(tracker.events) > 0 and isinstance(
-            tracker.events[-1], ActionExecutionRejected
+            last_action_event, ActionExecutionRejected
         ):
-            rejected_action_name = tracker.events[-1].action_name
+            rejected_action_name = last_action_event.action_name
 
         predictions = {
             f"policy_{i}_{type(p).__name__}": self._get_prediction(

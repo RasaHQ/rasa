@@ -34,6 +34,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
+    SPLIT_ENTITIES_BY_COMMA,
 )
 from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -246,6 +247,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Specify what features to use as sequence and sentence features
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
+        # Split entities by comma, this makes sense e.g. for a list of ingredients
+        # in a recipie, but it doesn't make sense for the parts of an address
+        SPLIT_ENTITIES_BY_COMMA: True,
     }
 
     # init helpers
@@ -326,12 +330,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._label_data: Optional[RasaModelData] = None
         self._data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
+        self.split_entities_config = self.init_split_entities()
+
     @property
     def label_key(self) -> Optional[Text]:
+        """Return key if intent classification is activated."""
         return LABEL_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @property
     def label_sub_key(self) -> Optional[Text]:
+        """Return sub key if intent classification is activated."""
         return LABEL_SUB_KEY if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod
@@ -852,6 +860,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.get(TEXT),
             message.get(TOKENS_NAMES[TEXT], []),
             predicted_tags,
+            self.split_entities_config,
             confidence_values,
         )
 
@@ -1087,10 +1096,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
 
-# accessing _tf_layers with any key results in key-error, disable it
-# pytype: disable=key-error
-
-
 class DIET(TransformerRasaModel):
     def __init__(
         self,
@@ -1115,7 +1120,9 @@ class DIET(TransformerRasaModel):
         self._create_metrics()
         self._update_metrics_to_log()
 
-        self.all_labels_embed = None  # needed for efficient prediction
+        # needed for efficient prediction
+        self.all_labels_embed: Optional[tf.Tensor] = None
+
         self._prepare_layers()
 
     @staticmethod
@@ -1560,13 +1567,10 @@ class DIET(TransformerRasaModel):
 
         # should call first to build weights
         pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
-        # pytype cannot infer that 'self._tf_layers["crf"]' has the method '.loss'
-        # pytype: disable=attribute-error
         loss = self._tf_layers[f"crf.{tag_name}"].loss(
             logits, tag_ids, sequence_lengths
         )
         f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
-        # pytype: enable=attribute-error
 
         return loss, f1, logits
 
@@ -1815,9 +1819,6 @@ class DIET(TransformerRasaModel):
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
-        # pytype cannot infer that 'self._tf_layers[f"loss.{LABEL}"]' has methods
-        # like '.sim' or '.confidence_from_sim'
-        # pytype: disable=attribute-error
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
@@ -1825,9 +1826,5 @@ class DIET(TransformerRasaModel):
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
         )
-        # pytype: enable=attribute-error
 
         return {"i_scores": scores}
-
-
-# pytype: enable=key-error

@@ -84,11 +84,9 @@ class MessageProcessor:
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
 
-        # preprocess message if 
+        # preprocess message if necessary
         with rasa.otel.start_span("log_message"):
             tracker = await self.log_message(message, should_save_tracker=False)
-            if not tracker:
-                return None
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
@@ -111,19 +109,14 @@ class MessageProcessor:
         if isinstance(message.output_channel, CollectingOutputChannel):
             with rasa.otel.start_span("output_channel"):
                 return message.output_channel.messages
-        else:
-            return None
+
+        return None
 
     async def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = await self.get_tracker_with_session_start(sender_id)
-        if not tracker:
-            logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
-            )
-            return None
+        tracker = await self.fetch_tracker_and_update_session(sender_id)
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
@@ -179,13 +172,13 @@ class MessageProcessor:
                 metadata=metadata,
             )
 
-    async def get_tracker_with_session_start(
+    async def fetch_tracker_and_update_session(
         self,
         sender_id: Text,
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
     ) -> DialogueStateTracker:
-        """Get tracker for `sender_id` or create a new tracker for `sender_id`.
+        """Fetches tracker for `sender_id` and updates its conversation session.
 
         If a new tracker is created, `action_session_start` is run.
 
@@ -195,19 +188,43 @@ class MessageProcessor:
             sender_id: Conversation ID for which to fetch the tracker.
 
         Returns:
-              Tracker for `sender_id` if available, `None` otherwise.
+              Tracker for `sender_id`.
         """
-
         tracker = self.get_tracker(sender_id)
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
 
+    async def fetch_tracker_with_initial_session(
+        self,
+        sender_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None,
+    ) -> DialogueStateTracker:
+        """Fetches tracker for `sender_id` and runs a session start if it's a new
+        tracker.
+
+        Args:
+            metadata: Data sent from client associated with the incoming user message.
+            output_channel: Output channel associated with the incoming user message.
+            sender_id: Conversation ID for which to fetch the tracker.
+
+        Returns:
+              Tracker for `sender_id`.
+        """
+        tracker = self.get_tracker(sender_id)
+
+        # run session start only if the tracker is empty
+        if not tracker.events:
+            await self._update_tracker_session(tracker, output_channel, metadata)
+
+        return tracker
+
     def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
-        In contrast to `get_tracker_with_session_start` this does not add any
+        In contrast to `fetch_tracker_and_update_session` this does not add any
         `action_session_start` or `session_start` events at the beginning of a
         conversation.
 
@@ -248,31 +265,25 @@ class MessageProcessor:
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Log `message` on tracker belonging to the message's conversation_id.
 
         Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
         can be skipped if the tracker returned by this method is used for further
         processing and saved at a later stage.
         """
-
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = await self.get_tracker_with_session_start(
+        tracker = await self.fetch_tracker_and_update_session(
             message.sender_id, message.output_channel, message.metadata
         )
 
-        if tracker:
-            await self._handle_message_with_tracker(message, tracker)
+        await self._handle_message_with_tracker(message, tracker)
 
-            if should_save_tracker:
-                # save tracker state to continue conversation from this state
-                self._save_tracker(tracker)
-        else:
-            logger.warning(
-                f"Failed to retrieve or create tracker for conversation ID "
-                f"'{message.sender_id}'."
-            )
+        if should_save_tracker:
+            # save tracker state to continue conversation from this state
+            self._save_tracker(tracker)
+
         return tracker
 
     async def execute_action(
@@ -287,20 +298,14 @@ class MessageProcessor:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
-        if tracker:
-            action = self._get_action(action_name)
-            await self._run_action(
-                action, tracker, output_channel, nlg, policy, confidence
-            )
+        tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
 
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-        else:
-            logger.warning(
-                f"Failed to retrieve or create tracker for conversation ID "
-                f"'{sender_id}'."
-            )
+        action = self._get_action(action_name)
+        await self._run_action(action, tracker, output_channel, nlg, policy, confidence)
+
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
+
         return tracker
 
     def predict_next_action(
@@ -349,8 +354,10 @@ class MessageProcessor:
         for e in reversed(tracker.events):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return False
-            elif isinstance(e, UserUttered) and e.text:
+
+            if isinstance(e, UserUttered) and e.text:
                 return True
+
         return True  # tracker has probably been restarted
 
     async def handle_reminder(
@@ -361,13 +368,7 @@ class MessageProcessor:
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
-        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
-
-        if not tracker:
-            logger.warning(
-                f"Failed to retrieve tracker for conversation ID '{sender_id}'."
-            )
-            return None
+        tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
 
         if (
             reminder_event.kill_on_user_message
@@ -698,12 +699,12 @@ class MessageProcessor:
 
     async def _run_action(
         self,
-        action,
-        tracker,
-        output_channel,
-        nlg,
-        policy=None,
-        confidence=None,
+        action: rasa.core.actions.action.Action,
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
@@ -773,7 +774,12 @@ class MessageProcessor:
                         )
 
     def _log_action_on_tracker(
-        self, tracker, action_name, events, policy, confidence
+        self,
+        tracker: DialogueStateTracker,
+        action_name: Text,
+        events: Optional[List[Event]],
+        policy: Optional[Text],
+        confidence: Optional[float],
     ) -> None:
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
@@ -787,7 +793,10 @@ class MessageProcessor:
 
         self._warn_about_new_slots(tracker, action_name, events)
 
-        if action_name is not None:
+        action_was_rejected_manually = any(
+            isinstance(event, ActionExecutionRejected) for event in events
+        )
+        if action_name is not None and not action_was_rejected_manually:
             # log the action and its produced events
             tracker.update(ActionExecuted(action_name, policy, confidence))
 
@@ -808,7 +817,6 @@ class MessageProcessor:
         Returns:
             `True` if the session in `tracker` has expired, `False` otherwise.
         """
-
         if not self.domain.session_config.are_sessions_enabled():
             # tracker has never expired if sessions are disabled
             return False
