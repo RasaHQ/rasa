@@ -426,15 +426,20 @@ def _get_credentials_and_endpoints_paths(
 def _prevent_failure_if_git_is_not_available() -> None:
     """Rasa X uses the `git` package, which will fail to import if git is not available.
 
-
     Git isn't needed locally, which means we can silence this error to allow
     users to use local mode even if git is not available on their machine.
-    Fixes regression https://github.com/RasaHQ/rasa/issues/7140"""
+    Fixes regression https://github.com/RasaHQ/rasa/issues/7140
+    """
     if os.environ.get("GIT_PYTHON_REFRESH") is None:
         os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 
 
-def run_locally(args: argparse.Namespace):
+def run_locally(args: argparse.Namespace) -> None:
+    """Run a Rasa X instance locally.
+
+    Args:
+        args: commandline arguments
+    """
     _prevent_failure_if_git_is_not_available()
 
     try:
