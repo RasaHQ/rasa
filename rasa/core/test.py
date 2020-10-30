@@ -354,9 +354,15 @@ def _clean_entity_results(
 
 def intent_response_key_from_parsed_data(parsed: Dict[Text, Any]) -> Text:
     try:
-        predicted_intent = parsed["response_selector"]["default"]["response"][
-            "intent_response_key"
-        ]
+        # TODO: find out why it is like this?
+        if "default" in parsed["response_selector"]:
+            predicted_intent = parsed["response_selector"]["default"]["response"][
+                "intent_response_key"
+            ]
+        else:
+            predicted_intent = parsed["response_selector"][parsed["intent"]["name"]][
+                "response"
+            ]["intent_response_key"]
     except:
         predicted_intent = parsed.get(INTENT, {}).get("name")
     return predicted_intent
@@ -370,12 +376,15 @@ def _collect_user_uttered_predictions(
 ) -> EvaluationStore:
     user_uttered_eval_store = EvaluationStore()
 
+    # intent from the test story, may either be base intent or full retrieval intent
     intent_gold = event.intent.get("name")
+
+    # predicted intent: note that this is only the base intent at this point
     predicted_intent = predicted.get(INTENT, {}).get("name")
 
-    # test stories may specify full retrieval intents
-    # in case they only specify base intents this will be skipped
-    # in any other case we are interested in the full retrieval intent
+    # if the test story only provides the base intent AND the prediction was correct,
+    # we are not interested in full retrieval intents and skip this section.
+    # in any other case we are interested in the full retrieval intent (e.g. for report)
     if intent_gold != predicted_intent:
         predicted_intent = intent_response_key_from_parsed_data(predicted)
 
