@@ -210,49 +210,64 @@ def test_demo_data_filter_out_retrieval_intents(files):
 def test_train_test_split(filepaths: List[Text]):
     from rasa.shared.importers.utils import training_data_from_paths
 
-    trainingdata = training_data_from_paths(filepaths, language="en")
+    training_data = training_data_from_paths(filepaths, language="en")
 
-    assert trainingdata.intents == {
+    assert training_data.intents == {
         "affirm",
         "greet",
         "restaurant_search",
         "goodbye",
         "chitchat",
     }
-    assert trainingdata.entities == {"location", "cuisine"}
-    assert set(trainingdata.responses.keys()) == {
+    assert training_data.entities == {"location", "cuisine"}
+    assert set(training_data.responses.keys()) == {
         "utter_chitchat/ask_name",
         "utter_chitchat/ask_weather",
     }
 
-    assert len(trainingdata.training_examples) == 46
-    assert len(trainingdata.intent_examples) == 46
-    assert len(trainingdata.response_examples) == 4
+    NUM_TRAIN_EXAMPLES = 46
+    NUM_RESPONSE_EXAMPLES = 4
 
-    trainingdata_train, trainingdata_test = trainingdata.train_test_split(
-        train_frac=0.8
-    )
+    assert len(training_data.training_examples) == NUM_TRAIN_EXAMPLES
+    assert len(training_data.intent_examples) == NUM_TRAIN_EXAMPLES
+    assert len(training_data.response_examples) == NUM_RESPONSE_EXAMPLES
 
-    assert (
-        len(trainingdata_test.training_examples)
-        + len(trainingdata_train.training_examples)
-        == 46
-    )
-    assert len(trainingdata_train.training_examples) == 34
-    assert len(trainingdata_test.training_examples) == 12
+    for train_percent in range(50, 95, 5):
+        train_frac = train_percent / 100.0
+        train_split, test_split = training_data.train_test_split(train_frac)
 
-    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
-        trainingdata_test.number_of_examples_per_intent.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
-        trainingdata_train.number_of_examples_per_intent.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
-        trainingdata_test.number_of_examples_per_response.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
-        trainingdata_train.number_of_examples_per_response.keys()
-    )
+        assert (
+            len(test_split.training_examples) + len(train_split.training_examples)
+            == NUM_TRAIN_EXAMPLES
+        )
+
+        num_classes = (
+            len(training_data.number_of_examples_per_intent.keys())
+            + -len(training_data.retrieval_intents)
+            + len(training_data.number_of_examples_per_response)
+        )
+
+        expected_num_train_examples_floor = int(train_frac * NUM_TRAIN_EXAMPLES)
+        if NUM_TRAIN_EXAMPLES - expected_num_train_examples_floor < num_classes:
+            expected_num_train_examples_floor = NUM_TRAIN_EXAMPLES - num_classes - 1
+
+        assert len(train_split.training_examples) >= expected_num_train_examples_floor
+        assert (
+            len(train_split.training_examples) <= expected_num_train_examples_floor + 1
+        )
+
+        assert len(training_data.number_of_examples_per_intent.keys()) == len(
+            test_split.number_of_examples_per_intent.keys()
+        )
+        assert len(training_data.number_of_examples_per_intent.keys()) == len(
+            train_split.number_of_examples_per_intent.keys()
+        )
+        assert len(training_data.number_of_examples_per_response.keys()) == len(
+            train_split.number_of_examples_per_response.keys()
+        )
+        assert len(training_data.number_of_examples_per_response.keys()) == len(
+            train_split.number_of_examples_per_response.keys()
+        )
 
 
 @pytest.mark.parametrize(
