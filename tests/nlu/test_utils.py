@@ -4,6 +4,7 @@ import pickle
 import pytest
 import tempfile
 import shutil
+from typing import Text
 
 from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.training_data.message
@@ -103,6 +104,19 @@ def test_remove_model_invalid(empty_model_dir):
     os.remove(test_file_path)
 
 
-def test_is_url():
-    assert not utils.is_url("./some/file/path")
-    assert utils.is_url("https://rasa.com/")
+@pytest.mark.parametrize(
+    "url, result",
+    [
+        ("a/b/c", False),
+        ("a", False),
+        ("https://192.168.1.1", True),
+        ("http://192.168.1.1", True),
+        ("https://google.com", True),
+        ("https://www.google.com", True),
+        ("http://google.com", True),
+        ("http://www.google.com", True),
+        ("http://a/b/c", False),
+    ],
+)
+def test_is_url(url: Text, result: bool):
+    assert result == utils.is_url(url)
