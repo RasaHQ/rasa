@@ -96,6 +96,16 @@ types:
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
 
+prepare-tests-windows-dependencies:
+	choco install ./system_packages/windows.xml
+
+prepare-tests-macos-dependencies:
+	# FIXME: why do we do '|| true' ?
+	cat ./system_packages/macos.txt | xargs brew install || true
+
+prepare-tests-ubuntu-dependencies:
+	cat ./system_packages/ubuntu.txt | xargs sudo apt-get -y install
+
 prepare-tests-files:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
@@ -104,20 +114,11 @@ prepare-tests-files:
 	poetry run python -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
-prepare-wget-macos:
-	brew install wget || true
+prepare-tests-macos: prepare-tests-macos-dependencies prepare-tests-files
 
-prepare-wget-windows:
-	choco install wget
+prepare-tests-ubuntu: prepare-tests-ubuntu-dependencies prepare-tests-files
 
-prepare-tests-macos: prepare-wget-macos prepare-tests-files
-	brew install graphviz || true
-
-prepare-tests-ubuntu: prepare-tests-files
-	sudo apt-get -y install graphviz graphviz-dev python-tk
-
-prepare-tests-windows: prepare-wget-windows prepare-tests-files
-	choco install graphviz
+prepare-tests-windows: prepare-tests-windows-dependencies prepare-tests-files
 
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
