@@ -175,7 +175,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: .system_dependencies_cache
-        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.xml') }}
+        key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.nuspec') }}
         restore-keys: ${{ runner.os }}-system
 
     - name: Install Dependencies (Linux) 📦
