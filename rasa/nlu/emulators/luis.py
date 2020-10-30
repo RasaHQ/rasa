@@ -1,15 +1,10 @@
 from typing import Any, Dict, Text
 
-from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.emulators.emulator import Emulator
 from typing import List, Optional
 
 
-class LUISEmulator(NoEmulator):
-    def __init__(self) -> None:
-
-        super().__init__()
-        self.name = "luis"
-
+class LUISEmulator(Emulator):
     def _top_intent(self, data) -> Optional[Dict[Text, Any]]:
         if data.get("intent"):
             return {

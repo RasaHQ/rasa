@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, Dict, List, Text
 
-from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.emulators.emulator import Emulator
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_TYPE,
@@ -14,18 +14,12 @@ from rasa.shared.nlu.constants import (
 )
 
 
-class WitEmulator(NoEmulator):
+class WitEmulator(Emulator):
     """Emulates the response format of this wit.ai endpoint:
     https://wit.ai/docs/http/20200513/#get__message_link
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.name = "wit"
-
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
-        """Transform data to wit.ai format."""
-
         entities = defaultdict(list)
         for entity in data[ENTITIES]:
             entity_name = entity[ENTITY_ATTRIBUTE_TYPE]

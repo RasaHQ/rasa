@@ -21,6 +21,8 @@ class WitReader(JsonTrainingDataReader):
             if entities is None:
                 continue
             text = s.get(TEXT)
+            # Out-of-scope WIT utterances won't have the intent field set,
+            # and that's the reason why we set it to `USER_INTENT_OUT_OF_SCOPE` by default.
             intent = s.get("intent", USER_INTENT_OUT_OF_SCOPE)
 
             for e in entities:
