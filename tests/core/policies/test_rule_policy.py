@@ -970,7 +970,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
     )
     assert_predicted_action(prediction, domain, form_name)
     # check that RulePolicy entered unhappy path based on the training story
-    assert tracker.events[-1] == LoopInterrupted(True)
+    assert prediction.events == [LoopInterrupted(True)]
 
 
 async def test_form_unhappy_path_no_validation_from_story():
@@ -1040,7 +1040,7 @@ async def test_form_unhappy_path_no_validation_from_story():
     # there is no rule for next action
     assert max(prediction.probabilities) == policy._core_fallback_threshold
     # check that RulePolicy entered unhappy path based on the training story
-    assert tracker.events[-1] == LoopInterrupted(True)
+    assert prediction.events == [LoopInterrupted(True)]
 
 
 async def test_form_unhappy_path_without_rule():

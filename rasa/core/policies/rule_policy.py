@@ -741,12 +741,14 @@ class RulePolicy(MemoizationPolicy):
 
     def _find_action_from_rules(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[Optional[Text], Optional[Text]]:
+    ) -> Tuple[Optional[Text], Optional[Text], bool]:
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
         current_states = self.format_tracker_states(states)
 
         logger.debug(f"Current tracker state:{current_states}")
+
+        entered_unhappy_path = False
 
         rule_keys = self._get_possible_keys(self.lookup[RULES], states)
         predicted_action_name = None
@@ -786,14 +788,14 @@ class RulePolicy(MemoizationPolicy):
                         f"Predicted loop '{active_loop_name}' by overwriting "
                         f"'{ACTION_LISTEN_NAME}' predicted by general rule."
                     )
-                    return active_loop_name, LOOP_RULES
+                    return active_loop_name, LOOP_RULES, entered_unhappy_path
 
                 # do not predict anything
                 predicted_action_name = None
 
             if DO_NOT_VALIDATE_LOOP in unhappy_path_conditions:
-                logger.debug("Added `FormValidation(False)` event.")
-                tracker.update(LoopInterrupted(True))
+                logger.debug("Entered unhappy path. Loop will be interrupted.")
+                entered_unhappy_path = True
 
         if predicted_action_name is not None:
             logger.debug(
@@ -804,7 +806,11 @@ class RulePolicy(MemoizationPolicy):
 
         # if we didn't predict anything from the rules, then the feature key created
         # from states can be used as an indicator that this state will lead to fallback
-        return predicted_action_name, best_rule_key or self._create_feature_key(states)
+        return (
+            predicted_action_name,
+            best_rule_key or self._create_feature_key(states),
+            entered_unhappy_path,
+        )
 
     def predict_action_probabilities(
         self,
@@ -839,16 +845,22 @@ class RulePolicy(MemoizationPolicy):
                 policy_priority=self.priority,
             )
 
-        rules_action_name, source = self._find_action_from_rules(tracker, domain)
+        rules_action_name, source, entered_unhappy_path = self._find_action_from_rules(
+            tracker, domain
+        )
         # we want to remember the source even if rules didn't predict any action
         self._prediction_source = source
-        if rules_action_name:
-            return PolicyPrediction(
-                self._prediction_result(rules_action_name, tracker, domain),
-                policy_priority=self.priority,
-            )
 
-        return PolicyPrediction(result, policy_priority=self.priority)
+        policy_events = []
+        if entered_unhappy_path:
+            policy_events.append(LoopInterrupted(True))
+
+        if rules_action_name:
+            result = self._prediction_result(rules_action_name, tracker, domain)
+
+        return PolicyPrediction(
+            result, policy_priority=self.priority, events=policy_events
+        )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)
