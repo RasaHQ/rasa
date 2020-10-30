@@ -888,8 +888,8 @@ class TED(TransformerRasaModel):
 
         return attribute_features
 
-    @staticmethod
     def _convert_to_original_shape(
+        self,
         attribute_features: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> tf.Tensor:
@@ -905,25 +905,18 @@ class TED(TransformerRasaModel):
         """
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][f"3D_{LENGTH}"][0], tf.int32)
 
+        batch_dim = tf.shape(dialogue_lengths)[0]
+        dialogue_dim = tf.shape(dialogue_lengths)[1]
+        units = tf.shape(attribute_features)[-1]
+
         indices = []
-        for batch_dim in range(dialogue_lengths.shape[0]):
-            for dialogue_dim in range(dialogue_lengths.shape[1]):
-                if dialogue_lengths[batch_dim][dialogue_dim] > 0:
-                    indices.append([batch_dim, dialogue_dim])
-        indices = tf.constant(indices)
+        for i in tf.range(batch_dim, dtype=tf.int32):
+            for j in tf.range(dialogue_dim, dtype=tf.int32):
+                if dialogue_lengths[i][j] > 0:
+                    indices.append([i, j])
+        indices = tf.convert_to_tensor(indices)
 
-        shape = tf.constant(
-            [
-                dialogue_lengths.shape[0],
-                dialogue_lengths.shape[1],
-                attribute_features.shape[-1],
-            ]
-        )
-
-        # no need to transform the data during loading
-        # when we pass the data_example
-        if np.all(shape == attribute_features.shape):
-            return attribute_features
+        shape = tf.convert_to_tensor([batch_dim, dialogue_dim, units])
 
         return tf.scatter_nd(indices, tf.squeeze(attribute_features, axis=1), shape)
 
