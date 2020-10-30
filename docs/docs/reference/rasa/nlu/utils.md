@@ -52,9 +52,15 @@ if all files have an appropriate ending.
 is_url(resource_name: Text) -> bool
 ```
 
-Return True if string is an http, ftp, or file URL path.
+Check whether the url specified is a well formed one.
 
-This implementation is the same as the one used by matplotlib
+Regex adapted from https://stackoverflow.com/a/7160778/3001665
+
+**Arguments**:
+
+- `resource_name` - Remote URL to validate
+  
+- `Returns` - `True` if valid, otherwise `False`.
 
 #### remove\_model
 
