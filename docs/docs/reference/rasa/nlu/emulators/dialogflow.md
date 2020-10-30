@@ -6,8 +6,10 @@ title: rasa.nlu.emulators.dialogflow
 ## DialogflowEmulator Objects
 
 ```python
-class DialogflowEmulator(NoEmulator)
+class DialogflowEmulator(Emulator)
 ```
+
+Emulates DialogFlow responses.
 
 #### normalise\_response\_json
 

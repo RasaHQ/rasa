@@ -395,6 +395,7 @@
             {
               "items": [
                 "reference/rasa/nlu/emulators/wit",
+                "reference/rasa/nlu/emulators/emulator",
                 "reference/rasa/nlu/emulators/luis",
                 "reference/rasa/nlu/emulators/dialogflow",
                 "reference/rasa/nlu/emulators/no_emulator"

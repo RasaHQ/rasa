@@ -6,8 +6,10 @@ title: rasa.nlu.emulators.luis
 ## LUISEmulator Objects
 
 ```python
-class LUISEmulator(NoEmulator)
+class LUISEmulator(Emulator)
 ```
+
+Emulates Luis responses.
 
 #### normalise\_response\_json
 
