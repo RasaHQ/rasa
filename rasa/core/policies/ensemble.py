@@ -613,25 +613,39 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         arguments = rasa.shared.utils.common.arguments_of(
             policy.predict_action_probabilities
         )
+
         if (
             len(arguments) > number_of_arguments_in_rasa_1_0
             and "interpreter" in arguments
         ):
-            return policy.predict_action_probabilities(tracker, domain, interpreter)
+            prediction = policy.predict_action_probabilities(
+                tracker, domain, interpreter
+            )
+        else:
+            # TODO: Deprecation warning if list of floats is returned
+            rasa.shared.utils.io.raise_warning(
+                "The function `predict_action_probabilities` of "
+                "the `Policy` interface was changed to support "
+                "additional parameters. Please make sure to "
+                "adapt your custom `Policy` implementation.",
+                category=DeprecationWarning,
+            )
+            prediction = policy.predict_action_probabilities(
+                tracker, domain, RegexInterpreter()
+            )
 
-        # TODO: Deprecation warning if list of floats is returned
-        rasa.shared.utils.io.raise_warning(
-            "The function `predict_action_probabilities` of "
-            "the `Policy` interface was changed to support "
-            "additional parameters. Please make sure to "
-            "adapt your custom `Policy` implementation.",
-            category=DeprecationWarning,
-        )
-        probabilities = policy.predict_action_probabilities(
-            tracker, domain, RegexInterpreter()
-        )
+        if isinstance(prediction, list):
+            rasa.shared.utils.io.raise_warning(
+                f"The function `predict_action_probabilities` of "
+                f"the `Policy` interface was changed to return "
+                f"a `{PolicyPrediction.__name__}` object. Please make sure to "
+                "adapt your custom `Policy` implementation. Support for returning "
+                "for return a list of floats will be removed in Rasa Open Source 3.0.",
+                category=DeprecationWarning,
+            )
+            prediction = PolicyPrediction(prediction, policy_priority=policy.priority)
 
-        return probabilities
+        return prediction
 
     def _fallback_after_listen(
         self, domain: Domain, probabilities: List[float], policy_name: Text

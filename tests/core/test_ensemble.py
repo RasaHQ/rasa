@@ -532,3 +532,32 @@ def test_prediction_applies_optional_policy_events(default_domain: Domain):
     assert len(tracker.events) == len(optional_events) + len(must_have_events)
     assert all(event in tracker.events for event in optional_events)
     assert all(event in tracker.events for event in must_have_events)
+
+
+def test_with_float_returning_policy(default_domain: Domain):
+    expected_index = 3
+
+    class OldPolicy(Policy):
+        def predict_action_probabilities(
+            self,
+            tracker: DialogueStateTracker,
+            domain: Domain,
+            interpreter: NaturalLanguageInterpreter,
+            **kwargs: Any,
+        ) -> List[float]:
+            prediction = [0.0] * default_domain.num_actions
+            prediction[expected_index] = 3
+            return prediction
+
+    ensemble = SimplePolicyEnsemble(
+        [ConstantPolicy(priority=1, predict_index=1), OldPolicy(priority=1)]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    with pytest.warns(DeprecationWarning):
+        prediction, winning_policy = ensemble.probabilities_using_best_policy(
+            tracker, default_domain, RegexInterpreter()
+        )
+
+    assert winning_policy == f"policy_1_{OldPolicy.__name__}"
+    assert prediction.index(max(prediction)) == expected_index
