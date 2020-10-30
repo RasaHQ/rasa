@@ -2,8 +2,7 @@ from typing import Any, Dict, Text
 
 
 class Emulator:
-    """Emulator specifies how requests and responses are getting transformed.
-    """
+    """Emulator specifies how requests and responses are getting transformed."""
 
     @classmethod
     def name(cls) -> Text:
