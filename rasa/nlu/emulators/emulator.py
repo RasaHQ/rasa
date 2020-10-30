@@ -3,9 +3,7 @@ from typing import Any, Dict, Text
 
 class Emulator:
     """Emulator specifies how requests and responses are getting transformed when
-    Rasa server is running in emulation mode.
-    """
-
+    Rasa server is running in emulation mode."""
     @classmethod
     def name(cls) -> Text:
         """Name that identifies the emulator."""

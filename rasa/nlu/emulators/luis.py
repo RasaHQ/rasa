@@ -5,6 +5,8 @@ from typing import List, Optional
 
 
 class LUISEmulator(Emulator):
+    """Emulates Luis responses."""
+
     def _top_intent(self, data) -> Optional[Dict[Text, Any]]:
         if data.get("intent"):
             return {
