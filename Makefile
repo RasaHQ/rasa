@@ -98,7 +98,7 @@ types:
 
 CHOCO_CACHE_LOCATION ?= %TEMP%
 prepare-tests-windows-dependencies:
-	choco install ./system_test_dependencies/windows.nuspec --cache-location=$(CHOCO_CACHE_LOCATION)
+	choco install ./system_test_dependencies/windows.nuspec --cache-location=$(CHOCO_CACHE_LOCATION) --pre
 
 prepare-tests-macos-dependencies:
 	# FIXME: why do we do '|| true' ?
