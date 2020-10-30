@@ -97,14 +97,14 @@ types:
 	--disable-error-code func-returns-value
 
 prepare-tests-windows-dependencies:
-	choco install ./system_packages/windows.xml
+	choco install ./system_test_dependencies/windows.xml
 
 prepare-tests-macos-dependencies:
 	# FIXME: why do we do '|| true' ?
-	cat ./system_packages/macos.txt | xargs brew install || true
+	cat ./system_test_dependencies/macos.txt | xargs brew install || true
 
 prepare-tests-ubuntu-dependencies:
-	cat ./system_packages/ubuntu.txt | xargs sudo apt-get -y install
+	cat ./system_test_dependencies/ubuntu.txt | xargs sudo apt-get -y install
 
 prepare-tests-files:
 	poetry install -E spacy
