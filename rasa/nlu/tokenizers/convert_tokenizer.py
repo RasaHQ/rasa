@@ -7,7 +7,7 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils import common
-from rasa.nlu import utils as nlu_utils
+import rasa.nlu.utils
 import rasa.utils.train_utils as train_utils
 from rasa.exceptions import RasaException
 import tensorflow as tf
@@ -133,7 +133,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                 containing the model files."""
             )
 
-        if nlu_utils.is_url(model_url):
+        if rasa.nlu.utils.is_url(model_url):
             return model_url
 
         if os.path.isdir(model_url):
