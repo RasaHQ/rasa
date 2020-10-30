@@ -118,7 +118,7 @@ async def test_test_stories(tmpdir: Path):
         )
 
 
-async def test_test_stories_response_key(tmpdir: Path):
+async def test_test_stories_conversion_response_key(tmpdir: Path):
     converted_data_folder = tmpdir / "converted_data"
     os.mkdir(converted_data_folder)
 
@@ -155,7 +155,7 @@ async def test_test_stories_response_key(tmpdir: Path):
         )
 
 
-async def test_stories_are_converted_response_key(tmpdir: Path):
+async def test_stories_conversion_response_key(tmpdir: Path):
     converted_data_folder = tmpdir / "converted_data"
     os.mkdir(converted_data_folder)
 
