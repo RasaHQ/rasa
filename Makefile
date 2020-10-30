@@ -96,8 +96,9 @@ types:
 	--disable-error-code no-redef \
 	--disable-error-code func-returns-value
 
+CHOCO_CACHE_LOCATION ?= %TEMP%
 prepare-tests-windows-dependencies:
-	choco install ./system_test_dependencies/windows.nuspec
+	choco install ./system_test_dependencies/windows.nuspec --cache-location=$(CHOCO_CACHE_LOCATION)
 
 prepare-tests-macos-dependencies:
 	# FIXME: why do we do '|| true' ?

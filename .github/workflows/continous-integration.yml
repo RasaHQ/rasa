@@ -28,6 +28,7 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
+  CHOCO_CACHE_LOCATION: ./system_dependencies_cache
 
 jobs:
   api:
@@ -159,10 +160,6 @@ jobs:
       run: |
         poetry config virtualenvs.in-project true
 
-    - name: Setup choco cache location (Windows) 🍫
-      if: matrix.os == 'windows-latest'
-      run: choco config set cacheLocation .system_dependencies_cache
-
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
@@ -174,7 +171,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       uses: actions/cache@v1
       with:
-        path: .system_dependencies_cache
+        path: ${{ env.CHOCO_CACHE_LOCATION }}
         key: ${{ runner.os }}-system-${{ hashFiles('system_test_dependencies/windows.nuspec') }}
         restore-keys: ${{ runner.os }}-system
 
