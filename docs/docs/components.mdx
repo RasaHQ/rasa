@@ -453,9 +453,15 @@ word vectors in your pipeline.
       "intent_split_symbol": "_"
       # Regular expression to detect tokens
       "token_pattern": None
-      # Remote URL of hosted model
-      "model_url": TF_HUB_MODULE_URL
+      # Remote URL/Local directory of model files(Required)
+      "model_url": None
     ```
+
+  :::note
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 
   ### LanguageModelTokenizer
@@ -2691,11 +2697,6 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 You can create a custom component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
 Below is the specification of the `rasa.nlu.components.Component`] class with the methods you'll need to implement.
-
-:::tip follow the tutorial
-There is a detailed tutorial on building custom components on the [Rasa Blog](https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/).
-
-:::
 
 You can add a custom component to your pipeline by adding the module path.
 So if you have a module called `sentiment`
