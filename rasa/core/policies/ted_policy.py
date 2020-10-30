@@ -374,9 +374,9 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predict the next action the bot should take.
+
         Return the list of probabilities for the next actions.
         """
-
         if self.model is None:
             return PolicyPrediction(self._default_predictions(domain))
 
@@ -399,7 +399,6 @@ class TEDPolicy(Policy):
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
-
         if self.model is None:
             logger.debug(
                 "Method `persist(...)` was called without a trained model present. "

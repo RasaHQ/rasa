@@ -120,7 +120,6 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action if NLU confidence is low."""
-
         nlu_data = tracker.latest_message.parse_data
         last_intent_name = nlu_data["intent"].get(INTENT_NAME_KEY, None)
         should_nlu_fallback = self.should_nlu_fallback(

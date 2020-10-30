@@ -157,7 +157,6 @@ class FallbackPolicy(Policy):
         The fallback action is predicted if the NLU confidence is low
         or no other policy has a high-confidence prediction.
         """
-
         nlu_data = tracker.latest_message.parse_data
 
         if (

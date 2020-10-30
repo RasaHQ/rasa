@@ -226,7 +226,6 @@ class Policy:
         Returns:
              the list of probabilities for the next actions
         """
-
         raise NotImplementedError("Policy must have the capacity to predict.")
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
@@ -355,6 +354,8 @@ class Policy:
 
 
 class PolicyPrediction:
+    """Stores information about the prediction of a `Policy`."""
+
     def __init__(
         self,
         probabilities: List[float],
@@ -363,6 +364,22 @@ class PolicyPrediction:
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
     ) -> None:
+        """Creates a `PolicyPrediction`.
+
+        Args:
+            probabilities: The probabilities for each action.
+            policy_priority: The priority of the policy which made the prediction.
+            events: Events which the `Policy` needs to have applied to the tracker
+                after the prediction. These events are applied independent of whether
+                the policy wins against other policies or not. Be careful which events
+                you return as they can potentially influence the conversation flow.
+            optional_events: Events which the `Policy` needs to have applied to the
+                tracker after the prediction in case it wins. These events are only
+                applied in case the policy's prediction wins. Be careful which events
+                you return as they can potentially influence the conversation flow.
+            is_end_to_end_prediction: `True` if the prediction used the text of the
+                user message instead of the intent.
+        """
         self.probabilities = probabilities
         self.policy_priority = (policy_priority,)
         self.events = events or []
@@ -370,6 +387,14 @@ class PolicyPrediction:
         self.is_end_to_end_prediction = is_end_to_end_prediction
 
     def __eq__(self, other: Any) -> bool:
+        """Check if the two objects are equal.
+
+        Args:
+            other: Any other object.
+
+        Returns:
+            `True` if it's the same classes and the values are the same.
+        """
         if not isinstance(other, PolicyPrediction):
             return False
 

@@ -100,8 +100,8 @@ class MappingPolicy(Policy):
 
         If the current intent is assigned to an action that action will be
         predicted with the highest probability of all policies. If it is not
-        the policy will predict zero for every action."""
-
+        the policy will predict zero for every action.
+        """
         result = self._default_predictions(domain)
 
         intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)

@@ -134,7 +134,7 @@ class FormPolicy(MemoizationPolicy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        """Predicts the corresponding form action if there is an active form"""
+        """Predicts the corresponding form action if there is an active form."""
         result = self._default_predictions(domain)
 
         if tracker.active_loop_name:

@@ -819,7 +819,7 @@ class RulePolicy(MemoizationPolicy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-
+        """Predicts the next action (see parent class for more information)."""
         result = self._default_predictions(domain)
 
         # Rasa Open Source default actions overrule anything. If users want to achieve

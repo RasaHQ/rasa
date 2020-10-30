@@ -450,10 +450,21 @@ class PolicyEnsemble:
 
 
 class SimplePolicyEnsemble(PolicyEnsemble):
+    """Default implementation of a `Policy` ensemble."""
+
     @staticmethod
     def is_not_memo_policy(
         policy_name: Text, max_confidence: Optional[float] = None
     ) -> bool:
+        """Checks if the policy is the `MemoizationPolicy` or one of its subclasses.
+
+        Args:
+            policy_name: Name of the policy which should be checked.
+            max_confidence: The prediction confidence since predictions with a max
+                confidence of `0.0` don't count as predictions.
+
+        Returns: `True` if it's a `MemoizationPolicy`, `False` otherwise.
+        """
         is_memo = policy_name.endswith("_" + MemoizationPolicy.__name__)
         is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
         # also check if confidence is 0, than it cannot be count as prediction
@@ -491,7 +502,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_probabilities: the list of probabilities for the next actions
             best_policy_name: the name of the picked policy
         """
-
         best_confidence = (-1, -1)
         best_policy_name = None
         # form and mapping policies are special:
