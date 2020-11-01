@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
+from typing import Text
+from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
+from rasa.nlu.tokenizers.convert_tokenizer import (
+    ConveRTTokenizer,
+    RESTRICTED_ACCESS_URL,
+)
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES
@@ -10,13 +15,15 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 
 
-# TODO
-#   skip tests as the ConveRT model is not publicly available anymore (see https://github.com/RasaHQ/rasa/issues/6806)
+@pytest.mark.skip_on_windows
+def test_convert_featurizer_process(component_builder, monkeypatch: MonkeyPatch):
 
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
 
-@pytest.mark.skip
-def test_convert_featurizer_process(component_builder):
-    tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
+    component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
+    tokenizer = ConveRTTokenizer(component_config)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
 
     sentence = "Hey how are you today ?"
@@ -41,9 +48,14 @@ def test_convert_featurizer_process(component_builder):
     assert np.allclose(sent_vecs[-1][:5], expected_cls, atol=1e-5)
 
 
-@pytest.mark.skip
-def test_convert_featurizer_train(component_builder):
-    tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
+@pytest.mark.skip_on_windows
+def test_convert_featurizer_train(component_builder, monkeypatch: MonkeyPatch):
+
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
+    component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
+    tokenizer = ConveRTTokenizer(component_config)
     featurizer = component_builder.create_component_from_class(ConveRTFeaturizer)
 
     sentence = "Hey how are you today ?"
@@ -88,6 +100,7 @@ def test_convert_featurizer_train(component_builder):
     assert sent_vecs is None
 
 
+@pytest.mark.skip_on_windows
 @pytest.mark.parametrize(
     "sentence, expected_text",
     [
@@ -98,9 +111,15 @@ def test_convert_featurizer_train(component_builder):
         ("ńöñàśçií", "ńöñàśçií"),
     ],
 )
-@pytest.mark.skip
-def test_convert_featurizer_tokens_to_text(component_builder, sentence, expected_text):
-    tokenizer = component_builder.create_component_from_class(ConveRTTokenizer)
+def test_convert_featurizer_tokens_to_text(
+    sentence: Text, expected_text: Text, monkeypatch: MonkeyPatch
+):
+
+    monkeypatch.setattr(
+        ConveRTTokenizer, "_get_validated_model_url", lambda x: RESTRICTED_ACCESS_URL
+    )
+    component_config = {"name": "ConveRTTokenizer", "model_url": RESTRICTED_ACCESS_URL}
+    tokenizer = ConveRTTokenizer(component_config)
     tokens = tokenizer.tokenize(Message(data={TEXT: sentence}), attribute=TEXT)
 
     actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]

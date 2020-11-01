@@ -3,18 +3,14 @@ from datetime import datetime
 from typing import Any, Dict, Text
 
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.emulators.emulator import Emulator
 
 
-class DialogflowEmulator(NoEmulator):
-    def __init__(self) -> None:
-
-        super().__init__()
-        self.name = "api"
+class DialogflowEmulator(Emulator):
+    """Emulates DialogFlow responses."""
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         """Transform data to Dialogflow format."""
-
         # populate entities dict
         entities = {
             entity_type: [] for entity_type in {x["entity"] for x in data["entities"]}

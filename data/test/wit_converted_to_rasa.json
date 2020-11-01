@@ -2,27 +2,31 @@
   "rasa_nlu_data": {
     "common_examples": [
       {
-        "text": "i want to go from berlin to tokyo tomorrow", 
-        "intent": "flight_booking", 
+        "text": "i want pizza",
+        "intent": "out_of_scope"
+      },
+      {
+        "text": "i want to go from berlin to tokyo tomorrow",
+        "intent": "flight_booking",
         "entities": [
           {
-            "start": 18, 
-            "role": "from", 
-            "end": 24, 
-            "value": "berlin", 
+            "start": 18,
+            "role": "from",
+            "end": 24,
+            "value": "berlin",
             "entity": "location"
-          }, 
+          },
           {
-            "start": 28, 
-            "role": "to", 
-            "end": 33, 
-            "value": "tokyo", 
+            "start": 28,
+            "role": "to",
+            "end": 33,
+            "value": "tokyo",
             "entity": "location"
-          }, 
+          },
           {
-            "start": 34, 
-            "end": 42, 
-            "value": "2016-05-29T00:00:00.000-07:00", 
+            "start": 34,
+            "end": 42,
+            "value": "2016-05-29T00:00:00.000-07:00",
             "entity": "datetime"
           }
         ]
