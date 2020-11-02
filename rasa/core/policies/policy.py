@@ -308,7 +308,7 @@ class Policy:
     def format_tracker_states(self, states: List[Dict]) -> Text:
         """Format tracker states to human readable format on debug log
 
-        Args: 
+        Args:
             states: list of tracker states dicts
         Returns:
             the string of the states with user intents and actions
