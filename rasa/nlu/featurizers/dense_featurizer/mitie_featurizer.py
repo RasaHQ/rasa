@@ -4,18 +4,18 @@ from typing import Any, List, Text, Optional, Dict, Type, Tuple
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
 )
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 
 if typing.TYPE_CHECKING:
@@ -53,7 +53,7 @@ class MitieFeaturizer(DenseFeaturizer):
     ) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        for example in training_data.intent_examples:
+        for example in training_data.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self.process_training_example(
                     example, attribute, mitie_feature_extractor
@@ -73,12 +73,16 @@ class MitieFeaturizer(DenseFeaturizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        tokens = message.get(TOKENS_NAMES[TEXT])
-        sequence_features, sentence_features = self.features_for_tokens(
-            tokens, mitie_feature_extractor
-        )
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            tokens = message.get(TOKENS_NAMES[attribute])
+            if tokens:
+                sequence_features, sentence_features = self.features_for_tokens(
+                    tokens, mitie_feature_extractor
+                )
 
-        self._set_features(message, sequence_features, sentence_features, TEXT)
+                self._set_features(
+                    message, sequence_features, sentence_features, attribute
+                )
 
     def _set_features(
         self,

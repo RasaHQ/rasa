@@ -19,9 +19,10 @@ def test_shell_help(run: Callable[..., RunResult]):
                   {nlu} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_shell_nlu_help(run: Callable[..., RunResult]):
@@ -31,6 +32,7 @@ def test_shell_nlu_help(run: Callable[..., RunResult]):
                       [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help

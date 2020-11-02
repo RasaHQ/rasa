@@ -3,19 +3,20 @@ from typing import Dict
 
 import pytest
 
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.fallback_classifier import (
     FallbackClassifier,
     THRESHOLD_KEY,
     AMBIGUITY_THRESHOLD_KEY,
 )
-from rasa.nlu.training_data import Message
-from rasa.nlu.constants import (
-    INTENT_RANKING_KEY,
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import (
     INTENT,
-    INTENT_CONFIDENCE_KEY,
+    TEXT,
     INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 
 
@@ -24,52 +25,55 @@ from rasa.nlu.constants import (
     [
         (
             Message(
-                "some message",
                 data={
+                    TEXT: "some message",
                     INTENT: {
                         INTENT_NAME_KEY: "greet",
-                        INTENT_CONFIDENCE_KEY: 0.234891876578331,
+                        PREDICTED_CONFIDENCE_KEY: 0.234891876578331,
                     },
                     INTENT_RANKING_KEY: [
                         {
                             INTENT_NAME_KEY: "greet",
-                            INTENT_CONFIDENCE_KEY: 0.234891876578331,
+                            PREDICTED_CONFIDENCE_KEY: 0.234891876578331,
                         },
-                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.5 - 0.0001},
-                        {INTENT_NAME_KEY: "affirm", INTENT_CONFIDENCE_KEY: 0},
-                        {INTENT_NAME_KEY: "inform", INTENT_CONFIDENCE_KEY: -100},
+                        {
+                            INTENT_NAME_KEY: "stop",
+                            PREDICTED_CONFIDENCE_KEY: 0.5 - 0.0001,
+                        },
+                        {INTENT_NAME_KEY: "affirm", PREDICTED_CONFIDENCE_KEY: 0},
+                        {INTENT_NAME_KEY: "inform", PREDICTED_CONFIDENCE_KEY: -100},
                         {
                             INTENT_NAME_KEY: "deny",
-                            INTENT_CONFIDENCE_KEY: 0.0879683718085289,
+                            PREDICTED_CONFIDENCE_KEY: 0.0879683718085289,
                         },
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5},
         ),
         (
             Message(
-                "some message",
                 data={
-                    INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
+                    TEXT: "some message",
+                    INTENT: {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
-                        {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
-                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.9},
+                        {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
+                        {INTENT_NAME_KEY: "stop", PREDICTED_CONFIDENCE_KEY: 0.9},
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.1},
         ),
         (
             Message(
-                "some message",
                 data={
-                    INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
+                    TEXT: "some message",
+                    INTENT: {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
-                        {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
-                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.5},
+                        {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
+                        {INTENT_NAME_KEY: "stop", PREDICTED_CONFIDENCE_KEY: 0.5},
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.51},
         ),
@@ -82,7 +86,7 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
 
     expected_intent = {
         INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
-        INTENT_CONFIDENCE_KEY: 1.0,
+        PREDICTED_CONFIDENCE_KEY: 1.0,
     }
     assert message.data[INTENT] == expected_intent
 
@@ -99,36 +103,36 @@ def test_predict_fallback_intent(message: Message, component_config: Dict):
     [
         (
             Message(
-                "some message",
                 data={
-                    INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 0.5},
+                    TEXT: "some message",
+                    INTENT: {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 0.5},
                     INTENT_RANKING_KEY: [
                         {
                             INTENT_NAME_KEY: "greet",
-                            INTENT_CONFIDENCE_KEY: 0.234891876578331,
+                            PREDICTED_CONFIDENCE_KEY: 0.234891876578331,
                         },
-                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.1},
-                        {INTENT_NAME_KEY: "affirm", INTENT_CONFIDENCE_KEY: 0},
-                        {INTENT_NAME_KEY: "inform", INTENT_CONFIDENCE_KEY: -100},
+                        {INTENT_NAME_KEY: "stop", PREDICTED_CONFIDENCE_KEY: 0.1},
+                        {INTENT_NAME_KEY: "affirm", PREDICTED_CONFIDENCE_KEY: 0},
+                        {INTENT_NAME_KEY: "inform", PREDICTED_CONFIDENCE_KEY: -100},
                         {
                             INTENT_NAME_KEY: "deny",
-                            INTENT_CONFIDENCE_KEY: 0.0879683718085289,
+                            PREDICTED_CONFIDENCE_KEY: 0.0879683718085289,
                         },
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5},
         ),
         (
             Message(
-                "some message",
                 data={
-                    INTENT: {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
+                    TEXT: "some message",
+                    INTENT: {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
                     INTENT_RANKING_KEY: [
-                        {INTENT_NAME_KEY: "greet", INTENT_CONFIDENCE_KEY: 1},
-                        {INTENT_NAME_KEY: "stop", INTENT_CONFIDENCE_KEY: 0.89},
+                        {INTENT_NAME_KEY: "greet", PREDICTED_CONFIDENCE_KEY: 1},
+                        {INTENT_NAME_KEY: "stop", PREDICTED_CONFIDENCE_KEY: 0.89},
                     ],
-                },
+                }
             ),
             {THRESHOLD_KEY: 0.5, AMBIGUITY_THRESHOLD_KEY: 0.1},
         ),

@@ -1,3 +1,4 @@
+version: "2.0"
 stories:
   - story: stop form + continue
     steps:
@@ -20,5 +21,5 @@ stories:
       - intent: stop
       - action: utter_ask_continue
       - intent: deny
-      - action: action_deactivate_form
+      - action: action_deactivate_loop
       - active_loop: null

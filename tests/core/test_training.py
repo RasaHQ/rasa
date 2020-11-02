@@ -5,13 +5,15 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.core.domain import Domain
-from rasa.core.interpreter import RegexInterpreter, RasaNLUInterpreter
+from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
+from rasa.shared.core.domain import Domain
+from rasa.core.interpreter import RasaNLUInterpreter
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
 
-from rasa.core.training.visualization import visualize_stories
+from rasa.shared.core.training_data.visualization import visualize_stories
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
@@ -22,7 +24,7 @@ from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_
 async def test_story_visualization(
     stories_file: Text, default_domain: Domain, tmp_path: Path
 ):
-    import rasa.core.training.loading as core_loading
+    import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
         "data/test_stories/stories.md", default_domain
@@ -48,7 +50,7 @@ async def test_story_visualization(
 async def test_story_visualization_with_merging(
     stories_file: Text, default_domain: Domain
 ):
-    import rasa.core.training.loading as core_loading
+    import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = await core_loading.load_data_from_resource(
         stories_file, default_domain
@@ -93,11 +95,10 @@ async def test_training_script_without_max_history_set(tmp_path: Path):
         if hasattr(policy.featurizer, "max_history"):
             if type(policy) == FormPolicy:
                 assert policy.featurizer.max_history == 2
+            elif type(policy) == MemoizationPolicy:
+                assert policy.featurizer.max_history == OLD_DEFAULT_MAX_HISTORY
             else:
-                assert (
-                    policy.featurizer.max_history
-                    == policy.featurizer.MAX_HISTORY_DEFAULT
-                )
+                assert policy.featurizer.max_history is None
 
 
 async def test_training_script_with_max_history_set(tmp_path: Path):

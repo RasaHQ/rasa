@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Text
 
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.nlu.emulators.no_emulator import NoEmulator
 
 

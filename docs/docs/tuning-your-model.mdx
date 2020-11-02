@@ -1,7 +1,8 @@
 ---
 id: tuning-your-model
-sidebar_label: Tuning Your Model
-title: Tuning Your Model
+sidebar_label: Tuning Your NLU Model
+title: Tuning Your NLU Model
+abstract: Rasa Open Source will provide you with a suggested NLU config on initialization of the project, but as your project grows, it's likely that you will need to adjust your config to suit your training data.
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
@@ -27,40 +28,38 @@ pipeline:
 
 ### Sensible Starting Pipelines
 
-We recommend using following pipeline, if your training data is in English:
-
-```yaml-rasa (docs/sources/data/configs_for_docs/default_english_config.yml)
-```
-
-The pipeline contains the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) that provides pre-trained word embeddings of the user utterance.
+If you're starting from scratch, it's often helpful to start with pretrained word embeddings.
 Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
 For example, if you have a sentence like “I want to buy apples” in your training data, and Rasa is asked to predict
 the intent for “get pears”, your model already knows that the words “apples” and “pears” are very similar.
 This is especially useful if you don't have enough training data.
-The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
-creates a contextual vector representation for the complete sentence.
-However, `ConveRT` is only available in English.
 
-If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
-the following pipeline:
+If you are getting started with a one of [spaCy's supported languages](https://spacy.io/usage/models#languages),
+we recommend the following pipeline:
 
 ```yaml-rasa (docs/sources/data/configs_for_docs/default_spacy_config.yml)
 ```
 
-It uses the [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) instead of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer).
-[SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer) provides pre-trained word embeddings from either GloVe or fastText in many different languages
-(see [Language Models](./components/language-models.mdx)).
+It uses the [SpacyFeaturizer](./components.mdx#spacyfeaturizer), which provides 
+pre-trained word embeddings from either GloVe or fastText in many different languages
+(see [Language Models](./components.mdx#language-models)).
 
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific.
+
 If there are no word embeddings for your language or you have very domain specific terminology,
 we recommend using the following pipeline:
 
 ```yaml-rasa (docs/sources/data/configs_for_docs/default_config.yml)
 ```
 
+This pipeline uses the [CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer) to train
+on only the training data you provide. This pipeline can handle any language in which words are
+separated by spaces. If this is not the case for your language, check out [alternatives to the 
+WhitespaceTokenizer](./components.mdx#tokenizers).
+
 :::note
-If you want to use custom components in your pipeline, see [Custom NLU Components](./components/custom-nlu-components.mdx).
+If you want to use custom components in your pipeline, see [Custom NLU Components](./components.mdx).
 
 :::
 
@@ -127,9 +126,9 @@ pipeline:
 
 The image below shows the call order during the training of this pipeline:
 
+import componentLifecycleImg from './component-lifecycle-img.png';
 
-
-<img alt="Component Lifecycle" src={useBaseUrl("/img/component_lifecycle.png")} />
+<Image img={componentLifecycleImg} caption="Component Lifecycle" alt="The component lifecycle during training. Components are processed in the order they're listed in the configuration file. All components are created and initialized in order before they are trained in order and then persisted in order." />
 
 Before the first component is created using the `create` function, a so
 called `context` is created (which is nothing more than a python dict).
@@ -143,20 +142,17 @@ in the image show the call order and visualize the path of the passed
 context. After all components are trained and persisted, the
 final context dictionary is used to persist the model's metadata.
 
-### Multi-Intent Classification
+### Doing Multi-Intent Classification
 
 You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
 multiple intents (`thank+goodbye`) or model hierarchical intent structure (`feedback+positive` being more similar
 to `feedback+negative` than `chitchat`).
-To do this, you need to use the [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) in your pipeline.
+To do this, you need to use the [DIETClassifier](./components.mdx#dietclassifier) in your pipeline.
 You'll also need to define these flags in whichever tokenizer you are using:
 
 * `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
 
 * `intent_split_symbol`: Set it to the delimiter string that splits the intent labels. In this case `+`, default `_`.
-
-Read a [tutorial](https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/)
-on how to use multiple intents in Rasa.
 
 Here's an example configuration:
 
@@ -171,35 +167,31 @@ pipeline:
 - name: "DIETClassifier"
 ```
 
+:::tip tutorial
+Read more about how to use multiple intents in Rasa in this [tutorial](https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/).
+:::
+
 ### Comparing Pipelines
 
 Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
 See [Comparing NLU Pipelines](./testing-your-assistant.mdx#comparing-nlu-pipelines) for more information.
-
-:::note
-Intent classification is independent of entity extraction. So sometimes
-NLU will get the intent right but entities wrong, or the other way around.
-You need to provide enough data for both intents and entities.
-
-:::
-
 
 ## Choosing the Right Components
 
 There are components for entity extraction, for intent classification, response selection,
 pre-processing, and others.
 If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out [Custom NLU Components](./components/custom-nlu-components.mdx).
+do sentiment analysis, check out [Custom NLU Components](./components.mdx).
 
 A pipeline usually consists of three main parts:
 
 ### Tokenization
 
-For tokenization of English input, we recommend the [ConveRTTokenizer](./components/tokenizers.mdx#converttokenizer).
-You can process other whitespace-tokenized (words are separated by spaces) languages
-with the [WhitespaceTokenizer](./components/tokenizers.mdx#swhitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
-We support a number of different [tokenizers](./components/tokenizers.mdx), or you can
-create your own [custom tokenizer](./components/custom-nlu-components.mdx).
+For tokenization of English input, we recommend the [ConveRTTokenizer](./components.mdx#converttokenizer).
+You can process other whitespace-tokenized (i.e. words are separated by spaces) languages
+with the [WhitespaceTokenizer](./components.mdx#whitespacetokenizer). If your language is not whitespace-tokenized, you should use a different tokenizer.
+We support a number of different [tokenizers](./components.mdx), or you can
+create your own [custom tokenizer](./components.mdx).
 
 :::note
 Some components further down the pipeline may require a specific tokenizer. You can find those requirements
@@ -223,24 +215,24 @@ The advantage of using pre-trained word embeddings in your pipeline is that if y
 words “apples” and “pears” are very similar. This is especially useful if you don't have enough training data.
 We support a few components that provide pre-trained word embeddings:
 
-1. [MitieFeaturizer](./components/featurizers.mdx#mitiefeaturizer)
+1. [MitieFeaturizer](./components.mdx#mitiefeaturizer)
 
-2. [SpacyFeaturizer](./components/featurizers.mdx#spacyfeaturizer)
+2. [SpacyFeaturizer](./components.mdx#spacyfeaturizer)
 
-3. [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer)
+3. [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
 
-4. [LanguageModelFeaturizer](./components/featurizers.mdx#languagemodelfeaturizer)
+4. [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
 
-If your training data is in English, we recommend using the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer).
-The advantage of the [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
+If your training data is in English, we recommend using the [ConveRTFeaturizer](./components.mdx#convertfeaturizer).
+The advantage of the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence. For example, if you
 have a training example, like: “Can I book a car?”, and Rasa is asked to predict the intent for “I need a ride from
 my place”, since the contextual vector representation for both examples are already very similar, the intent classified
 for both is highly likely to be the same. This is also useful if you don't have enough training data.
 
-An alternative to [ConveRTFeaturizer](./components/featurizers.mdx#convertfeaturizer) is the [LanguageModelFeaturizer](./components/featurizers.mdx#languagemodelfeaturizer) which uses pre-trained language
+An alternative to [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which uses pre-trained language
 models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
-[HFTransformersNLP](./components/language-models.mdx#hftransformersnlp) for a full list of supported language models.
+[HFTransformersNLP](./components.mdx#hftransformersnlp) for a full list of supported language models.
 
 If your training data is not in English you can also use a different variant of a language model which
 is pre-trained in the language specific to your training data.
@@ -249,7 +241,7 @@ A full list of different variants of
 these language models is available in the
 [official documentation of the Transformers library](https://huggingface.co/transformers/pretrained_models.html).
 
-[spacynlp](./components/featurizers.mdx#spacyfeaturizer) also provides word embeddings in many different languages,
+[spacynlp](./components.mdx#spacyfeaturizer) also provides word embeddings in many different languages,
 so you can use this as another alternative, depending on the language of your training data.
 
 #### Supervised Embeddings
@@ -258,25 +250,25 @@ If you don't use any pre-trained word embeddings inside your pipeline, you are n
 and can train your model to be more domain specific. For example, in general English, the word “balance” is closely
 related to “symmetry”, but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely
 related and you'd like your model to capture that.
-You should only use featurizers from the category [sparse featurizers](./components/featurizers.mdx#text-featurizers), such as
-[CountVectorsFeaturizer](./components/featurizers.mdx#countvectorsfeaturizer), [RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer), if you don't want to use
+You should only use featurizers from the category [sparse featurizers](./components.mdx#featurizers), such as
+[CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer), [RegexFeaturizer](./components.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer), if you don't want to use
 pre-trained word embeddings.
 
 ### Intent Classification / Response Selectors
 
 Depending on your data you may want to only perform intent classification, entity recognition or response selection.
 Or you might want to combine multiple of those tasks. We support several components for each of the tasks.
-We recommend using [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) for intent classification and entity recognition
-and [ResponseSelector](./components/selectors.mdx#responseselector) for response selection.
+We recommend using [DIETClassifier](./components.mdx#dietclassifier) for intent classification and entity recognition
+and [ResponseSelector](./components.mdx#responseselector) for response selection.
 
 By default all of these components consume all available features produced in the pipeline.
 However, sometimes it makes sense to restrict the features that are used by a specific component.
-For example, [ResponseSelector](./components/selectors.mdx#responseselector) is likely to perform better if no features from the
-[RegexFeaturizer](./components/featurizers.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer) are used.
+For example, [ResponseSelector](./components.mdx#responseselector) is likely to perform better if no features from the
+[RegexFeaturizer](./components.mdx#regexfeaturizer) or [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer) are used.
 To achieve that, you can do the following:
 Set an alias for every featurizer in your pipeline via the option `alias`.
 By default the alias is set the the full featurizer class name, for example, `RegexFeaturizer`.
-You can then specify, for example, on the [ResponseSelector](./components/selectors.mdx#responseselector) via the option `featurizers` what features from
+You can then specify, for example, on the [ResponseSelector](./components.mdx#responseselector) via the option `featurizers` what features from
 which featurizers should be used.
 If you don't set the option `featurizers` all available features will be used.
 
@@ -292,14 +284,14 @@ Entity extraction involves parsing user messages for required pieces of informat
 provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
 Here is a summary of the available extractors and what they are best used for:
 
-|       Component        |     Requires     |                      Model                      |              Notes               |
-|------------------------|------------------|-------------------------------------------------|----------------------------------|
-|`DIETClassifier`        | N/A              |conditional random field on top of a transformer |good for training custom entities |
-|`CRFEntityExtractor`    |sklearn-crfsuite  |conditional random field                         |good for training custom entities |
-|`SpacyEntityExtractor`  |spaCy             |averaged perceptron                              |provides pre-trained entities     |
-|`DucklingHTTPExtractor` |running duckling  |context-free grammar                             |provides pre-trained entities     |
-|`MitieEntityExtractor`  |MITIE             |structured SVM                                   |good for training custom entities |
-|`EntitySynonymMapper`   |existing entities |N/A                                              |maps known synonyms               |
+|       Component          |     Requires     |                      Model                      |              Notes               |
+|--------------------------|------------------|-------------------------------------------------|----------------------------------|
+|`DIETClassifier`          | N/A              |conditional random field on top of a transformer |good for training custom entities |
+|`CRFEntityExtractor`      |sklearn-crfsuite  |conditional random field                         |good for training custom entities |
+|`SpacyEntityExtractor`    |spaCy             |averaged perceptron                              |provides pre-trained entities     |
+|`DucklingEntityExtractor` |running duckling  |context-free grammar                             |provides pre-trained entities     |
+|`MitieEntityExtractor`    |MITIE             |structured SVM                                   |good for training custom entities |
+|`EntitySynonymMapper`     |existing entities |N/A                                              |maps known synonyms               |
 
 ## Handling Class Imbalance
 

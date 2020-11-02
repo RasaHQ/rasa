@@ -4,14 +4,21 @@ import re
 from typing import Text, List, Optional, Dict, Any
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import TEXT, TOKENS_NAMES, MESSAGE_ATTRIBUTES, INTENT
+from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.shared.nlu.constants import (
+    INTENT,
+    INTENT_RESPONSE_KEY,
+    RESPONSE_IDENTIFIER_DELIMITER,
+    ACTION_NAME,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class Token(object):
+class Token:
     def __init__(
         self,
         text: Text,
@@ -87,27 +94,50 @@ class Tokenizer(Component):
 
         for example in training_data.training_examples:
             for attribute in MESSAGE_ATTRIBUTES:
-                if example.get(attribute) is not None:
-                    if attribute == INTENT:
-                        tokens = self._split_intent(example)
+                if (
+                    example.get(attribute) is not None
+                    and not example.get(attribute) == ""
+                ):
+                    if attribute in [INTENT, ACTION_NAME, INTENT_RESPONSE_KEY]:
+                        tokens = self._split_name(example, attribute)
                     else:
                         tokens = self.tokenize(example, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
+        for attribute in MESSAGE_ATTRIBUTES:
+            if isinstance(message.get(attribute), str):
+                if attribute in [INTENT, ACTION_NAME, RESPONSE_IDENTIFIER_DELIMITER]:
+                    tokens = self._split_name(message, attribute)
+                else:
+                    tokens = self.tokenize(message, attribute)
 
-        tokens = self.tokenize(message, TEXT)
-        message.set(TOKENS_NAMES[TEXT], tokens)
+                message.set(TOKENS_NAMES[attribute], tokens)
 
-    def _split_intent(self, message: Message):
-        text = message.get(INTENT)
+    def _tokenize_on_split_symbol(self, text: Text) -> List[Text]:
 
         words = (
             text.split(self.intent_split_symbol)
             if self.intent_tokenization_flag
             else [text]
         )
+
+        return words
+
+    def _split_name(self, message: Message, attribute: Text = INTENT) -> List[Token]:
+        text = message.get(attribute)
+
+        # for INTENT_RESPONSE_KEY attribute,
+        # first split by RESPONSE_IDENTIFIER_DELIMITER
+        if attribute == INTENT_RESPONSE_KEY:
+            intent, response_key = text.split(RESPONSE_IDENTIFIER_DELIMITER)
+            words = self._tokenize_on_split_symbol(
+                intent
+            ) + self._tokenize_on_split_symbol(response_key)
+
+        else:
+            words = self._tokenize_on_split_symbol(text)
 
         return self._convert_words_to_tokens(words, text)
 

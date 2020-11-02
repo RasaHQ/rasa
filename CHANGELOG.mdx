@@ -15,13 +15,21 @@ You can find more information on how to add a new change log entry at
 https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
+
+## [1.10.12] - 2020-09-03
+
+### Bugfixes
+
+- [#6549](https://github.com/rasahq/rasa/issues/6549): Fix slow training of `CRFEntityExtractor` when using Entity Roles and Groups.
+
 ## [1.10.11] - 2020-08-21
 
 ### Improvements
 
-- [#6044](https://github.com/rasahq/rasa/issues/6044>): Do not deepcopy slots when instantiating trackers. This leads to a significant
+- [#6044](https://github.com/rasahq/rasa/issues/6044): Do not deepcopy slots when instantiating trackers. This leads to a significant
   speedup when training on domains with a large number of slots.
-- [#6226](https://github.com/rasahq/rasa/issues/6226>): Added more debugging logs to the [Lock Stores](./lock-stores.mdx) to simplify debugging in case of
+- [#6226](https://github.com/rasahq/rasa/issues/6226): Added more debugging logs to the [Lock Stores](./lock-stores.mdx) to simplify debugging in case of
+
   connection problems.
 
   Added a new parameter `socket_timeout` to the `RedisLockStore`. If Redis doesn't
@@ -123,7 +131,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   entity predictions.
 
 * [#5976](https://github.com/rasahq/rasa/issues/5976): Fix server crashes that occurred when Rasa Open Source pulls a model from a
-  [model server](./model-storage.mdx#server-fetch-from-server) and an exception was thrown during
+  [model server](./model-storage.mdx#load-model-from-server) and an exception was thrown during
   model loading (such as a domain with invalid YAML).
 
 ## [1.10.2] - 2020-06-03
@@ -132,7 +140,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5521](https://github.com/rasahq/rasa/issues/5521): Responses used in ResponseSelector now support new lines with explicitly adding `\\n` between them.
 
-* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [rasa export](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#connect-rasa-deployment) ([Export Conversations to an Event Broker](./command-line-interface.mdx#export-conversations-to-an-event-broker)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-config).
+* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [`rasa export`](./command-line-interface.mdx#rasa-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-configuration).
 
 ## [1.10.1] - 2020-05-15
 
@@ -172,7 +180,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   The group label can be used to group multiple entities together.
   For example, you could group different pizza orders, so that you know what toppings goes with which pizza and
   what size which pizza has.
-  For more details see [Entities Roles and Groups](./training-data-format.mdx#entities-roles-groups).
+  For more details see [Entities Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups).
 
   To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
   We updated the tracker method `get_latest_entity_values` to take an optional role/group label.
@@ -180,7 +188,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   `from_entity` (see [Forms](./forms.mdx)).
 
   :::note
-  Composite entities are currently just supported by the [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) and [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor).
+  Composite entities are currently just supported by the [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor).
 
   :::
 
@@ -233,7 +241,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   If you are using ResponseSelectors, they now produce similiar outputs during NLU evaluation. Misclassfied responses are listed in a “confused_with” attribute in the evaluation report. Similiarily, a confusion matrix of all responses is plotted.
 
-* [#5578](https://github.com/rasahq/rasa/issues/5578): Added `socketio` to the compatible channels for [Reminders and External Events](./reminders-and-external-events.mdx).
+* [#5578](https://github.com/rasahq/rasa/issues/5578): Added `socketio` to the compatible channels for [Reminders and External Events](./reaching-out-to-user.mdx).
 
 * [#5595](https://github.com/rasahq/rasa/issues/5595): Update `POST /model/train` endpoint to accept retrieval action responses
   at the `responses` key of the JSON payload.
@@ -328,8 +336,8 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   connected to a PostgreSQL database.
 
   The schema is added to the connection string option's `-csearch_path` key, e.g.
-  `-options=-csearch_path=<SCHEMA_NAME>` (see
-  [https://www.postgresql.org/docs/11/contrib-dblink-connect.html](https://www.postgresql.org/docs/11/contrib-dblink-connect.html) for more details).
+  `-options=-csearch_path=<SCHEMA_NAME>` (see the
+  [PostgreSQL docs](https://www.postgresql.org/docs/11/contrib-dblink-connect.html) for more details).
   As before, if no `POSTGRESQL_SCHEMA` is defined, Rasa uses the database's default
   schema (`public`).
 
@@ -355,7 +363,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 ### Bugfixes
 
 * [#5505](https://github.com/rasahq/rasa/issues/5505): Set default value for `weight_sparsity` in `ResponseSelector` to `0`.
-  This fixes a bug in the default behaviour of `ResponseSelector` which was accidentally introduced in `rasa==1.8.0`.
+  This fixes a bug in the default behavior of `ResponseSelector` which was accidentally introduced in `rasa==1.8.0`.
   Users should update to this version and re-train their models if `ResponseSelector` was used in their pipeline.
 
 ## [1.9.2] - 2020-03-26
@@ -379,7 +387,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5006](https://github.com/rasahq/rasa/issues/5006): Channel `hangouts` for Rasa integration with Google Hangouts Chat is now supported out-of-the-box.
 
-* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for [HFTransformersNLP](./components/language-models.mdx#hftransformersnlp).
+* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for [HFTransformersNLP](./components.mdx#hftransformersnlp).
 
 * [#5422](https://github.com/rasahq/rasa/issues/5422): Add options `tensorboard_log_directory` and `tensorboard_log_level` to `EmbeddingIntentClassifier`,
   `DIETClasifier`, `ResponseSelector`, `EmbeddingPolicy` and `TEDPolicy`.
@@ -431,7 +439,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5446](https://github.com/rasahq/rasa/issues/5446): The endpoint `PUT /conversations/<conversation_id>/tracker/events` no longer
   adds session start events (to learn more about conversation sessions, please
-  see [Session configuration](./domain.mdx#session-config)) in addition to the events which were sent in the request
+  see [Session configuration](./domain.mdx#session-configuration)) in addition to the events which were sent in the request
   payload. To achieve the old behavior send a
   `GET /conversations/<conversation_id>/tracker`
   request before appending events.
@@ -482,7 +490,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#5444](https://github.com/rasahq/rasa/issues/5444): Fixed ambiguous logging in DIETClassifier by adding the name of the calling class to the log message.
 
 * [#5506](https://github.com/rasahq/rasa/issues/5506): Set default value for `weight_sparsity` in `ResponseSelector` to `0`.
-  This fixes a bug in the default behaviour of `ResponseSelector` which was accidentally introduced in `rasa==1.8.0`.
+  This fixes a bug in the default behavior of `ResponseSelector` which was accidentally introduced in `rasa==1.8.0`.
   Users should update to this version or `rasa>=1.9.3` and re-train their models if `ResponseSelector` was used in their pipeline.
 
 ### Improved Documentation
@@ -538,7 +546,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#4088](https://github.com/rasahq/rasa/issues/4088): Add story structure validation functionality (e.g. rasa data validate stories –max-history 5).
 
-* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](./components/featurizers.mdx#lexicalsyntacticfeaturizer) to sparse featurizers.
+* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer) to sparse featurizers.
 
   `LexicalSyntacticFeaturizer` does the same featurization as the `CRFEntityExtractor`. We extracted the
   featurization into a separate component so that the features can be reused and featurization is independent from the
@@ -546,19 +554,19 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 * [#5187](https://github.com/rasahq/rasa/issues/5187): Integrate language models from HuggingFace's [Transformers](https://github.com/huggingface/transformers) Library.
 
-  Add a new NLP component [HFTransformersNLP](./components/language-models.mdx#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
+  Add a new NLP component [HFTransformersNLP](./components.mdx#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add [LanguageModelTokenizer](./components/tokenizers.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components/featurizers.mdx#languagemodelfeaturizer) which use the information from
-  [HFTransformersNLP](./components/language-models.mdx#hftransformersnlp) and sets them correctly for message object.
+  Add [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
+  [HFTransformersNLP](./components.mdx#hftransformersnlp) and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
 * [#5225](https://github.com/rasahq/rasa/issues/5225): Added a new CLI command `rasa export` to publish tracker events from a persistent
-  tracker store using an event broker. See [Export Conversations to an Event Broker](./command-line-interface.mdx#export-conversations-to-an-event-broker), [Tracker Stores](./tracker-stores.mdx)
+  tracker store using an event broker. See [Export Conversations to an Event Broker](./command-line-interface.mdx#rasa-export), [Tracker Stores](./tracker-stores.mdx)
   and [Event Brokers](./event-brokers.mdx) for more details.
 
 * [#5230](https://github.com/rasahq/rasa/issues/5230): Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
 
-  Please refer to the [documentation](./tuning-your-model.mdx#configuring-tensorflow) to understand
+  Please refer to the documentation on [Configuring TensorFlow](./tuning-your-model.mdx#configuring-tensorflow) to understand
   which environment variables to set in what scenarios. A couple of examples are shown below as well:
 
   ```python
@@ -572,17 +580,17 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   TF_INTRA_OP_PARALLELISM_THREADS="2"
   ```
 
-* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components/intent-classifiers.mdx#dietclassifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
+* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components.mdx#dietclassifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
-  recognition. You can read more about this component in our [documentation](./components/intent-classifiers.mdx#dietclassifier).
+  recognition. You can read more about this component in the [DIETClassifier](./components.mdx#dietclassifier) documentation.
   The new component will replace the `EmbeddingIntentClassifier` and the
-  [CRFEntityExtractor](./components/entity-extractors.mdx#crfentityextractor) in the future.
+  [CRFEntityExtractor](./components.mdx#crfentityextractor) in the future.
   Those two components are deprecated from now on.
-  See [migration guide](./migration-guide.mdx#migration-to-rasa-1-8) for details on how to
+  See [migration guide](./migration-guide.mdx#rasa-17-to-rasa-18) for details on how to
   switch to the new component.
 
-  [TEDPolicy](./policies.mdx#ted-policy) is the new name for [EmbeddingPolicy](./policies.mdx#embedding-policy).
+  [TEDPolicy](./policies.mdx#ted-policy) is the new name for EmbeddingPolicy.
   `EmbeddingPolicy` is deprecated from now on.
   The functionality of `TEDPolicy` and `EmbeddingPolicy` is the same.
   Please update your configuration file to use the new name for the policy.
@@ -766,7 +774,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
   are `DucklingHTTPExtractor` and `SpacyEntityExtractor`.
 
 * [#4902](https://github.com/rasahq/rasa/issues/4902): The `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` now by default normalize confidence
-  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](./migration-guide.mdx#migration-to-rasa-1-7) for more details.
+  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](./migration-guide.mdx#rasa-16-to-rasa-17) for more details.
 
 * [#4964](https://github.com/rasahq/rasa/issues/4964): `ReminderCancelled` can now cancel multiple reminders if no name is given. It still cancels a single
   reminder if the reminder's name is specified.
@@ -842,7 +850,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
     min_df: 5
   ```
 
-* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](./components/entity-extractors.mdx#passing-custom-features-to-crfentityextractor)
+* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](./components.mdx#crfentityextractor)
   use `text_dense_features` instead of `ner_features`. If
   `text_dense_features` are present in the feature set, the `CRFEntityExtractor` will automatically make use of
   them. Just make sure to add a dense featurizer in front of the `CRFEntityExtractor` in your pipeline and set the
@@ -881,7 +889,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
       events from the last session from the database.
 
   :::note
-  The session behaviour is disabled for existing projects, i.e. existing domains
+  The session behavior is disabled for existing projects, i.e. existing domains
   without session config section.
 
   :::
@@ -893,13 +901,13 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
   Add option `return_sequence` to all featurizers. By default all featurizers return a matrix of size
   (1 x feature-dimension). If the option `return_sequence` is set to `True`, the corresponding featurizer will return
-  a matrix of size (token-length x feature-dimension). See [Text Featurizers](./components/featurizers.mdx).
+  a matrix of size (token-length x feature-dimension). See [Text Featurizers](./components.mdx#featurizers).
   Default value is set to `False`. However, you might want to set it to `True` if you want to use custom features
   in the `CRFEntityExtractor`.
-  See [passing custom features to the `CRFEntityExtractor`](./components/entity-extractors.mdx#passing-custom-features-to-crfentityextractor)
+  See [passing custom features to the `CRFEntityExtractor`](./components.mdx#crfentityextractor)
 
   Changed some featurizers to use sparse features, which should reduce memory usage with large amounts of training data significantly.
-  Read more: [Text Featurizers](./components/featurizers.mdx) .
+  Read more: [Text Featurizers](./components.mdx#featurizers) .
 
   :::caution
   These changes break model compatibility. You will need to retrain your old models!
@@ -957,7 +965,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#4925](https://github.com/rasahq/rasa/issues/4925): “rasa init” will ask if user wants to train a model
 
 * [#4942](https://github.com/rasahq/rasa/issues/4942): Pin `multidict` dependency to 4.6.1 to prevent sanic from breaking,
-  see [https://github.com/huge-success/sanic/issues/1729](https://github.com/huge-success/sanic/issues/1729)
+  see [the Sanic GitHub issue](https://github.com/huge-success/sanic/issues/1729 "Sanic Github Issue #1729 about Multidict update breaking Sanic") for more info.
 
 * [#4985](https://github.com/rasahq/rasa/issues/4985): Fix errors during training and testing of `ResponseSelector`.
 
@@ -972,7 +980,7 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 * [#4914](https://github.com/rasahq/rasa/issues/4914): Added `rasa/nlu/schemas/config.yml` to wheel package
 
 * [#4942](https://github.com/rasahq/rasa/issues/4942): Pin `multidict` dependency to 4.6.1 to prevent sanic from breaking,
-  see [https://github.com/huge-success/sanic/issues/1729](https://github.com/huge-success/sanic/issues/1729)
+  see [the Sanic GitHub issue](https://github.com/huge-success/sanic/issues/1729 "Sanic Github Issue #1729 about Multidict update breaking Sanic")
 
 ## [1.5.2] - 2019-12-09
 
@@ -1302,7 +1310,8 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 ### Bugfixes
 
 * Added the ability to properly deal with spaCy `Doc`-objects created on
-  empty strings as discussed [here](https://github.com/RasaHQ/rasa/issues/4445).
+  empty strings as discussed in 
+  [issue #4445](https://github.com/RasaHQ/rasa/issues/4445 "Rasa issue #4445: Handling spaCy objects on empty strings").
   Only training samples that actually bear content are sent to `self.nlp.pipe`
   for every given attribute. Non-content-bearing samples are converted to empty
   `Doc`-objects. The resulting lists are merged with their preserved order and

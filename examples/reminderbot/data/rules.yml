@@ -1,5 +1,4 @@
 version: "2.0"
-
 rules:
 - rule: greet
   steps:

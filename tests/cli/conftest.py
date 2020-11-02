@@ -10,7 +10,7 @@ import os
 from _pytest.pytester import Testdir, RunResult
 
 from rasa.cli import scaffold
-from rasa.utils.io import write_yaml
+from rasa.shared.utils.io import write_yaml
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def create_simple_project(path: Path):
             "language": "en",
             "pipeline": [{"name": "KeywordIntentClassifier"}],
             "policies": [
-                {"name": "MappingPolicy"},
+                {"name": "RulePolicy"},
                 {"name": "MemoizationPolicy", "max_history": 3},
             ],
         },

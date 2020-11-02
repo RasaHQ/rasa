@@ -1,12 +1,16 @@
+from collections import defaultdict
 import itertools
 import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
-from rasa.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.exceptions import MissingDependencyException
+from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -45,21 +49,32 @@ def validate_requirements(component_names: List[Text]) -> None:
     from rasa.nlu import registry
 
     # Validate that all required packages are installed
-    failed_imports = set()
+    failed_imports = {}
     for component_name in component_names:
         component_class = registry.get_component_class(component_name)
-        failed_imports.update(
-            find_unavailable_packages(component_class.required_packages())
+        unavailable_packages = find_unavailable_packages(
+            component_class.required_packages()
         )
+        if unavailable_packages:
+            failed_imports[component_name] = unavailable_packages
     if failed_imports:  # pragma: no cover
-        # if available, use the development file to figure out the correct
-        # version numbers for each requirement
-        raise Exception(
-            f"Not all required importable packages are installed. "
+        dependency_component_map = defaultdict(list)
+        for component, missing_dependencies in failed_imports.items():
+            for dependency in missing_dependencies:
+                dependency_component_map[dependency].append(component)
+
+        missing_lines = [
+            f"{d} (needed for {', '.join(cs)})"
+            for d, cs in dependency_component_map.items()
+        ]
+        missing = "\n  - ".join(missing_lines)
+        raise MissingDependencyException(
+            f"Not all required importable packages are installed to use "
+            f"the configured NLU pipeline. "
             f"To use this pipeline, you need to install the "
-            f"missing dependencies. "
-            f"Please install the package(s) that contain the module(s): "
-            f"{', '.join(failed_imports)}"
+            f"missing modules: \n"
+            f"  - {missing}\n"
+            f"Please install the packages that contain the missing modules."
         )
 
 
@@ -74,9 +89,7 @@ def validate_empty_pipeline(pipeline: List["Component"]) -> None:
         raise InvalidConfigError(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
-            "the configuration using the 'pipeline' key. "
-            "The 'backend' configuration key is "
-            "NOT supported anymore."
+            "the configuration using the 'pipeline' key."
         )
 
 
@@ -96,8 +109,9 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
 
     if len(tokenizer_names) > 1:
         raise InvalidConfigError(
-            f"More than one tokenizer is used: {tokenizer_names}. "
-            f"You can use only one tokenizer."
+            f"The pipeline configuration contains more than one tokenizer, "
+            f"which is not possible at this time. You can only use one tokenizer. "
+            f"The pipeline contains the following tokenizers: {tokenizer_names}. "
         )
 
 
@@ -134,10 +148,14 @@ def validate_required_components(pipeline: List["Component"]) -> None:
             if not _required_component_in_pipeline(required_component, pipeline[:i]):
                 missing_components.append(required_component.name)
 
+        missing_components_str = ", ".join(f"'{c}'" for c in missing_components)
+
         if missing_components:
             raise InvalidConfigError(
-                f"'{component.name}' requires {missing_components}. "
-                f"Add required components to the pipeline."
+                f"The pipeline configuration contains errors. The component "
+                f"'{component.name}' requires {missing_components_str} to be "
+                f"placed before it in the pipeline. Please "
+                f"add the required components to the pipeline."
             )
 
 
@@ -174,13 +192,13 @@ def validate_required_components_from_data(
 
     Args:
         pipeline: The list of the :class:`rasa.nlu.components.Component`s.
-        data: The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+        data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
     """
 
     if data.response_examples and not any_components_in_pipeline(
         ["ResponseSelector"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data with examples for training a response "
             "selector, but your NLU pipeline does not include a response selector "
             "component. To train a model on your response selector data, add a "
@@ -190,7 +208,7 @@ def validate_required_components_from_data(
     if data.entity_examples and not any_components_in_pipeline(
         TRAINABLE_EXTRACTORS, pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data consisting of entity examples, but "
             "your NLU pipeline does not include an entity extractor trained on "
             "your training data. To extract non-pretrained entities, add one of "
@@ -201,7 +219,7 @@ def validate_required_components_from_data(
         {"DIETClassifier", "CRFEntityExtractor"}, pipeline
     ):
         if data.entity_roles_groups_used():
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "You have defined training data with entities that have roles/groups, "
                 "but your NLU pipeline does not include a 'DIETClassifier' or a "
                 "'CRFEntityExtractor'. To train entities that have roles/groups, "
@@ -212,7 +230,7 @@ def validate_required_components_from_data(
     if data.regex_features and not any_components_in_pipeline(
         ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data with regexes, but "
             "your NLU pipeline does not include a 'RegexFeaturizer' or a "
             "'RegexEntityExtractor'. To use regexes, include either a "
@@ -222,7 +240,7 @@ def validate_required_components_from_data(
     if data.lookup_tables and not any_components_in_pipeline(
         ["RegexFeaturizer", "RegexEntityExtractor"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined training data consisting of lookup tables, but "
             "your NLU pipeline does not include a 'RegexFeaturizer' or a "
             "'RegexEntityExtractor'. To use lookup tables, include either a "
@@ -233,7 +251,7 @@ def validate_required_components_from_data(
         if not any_components_in_pipeline(
             ["CRFEntityExtractor", "DIETClassifier"], pipeline
         ):
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include any components that use these "
                 "features. To make use of lookup tables, add a 'DIETClassifier' or a "
@@ -250,7 +268,7 @@ def validate_required_components_from_data(
                 has_pattern_feature = "pattern" in itertools.chain(*crf_features)
 
             if not has_pattern_feature:
-                raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     "You have defined training data consisting of lookup tables, but "
                     "your NLU pipeline's 'CRFEntityExtractor' does not include the "
                     "'pattern' feature. To featurize lookup tables, add the 'pattern' "
@@ -260,7 +278,7 @@ def validate_required_components_from_data(
     if data.entity_synonyms and not any_components_in_pipeline(
         ["EntitySynonymMapper"], pipeline
     ):
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "You have defined synonyms in your training data, but "
             "your NLU pipeline does not include an 'EntitySynonymMapper'. "
             "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."
@@ -282,7 +300,7 @@ class MissingArgumentError(ValueError):
         return self.message
 
 
-class UnsupportedLanguageError(Exception):
+class UnsupportedLanguageError(RasaException):
     """Raised when a component is created but the language is not supported.
 
     Attributes:
@@ -339,7 +357,7 @@ class Component(metaclass=ComponentMetaclass):
     # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
     @property
-    def name(self):
+    def name(self) -> Text:
         """Access the class's property name from an instance."""
 
         return type(self).name
@@ -364,13 +382,19 @@ class Component(metaclass=ComponentMetaclass):
 
     # Defines what language(s) this component can handle.
     # This attribute is designed for instance method: `can_handle_language`.
-    # Default value is None which means it can handle all languages.
+    # Default value is None. if both `support_language_list` and
+    # `not_supported_language_list` are None, it means it can handle
+    # all languages. Also, only one of `support_language_list` and
+    # `not_supported_language_list` can be set to not None.
     # This is an important feature for backwards compatibility of components.
     supported_language_list = None
 
     # Defines what language(s) this component can NOT handle.
     # This attribute is designed for instance method: `can_handle_language`.
-    # Default value is None which means it can handle all languages.
+    # Default value is None. if both `support_language_list` and
+    # `not_supported_language_list` are None, it means it can handle
+    # all languages. Also, only one of `support_language_list` and
+    # `not_supported_language_list` can be set to not None.
     # This is an important feature for backwards compatibility of components.
     not_supported_language_list = None
 
@@ -500,7 +524,7 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             training_data:
-                The :class:`rasa.nlu.training_data.training_data.TrainingData`.
+                The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
 
         """
@@ -520,7 +544,7 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
 
         """
 
@@ -599,10 +623,11 @@ class Component(metaclass=ComponentMetaclass):
         previous to this one in the pipeline.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to
+            process.
 
         Returns:
-            The processed :class:`rasa.nlu.training_data.message.Message`.
+            The processed :class:`rasa.shared.nlu.training_data.message.Message`.
 
         """
 
@@ -627,17 +652,48 @@ class Component(metaclass=ComponentMetaclass):
             `True` if component can handle specific language, `False` otherwise.
         """
 
-        # if language_list is set to `None` it means: support all languages
+        # If both `supported_language_list` and `not_supported_language_list` are set to `None`,
+        # it means: support all languages
         if language is None or (
             cls.supported_language_list is None
             and cls.not_supported_language_list is None
         ):
             return True
 
-        language_list = cls.supported_language_list or []
-        not_supported_language_list = cls.not_supported_language_list or []
+        # check language supporting settings
+        if cls.supported_language_list and cls.not_supported_language_list:
+            # When user set both language supporting settings to not None, it will lead to ambiguity.
+            raise RasaException(
+                "Only one of `supported_language_list` and `not_supported_language_list` can be set to not None"
+            )
 
-        return language in language_list or language not in not_supported_language_list
+        # convert to `list` for membership test
+        supported_language_list = (
+            cls.supported_language_list
+            if cls.supported_language_list is not None
+            else []
+        )
+        not_supported_language_list = (
+            cls.not_supported_language_list
+            if cls.not_supported_language_list is not None
+            else []
+        )
+
+        # check if user provided a valid setting
+        if not supported_language_list and not not_supported_language_list:
+            # One of language settings must be valid (not None and not a empty list),
+            # There are three combinations of settings are not valid: (None, []), ([], None) and ([], [])
+            raise RasaException(
+                "Empty lists for both "
+                "`supported_language_list` and `not_supported language_list` "
+                "is not a valid setting. If you meant to allow all languages "
+                "for the component use `None` for both of them."
+            )
+
+        if supported_language_list:
+            return language in supported_language_list
+        else:
+            return language not in not_supported_language_list
 
 
 C = typing.TypeVar("C", bound=Component)

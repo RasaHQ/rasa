@@ -9,7 +9,7 @@ from aioresponses import aioresponses
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 
@@ -89,16 +89,16 @@ async def test_formbot_example():
             responses = await agent.handle_text(input_text)
             assert responses[0]["text"] == output_text
 
-    await mock_form_happy_path("/request_restaurant", "what cuisine?", slot="cuisine")
+    await mock_form_happy_path("/request_restaurant", "What cuisine?", slot="cuisine")
     await mock_form_unhappy_path("/chitchat", "chitchat", slot="cuisine")
     await mock_form_happy_path(
-        '/inform{"cuisine": "mexican"}', "how many people?", slot="num_people"
+        '/inform{"cuisine": "mexican"}', "How many people?", slot="num_people"
     )
     await mock_form_happy_path(
-        '/inform{"number": "2"}', "do you want to seat outside?", slot="outdoor_seating"
+        '/inform{"number": "2"}', "Do you want to sit outside?", slot="outdoor_seating"
     )
     await mock_form_happy_path(
-        "/affirm", "please provide additional preferences", slot="preferences"
+        "/affirm", "Please provide additional preferences", slot="preferences"
     )
 
     responses = await agent.handle_text("/restart")
@@ -110,26 +110,26 @@ async def test_formbot_example():
         == "Hello! I am restaurant search assistant! How can I help?"
     )
 
-    await mock_form_happy_path("/request_restaurant", "what cuisine?", slot="cuisine")
+    await mock_form_happy_path("/request_restaurant", "What cuisine?", slot="cuisine")
     await mock_form_happy_path(
-        '/inform{"cuisine": "mexican"}', "how many people?", slot="num_people"
+        '/inform{"cuisine": "mexican"}', "How many people?", slot="num_people"
     )
     await mock_form_happy_path(
-        '/inform{"number": "2"}', "do you want to seat outside?", slot="outdoor_seating"
+        '/inform{"number": "2"}', "Do you want to sit outside?", slot="outdoor_seating"
     )
     await mock_form_unhappy_path(
-        "/stop", "do you want to continue?", slot="outdoor_seating"
+        "/stop", "Do you want to continue?", slot="outdoor_seating"
     )
     await mock_form_happy_path(
-        "/affirm", "do you want to seat outside?", slot="outdoor_seating"
+        "/affirm", "Do you want to sit outside?", slot="outdoor_seating"
     )
     await mock_form_happy_path(
-        "/affirm", "please provide additional preferences", slot="preferences"
+        "/affirm", "Please provide additional preferences", slot="preferences"
     )
     await mock_form_happy_path(
-        "/deny", "please give your feedback on your experience so far", slot="feedback"
+        "/deny", "Please give your feedback on your experience so far", slot="feedback"
     )
     await mock_form_happy_path('/inform{"feedback": "great"}', "All done!")
 
     responses = await agent.handle_text("/thankyou")
-    assert responses[0]["text"] == "you are welcome :)"
+    assert responses[0]["text"] == "You are welcome :)"

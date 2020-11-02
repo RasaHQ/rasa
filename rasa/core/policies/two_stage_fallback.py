@@ -1,30 +1,30 @@
-import json
 import logging
-import os
-import typing
-from typing import List, Text, Optional, Any
+from typing import List, Text, Optional, Any, TYPE_CHECKING, Dict
 
-import rasa.utils.io
-from rasa.core.actions.action import (
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_LISTEN_NAME,
-)
+from rasa.shared.core.events import UserUttered, ActionExecuted
 
-from rasa.core.events import UserUttered, ActionExecuted
-
-from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import FALLBACK_POLICY_PRIORITY
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.constants import (
+    FALLBACK_POLICY_PRIORITY,
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+)
+from rasa.shared.core.constants import (
+    USER_INTENT_OUT_OF_SCOPE,
+    ACTION_LISTEN_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME,
+)
+from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
 
@@ -36,29 +36,29 @@ def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
 
 
 class TwoStageFallbackPolicy(FallbackPolicy):
-    """ This policy handles low NLU confidence in multiple stages.
+    """This policy handles low NLU confidence in multiple stages.
 
-        If a NLU prediction has a low confidence score,
-        the user is asked to affirm whether they really had this intent.
-        If they affirm, the story continues as if the intent was classified
-        with high confidence from the beginning.
-        If they deny, the user is asked to rephrase his intent.
-        If the classification for the rephrased intent was confident, the story
-        continues as if the user had this intent from the beginning.
-        If the rephrased intent was not classified with high confidence,
-        the user is asked to affirm the classified intent.
-        If the user affirm the intent, the story continues as if the user had
-        this intent from the beginning.
-        If the user denies, an ultimate fallback action is triggered
-        (e.g. a hand-off to a human).
+    If a NLU prediction has a low confidence score,
+    the user is asked to affirm whether they really had this intent.
+    If they affirm, the story continues as if the intent was classified
+    with high confidence from the beginning.
+    If they deny, the user is asked to rephrase his intent.
+    If the classification for the rephrased intent was confident, the story
+    continues as if the user had this intent from the beginning.
+    If the rephrased intent was not classified with high confidence,
+    the user is asked to affirm the classified intent.
+    If the user affirm the intent, the story continues as if the user had
+    this intent from the beginning.
+    If the user denies, an ultimate fallback action is triggered
+    (e.g. a hand-off to a human).
     """
 
     def __init__(
         self,
         priority: int = FALLBACK_POLICY_PRIORITY,
-        nlu_threshold: float = 0.3,
-        ambiguity_threshold: float = 0.1,
-        core_threshold: float = 0.3,
+        nlu_threshold: float = DEFAULT_NLU_FALLBACK_THRESHOLD,
+        ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+        core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
         fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
@@ -116,7 +116,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predicts the next action if NLU confidence is low."""
@@ -124,7 +124,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         nlu_data = tracker.latest_message.parse_data
         last_intent_name = nlu_data["intent"].get(INTENT_NAME_KEY, None)
         should_nlu_fallback = self.should_nlu_fallback(
-            nlu_data, tracker.latest_action_name
+            nlu_data, tracker.latest_action.get(ACTION_NAME)
         )
         user_rephrased = has_user_rephrased(tracker)
 
@@ -180,7 +180,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         return result
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
-        action_requires_input = tracker.latest_action_name in [
+        action_requires_input = tracker.latest_action.get(ACTION_NAME) in [
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name,
@@ -214,10 +214,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         else:
             return confidence_scores_for(ACTION_DEFAULT_ASK_REPHRASE_NAME, 1.0, domain)
 
-    def persist(self, path: Text) -> None:
-        """Persists the policy to storage."""
-        config_file = os.path.join(path, "two_stage_fallback_policy.json")
-        meta = {
+    def _metadata(self) -> Dict[Text, Any]:
+        return {
             "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
             "ambiguity_threshold": self.ambiguity_threshold,
@@ -226,15 +224,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "fallback_nlu_action_name": self.fallback_nlu_action_name,
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
-    def load(cls, path: Text) -> "FallbackPolicy":
-        meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "two_stage_fallback_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
-
-        return cls(**meta)
+    def _metadata_filename(cls) -> Text:
+        return "two_stage_fallback_policy.json"

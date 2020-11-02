@@ -3,7 +3,7 @@ import uuid
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -147,7 +147,7 @@ class SocketIOInput(InputChannel):
 
     def get_output_channel(self) -> Optional["OutputChannel"]:
         if self.sio is None:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "SocketIO output channel cannot be recreated. "
                 "This is expected behavior when using multiple Sanic "
                 "workers or multiple Rasa Open Source instances. "
@@ -199,7 +199,7 @@ class SocketIOInput(InputChannel):
 
             if self.session_persistence:
                 if not data.get("session_id"):
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         "A message without a valid session_id "
                         "was received. This message will be "
                         "ignored. Make sure to set a proper "

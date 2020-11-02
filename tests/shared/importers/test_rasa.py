@@ -1,0 +1,51 @@
+from pathlib import Path
+from typing import Text
+import os
+
+from rasa.shared.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
+)
+from rasa.shared.core.constants import DEFAULT_INTENTS
+from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.rasa import RasaFileImporter
+
+
+async def test_rasa_file_importer(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
+    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
+
+    importer = RasaFileImporter(config_path, domain_path, [default_data_path])
+
+    domain = await importer.get_domain()
+    assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
+    assert domain.slots == []
+    assert domain.entities == []
+    assert len(domain.action_names) == 17
+    assert len(domain.templates) == 6
+
+    stories = await importer.get_stories()
+    assert len(stories.story_steps) == 5
+
+    nlu_data = await importer.get_nlu_data("en")
+    assert len(nlu_data.intents) == 7
+    assert len(nlu_data.intent_examples) == 69
+
+
+async def test_rasa_file_importer_with_invalid_config():
+    importer = RasaFileImporter(config_file="invalid path")
+    actual = await importer.get_config()
+
+    assert actual == {}
+
+
+async def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
+    config_file = tmp_path / "config.yml"
+    config_file.write_text("")
+    importer = TrainingDataImporter.load_from_dict({}, str(config_file), None, [])
+
+    actual = await importer.get_domain()
+    assert actual.as_dict() == Domain.empty().as_dict()

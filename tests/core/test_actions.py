@@ -6,16 +6,6 @@ from aioresponses import aioresponses
 import rasa.core
 from rasa.core.actions import action
 from rasa.core.actions.action import (
-    ACTION_BACK_NAME,
-    ACTION_DEACTIVATE_FORM_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_SESSION_START_NAME,
-    RULE_SNIPPET_ACTION_NAME,
     ActionBack,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
@@ -29,10 +19,9 @@ from rasa.core.actions.action import (
     ActionSessionStart,
 )
 from rasa.core.actions.forms import FormAction
-from rasa.core.actions.two_stage_fallback import ACTION_TWO_STAGE_FALLBACK_NAME
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain, SessionConfig
-from rasa.core.events import (
+from rasa.shared.core.domain import ActionNotFoundException, SessionConfig, Domain
+from rasa.shared.core.events import (
     Restarted,
     SlotSet,
     UserUtteranceReverted,
@@ -44,8 +33,22 @@ from rasa.core.events import (
     UserUttered,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
-from rasa.core.constants import USER_INTENT_SESSION_START
-from rasa.core.trackers import DialogueStateTracker, ACTIVE_LOOP_KEY
+from rasa.shared.core.constants import (
+    USER_INTENT_SESSION_START,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_DEACTIVATE_LOOP_NAME,
+    ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_BACK_NAME,
+    ACTION_TWO_STAGE_FALLBACK_NAME,
+    RULE_SNIPPET_ACTION_NAME,
+    ACTIVE_LOOP,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -82,46 +85,32 @@ def test_text_format():
         == "ActionUtterTemplate('my_action_name')"
     )
     assert (
-        "{}".format(ActionRetrieveResponse("respond_test"))
-        == "ActionRetrieveResponse('respond_test')"
+        "{}".format(ActionRetrieveResponse("utter_test"))
+        == "ActionRetrieveResponse('utter_test')"
     )
-
-
-def test_action_instantiation_from_names():
-    instantiated_actions = action.actions_from_names(
-        ["random_name", "utter_test", "respond_test"],
-        None,
-        ["random_name", "utter_test"],
-    )
-    assert len(instantiated_actions) == 3
-    assert isinstance(instantiated_actions[0], RemoteAction)
-    assert instantiated_actions[0].name() == "random_name"
-
-    assert isinstance(instantiated_actions[1], ActionUtterTemplate)
-    assert instantiated_actions[1].name() == "utter_test"
-
-    assert isinstance(instantiated_actions[2], ActionRetrieveResponse)
-    assert instantiated_actions[2].name() == "respond_test"
 
 
 def test_domain_action_instantiation():
     domain = Domain(
-        intents={},
+        intents=[{"chitchat": {"is_retrieval_intent": True}}],
         entities=[],
         slots=[],
         templates={},
-        action_names=["my_module.ActionTest", "utter_test", "respond_test"],
+        action_names=["my_module.ActionTest", "utter_test", "utter_chitchat"],
         forms=[],
     )
 
-    instantiated_actions = domain.actions(None)
+    instantiated_actions = [
+        action.action_for_name(action_name, domain, None)
+        for action_name in domain.action_names
+    ]
 
     assert len(instantiated_actions) == 14
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
     assert instantiated_actions[3].name() == ACTION_DEFAULT_FALLBACK_NAME
-    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_FORM_NAME
+    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_LOOP_NAME
     assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
@@ -130,7 +119,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
     assert instantiated_actions[11].name() == "my_module.ActionTest"
     assert instantiated_actions[12].name() == "utter_test"
-    assert instantiated_actions[13].name() == "respond_test"
+    assert instantiated_actions[13].name() == "utter_chitchat"
 
 
 async def test_remote_action_runs(
@@ -167,7 +156,8 @@ async def test_remote_action_runs(
                     "message_id": None,
                     "metadata": {},
                 },
-                ACTIVE_LOOP_KEY: {},
+                ACTIVE_LOOP: {},
+                "latest_action": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
@@ -221,7 +211,8 @@ async def test_remote_action_logs_events(
                     "message_id": None,
                     "metadata": {},
                 },
-                ACTIVE_LOOP_KEY: {},
+                ACTIVE_LOOP: {},
+                "latest_action": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
@@ -359,18 +350,26 @@ async def test_action_utter_retrieved_response(
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
             "response_selector": {
                 "chitchat": {
-                    "response": {"text": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
+                    }
                 }
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
@@ -379,7 +378,8 @@ async def test_action_utter_retrieved_response(
         "text"
     )
     assert (
-        events[0].as_dict().get("metadata").get("template_name") == "chitchat/ask_name"
+        events[0].as_dict().get("metadata").get("template_name")
+        == "utter_chitchat/ask_name"
     )
 
 
@@ -388,18 +388,26 @@ async def test_action_utter_default_retrieved_response(
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
             "response_selector": {
                 "default": {
-                    "response": {"text": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
+                    }
                 }
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
@@ -408,24 +416,37 @@ async def test_action_utter_default_retrieved_response(
         "text"
     )
 
+    assert (
+        events[0].as_dict().get("metadata").get("template_name")
+        == "utter_chitchat/ask_name"
+    )
+
 
 async def test_action_utter_retrieved_empty_response(
     default_channel, default_nlg, default_tracker, default_domain
 ):
     from rasa.core.channels.channel import UserMessage
 
-    action_name = "respond_chitchat"
+    action_name = "utter_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
         parse_data={
             "response_selector": {
                 "dummy": {
-                    "response": {"text": "I am a bot."},
-                    "full_retrieval_intent": "chitchat/ask_name",
+                    "response": {
+                        "intent_response_key": "chitchat/ask_name",
+                        "response_templates": [{"text": "I am a bot."}],
+                        "template_name": "utter_chitchat/ask_name",
+                    }
                 }
             }
         },
     )
+
+    default_domain.templates.update(
+        {"utter_chitchat/ask_name": [{"text": "I am a bot."}]}
+    )
+
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
@@ -679,13 +700,13 @@ def test_get_form_action():
     actions:
     - my_action
     forms:
-    - {form_action_name}:
+      {form_action_name}:
         my_slot:
         - type: from_text
     """
     )
 
-    actual = domain.action_for_name(form_action_name, None)
+    actual = action.action_for_name(form_action_name, domain, None)
     assert isinstance(actual, FormAction)
 
 
@@ -700,7 +721,7 @@ def test_get_form_action_without_slot_mapping():
     """
     )
 
-    actual = domain.action_for_name(form_action_name, None)
+    actual = action.action_for_name(form_action_name, domain, None)
     assert isinstance(actual, RemoteAction)
 
 
@@ -713,5 +734,5 @@ def test_get_form_action_if_not_in_forms():
     """
     )
 
-    with pytest.raises(NameError):
-        assert not domain.action_for_name(form_action_name, None)
+    with pytest.raises(ActionNotFoundException):
+        assert not action.action_for_name(form_action_name, domain, None)

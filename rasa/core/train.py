@@ -6,14 +6,15 @@ import tempfile
 import typing
 from typing import Dict, Optional, Text, Union, List
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
-from rasa.core.domain import Domain
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
-    from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
 
 
@@ -80,7 +81,6 @@ async def train_comparison_models(
 ):
     """Train multiple models for comparison of policies"""
     from rasa import model
-    from rasa.importers.importer import TrainingDataImporter
 
     exclusion_percentages = exclusion_percentages or []
     policy_configs = policy_configs or []
@@ -129,12 +129,10 @@ async def train_comparison_models(
 
 async def get_no_of_stories(story_file: Text, domain: Text) -> int:
     """Get number of stories in a file."""
-    from rasa.core.domain import TemplateDomain
-    from rasa.core.training import loading
+    from rasa.shared.core.domain import Domain
+    from rasa.shared.core.training_data import loading
 
-    stories = await loading.load_data_from_files(
-        [story_file], TemplateDomain.load(domain)
-    )
+    stories = await loading.load_data_from_files([story_file], Domain.load(domain))
     return len(stories)
 
 
@@ -165,7 +163,9 @@ async def do_compare_training(
     training_stories_per_model_file = os.path.join(
         args.out, NUMBER_OF_TRAINING_STORIES_FILE
     )
-    rasa.utils.io.dump_obj_as_json_to_file(training_stories_per_model_file, story_range)
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        training_stories_per_model_file, story_range
+    )
 
 
 def do_interactive_learning(
@@ -178,12 +178,4 @@ def do_interactive_learning(
         skip_visualization=args.skip_visualization,
         conversation_id=args.conversation_id,
         server_args=args.__dict__,
-    )
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.core.train` directly is no longer supported. Please use "
-        "`rasa train` to train a combined Core and NLU model or `rasa train core` "
-        "to train a Core model."
     )

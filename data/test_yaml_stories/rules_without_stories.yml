@@ -34,3 +34,12 @@ rules:
   steps:
   - intent: explain
   - action: utter_explain_some_slot
+
+- rule: start optional preferences
+  steps:
+  - action: utter_request_optional
+  - or:
+    - intent: deny
+    - intent: inform
+  - action: form_plane_search_preference
+  wait_for_user_input: false

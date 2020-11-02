@@ -8,32 +8,37 @@ from functools import partial
 from multiprocessing import Process
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
-import numpy as np
-from aiohttp import ClientError
-from colorclass import Color
 
-from rasa.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
-from rasa.nlu.constants import INTENT_NAME_KEY
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
-
+import numpy as np
+from aiohttp import ClientError
+from colorclass import Color
 import questionary
-import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa.core import constants, run, train, utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
-from rasa.core.channels.channel import UserMessage
-from rasa.core.constants import (
-    DEFAULT_SERVER_FORMAT,
-    DEFAULT_SERVER_PORT,
+from rasa import telemetry
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
+import rasa.cli.utils
+import rasa.shared.data
+from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
+from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.core.constants import (
+    USER_INTENT_RESTART,
+    ACTION_LISTEN_NAME,
+    LOOP_NAME,
+    ACTIVE_LOOP,
+    LOOP_REJECTED,
     REQUESTED_SLOT,
-    UTTER_PREFIX,
+    LOOP_INTERRUPTED,
 )
-from rasa.core.domain import Domain
-import rasa.core.events
-from rasa.core.events import (
+from rasa.core import run, train, utils
+from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
+from rasa.shared.core.domain import Domain
+import rasa.shared.core.events
+from rasa.shared.core.events import (
     ActionExecuted,
     ActionReverted,
     BotUttered,
@@ -42,21 +47,22 @@ from rasa.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
-from rasa.core.trackers import EventVerbosity, DialogueStateTracker, ACTIVE_LOOP_KEY
-from rasa.core.training import visualization
-from rasa.core.training.visualization import (
+import rasa.core.interpreter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID, UTTER_PREFIX
+from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
+from rasa.shared.core.training_data import visualization
+from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
 )
 from rasa.core.utils import AvailableEndpoints
-from rasa.importers.rasa import TrainingDataImporter
+from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 # noinspection PyProtectedMember
-from rasa.nlu.training_data import loading
-from rasa.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data import loading
+from rasa.shared.nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test
@@ -319,7 +325,7 @@ async def _ask_questions(
 def _selection_choices_from_intent_prediction(
     predictions: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
-    """"Given a list of ML predictions create a UI choice list."""
+    """Given a list of ML predictions create a UI choice list."""
 
     sorted_intents = sorted(
         predictions, key=lambda k: (-k["confidence"], k[INTENT_NAME_KEY])
@@ -567,11 +573,26 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strings = []
     for k, s in tracker_dump.get("slots", {}).items():
-        colored_value = rasa.cli.utils.wrap_with_color(
-            str(s), color=rasa.cli.utils.bcolors.WARNING
+        colored_value = rasa.shared.utils.io.wrap_with_color(
+            str(s), color=rasa.shared.utils.io.bcolors.WARNING
         )
         slot_strings.append(f"{k}: {colored_value}")
     return slot_strings
+
+
+def _retry_on_error(
+    func: Callable, export_path: Text, *args: Any, **kwargs: Any
+) -> None:
+    while True:
+        try:
+            return func(export_path, *args, **kwargs)
+        except OSError as e:
+            answer = questionary.confirm(
+                f"Failed to export '{export_path}': {e}. Please make sure 'rasa' "
+                f"has read and write access to this file. Would you like to retry?"
+            ).ask()
+            if not answer:
+                raise e
 
 
 async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
@@ -585,9 +606,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    _write_stories_to_file(story_path, events, domain)
-    _write_nlu_to_file(nlu_path, events)
-    _write_domain_to_file(domain_path, events, domain)
+    _retry_on_error(_write_stories_to_file, story_path, events, domain)
+    _retry_on_error(_write_nlu_to_file, nlu_path, events)
+    _retry_on_error(_write_domain_to_file, domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -677,6 +698,8 @@ async def _request_action_from_user(
 
 
 def _request_export_info() -> Tuple[Text, Text, Text]:
+    import rasa.shared.data
+
     """Request file path and export stories & nlu data to that path"""
 
     # export training data and quit
@@ -686,8 +709,10 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                [".md"],
-                "Please provide a valid export path for the stories, e.g. 'stories.md'.",
+                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS
+                + rasa.shared.data.YAML_FILE_EXTENSIONS,
+                "Please provide a valid export path for the stories, "
+                "e.g. 'stories.yml'.",
             ),
         ),
         export_nlu=questionary.text(
@@ -695,8 +720,9 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
             validate=io_utils.file_type_validator(
-                [".md", ".json"],
-                "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
+                list(rasa.shared.data.TRAINING_DATA_EXTENSIONS),
+                "Please provide a valid export path for the NLU data, "
+                "e.g. 'nlu.yml'.",
             ),
         ),
         export_domain=questionary.text(
@@ -704,8 +730,9 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will be overwritten)",
             default=PATHS["domain"],
             validate=io_utils.file_type_validator(
-                [".yml", ".yaml"],
-                "Please provide a valid export path for the domain file, e.g. 'domain.yml'.",
+                rasa.shared.data.YAML_FILE_EXTENSIONS,
+                "Please provide a valid export path for the domain file, "
+                "e.g. 'domain.yml'.",
             ),
         ),
     )
@@ -744,7 +771,7 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
 
-    import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
+    import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
     messages = []
 
@@ -772,20 +799,38 @@ def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        YAMLStoryReader,
+    )
+    from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+        YAMLStoryWriter,
+    )
+    from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
+        MarkdownStoryWriter,
+    )
 
     sub_conversations = _split_conversation_at_restarts(events)
 
     io_utils.create_path(export_story_path)
 
+    if rasa.shared.data.is_likely_yaml_file(export_story_path):
+        writer = YAMLStoryWriter()
+    else:
+        writer = MarkdownStoryWriter()
+
+    should_append_stories = False
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
+        should_append_stories = True
     else:
         append_write = "w"  # make a new file if not
 
-    with open(export_story_path, append_write, encoding=io_utils.DEFAULT_ENCODING) as f:
+    with open(
+        export_story_path, append_write, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+    ) as f:
         i = 1
         for conversation in sub_conversations:
-            parsed_events = rasa.core.events.deserialise_events(conversation)
+            parsed_events = rasa.shared.core.events.deserialise_events(conversation)
             tracker = DialogueStateTracker.from_events(
                 f"interactive_story_{i}", evts=parsed_events, slots=domain.slots
             )
@@ -794,7 +839,14 @@ def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
+                f.write(
+                    "\n"
+                    + tracker.export_stories(
+                        writer=writer,
+                        should_append_stories=should_append_stories,
+                        e2e=SAVE_IN_E2E,
+                    )
+                )
 
 
 def _filter_messages(msgs: List[Message]) -> List[Message]:
@@ -802,14 +854,14 @@ def _filter_messages(msgs: List[Message]) -> List[Message]:
 
     filtered_messages = []
     for msg in msgs:
-        if not msg.text.startswith(INTENT_MESSAGE_PREFIX):
+        if not msg.get(TEXT).startswith(INTENT_MESSAGE_PREFIX):
             filtered_messages.append(msg)
     return filtered_messages
 
 
 def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> None:
     """Write the nlu data of the conversation_id to the file paths."""
-    from rasa.nlu.training_data import TrainingData
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
     msgs = _collect_messages(events)
     msgs = _filter_messages(msgs)
@@ -836,20 +888,18 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     else:
         stringified_training_data = nlu_data.nlu_as_json()
 
-    io_utils.write_text_file(stringified_training_data, export_nlu_path)
+    rasa.shared.utils.io.write_text_file(stringified_training_data, export_nlu_path)
 
 
 def _get_nlu_target_format(export_path: Text) -> Text:
-    from rasa import data
-
     guessed_format = loading.guess_format(export_path)
 
     if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
-        if data.is_likely_json_file(export_path):
+        if rasa.shared.data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif data.is_likely_markdown_file(export_path):
+        elif rasa.shared.data.is_likely_markdown_file(export_path):
             guessed_format = MARKDOWN
-        elif data.is_likely_yaml_file(export_path):
+        elif rasa.shared.data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
     return guessed_format
@@ -885,7 +935,7 @@ def _write_domain_to_file(
         {
             e["name"]
             for e in actions
-            if e["name"] not in default_action_names()
+            if e["name"] not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
             and e["name"] not in old_domain.form_names
         }
     )
@@ -1004,8 +1054,8 @@ async def _correct_wrong_action(
 def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check if the form got rejected with the most recent action name."""
     return (
-        tracker.get(ACTIVE_LOOP_KEY, {}).get("name")
-        and action_name != tracker[ACTIVE_LOOP_KEY]["name"]
+        tracker.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+        and action_name != tracker[ACTIVE_LOOP][LOOP_NAME]
         and action_name != ACTION_LISTEN_NAME
     )
 
@@ -1013,9 +1063,9 @@ def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
 def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check whether the form is called again after it was rejected."""
     return (
-        tracker.get(ACTIVE_LOOP_KEY, {}).get("rejected")
+        tracker.get(ACTIVE_LOOP, {}).get(LOOP_REJECTED)
         and tracker.get("latest_action_name") == ACTION_LISTEN_NAME
-        and action_name == tracker.get(ACTIVE_LOOP_KEY, {}).get("name")
+        and action_name == tracker.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
     )
 
 
@@ -1039,10 +1089,15 @@ async def _confirm_form_validation(
     if not validate_input:
         # notify form action to skip validation
         await send_event(
-            endpoint, conversation_id, {"event": "form_validation", "validate": False}
+            endpoint,
+            conversation_id,
+            {
+                "event": rasa.shared.core.events.LoopInterrupted.type_name,
+                LOOP_INTERRUPTED: True,
+            },
         )
 
-    elif not tracker.get(ACTIVE_LOOP_KEY, {}).get("validate"):
+    elif tracker.get(ACTIVE_LOOP, {}).get(LOOP_INTERRUPTED):
         # handle contradiction with learned behaviour
         warning_question = questionary.confirm(
             "ERROR: FormPolicy predicted no form validation "
@@ -1056,7 +1111,12 @@ async def _confirm_form_validation(
         await _ask_questions(warning_question, conversation_id, endpoint)
         # notify form action to validate an input
         await send_event(
-            endpoint, conversation_id, {"event": "form_validation", "validate": True}
+            endpoint,
+            conversation_id,
+            {
+                "event": rasa.shared.core.events.LoopInterrupted.type_name,
+                LOOP_INTERRUPTED: False,
+            },
         )
 
 
@@ -1094,7 +1154,7 @@ async def _validate_action(
             conversation_id,
             {
                 "event": "action_execution_rejected",
-                "name": tracker[ACTIVE_LOOP_KEY]["name"],
+                LOOP_NAME: tracker[ACTIVE_LOOP][LOOP_NAME],
             },
         )
 
@@ -1113,7 +1173,7 @@ async def _validate_action(
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
-    from rasa.nlu.training_data.formats.readerwriter import TrainingDataWriter
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data["text"]
@@ -1216,7 +1276,7 @@ async def _correct_entities(
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
-    from rasa.nlu.training_data import entities_parser
+    from rasa.shared.nlu.training_data import entities_parser
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)
@@ -1265,7 +1325,7 @@ async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -
 
     message = await _ask_questions(question, conversation_id, endpoint, lambda a: not a)
 
-    if message == (INTENT_MESSAGE_PREFIX + constants.USER_INTENT_RESTART):
+    if message == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
         raise RestartConversation()
 
     await send_message(endpoint, conversation_id, message)
@@ -1324,7 +1384,7 @@ async def _fetch_events(
             events = tracker.get("events", [])
 
             for conversation in _split_conversation_at_restarts(events):
-                parsed_events = rasa.core.events.deserialise_events(conversation)
+                parsed_events = rasa.shared.core.events.deserialise_events(conversation)
                 event_sequences.append(parsed_events)
         else:
             event_sequences.append(conversation_id)
@@ -1376,7 +1436,7 @@ def _print_help(skip_visualization: bool) -> None:
     else:
         visualization_help = ""
 
-    rasa.cli.utils.print_success(
+    rasa.shared.utils.cli.print_success(
         f"Bot loaded. {visualization_help}\n"
         f"Type a message and press enter "
         f"(press 'Ctr-c' to exit)."
@@ -1386,7 +1446,7 @@ def _print_help(skip_visualization: bool) -> None:
 async def record_messages(
     endpoint: EndpointConfig,
     file_importer: TrainingDataImporter,
-    conversation_id: Text = UserMessage.DEFAULT_SENDER_ID,
+    conversation_id: Text = DEFAULT_SENDER_ID,
     max_message_limit: Optional[int] = None,
     skip_visualization: bool = False,
 ) -> None:
@@ -1478,7 +1538,7 @@ async def _get_tracker_events_to_plot(
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
-        rasa.cli.utils.print_warning(
+        rasa.shared.utils.cli.print_warning(
             f"You have {number_of_trackers} different story paths in "
             f"your training data. Visualizing them is very resource "
             f"consuming. Hence, the visualization will only show the stories "
@@ -1573,7 +1633,9 @@ def start_visualization(image_path: Text, port: int) -> None:
 async def train_agent_on_start(
     args, endpoints, additional_arguments, app, loop
 ) -> None:
-    _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or args.get("nlu"))
+    _interpreter = rasa.core.interpreter.create_interpreter(
+        endpoints.nlu or args.get("nlu")
+    )
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
@@ -1659,6 +1721,8 @@ def run_interactive_learning(
         partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
         "before_server_start",
     )
+
+    telemetry.track_interactive_learning_start(skip_visualization, SAVE_IN_E2E)
 
     _serve_application(app, file_importer, skip_visualization, conversation_id, port)
 

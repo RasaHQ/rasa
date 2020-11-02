@@ -5,8 +5,9 @@ Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope."""
 
 import logging
+import traceback
 import typing
-from typing import Any, Dict, List, Optional, Text, Type
+from typing import Any, Dict, Optional, Text, Type
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
@@ -14,7 +15,7 @@ from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifi
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
+from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -41,7 +42,11 @@ from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.utils.common import class_from_module_path, raise_warning
+from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+import rasa.utils.io
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -68,7 +73,7 @@ component_classes = [
     SpacyEntityExtractor,
     MitieEntityExtractor,
     CRFEntityExtractor,
-    DucklingHTTPExtractor,
+    DucklingEntityExtractor,
     EntitySynonymMapper,
     RegexEntityExtractor,
     # featurizers
@@ -93,38 +98,63 @@ component_classes = [
 registered_components = {c.name: c for c in component_classes}
 
 
+class ComponentNotFoundException(ModuleNotFoundError, RasaException):
+    """Raised if a module referenced by name can not be imported."""
+
+    pass
+
+
 def get_component_class(component_name: Text) -> Type["Component"]:
     """Resolve component name to a registered components class."""
 
+    if component_name == "DucklingHTTPExtractor":
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The component 'DucklingHTTPExtractor' has been renamed to "
+            "'DucklingEntityExtractor'. Update your pipeline to use "
+            "'DucklingEntityExtractor'.",
+            docs=DOCS_URL_COMPONENTS,
+        )
+        component_name = "DucklingEntityExtractor"
+
     if component_name not in registered_components:
         try:
-            return class_from_module_path(component_name)
+            return rasa.shared.utils.common.class_from_module_path(component_name)
 
-        except AttributeError:
-            # when component_name is a path to a class but the path does not contain
-            # that class
-            module_name, _, class_name = component_name.rpartition(".")
-            raise Exception(
-                f"Failed to find class '{class_name}' in module '{module_name}'.\n"
-            )
-        except ImportError as e:
+        except (ImportError, AttributeError) as e:
             # when component_name is a path to a class but that path is invalid or
             # when component_name is a class name and not part of old_style_names
 
             is_path = "." in component_name
 
             if is_path:
-                module_name, _, _ = component_name.rpartition(".")
-                exception_message = f"Failed to find module '{module_name}'. \n{e}"
+                module_name, _, class_name = component_name.rpartition(".")
+                if isinstance(e, ImportError):
+                    exception_message = f"Failed to find module '{module_name}'."
+                else:
+                    # when component_name is a path to a class but the path does
+                    # not contain that class
+                    exception_message = (
+                        f"The class '{class_name}' could not be "
+                        f"found in module '{module_name}'."
+                    )
             else:
                 exception_message = (
-                    f"Cannot find class '{component_name}' from global namespace. "
+                    f"Cannot find class '{component_name}' in global namespace. "
                     f"Please check that there is no typo in the class "
                     f"name and that you have imported the class into the global "
                     f"namespace."
                 )
 
-            raise ModuleNotFoundError(exception_message)
+            raise ComponentNotFoundException(
+                f"Failed to load the component "
+                f"'{component_name}'. "
+                f"{exception_message} Either your "
+                f"pipeline configuration contains an error "
+                f"or the module you are trying to import "
+                f"is broken (e.g. the module is trying "
+                f"to import a package that is not "
+                f"installed). {traceback.format_exc()}"
+            )
 
     return registered_components[component_name]
 

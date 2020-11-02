@@ -1,10 +1,10 @@
 # Configuration for Rasa NLU.
-# https://rasa.com/docs/rasa/nlu/components/
+# https://rasa.com/docs/rasa/components
 language: en
 pipeline:
   - name: KeywordIntentClassifier
 
 # Configuration for Rasa Core.
-# https://rasa.com/docs/rasa/core/policies/
+# https://rasa.com/docs/rasa/policies
 policies:
   - name: MemoizationPolicy

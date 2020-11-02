@@ -7,9 +7,7 @@ from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.training_data import Message
-
-from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 

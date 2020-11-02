@@ -1,34 +1,30 @@
 import logging
-import json
-import os
-import typing
-from typing import Any, List, Text, Optional
+from typing import Any, List, Text, Optional, Dict, TYPE_CHECKING
 
-from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
+import rasa.shared.utils.common
 import rasa.utils.io
-from rasa.nlu.constants import INTENT_NAME_KEY
+import rasa.shared.utils.io
+from rasa.shared.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils import common as common_utils
-
-from rasa.core.actions.action import (
-    ACTION_BACK_NAME,
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_SESSION_START_NAME,
-)
-from rasa.core.constants import (
+from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
     USER_INTENT_SESSION_START,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_BACK_NAME,
 )
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import ActionExecuted
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
-from rasa.utils.common import raise_warning
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
 
@@ -52,7 +48,7 @@ class MappingPolicy(Policy):
 
         super().__init__(priority=priority)
 
-        common_utils.raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{MappingPolicy.__name__}' is deprecated and will be removed in "
             "the future. It is recommended to use the 'RulePolicy' instead.",
             docs=DOCS_URL_MIGRATION_GUIDE,
@@ -84,7 +80,7 @@ class MappingPolicy(Policy):
 
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -97,7 +93,7 @@ class MappingPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> List[float]:
         """Predicts the assigned action.
@@ -123,7 +119,7 @@ class MappingPolicy(Policy):
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    raise_warning(
+                    rasa.shared.utils.io.raise_warning(
                         f"MappingPolicy tried to predict unknown "
                         f"action '{action}'. Make sure all mapped actions are "
                         f"listed in the domain.",
@@ -174,22 +170,9 @@ class MappingPolicy(Policy):
             )
         return result
 
-    def persist(self, path: Text) -> None:
-        """Only persists the priority."""
-
-        config_file = os.path.join(path, "mapping_policy.json")
-        meta = {"priority": self.priority}
-        rasa.utils.io.create_directory_for_file(config_file)
-        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
+    def _metadata(self) -> Dict[Text, Any]:
+        return {"priority": self.priority}
 
     @classmethod
-    def load(cls, path: Text) -> "MappingPolicy":
-        """Returns the class with the configured priority."""
-
-        meta = {}
-        if os.path.exists(path):
-            meta_path = os.path.join(path, "mapping_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
-
-        return cls(**meta)
+    def _metadata_filename(cls) -> Text:
+        return "mapping_policy.json"

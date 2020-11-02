@@ -7,7 +7,9 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, Dict, Any, List, Callable, Awaitable, Optional
 
-from rasa.constants import DOCS_URL_CONNECTORS
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+from rasa.shared.constants import DOCS_URL_CONNECTORS
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
 
@@ -132,7 +134,7 @@ class MattermostInput(InputChannel):
 
         # pytype: disable=attribute-error
         if credentials.get("pw") is not None or credentials.get("user") is not None:
-            common_utils.raise_deprecation_warning(
+            rasa.shared.utils.io.raise_deprecation_warning(
                 "Mattermost recently switched to bot accounts. 'user' and 'pw' "
                 "should not be used anymore, you should rather convert your "
                 "account to a bot account and use a token. Password based "

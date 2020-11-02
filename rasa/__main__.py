@@ -1,27 +1,33 @@
-import sys
 import argparse
 import logging
+import os
 import platform
+import sys
 
-import rasa.utils.io
+from rasa_sdk import __version__ as rasa_sdk_version
+
 from rasa import version
 from rasa.cli import (
-    scaffold,
-    run,
-    train,
-    interactive,
-    shell,
-    test,
-    visualize,
     data,
-    x,
     export,
+    interactive,
+    run,
+    scaffold,
+    shell,
+    telemetry,
+    test,
+    train,
+    visualize,
+    x,
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
-from rasa.utils.common import set_log_level, set_log_and_warnings_filters
+from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.cli import print_error
+import rasa.telemetry
+from rasa.utils.common import set_log_and_warnings_filters, set_log_level
+import rasa.utils.io
 import rasa.utils.tensorflow.environment as tf_env
-from rasa_sdk import __version__ as rasa_sdk_version
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +62,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     shell.add_subparser(subparsers, parents=parent_parsers)
     train.add_subparser(subparsers, parents=parent_parsers)
     interactive.add_subparser(subparsers, parents=parent_parsers)
+    telemetry.add_subparser(subparsers, parents=parent_parsers)
     test.add_subparser(subparsers, parents=parent_parsers)
     visualize.add_subparser(subparsers, parents=parent_parsers)
     data.add_subparser(subparsers, parents=parent_parsers)
@@ -86,8 +93,6 @@ def print_version() -> None:
 
 def main() -> None:
     # Running as standalone python application
-    import os
-    import sys
 
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
@@ -103,17 +108,26 @@ def main() -> None:
     # insert current path in syspath so custom modules are found
     sys.path.insert(1, os.getcwd())
 
-    if hasattr(cmdline_arguments, "func"):
-        rasa.utils.io.configure_colored_logging(log_level)
-        set_log_and_warnings_filters()
-        cmdline_arguments.func(cmdline_arguments)
-    elif hasattr(cmdline_arguments, "version"):
-        print_version()
-    else:
-        # user has not provided a subcommand, let's print the help
-        logger.error("No command specified.")
-        arg_parser.print_help()
-        exit(1)
+    try:
+        if hasattr(cmdline_arguments, "func"):
+            rasa.utils.io.configure_colored_logging(log_level)
+            set_log_and_warnings_filters()
+            rasa.telemetry.initialize_error_reporting()
+            cmdline_arguments.func(cmdline_arguments)
+        elif hasattr(cmdline_arguments, "version"):
+            print_version()
+        else:
+            # user has not provided a subcommand, let's print the help
+            logger.error("No command specified.")
+            arg_parser.print_help()
+            sys.exit(1)
+    except RasaException as e:
+        # these are exceptions we expect to happen (e.g. invalid training data format)
+        # it doesn't make sense to print a stacktrace for these if we are not in
+        # debug mode
+        logger.debug("Failed to run CLI command due to an exception.", exc_info=e)
+        print_error(f"{e.__class__.__name__}: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -1,16 +1,19 @@
 import logging
 from typing import Any, List, Type, Text, Dict, Union, Tuple, Optional
 
-from rasa.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.core.constants import (
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+)
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component
-from rasa.nlu.training_data import Message
-from rasa.nlu.constants import (
-    INTENT_RANKING_KEY,
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import (
     INTENT,
-    INTENT_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 
 THRESHOLD_KEY = "threshold"
@@ -19,7 +22,7 @@ AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
 logger = logging.getLogger(__name__)
 
 
-class FallbackClassifier(Component):
+class FallbackClassifier(IntentClassifier):
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
@@ -28,7 +31,7 @@ class FallbackClassifier(Component):
         THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_THRESHOLD,
         # If the confidence scores for the top two intent predictions are closer than
         # `AMBIGUITY_THRESHOLD_KEY`, then `FALLBACK_INTENT_NAME ` is predicted.
-        AMBIGUITY_THRESHOLD_KEY: 0.1,
+        AMBIGUITY_THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
     }
 
     @classmethod
@@ -48,7 +51,8 @@ class FallbackClassifier(Component):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to
+            process.
 
         """
 
@@ -56,6 +60,7 @@ class FallbackClassifier(Component):
             return
 
         message.data[INTENT] = _fallback_intent()
+        message.data.setdefault(INTENT_RANKING_KEY, [])
         message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent())
 
     def _should_fallback(self, message: Message) -> bool:
@@ -92,7 +97,7 @@ class FallbackClassifier(Component):
         return False
 
     def _nlu_confidence_below_threshold(self, message: Message) -> Tuple[bool, float]:
-        nlu_confidence = message.data[INTENT].get(INTENT_CONFIDENCE_KEY)
+        nlu_confidence = message.data[INTENT].get(PREDICTED_CONFIDENCE_KEY)
         return nlu_confidence < self.component_config[THRESHOLD_KEY], nlu_confidence
 
     def _nlu_prediction_ambiguous(
@@ -100,8 +105,8 @@ class FallbackClassifier(Component):
     ) -> Tuple[bool, Optional[float]]:
         intents = message.data.get(INTENT_RANKING_KEY, [])
         if len(intents) >= 2:
-            first_confidence = intents[0].get(INTENT_CONFIDENCE_KEY, 1.0)
-            second_confidence = intents[1].get(INTENT_CONFIDENCE_KEY, 1.0)
+            first_confidence = intents[0].get(PREDICTED_CONFIDENCE_KEY, 1.0)
+            second_confidence = intents[1].get(PREDICTED_CONFIDENCE_KEY, 1.0)
             difference = first_confidence - second_confidence
             return (
                 difference < self.component_config[AMBIGUITY_THRESHOLD_KEY],
@@ -114,5 +119,5 @@ def _fallback_intent() -> Dict[Text, Union[Text, float]]:
     return {
         INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
         # TODO: Re-consider how we represent the confidence here
-        INTENT_CONFIDENCE_KEY: 1.0,
+        PREDICTED_CONFIDENCE_KEY: 1.0,
     }

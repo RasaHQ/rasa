@@ -16,6 +16,13 @@ on:
 #               RasaHQ/rasa on pypi (account credentials in 1password)
 # - DOCKERHUB_PASSWORD: password for an account with write access to the rasa
 #                       repo on hub.docker.com. used to pull and upload containers
+# - RASA_OSS_TELEMETRY_WRITE_KEY: key to write to segment. Used to report telemetry.
+#                                 The key will be added to the distributions
+# - RASA_OSS_EXCEPTION_WRITE_KEY: key to write to sentry. Used to report exceptions.
+#                                 The key will be added to the distributions.
+#                                 Key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
+# - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
+#                      created at https://sentry.io/settings/account/api/auth-tokens/
 
 env:
   # needed to fix issues with boto during testing:
@@ -132,10 +139,21 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
+    - name: Set up virtual environment
+      # Poetry on Windows cannot pick up the virtual environments directory properly,
+      # and it creates a new one every time the pipeline runs.
+      # We want to  allow Poetry to create a venv directory if it doesn't
+      # exist, but also pick it up if it's already there.
+      # This step solves this problem — it tells poetry to always use `.venv` directory inside
+      # the project itself, which also makes it easier for us to determine the correct directory
+      # that needs to be cached.
+      run: |
+        poetry config virtualenvs.in-project true
+
     - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
-        path: ~/.cache/pypoetry/virtualenvs
+        path: .venv
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
@@ -149,26 +167,29 @@ jobs:
 
     - name: Install Dependencies (Windows) 📦
       if: matrix.os == 'windows-latest'
+      # Restoring cache doesn't work properly on Windows due to symlinks.
+      # We create symlinks for spacy models, that's why we need to clean them up
+      # before caching the dependencies directory.
+      # More information: https://github.com/actions/cache/issues/120
       run: |
-        make install-full-windows
+        $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
+        if (Test-Path $spacy_data_dir) {
+          Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+          Remove-Item -Force -Recurse $spacy_data_dir
+          New-Item -Path $spacy_data_dir -Type Directory
+        }
+        make install-full
         make prepare-tests-windows
 
     - name: Test Code 🔍
-      # We don't test Windows code with Python 3.8 because there is an issue
-      # with python-crc32c library — CFFI is not supported by Github Runners (the corresponding
-      # C++ Build Tools are not installed on their machines). In this case, python-crc32c
-      # should use a pure Python implementation of CFFI but Google made a mistake with
-      # the order of arguments in their code, and their solution doesn't work.
-      # This PR fixes the issue but it's not merged yet:
-      # https://github.com/googleapis/python-crc32c/pull/27
-      if: matrix.os != 'windows-latest' || matrix.python-version != '3.8'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
-      run: make test
+      run: |
+        make test
 
     - name: Send Coverage Report 📊
-      if: matrix.python-version == 3.6
+      if: matrix.python-version == 3.6 && matrix.os != 'windows-latest'
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
@@ -209,6 +230,14 @@ jobs:
 
     - name: Pull latest${{ matrix.image.tag_ext }} Docker image for caching
       run: docker pull rasa/rasa:latest${{ matrix.image.tag_ext }} || true
+
+    - name: Copy Segment write key to the package
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+      env:
+        RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+        RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+      run: |
+        ./scripts/write_keys_file.sh
 
     - name: Build latest${{ matrix.image.tag_ext }} Docker image
       run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
@@ -253,6 +282,13 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
+    - name: Copy Segment write key to the package
+      env:
+        RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+        RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+      run: |
+        ./scripts/write_keys_file.sh
+
     - name: Build ⚒️ Distributions
       run: poetry build
 
@@ -261,6 +297,18 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
+
+    - name: Notify Sentry about the release
+      env:
+        GITHUB_TAG: ${{ github.ref }}
+        SENTRY_ORG: rasahq
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      run: |
+        curl -sL https://sentry.io/get-cli/ | bash
+        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+        sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
+        sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
+        sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
     - name: Notify Slack & Publish Release Notes 🗞
       env:

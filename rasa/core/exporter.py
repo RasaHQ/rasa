@@ -6,11 +6,12 @@ from typing import Text, Optional, List, Set, Dict, Any
 from tqdm import tqdm
 
 import rasa.cli.utils as cli_utils
+import rasa.shared.utils.cli
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import EventVerbosity
+from rasa.shared.core.trackers import EventVerbosity
 from rasa.exceptions import (
     NoEventsToMigrateError,
     NoConversationsInTrackerStoreError,
@@ -70,7 +71,7 @@ class Exporter:
         """
         events = self._fetch_events_within_time_range()
 
-        cli_utils.print_info(
+        rasa.shared.utils.cli.print_info(
             f"Selected {len(events)} events for publishing. Ready to go 🚀"
         )
 
@@ -160,7 +161,7 @@ class Exporter:
             set(self.requested_conversation_ids) - conversation_ids_in_tracker_store
         )
         if missing_ids_in_tracker_store:
-            cli_utils.print_warning(
+            rasa.shared.utils.cli.print_warning(
                 f"Could not find the following requested "
                 f"conversation IDs in connected tracker store: "
                 f"{', '.join(sorted(missing_ids_in_tracker_store))}"
@@ -206,7 +207,7 @@ class Exporter:
         """
         conversation_ids_to_process = self._get_conversation_ids_to_process()
 
-        cli_utils.print_info(
+        rasa.shared.utils.cli.print_info(
             f"Fetching events for {len(conversation_ids_to_process)} "
             f"conversation IDs:"
         )

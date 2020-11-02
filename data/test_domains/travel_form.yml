@@ -11,7 +11,8 @@ slots:
   GPE_destination:
     type: text
   requested_slot:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
 
 responses:
   utter_ask_GPE_origin:

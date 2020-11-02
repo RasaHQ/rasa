@@ -6,8 +6,8 @@ import os
 from async_generator import asynccontextmanager
 from typing import Text, Union, Optional, AsyncGenerator
 
+import rasa.shared.utils.common
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.utils import common
 from rasa.core.lock import TicketLock
 from rasa.utils.endpoints import EndpointConfig
 
@@ -27,8 +27,8 @@ DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX = "lock:"
 class LockError(Exception):
     """Exception that is raised when a lock cannot be acquired.
 
-     Attributes:
-          message (str): explanation of which `conversation_id` raised the error
+    Attributes:
+         message (str): explanation of which `conversation_id` raised the error
     """
 
     pass
@@ -309,7 +309,9 @@ def _load_from_module_name_in_endpoint_config(
     """Retrieve a `LockStore` based on its class name."""
 
     try:
-        lock_store_class = common.class_from_module_path(endpoint_config.type)
+        lock_store_class = rasa.shared.utils.common.class_from_module_path(
+            endpoint_config.type
+        )
         return lock_store_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
         raise Exception(

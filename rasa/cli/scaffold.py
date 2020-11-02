@@ -1,26 +1,36 @@
 import argparse
 import os
+import sys
 from typing import List, Text
 
+from rasa import telemetry
+from rasa.cli import SubParsersAction
 import rasa.train
 from rasa.cli.shell import shell
-from rasa.cli.utils import create_output_path, print_success, print_error_and_exit
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATH,
+from rasa.cli.utils import create_output_path
+from rasa.shared.utils.cli import print_success, print_error_and_exit
+from rasa.shared.constants import (
     DOCS_BASE_URL,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
 )
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all init parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     scaffold_parser = subparsers.add_parser(
         "init",
         parents=parents,
-        help="Creates a new project, with example training data, actions, and config files.",
+        help="Creates a new project, with example training data, "
+        "actions, and config files.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     scaffold_parser.add_argument(
@@ -57,7 +67,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
         args.model = rasa.train(domain, config, training_files, output)
 
-        print_run_or_instructions(args, path)
+        print_run_or_instructions(args)
 
     else:
         print_success(
@@ -66,7 +76,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
         )
 
 
-def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
+def print_run_or_instructions(args: argparse.Namespace) -> None:
     from rasa.core import constants
     import questionary
 
@@ -132,7 +142,7 @@ def scaffold_path() -> Text:
 
 def print_cancel() -> None:
     print_success("Ok. You can continue setting up by running 'rasa init' 🙋🏽‍♀️")
-    exit(0)
+    sys.exit(0)
 
 
 def _ask_create_path(path: Text) -> None:
@@ -145,7 +155,7 @@ def _ask_create_path(path: Text) -> None:
         os.makedirs(path)
     else:
         print_success("Ok. You can continue setting up by running " "'rasa init' 🙋🏽‍♀️")
-        exit(0)
+        sys.exit(0)
 
 
 def _ask_overwrite(path: Text) -> None:
@@ -202,5 +212,7 @@ def run(args: argparse.Namespace) -> None:
 
     if not args.no_prompt and len(os.listdir(path)) > 0:
         _ask_overwrite(path)
+
+    telemetry.track_project_init(path)
 
     init_project(args, path)

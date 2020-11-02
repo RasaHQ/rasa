@@ -1,13 +1,10 @@
-from pep440_version_utils import Version
-
 import pytest
 
-from rasa.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.validator import Validator, KEY_TRAINING_DATA_FORMAT_VERSION
-from rasa.importers.rasa import RasaFileImporter
+import rasa.shared.utils.io
+from rasa.validator import Validator
+from rasa.shared.importers.rasa import RasaFileImporter
 from tests.conftest import DEFAULT_NLU_DATA
 from tests.core.conftest import DEFAULT_STORIES_FILE
-import rasa.utils.io as io_utils
 
 
 async def test_verify_intents_does_not_fail_on_valid_data():
@@ -36,6 +33,18 @@ async def test_verify_valid_utterances():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_utterances()
+
+
+async def test_verify_valid_responses():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/selectors.yml",
+        training_data_paths=[
+            "data/test_selectors/nlu.yml",
+            "data/test_selectors/stories.yml",
+        ],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_utterances_in_stories()
 
 
 async def test_verify_story_structure():
@@ -68,7 +77,7 @@ async def test_verify_bad_story_structure_ignore_warnings():
 async def test_fail_on_invalid_utterances(tmpdir):
     # domain and stories are from different domain and should produce warnings
     invalid_domain = str(tmpdir / "invalid_domain.yml")
-    io_utils.write_yaml(
+    rasa.shared.utils.io.write_yaml(
         {
             "responses": {"utter_greet": [{"text": "hello"}]},
             "actions": [
@@ -135,39 +144,3 @@ async def test_verify_there_is_not_example_repetition_in_intents():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_example_repetition_in_intents(False)
-
-
-async def test_future_training_data_format_version_not_compatible():
-
-    next_minor = str(Version(LATEST_TRAINING_DATA_FORMAT_VERSION).next_minor())
-
-    incompatible_version = {KEY_TRAINING_DATA_FORMAT_VERSION: next_minor}
-
-    with pytest.warns(UserWarning):
-        assert not Validator.validate_training_data_format_version(
-            incompatible_version, ""
-        )
-
-
-async def test_compatible_training_data_format_version():
-
-    prev_major = str(Version("1.0"))
-
-    compatible_version_1 = {KEY_TRAINING_DATA_FORMAT_VERSION: prev_major}
-    compatible_version_2 = {
-        KEY_TRAINING_DATA_FORMAT_VERSION: LATEST_TRAINING_DATA_FORMAT_VERSION
-    }
-
-    for version in [compatible_version_1, compatible_version_2]:
-        with pytest.warns(None):
-            assert Validator.validate_training_data_format_version(version, "")
-
-
-async def test_invalid_training_data_format_version_warns():
-
-    invalid_version_1 = {KEY_TRAINING_DATA_FORMAT_VERSION: 2.0}
-    invalid_version_2 = {KEY_TRAINING_DATA_FORMAT_VERSION: "Rasa"}
-
-    for version in [invalid_version_1, invalid_version_2]:
-        with pytest.warns(UserWarning):
-            assert Validator.validate_training_data_format_version(version, "")

@@ -19,34 +19,40 @@ entities:
 
 slots:
   cuisine:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
     auto_fill: false
   num_people:
-    type: unfeaturized
+    type: float
+    influence_conversation: false
     auto_fill: false
   outdoor_seating:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
     auto_fill: false
   preferences:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
     auto_fill: false
   feedback:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
     auto_fill: false
   requested_slot:
-    type: unfeaturized
+    type: text
+    influence_conversation: false
 
 responses:
   utter_ask_cuisine:
-    - text: "what cuisine?"
+    - text: "What cuisine?"
   utter_ask_num_people:
-    - text: "how many people?"
+    - text: "How many people?"
   utter_ask_outdoor_seating:
-    - text: "do you want to seat outside?"
+    - text: "Do you want to sit outside?"
   utter_ask_preferences:
-    - text: "please provide additional preferences"
+    - text: "Please provide additional preferences"
   utter_ask_feedback:
-    - text: "please give your feedback on your experience so far"
+    - text: "Please give your feedback on your experience so far"
   utter_submit:
   - text: "All done!"
   utter_slots_values:
@@ -57,19 +63,19 @@ responses:
              - preferences: {preferences}\n
              - feedback: {feedback}"
   utter_noworries:
-    - text: "you are welcome :)"
+    - text: "You are welcome :)"
   utter_chitchat:
     - text: "chitchat"
   utter_ask_continue:
-    - text: "do you want to continue?"
+    - text: "Do you want to continue?"
   utter_wrong_cuisine:
-    - text: "cuisine type is not in the database, please try again"
+    - text: "Cuisine type is not in the database, please try again"
   utter_wrong_num_people:
-    - text: "number of people should be a positive integer, please try again"
+    - text: "Number of people should be a positive integer, please try again"
   utter_wrong_outdoor_seating:
-    - text: "could not convert input to boolean value, please try again"
+    - text: "Could not convert input to boolean value, please try again"
   utter_default:
-    - text: "sorry, I didn't understand you, please try input something else"
+    - text: "Sorry, I didn't understand you, please try input something else"
   utter_greet:
     - text: "Hello! I am restaurant search assistant! How can I help?"
   utter_iamabot:
@@ -78,7 +84,7 @@ responses:
     - text: "restarted"
 
 forms:
-  - restaurant_form:
+  restaurant_form:
       cuisine:
         - type: from_entity
           entity: cuisine

@@ -2,10 +2,8 @@ import json
 import logging
 from typing import Optional
 
-from rasa.constants import DOCS_URL_EVENT_BROKERS
 from rasa.core.brokers.broker import EventBroker
-from rasa.utils.common import raise_warning
-from rasa.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 

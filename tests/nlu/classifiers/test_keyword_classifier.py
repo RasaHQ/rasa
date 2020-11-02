@@ -5,15 +5,16 @@ from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifi
 
 # TODO: add tests for other classifers
 # from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-from rasa.nlu.training_data.formats.rasa import RasaReader
-from rasa.nlu.training_data import load_data
-from rasa.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.training_data.formats.rasa import RasaReader
+import rasa.shared.nlu.training_data.loading
+from rasa.shared.nlu.training_data.message import Message
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 @pytest.fixture(scope="module")
 def training_data():
-    return load_data(DEFAULT_DATA_PATH)
+    return rasa.shared.nlu.training_data.loading.load_data(DEFAULT_DATA_PATH)
 
 
 class ClassifierTestCollection:
@@ -97,7 +98,7 @@ class TestKeywordClassifier(ClassifierTestCollection):
         ],
     )
     def test_classification(self, trained_classifier, message, intent):
-        text = Message(message)
+        text = Message(data={TEXT: message})
         trained_classifier.process(text)
         assert text.get("intent").get("name", "NOT_CLASSIFIED") == intent
 

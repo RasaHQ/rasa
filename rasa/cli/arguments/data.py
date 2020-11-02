@@ -7,29 +7,32 @@ from rasa.cli.arguments.default_arguments import (
     add_data_param,
     add_domain_param,
 )
+from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
 
 
 def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
-    add_data_param(parser, required=True, default=None, data_type=data_type)
-
-    add_out_param(
-        parser,
-        required=True,
-        default=None,
-        help_text="File where to save training data in Rasa format.",
-    )
-
-    parser.add_argument("-l", "--language", default="en", help="Language of data.")
-
     parser.add_argument(
         "-f",
         "--format",
         required=True,
+        default="yaml",
         choices=["json", "md", "yaml"],
         help="Output format the training data should be converted into. "
         "Note: currently training data can be converted to 'yaml' format "
         "only from 'md' format",
     )
+
+    add_data_param(parser, required=True, data_type=data_type)
+
+    add_out_param(
+        parser,
+        required=True,
+        default=DEFAULT_CONVERTED_DATA_PATH,
+        help_text="File (for `json` and `md`) or existing path (for `yaml`) "
+        "where to save training data in Rasa format.",
+    )
+
+    parser.add_argument("-l", "--language", default="en", help="Language of data.")
 
 
 def set_split_arguments(parser: argparse.ArgumentParser):

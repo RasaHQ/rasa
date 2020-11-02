@@ -3,7 +3,7 @@ from typing import Text, Any, Dict, Optional
 
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
             "elements": {"type": ["array", "null"], "items": {"type": "object"}},
             "attachment": {"type": ["object", "null"]},
             "image": {"type": ["string", "null"]},
+            "custom": {"type": "object"},
         },
     }
 
@@ -124,6 +125,6 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                 "response from the NLG endpoint is valid. "
                 "For more information about the format please consult the "
                 "`nlg_response_format_spec` function from this same module: "
-                "https://github.com/RasaHQ/rasa/blob/master/rasa/core/nlg/callback.py#L12"
+                "https://github.com/RasaHQ/rasa/blob/master/rasa/core/nlg/callback.py"
             )
             raise e

@@ -4,7 +4,7 @@ import re
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
-from rasa.utils.common import raise_warning
+import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -38,11 +38,13 @@ class SlackBot(OutputChannel):
     def _get_text_from_slack_buttons(buttons: List[Dict]) -> Text:
         return "".join([b.get("title", "") for b in buttons])
 
-    async def _post_message(self, **kwargs: Any):
+    async def _post_message(self, channel, **kwargs: Any):
         if self.thread_id:
-            await self.client.chat_postMessage(**kwargs, thread_ts=self.thread_id)
+            await self.client.chat_postMessage(
+                channel=channel, **kwargs, thread_ts=self.thread_id
+            )
         else:
-            await self.client.chat_postMessage(**kwargs)
+            await self.client.chat_postMessage(channel=channel, **kwargs)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
@@ -83,7 +85,7 @@ class SlackBot(OutputChannel):
         text_block = {"type": "section", "text": {"type": "plain_text", "text": text}}
 
         if len(buttons) > 5:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Slack API currently allows only up to 5 buttons. "
                 "Since you added more than 5, slack will ignore all of them."
             )
@@ -109,9 +111,9 @@ class SlackBot(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        json_message.setdefault("channel", self.slack_channel or recipient_id)
+        channel = json_message.get("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
-        await self._post_message(**json_message)
+        await self._post_message(channel=channel, **json_message)
 
 
 class SlackInput(InputChannel):

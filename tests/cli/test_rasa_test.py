@@ -2,8 +2,9 @@ import os
 from shutil import copyfile
 
 from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
-from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
-from rasa.utils.io import list_files, write_yaml
+from rasa.constants import RESULTS_FILE
+from rasa.shared.constants import DEFAULT_RESULTS_PATH
+from rasa.shared.utils.io import list_files, write_yaml
 from typing import Callable
 from _pytest.pytester import RunResult
 
@@ -20,6 +21,17 @@ def test_test_core_no_plot(run_in_simple_project: Callable[..., RunResult]):
     assert not os.path.exists(f"results/{CONFUSION_MATRIX_STORIES_FILE}")
 
 
+def test_test_core_with_no_model(run_in_simple_project: Callable[..., RunResult]):
+    assert not os.path.exists("models")
+
+    output = run_in_simple_project("test", "core")
+
+    assert (
+        "No model provided. Please make sure to specify the model to test with"
+        in output.outlines[7]
+    )
+
+
 def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
     write_yaml(
         {
@@ -34,6 +46,31 @@ def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
     assert os.path.exists("results")
     assert os.path.exists("results/intent_histogram.png")
     assert os.path.exists("results/intent_confusion_matrix.png")
+
+
+def test_test_with_no_user_utterance(
+    run_in_simple_project_with_model: Callable[..., RunResult]
+):
+    write_yaml(
+        {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}],},
+        "config.yml",
+    )
+
+    simple_test_story_yaml = """
+stories:
+- story: happy path 1
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: mood_great
+  - action: utter_happy
+"""
+    with open("tests/test_story_no_utterance.yaml", "w") as f:
+        f.write(simple_test_story_yaml)
+
+    run_in_simple_project_with_model("test", "--fail-on-prediction-errors")
+    assert os.path.exists("results")
+    assert not os.path.exists("results/failed_test_stories.yml")
 
 
 def test_test_no_plot(run_in_simple_project: Callable[..., RunResult]):
@@ -169,9 +206,10 @@ def test_test_help(run: Callable[..., RunResult]):
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_test_nlu_help(run: Callable[..., RunResult]):
@@ -183,9 +221,10 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
                      [--successes] [--no-errors]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_test_core_help(run: Callable[..., RunResult]):
@@ -199,6 +238,7 @@ def test_test_core_help(run: Callable[..., RunResult]):
                       [--no-errors]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help

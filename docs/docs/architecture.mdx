@@ -11,9 +11,9 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 This diagram shows the basic steps of how an assistant built with Rasa
 responds to a message:
 
+import archImage from './architecture-img.png';
 
-
-<img alt="image" src={useBaseUrl("/img/rasa-message-processing.png")} />
+<Image img={archImage} caption="Rasa Open Source architecture" alt="A visual representation of the steps that follow."/>
 
 The steps are:
 
@@ -21,19 +21,13 @@ The steps are:
    converts it into a dictionary including the original text, the intent,
    and any entities that were found. This part is handled by NLU.
 
-2. The `Tracker` is the object which keeps track of conversation state.
-   It receives the info that a new message has come in.
+2. The message is passed from the `Interpreter` to the `Tracker`.
+   The `Tracker` is the object which keeps track of conversation state.
 
-3. The policy receives the current state of the tracker.
+3. The current state of the tracker is sent to each policy.
 
-4. The policy chooses which action to take next.
+4. Each policy chooses which action to take next.
 
 5. The chosen action is logged by the tracker.
 
 6. A response is sent to the user.
-
-:::note
-Messages can be text typed by a human, or structured input
-like a button press.
-
-:::

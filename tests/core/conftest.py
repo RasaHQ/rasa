@@ -5,22 +5,22 @@ from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Iterator
+from typing import Text, Generator
 
 import pytest
 
 import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
-from rasa.core.domain import Domain
-from rasa.core.events import ReminderScheduled, UserUttered, ActionExecuted
-from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
@@ -73,7 +73,7 @@ class CustomSlot(Slot):
 # noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
 class ExamplePolicy(Policy):
     def __init__(self, example_arg):
-        pass
+        super(ExamplePolicy, self).__init__()
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):
@@ -84,6 +84,10 @@ class MockedMongoTrackerStore(MongoTrackerStore):
 
         self.db = MongoClient().rasa
         self.collection = "conversations"
+
+        # skipcq: PYL-E1003
+        # Skip `MongoTrackerStore` constructor to avoid that actual Mongo connection
+        # is created.
         super(MongoTrackerStore, self).__init__(_domain, None)
 
 
@@ -91,14 +95,14 @@ class MockedMongoTrackerStore(MongoTrackerStore):
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
 @pytest.yield_fixture(scope="session")
-def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+def event_loop(request: Request) -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
 
 @pytest.fixture(scope="session")
-def loop():
+def loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop = rasa.utils.io.enable_async_loop_debugging(loop)
@@ -107,17 +111,17 @@ def loop():
 
 
 @pytest.fixture(scope="session")
-def default_domain_path():
+def default_domain_path() -> Text:
     return DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture(scope="session")
-def default_stories_file():
+def default_stories_file() -> Text:
     return DEFAULT_STORIES_FILE
 
 
 @pytest.fixture(scope="session")
-def default_stack_config():
+def default_stack_config() -> Text:
     return DEFAULT_STACK_CONFIG
 
 
@@ -126,11 +130,6 @@ def default_nlu_data():
     from tests.conftest import DEFAULT_NLU_DATA
 
     return DEFAULT_NLU_DATA
-
-
-@pytest.fixture(scope="session")
-def default_domain():
-    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
 
 @pytest.fixture
@@ -192,37 +191,20 @@ def tracker_with_six_scheduled_reminders(
 
 
 @pytest.fixture(scope="session")
-def moodbot_domain():
-    domain_path = os.path.join("examples", "moodbot", "domain.yml")
-    return Domain.load(domain_path)
-
-
-@pytest.fixture(scope="session")
-def moodbot_metadata(unpacked_trained_moodbot_path):
+def moodbot_metadata(unpacked_trained_moodbot_path: Text) -> PolicyEnsemble:
     return PolicyEnsemble.load_metadata(
         os.path.join(unpacked_trained_moodbot_path, "core")
     )
 
 
 @pytest.fixture
-def default_nlg(default_domain):
+def default_nlg(default_domain: Domain) -> NaturalLanguageGenerator:
     return TemplatedNaturalLanguageGenerator(default_domain.templates)
 
 
 @pytest.fixture
-def default_tracker(default_domain):
+def default_tracker(default_domain: Domain) -> DialogueStateTracker:
     return DialogueStateTracker("my-sender", default_domain.slots)
-
-
-@pytest.fixture(scope="session")
-def project() -> Text:
-    import tempfile
-    from rasa.cli.scaffold import create_initial_project
-
-    directory = tempfile.mkdtemp()
-    create_initial_project(directory)
-
-    return directory
 
 
 @pytest.fixture

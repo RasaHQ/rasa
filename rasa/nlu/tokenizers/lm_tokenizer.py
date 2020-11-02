@@ -3,7 +3,7 @@ from typing import Text, List, Any, Dict, Type
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 from rasa.nlu.constants import LANGUAGE_MODEL_DOCS, TOKENS
 

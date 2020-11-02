@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 import pytest
 import sys
@@ -15,13 +16,14 @@ from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
+import rasa.shared.utils.io
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
-from rasa.core.domain import SessionConfig
-from rasa.core.events import UserUttered
+from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
 from rasa.core.policies import Policy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
@@ -30,7 +32,6 @@ from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
-import rasa.utils.io as io_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STACK_CONFIG,
@@ -126,6 +127,11 @@ def default_domain_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def default_domain() -> Domain:
+    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+
+
+@pytest.fixture(scope="session")
 def default_stories_file() -> Text:
     return DEFAULT_STORIES_FILE
 
@@ -217,6 +223,12 @@ async def trained_nlu_model(
     return trained_nlu_model_path
 
 
+@pytest.fixture(scope="session")
+def moodbot_domain() -> Domain:
+    domain_path = os.path.join("examples", "moodbot", "domain.yml")
+    return Domain.load(domain_path)
+
+
 @pytest.fixture
 async def rasa_server(stack_agent: Agent) -> Sanic:
     app = server.create_app(agent=stack_agent)
@@ -252,6 +264,17 @@ async def rasa_server_without_api() -> Sanic:
     return app
 
 
+@pytest.fixture(scope="session")
+def project() -> Text:
+    import tempfile
+    from rasa.cli.scaffold import create_initial_project
+
+    directory = tempfile.mkdtemp()
+    create_initial_project(directory)
+
+    return directory
+
+
 def get_test_client(server: Sanic) -> SanicTestClient:
     test_client = server.test_client
     test_client.port = None
@@ -264,7 +287,7 @@ def write_endpoint_config_to_yaml(
     endpoints_path = path / endpoints_filename
 
     # write endpoints config to file
-    io_utils.write_yaml(data, endpoints_path)
+    rasa.shared.utils.io.write_yaml(data, endpoints_path)
     return endpoints_path
 
 

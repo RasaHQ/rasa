@@ -1,38 +1,34 @@
-import logging
 from collections import defaultdict
-from typing import List, Optional, Dict, Text, Tuple, Generator, NamedTuple
+import logging
+from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, Domain
-from rasa.core.events import ActionExecuted, Event
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.nlu.constants import INTENT
-from rasa.core.training.generator import TrackerWithCachedStates
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.domain import Domain, PREV_PREFIX, State
+from rasa.shared.core.events import ActionExecuted, Event
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.nlu.constants import INTENT
 
 logger = logging.getLogger(__name__)
 
 
 class StoryConflict:
-    """
-    Represents a conflict between two or more stories.
+    """Represents a conflict between two or more stories.
 
     Here, a conflict means that different actions are supposed to follow from
     the same dialogue state, which most policies cannot learn.
-
-    Attributes:
-        conflicting_actions: A list of actions that all follow from the same state.
-        conflict_has_prior_events: If `False`, then the conflict occurs without any
-                                   prior events (i.e. at the beginning of a dialogue).
     """
 
-    def __init__(self, sliced_states: List[Optional[Dict[Text, float]]]) -> None:
+    def __init__(self, sliced_states: List[State]) -> None:
         """
         Creates a `StoryConflict` from a given state.
 
         Args:
             sliced_states: The (sliced) dialogue state at which the conflict occurs.
         """
+
         self._sliced_states = sliced_states
+        # A list of actions that all follow from the same state.
         self._conflicting_actions = defaultdict(
             list
         )  # {"action": ["story_1", ...], ...}
@@ -72,7 +68,10 @@ class StoryConflict:
         # Describe where the conflict occurs in the stories
         last_event_type, last_event_name = _get_previous_event(self._sliced_states[-1])
         if last_event_type:
-            conflict_message = f"Story structure conflict after {last_event_type} '{last_event_name}':\n"
+            conflict_message = (
+                f"Story structure conflict after {last_event_type} "
+                f"'{last_event_name}':\n"
+            )
         else:
             conflict_message = "Story structure conflict at the beginning of stories:\n"
 
@@ -108,8 +107,9 @@ class StoryConflict:
             conflict_description = f"'{stories[0]}'"
         else:
             raise ValueError(
-                "An internal error occurred while trying to summarise a conflict without stories. "
-                "Please file a bug report at https://github.com/RasaHQ/rasa."
+                "An internal error occurred while trying to summarise a conflict "
+                "without stories. Please file a bug report at "
+                "https://github.com/RasaHQ/rasa."
             )
 
         return f"{action} predicted in {conflict_description}\n"
@@ -120,7 +120,7 @@ class TrackerEventStateTuple(NamedTuple):
 
     tracker: TrackerWithCachedStates
     event: Event
-    sliced_states: List[Dict[Text, float]]
+    sliced_states: List[State]
 
     @property
     def sliced_states_hash(self) -> int:
@@ -269,7 +269,6 @@ def _sliced_states_iterator(
     """
     for tracker in trackers:
         states = tracker.past_states(domain)
-        states = [dict(state) for state in states]
 
         idx = 0
         for event in tracker.events:
@@ -282,7 +281,7 @@ def _sliced_states_iterator(
 
 
 def _get_previous_event(
-    state: Optional[Dict[Text, float]]
+    state: Optional[State],
 ) -> Tuple[Optional[Text], Optional[Text]]:
     """Returns previous event type and name.
 

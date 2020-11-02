@@ -2,20 +2,20 @@ from typing import Any, Optional, Text, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    TEXT,
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     FEATURIZER_CLASS_ALIAS,
 )
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 
 
 class LanguageModelFeaturizer(DenseFeaturizer):
@@ -51,7 +51,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def process(self, message: Message, **kwargs: Any) -> None:
         """Sets the dense features from the language model doc to the incoming
         message."""
-        self._set_lm_features(message)
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            self._set_lm_features(message, attribute)
 
     def _set_lm_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the precomputed word vectors to the messages features."""

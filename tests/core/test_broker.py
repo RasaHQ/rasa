@@ -10,13 +10,14 @@ from _pytest.logging import LogCaptureFixture
 
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
-from rasa.core.events import Event, Restarted, SlotSet, UserUttered
+from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
@@ -129,7 +130,7 @@ def test_file_broker_from_config(tmp_path: Path):
           type: "file"
     """
     )
-    rasa.utils.io.write_text_file(endpoint_config, tmp_path / "endpoint.yml")
+    rasa.shared.utils.io.write_text_file(endpoint_config, tmp_path / "endpoint.yml")
 
     cfg = read_endpoint_config(str(tmp_path / "endpoint.yml"), "event_broker")
     actual = EventBroker.create(cfg)

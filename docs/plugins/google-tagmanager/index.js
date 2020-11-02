@@ -1,9 +1,9 @@
 const path = require('path');
 
 module.exports = function (context, options) {
-  const {siteConfig} = context;
-  const {themeConfig} = siteConfig;
-  const {gtm} = themeConfig || {};
+  const { siteConfig } = context;
+  const { themeConfig } = siteConfig;
+  const { gtm } = themeConfig || {};
 
   if (!gtm) {
     throw new Error(
@@ -11,7 +11,7 @@ module.exports = function (context, options) {
     );
   }
 
-  const {containerID} = gtm;
+  const { containerID } = gtm;
 
   if (!containerID) {
     throw new Error(
@@ -65,7 +65,7 @@ module.exports = function (context, options) {
           {
             tagName: 'noscript',
             innerHTML: `<iframe src="https://www.googletagmanager.com/ns.html?id=${containerID}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`,
-          }
+          },
         ],
         postBodyTags: [],
       };

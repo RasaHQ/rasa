@@ -3,8 +3,8 @@ from typing import List, Any, Text
 import pytest
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain
-from rasa.core.events import (
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     Event,
     ActionExecutionRejected,
     ActionExecuted,
@@ -12,7 +12,7 @@ from rasa.core.events import (
     SlotSet,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
 
 
 async def test_whole_loop():

@@ -24,6 +24,7 @@
     ]
   },
   "sender_id": "mysender",
+  "latest_action": {"action_name": "action_listen"},
   "latest_action_name": "action_listen",
   "active_loop": {},
   "paused": false,

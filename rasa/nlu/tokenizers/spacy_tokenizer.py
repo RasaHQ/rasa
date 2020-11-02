@@ -1,10 +1,10 @@
 import typing
-from typing import Text, List, Any, Type
+from typing import Text, List, Any, Type, Optional
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.components import Component
 from rasa.nlu.utils.spacy_utils import SpacyNLP
-from rasa.nlu.training_data import Message
+from rasa.shared.nlu.training_data.message import Message
 
 from rasa.nlu.constants import SPACY_DOCS
 
@@ -29,11 +29,13 @@ class SpacyTokenizer(Tokenizer):
         "token_pattern": None,
     }
 
-    def get_doc(self, message: Message, attribute: Text) -> "Doc":
+    def get_doc(self, message: Message, attribute: Text) -> Optional["Doc"]:
         return message.get(SPACY_DOCS[attribute])
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         doc = self.get_doc(message, attribute)
+        if not doc:
+            return []
 
         tokens = [
             Token(

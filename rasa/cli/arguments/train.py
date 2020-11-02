@@ -8,7 +8,7 @@ from rasa.cli.arguments.default_arguments import (
     add_out_param,
     add_domain_param,
 )
-from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_CONFIG_PATH
+from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 
 def set_train_arguments(parser: argparse.ArgumentParser):
@@ -46,6 +46,7 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
 
 def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
+    add_domain_param(parser, default=None)
     add_out_param(parser, help_text="Directory where your models should be stored.")
 
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")

@@ -10,8 +10,9 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.nlu.constants import TEXT, SPACY_DOCS, ENTITIES
-from rasa.nlu.training_data import Message
+from rasa.nlu.constants import SPACY_DOCS
+from rasa.shared.nlu.constants import TEXT, ENTITIES
+from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
 
@@ -145,7 +146,7 @@ def test_crf_use_dense_features(spacy_nlp: Any):
     spacy_tokenizer = SpacyTokenizer()
 
     text = "Rasa is a company in Berlin"
-    message = Message(text)
+    message = Message(data={TEXT: text})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
     spacy_tokenizer.process(message)
@@ -156,6 +157,8 @@ def test_crf_use_dense_features(spacy_nlp: Any):
 
     assert "0:text_dense_features" in features[0]
     dense_features, _ = message.get_dense_features(TEXT, [])
+    if dense_features:
+        dense_features = dense_features.features
 
     for i in range(0, len(dense_features[0])):
         assert (

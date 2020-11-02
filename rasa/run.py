@@ -2,8 +2,9 @@ import logging
 import typing
 from typing import Dict, Text
 
-from rasa.cli.utils import print_warning
-from rasa.constants import DOCS_BASE_URL
+import rasa.shared.utils.common
+from rasa.shared.utils.cli import print_warning
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.core.lock_store import LockStore
 
 logger = logging.getLogger(__name__)
@@ -41,13 +42,14 @@ def run(
     if not connector and not credentials:
         connector = "rest"
         print_warning(
-            "No chat connector configured, falling back to the "
-            "REST input channel. To connect your bot to another channel, "
-            "read the docs here: {}/user-guide/"
-            "messaging-and-voice-channels".format(DOCS_BASE_URL)
+            f"No chat connector configured, falling back to the "
+            f"REST input channel. To connect your bot to another channel, "
+            f"read the docs here: {DOCS_BASE_URL}/messaging-and-voice-channels"
         )
 
-    kwargs = utils.minimal_kwargs(kwargs, rasa.core.run.serve_application)
+    kwargs = rasa.shared.utils.common.minimal_kwargs(
+        kwargs, rasa.core.run.serve_application
+    )
     rasa.core.run.serve_application(
         model,
         channel=connector,

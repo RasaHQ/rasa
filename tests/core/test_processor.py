@@ -9,14 +9,13 @@ from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable
 from unittest.mock import patch, Mock
+from tests.utilities import latest_request
 
 from rasa.core import jobs
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
-
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
-from rasa.core.domain import SessionConfig, Domain
-from rasa.core.events import (
+from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
     ReminderCancelled,
@@ -27,18 +26,23 @@ from rasa.core.events import (
     Event,
     SlotSet,
 )
-from rasa.core.interpreter import RasaNLUHttpInterpreter, NaturalLanguageInterpreter
+from rasa.core.interpreter import RasaNLUHttpInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.core.slots import Slot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.core.trackers import DialogueStateTracker
-from rasa.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
-from tests.utilities import latest_request
-
-from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL, DEFAULT_INTENTS
+from rasa.shared.core.constants import (
+    DEFAULT_INTENTS,
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    EXTERNAL_MESSAGE_PREFIX,
+    IS_EXTERNAL,
+)
 
 import logging
 
@@ -120,7 +124,7 @@ async def test_http_parsing():
         assert r
 
 
-async def mocked_parse(self, text, message_id=None, tracker=None):
+async def mocked_parse(self, text, message_id=None, tracker=None, metadata=None):
     """Mock parsing a text message and augment it with the slot
     value from the tracker's state."""
 
@@ -166,7 +170,7 @@ async def test_reminder_scheduled(
     default_processor.tracker_store.save(tracker)
 
     await default_processor.handle_reminder(
-        reminder, sender_id, default_channel, default_processor.nlg
+        reminder, sender_id, default_channel,
     )
 
     # retrieve the updated tracker
@@ -180,6 +184,25 @@ async def test_reminder_scheduled(
         intent={INTENT_NAME_KEY: "remind", IS_EXTERNAL: True},
     )
     assert t.events[-1] == ActionExecuted("action_listen")
+
+
+async def test_trigger_external_latest_input_channel(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    input_channel = "test_input_channel_external"
+
+    tracker.update(UserUttered("test1"))
+    tracker.update(UserUttered("test2", input_channel=input_channel))
+
+    await default_processor.trigger_external_user_uttered(
+        "test3", None, tracker, default_channel
+    )
+
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+
+    assert tracker.get_latest_input_channel() == input_channel
 
 
 async def test_reminder_aborted(
@@ -197,7 +220,7 @@ async def test_reminder_aborted(
 
     default_processor.tracker_store.save(tracker)
     await default_processor.handle_reminder(
-        reminder, sender_id, default_channel, default_processor.nlg
+        reminder, sender_id, default_channel,
     )
 
     # retrieve the updated tracker
@@ -243,7 +266,7 @@ async def test_reminder_cancelled_multi_user(
     for tracker in trackers:
         default_processor.tracker_store.save(tracker)
         await default_processor._schedule_reminders(
-            tracker.events, tracker, default_channel, default_processor.nlg
+            tracker.events, tracker, default_channel,
         )
     # check that the jobs were added
     assert len((await jobs.scheduler()).get_jobs()) == 2
@@ -334,7 +357,7 @@ async def test_reminder_cancelled_by_name(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel, default_processor.nlg
+        tracker.events, tracker, default_channel,
     )
 
     # cancel the sixth reminder
@@ -350,7 +373,7 @@ async def test_reminder_cancelled_by_entities(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel, default_processor.nlg
+        tracker.events, tracker, default_channel,
     )
 
     # cancel the fourth reminder
@@ -370,7 +393,7 @@ async def test_reminder_cancelled_by_intent(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel, default_processor.nlg
+        tracker.events, tracker, default_channel,
     )
 
     # cancel the third, fifth, and sixth reminder
@@ -386,7 +409,7 @@ async def test_reminder_cancelled_all(
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
-        tracker.events, tracker, default_channel, default_processor.nlg
+        tracker.events, tracker, default_channel,
     )
 
     # cancel all reminders
@@ -411,7 +434,7 @@ async def test_reminder_restart(
 
     default_processor.tracker_store.save(tracker)
     await default_processor.handle_reminder(
-        reminder, sender_id, default_channel, default_processor.nlg
+        reminder, sender_id, default_channel,
     )
 
     # retrieve the updated tracker
@@ -611,7 +634,7 @@ async def test_handle_message_with_session_start(
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # make sure the sequence of events is as expected
-    assert list(tracker.events) == [
+    expected = [
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -642,8 +665,15 @@ async def test_handle_message_with_session_start(
             ],
         ),
         SlotSet(entity, slot_2[entity]),
+        ActionExecuted("utter_greet"),
+        BotUttered(
+            "hey there post-session start hello!",
+            metadata={"template_name": "utter_greet"},
+        ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
+    assert list(tracker.events) == expected
 
 
 # noinspection PyProtectedMember
@@ -698,7 +728,10 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 
 @pytest.mark.parametrize(
     "predict_function",
-    [lambda tracker, domain: [1, 0], lambda tracker, domain, some_bool=True: [1, 0]],
+    [
+        lambda tracker, domain, something_else: [1, 0, 2, 3],
+        lambda tracker, domain, some_bool=True: [1, 0],
+    ],
 )
 def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
     predict_function: Callable,

@@ -1,0 +1,9 @@
+stories:
+- story: Story with all different slot types
+  steps:
+  - intent: card_lost
+  - action: check_transactions
+  - slot_was_set:
+    - list_slot: ["value1", "value2"]
+    - bool_slot: true
+    - text_slot: "some_text"
