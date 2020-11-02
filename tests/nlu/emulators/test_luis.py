@@ -42,6 +42,6 @@ def test_luis_response():
                     "role": None,
                 }
                 for e in data["entities"]
-            ]
+            ],
         },
     }

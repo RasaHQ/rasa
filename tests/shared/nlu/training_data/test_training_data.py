@@ -4,8 +4,15 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY, ENTITY_ATTRIBUTE_START, ENTITY_ATTRIBUTE_END, \
-    ENTITY_ATTRIBUTE_VALUE, ENTITY_ATTRIBUTE_TYPE, ENTITIES
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT_RESPONSE_KEY,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITIES,
+)
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
