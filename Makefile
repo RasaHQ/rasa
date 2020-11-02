@@ -68,7 +68,7 @@ lint:
 
 BRANCH ?= master # Compare against `master` if no branch was provided
 lint-docstrings:
-	# Lint docstrings only against the the diff to avoid too many errors.
+	# Lint docstrings only against the diff to avoid too many errors.
 	# Check only production code. Ignore other flake errors which are captured by `lint`
 	# Diff of committed changes (shows only changes introduced by your branch)
 	if [[ -n $(BRANCH) ]]; then
