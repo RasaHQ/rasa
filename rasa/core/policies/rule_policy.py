@@ -744,13 +744,13 @@ class RulePolicy(MemoizationPolicy):
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool,
-    ) -> Optional[Text]:
+    ) -> Tuple[Optional[Text], Optional[Text]]:
         if (
             use_text_for_last_user_input
             and not tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
             # make text prediction only after user utterance
-            return
+            return None, None
 
         tracker_as_states = self.featurizer.prediction_states(
             [tracker], domain, use_text_for_last_user_input
@@ -824,7 +824,10 @@ class RulePolicy(MemoizationPolicy):
         **kwargs: Any,
     ) -> Tuple[List[float], Optional[bool]]:
         # user text input is ground truth, so try to predict using it first
-        rules_action_name_from_text = self._find_action_from_rules(
+        (
+            rules_action_name_from_text,
+            self._prediction_source,
+        ) = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=True
         )
 
@@ -853,13 +856,17 @@ class RulePolicy(MemoizationPolicy):
                 None,
             )
 
-        rules_action_name, source = self._find_action_from_rules(tracker, domain)
-        # we want to remember the source even if rules didn't predict any action
-        self._prediction_source = source
-        if rules_action_name:
-            return self._prediction_result(rules_action_name, tracker, domain), True
+        # predict rules from text first
+        if rules_action_name_from_text:
+            return (
+                self._prediction_result(rules_action_name_from_text, tracker, domain),
+                True,
+            )
 
-        rules_action_name_from_intent = self._find_action_from_rules(
+        (
+            rules_action_name_from_intent,
+            self._prediction_source,
+        ) = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=False
         )
         if rules_action_name_from_intent:
