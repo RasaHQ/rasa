@@ -7,7 +7,7 @@ from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
-from rasa.utils.tensorflow.constants import SEQUENCE, MASK, MASK_3D
+from rasa.utils.tensorflow.constants import MASK
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     TEXT,

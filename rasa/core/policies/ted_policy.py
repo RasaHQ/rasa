@@ -92,7 +92,6 @@ from rasa.utils.tensorflow.constants import (
     MASK,
     HIDDEN_LAYERS_SIZES,
     FEATURIZERS,
-    MASK_3D,
 )
 
 
