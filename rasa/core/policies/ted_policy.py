@@ -4,6 +4,8 @@ from pathlib import Path
 from collections import defaultdict
 
 import numpy as np
+from tensorflow import RaggedTensorSpec
+
 import rasa.shared.utils.io
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -374,13 +376,6 @@ class TEDPolicy(Policy):
         )
         model_data.data[DIALOGUE][LENGTH] = [
             FeatureArray(dialogue_length, number_of_dimensions=1)
-        ]
-
-        dialogue_indices = np.array(
-            [[i, j] for i, length in enumerate(dialogue_length) for j in range(length)]
-        )
-        model_data.data[DIALOGUE]["indices"] = [
-            FeatureArray(dialogue_indices, number_of_dimensions=2)
         ]
 
         return model_data
@@ -906,23 +901,31 @@ class TED(TransformerRasaModel):
         Returns:
             The converted attribute features
         """
+        # dialogue lengths contains the actual dialogue length
+        # shape is batch-size x 1
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
-        dialogue_indices = tf.cast(tf_batch_data[DIALOGUE]["indices"][0], tf.int32)
 
-        # TODO
+        # in order to convert the attribute features with shape
+        # combined batch-size and dialogue length x 1 x units
+        # to a shape of
+        # batch-size x dialogue length x units
+        # we use tf.scatter_nd. Therefore, we need to the target shape and the indices
+        # mapping the values of attribute features to the position in the resulting
+        # tensor.
 
         batch_dim = tf.size(dialogue_lengths)
         dialogue_dim = tf.reduce_max(dialogue_lengths)
         units = tf.shape(attribute_features)[-1]
 
-        # tf while loop
-
-        indices = []
-        for i in tf.range(batch_dim, dtype=tf.int32):
-            for j in tf.range(dialogue_dim, dtype=tf.int32):
-                if dialogue_lengths[i][j] > 0:
-                    indices.append([i, j])
-        indices = tf.convert_to_tensor(indices)
+        batch_indices = tf.repeat(tf.range(batch_dim), dialogue_lengths)
+        dialogue_indices = (
+            tf.map_fn(
+                tf.range,
+                dialogue_lengths,
+                fn_output_signature=tf.RaggedTensorSpec(shape=[None], dtype=tf.int32),
+            )
+        ).values
+        indices = tf.stack([batch_indices, dialogue_indices], axis=1)
 
         shape = tf.convert_to_tensor([batch_dim, dialogue_dim, units])
 
