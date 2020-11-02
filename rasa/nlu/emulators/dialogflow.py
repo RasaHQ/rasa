@@ -7,11 +7,21 @@ from rasa.nlu.emulators.emulator import Emulator
 
 
 class DialogflowEmulator(Emulator):
-    """Emulates DialogFlow responses."""
+    """Emulates the response format of the DialogFlow projects.agent.environments.users.sessions.detectIntent
+
+    https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/projects.agent.environments.users.sessions/detectIntent
+    https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse
+    """
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
-        """Transform data to Dialogflow format."""
-        # populate entities dict
+        """"Transform response JSON to DialogFlow format.
+
+        Args:
+            data: input JSON data as a dictionary.
+
+        Returns:
+            The transformed input data.
+        """
         entities = {
             entity_type: [] for entity_type in {x["entity"] for x in data["entities"]}
         }
@@ -20,10 +30,8 @@ class DialogflowEmulator(Emulator):
             entities[entity["entity"]].append(entity["value"])
 
         return {
-            "id": str(uuid.uuid1()),
-            "timestamp": datetime.now().isoformat(),
-            "result": {
-                "source": "agent",
+            "responseId": str(uuid.uuid1()),
+            "queryResult": {
                 "resolvedQuery": data["text"],
                 "action": data["intent"][INTENT_NAME_KEY],
                 "actionIncomplete": False,
@@ -36,7 +44,5 @@ class DialogflowEmulator(Emulator):
                 },
                 "fulfillment": {},
                 "score": data["intent"]["confidence"],
-            },
-            "status": {"code": 200, "errorType": "success"},
-            "sessionId": str(uuid.uuid1()),
+            }
         }

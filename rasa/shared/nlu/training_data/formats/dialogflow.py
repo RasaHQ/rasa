@@ -66,7 +66,6 @@ class DialogflowReader(TrainingDataReader):
         self, chunks: List[Dict[Text, Any]]
     ) -> Tuple[Text, List[Dict[Text, Any]]]:
         """Combines text chunks and extracts entities."""
-
         utterance = ""
         entities = []
         for chunk in chunks:
@@ -82,7 +81,6 @@ class DialogflowReader(TrainingDataReader):
         chunk: Dict[Text, Any], current_offset: int
     ) -> Optional[Dict[Text, Any]]:
         """Extract an entity from a chunk if present."""
-
         entity = None
         if "meta" in chunk or "alias" in chunk:
             start = current_offset
@@ -104,7 +102,7 @@ class DialogflowReader(TrainingDataReader):
     def _extract_lookup_tables(
         entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
     ) -> Optional[List[Dict[Text, Any]]]:
-        """Extract the lookup table from the entity synonyms"""
+        """Extract the lookup table from the entity synonyms."""
         synonyms = [e["synonyms"] for e in examples_js if "synonyms" in e]
         synonyms = DialogflowReader._flatten(synonyms)
         elements = [synonym for synonym in synonyms if "@" not in synonym]
@@ -117,7 +115,7 @@ class DialogflowReader(TrainingDataReader):
     def _extract_regex_features(
         entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
     ) -> Optional[List[Dict[Text, Any]]]:
-        """Extract the regex features from the entity synonyms"""
+        """Extract the regex features from the entity synonyms."""
         synonyms = [e["synonyms"] for e in examples_js if "synonyms" in e]
         synonyms = DialogflowReader._flatten(synonyms)
         return [{"name": entity_js.get("name"), "pattern": synonym} for synonym in synonyms]
