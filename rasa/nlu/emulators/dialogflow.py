@@ -1,8 +1,15 @@
 import uuid
-from datetime import datetime
 from typing import Any, Dict, Text
 
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    INTENT_NAME_KEY,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
+    TEXT,
+    PREDICTED_CONFIDENCE_KEY,
+)
 from rasa.nlu.emulators.emulator import Emulator
 
 
@@ -23,26 +30,25 @@ class DialogflowEmulator(Emulator):
             The transformed input data.
         """
         entities = {
-            entity_type: [] for entity_type in {x["entity"] for x in data["entities"]}
+            entity_type: []
+            for entity_type in {x[ENTITY_ATTRIBUTE_TYPE] for x in data[ENTITIES]}
         }
 
-        for entity in data["entities"]:
-            entities[entity["entity"]].append(entity["value"])
+        for entity in data[ENTITIES]:
+            entities[entity[ENTITY_ATTRIBUTE_TYPE]].append(
+                entity[ENTITY_ATTRIBUTE_VALUE]
+            )
 
         return {
             "responseId": str(uuid.uuid1()),
             "queryResult": {
-                "resolvedQuery": data["text"],
-                "action": data["intent"][INTENT_NAME_KEY],
-                "actionIncomplete": False,
-                "parameters": entities,
+                "resolvedQuery": data[TEXT],
+                "action": data[INTENT][INTENT_NAME_KEY],
                 "contexts": [],
-                "metadata": {
-                    "intentId": str(uuid.uuid1()),
-                    "webhookUsed": "false",
-                    "intentName": data["intent"]["name"],
-                },
-                "fulfillment": {},
-                "score": data["intent"]["confidence"],
+                "parameters": entities,
+                "fulfillmentText": "",
+                "fulfillmentMessages": [],
+                "outputContexts": [],
+                "intentDetectionConfidence": data[INTENT][PREDICTED_CONFIDENCE_KEY]
             },
         }
