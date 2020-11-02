@@ -22,13 +22,16 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     EXTRACTOR,
     ENTITY_ATTRIBUTE_TYPE,
+    INTENT_RESPONSE_KEY,
+    INTENT_NAME_KEY,
+    RESPONSE,
+    RESPONSE_SELECTOR,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.utils.io import DEFAULT_ENCODING
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -352,19 +355,19 @@ def _clean_entity_results(
     return cleaned_entities
 
 
-def intent_response_key_from_parsed_data(parsed: Dict[Text, Any]) -> Text:
+def _intent_response_key_from_parsed_data(parsed: Dict[Text, Any]) -> Text:
     try:
         # TODO: find out why it is like this?
-        if "default" in parsed["response_selector"]:
-            predicted_intent = parsed["response_selector"]["default"]["response"][
-                "intent_response_key"
+        if "default" in parsed.get(RESPONSE_SELECTOR, {}):
+            predicted_intent = parsed[RESPONSE_SELECTOR]["default"][RESPONSE][
+                INTENT_RESPONSE_KEY
             ]
         else:
-            predicted_intent = parsed["response_selector"][parsed["intent"]["name"]][
-                "response"
-            ]["intent_response_key"]
+            predicted_intent = parsed[RESPONSE_SELECTOR][
+                parsed.get(INTENT, {})[INTENT_NAME_KEY]
+            ][RESPONSE][INTENT_RESPONSE_KEY]
     except:
-        predicted_intent = parsed.get(INTENT, {}).get("name")
+        predicted_intent = parsed.get(INTENT, {}).get(INTENT_NAME_KEY, {})
     return predicted_intent
 
 
@@ -386,7 +389,7 @@ def _collect_user_uttered_predictions(
     # we are not interested in full retrieval intents and skip this section.
     # in any other case we are interested in the full retrieval intent (e.g. for report)
     if intent_gold != predicted_intent:
-        predicted_intent = intent_response_key_from_parsed_data(predicted)
+        predicted_intent = _intent_response_key_from_parsed_data(predicted)
 
     user_uttered_eval_store.add_to_store(
         intent_predictions=[predicted_intent], intent_targets=[intent_gold]
@@ -400,11 +403,6 @@ def _collect_user_uttered_predictions(
             entity_targets=_clean_entity_results(event.text, entity_gold),
             entity_predictions=_clean_entity_results(event.text, predicted_entities),
         )
-
-    # # update event intent
-    # # TODO: find a better place for this, we still want to accress full retrieval intent
-    # base_intent = event.intent.get("name").split(INTENT_MESSAGE_PREFIX)[0]
-    # event.intent["name"] = base_intent
 
     if user_uttered_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(

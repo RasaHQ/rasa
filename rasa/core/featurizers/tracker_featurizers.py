@@ -4,7 +4,7 @@ import jsonpickle
 import logging
 
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, INTENT
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union
 import numpy as np
@@ -17,6 +17,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -450,9 +451,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         ]
         # TODO there is no prediction support for e2e input right now, therefore
         #  temporary remove TEXT features from USER state during prediction
+        #  also temporary remove full retrieval intent
         for states in trackers_as_states:
             for state in states:
                 if state.get(USER, {}).get(TEXT):
                     del state[USER][TEXT]
+
+                # remove full intent, only keep base intent
+                intent = state.get(USER, {}).get(INTENT)
+                if intent and INTENT_MESSAGE_PREFIX in intent:
+                    state[USER][INTENT] = intent.split(INTENT_MESSAGE_PREFIX)[0]
 
         return trackers_as_states

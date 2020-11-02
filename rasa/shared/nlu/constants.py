@@ -1,6 +1,7 @@
 TEXT = "text"
 INTENT = "intent"
 RESPONSE = "response"
+RESPONSE_SELECTOR = "response_selector"
 INTENT_RESPONSE_KEY = "intent_response_key"
 ACTION_TEXT = "action_text"
 ACTION_NAME = "action_name"
