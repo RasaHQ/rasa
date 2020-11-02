@@ -118,17 +118,25 @@ class DialogflowReader(TrainingDataReader):
         """Extract the regex features from the entity synonyms."""
         synonyms = [e["synonyms"] for e in examples_js if "synonyms" in e]
         synonyms = DialogflowReader._flatten(synonyms)
-        return [{"name": entity_js.get("name"), "pattern": synonym} for synonym in synonyms]
+        return [
+            {"name": entity_js.get("name"), "pattern": synonym} for synonym in synonyms
+        ]
 
     @staticmethod
-    def _read_entities(entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]) -> "TrainingData":
+    def _read_entities(
+        entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
+    ) -> "TrainingData":
         entity_synonyms = transform_entity_synonyms(examples_js)
 
         if entity_js["isRegexp"]:
-            regex_features = DialogflowReader._extract_regex_features(entity_js, examples_js)
+            regex_features = DialogflowReader._extract_regex_features(
+                entity_js, examples_js
+            )
             return TrainingData([], entity_synonyms, regex_features, [],)
         else:
-            lookup_tables = DialogflowReader._extract_lookup_tables(entity_js, examples_js)
+            lookup_tables = DialogflowReader._extract_lookup_tables(
+                entity_js, examples_js
+            )
             return TrainingData([], entity_synonyms, [], lookup_tables,)
 
     @staticmethod

@@ -44,5 +44,5 @@ class DialogflowEmulator(Emulator):
                 },
                 "fulfillment": {},
                 "score": data["intent"]["confidence"],
-            }
+            },
         }
