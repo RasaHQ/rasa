@@ -376,12 +376,11 @@ class TestTEDPolicy(PolicyTestCollection):
             batch_slots_sentence_2,
             batch_slots_sentence_3,
             batch_dialogue_length,
-            batch_dialogue_3d_length,
         ) = next(model_data._gen_batch(batch_size=batch_size))
 
         assert (
             batch_label_ids.shape[0] == batch_size
-            and batch_dialogue_3d_length.shape[0] == batch_size
+            and batch_dialogue_length.shape[0] == batch_size
         )
         # batch and dialogue dimensions are combined
         assert (
@@ -416,7 +415,6 @@ class TestTEDPolicy(PolicyTestCollection):
             batch_action_name_sentence_2,
             batch_action_name_sentence_3,
             batch_dialogue_length,
-            batch_dialogue_3d_length,
         ) = next(
             model_data._gen_batch(
                 batch_size=batch_size, batch_strategy="balanced", shuffle=True
@@ -425,7 +423,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
         assert (
             batch_label_ids.shape[0] == batch_size
-            and batch_dialogue_3d_length.shape[0] == batch_size
+            and batch_dialogue_length.shape[0] == batch_size
         )
         assert (
             batch_intent_sentence_3[1]
