@@ -310,7 +310,7 @@ class Policy:
 
         Args:
             states: list of tracker states dicts
-            
+
         Returns:
             the string of the states with user intents and actions
         """
