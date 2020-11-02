@@ -33,6 +33,7 @@ def test_luis_data():
     assert not td.is_empty()
     assert len(td.entity_examples) == 8
     assert len(td.intent_examples) == 28
+    assert len(td.regex_features) == 1
     assert len(td.training_examples) == 28
     assert td.entity_synonyms == {}
     assert td.intents == {"affirm", "goodbye", "greet", "inform"}
@@ -421,7 +422,6 @@ def test_nonascii_entities(tmp_path):
     assert len(td.entity_examples) == 1
     example = td.entity_examples[0]
     entities = example.get(ENTITIES)
-    print(entities)
     assert len(entities) == 1
     entity = entities[0]
     assert entity[ENTITY_ATTRIBUTE_VALUE] == "ßäæ ?€ö)"
@@ -553,6 +553,7 @@ def test_training_data_conversion(
     cmp_message_list(td.entity_examples, gold_standard.entity_examples)
     cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
+    assert td.entity_roles == gold_standard.entity_roles
 
     # converting the converted file back to original
     # file format and performing the same tests

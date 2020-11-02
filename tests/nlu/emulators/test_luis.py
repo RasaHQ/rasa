@@ -25,13 +25,21 @@ def test_luis_response():
     assert norm == {
         "query": data["text"],
         "prediction": {
-            "topIntent": {"intent": "restaurant_search", "score": 0.737014589341683},
-            "intents": [
-                {"intent": "restaurant_search", "score": 0.737014589341683},
-                {"intent": "goodbye", "score": 0.11605464483122209},
-                {"intent": "greet", "score": 0.08816417744097163},
-                {"intent": "affirm", "score": 0.058766588386123204},
-            ],
+            "topIntent": "restaurant_search",
+            "intents": {
+                "restaurant_search": {
+                    "score": 0.737014589341683
+                },
+                "goodbye": {
+                    "score": 0.11605464483122209
+                },
+                "greet": {
+                    "score": 0.08816417744097163
+                },
+                "affirm": {
+                    "score": 0.058766588386123204
+                },
+            },
             "entities": [
                 {
                     "entity": e["value"],

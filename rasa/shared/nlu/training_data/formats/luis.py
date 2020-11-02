@@ -10,6 +10,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    NO_ENTITY_TAG
 )
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 import rasa.shared.utils.io
@@ -60,13 +61,14 @@ class LuisReader(JsonTrainingDataReader):
             for e in s.get("entities") or []:
                 start, end = e["startPos"], e["endPos"] + 1
                 val = text[start:end]
+
                 entities.append(
                     {
                         ENTITY_ATTRIBUTE_TYPE: e.get("entity"),
                         ENTITY_ATTRIBUTE_VALUE: val,
                         ENTITY_ATTRIBUTE_START: start,
                         ENTITY_ATTRIBUTE_END: end,
-                        ENTITY_ATTRIBUTE_ROLE: e.get("role"),
+                        ENTITY_ATTRIBUTE_ROLE: e.get("role", NO_ENTITY_TAG),
                     }
                 )
 

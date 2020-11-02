@@ -34,15 +34,24 @@ class LUISEmulator(Emulator):
             "score": intent[PREDICTED_CONFIDENCE_KEY],
         }
 
-    def _intents(self, data) -> List[Dict[Text, Any]]:
+    def _intents(self, data) -> Dict[Text, Any]:
         if data.get(INTENT_RANKING_KEY):
-            return [
-                {"intent": el[INTENT_NAME_KEY], "score": el[PREDICTED_CONFIDENCE_KEY]}
+            return {
+                el[INTENT_NAME_KEY]: {
+                    "score": el[PREDICTED_CONFIDENCE_KEY]
+                }
                 for el in data[INTENT_RANKING_KEY]
-            ]
-        else:
-            top = self._top_intent(data)
-            return [top] if top else []
+            }
+
+        top = self._top_intent(data)
+        if not top:
+            return {}
+
+        return {
+            top["intent"]: {
+                "score": top["score"]
+            }
+        }
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         """Transform response JSON to LUIS format.
@@ -53,10 +62,12 @@ class LUISEmulator(Emulator):
         Returns:
             The transformed input data.
         """
+        top = self._top_intent(data)
+
         return {
             "query": data[TEXT],
             "prediction": {
-                "topIntent": self._top_intent(data),
+                "topIntent": top["intent"] if top else None,
                 "intents": self._intents(data),
                 "entities": [
                     {
