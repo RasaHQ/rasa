@@ -144,6 +144,23 @@ Loads a policy from path.
 
   An instance of `Policy`.
 
+#### format\_tracker\_states
+
+```python
+ | format_tracker_states(states: List[Dict]) -> Text
+```
+
+Format tracker states to human readable format on debug log.
+
+**Arguments**:
+
+- `states` - list of tracker states dicts
+  
+
+**Returns**:
+
+  the string of the states with user intents and actions
+
 #### confidence\_scores\_for
 
 ```python
