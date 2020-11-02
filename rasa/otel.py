@@ -53,6 +53,7 @@ def inject(url):
     global tracer
     if tracer:
         span = tracer.active_span
+        logger.debug(f"otel injecting headers, span: {span}")
         span.set_tag(tags.HTTP_METHOD, 'POST')
         span.set_tag(tags.HTTP_URL, url)
         span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
