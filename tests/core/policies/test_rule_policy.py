@@ -440,10 +440,8 @@ def assert_predicted_action(
     expected_action_name: Text,
     confidence: float = 1.0,
 ) -> None:
-    assert max(prediction.probabilities) == confidence
-    index_of_predicted_action = prediction.probabilities.index(
-        max(prediction.probabilities)
-    )
+    assert prediction.max_confidence == confidence
+    index_of_predicted_action = prediction.max_index
     prediction_action_name = domain.action_names[index_of_predicted_action]
     assert prediction_action_name == expected_action_name
 
@@ -879,7 +877,7 @@ async def test_form_unhappy_path_from_story():
         domain,
         RegexInterpreter(),
     )
-    assert max(prediction.probabilities) == policy._core_fallback_threshold
+    assert prediction.max_confidence == policy._core_fallback_threshold
 
 
 async def test_form_unhappy_path_no_validation_from_rule():
@@ -1038,7 +1036,7 @@ async def test_form_unhappy_path_no_validation_from_story():
         tracker, domain, RegexInterpreter()
     )
     # there is no rule for next action
-    assert max(prediction.probabilities) == policy._core_fallback_threshold
+    assert prediction.max_confidence == policy._core_fallback_threshold
     # check that RulePolicy entered unhappy path based on the training story
     assert prediction.events == [LoopInterrupted(True)]
 
@@ -1084,7 +1082,7 @@ async def test_form_unhappy_path_without_rule():
         RegexInterpreter(),
     )
 
-    assert max(prediction.probabilities) == policy._core_fallback_threshold
+    assert prediction.max_confidence == policy._core_fallback_threshold
 
 
 async def test_form_activation_rule():
@@ -1163,7 +1161,7 @@ async def test_failing_form_activation_due_to_no_rule():
         RegexInterpreter(),
     )
 
-    assert max(prediction.probabilities) == policy._core_fallback_threshold
+    assert prediction.max_confidence == policy._core_fallback_threshold
 
 
 def test_form_submit_rule():
@@ -1506,4 +1504,4 @@ def test_predict_nothing_if_fallback_disabled():
         new_conversation, domain, RegexInterpreter()
     )
 
-    assert max(prediction.probabilities) == 0
+    assert prediction.max_confidence == 0

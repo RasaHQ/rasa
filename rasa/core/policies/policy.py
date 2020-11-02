@@ -224,7 +224,7 @@ class Policy:
                 additional features.
 
         Returns:
-             the list of probabilities for the next actions
+             The policy's prediction (e.g. the probabilities for the actions).
         """
         raise NotImplementedError("Policy must have the capacity to predict.")
 
@@ -387,7 +387,7 @@ class PolicyPrediction:
         self.is_end_to_end_prediction = is_end_to_end_prediction
 
     def __eq__(self, other: Any) -> bool:
-        """Check if the two objects are equal.
+        """Checks if the two objects are equal.
 
         Args:
             other: Any other object.
@@ -405,6 +405,24 @@ class PolicyPrediction:
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
         )
+
+    @property
+    def max_index(self) -> int:
+        """Gets the index of the action prediction with the highest confidence.
+
+        Returns:
+            The index of the action with the highest confidence.
+        """
+        return self.probabilities.index(self.max_confidence)
+
+    @property
+    def max_confidence(self) -> float:
+        """Get the highest predicted probability.
+
+        Returns:
+            The highest predicted probability.
+        """
+        return max(self.probabilities)
 
 
 def confidence_scores_for(

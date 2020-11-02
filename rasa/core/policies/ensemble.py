@@ -499,8 +499,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                          and predictions as values
 
         Returns:
-            best_probabilities: the list of probabilities for the next actions
-            best_policy_name: the name of the picked policy
+            The best prediction and the name of the policy which did this prediction.
         """
         best_confidence = (-1, -1)
         best_policy_name = None
@@ -512,16 +511,18 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         form_confidence = None
         form_policy_name = None
-
         use_only_end_to_end = any(
             prediction.is_end_to_end_prediction for prediction in predictions.values()
         )
+        policy_events = []
 
         for policy_name, prediction in predictions.items():
+            policy_events += prediction.events
+
             if prediction.is_end_to_end_prediction != use_only_end_to_end:
                 continue
 
-            confidence = (max(prediction.probabilities), prediction.policy_priority)
+            confidence = (prediction.max_confidence, prediction.policy_priority)
             if self._is_form_policy(policy_name):
                 # store form prediction separately
                 form_confidence = confidence
@@ -538,22 +539,22 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             if form_confidence > best_confidence:
                 best_policy_name = form_policy_name
 
-        for policy_name, prediction in predictions.items():
-            policy_events = prediction.events.copy()
-            if policy_name == best_policy_name:
-                policy_events += prediction.optional_events
+        best_prediction = predictions[best_policy_name]
 
-            for event in policy_events:
-                tracker.update(event, domain)
+        # Apply policy events to tracker
+        policy_events += best_prediction.optional_events
 
-        return predictions[best_policy_name].probabilities, best_policy_name
+        for event in policy_events:
+            tracker.update(event, domain)
+
+        return best_prediction, best_policy_name
 
     def _best_policy_prediction(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> Tuple[PolicyPrediction, Optional[Text]]:
         """Finds the best policy prediction.
 
         Args:
@@ -709,23 +710,22 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_policy_name: the name of the picked policy
         """
 
-        probabilities, policy_name = self._best_policy_prediction(
+        prediction, policy_name = self._best_policy_prediction(
             tracker, domain, interpreter
         )
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME
-            and probabilities is not None
-            and probabilities.index(max(probabilities))
-            == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_not_memo_policy(policy_name, max(probabilities))
+            and prediction.probabilities is not None
+            and prediction.max_index == domain.index_for_action(ACTION_LISTEN_NAME)
+            and self.is_not_memo_policy(policy_name, prediction.max_confidence)
         ):
             probabilities, policy_name = self._fallback_after_listen(
-                domain, probabilities, policy_name
+                domain, prediction.probabilities, policy_name
             )
 
         logger.debug(f"Predicted next action using {policy_name}")
-        return probabilities, policy_name
+        return prediction.probabilities, policy_name
 
 
 def _check_policy_for_forms_available(
