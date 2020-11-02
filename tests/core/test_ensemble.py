@@ -316,7 +316,7 @@ class LoadReturnsNonePolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         pass
 
 
@@ -352,7 +352,7 @@ class LoadReturnsWrongTypePolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         pass
 
 

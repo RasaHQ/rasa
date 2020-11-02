@@ -491,7 +491,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         predictions: Dict[Text, PolicyPrediction],
         tracker: DialogueStateTracker,
         domain: Domain,
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> Tuple[PolicyPrediction, Optional[Text]]:
         """Picks the best policy prediction based on probabilities and policy priority.
 
         Args:
