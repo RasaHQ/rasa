@@ -18,13 +18,10 @@ from typing import List, Optional
 
 
 class LUISEmulator(Emulator):
-    def __init__(self) -> None:
-        """Emulates the response format of the LUIS Endpoint API v3.0 /predict endpoint.
+    """Emulates the response format of the LUIS Endpoint API v3.0 /predict endpoint.
 
-        https://westcentralus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0/"""
-
-        super().__init__()
-        self.name = "luis"
+    https://westcentralus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0/
+    """
 
     def _top_intent(self, data) -> Optional[Dict[Text, Any]]:
         intent = data.get(INTENT)
@@ -48,8 +45,14 @@ class LUISEmulator(Emulator):
             return [top] if top else []
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
-        """Transform data to luis.ai format."""
+        """Transform response JSON to LUIS format.
 
+        Args:
+            data: input JSON data as a dictionary.
+
+        Returns:
+            The transformed input data.
+        """
         return {
             "query": data[TEXT],
             "prediction": {
