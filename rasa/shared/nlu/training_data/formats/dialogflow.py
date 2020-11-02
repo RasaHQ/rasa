@@ -102,27 +102,36 @@ class DialogflowReader(TrainingDataReader):
 
     @staticmethod
     def _extract_lookup_tables(
-        name: Text, examples: List[Dict[Text, Any]]
+        entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
     ) -> Optional[List[Dict[Text, Any]]]:
         """Extract the lookup table from the entity synonyms"""
-        synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
+        synonyms = [e["synonyms"] for e in examples_js if "synonyms" in e]
         synonyms = DialogflowReader._flatten(synonyms)
         elements = [synonym for synonym in synonyms if "@" not in synonym]
 
         if len(elements) == 0:
             return None
-        return [{"name": name, "elements": elements}]
+        return [{"name": entity_js.get("name"), "elements": elements}]
 
     @staticmethod
-    def _read_entities(entity_js, examples_js) -> "TrainingData":
-        entity_synonyms = transform_entity_synonyms(examples_js)
-        regex_features = []
-        # TODO: regex features
-        # TODO: remove old_affirm.json & old_inform.json
+    def _extract_regex_features(
+        entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
+    ) -> Optional[List[Dict[Text, Any]]]:
+        """Extract the regex features from the entity synonyms"""
+        synonyms = [e["synonyms"] for e in examples_js if "synonyms" in e]
+        synonyms = DialogflowReader._flatten(synonyms)
+        return [{"name": entity_js.get("name"), "pattern": synonym} for synonym in synonyms]
 
-        name = entity_js.get("name")
-        lookup_tables = DialogflowReader._extract_lookup_tables(name, examples_js)
-        return TrainingData([], entity_synonyms, regex_features, lookup_tables,)
+    @staticmethod
+    def _read_entities(entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]) -> "TrainingData":
+        entity_synonyms = transform_entity_synonyms(examples_js)
+
+        if entity_js["isRegexp"]:
+            regex_features = DialogflowReader._extract_regex_features(entity_js, examples_js)
+            return TrainingData([], entity_synonyms, regex_features, [],)
+        else:
+            lookup_tables = DialogflowReader._extract_lookup_tables(entity_js, examples_js)
+            return TrainingData([], entity_synonyms, [], lookup_tables,)
 
     @staticmethod
     def _read_examples_js(fn: Text, language: Text, fformat: Text) -> Any:

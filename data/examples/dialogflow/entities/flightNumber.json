@@ -3,7 +3,7 @@
   "name": "flightNumber",
   "isOverridable": true,
   "isEnum": false,
-  "isRegexp": false,
+  "isRegexp": true,
   "automatedExpansion": false,
   "allowFuzzyExtraction": false
 }
