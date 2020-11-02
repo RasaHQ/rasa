@@ -10,7 +10,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    NO_ENTITY_TAG
+    NO_ENTITY_TAG,
 )
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 import rasa.shared.utils.io

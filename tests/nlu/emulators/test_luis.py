@@ -19,37 +19,32 @@ def test_luis_response():
             {"confidence": 0.08816417744097163, "name": "greet"},
             {"confidence": 0.058766588386123204, "name": "affirm"},
         ],
-        "entities": [{"entity": "cuisine", "value": "italian"}],
+        "entities": [{"entity": "cuisine", "value": "italian", "role": "roleCuisine"}],
     }
     norm = em.normalise_response_json(data)
     assert norm == {
         "query": data["text"],
         "prediction": {
+            "normalizedQuery": data["text"],
             "topIntent": "restaurant_search",
             "intents": {
-                "restaurant_search": {
-                    "score": 0.737014589341683
-                },
-                "goodbye": {
-                    "score": 0.11605464483122209
-                },
-                "greet": {
-                    "score": 0.08816417744097163
-                },
-                "affirm": {
-                    "score": 0.058766588386123204
+                "restaurant_search": {"score": 0.737014589341683},
+                "goodbye": {"score": 0.11605464483122209},
+                "greet": {"score": 0.08816417744097163},
+                "affirm": {"score": 0.058766588386123204},
+            },
+            "entities": {
+                "roleCuisine": ["italian"],
+                "$instance": {
+                    "role": "roleCuisine",
+                    "type": "cuisine",
+                    "text": "italian",
+                    "startIndex": None,
+                    "length": len("italian"),
+                    "score": None,
+                    "modelTypeId": 1,
+                    "modelType": "Entity Extractor",
                 },
             },
-            "entities": [
-                {
-                    "entity": e["value"],
-                    "type": e["entity"],
-                    "startIndex": None,
-                    "endIndex": None,
-                    "score": None,
-                    "role": None,
-                }
-                for e in data["entities"]
-            ],
         },
     }
