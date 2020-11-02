@@ -6,7 +6,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_START,
     INTENT_RANKING_KEY,
     TEXT,
@@ -14,7 +13,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from typing import List, Optional
+from typing import Optional
 
 
 class LUISEmulator(Emulator):
