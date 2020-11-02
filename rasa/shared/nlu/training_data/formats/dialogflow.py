@@ -116,10 +116,13 @@ class DialogflowReader(TrainingDataReader):
     @staticmethod
     def _read_entities(entity_js, examples_js) -> "TrainingData":
         entity_synonyms = transform_entity_synonyms(examples_js)
+        regex_features = []
+        # TODO: regex features
+        # TODO: remove old_affirm.json & old_inform.json
 
         name = entity_js.get("name")
         lookup_tables = DialogflowReader._extract_lookup_tables(name, examples_js)
-        return TrainingData([], entity_synonyms, [], lookup_tables)
+        return TrainingData([], entity_synonyms, regex_features, lookup_tables,)
 
     @staticmethod
     def _read_examples_js(fn: Text, language: Text, fformat: Text) -> Any:
