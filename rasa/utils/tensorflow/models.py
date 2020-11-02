@@ -254,7 +254,7 @@ class RasaModel(tf.keras.models.Model):
 
         # calculate supervision and regularization losses separately
         with tf.GradientTape(persistent=True) as tape:
-            prediction_loss, sim_pos, sim_neg_il = self.batch_loss(batch_in)
+            prediction_loss = self.batch_loss(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
             total_loss = prediction_loss + regularization_loss
 
@@ -536,6 +536,8 @@ class RasaModel(tf.keras.models.Model):
                         shape = [
                             batch[idx + 2][i] for i in range(number_of_dimensions - 1)
                         ] + [feature_dimension]
+                        print("Adding...", key, sub_key)
+                        print(batch[idx], batch[idx + 1])
                         batch_data[key][sub_key].append(
                             tf.SparseTensor(batch[idx], batch[idx + 1], shape)
                         )

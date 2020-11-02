@@ -1223,7 +1223,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             mask,
         )
 
-        return loss, accuracy, sim_pos, sim_neg_il
+        return loss, accuracy
 
     @staticmethod
     def _calc_accuracy(
@@ -1249,3 +1249,12 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         return acc
+
+    @staticmethod
+    def confidence_from_sim(sim: tf.Tensor, similarity_type: Text) -> tf.Tensor:
+        if similarity_type == COSINE:
+            # clip negative values to zero
+            return tf.nn.relu(sim)
+        else:
+            # normalize result to [0, 1] with sigmoid
+            return tf.nn.sigmoid(sim)
