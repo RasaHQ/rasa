@@ -109,13 +109,13 @@ def validate_component_keys(pipeline: List["Component"]) -> None:
         allowed_keys = set(component_class.defaults.keys())
         provided_keys = set(component.keys())
         provided_keys.remove("name")
-        listseperator = "\n- "
+        list_separator = "\n- "
         for key in provided_keys:
             if key not in allowed_keys:
                 rasa.shared.utils.io.raise_warning(
                     f"You have provided an invalid key `{key}` for component `{component_name}` in your pipeline. "
                     f"Valid options for `{component_name}` are:\n- "
-                    f"{listseperator.join(allowed_keys)}"
+                    f"{list_separator.join(allowed_keys)}"
                 )
 
 

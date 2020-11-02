@@ -204,7 +204,7 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
 
 async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: Path,):
     _config = RasaNLUModelConfig(
-        # config with a component that does not have a `name` property
+        # config with a component that does not have a `confidence_threshold ` property
         {"pipeline": [{"name": "WhitespaceTokenizer", "confidence_threshold": 0.7}]}
     )
 
