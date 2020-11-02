@@ -315,14 +315,21 @@ def test_input_padding(
 
 
 @pytest.mark.parametrize(
-    "sequence_length, model_name, should_overflow",
-    [(1000, "bert", True), (256, "bert", False)],
+    "sequence_length, model_name, model_weights, should_overflow",
+    [
+        (1000, "bert", "bert-base-uncased", True),
+        (256, "bert", "bert-base-uncased", False),
+    ],
 )
 @pytest.mark.skip_on_windows
 def test_log_longer_sequence(
-    sequence_length: int, model_name: Text, should_overflow: bool, caplog
+    sequence_length: int,
+    model_name: Text,
+    model_weights: Text,
+    should_overflow: bool,
+    caplog,
 ):
-    config = {"model_name": model_name}
+    config = {"model_name": model_name, "model_weights": model_weights}
 
     featurizer = LanguageModelFeaturizer(config)
 

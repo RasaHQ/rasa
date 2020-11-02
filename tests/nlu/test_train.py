@@ -7,12 +7,16 @@ from rasa.nlu.model import Interpreter, Trainer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu.conftest import DEFAULT_DATA_PATH
-from typing import Any, Dict, List, Tuple, Text, Union, Optional
+from typing import Any, Dict, List, Tuple, Text, Union
 
 COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1},
     "ResponseSelector": {EPOCHS: 1},
     "HFTransformersNLP": {"model_name": "bert", "model_weights": "bert-base-uncased"},
+    "LanguageModelFeaturizer": {
+        "model_name": "bert",
+        "model_weights": "bert-base-uncased",
+    },
 }
 
 
