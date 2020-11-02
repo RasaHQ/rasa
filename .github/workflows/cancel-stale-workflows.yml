@@ -1,0 +1,26 @@
+name: Cleanup Duplicate Branches and PRs
+on:
+  schedule:
+    - cron:  '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  cancel-runs:
+    # Prevent forks from running this to be nice
+    if: github.repository == 'RasaHQ/rasa'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: n1hility/cancel-previous-runs@v2
+      with:
+        token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+        workflow: 351973
+
+    - name: Notify slack on failure
+      if: failure() && github.event_name == 'schedule'
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+        status: FAILED
+        color: warning
