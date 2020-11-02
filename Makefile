@@ -98,14 +98,14 @@ types:
 
 CHOCO_CACHE_LOCATION ?= %TEMP%
 prepare-tests-windows-dependencies:
-	cat ./system_test_dependencies/windows.txt | xargs choco install --cache-location=$(CHOCO_CACHE_LOCATION)
+	cat ./system_test_dependencies/windows.txt | xargs -r -L1 choco install --cache-location=$(CHOCO_CACHE_LOCATION)
 
 prepare-tests-macos-dependencies:
 	# FIXME: why do we do '|| true' ?
-	cat ./system_test_dependencies/macos.txt | xargs brew install || true
+	cat ./system_test_dependencies/macos.txt | xargs -r brew install || true
 
 prepare-tests-ubuntu-dependencies:
-	cat ./system_test_dependencies/ubuntu.txt | xargs sudo apt-get -y install
+	cat ./system_test_dependencies/ubuntu.txt | xargs -r sudo apt-get -y install
 
 prepare-tests-files:
 	poetry install -E spacy
