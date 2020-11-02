@@ -63,14 +63,20 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
+        """Components that should be included in the pipeline before this component."""
         return [Tokenizer]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Packages needed to be installed."""
         return ["tensorflow_text", "tensorflow_hub"]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        """Initializes ConveRTFeaturizer with the model and different encoding signatures.
 
+        Args:
+            component_config: Configuration for the component.
+        """
         super(ConveRTFeaturizer, self).__init__(component_config)
         self.model_url = self._get_validated_model_url()
 
@@ -178,7 +184,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
     @staticmethod
     def _get_signature(signature: Text, module: Any) -> NoReturn:
         """Retrieve a signature from a (hopefully loaded) TF model."""
-
         if not module:
             raise Exception(
                 "ConveRTFeaturizer needs a proper loaded tensorflow module when used. "
@@ -295,6 +300,13 @@ class ConveRTFeaturizer(DenseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Featurize all message attributes in the training data with the ConveRT model.
+
+        Args:
+            training_data: Training data to be featurized
+            config: Pipeline configuration
+            **kwargs: Any other arguments.
+        """
         if config is not None and config.language != "en":
             rasa.shared.utils.io.raise_warning(
                 f"Since ``ConveRT`` model is trained only on an english "
@@ -337,6 +349,12 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 )
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Featurize an incoming message with the ConveRT model.
+
+        Args:
+            message: Message to be featurized
+            **kwargs: Any other arguments.
+        """
         for attribute in {TEXT, ACTION_TEXT}:
             if message.get(attribute):
                 sequence_features, sentence_features = self._compute_features(
@@ -387,6 +405,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         return f"{cls.name}-{get_dict_hash(_config)}"
 
     def provide_context(self) -> Dict[Text, Any]:
+        """Store the model in pipeline context for future use."""
         return {"tf_hub_module": self.module}
 
     def _tokenize(self, sentence: Text) -> Any:
@@ -397,6 +416,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenize the text using the ConveRT model.
+
         ConveRT adds a special char in front of (some) words and splits words into
         sub-words. To ensure the entity start and end values matches the token values,
         reuse the tokens that are already assigned to the message. If individual tokens

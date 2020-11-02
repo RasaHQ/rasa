@@ -63,6 +63,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
+        """Packages needed to be installed."""
         return [Tokenizer]
 
     def __init__(
@@ -70,6 +71,12 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         component_config: Optional[Dict[Text, Any]] = None,
         skip_model_load: bool = False,
     ) -> None:
+        """Initializes LanguageModelFeaturizer with the specified model.
+
+        Args:
+            component_config: Configuration for the component.
+            skip_model_load: Skip loading the model for pytests.
+        """
         super(LanguageModelFeaturizer, self).__init__(component_config)
 
         self._load_model_metadata()
@@ -77,6 +84,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
     def _load_model_metadata(self) -> None:
         """Load the metadata for the specified model and sets these properties.
+
         This includes the model name, model weights, cache directory and the
         maximum sequence length the model can handle.
         """
@@ -107,7 +115,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
 
     def _load_model_instance(self, skip_model_load: bool) -> None:
-        """Try loading the model instance
+        """Try loading the model instance.
 
         Args:
             skip_model_load: Skip loading the model instances to save time. This
@@ -143,12 +151,21 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: Metadata
     ) -> Optional[Text]:
+        """Cache the component for future use.
+
+        Args:
+            component_meta: configuration for the component.
+            model_metadata: configuration for the whole pipeline.
+
+        Returns: key of the cache for future retrievals.
+        """
         weights = component_meta.get("model_weights") or {}
 
         return f"{cls.name}-{component_meta.get('model_name')}-{get_dict_hash(weights)}"
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Packages needed to be installed."""
         return ["transformers"]
 
     def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
@@ -157,9 +174,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         Args:
             text: Text to be tokenized.
 
-        Returns:
-            List of token ids and token strings.
-
+        Returns: List of token ids and token strings.
         """
         split_token_ids = self.tokenizer.encode(text, add_special_tokens=False)
 
@@ -175,8 +190,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         Args:
             token_ids: List of token ids for each example in the batch.
 
-        Returns:
-            Augmented list of token ids for each example in the batch.
+        Returns: Augmented list of token ids for each example in the batch.
         """
         from rasa.nlu.utils.hugging_face.registry import (
             model_special_tokens_pre_processors,
@@ -203,8 +217,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             token_strings: List of token strings received as output from the language
             model specific tokenizer.
 
-        Returns:
-            Cleaned up token ids and token strings.
+        Returns: Cleaned up token ids and token strings.
         """
         from rasa.nlu.utils.hugging_face.registry import model_tokens_cleaners
 
@@ -213,17 +226,14 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def _post_process_sequence_embeddings(
         self, sequence_embeddings: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Compute sentence level representations and sequence level representations
-        for relevant tokens.
+        """Compute sentence and sequence level representations for relevant tokens.
 
         Args:
             sequence_embeddings: Sequence level dense features received as output from
             language model.
 
-        Returns:
-            Sentence and sequence level representations.
+        Returns: Sentence and sequence level representations.
         """
-
         from rasa.nlu.utils.hugging_face.registry import (
             model_embeddings_post_processors,
         )
@@ -261,11 +271,9 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             attribute: Property of message to be processed, one of ``TEXT`` or
             ``RESPONSE``.
 
-        Returns:
-            List of token strings and token ids for the corresponding attribute of the
+        Returns: List of token strings and token ids for the corresponding attribute of the
             message.
         """
-
         tokens_in = message.get(TOKENS_NAMES[attribute])
         tokens_out = []
 
@@ -293,16 +301,15 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         """Compute token ids and token strings for each example in batch.
 
         A token id is the id of that token in the vocabulary of the language model.
+
         Args:
             batch_examples: Batch of message objects for which tokens need to be
             computed.
             attribute: Property of message to be processed, one of ``TEXT`` or
             ``RESPONSE``.
 
-        Returns:
-            List of token strings and token ids for each example in the batch.
+        Returns: List of token strings and token ids for each example in the batch.
         """
-
         batch_token_ids = []
         batch_tokens = []
         for example in batch_examples:
@@ -330,10 +337,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             after taking into consideration the maximum input sequence the model can handle. Hence it can never be
             greater than self.max_model_sequence_length in case the model applies length restriction.
 
-        Returns:
-            Computed attention mask, 0 for padding and 1 for non-padding tokens.
+        Returns: Computed attention mask, 0 for padding and 1 for non-padding tokens.
         """
-
         attention_mask = []
 
         for actual_sequence_length in actual_sequence_lengths:
@@ -353,8 +358,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
     ) -> Tuple[List[int], int]:
-        """Extracts the sequence length for each example, as well as the maximum
-        sequence length across examples.
+        """Extracts the sequence length for each example and maximum sequence length.
 
         Args:
             batch_token_ids: List of token ids for each example in the batch.
@@ -421,7 +425,9 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def _extract_nonpadded_embeddings(
         embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
-        """Use pre-computed non-padded lengths of each example to extract embeddings
+        """Extract embeddings for actual tokens.
+
+        Use pre-computed non-padded lengths of each example to extract embeddings
         for non-padding tokens.
 
         Args:
@@ -469,7 +475,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         attribute: Text,
         inference_mode: bool = False,
     ) -> None:
-        """Validate if sequence lengths of all inputs are less the max sequence length the model can handle
+        """Validate if sequence lengths of all inputs are less the max sequence length the model can handle.
 
         This method should throw an error during training, whereas log a debug message during inference if
         any of the input examples have a length greater than maximum sequence length allowed.
@@ -506,8 +512,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def _add_extra_padding(
         self, sequence_embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
-        """
-        Add extra zero padding to match the original sequence length.
+        """Add extra zero padding to match the original sequence length.
 
         This is only done if the input was truncated during the batch preparation of input for the model.
         Args:
@@ -517,7 +522,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         Returns:
             Modified sequence embeddings with padding if necessary
         """
-
         if self.max_model_sequence_length == NO_LENGTH_RESTRICTION:
             # No extra padding needed because there wouldn't have been any truncation in the first place
             return sequence_embeddings
@@ -659,7 +663,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         Returns:
             List of language model docs for each message in batch.
         """
-
         hf_transformers_doc = batch_examples[0].get(LANGUAGE_MODEL_DOCS[attribute])
         if hf_transformers_doc:
             # This should only be the case if the deprecated
@@ -707,9 +710,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         Args:
             training_data: NLU training data to be tokenized and featurized
             config: NLU pipeline config consisting of all components.
-
         """
-
         batch_size = 64
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
@@ -742,7 +743,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         Args:
             message: Incoming message object
         """
-
         # process of all featurizers operates only on TEXT and ACTION_TEXT attributes,
         # because all other attributes are labels which are featurized during training
         # and their features are stored by the model itself.
@@ -760,7 +760,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         self, doc: Dict[Text, Any], message: Message, attribute: Text = TEXT
     ) -> None:
         """Adds the precomputed word vectors to the messages features."""
-
         sequence_features = doc[SEQUENCE_FEATURES]
         sentence_features = doc[SENTENCE_FEATURES]
 

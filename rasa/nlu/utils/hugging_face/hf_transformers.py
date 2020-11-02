@@ -37,8 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class HFTransformersNLP(Component):
-    """
-    This component is deprecated and will be removed in the future.
+    """This component is deprecated and will be removed in the future.
 
     Use the LanguageModelFeaturizer instead.
     """
@@ -58,6 +57,7 @@ class HFTransformersNLP(Component):
         component_config: Optional[Dict[Text, Any]] = None,
         skip_model_load: bool = False,
     ) -> None:
+        """Initializes HFTransformsNLP with the models specified."""
         super(HFTransformersNLP, self).__init__(component_config)
 
         self._load_model_metadata()
@@ -100,13 +100,12 @@ class HFTransformersNLP(Component):
         self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
 
     def _load_model_instance(self, skip_model_load: bool) -> None:
-        """Try loading the model instance
+        """Try loading the model instance.
 
         Args:
             skip_model_load: Skip loading the model instances to save time.
             This should be True only for pytests
         """
-
         if skip_model_load:
             # This should be True only during pytests
             return
@@ -137,6 +136,14 @@ class HFTransformersNLP(Component):
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: Metadata
     ) -> Optional[Text]:
+        """Cache the component for future use.
+
+        Args:
+            component_meta: configuration for the component.
+            model_metadata: configuration for the whole pipeline.
+
+        Returns: key of the cache for future retrievals.
+        """
         weights = component_meta.get("model_weights") or {}
 
         return f"{cls.name}-{component_meta.get('model_name')}-{get_dict_hash(weights)}"
@@ -328,7 +335,6 @@ class HFTransformersNLP(Component):
         Returns:
             Computed attention mask, 0 for padding and 1 for non-padding tokens.
         """
-
         attention_mask = []
 
         for actual_sequence_length in actual_sequence_lengths:
@@ -348,8 +354,7 @@ class HFTransformersNLP(Component):
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
     ) -> Tuple[List[int], int]:
-        """Extracts the sequence length for each example, as well as the maximum
-        sequence length across examples.
+        """Extracts the sequence length for each example and maximum sequence length.
 
         Args:
             batch_token_ids: List of token ids for each example in the batch.
