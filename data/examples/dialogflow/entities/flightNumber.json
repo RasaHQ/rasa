@@ -1,8 +1,8 @@
 {
-  "id": "11c77228-4a02-4db8-a398-b286fe8098d2",
-  "name": "cuisine",
+  "id": "fc93d510-e240-4b71-bafe-7dd7a3303e79",
+  "name": "flightNumber",
   "isOverridable": true,
-  "isEnum": false,
+  "isEnum": true,
   "isRegexp": false,
   "automatedExpansion": false,
   "allowFuzzyExtraction": false

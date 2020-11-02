@@ -1,62 +1,133 @@
 [
   {
-    "id": "40c60a12-1079-4e2c-a7c3-3498ab00de30",
+    "id": "b3ecd39d-4eec-435d-a0fe-6cfd29412ad7",
     "data": [
       {
-        "text": "hello",
+        "text": "estoy buscando un lugar para comer",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
-    "updated": 1507540781
+    "lang": "es",
+    "updated": 0
   },
   {
-    "id": "96019dea-5810-4ce0-9f69-16c2ce012603",
+    "id": "5a25e429-a00a-4418-a48b-7d019eca3ac6",
     "data": [
       {
-        "text": "Hola amigo",
+        "text": "busco un lugar en el ",
+        "userDefined": false
+      },
+      {
+        "text": "norte",
+        "meta": "@location",
+        "alias": "location",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
-    "updated": 1507540781
+    "lang": "es",
+    "updated": 0
   },
   {
-    "id": "298a54d1-c80c-4542-b41f-2cb549db814c",
+    "id": "8b6fcd21-8e95-46ff-a841-54c59c650571",
     "data": [
       {
-        "text": "Bueno",
+        "text": "muéstrame los restaurantes ",
         "userDefined": false
+      },
+      {
+        "text": "chinos",
+        "meta": "@cuisine",
+        "alias": "cuisine",
+        "userDefined": true
       }
     ],
     "isTemplate": false,
-    "count": 0,
-    "updated": 1507540781
+    "count": 1,
+    "lang": "es",
+    "updated": 0
   },
   {
-    "id": "0f490459-85df-4865-abd0-70f87f62890e",
+    "id": "86992625-d848-47de-8220-f9a7d5ddf63b",
     "data": [
       {
-        "text": "Caramba",
+        "text": "estoy buscando un lugar ",
+        "userDefined": false
+      },
+      {
+        "text": "indio",
+        "meta": "@cuisine",
+        "alias": "cuisine",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
-    "updated": 1507540781
+    "lang": "es",
+    "updated": 0
   },
   {
-    "id": "1bf90b9b-fe34-42ae-96ea-21beaa3fca4f",
+    "id": "2c5ce034-f89b-4570-a7eb-7bee714902df",
     "data": [
       {
-        "text": "Hola",
+        "text": "buscar restaurantes",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
-    "updated": 1507540781
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "93ce3697-b53f-4e96-bea1-9de96b098ec4",
+    "data": [
+      {
+        "text": "en cualquier parte del ",
+        "userDefined": false
+      },
+      {
+        "text": "oeste",
+        "meta": "@location",
+        "alias": "location",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
+  },
+  {
+    "id": "6190aae9-a23f-4d8a-9a50-84a9d971d3f0",
+    "data": [
+      {
+        "text": "restaurante ",
+        "userDefined": false
+      },
+      {
+        "text": "central",
+        "meta": "@location",
+        "alias": "location",
+        "userDefined": false
+      },
+      {
+        "text": " de la ",
+        "userDefined": false
+      },
+      {
+        "text": "India",
+        "meta": "@cuisine",
+        "alias": "cuisine",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "es",
+    "updated": 0
   }
 ]

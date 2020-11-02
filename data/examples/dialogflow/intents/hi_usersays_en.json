@@ -1,62 +1,145 @@
 [
   {
-    "id": "462fb0f5-d97a-4a95-96ab-91f49f289676",
+    "id": "e623ff79-8f24-40bf-a6ed-5a885d9af6c8",
     "data": [
       {
-        "text": "hey",
+        "text": "i\u0027m looking for a place to eat",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
-    "id": "651c6730-61e8-467b-a174-aca4e0ed66af",
+    "id": "a3e1901a-6c84-402c-a5a4-e2ec05307aa9",
     "data": [
       {
-        "text": "howdy",
+        "text": "i\u0027m looking for a place in the ",
+        "userDefined": false
+      },
+      {
+        "text": "north",
+        "meta": "@location",
+        "alias": "location",
+        "userDefined": false
+      },
+      {
+        "text": " of",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
-    "id": "bab1998d-d54f-4a5f-9ed2-c7e8b24f37fc",
+    "id": "fbf1e1b3-da86-4bbf-98b4-85e09f14c7b2",
     "data": [
       {
-        "text": "hey there",
+        "text": "show me ",
+        "userDefined": false
+      },
+      {
+        "text": "chinese",
+        "meta": "@cuisine",
+        "alias": "cuisine",
+        "userDefined": false
+      },
+      {
+        "text": " restaurants",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
-    "id": "9dfc509d-4f0e-4723-af4a-10ceef2fbf91",
+    "id": "860619cb-6c78-41b9-882d-d105a51e4377",
     "data": [
       {
-        "text": "hello",
+        "text": "i am looking for an ",
+        "userDefined": false
+      },
+      {
+        "text": "indian",
+        "meta": "@cuisine",
+        "alias": "cuisine",
+        "userDefined": false
+      },
+      {
+        "text": " spot",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
-    "id": "a2271775-488e-4223-9ff4-458cfe4d2ba8",
+    "id": "a8b9fa75-19db-49ef-963b-50d316a14aa2",
     "data": [
       {
-        "text": "hi",
+        "text": "search for restaurants",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c91a0223-e109-4d32-aab0-4008fb0a9f35",
+    "data": [
+      {
+        "text": "anywhere in the ",
+        "userDefined": false
+      },
+      {
+        "text": "west",
+        "meta": "@location",
+        "alias": "location",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "34c28215-f492-44d6-88a9-779ff59cb301",
+    "data": [
+      {
+        "text": "central",
+        "meta": "@location",
+        "alias": "location",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "indian",
+        "meta": "@cuisine",
+        "alias": "cuisine",
+        "userDefined": false
+      },
+      {
+        "text": " restaurant",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
     "updated": 0
   }
 ]

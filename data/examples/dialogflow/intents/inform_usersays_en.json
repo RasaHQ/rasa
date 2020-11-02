@@ -9,6 +9,7 @@
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
@@ -20,8 +21,8 @@
       },
       {
         "text": "north",
-        "alias": "location",
         "meta": "@location",
+        "alias": "location",
         "userDefined": false
       },
       {
@@ -31,6 +32,7 @@
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
@@ -42,8 +44,8 @@
       },
       {
         "text": "chinese",
-        "alias": "cuisine",
         "meta": "@cuisine",
+        "alias": "cuisine",
         "userDefined": false
       },
       {
@@ -53,6 +55,7 @@
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
@@ -64,8 +67,8 @@
       },
       {
         "text": "indian",
-        "alias": "cuisine",
         "meta": "@cuisine",
+        "alias": "cuisine",
         "userDefined": false
       },
       {
@@ -75,6 +78,7 @@
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
@@ -87,6 +91,7 @@
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
@@ -98,13 +103,14 @@
       },
       {
         "text": "west",
-        "alias": "location",
         "meta": "@location",
+        "alias": "location",
         "userDefined": false
       }
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   },
   {
@@ -112,8 +118,8 @@
     "data": [
       {
         "text": "central",
-        "alias": "location",
         "meta": "@location",
+        "alias": "location",
         "userDefined": false
       },
       {
@@ -122,8 +128,8 @@
       },
       {
         "text": "indian",
-        "alias": "cuisine",
         "meta": "@cuisine",
+        "alias": "cuisine",
         "userDefined": false
       },
       {
@@ -133,6 +139,7 @@
     ],
     "isTemplate": false,
     "count": 0,
+    "lang": "en",
     "updated": 0
   }
 ]
