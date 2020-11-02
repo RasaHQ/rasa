@@ -237,19 +237,40 @@ class IntentTEDPolicy(TEDPolicy):
 
         return label_data, encoded_all_labels
 
+    def _separate_augmented_trackers(
+        self, all_trackers: List[DialogueStateTracker]
+    ) -> Tuple[List[DialogueStateTracker], List[DialogueStateTracker]]:
+        """Separate
+
+        Args:
+            all_trackers:
+
+        Returns:
+        """
+
+        augmented, non_augmented = [], []
+        for tracker in all_trackers:
+            augmented.append(tracker) if tracker.is_augmented else non_augmented.append(
+                tracker
+            )
+
+        return augmented, non_augmented
+
     def train(
         self,
-        training_trackers: List[DialogueStateTracker],
+        all_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
 
-        # dealing with training data
-        tracker_state_features, label_ids = self.featurize_for_training(
-            training_trackers, domain, interpreter, **kwargs
+        # Filter non-augmented trackers from augmented ones.
+        augmented_trackers, non_augmented_trackers = self._separate_augmented_trackers(
+            all_trackers
         )
+
+        print(len(non_augmented_trackers), len(augmented_trackers))
 
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
@@ -257,14 +278,13 @@ class IntentTEDPolicy(TEDPolicy):
 
         print("Label data signature", self._label_data.get_signature())
 
-        # extract actual training data to feed to model
-        model_data = self._create_model_data(
-            tracker_state_features, label_ids, encoded_all_labels
+        model_train_data, train_label_ids = self._featurize_for_model(
+            domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
         )
 
-        print("model_data signature", model_data.get_signature())
+        print("model_data signature", model_train_data.get_signature())
 
-        if model_data.is_empty():
+        if model_train_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
                 f"Skipping training of the policy."
@@ -272,23 +292,48 @@ class IntentTEDPolicy(TEDPolicy):
             return
 
         # keep one example for persisting and loading
-        self.data_example = model_data.first_data_example()
+        self.data_example = model_train_data.first_data_example()
 
         self.model = IntentTED(
-            model_data.get_signature(),
+            model_train_data.get_signature(),
             self.config,
             isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
             self._label_data,
         )
 
         self.model.fit(
-            model_data,
+            model_train_data,
             self.config[EPOCHS],
             self.config[BATCH_SIZES],
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
         )
+
+        # Featurize augmented trackers for threshold computation
+        model_threshold_data, threshold_label_ids = self._featurize_for_model(
+            domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
+        )
+
+        self.model.compute_thresholds(model_threshold_data, threshold_label_ids)
+
+    def _featurize_for_model(
+        self,
+        domain,
+        encoded_all_labels,
+        interpreter,
+        non_augmented_trackers,
+        **kwargs: Any,
+    ):
+        # dealing with training data
+        tracker_state_features, label_ids = self.featurize_for_training(
+            non_augmented_trackers, domain, interpreter, **kwargs
+        )
+        # extract actual training data to feed to model
+        model_data = self._create_model_data(
+            tracker_state_features, label_ids, encoded_all_labels
+        )
+        return model_data, label_ids
 
     @classmethod
     def load(cls, path: Text) -> "TEDPolicy":
@@ -421,7 +466,7 @@ class IntentTED(TED):
         )
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
-        loss, acc, sim_pos, sim_neg_il = self._tf_layers[f"loss.{LABEL}"](
+        loss, acc = self._tf_layers[f"loss.{LABEL}"](
             dialogue_embed,
             batch_labels_embed,
             batch_label_ids,
@@ -433,69 +478,73 @@ class IntentTED(TED):
         self.action_loss.update_state(loss)
         self.action_acc.update_state(acc)
 
-        return loss, sim_pos, sim_neg_il
-
-    # def batch_loss(
-    #     self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    # ) -> tf.Tensor:
-    #     batch = self.batch_to_model_data_format(batch_in, self.data_signature)
-    #     print("batch", batch.keys())
-    #     print("dialogue", batch[DIALOGUE])
-    #
-    #     dialogue_in = batch[DIALOGUE_FEATURES][0]
-    #     label_in = batch[LABEL_FEATURES][0]
-    #     label_ids = batch[LABEL_IDS][0]
-    #     all_gt_labels = batch["all_gt_labels"][0]
-    #     # neg_label_mask = batch["Neg Label Mask"][0]
-    #
-    #     # print("label ids", label_ids.shape)
-    #
-    #     if self.max_history_tracker_featurizer_used:
-    #         # add time dimension if max history featurizer is used
-    #         label_in = label_in[:, tf.newaxis, :]
-    #
-    #     all_labels, all_labels_embed = self._create_all_labels_embed()
-    #     # print('labels shape', all_labels.shape, all_labels_embed.shape)
-    #
-    #     dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
-    #     label_embed = self._embed_label(label_in)
-    #
-    #     loss, acc = self._tf_layers[f"loss.{LABEL}"](
-    #         dialogue_embed,
-    #         label_embed,
-    #         label_in,
-    #         all_labels_embed,
-    #         all_labels,
-    #         mask,
-    #         all_gt_labels,
-    #         label_ids,
-    #     )
-    #
-    #     self.action_loss.update_state(loss)
-    #     self.action_acc.update_state(acc)
-    #
-    #     return loss
+        return loss
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
-        batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
 
-        dialogue_in = batch[DIALOGUE_FEATURES][0]
+        tf_batch_data = self.batch_to_model_data_format(
+            batch_in, self.predict_data_signature
+        )
+
+        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
-        dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
+        dialogue_in = self._process_batch_data(tf_batch_data)
+        dialogue_embed, dialogue_mask = self._emebed_dialogue(
+            dialogue_in, dialogue_lengths
+        )
+        dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             dialogue_embed[:, :, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
-            mask,
+            dialogue_mask,
         )
 
         scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[LOSS_TYPE]
+            sim_all, self.config[SIMILARITY_TYPE]
         )
 
         return {"action_scores": scores, "sim_all": sim_all}
+
+    def predict(self, predict_data: RasaModelData) -> Dict[Text, tf.Tensor]:
+        if self._predict_function is None:
+            logger.debug("There is no tensorflow prediction graph.")
+            self.build_for_predict(predict_data)
+
+        self._training = False  # needed for eager mode
+
+        all_outputs = {"intent_scores": None, "similarities": None}
+
+        # Prepare multiple batches and collect outputs
+        # total_num_examples = predict_data.number_of_examples()
+        # batch_size = 1
+        # for index in range(0, total_num_examples, batch_size):
+        #
+        #     current_batch_size = min(batch_size, total_num_examples - index)
+        #     batch_in = predict_data.prepare_batch(start=index, end=index+current_batch_size)
+        #     batch_output = self._predict_function(batch_in)
+        #     all_outputs["similarities"] = (
+        #         tf.stack(all_outputs["similarities"], batch_output["similarities"])
+        #         if all_outputs["similarities"]
+        #         else batch_output["similarities"]
+        #     )
+        #     all_outputs["intent_scores"] = (
+        #         tf.stack(all_outputs["intent_scores"], batch_output["intent_scores"])
+        #         if all_outputs["intent_scores"]
+        #         else batch_output["intent_scores"]
+        #     )
+
+        batch_in = predict_data.prepare_batch()
+        batch_output = self._predict_function(batch_in)
+
+        return batch_output
+
+    def compute_thresholds(self, model_data: RasaModelData, label_ids):
+
+        model_outputs = self.predict(model_data)
+        print(model_outputs.keys())

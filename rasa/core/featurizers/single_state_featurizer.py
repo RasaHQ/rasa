@@ -331,7 +331,7 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
             domain: The domain that contains the actions.
             interpreter: The interpreter used to encode the actions.
         Returns:
-            A list of encoded actions.
+            A list of encoded intents.
         """
 
         return [self._encode_intent(intent, interpreter) for intent in domain.intents]
