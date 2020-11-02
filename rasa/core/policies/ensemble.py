@@ -623,7 +623,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 tracker, domain, interpreter
             )
         else:
-            # TODO: Deprecation warning if list of floats is returned
             rasa.shared.utils.io.raise_warning(
                 "The function `predict_action_probabilities` of "
                 "the `Policy` interface was changed to support "
@@ -641,7 +640,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 f"the `Policy` interface was changed to return "
                 f"a `{PolicyPrediction.__name__}` object. Please make sure to "
                 "adapt your custom `Policy` implementation. Support for returning "
-                "for return a list of floats will be removed in Rasa Open Source 3.0.",
+                "a list of floats will be removed in Rasa Open Source 3.0.",
                 category=DeprecationWarning,
             )
             prediction = PolicyPrediction(prediction, policy_priority=policy.priority)
