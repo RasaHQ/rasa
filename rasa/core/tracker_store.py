@@ -43,7 +43,10 @@ from rasa.shared.core.trackers import (
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
+
+from opentelemetry import trace
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
@@ -856,6 +859,7 @@ class SQLTrackerStore(TrackerStore):
         self._create_database(self.engine, db)
         engine_url.database = db
         self.engine = create_engine(engine_url)
+        trace.set_tracer_provider(TracerProvider())
         # On Mac, causes a jaeger [bug](https://github.com/open-telemetry/opentelemetry-python/issues/1061)
         SQLAlchemyInstrumentor().instrument(
             engine=self.engine,
