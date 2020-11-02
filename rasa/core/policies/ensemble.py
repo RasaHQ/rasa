@@ -723,7 +723,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 domain, prediction.probabilities, policy_name
             )
 
-        logger.debug(f"Predicted next action using {policy_name}")
+        logger.debug(f"Predicted next action using {policy_name}.")
         return prediction.probabilities, policy_name
 
 

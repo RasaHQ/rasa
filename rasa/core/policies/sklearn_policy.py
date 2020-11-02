@@ -281,7 +281,7 @@ class SklearnPolicy(Policy):
         )
 
     def persist(self, path: Union[Text, Path]) -> None:
-        """Persist the policy properties (see parent class for more information)."""
+        """Persists the policy properties (see parent class for more information)."""
         if self.model:
             self.featurizer.persist(path)
 

@@ -76,8 +76,8 @@ def test_policy_loading_simple(tmp_path: Path):
 class ConstantPolicy(Policy):
     def __init__(
         self,
-        priority: int = None,
-        predict_index: int = None,
+        priority: Optional[int] = None,
+        predict_index: Optional[int] = None,
         confidence: float = 1,
         is_end_to_end_prediction: bool = False,
         events: Optional[List[Event]] = None,

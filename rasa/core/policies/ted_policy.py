@@ -373,12 +373,14 @@ class TEDPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        """Predict the next action the bot should take.
+        """Predicts the next action the bot should take.
 
-        Return the list of probabilities for the next actions.
+        See the docstring of the parent class `Policy` for more information.
         """
         if self.model is None:
-            return PolicyPrediction(self._default_predictions(domain))
+            return PolicyPrediction(
+                self._default_predictions(domain), policy_priority=self.priority
+            )
 
         # create model data from tracker
         tracker_state_features = self.featurizer.create_state_features(
