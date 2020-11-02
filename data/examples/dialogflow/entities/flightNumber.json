@@ -2,7 +2,7 @@
   "id": "fc93d510-e240-4b71-bafe-7dd7a3303e79",
   "name": "flightNumber",
   "isOverridable": true,
-  "isEnum": true,
+  "isEnum": false,
   "isRegexp": false,
   "automatedExpansion": false,
   "allowFuzzyExtraction": false
