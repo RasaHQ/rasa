@@ -507,7 +507,7 @@ class Domain:
         self.intent_properties = self.collect_intent_properties(
             intents, self.entities, self.roles, self.groups
         )
-        self.overriden_default_intents = self._collect_overridden_default_intents(
+        self.overridden_default_intents = self._collect_overridden_default_intents(
             intents
         )
 
@@ -1032,7 +1032,7 @@ class Domain:
         for intent_name, intent_props in intent_properties.items():
             if (
                 intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
-                and intent_name not in self.overriden_default_intents
+                and intent_name not in self.overridden_default_intents
             ):
                 # Default intents should be not dumped with the domain
                 continue

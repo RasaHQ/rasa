@@ -999,7 +999,7 @@ def test_domain_deepcopy():
 
     # equalities
     assert new_domain.intent_properties == domain.intent_properties
-    assert new_domain.overriden_default_intents == domain.overriden_default_intents
+    assert new_domain.overridden_default_intents == domain.overridden_default_intents
     assert new_domain.entities == domain.entities
     assert new_domain.forms == domain.forms
     assert new_domain.form_names == domain.form_names
@@ -1014,7 +1014,9 @@ def test_domain_deepcopy():
     # not the same objects
     assert new_domain is not domain
     assert new_domain.intent_properties is not domain.intent_properties
-    assert new_domain.overriden_default_intents is not domain.overriden_default_intents
+    assert (
+        new_domain.overridden_default_intents is not domain.overridden_default_intents
+    )
     assert new_domain.entities is not domain.entities
     assert new_domain.forms is not domain.forms
     assert new_domain.form_names is not domain.form_names
