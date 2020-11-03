@@ -601,13 +601,13 @@ class Domain:
         if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
             # list of form names (Rasa Open Source 1 format)
             rasa.shared.utils.io.raise_warning(
-                f"The `forms` section in the domain used the old Rasa Open Source 1 "
-                f"list format to define forms. Rasa Open Source will be configured to "
-                f"use the deprecated `FormAction` within the Rasa SDK. If you want to "
-                f"use the new Rasa Open Source 2 `FormAction` adapt your `forms`"
-                f"section as described in the documentation. Support for the "
-                f"deprecated `FormAction` in the Rasa SDK will be removed in Rasa Open "
-                f"Source 3.0.",
+                "The `forms` section in the domain used the old Rasa Open Source 1 "
+                "list format to define forms. Rasa Open Source will be configured to "
+                "use the deprecated `FormAction` within the Rasa SDK. If you want to "
+                "use the new Rasa Open Source 2 `FormAction` adapt your `forms` "
+                "section as described in the documentation. Support for the "
+                "deprecated `FormAction` in the Rasa SDK will be removed in Rasa Open "
+                "Source 3.0.",
                 docs=rasa.shared.constants.DOCS_URL_FORMS,
                 category=FutureWarning,
             )
@@ -622,6 +622,7 @@ class Domain:
         return [], {}, []
 
     def __hash__(self) -> int:
+        """Returns a unique hash for the domain."""
         self_as_dict = self.as_dict()
         self_as_dict[
             KEY_INTENTS

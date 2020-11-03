@@ -155,8 +155,17 @@ def action_from_name(
     action_endpoint: Optional[EndpointConfig],
     retrieval_intents: Optional[List[Text]] = None,
 ) -> "Action":
-    """Return an action instance for the name."""
+    """Retrieves an action by its name.
 
+    Args:
+        name: The name of the action.
+        domain: The current model domain.
+        action_endpoint: The endpoint to execute custom actions.
+        retrieval_intents: Retrieval intents used by the current model.
+
+    Returns:
+        The instantiated action.
+    """
     defaults = {a.name(): a for a in default_actions(action_endpoint)}
 
     if name in defaults and name not in domain.user_actions_and_forms:
