@@ -909,7 +909,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             message.set(ENTITIES, entities, add_to_output=True)
 
-        return values_to_numpy(out.get(DIAGNOSTIC_DATA))
+        return values_to_numpy(out.get(DIAGNOSTIC_DATA)) if out else None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.

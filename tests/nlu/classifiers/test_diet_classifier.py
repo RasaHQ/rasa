@@ -445,3 +445,40 @@ async def test_train_persist_load_with_composite_entities(
     assert loaded.pipeline
     text = "I am looking for an italian restaurant"
     assert loaded.parse(text) == trained.parse(text)
+
+
+async def test_process_gives_diagnostic_data(component_builder: ComponentBuilder, tmpdir: Path):
+    """Test if processing a message returns attention weights as numpy array"""
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", RANDOM_SEED: 1, EPOCHS: 1},
+            ],
+            "language": "en",
+        }
+    )
+
+    (trainer, trained, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data="data/test/many_intents.md",
+        component_builder=component_builder,
+    )
+
+    assert trainer.pipeline
+    assert trained.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    message = Message(data={TEXT: "hello"})
+    diagnostic_data = None
+    for component in loaded.pipeline:
+        diagnostic_data = component.process(message)
+
+    # The last component is DIETClassifier, which should return attention weights
+    assert isinstance(diagnostic_data, dict)
+    assert "attention_weights" in diagnostic_data
+    assert isinstance(diagnostic_data.get("attention_weights"), np.ndarray)
