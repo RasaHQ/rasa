@@ -825,11 +825,12 @@ class TED(TransformerRasaModel):
             _sequence_lengths = tf.cast(
                 tf_batch_data[attribute][SEQUENCE_LENGTH][0], dtype=tf.int32
             )
+            _sequence_lengths = tf.squeeze(_sequence_lengths, axis=-1)
             mask_sequence_text = tf.squeeze(
-                self._compute_mask(tf.squeeze(_sequence_lengths, axis=-1)), 1
+                self._compute_mask(_sequence_lengths), axis=1
             )
             sequence_lengths = _sequence_lengths + 1
-            mask_text = self._compute_mask(tf.squeeze(sequence_lengths, axis=-1))
+            mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
             attribute_features, _, _, _ = self._create_sequence(
                 tf_batch_data[attribute][SEQUENCE],
@@ -846,9 +847,12 @@ class TED(TransformerRasaModel):
             # TODO entities
 
             # resulting attribute features will have shape
-            # combined batch dimension and dialogue length x sequence length x units
-            attribute_features = self._last_token(
-                attribute_features, tf.squeeze(sequence_lengths, axis=-1)
+            # combined batch dimension and dialogue length x 1 x units
+            attribute_features = tf.expand_dims(
+                self._last_token(
+                    attribute_features, tf.squeeze(sequence_lengths, axis=-1)
+                ),
+                axis=1,
             )
 
         else:
@@ -876,6 +880,10 @@ class TED(TransformerRasaModel):
             + SEQUENCE_FEATURES_TO_ENCODE
             + STATE_LEVEL_FEATURES
         ):
+            # attribute features have shape
+            # combined batch dimension and dialogue length x 1 x units
+            # convert them back to their original shape of
+            # batch size x dialogue length x units
             attribute_features = self._convert_to_original_shape(
                 attribute_features, tf_batch_data
             )
