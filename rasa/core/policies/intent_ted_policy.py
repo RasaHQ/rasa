@@ -241,11 +241,11 @@ class IntentTEDPolicy(TEDPolicy):
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_intents(domain, interpreter)
-        print("encoded all labels", encoded_all_labels)
+        # print("encoded all labels", encoded_all_labels)
 
         attribute_data, _ = convert_to_data_format(encoded_all_labels)
 
-        print("Attribute data after conversion", attribute_data)
+        # print("Attribute data after conversion", attribute_data)
 
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
@@ -292,19 +292,19 @@ class IntentTEDPolicy(TEDPolicy):
             all_trackers
         )
 
-        print(len(non_augmented_trackers), len(augmented_trackers))
+        # print(len(non_augmented_trackers), len(augmented_trackers))
 
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
 
-        print("Label data signature", self._label_data.get_signature())
+        # print("Label data signature", self._label_data.get_signature())
 
         model_train_data, train_label_ids = self._featurize_for_model(
             domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
         )
 
-        print("model_data signature", model_train_data.get_signature())
+        # print("model_data signature", model_train_data.get_signature())
 
         if model_train_data.is_empty():
             logger.error(
@@ -532,6 +532,12 @@ class IntentTEDPolicy(TEDPolicy):
         # take the last prediction in the sequence
         confidences = output["intent_scores"].numpy()[:, -1, :]
 
+        intent_confidences = {}
+        for index, intent in enumerate(domain.intents):
+            intent_confidences[intent] = confidences[0][index]
+
+        # print("Confidences", intent_confidences)
+
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
         if last_user_event:
@@ -540,14 +546,22 @@ class IntentTEDPolicy(TEDPolicy):
             query_intent_id = domain.index_for_intent(query_intent)
             query_intent_prob = confidences[0][query_intent_id]
 
-            if query_intent_id in self.intent_thresholds:
+            if (
+                query_intent_id in self.intent_thresholds
+                and query_intent not in domain.retrieval_intents
+            ):
                 # Check is only valid in this case, for all
                 # other cases it means that this intent did not appear in stories.
                 logger.debug(
                     f"User intent {query_intent} is probable with "
                     f"{query_intent_prob}, while threshold is {self.intent_thresholds[query_intent_id]}"
                 )
+                print(
+                    f"User intent {query_intent} is probable with "
+                    f"{query_intent_prob}, while threshold is {self.intent_thresholds[query_intent_id]}"
+                )
                 if query_intent_prob < self.intent_thresholds[query_intent_id]:
+
                     # Mark the corresponding user turn as interesting
                     last_user_event.set_as_not_probable()
 
@@ -557,15 +571,15 @@ class IntentTEDPolicy(TEDPolicy):
 class IntentTED(TED):
     def _prepare_layers(self) -> None:
 
-        print("preparing layers")
+        # print("preparing layers")
 
-        print("data layers")
+        # print("data layers")
         for name in self.data_signature.keys():
             print(name)
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
             self._prepare_encoding_layers(name)
 
-        print("label layers")
+        # print("label layers")
         for name in self.label_signature.keys():
             print(name)
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
@@ -578,7 +592,7 @@ class IntentTED(TED):
         self._prepare_embed_layers(DIALOGUE)
         self._prepare_embed_layers(LABEL)
 
-        print("layers uptil now - ", self._tf_layers.keys())
+        # print("layers uptil now - ", self._tf_layers.keys())
 
         self._prepare_multi_label_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
@@ -605,7 +619,7 @@ class IntentTED(TED):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-        print("tf_batch_data keys", tf_batch_data.keys())
+        # print("tf_batch_data keys", tf_batch_data.keys())
 
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
@@ -614,11 +628,11 @@ class IntentTED(TED):
         batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][
             0
         ]  # This can have multiple ids
-        print("Batch label ids shape", batch_label_ids.shape)
+        # print("Batch label ids shape", batch_label_ids.shape)
 
         batch_labels_embed = self._get_labels_embed(batch_label_ids, all_labels_embed)
 
-        print("Batch labels embed shape", batch_labels_embed.shape)
+        # print("Batch labels embed shape", batch_labels_embed.shape)
 
         dialogue_in = self._process_batch_data(tf_batch_data)
         dialogue_embed, dialogue_mask = self._emebed_dialogue(
@@ -721,7 +735,7 @@ class IntentTED(TED):
             )
 
         for label_id in thresholds:
-            thresholds[label_id] = min(thresholds[label_id])
+            thresholds[label_id] = min(0.5, min(thresholds[label_id]))
 
         print(thresholds)
 

@@ -982,17 +982,17 @@ class MultiLabelDotProductLoss(DotProductLoss):
             name="expand_pos_labels",
         )
 
-        print("Pos input embed shape", pos_inputs_embed.shape)
-        print("Pos labels embed shape", pos_labels_embed.shape)
+        # print("Pos input embed shape", pos_inputs_embed.shape)
+        # print("Pos labels embed shape", pos_labels_embed.shape)
 
         # get neg ids from batch itself
         neg_ids = self._get_neg_indices(
             tf.shape(inputs_embed)[0], tf.shape(inputs_embed)[0]
         )
 
-        print("Neg ids shape", neg_ids.shape)
-
-        print("labels_embed shape", labels_embed.shape)
+        # print("Neg ids shape", neg_ids.shape)
+        #
+        # print("labels_embed shape", labels_embed.shape)
 
         # sample negative labels
         # print("Neg ids", neg_ids.shape)
@@ -1003,8 +1003,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
         # neg_label_ids = self._get_negs(label_ids, label_ids, label_ids, neg_ids)
         neg_labels_ids = self._get_neg_values(label_ids, neg_ids)
 
-        print("Neg labels embed shape", neg_labels_embed.shape)
-        print("Neg label ids shape", neg_labels_ids.shape)
+        # print("Neg labels embed shape", neg_labels_embed.shape)
+        # print("Neg label ids shape", neg_labels_ids.shape)
 
         # print('Neg labels', neg_labels.shape, 'all_gt_labels', all_gt_labels.shape)
         max_label_id = tf.cast(tf.math.reduce_max(all_label_ids), dtype=tf.int32)
@@ -1019,7 +1019,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             tf.float32,
         )  # bs x num label ids
 
-        print("batch mh labels shape", batch_labels_multi_hot.shape)
+        # print("batch mh labels shape", batch_labels_multi_hot.shape)
 
         # Remove extra dimensions for gather
         neg_labels_ids = tf.squeeze(tf.squeeze(neg_labels_ids, 1), -1)
@@ -1033,7 +1033,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         pos_neg_labels = tf.cast(pos_neg_labels, tf.float32)
-        print("Pos neg labels shape", pos_neg_labels.shape)
+        # print("Pos neg labels shape", pos_neg_labels.shape)
 
         # tf.print("Label ids")
         # tf.print(label_ids)
@@ -1067,7 +1067,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         target_size = tf.shape(embeds_flat)[0]
         neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
 
-        print("neg embeds inside _get_negs shape", neg_embeds.shape)
+        # print("neg embeds inside _get_negs shape", neg_embeds.shape)
 
         # check if inputs have sequence dimension
         if len(embeds.shape) == 3:
@@ -1117,7 +1117,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
 
-        print("Loss shape", loss.shape)
+        # print("Loss shape", loss.shape)
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
@@ -1153,8 +1153,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
         sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
         sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask)
 
-        print("Sim pos shape", sim_pos.shape)
-        print("Sim neg_il shape", sim_neg_il.shape)
+        # print("Sim pos shape", sim_pos.shape)
+        # print("Sim neg_il shape", sim_neg_il.shape)
 
         # sim_neg_ll = (
         #     self.sim(pos_labels_embed, neg_labels_embed, mask) + neg_inf * bad_neg_labels
@@ -1197,15 +1197,15 @@ class MultiLabelDotProductLoss(DotProductLoss):
             all_label_ids,
         )
 
-        print("Sampled ------------")
-        print(
-            pos_inputs_embed.shape,
-            pos_labels_embed.shape,
-            neg_labels_embed.shape,
-            pos_neg_labels.shape,
-        )
+        # print("Sampled ------------")
+        # print(
+        #     pos_inputs_embed.shape,
+        #     pos_labels_embed.shape,
+        #     neg_labels_embed.shape,
+        #     pos_neg_labels.shape,
+        # )
 
-        print("mask shape", mask.shape)
+        # print("mask shape", mask.shape)
 
         # calculate similarities
         sim_pos, sim_neg_il = self._train_sim(

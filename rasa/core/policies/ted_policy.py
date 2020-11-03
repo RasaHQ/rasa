@@ -305,10 +305,10 @@ class TEDPolicy(Policy):
         """
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
-        print("Inside create model data")
+        # print("Inside create model data")
 
-        print("Label ids", label_ids)
-        print("Encoded_all_labels", encoded_all_labels)
+        # print("Label ids", label_ids)
+        # print("Encoded_all_labels", encoded_all_labels)
 
         if label_ids is not None and encoded_all_labels is not None:
 
@@ -337,7 +337,7 @@ class TEDPolicy(Policy):
             DIALOGUE, LENGTH, next(iter(list(attribute_data.keys()))), MASK
         )
 
-        print("-------------")
+        # print("-------------")
 
         return model_data
 
@@ -366,7 +366,7 @@ class TEDPolicy(Policy):
             domain, interpreter
         )
 
-        print("Label data signature", self._label_data.get_signature())
+        # print("Label data signature", self._label_data.get_signature())
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(

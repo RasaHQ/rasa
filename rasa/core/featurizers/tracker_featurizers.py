@@ -520,37 +520,22 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         )
         for tracker in pbar:
 
-            # print(len(tracker.events))
-            # for event in tracker.events:
-            #     # print(event).as_dict()
-            #     print(event)
             states = self._create_states(tracker, domain)
-            # print(states)
-            # exit(0)
-            # print('Created states: ', states)
+
             states_length_for_intent = 0
             for event in tracker.applied_events():
-                # print('--------')
-                # print("Event dets")
-                # event.print()
-                # print('---------')
                 if isinstance(event, ActionExecuted):
                     states_length_for_intent += 1
-                # print(event)
+
                 if isinstance(event, UserUttered):
-                    # print('user uttered')
-                    # print('user event: ', event.intent['name'])
-                    # if not event.unpredictable:
 
                     # only actions which can be
                     # predicted at a stories start
                     sliced_states = self.slice_state_history(
                         states[:states_length_for_intent], self.max_history
                     )
-                    # print('index: ', idx)
-                    # print('sliced states: ', sliced_states)
-                    # print('name', event.intent['name'])
-                    # TODO: If there are duplicate tracker states with different intents,
+
+                    # TODO: If there are duplicate tracker states with different intents as labels,
                     #  then collect all intents here itself to construct the list of multiple labels
                     if self.remove_duplicates:
                         hashed = self._hash_example(
@@ -570,12 +555,6 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                     pbar.set_postfix(
                         {"# actions": "{:d}".format(len(trackers_as_actions))}
                     )
-
-            # exit(0)
-            # print('----------------------------------')
-
-        for s, a in zip(trackers_as_states, trackers_as_actions):
-            print(s, a)
 
         logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 
@@ -622,37 +601,12 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             self._create_states(tracker, domain) for tracker in duplicate_trackers
         ]
 
-        return trackers_as_states
+        trackers_as_states = [
+            self.slice_state_history(states, self.max_history)
+            for states in trackers_as_states
+        ]
 
-    # def prediction_states(
-    #     self, trackers: List[DialogueStateTracker], domain: Domain, use_
-    # ) -> List[List[Dict[Text, float]]]:
-    #     """Transforms list of trackers to lists of states for prediction."""
-    #
-    #     copy_trackers = copy.deepcopy(trackers)
-    #
-    #     # print(len(trackers[0].events), len(copy_trackers[0].events))
-    #
-    #     # tracker length is always 1 at prediction time
-    #     # popped_event = copy_trackers[0].events.pop()
-    #
-    #     # print(len(trackers[0].events), len(copy_trackers[0].events))
-    #
-    #     trackers_as_states = [
-    #         self._create_states(tracker, domain) for tracker in copy_trackers
-    #     ]
-    #     # print(trackers_as_states)
-    #
-    #     # remove last state because we expect latest UserUttered event to have been added to incoming tracker also.
-    #     # TODO: add a None in the beginning as well, otherwise effectively max history is reduced by 1 here
-    #     trackers_as_states = [
-    #         self.slice_state_history(states, self.max_history)[:-1]
-    #         for states in trackers_as_states
-    #     ]
-    #
-    #     # print('sliced states for prediction', trackers_as_states)
-    #
-    #     return trackers_as_states
+        return trackers_as_states
 
     @staticmethod
     def _serialize_state_feature(features_list):
@@ -677,7 +631,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             )
             all_labels = [label_ids[i][0]]
 
-            print(current_tracker_state_feature)
+            # print(current_tracker_state_feature)
 
             for j in range(len(tracker_state_features)):
 
@@ -727,17 +681,17 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             trackers, domain
         )
 
-        print("Featurizing states")
+        # print("Featurizing states")
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
 
-        print("Featurizing labels")
+        # print("Featurizing labels")
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
 
         label_ids = self._collect_multiple_labels(tracker_state_features, label_ids)
 
-        print(domain.intents)
-        print(domain.action_names)
-        print(label_ids)
+        # print(domain.intents)
+        # print(domain.action_names)
+        # print(label_ids)
 
         return tracker_state_features, label_ids
