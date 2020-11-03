@@ -5,6 +5,7 @@ from _pytest.fixtures import SubRequest
 
 import rasa.shared.core.constants
 from rasa.shared.core.slots import (
+    InvalidSlotTypeException,
     Slot,
     TextSlot,
     BooleanSlot,
@@ -292,3 +293,8 @@ class TestAnySlot(SlotTestCollection):
     def test_exception_if_featurized(self):
         with pytest.raises(ValueError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
+
+
+def test_raises_on_invalid_slot_type():
+    with pytest.raises(InvalidSlotTypeException):
+        Slot.resolve_by_type("foobar")

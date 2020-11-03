@@ -69,7 +69,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -96,8 +96,18 @@ jobs:
         sudo apt-get -y install libpq-dev
         make install-full install-docs
 
+    - name: Checkout target branch to be able to diff
+      if: github.event_name == 'pull_request'
+      run: |
+        git fetch --depth=1 origin ${{ github.base_ref }}
+        echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
+
     - name: Lint Code 🎎
-      run: make lint
+      run: |
+        # If it's not a pull request, $DOCSTRING_DIFF_BRANCH is unset.
+        # This will result in an empty diff, which effictively means that
+        # make lint-docstrings will be skipped for other events than `pull_request`
+        make lint BRANCH=$DOCSTRING_DIFF_BRANCH
 
     - name: Check Types 📚
       run: make types
@@ -115,7 +125,6 @@ jobs:
     name: Run Tests
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 3
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
@@ -131,7 +140,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -274,7 +283,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -332,9 +341,9 @@ jobs:
         shell: bash
         run: |
           if [ -z "${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" ]; then
-            echo ::set-env name=MERGE_TOKEN::${{ secrets.GITHUB_TOKEN }}
+            echo "MERGE_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
           else
-            echo ::set-env name=MERGE_TOKEN::${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}
+            echo "MERGE_TOKEN=${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" >> $GITHUB_ENV
           fi
       - uses: rasahq/merge-pal-action@master
         with:

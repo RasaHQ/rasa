@@ -489,12 +489,12 @@ class ResponseSelector(DIETClassifier):
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
         if not meta.get("file"):
-            return model  # pytype: disable=bad-return-type
+            return model
 
         model.responses = meta.get("responses", {})
         model.all_retrieval_intents = meta.get("all_retrieval_intents", [])
 
-        return model  # pytype: disable=bad-return-type
+        return model
 
 
 class DIET2BOW(DIET):

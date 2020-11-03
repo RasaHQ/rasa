@@ -1,24 +1,15 @@
-import asyncio
-from pathlib import Path
 from typing import Text, List
 
 import pytest
 
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted
-from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
-from rasa.shared.importers.importer import E2EImporter, TrainingDataImporter
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.shared.nlu.constants import TEXT, INTENT_RESPONSE_KEY
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.loading import (
-    guess_format,
-    UNK,
-    load_data,
-)
+from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
     template_key_to_intent_response_key,
@@ -44,11 +35,11 @@ def test_wit_data():
     td = load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 4
-    assert len(td.intent_examples) == 1
-    assert len(td.training_examples) == 4
+    assert len(td.intent_examples) == 5
+    assert len(td.training_examples) == 5
     assert td.entity_synonyms == {}
-    assert td.intents == {"flight_booking"}
-    assert td.entities == {"location", "datetime"}
+    assert td.intents == {"flight_booking", USER_INTENT_OUT_OF_SCOPE}
+    assert td.entities == {"location", "wit$datetime"}
 
 
 def test_dialogflow_data():
@@ -219,49 +210,64 @@ def test_demo_data_filter_out_retrieval_intents(files):
 def test_train_test_split(filepaths: List[Text]):
     from rasa.shared.importers.utils import training_data_from_paths
 
-    trainingdata = training_data_from_paths(filepaths, language="en")
+    training_data = training_data_from_paths(filepaths, language="en")
 
-    assert trainingdata.intents == {
+    assert training_data.intents == {
         "affirm",
         "greet",
         "restaurant_search",
         "goodbye",
         "chitchat",
     }
-    assert trainingdata.entities == {"location", "cuisine"}
-    assert set(trainingdata.responses.keys()) == {
+    assert training_data.entities == {"location", "cuisine"}
+    assert set(training_data.responses.keys()) == {
         "utter_chitchat/ask_name",
         "utter_chitchat/ask_weather",
     }
 
-    assert len(trainingdata.training_examples) == 46
-    assert len(trainingdata.intent_examples) == 46
-    assert len(trainingdata.response_examples) == 4
+    NUM_TRAIN_EXAMPLES = 46
+    NUM_RESPONSE_EXAMPLES = 4
 
-    trainingdata_train, trainingdata_test = trainingdata.train_test_split(
-        train_frac=0.8
-    )
+    assert len(training_data.training_examples) == NUM_TRAIN_EXAMPLES
+    assert len(training_data.intent_examples) == NUM_TRAIN_EXAMPLES
+    assert len(training_data.response_examples) == NUM_RESPONSE_EXAMPLES
 
-    assert (
-        len(trainingdata_test.training_examples)
-        + len(trainingdata_train.training_examples)
-        == 46
-    )
-    assert len(trainingdata_train.training_examples) == 34
-    assert len(trainingdata_test.training_examples) == 12
+    for train_percent in range(50, 95, 5):
+        train_frac = train_percent / 100.0
+        train_split, test_split = training_data.train_test_split(train_frac)
 
-    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
-        trainingdata_test.number_of_examples_per_intent.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_intent.keys()) == len(
-        trainingdata_train.number_of_examples_per_intent.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
-        trainingdata_test.number_of_examples_per_response.keys()
-    )
-    assert len(trainingdata.number_of_examples_per_response.keys()) == len(
-        trainingdata_train.number_of_examples_per_response.keys()
-    )
+        assert (
+            len(test_split.training_examples) + len(train_split.training_examples)
+            == NUM_TRAIN_EXAMPLES
+        )
+
+        num_classes = (
+            len(training_data.number_of_examples_per_intent.keys())
+            + -len(training_data.retrieval_intents)
+            + len(training_data.number_of_examples_per_response)
+        )
+
+        expected_num_train_examples_floor = int(train_frac * NUM_TRAIN_EXAMPLES)
+        if NUM_TRAIN_EXAMPLES - expected_num_train_examples_floor < num_classes:
+            expected_num_train_examples_floor = NUM_TRAIN_EXAMPLES - num_classes - 1
+
+        assert len(train_split.training_examples) >= expected_num_train_examples_floor
+        assert (
+            len(train_split.training_examples) <= expected_num_train_examples_floor + 1
+        )
+
+        assert len(training_data.number_of_examples_per_intent.keys()) == len(
+            test_split.number_of_examples_per_intent.keys()
+        )
+        assert len(training_data.number_of_examples_per_intent.keys()) == len(
+            train_split.number_of_examples_per_intent.keys()
+        )
+        assert len(training_data.number_of_examples_per_response.keys()) == len(
+            train_split.number_of_examples_per_response.keys()
+        )
+        assert len(training_data.number_of_examples_per_response.keys()) == len(
+            train_split.number_of_examples_per_response.keys()
+        )
 
 
 @pytest.mark.parametrize(
@@ -562,10 +568,7 @@ def test_training_data_conversion(
             rasa.shared.data.yaml_file_extension(),
         ),
         ("data/examples", rasa.shared.data.yaml_file_extension()),
-        (
-            "data/examples/rasa/demo-rasa.md",
-            rasa.shared.data.markdown_file_extension(),
-        ),
+        ("data/examples/rasa/demo-rasa.md", rasa.shared.data.markdown_file_extension()),
         ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],
 )
@@ -607,37 +610,3 @@ def test_custom_attributes(tmp_path):
     assert len(td.training_examples) == 1
     example = td.training_examples[0]
     assert example.get("sentiment") == 0.8
-
-
-async def test_without_additional_e2e_examples(tmp_path: Path):
-    domain_path = tmp_path / "domain.yml"
-    domain_path.write_text(Domain.empty().as_yaml())
-
-    config_path = tmp_path / "config.yml"
-    config_path.touch()
-
-    existing = TrainingDataImporter.load_from_dict(
-        {}, str(config_path), str(domain_path), []
-    )
-
-    stories = StoryGraph(
-        [
-            StoryStep(
-                events=[
-                    UserUttered("greet_from_stories", {"name": "greet_from_stories"}),
-                    ActionExecuted("utter_greet_from_stories"),
-                ]
-            )
-        ]
-    )
-
-    # Patch to return our test stories
-    existing.get_stories = asyncio.coroutine(lambda *args: stories)
-
-    importer = E2EImporter(existing)
-
-    training_data = await importer.get_nlu_data()
-
-    assert training_data.training_examples
-    assert training_data.is_empty()
-    assert not training_data.without_empty_e2e_examples().training_examples

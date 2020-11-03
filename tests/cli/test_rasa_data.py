@@ -130,7 +130,17 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
     subparsers = parser.add_subparsers(help="Rasa commands")
     data.add_subparser(subparsers, parents=[])
 
-    args = parser.parse_args(["data", "validate", "stories", "--max-history", 0])
+    args = parser.parse_args(
+        [
+            "data",
+            "validate",
+            "stories",
+            "--data",
+            "examples/moodbot/data",
+            "--max-history",
+            0,
+        ]
+    )
 
     async def mock_from_importer(importer: TrainingDataImporter) -> Validator:
         return Mock()

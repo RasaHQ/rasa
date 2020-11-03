@@ -7,11 +7,23 @@ from rasa.nlu.model import Interpreter, Trainer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu.conftest import DEFAULT_DATA_PATH
-from typing import Any, Dict, List, Tuple, Text
+from typing import Any, Dict, List, Tuple, Text, Union, Optional
+
+COMPONENTS_TEST_PARAMS = {
+    "DIETClassifier": {EPOCHS: 1},
+    "ResponseSelector": {EPOCHS: 1},
+    "HFTransformersNLP": {"model_name": "bert", "model_weights": "bert-base-uncased"},
+}
+
+
+def get_test_params_for_component(component: Text) -> Dict[Text, Union[Text, int]]:
+    return (
+        COMPONENTS_TEST_PARAMS[component] if component in COMPONENTS_TEST_PARAMS else {}
+    )
 
 
 def as_pipeline(*components):
-    return [{"name": c, EPOCHS: 1} for c in components]
+    return [{**{"name": c}, **get_test_params_for_component(c)} for c in components]
 
 
 def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
@@ -60,12 +72,6 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
                 "DIETClassifier",
             ),
         ),
-        (
-            "zh",
-            as_pipeline(
-                "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
-            ),
-        ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
     ]
 
@@ -94,6 +100,12 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
                 "RegexEntityExtractor",
             ),
         ),
+        (
+            "zh",
+            as_pipeline(
+                "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
+            ),
+        ),
     ]
 
 
@@ -116,6 +128,7 @@ def test_all_components_are_in_at_least_one_test_pipeline():
         ), "`all_components` template is missing component."
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_persist_load_parse(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -135,6 +148,7 @@ async def test_train_persist_load_parse(language, pipeline, component_builder, t
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 async def test_train_persist_load_parse_non_windows(
@@ -157,6 +171,7 @@ def test_train_model_without_data(language, pipeline, component_builder, tmpdir)
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 def test_train_model_without_data_non_windows(
@@ -165,6 +180,7 @@ def test_train_model_without_data_non_windows(
     test_train_model_without_data(language, pipeline, component_builder, tmpdir)
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 def test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -178,6 +194,7 @@ def test_load_and_persist_without_train(language, pipeline, component_builder, t
     assert loaded.parse("Rasa is great!") is not None
 
 
+@pytest.mark.timeout(600)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 def test_load_and_persist_without_train_non_windows(

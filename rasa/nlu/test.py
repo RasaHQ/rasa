@@ -1306,7 +1306,7 @@ def get_eval_data(
 
     should_eval_entities = is_entity_extractor_present(interpreter)
 
-    for example in tqdm(test_data.training_examples):
+    for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
@@ -1861,7 +1861,7 @@ def compare_nlu(
             _, train_included = train.train_test_split(percentage / 100)
             # only count for the first run and ignore the others
             if run == 0:
-                training_examples_per_run.append(len(train_included.training_examples))
+                training_examples_per_run.append(len(train_included.nlu_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")

@@ -18,11 +18,10 @@ from typing import (
 )
 from pathlib import Path
 
-from ruamel.yaml import YAMLError
-
 import rasa.shared.constants
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, YamlException
+from rasa.shared.utils.validation import YamlValidationException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -42,6 +41,8 @@ USED_ENTITIES_KEY = "used_entities"
 USE_ENTITIES_KEY = "use_entities"
 IGNORE_ENTITIES_KEY = "ignore_entities"
 IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
+ENTITY_ROLES_KEY = "roles"
+ENTITY_GROUPS_KEY = "groups"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -148,17 +149,17 @@ class Domain:
             rasa.shared.utils.validation.validate_yaml_schema(
                 yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
             )
-        except rasa.shared.utils.validation.YamlValidationException as e:
+
+            data = rasa.shared.utils.io.read_yaml(yaml)
+            if not rasa.shared.utils.validation.validate_training_data_format_version(
+                data, original_filename
+            ):
+                return Domain.empty()
+
+            return cls.from_dict(data)
+        except YamlException as e:
             e.filename = original_filename
-            raise InvalidDomain(str(e))
-
-        data = rasa.shared.utils.io.read_yaml(yaml)
-        if not rasa.shared.utils.validation.validate_training_data_format_version(
-            data, original_filename
-        ):
-            return Domain.empty()
-
-        return cls.from_dict(data)
+            raise e
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
@@ -170,7 +171,7 @@ class Domain:
 
         return cls(
             intents,
-            data.get(KEY_ENTITIES, []),
+            data.get(KEY_ENTITIES, {}),
             slots,
             utter_templates,
             data.get(KEY_ACTIONS, []),
@@ -253,7 +254,7 @@ class Domain:
 
         if override:
             config = domain_dict["config"]
-            for key, val in config.items():  # pytype: disable=attribute-error
+            for key, val in config.items():
                 combined["config"][key] = val
 
         if override or self.session_config == SessionConfig.default():
@@ -292,7 +293,10 @@ class Domain:
 
     @staticmethod
     def _transform_intent_properties_for_internal_use(
-        intent: Dict[Text, Any], entities: List
+        intent: Dict[Text, Any],
+        entities: List[Text],
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
     ) -> Dict[Text, Any]:
         """Transform intent properties coming from a domain file for internal use.
 
@@ -302,6 +306,8 @@ class Domain:
         Args:
             intent: The intents as provided by a domain file.
             entities: All entities as provided by a domain file.
+            roles: All roles for entities as provided by a domain file.
+            groups: All groups for entities as provided by a domain file.
 
         Returns:
             The intents as they should be used internally.
@@ -315,11 +321,26 @@ class Domain:
 
         # `use_entities` is either a list of explicitly included entities
         # or `True` if all should be included
+        # if the listed entities have a role or group label, concatenate the entity
+        # label with the corresponding role or group label to make sure roles and
+        # groups can also influence the dialogue predictions
         if properties[USE_ENTITIES_KEY] is True:
             included_entities = set(entities)
+            included_entities.update(Domain.concatenate_entity_labels(roles))
+            included_entities.update(Domain.concatenate_entity_labels(groups))
         else:
             included_entities = set(properties[USE_ENTITIES_KEY])
+            for entity in list(included_entities):
+                included_entities.update(
+                    Domain.concatenate_entity_labels(roles, entity)
+                )
+                included_entities.update(
+                    Domain.concatenate_entity_labels(groups, entity)
+                )
         excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
+        for entity in list(excluded_entities):
+            excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
+            excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
         used_entities = list(included_entities - excluded_entities)
         used_entities.sort()
 
@@ -352,14 +373,56 @@ class Domain:
         ]
 
     @classmethod
+    def collect_entity_properties(
+        cls, domain_entities: List[Union[Text, Dict[Text, Any]]]
+    ) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]:
+        """Get entity properties for a domain from what is provided by a domain file.
+
+        Args:
+            domain_entities: The entities as provided by a domain file.
+
+        Returns:
+            A list of entity names.
+            A dictionary of entity names to roles.
+            A dictionary of entity names to groups.
+        """
+        entities: List[Text] = []
+        roles: Dict[Text, List[Text]] = {}
+        groups: Dict[Text, List[Text]] = {}
+
+        for entity in domain_entities:
+            if isinstance(entity, str):
+                entities.append(entity)
+            elif isinstance(entity, dict):
+                for _entity, sub_labels in entity.items():
+                    entities.append(_entity)
+                    if ENTITY_ROLES_KEY in sub_labels:
+                        roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
+                    if ENTITY_GROUPS_KEY in sub_labels:
+                        groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+            else:
+                raise InvalidDomain(
+                    f"Invalid domain. Entity is invalid, type of entity '{entity}' "
+                    f"not supported: '{type(entity).__name__}'"
+                )
+
+        return entities, roles, groups
+
+    @classmethod
     def collect_intent_properties(
-        cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
+        cls,
+        intents: List[Union[Text, Dict[Text, Any]]],
+        entities: List[Text],
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
     ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
         """Get intent properties for a domain from what is provided by a domain file.
 
         Args:
             intents: The intents as provided by a domain file.
             entities: All entities as provided by a domain file.
+            roles: The roles of entities as provided by a domain file.
+            groups: The groups of entities as provided by a domain file.
 
         Returns:
             The intent properties to be stored in the domain.
@@ -370,7 +433,9 @@ class Domain:
         duplicates = set()
 
         for intent in intents:
-            intent_name, properties = cls._intent_properties(intent, entities)
+            intent_name, properties = cls._intent_properties(
+                intent, entities, roles, groups
+            )
 
             if intent_name in intent_properties.keys():
                 duplicates.add(intent_name)
@@ -383,13 +448,17 @@ class Domain:
                 f"Either rename or remove the duplicate ones."
             )
 
-        cls._add_default_intents(intent_properties, entities)
+        cls._add_default_intents(intent_properties, entities, roles, groups)
 
         return intent_properties
 
     @classmethod
     def _intent_properties(
-        cls, intent: Union[Text, Dict[Text, Any]], entities: List[Text]
+        cls,
+        intent: Union[Text, Dict[Text, Any]],
+        entities: List[Text],
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
     ) -> Tuple[Text, Dict[Text, Any]]:
         if not isinstance(intent, dict):
             intent_name = intent
@@ -399,7 +468,9 @@ class Domain:
 
         return (
             intent_name,
-            cls._transform_intent_properties_for_internal_use(intent, entities),
+            cls._transform_intent_properties_for_internal_use(
+                intent, entities, roles, groups
+            ),
         )
 
     @classmethod
@@ -407,16 +478,20 @@ class Domain:
         cls,
         intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
         entities: List[Text],
+        roles: Optional[Dict[Text, List[Text]]],
+        groups: Optional[Dict[Text, List[Text]]],
     ) -> None:
         for intent_name in rasa.shared.core.constants.DEFAULT_INTENTS:
             if intent_name not in intent_properties:
-                _, properties = cls._intent_properties(intent_name, entities)
+                _, properties = cls._intent_properties(
+                    intent_name, entities, roles, groups
+                )
                 intent_properties.update(properties)
 
     def __init__(
         self,
         intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
-        entities: List[Text],
+        entities: List[Union[Text, Dict[Text, Any]]],
         slots: List[Slot],
         templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
@@ -425,12 +500,16 @@ class Domain:
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
+        self.entities, self.roles, self.groups = self.collect_entity_properties(
+            entities
+        )
 
-        self.intent_properties = self.collect_intent_properties(intents, entities)
+        self.intent_properties = self.collect_intent_properties(
+            intents, self.entities, self.roles, self.groups
+        )
         self.overriden_default_intents = self._collect_overridden_default_intents(
             intents
         )
-        self.entities = entities
 
         self.forms: Dict[Text, Any] = {}
         self.form_names: List[Text] = []
@@ -549,6 +628,26 @@ class Domain:
 
         return len(self.input_states)
 
+    @rasa.shared.utils.common.lazy_property
+    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
+        """Return only the templates which are defined for retrieval intents"""
+
+        return dict(
+            filter(
+                lambda x: self.is_retrieval_intent_template(x), self.templates.items()
+            )
+        )
+
+    @staticmethod
+    def is_retrieval_intent_template(
+        template: Tuple[Text, List[Dict[Text, Any]]]
+    ) -> bool:
+        """Check if the response template is for a retrieval intent.
+
+        These templates have a `/` symbol in their name. Use that to filter them from the rest.
+        """
+        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in template[0]
+
     def add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
 
@@ -638,6 +737,48 @@ class Domain:
             for feature_index in range(0, slot.feature_dimensionality())
         ]
 
+    # noinspection PyTypeChecker
+    @rasa.shared.utils.common.lazy_property
+    def entity_states(self) -> List[Text]:
+        """Returns all available entity state strings."""
+
+        entity_states = copy.deepcopy(self.entities)
+        entity_states.extend(Domain.concatenate_entity_labels(self.roles))
+        entity_states.extend(Domain.concatenate_entity_labels(self.groups))
+
+        return entity_states
+
+    @staticmethod
+    def concatenate_entity_labels(
+        entity_labels: Dict[Text, List[Text]], entity: Optional[Text] = None
+    ) -> List[Text]:
+        """Concatenates the given entity labels with their corresponding sub-labels.
+
+        If a specific entity label is given, only this entity label will be
+        concatenated with its corresponding sub-labels.
+
+        Args:
+            entity_labels: A map of an entity label to its sub-label list.
+            entity: If present, only this entity will be considered.
+
+        Returns:
+            A list of labels.
+        """
+        if entity is not None and entity not in entity_labels:
+            return []
+
+        if entity:
+            return [
+                f"{entity}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{sub_label}"
+                for sub_label in entity_labels[entity]
+            ]
+
+        return [
+            f"{entity_label}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity_sub_label}"
+            for entity_label, entity_sub_labels in entity_labels.items()
+            for entity_sub_label in entity_sub_labels
+        ]
+
     @rasa.shared.utils.common.lazy_property
     def input_state_map(self) -> Dict[Text, int]:
         """Provide a mapping from state names to indices."""
@@ -649,7 +790,7 @@ class Domain:
 
         return (
             self.intents
-            + self.entities
+            + self.entity_states
             + self.slot_states
             + self.action_names
             + self.form_names
@@ -661,13 +802,32 @@ class Domain:
         )
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
-        entity_names = set(
-            entity["entity"] for entity in entities if "entity" in entity.keys()
+
+        # If Entity Roles and Groups is used, we also need to make sure the roles and
+        # groups get featurized. We concatenate the entity label with the role/group
+        # label using a special separator to make sure that the resulting label is
+        # unique (as you can have the same role/group label for different entities).
+        entity_names = (
+            set(entity["entity"] for entity in entities if "entity" in entity.keys())
+            | set(
+                f"{entity['entity']}"
+                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
+                for entity in entities
+                if "entity" in entity.keys() and "role" in entity.keys()
+            )
+            | set(
+                f"{entity['entity']}"
+                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
+                for entity in entities
+                if "entity" in entity.keys() and "group" in entity.keys()
+            )
         )
 
+        # the USED_ENTITIES_KEY of an intent also contains the entity labels and the
+        # concatenated entity labels with their corresponding roles and groups labels
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
-        return entity_names.intersection(wanted_entities)
+        return entity_names & wanted_entities
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
@@ -788,7 +948,7 @@ class Domain:
             for s in self.slots:
                 if s.auto_fill:
                     matching_entities = [
-                        e["value"] for e in entities if e["entity"] == s.name
+                        e.get("value") for e in entities if e.get("entity") == s.name
                     ]
                     if matching_entities:
                         if s.type_name == "list":
@@ -848,7 +1008,7 @@ class Domain:
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
             KEY_INTENTS: self._transform_intents_for_file(),
-            KEY_ENTITIES: self.entities,
+            KEY_ENTITIES: self._transform_entities_for_file(),
             KEY_SLOTS: self._slot_definitions(),
             KEY_RESPONSES: self.templates,
             KEY_ACTIONS: self._custom_actions,  # class names of the actions
@@ -876,7 +1036,14 @@ class Domain:
             ):
                 # Default intents should be not dumped with the domain
                 continue
-            use_entities = set(intent_props[USED_ENTITIES_KEY])
+            # `use_entities` and `ignore_entities` in the domain file do not consider
+            # the role and group labels remove them from the list to make sure to not
+            # put them into the domain file
+            use_entities = set(
+                entity
+                for entity in intent_props[USED_ENTITIES_KEY]
+                if rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR not in entity
+            )
             ignore_entities = set(self.entities) - use_entities
             if len(use_entities) == len(self.entities):
                 intent_props[USE_ENTITIES_KEY] = True
@@ -888,6 +1055,37 @@ class Domain:
             intents_for_file.append({intent_name: intent_props})
 
         return intents_for_file
+
+    def _transform_entities_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+        """Transform entity properties for displaying or writing to a domain file.
+
+        Returns:
+            The entity properties as they are used in domain files.
+        """
+        entities_for_file = []
+
+        for entity in self.entities:
+            if entity in self.roles and entity in self.groups:
+                entities_for_file.append(
+                    {
+                        entity: {
+                            ENTITY_GROUPS_KEY: self.groups[entity],
+                            ENTITY_ROLES_KEY: self.roles[entity],
+                        }
+                    }
+                )
+            elif entity in self.roles:
+                entities_for_file.append(
+                    {entity: {ENTITY_ROLES_KEY: self.roles[entity]}}
+                )
+            elif entity in self.groups:
+                entities_for_file.append(
+                    {entity: {ENTITY_GROUPS_KEY: self.groups[entity]}}
+                )
+            else:
+                entities_for_file.append(entity)
+
+        return entities_for_file
 
     def cleaned_domain(self) -> Dict[Text, Any]:
         """Fetch cleaned domain to display or write into a file.
@@ -904,7 +1102,7 @@ class Domain:
         domain_data.pop(KEY_E2E_ACTIONS, None)
 
         for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):
-            for name, intent in intent_info.items():  # pytype: disable=attribute-error
+            for name, intent in intent_info.items():
                 if intent.get(USE_ENTITIES_KEY) is True:
                     del intent[USE_ENTITIES_KEY]
                 if not intent.get(IGNORE_ENTITIES_KEY):
@@ -912,7 +1110,7 @@ class Domain:
                 if len(intent) == 0:
                     domain_data[KEY_INTENTS][idx] = name
 
-        for slot in domain_data[KEY_SLOTS].values():  # pytype: disable=attribute-error
+        for slot in domain_data[KEY_SLOTS].values():
             if slot["initial_value"] is None:
                 del slot["initial_value"]
             if slot["auto_fill"]:
@@ -1192,19 +1390,18 @@ class Domain:
 
         Returns:
             `True` if it's a domain file, otherwise `False`.
+
+        Raises:
+            YamlException: if the file seems to be a YAML file (extension) but
+                can not be read / parsed.
         """
         from rasa.shared.data import is_likely_yaml_file
 
         if not is_likely_yaml_file(filename):
             return False
-        try:
-            content = rasa.shared.utils.io.read_yaml_file(filename)
-            if any(key in content for key in ALL_DOMAIN_KEYS):
-                return True
-        except YAMLError:
-            pass
 
-        return False
+        content = rasa.shared.utils.io.read_yaml_file(filename)
+        return any(key in content for key in ALL_DOMAIN_KEYS)
 
     def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
         """Retrieve the slot mappings for a form which are defined in the domain.

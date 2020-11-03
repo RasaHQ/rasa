@@ -3,8 +3,8 @@ import logging
 from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.shared.core.domain import Domain, PREV_PREFIX, State
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
+from rasa.shared.core.domain import Domain, PREV_PREFIX, State, SubState
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT
@@ -286,7 +286,7 @@ def _get_previous_event(
     """Returns previous event type and name.
 
     Returns the type and name of the event (action or intent) previous to the
-    given state.
+    given state (excluding action_listen).
 
     Args:
         state: Element of sliced states.
@@ -298,23 +298,33 @@ def _get_previous_event(
     previous_event_type = None
     previous_event_name = None
 
+    # A typical state might be
+    # `{'user': {'intent': 'greet'}, 'prev_action': {'action_name': 'action_listen'}}`.
     if not state:
-        return previous_event_type, previous_event_name
-
-    # A typical state is, for example,
-    # `{'prev_action_listen': 1.0, 'intent_greet': 1.0, 'slot_cuisine_0': 1.0}`.
-    # We need to look out for `prev_` and `intent_` prefixes in the labels.
-    for turn_label in state:
-        if (
-            turn_label.startswith(PREV_PREFIX)
-            and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
-        ):
-            # The `prev_...` was an action that was NOT `action_listen`
-            return "action", turn_label.replace(PREV_PREFIX, "")
-        elif turn_label.startswith(INTENT + "_"):
-            # We found an intent, but it is only the previous event if
-            # the `prev_...` was `prev_action_listen`, so we don't return.
+        previous_event_type = None
+        previous_event_name = None
+    elif (
+        PREVIOUS_ACTION in state.keys()
+        and "action_name" in state[PREVIOUS_ACTION]
+        and state[PREVIOUS_ACTION]["action_name"] != ACTION_LISTEN_NAME
+    ):
+        previous_event_type = "action"
+        previous_event_name = state[PREVIOUS_ACTION]["action_name"]
+    elif PREVIOUS_ACTION in state.keys() and "action_text" in state[PREVIOUS_ACTION]:
+        previous_event_type = "bot utterance"
+        previous_event_name = state[PREVIOUS_ACTION]["action_text"]
+    elif USER in state.keys():
+        if "intent" in state[USER]:
             previous_event_type = "intent"
-            previous_event_name = turn_label.replace(INTENT + "_", "")
+            previous_event_name = state[USER]["intent"]
+        elif "text" in state[USER]:
+            previous_event_type = "user utterance"
+            previous_event_name = state[USER]["text"]
+
+    if not isinstance(previous_event_name, (str, type(None))):
+        # While the Substate type doesn't restrict the value of `action_text` / `intent`, etc. to be a string, it always should be
+        raise TypeError(
+            f"The value '{previous_event_name}' in the substate should be a string or None, not {type(previous_event_name)}. Did you modify Rasa source code?"
+        )
 
     return previous_event_type, previous_event_name

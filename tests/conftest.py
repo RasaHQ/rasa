@@ -6,7 +6,6 @@ import sys
 import uuid
 
 from sanic.request import Request
-from sanic.testing import SanicTestClient
 
 from typing import Iterator, Callable
 
@@ -275,12 +274,6 @@ def project() -> Text:
     return directory
 
 
-def get_test_client(server: Sanic) -> SanicTestClient:
-    test_client = server.test_client
-    test_client.port = None
-    return test_client
-
-
 def write_endpoint_config_to_yaml(
     path: Path, data: Dict[Text, Any], endpoints_filename: Text = "endpoints.yml"
 ) -> Path:
@@ -307,7 +300,7 @@ def pytest_runtest_setup(item) -> None:
 
 
 class MockExporter(Exporter):
-    """Mocked `Exporter` object."""
+    """Mocked `Exporter` class."""
 
     def __init__(
         self,

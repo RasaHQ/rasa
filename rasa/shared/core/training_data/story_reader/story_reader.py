@@ -27,8 +27,8 @@ class StoryReader:
         domain: Optional[Domain] = None,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
-        source_name: Text = None,
-        is_used_for_conversion: bool = False,
+        source_name: Optional[Text] = None,
+        is_used_for_training: bool = True,
     ) -> None:
         """Constructor for the StoryReader.
 
@@ -37,9 +37,9 @@ class StoryReader:
             template_vars: Template variables to be replaced.
             use_e2e: Specifies whether to use the e2e parser or not.
             source_name: Name of the training data source.
-            is_used_for_conversion: Identifies if the user utterances should be parsed
+            is_used_for_training: Identifies if the user utterances should be parsed
               (entities are extracted and removed from the original text) and
-              OR statements should be unfolded . This parameter is used only to
+              OR statements should be unfolded. This parameter is used only to
               simplify the conversation from MD story files. Don't use it other ways,
               because it ends up in a invalid story that cannot be user for real
               training. Default value is `False`, which preserves the expected behavior
@@ -51,7 +51,7 @@ class StoryReader:
         self.template_variables = template_vars if template_vars else {}
         self.use_e2e = use_e2e
         self.source_name = source_name
-        self.is_used_for_conversion = is_used_for_conversion
+        self._is_used_for_training = is_used_for_training
         self._is_parsing_conditions = False
 
     def read_from_file(self, filename: Text) -> List[StoryStep]:
@@ -86,11 +86,11 @@ class StoryReader:
             self.current_step_builder.flush()
             self.story_steps.extend(self.current_step_builder.story_steps)
 
-    def _new_story_part(self, name: Text, source_name: Text):
+    def _new_story_part(self, name: Text, source_name: Optional[Text]):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
 
-    def _new_rule_part(self, name: Text, source_name: Text):
+    def _new_rule_part(self, name: Text, source_name: Optional[Text]):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
 

@@ -152,7 +152,6 @@ class BotFramework(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        # pytype: disable=attribute-error
         json_message.setdefault("type", "message")
         json_message.setdefault("recipient", {}).setdefault("id", recipient_id)
         json_message.setdefault("from", self.bot)
@@ -161,7 +160,6 @@ class BotFramework(OutputChannel):
         ).setdefault("alert", "true")
         json_message.setdefault("text", "")
         await self.send(json_message)
-        # pytype: enable=attribute-error
 
 
 class BotFrameworkInput(InputChannel):
@@ -176,9 +174,7 @@ class BotFrameworkInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # pytype: disable=attribute-error
         return cls(credentials.get("app_id"), credentials.get("app_password"))
-        # pytype: enable=attribute-error
 
     def __init__(self, app_id: Text, app_password: Text) -> None:
         """Create a Bot Framework input channel.

@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Text, Dict, List, Optional, Any
 
 from packaging import version
@@ -8,13 +9,12 @@ from pykwalify.errors import SchemaError
 from ruamel.yaml.constructor import DuplicateKeyError
 
 import rasa.shared
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import YamlException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import (
-    DOCS_URL_TRAINING_DATA_NLU,
+    DOCS_URL_TRAINING_DATA,
     PACKAGE_NAME,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    DOCS_BASE_URL,
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
 )
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 KEY_TRAINING_DATA_FORMAT_VERSION = "version"
 
 
-class YamlValidationException(ValueError, RasaException):
+class YamlValidationException(YamlException, ValueError):
     """Raised if a yaml file does not correspond to the expected schema."""
 
     def __init__(
@@ -42,18 +42,18 @@ class YamlValidationException(ValueError, RasaException):
             filename: name of the file which was validated
             content: yaml content loaded from the file (used for line information)
         """
+        super(YamlValidationException, self).__init__(filename)
+
         self.message = message
-        self.filename = filename
         self.validation_errors = validation_errors
         self.content = content
-        super(YamlValidationException, self).__init__()
 
     def __str__(self) -> Text:
         msg = ""
         if self.filename:
             msg += f"Failed to validate '{self.filename}'. "
         else:
-            msg += "Failed to validate yaml. "
+            msg += "Failed to validate YAML. "
         msg += self.message
         if self.validation_errors:
             unique_errors = {}
@@ -139,18 +139,8 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
         source_data = rasa.shared.utils.io.read_yaml(
             yaml_file_content, reader_type=["safe", "rt"]
         )
-    except YAMLError:
-        raise YamlValidationException(
-            "The provided yaml file is invalid. You can use "
-            "http://www.yamllint.com/ to validate the yaml syntax "
-            "of your file."
-        )
-    except DuplicateKeyError as e:
-        raise YamlValidationException(
-            "The provided yaml file contains a duplicated key: '{}'. You can use "
-            "http://www.yamllint.com/ to validate the yaml syntax "
-            "of your file.".format(str(e))
-        )
+    except (YAMLError, DuplicateKeyError) as e:
+        raise YamlSyntaxException(underlying_yaml_exception=e)
 
     schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
     schema_utils_file = pkg_resources.resource_filename(
@@ -197,13 +187,13 @@ def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) 
         e.message += (
             f". Failed to validate data, make sure your data "
             f"is valid. For more information about the format visit "
-            f"{DOCS_URL_TRAINING_DATA_NLU}."
+            f"{DOCS_URL_TRAINING_DATA}."
         )
         raise e
 
 
 def validate_training_data_format_version(
-    yaml_file_content: Dict[Text, Any], filename: Text
+    yaml_file_content: Dict[Text, Any], filename: Optional[Text]
 ) -> bool:
     """Validates version on the training data content using `version` field
        and warns users if the file is not compatible with the current version of
@@ -217,19 +207,27 @@ def validate_training_data_format_version(
         `True` if the file can be processed by current version of Rasa Open Source,
         `False` otherwise.
     """
+
+    if filename:
+        filename = os.path.abspath(filename)
+
     if not isinstance(yaml_file_content, dict):
-        raise ValueError(f"Failed to validate {filename}.")
+        raise YamlValidationException(
+            "YAML content in is not a mapping, can not validate training "
+            "data schema version.",
+            filename=filename,
+        )
 
     version_value = yaml_file_content.get(KEY_TRAINING_DATA_FORMAT_VERSION)
 
     if not version_value:
         # not raising here since it's not critical
-        logger.warning(
-            f"Training data file {filename} doesn't have a "
-            f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' key. "
+        logger.info(
+            f"The '{KEY_TRAINING_DATA_FORMAT_VERSION}' key is missing in "
+            f"the training data file {filename}. "
             f"Rasa Open Source will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file. "
-            f"See {DOCS_BASE_URL}."
+            f"See {DOCS_URL_TRAINING_DATA}."
         )
         return True
 
@@ -248,16 +246,16 @@ def validate_training_data_format_version(
             f"{KEY_TRAINING_DATA_FORMAT_VERSION}: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
             f"Rasa Open Source will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file.",
-            docs=DOCS_BASE_URL,
+            docs=DOCS_URL_TRAINING_DATA,
         )
         return True
 
     rasa.shared.utils.io.raise_warning(
-        f"Training data file {filename} has a greater format version than "
-        f"your Rasa Open Source installation: "
+        f"Training data file {filename} has a greater "
+        f"format version than your Rasa Open Source installation: "
         f"{version_value} > {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
         f"Please consider updating to the latest version of Rasa Open Source."
         f"This file will be skipped.",
-        docs=DOCS_BASE_URL,
+        docs=DOCS_URL_TRAINING_DATA,
     )
     return False

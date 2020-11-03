@@ -79,7 +79,6 @@ class FormPolicy(MemoizationPolicy):
 
         return [action_before_listen, states[-1]]
 
-    # pytype: disable=bad-return-type
     def _create_lookup_from_states(
         self,
         trackers_as_states: List[List[State]],
@@ -98,8 +97,6 @@ class FormPolicy(MemoizationPolicy):
                 # because of `active_form_...` feature
                 lookup[feature_key] = active_form
         return lookup
-
-    # pytype: enable=bad-return-type
 
     def recall(
         self, states: List[State], tracker: DialogueStateTracker, domain: Domain

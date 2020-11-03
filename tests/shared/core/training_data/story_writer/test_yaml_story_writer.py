@@ -4,6 +4,7 @@ from typing import Text
 
 import pytest
 
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -17,6 +18,9 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.core.training_data.structures import STORY_START
+from rasa.utils.endpoints import EndpointConfig
+
+import rasa.shared.utils.io
 
 
 @pytest.mark.parametrize(
@@ -34,7 +38,7 @@ async def test_simple_story(
 ):
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_md_file, is_used_for_conversion=True
+        default_domain, None, False, input_md_file, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
@@ -63,7 +67,7 @@ async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
     input_md_file = "data/test_stories/stories.md"
 
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, input_md_file, is_used_for_conversion=True
+        default_domain, None, False, input_md_file, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(input_md_file)
 
@@ -74,7 +78,7 @@ async def test_story_start_checkpoint_is_skipped(default_domain: Domain):
 
 async def test_forms_are_converted(default_domain: Domain):
     original_md_reader = MarkdownStoryReader(
-        default_domain, None, False, is_used_for_conversion=True
+        default_domain, None, False, is_used_for_training=False
     )
     original_md_story_steps = original_md_reader.read_from_file(
         "data/test_stories/stories_form.md"
@@ -93,7 +97,7 @@ async def test_forms_are_converted(default_domain: Domain):
 def test_yaml_writer_dumps_user_messages():
     events = [UserUttered("Hello", {"name": "greet"}), ActionExecuted("utter_greet")]
     tracker = DialogueStateTracker.from_events("default", events)
-    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps, is_test_story=True)
 
     assert (
         dump.strip()
@@ -149,3 +153,32 @@ def test_yaml_writer_dumps_rules(
 
     with open(input_yaml_file) as original_file:
         assert dump == original_file.read()
+
+
+async def test_action_start_action_listen_are_not_dumped():
+    events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        UserUttered("Hello", {"name": "greet"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+    tracker = DialogueStateTracker.from_events("default", events)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
+
+    assert ACTION_SESSION_START_NAME not in dump
+    assert ACTION_LISTEN_NAME not in dump
+
+
+def test_yaml_writer_stories_to_yaml(default_domain: Domain):
+    from collections import OrderedDict
+
+    reader = YAMLStoryReader(default_domain, None, False)
+    writer = YAMLStoryWriter()
+    steps = reader.read_from_file(
+        "data/test_yaml_stories/simple_story_with_only_end.yml"
+    )
+
+    result = writer.stories_to_yaml(steps)
+    assert isinstance(result, OrderedDict)
+    assert "stories" in result
+    assert len(result["stories"]) == 1

@@ -6,6 +6,7 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa import telemetry
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
@@ -52,6 +53,10 @@ StoryEvaluation = namedtuple(
         "in_training_data_fraction",
     ],
 )
+
+
+class WrongPredictionException(RasaException, ValueError):
+    """Raised if a wrong prediction is encountered."""
 
 
 class EvaluationStore:
@@ -375,11 +380,10 @@ def _collect_user_uttered_predictions(
             WronglyClassifiedUserUtterance(event, user_uttered_eval_store)
         )
         if fail_on_prediction_errors:
-            raise ValueError(
-                "NLU model predicted a wrong intent. Failed Story:"
-                " \n\n{}".format(
-                    YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
-                )
+            story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
+            raise WrongPredictionException(
+                f"NLU model predicted a wrong intent. Failed Story:"
+                f" \n\n{story_dump}"
             )
     else:
         end_to_end_user_utterance = EndToEndUserUtterance(
@@ -450,16 +454,12 @@ def _collect_action_executed_predictions(
 
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
-            WronglyPredictedAction(
-                gold, predicted, event.policy, event.confidence, event.timestamp
-            )
+            WronglyPredictedAction(gold, predicted, policy, confidence, event.timestamp)
         )
         if fail_on_prediction_errors:
+            story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             error_msg = (
-                "Model predicted a wrong action. Failed Story: "
-                "\n\n{}".format(
-                    YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
-                )
+                f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
             )
             if FormPolicy.__name__ in policy:
                 error_msg += (
@@ -469,9 +469,11 @@ def _collect_action_executed_predictions(
                     "If the story is correct, add it to the "
                     "training stories and retrain."
                 )
-            raise ValueError(error_msg)
+            raise WrongPredictionException(error_msg)
     else:
-        partial_tracker.update(event)
+        partial_tracker.update(
+            ActionExecuted(predicted, policy, confidence, event.timestamp)
+        )
 
     return action_executed_eval_store, policy, confidence
 
