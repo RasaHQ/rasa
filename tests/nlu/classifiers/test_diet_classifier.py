@@ -447,7 +447,9 @@ async def test_train_persist_load_with_composite_entities(
     assert loaded.parse(text) == trained.parse(text)
 
 
-async def test_process_gives_diagnostic_data(component_builder: ComponentBuilder, tmpdir: Path):
+async def test_process_gives_diagnostic_data(
+    component_builder: ComponentBuilder, tmpdir: Path
+):
     """Test if processing a message returns attention weights as numpy array"""
 
     _config = RasaNLUModelConfig(

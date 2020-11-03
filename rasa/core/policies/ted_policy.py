@@ -374,22 +374,6 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
-        """Predict the next action the bot should take.
-        Return the list of probabilities for the next actions.
-        """
-
-        action_probabilities, _ = self.predict_action_probabilities_with_diagnostics(
-            tracker, domain, interpreter, **kwargs
-        )
-        return action_probabilities
-
-    def predict_action_probabilities_with_diagnostics(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
     ) -> Tuple[List[float], Optional[Dict[Text, Any]]]:
         """Predict the next action the bot should take.
         Return the list of probabilities for the next actions and

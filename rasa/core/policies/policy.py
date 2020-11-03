@@ -213,7 +213,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> Tuple[List[float], Optional[Dict[Text, Any]]]:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
@@ -223,35 +223,10 @@ class Policy:
                 additional features.
 
         Returns:
-             the list of probabilities for the next actions
+             The list of probabilities for the next actions and an optional dict for diagnostic data
         """
 
         raise NotImplementedError("Policy must have the capacity to predict.")
-
-    def predict_action_probabilities_with_diagnostics(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
-    ) -> Tuple[List[float], Optional[Dict[Text, Any]]]:
-        """Predicts the next action and diagnostic data for debugging.
-
-        Args:
-            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
-
-        Returns:
-             The list of probabilities for the next actions and a dictionary of
-             diagnostic data (or None).
-        """
-
-        return (
-            self.predict_action_probabilities(tracker, domain, interpreter, **kwargs),
-            None,
-        )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
         """Returns this policy's attributes that should be persisted.

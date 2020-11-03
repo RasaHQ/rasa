@@ -131,10 +131,10 @@ class PolicyTestCollection:
         trackers = await train_trackers(default_domain, augmentation_factor=20)
 
         for tracker in trackers:
-            predicted_probabilities = loaded.predict_action_probabilities(
+            predicted_probabilities, _ = loaded.predict_action_probabilities(
                 tracker, default_domain, RegexInterpreter()
             )
-            actual_probabilities = trained_policy.predict_action_probabilities(
+            actual_probabilities, _ = trained_policy.predict_action_probabilities(
                 tracker, default_domain, RegexInterpreter()
             )
             assert predicted_probabilities == actual_probabilities

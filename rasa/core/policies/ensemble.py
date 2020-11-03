@@ -597,7 +597,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             len(arguments) > number_of_arguments_in_rasa_1_0
             and "interpreter" in arguments
         ):
-            probabilities = policy.predict_action_probabilities(
+            probabilities, _ = policy.predict_action_probabilities(
                 tracker, domain, interpreter
             )
         else:
@@ -608,7 +608,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 "adapt your custom `Policy` implementation.",
                 category=DeprecationWarning,
             )
-            probabilities = policy.predict_action_probabilities(
+            probabilities, _ = policy.predict_action_probabilities(
                 tracker, domain, RegexInterpreter()
             )
 
