@@ -787,7 +787,6 @@ class TED(TransformerRasaModel):
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
-
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
         mask = self._compute_mask(dialogue_lengths)
 
@@ -797,8 +796,6 @@ class TED(TransformerRasaModel):
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         if self.max_history_tracker_featurizer_used:
-            # get the actual dialogue length in a 1D tensor
-            dialogue_lengths = tf.squeeze(tf.reduce_sum(dialogue_lengths, axis=1))
             # pick last vector if max history featurizer is used
             dialogue_transformed = tf.expand_dims(
                 self._last_token(dialogue_transformed, dialogue_lengths), 1

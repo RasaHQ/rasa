@@ -89,7 +89,6 @@ from rasa.utils.tensorflow.constants import (
     FEATURIZERS,
     CHECKPOINT_MODEL,
     SEQUENCE,
-    SEQUENCE_LENGTH,
     SENTENCE,
     SEQUENCE_LENGTH,
     DENSE_DIMENSION,
