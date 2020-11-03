@@ -6,7 +6,8 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def _convert_lookup_tables_to_regex(
-    training_data: TrainingData, use_only_entities: bool = False,
+    training_data: TrainingData,
+    use_only_entities: bool = False,
     config_language: Text = None,
 ) -> List[Dict[Text, Text]]:
     """Convert the lookup tables from the training data to regex patterns.
@@ -22,15 +23,15 @@ def _convert_lookup_tables_to_regex(
     for table in training_data.lookup_tables:
         if use_only_entities and table["name"] not in training_data.entities:
             continue
-        regex_pattern = _generate_lookup_regex(table,config_language=config_language)
+        regex_pattern = _generate_lookup_regex(table, config_language=config_language)
         lookup_regex = {"name": table["name"], "pattern": regex_pattern}
         patterns.append(lookup_regex)
     return patterns
 
 
 def _generate_lookup_regex(
-        lookup_table: Dict[Text, Union[Text, List[Text]]],
-        config_language: Text = None,
+    lookup_table: Dict[Text, Union[Text, List[Text]]],
+    config_language: Text = None,
 ) -> Text:
     """Creates a regex pattern from the given lookup table.
 
@@ -141,7 +142,9 @@ def extract_patterns(
         patterns.extend(_collect_regex_features(training_data, use_only_entities))
     if use_lookup_tables:
         patterns.extend(
-            _convert_lookup_tables_to_regex(training_data, use_only_entities,config_language=config_language)
+            _convert_lookup_tables_to_regex(
+                training_data, use_only_entities, config_language=config_language
+            )
         )
 
     return patterns
