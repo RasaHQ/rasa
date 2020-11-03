@@ -27,6 +27,6 @@ def test_dialogflow_response():
             "fulfillmentText": "",
             "fulfillmentMessages": [],
             "outputContexts": [],
-            "intentDetectionConfidence": data["intent"]["confidence"]
-        }
+            "intentDetectionConfidence": data["intent"]["confidence"],
+        },
     }

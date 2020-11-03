@@ -31,7 +31,9 @@ class DialogflowEmulator(Emulator):
         """
         entities = {
             entity_type: []
-            for entity_type in {x[ENTITY_ATTRIBUTE_TYPE] for x in data[ENTITIES]}
+            for entity_type in {
+                entity[ENTITY_ATTRIBUTE_TYPE] for entity in data[ENTITIES]
+            }
         }
 
         for entity in data[ENTITIES]:
@@ -49,6 +51,6 @@ class DialogflowEmulator(Emulator):
                 "fulfillmentText": "",
                 "fulfillmentMessages": [],
                 "outputContexts": [],
-                "intentDetectionConfidence": data[INTENT][PREDICTED_CONFIDENCE_KEY]
+                "intentDetectionConfidence": data[INTENT][PREDICTED_CONFIDENCE_KEY],
             },
         }

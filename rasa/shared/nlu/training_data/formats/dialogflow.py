@@ -36,27 +36,27 @@ class DialogflowReader(TrainingDataReader):
             )
 
         root_js = rasa.shared.utils.io.read_json_file(fn)
-        examples_js = self._read_examples_js(fn, language, fformat)
+        examples = self._read_examples(fn, language, fformat)
 
-        if not examples_js:
+        if not examples:
             rasa.shared.utils.io.raise_warning(
                 f"No training examples found for dialogflow file {fn}!",
                 docs=DOCS_URL_MIGRATE_GOOGLE,
             )
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:
-            return self._read_intent(root_js, examples_js)
+            return self._read_intent(root_js, examples)
         else:  # path for DIALOGFLOW_ENTITIES
-            return self._read_entities(root_js, examples_js)
+            return self._read_entities(root_js, examples)
 
     def _read_intent(
-        self, intent_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
+        self, intent: Dict[Text, Any], examples: List[Dict[Text, Any]]
     ) -> "TrainingData":
         """Reads the intent and examples from respective jsons."""
-        intent = intent_js.get("name")
+        intent = intent.get("name")
 
         training_examples = []
-        for ex in examples_js:
+        for ex in examples:
             text, entities = self._join_text_chunks(ex["data"])
             training_examples.append(Message.build(text, intent, entities))
 
@@ -100,47 +100,45 @@ class DialogflowReader(TrainingDataReader):
 
     @staticmethod
     def _extract_lookup_tables(
-        entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
+        entity: Dict[Text, Any], examples: List[Dict[Text, Any]]
     ) -> Optional[List[Dict[Text, Any]]]:
-        """Extract the lookup table from the entity synonyms."""
-        synonyms = [e["synonyms"] for e in examples_js if "synonyms" in e]
+        """Extracts the lookup table from the entity synonyms."""
+        synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
         synonyms = DialogflowReader._flatten(synonyms)
         elements = [synonym for synonym in synonyms if "@" not in synonym]
 
         if len(elements) == 0:
             return None
-        return [{"name": entity_js.get("name"), "elements": elements}]
+        return [{"name": entity.get("name"), "elements": elements}]
 
     @staticmethod
     def _extract_regex_features(
-        entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
-    ) -> Optional[List[Dict[Text, Any]]]:
+        entity: Dict[Text, Any], examples: List[Dict[Text, Any]]
+    ) -> List[Dict[Text, Any]]:
         """Extract the regex features from the entity synonyms."""
-        synonyms = [e["synonyms"] for e in examples_js if "synonyms" in e]
+        synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
         synonyms = DialogflowReader._flatten(synonyms)
         return [
-            {"name": entity_js.get("name"), "pattern": synonym} for synonym in synonyms
+            {"name": entity.get("name"), "pattern": synonym} for synonym in synonyms
         ]
 
     @staticmethod
     def _read_entities(
-        entity_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
+        entity: Dict[Text, Any], examples: List[Dict[Text, Any]]
     ) -> "TrainingData":
-        entity_synonyms = transform_entity_synonyms(examples_js)
+        entity_synonyms = transform_entity_synonyms(examples)
 
-        if entity_js["isRegexp"]:
-            regex_features = DialogflowReader._extract_regex_features(
-                entity_js, examples_js
-            )
+        if entity["isRegexp"]:
+            regex_features = DialogflowReader._extract_regex_features(entity, examples)
             return TrainingData([], entity_synonyms, regex_features, [],)
         else:
-            lookup_tables = DialogflowReader._extract_lookup_tables(
-                entity_js, examples_js
-            )
+            lookup_tables = DialogflowReader._extract_lookup_tables(entity, examples)
             return TrainingData([], entity_synonyms, [], lookup_tables,)
 
     @staticmethod
-    def _read_examples_js(fn: Text, language: Text, fformat: Text) -> Any:
+    def _read_examples(
+        fn: Text, language: Text, fformat: Text
+    ) -> Optional[List[Dict[Text, Any]]]:
         """Infer and load the example file based on the root
         filename and root format."""
 
@@ -155,5 +153,5 @@ class DialogflowReader(TrainingDataReader):
         else:
             return None
 
-    def reads(self, s, **kwargs):
+    def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         raise NotImplementedError
