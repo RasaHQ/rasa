@@ -536,8 +536,8 @@ class RasaModel(tf.keras.models.Model):
                         shape = [
                             batch[idx + 2][i] for i in range(number_of_dimensions - 1)
                         ] + [feature_dimension]
-                        print("Adding...", key, sub_key)
-                        print(batch[idx], batch[idx + 1])
+                        # print("Adding...", key, sub_key)
+                        # print(batch[idx], batch[idx + 1])
                         batch_data[key][sub_key].append(
                             tf.SparseTensor(batch[idx], batch[idx + 1], shape)
                         )

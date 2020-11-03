@@ -25,15 +25,14 @@ from rasa.core.policies.ted_policy import TEDPolicy, TED
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.transformer import TransformerEncoder
-from rasa.utils.tensorflow.models import RasaModel
+import rasa.shared.utils.io
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
     FeatureSignature,
     FeatureArray,
 )
 from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
+from rasa.utils.tensorflow.models import RasaModel
 
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -76,7 +75,11 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     FEATURIZERS,
 )
-from rasa.core.policies.ted_policy import LENGTH
+from rasa.core.policies.ted_policy import (
+    LENGTH,
+    STATE_LEVEL_FEATURES,
+    FEATURES_TO_ENCODE,
+)
 from rasa.shared.nlu.constants import INTENT
 
 logger = logging.getLogger(__name__)
@@ -203,6 +206,23 @@ class IntentTEDPolicy(TEDPolicy):
         FEATURIZERS: [],
     }
 
+    def __init__(
+        self,
+        featurizer: Optional[TrackerFeaturizer] = None,
+        priority: int = DEFAULT_POLICY_PRIORITY,
+        max_history: Optional[int] = None,
+        model: Optional[RasaModel] = None,
+        zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
+        intent_thresholds: Dict[int, float] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Declare instance variables with default values."""
+        super().__init__(
+            featurizer, priority, max_history, model, zero_state_features, **kwargs
+        )
+
+        self.intent_thresholds = intent_thresholds
+
     @staticmethod
     def supported_data() -> SupportedData:
         return SupportedData.ML_AND_RULE_DATA
@@ -315,7 +335,9 @@ class IntentTEDPolicy(TEDPolicy):
             domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
         )
 
-        self.model.compute_thresholds(model_threshold_data, threshold_label_ids)
+        self.intent_thresholds = self.model.compute_thresholds(
+            model_threshold_data, threshold_label_ids
+        )
 
     def _featurize_for_model(
         self,
@@ -335,19 +357,70 @@ class IntentTEDPolicy(TEDPolicy):
         )
         return model_data, label_ids
 
+    def persist(self, path: Union[Text, Path]) -> None:
+        """Persists the policy to a storage."""
+
+        if self.model is None:
+            logger.debug(
+                "Method `persist(...)` was called "
+                "without a trained model present. "
+                "Nothing to persist then!"
+            )
+            return
+
+        model_path = Path(path)
+        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
+
+        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
+
+        self.featurizer.persist(path)
+
+        if self.model.checkpoint_model:
+            self.model.copy_best(str(tf_model_file))
+        else:
+            self.model.save(str(tf_model_file))
+
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
+        )
+        io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl", self.config
+        )
+        io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
+        )
+        io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_state_features.pkl",
+            self.zero_state_features,
+        )
+        io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
+            dict(self._label_data.data),
+        )
+
+        io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
+            dict(self._label_data.data),
+        )
+
+        io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.intent_thresholds.pkl",
+            dict(self.intent_thresholds),
+        )
+
     @classmethod
-    def load(cls, path: Text) -> "TEDPolicy":
+    def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
         """Loads a policy from the storage.
         **Needs to load its featurizer**
         """
+        model_path = Path(path)
 
-        if not os.path.exists(path):
+        if not model_path.exists():
             raise Exception(
                 f"Failed to load TED policy model. Path "
-                f"'{os.path.abspath(path)}' doesn't exist."
+                f"'{model_path.absolute()}' doesn't exist."
             )
 
-        model_path = Path(path)
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)
@@ -355,21 +428,30 @@ class IntentTEDPolicy(TEDPolicy):
         if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
             return cls(featurizer=featurizer)
 
-        loaded_data = io_utils.json_unpickle(
+        loaded_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
         )
-        label_data = io_utils.json_unpickle(
+        label_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
+        zero_state_features = io_utils.pickle_load(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_state_features.pkl"
+        )
+        intent_thresholds = io_utils.pickle_load(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.intent_thresholds.pkl"
+        )
+        label_data = RasaModelData(data=label_data)
         meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
         priority = io_utils.json_unpickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
         )
 
-        model_data_example = RasaModelData(label_key=LABEL_IDS, data=loaded_data)
+        model_data_example = RasaModelData(
+            label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
+        )
         meta = train_utils.update_similarity_type(meta)
 
-        model = IntentTED.load(
+        model = TED.load(
             str(tf_model_file),
             model_data_example,
             data_signature=model_data_example.get_signature(),
@@ -382,16 +464,25 @@ class IntentTEDPolicy(TEDPolicy):
 
         # build the graph for prediction
         predict_data_example = RasaModelData(
-            label_key=LABEL_IDS,
+            label_key=LABEL_KEY,
+            label_sub_key=LABEL_SUB_KEY,
             data={
                 feature_name: features
                 for feature_name, features in model_data_example.items()
-                if DIALOGUE in feature_name
+                if feature_name
+                # we need to remove label features for prediction if they are present
+                in STATE_LEVEL_FEATURES + FEATURES_TO_ENCODE + [DIALOGUE]
             },
         )
         model.build_for_predict(predict_data_example)
 
-        return cls(featurizer=featurizer, priority=priority, model=model, **meta)
+        return cls(
+            featurizer=featurizer,
+            priority=priority,
+            model=model,
+            zero_state_features=zero_state_features,
+            intent_thresholds=intent_thresholds ** meta,
+        )
 
 
 class IntentTED(TED):
@@ -480,6 +571,34 @@ class IntentTED(TED):
 
         return loss
 
+    def batch_infer_during_training(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> tf.Tensor:
+
+        tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+
+        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
+
+        all_label_ids, all_labels_embed = self._create_all_labels_embed()
+
+        dialogue_in = self._process_batch_data(tf_batch_data)
+        dialogue_embed, dialogue_mask = self._emebed_dialogue(
+            dialogue_in, dialogue_lengths
+        )
+        dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
+
+        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
+            dialogue_embed[:, :, tf.newaxis, :],
+            all_labels_embed[tf.newaxis, tf.newaxis, :, :],
+            dialogue_mask,
+        )
+
+        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
+            sim_all, self.config[SIMILARITY_TYPE]
+        )
+
+        return {"intent_scores": scores, "sim_all": sim_all}
+
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
@@ -509,7 +628,7 @@ class IntentTED(TED):
             sim_all, self.config[SIMILARITY_TYPE]
         )
 
-        return {"action_scores": scores, "sim_all": sim_all}
+        return {"intent_scores": scores, "sim_all": sim_all}
 
     def predict(self, predict_data: RasaModelData) -> Dict[Text, tf.Tensor]:
         if self._predict_function is None:
@@ -546,5 +665,28 @@ class IntentTED(TED):
 
     def compute_thresholds(self, model_data: RasaModelData, label_ids):
 
-        model_outputs = self.predict(model_data)
-        print(model_outputs.keys())
+        batch_in = model_data.prepare_batch()
+
+        # Directly use eager mode for inference
+        self._training = False
+        batch_output = self.batch_infer_during_training(batch_in)
+
+        thresholds = {}
+
+        # Collect all the probabilities for each label id
+        for index, all_pos_labels in enumerate(label_ids):
+            first_pos_label_id = all_pos_labels[0]
+
+            if first_pos_label_id not in thresholds:
+                thresholds[first_pos_label_id] = []
+
+            thresholds[first_pos_label_id].append(
+                batch_output["intent_scores"][index, 0, first_pos_label_id].numpy()
+            )
+
+        for label_id in thresholds:
+            thresholds[label_id] = min(thresholds[label_id])
+
+        print(thresholds)
+
+        return thresholds
