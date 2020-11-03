@@ -398,9 +398,7 @@ def _extract_features(
 
         # create a mask for every state
         # to capture which turn has which input
-        attribute_mask = np.expand_dims(
-            np.expand_dims(np.ones(len(list_of_list_of_features), np.float32), -1), -1
-        )
+        attribute_mask = np.ones(len(list_of_list_of_features), np.float32)
 
         for i, list_of_features in enumerate(list_of_list_of_features):
 
@@ -434,6 +432,9 @@ def _extract_features(
         for key, value in dialogue_dense_features.items():
             dense_features[key].append(value)
 
+        # add additional dimensions to attribute mask to get a 3D vector
+        # resulting shape dialogue length x 1 x 1
+        attribute_mask = np.expand_dims(np.expand_dims(attribute_mask, -1), -1)
         attribute_masks.append(attribute_mask)
 
     return attribute_masks, dense_features, sparse_features

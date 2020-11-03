@@ -1082,7 +1082,7 @@ class RasaModelData:
         # the original shape and the original dialogue length is passed on to the model
         # it can be used to transform the 3D tensor back into 4D
 
-        sum_dialogue_len = sum(
+        combined_dialogue_len = sum(
             len(array_of_dense) for array_of_dense in array_of_array_of_dense
         )
         max_seq_len = max(
@@ -1094,7 +1094,11 @@ class RasaModelData:
         )
 
         data_padded = np.zeros(
-            [sum_dialogue_len, max_seq_len, array_of_array_of_dense[0][0].shape[-1]],
+            [
+                combined_dialogue_len,
+                max_seq_len,
+                array_of_array_of_dense[0][0].shape[-1],
+            ],
             dtype=array_of_array_of_dense[0][0].dtype,
         )
 
@@ -1167,7 +1171,7 @@ class RasaModelData:
                 for array_of_sparse in array_of_array_of_sparse
             ]
 
-        max_dialogue_len = sum(
+        combined_dialogue_len = sum(
             len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse
         )
         max_seq_len = max(
@@ -1205,7 +1209,7 @@ class RasaModelData:
         )
 
         number_of_features = array_of_array_of_sparse[0][0].shape[-1]
-        shape = np.array((max_dialogue_len, max_seq_len, number_of_features))
+        shape = np.array((combined_dialogue_len, max_seq_len, number_of_features))
 
         return [
             indices.astype(np.int64),
