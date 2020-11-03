@@ -1,4 +1,4 @@
-from typing import Any, Dict, Text
+from typing import Any, Dict, List, Text
 
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.shared.nlu.constants import (
@@ -34,20 +34,20 @@ class LUISEmulator(Emulator):
             "score": intent[PREDICTED_CONFIDENCE_KEY],
         }
 
-    def _intents(self, data) -> Dict[Text, Any]:
+    def _intents(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         if data.get(INTENT_RANKING_KEY):
             return {
-                el[INTENT_NAME_KEY]: {"score": el[PREDICTED_CONFIDENCE_KEY]}
-                for el in data[INTENT_RANKING_KEY]
+                intent[INTENT_NAME_KEY]: {"score": intent[PREDICTED_CONFIDENCE_KEY]}
+                for intent in data[INTENT_RANKING_KEY]
             }
 
         top = self._top_intent(data)
         if not top:
             return {}
 
-        return {top["intent"]: {"score": top["score"]}}
+        return {top[INTENT]: {"score": top[PREDICTED_CONFIDENCE_KEY]}}
 
-    def _entities(self, data) -> Optional[Dict[Text, Any]]:
+    def _entities(self, data: Dict[Text, Any]) -> Dict[Text, Dict[Text, List[Dict[Text, Any]]]]:
         if ENTITIES not in data:
             return {}
 
