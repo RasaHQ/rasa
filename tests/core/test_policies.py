@@ -383,11 +383,12 @@ class TestTEDPolicy(PolicyTestCollection):
             and batch_dialogue_length.shape[0] == batch_size
         )
         # batch and dialogue dimensions are combined
+        first_dimension_size = batch_size if self.max_history <= 1 else batch_size + 1
         assert (
-            batch_slots_mask.shape[0] == 3
-            and batch_intent_mask.shape[0] == 3
-            and batch_entities_mask.shape[0] == 3
-            and batch_action_name_mask.shape[0] == 3
+            batch_slots_mask.shape[0] == first_dimension_size
+            and batch_intent_mask.shape[0] == first_dimension_size
+            and batch_entities_mask.shape[0] == first_dimension_size
+            and batch_action_name_mask.shape[0] == first_dimension_size
         )
         assert (
             batch_intent_sentence_3[1]

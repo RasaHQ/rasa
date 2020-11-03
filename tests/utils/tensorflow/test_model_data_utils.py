@@ -168,7 +168,7 @@ def test_extract_features():
         dense_features,
         sparse_features,
     ) = model_data_utils._extract_features(tracker_features, zero_features_list, INTENT)
-    expected_mask = np.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
+    expected_mask = np.array([[[1], [0], [1]], [[0], [0], [1]], [[1], [1], [1]]])
 
     assert np.all(np.squeeze(np.array(attribute_masks), 2) == expected_mask)
     assert np.array(dense_features[SENTENCE]).shape[-1] == zero_features.shape[-1]
