@@ -8,15 +8,17 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView, Unio
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
-from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
-from rasa.shared.core.domain import Domain  # pytype: disable=pyi-error
-from rasa.shared.core.events import (  # pytype: disable=pyi-error
+from rasa.shared.core.conversation import Dialogue
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
     SessionStarted,
 )
-from rasa.shared.core.trackers import DialogueStateTracker  # pytype: disable=pyi-error
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaCoreException
+
 
 if typing.TYPE_CHECKING:
     import networkx as nx
@@ -39,6 +41,13 @@ FORM_PREFIX = "form: "
 # prefix for storystep ID to get reproducible sorting results
 # will get increased with each new instance
 STEP_COUNT = 1
+
+
+class EventTypeError(RasaCoreException, ValueError):
+    """Represents an error caused by a Rasa Core event not being of the expected
+    type.
+
+    """
 
 
 class Checkpoint:
@@ -131,6 +140,19 @@ class StoryStep:
     def _bot_string(story_step_element: Event) -> Text:
         return f"    - {story_step_element.as_story_string()}\n"
 
+    @staticmethod
+    def _or_string(story_step_element: List[Event], e2e: bool) -> Text:
+        for event in story_step_element:
+            if not isinstance(event, UserUttered):
+                raise EventTypeError(
+                    "OR statement events must be of type `UserUttered`."
+                )
+
+        result = " OR ".join(
+            [element.as_story_string(e2e) for element in story_step_element]
+        )
+        return f"* {result}\n"
+
     def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
@@ -153,9 +175,14 @@ class StoryStep:
             if isinstance(s, UserUttered):
                 result += self._user_string(s, e2e)
             elif isinstance(s, Event):
-                converted = s.as_story_string()  # pytype: disable=attribute-error
+                converted = s.as_story_string()
                 if converted:
                     result += self._bot_string(s)
+            elif isinstance(s, list):
+                # The story reader classes support reading stories in
+                # conversion mode.  When this mode is enabled, OR statements
+                # are represented as lists of events.
+                result += self._or_string(s, e2e)
             else:
                 raise Exception(f"Unexpected element in story step: {s}")
 
@@ -168,20 +195,16 @@ class StoryStep:
     def is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
-        # pytype: disable=attribute-error
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
-        # pytype: enable=attribute-error
 
     @staticmethod
     def is_action_session_start(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
-        # pytype: disable=attribute-error
         return (
             type(event) == ActionExecuted
             and event.action_name == ACTION_SESSION_START_NAME
         )
-        # pytype: enable=attribute-error
 
     def _add_action_listen(self, events: List[Event]) -> None:
         if not events or not self.is_action_listen(events[-1]):
@@ -205,11 +228,7 @@ class StoryStep:
             if isinstance(e, UserUttered):
                 self._add_action_listen(events)
                 events.append(e)
-                events.extend(
-                    domain.slots_for_entities(
-                        e.entities  # pytype: disable=attribute-error
-                    )
-                )
+                events.extend(domain.slots_for_entities(e.entities))
             else:
                 events.append(e)
 

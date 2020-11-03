@@ -17,8 +17,20 @@ mapping:
     - type: "str"
   entities:
     type: "seq"
+    matching: "any"
     sequence:
-    - type: "str"
+      - type: "map"
+        mapping:
+          roles:
+            type: "seq"
+            sequence:
+              - type: "str"
+          groups:
+            type: "seq"
+            sequence:
+            - type: "str"
+        allowempty: True
+      - type: "str"
   actions:
     type: "seq"
     sequence:

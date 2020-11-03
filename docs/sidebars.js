@@ -8,6 +8,7 @@ module.exports = {
       collapsed: false,
       items: [
           'installation',
+          'command-line-interface',
 //        {
 //          type: 'category',
 //          label: 'Getting Started',
@@ -70,6 +71,7 @@ module.exports = {
             'components',
             'policies',
             'training-data-importers',
+            'language-support',
           ],
         },
         {
@@ -120,7 +122,6 @@ module.exports = {
       label: 'APIs',
       collapsed: true,
       items: [
-        'command-line-interface',
         'http-api',
         // 'jupyter-notebooks',
       ],

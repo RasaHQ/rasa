@@ -318,7 +318,7 @@ def pytest_runtest_setup(item) -> None:
 
 
 class MockExporter(Exporter):
-    """Mocked `Exporter` object."""
+    """Mocked `Exporter` class."""
 
     def __init__(
         self,

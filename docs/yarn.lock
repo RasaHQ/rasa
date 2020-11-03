@@ -2246,10 +2246,10 @@
     os-homedir "^1.0.1"
     regexpu-core "^4.5.4"
 
-"@rasahq/docusaurus-theme-tabula@^0.8.1":
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@rasahq/docusaurus-theme-tabula/-/docusaurus-theme-tabula-0.8.1.tgz#27723ef68e6a3a27e92f5150bf68e663b2549221"
-  integrity sha512-533IiB5WLtDgjOIorZ+CKCcspCjP0RLUwo7p5yyDrSccr2x39xxpj8Imz6F5vE9H6efIDN1gL4tdD/C+jp5V1w==
+"@rasahq/docusaurus-theme-tabula@^0.8.2":
+  version "0.8.2"
+  resolved "https://registry.yarnpkg.com/@rasahq/docusaurus-theme-tabula/-/docusaurus-theme-tabula-0.8.2.tgz#ea92e1fd08678fe83dda2e701c7589acc25a7a0a"
+  integrity sha512-N159DCmpJhECZogIcndscPoBV8hhFPkRZcMOi9iZZ0EXyJXUDdOkdBikNlFgWssV/EVGemPQsCfOGSHflYJJgg==
   dependencies:
     clsx "^1.1.1"
     copy-text-to-clipboard "^2.2.0"

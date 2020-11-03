@@ -143,11 +143,27 @@ class RasaModel(tf.keras.models.Model):
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
+        """Calculates the loss for the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The loss of the given batch.
+        """
         raise NotImplementedError
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
+        """Predicts the output of the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The output to predict.
+        """
         raise NotImplementedError
 
     def fit(
@@ -671,7 +687,7 @@ class TransformerRasaModel(RasaModel):
         )
 
         # set up tf layers
-        self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
 
     def _check_data(self) -> None:
         raise NotImplementedError
@@ -1042,9 +1058,25 @@ class TransformerRasaModel(RasaModel):
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
+        """Calculates the loss for the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The loss of the given batch.
+        """
         raise NotImplementedError
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
+        """Predicts the output of the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The output to predict.
+        """
         raise NotImplementedError

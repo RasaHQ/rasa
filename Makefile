@@ -14,8 +14,10 @@ help:
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
 	@echo "        Lint code with flake8, and check if black formatter should be applied."
+	@echo "    lint-docstrings"
+	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
-	@echo "        Check for type errors using pytype."
+	@echo "        Check for type errors using mypy."
 	@echo "    prepare-tests-ubuntu"
 	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
@@ -37,7 +39,7 @@ clean:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f  {} +
 	rm -rf build/
-	rm -rf .pytype/
+	rm -rf .mypy_cache/
 	rm -rf dist/
 	rm -rf docs/build
 	rm -rf docs/.docusaurus
@@ -59,11 +61,40 @@ formatter:
 	poetry run black rasa tests
 
 lint:
-	poetry run flake8 rasa tests
+     # Ignore docstring errors when running on the entire project
+	poetry run flake8 rasa tests --extend-ignore D
 	poetry run black --check rasa tests
+	make lint-docstrings
+
+BRANCH ?= master # Compare against `master` if no branch was provided
+lint-docstrings:
+     # Lint docstrings only against the the diff to avoid too many errors.
+     # Check only production code. Ignore other flake errors which are captured by `lint`
+	git diff $(BRANCH) -- rasa | poetry run flake8 --select D --diff
 
 types:
-	poetry run pytype --keep-going rasa -j 16
+	# FIXME: working our way towards removing these
+	# see https://github.com/RasaHQ/rasa/pull/6470
+	# the list below is sorted by the number of errors for each error code, in decreasing order
+	poetry run mypy rasa --disable-error-code arg-type \
+	--disable-error-code assignment \
+	--disable-error-code var-annotated \
+	--disable-error-code return-value \
+	--disable-error-code union-attr \
+	--disable-error-code override \
+	--disable-error-code operator \
+	--disable-error-code attr-defined \
+	--disable-error-code index \
+	--disable-error-code misc \
+	--disable-error-code return \
+	--disable-error-code call-arg \
+	--disable-error-code type-var \
+	--disable-error-code list-item \
+	--disable-error-code has-type \
+	--disable-error-code valid-type \
+	--disable-error-code dict-item \
+	--disable-error-code no-redef \
+	--disable-error-code func-returns-value
 
 prepare-tests-files:
 	poetry install -E spacy
