@@ -290,6 +290,7 @@ async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
         async with lock_store.lock("some sender"):
             pass
 
+
 async def test_redis_lock_store_with_invalid_prefix(monkeypatch: MonkeyPatch):
     import redis.exceptions
 
@@ -308,6 +309,7 @@ async def test_redis_lock_store_with_invalid_prefix(monkeypatch: MonkeyPatch):
     with pytest.raises(LockError):
         async with lock_store.lock("some sender"):
             pass
+
 
 async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
     import redis.exceptions

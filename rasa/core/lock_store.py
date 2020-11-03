@@ -303,6 +303,7 @@ def _create_from_endpoint_config(
 
     return lock_store
 
+
 def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
 ) -> "LockStore":
