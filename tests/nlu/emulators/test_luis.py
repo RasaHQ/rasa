@@ -1,14 +1,13 @@
-def test_luis_request():
-    from rasa.nlu.emulators.luis import LUISEmulator
+from rasa.nlu.emulators.luis import LUISEmulator
 
+
+def test_luis_request():
     em = LUISEmulator()
     norm = em.normalise_request_json({"text": ["arb text"]})
     assert norm == {"text": "arb text", "time": None}
 
 
 def test_luis_response():
-    from rasa.nlu.emulators.luis import LUISEmulator
-
     em = LUISEmulator()
     data = {
         "text": "I want italian food",
@@ -19,7 +18,16 @@ def test_luis_response():
             {"confidence": 0.08816417744097163, "name": "greet"},
             {"confidence": 0.058766588386123204, "name": "affirm"},
         ],
-        "entities": [{"entity": "cuisine", "value": "italian", "role": "roleCuisine"}],
+        "entities": [
+            {
+                "entity": "cuisine",
+                "value": "italian",
+                "role": "roleCuisine",
+                "extractor": "SpacyEntityExtractor",
+                "start": 7,
+                "end": 14,
+            }
+        ],
     }
     norm = em.normalise_response_json(data)
     assert norm == {
@@ -39,11 +47,73 @@ def test_luis_response():
                     "role": "roleCuisine",
                     "type": "cuisine",
                     "text": "italian",
-                    "startIndex": None,
+                    "startIndex": 7,
                     "length": len("italian"),
                     "score": None,
-                    "modelTypeId": 1,
-                    "modelType": "Entity Extractor",
+                    "modelType": "SpacyEntityExtractor",
+                },
+            },
+        },
+    }
+
+
+def test_luis_response_without_role():
+    em = LUISEmulator()
+    data = {
+        "text": "I want italian food",
+        "intent": {"name": "restaurant_search", "confidence": 0.737014589341683},
+        "intent_ranking": [
+            {"confidence": 0.737014589341683, "name": "restaurant_search"}
+        ],
+        "entities": [{"entity": "cuisine", "value": "italian"}],
+    }
+    norm = em.normalise_response_json(data)
+    assert norm == {
+        "query": data["text"],
+        "prediction": {
+            "normalizedQuery": data["text"],
+            "topIntent": "restaurant_search",
+            "intents": {"restaurant_search": {"score": 0.737014589341683}},
+            "entities": {
+                "cuisine": ["italian"],
+                "$instance": {
+                    "role": None,
+                    "type": "cuisine",
+                    "text": "italian",
+                    "startIndex": None,
+                    "length": None,
+                    "score": None,
+                    "modelType": None,
+                },
+            },
+        },
+    }
+
+
+def test_luis_response_without_intent_ranking():
+    em = LUISEmulator()
+    data = {
+        "text": "I want italian food",
+        "intent": {"name": "restaurant_search", "confidence": 0.737014589341683},
+        "entities": [{"entity": "cuisine", "value": "italian", "role": "roleCuisine"}],
+    }
+    norm = em.normalise_response_json(data)
+    assert norm == {
+        "query": data["text"],
+        "prediction": {
+            "normalizedQuery": data["text"],
+            "topIntent": "restaurant_search",
+            "intents": {"restaurant_search": {"score": 0.737014589341683}},
+            "entities": {
+                "roleCuisine": ["italian"],
+                "$instance": {
+                    "role": "roleCuisine",
+                    "type": "cuisine",
+                    "text": "italian",
+                    "startIndex": None,
+                    "length": None,
+                    "score": None,
+                    "modelType": None,
                 },
             },
         },

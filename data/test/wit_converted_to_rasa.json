@@ -53,8 +53,7 @@
             "start": 50, 
             "end": 61, 
             "value": "2016-05-30T00:00:00.000-07:00", 
-            "entity": "datetime",
-            "role": "datetime"
+            "entity": "datetime"
           }
         ]
       }, 
