@@ -35,7 +35,7 @@ from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
     RedisTrackerStore,
-    DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,   
+    DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,
     SQLTrackerStore,
     DynamoTrackerStore,
     FailSafeTrackerStore,
@@ -150,7 +150,7 @@ def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
 
 
 def test_redis_tracker_store_invalid_key_prefix(default_domain: Domain):
-    
+
     test_invalid_key_prefix = "$$ &!"
 
     tracker_store = RedisTrackerStore(
@@ -165,7 +165,7 @@ def test_redis_tracker_store_invalid_key_prefix(default_domain: Domain):
 
     assert tracker_store._get_key_prefix() == DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
 
-def test_redis_tracker_store_valid_key_prefix(default_domain: Domain):    
+def test_redis_tracker_store_valid_key_prefix(default_domain: Domain):
     test_valid_key_prefix = "spanish"
 
     tracker_store = RedisTrackerStore(

@@ -58,7 +58,9 @@ logger = logging.getLogger(__name__)
 POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
 POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
+# default value for key prefix in RedisTrackerStore
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
+
 
 class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
@@ -321,7 +323,7 @@ class RedisTrackerStore(TrackerStore):
         if key_prefix:
             logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
             self._set_key_prefix(key_prefix)
-          
+
         super().__init__(domain, event_broker, **kwargs)
 
     def _set_key_prefix(self, key_prefix: Text) -> None:
@@ -332,10 +334,8 @@ class RedisTrackerStore(TrackerStore):
                 f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
             )
 
-    def _get_key_prefix(self) -> "Key prefix":
+    def _get_key_prefix(self) -> Text:
         return self.key_prefix
-
-
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""

@@ -24,6 +24,7 @@ DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 
 DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX = "lock:"
 
+
 # noinspection PyUnresolvedReferences
 class LockError(RasaException):
     """Exception that is raised when a lock cannot be acquired.
@@ -244,9 +245,8 @@ class RedisLockStore(LockStore):
                 f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
             )
 
-    def _get_key_prefix(self) -> "Key prefix":
+    def _get_key_prefix(self) -> Text:
         return self.key_prefix
-
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         serialised_lock = self.red.get(self.key_prefix + conversation_id)
@@ -302,7 +302,6 @@ def _create_from_endpoint_config(
     logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
 
     return lock_store
-
 
 def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,

@@ -31,7 +31,7 @@ class FakeRedisLockStore(RedisLockStore):
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
-        
+
         self.key_prefix = DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
 
 
@@ -298,7 +298,7 @@ async def test_redis_lock_store_with_invalid_prefix(monkeypatch: MonkeyPatch):
     prefix = "!asdf234 34#"
     lock_store._set_key_prefix(prefix)
     assert lock_store._get_key_prefix() == DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
-    
+
     monkeypatch.setattr(
         lock_store,
         lock_store.get_or_create_lock.__name__,
@@ -317,12 +317,12 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
     prefix = "chatbot42"
     lock_store._set_key_prefix(prefix)
     assert lock_store._get_key_prefix() == prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
-    
+
     monkeypatch.setattr(
         lock_store,
         lock_store.get_or_create_lock.__name__,
         Mock(side_effect=redis.exceptions.TimeoutError),
-    )  
+    )
 
     with pytest.raises(LockError):
         async with lock_store.lock("some sender"):
