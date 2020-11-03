@@ -24,6 +24,7 @@ from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow.tf_to_numpy import values_to_numpy
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -892,9 +893,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return predicted_tags, confidence_values
 
-    def process(
-        self, message: Message, **kwargs: Any
-    ) -> Optional[Dict[Text, Any]]:
+    def process(self, message: Message, **kwargs: Any) -> Optional[Dict[Text, Any]]:
         """Augment the message with intents and entities and return diagnostic data."""
 
         out = self._predict(message)
@@ -910,7 +909,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             message.set(ENTITIES, entities, add_to_output=True)
 
-        return out.get(DIAGNOSTIC_DATA)
+        return values_to_numpy(out.get(DIAGNOSTIC_DATA))
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
