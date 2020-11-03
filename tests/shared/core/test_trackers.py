@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type
@@ -115,7 +116,7 @@ def test_tracker_duplicate():
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-def test_tracker_store_storage_and_retrieval(store):
+def test_tracker_store_storage_and_retrieval(store: TrackerStore):
     tracker = store.get_or_create_tracker("some-id")
     # the retrieved tracker should be empty
     assert tracker.sender_id == "some-id"
@@ -462,8 +463,6 @@ def test_traveling_back_in_time(default_domain: Domain):
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
     tracker.update(UserUttered("/greet", intent, []))
-
-    import time
 
     time.sleep(1)
     time_for_timemachine = time.time()
@@ -1177,3 +1176,52 @@ def test_set_form_validation_deprecation_warning(validate: bool):
         tracker.set_form_validation(validate)
 
     assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)
+
+
+@pytest.mark.parametrize(
+    "conversation_events,n_subtrackers",
+    [
+        (
+            # conversation contains multiple sessions
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+                # second session begins here
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("goodbye", {"name": "goodbye"}),
+                ActionExecuted("utter_goodbye"),
+            ],
+            2,
+        ),
+        (
+            # conversation contains only one session
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                UserUttered("hi", {"name": "greet"}),
+                ActionExecuted("utter_greet"),
+            ],
+            1,
+        ),
+        (
+            # this conversation does not contain a session
+            [UserUttered("hi", {"name": "greet"}), ActionExecuted("utter_greet"),],
+            1,
+        ),
+    ],
+)
+def test_trackers_for_conversation_sessions(
+    conversation_events: List[Event], n_subtrackers: int
+):
+    import rasa.shared.core.trackers as trackers_module
+
+    tracker = DialogueStateTracker.from_events(
+        "some-conversation-ID", conversation_events
+    )
+
+    subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
+
+    assert len(subtrackers) == n_subtrackers

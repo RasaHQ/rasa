@@ -126,9 +126,8 @@ class Message:
         if intent_metadata is not None:
             data[METADATA] = {METADATA_INTENT: intent_metadata}
         if example_metadata is not None:
-            # pytype: disable=unsupported-operands
             data.setdefault(METADATA, {})[METADATA_EXAMPLE] = example_metadata
-            # pytype: enable=unsupported-operands
+
         return cls(data, **kwargs)
 
     def get_full_intent(self) -> Text:

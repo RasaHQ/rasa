@@ -581,6 +581,30 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 ### Miscellaneous internal changes
 - [#5784](https://github.com/rasahq/rasa/issues/5784), [#5788](https://github.com/rasahq/rasa/issues/5788), [#6199](https://github.com/rasahq/rasa/issues/6199), [#6403](https://github.com/rasahq/rasa/issues/6403), [#6735](https://github.com/rasahq/rasa/issues/6735)
 
+## [1.10.15] - 2020-10-09
+
+### Bugfixes
+
+- [#3597](https://github.com/rasahq/rasa/issues/3597): Fixed issue where temporary model directories were not removed after pulling from a model server. If the model pulled from the server was invalid, this could lead to large amounts of local storage usage.
+- [#6755](https://github.com/rasahq/rasa/issues/6755): Treat the length of OOV token as 1 to fix token align issue when OOV occurred.
+- [#6899](https://github.com/rasahq/rasa/issues/6899): Fixed ``MappingPolicy`` not predicting ``action_listen`` after the mapped action while running ``rasa test``.
+
+
+### Improvements
+
+- [#6900](https://github.com/rasahq/rasa/issues/6900): Debug logs from ``matplotlib`` libraries are now hidden by default and are configurable with the ``LOG_LEVEL_LIBRARIES`` environment variable.
+
+## [1.10.14] - 2020-09-23
+
+### Bugfixes
+
+- [#6741](https://github.com/rasahq/rasa/issues/6741): Fixed the remote URL of ConveRT model as it was recently updated by its authors. Also made the remote URL configurable at runtime in the corresponding tokenizer's and featurizer's configuration.
+
+## [1.10.13] - 2020-09-22
+
+### Bugfixes
+
+- [#6577](https://github.com/rasahq/rasa/issues/6577): Remove BILOU tag prefix from role and group labels when creating entities.
 
 ## [1.10.12] - 2020-09-03
 

@@ -454,9 +454,7 @@ def _collect_action_executed_predictions(
 
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
-            WronglyPredictedAction(
-                gold, predicted, event.policy, event.confidence, event.timestamp
-            )
+            WronglyPredictedAction(gold, predicted, policy, confidence, event.timestamp)
         )
         if fail_on_prediction_errors:
             story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
@@ -473,7 +471,9 @@ def _collect_action_executed_predictions(
                 )
             raise WrongPredictionException(error_msg)
     else:
-        partial_tracker.update(event)
+        partial_tracker.update(
+            ActionExecuted(predicted, policy, confidence, event.timestamp)
+        )
 
     return action_executed_eval_store, policy, confidence
 

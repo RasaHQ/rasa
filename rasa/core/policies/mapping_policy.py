@@ -75,7 +75,7 @@ class MappingPolicy(Policy):
                 "You have defined triggers in your domain, but haven't "
                 "added the MappingPolicy to your policy ensemble. "
                 "Either remove the triggers from your domain or "
-                "exclude the MappingPolicy from your policy configuration."
+                "include the MappingPolicy in your policy configuration."
             )
 
     def train(

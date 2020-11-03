@@ -45,7 +45,7 @@ import rasa.core.training.training
 
 
 if TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble  # pytype: disable=pyi-error
+    from rasa.core.policies.ensemble import PolicyEnsemble
 
 logger = logging.getLogger(__name__)
 
@@ -742,8 +742,9 @@ class RulePolicy(MemoizationPolicy):
     ) -> Tuple[Optional[Text], Optional[Text]]:
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
+        current_states = self.format_tracker_states(states)
 
-        logger.debug(f"Current tracker state: {states}")
+        logger.debug(f"Current tracker state:{current_states}")
 
         rule_keys = self._get_possible_keys(self.lookup[RULES], states)
         predicted_action_name = None

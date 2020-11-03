@@ -17,9 +17,8 @@ from typing import (
     Union,
     FrozenSet,
     Tuple,
+    TYPE_CHECKING,
 )
-
-import typing
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -31,7 +30,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
-from rasa.shared.core import events  # pytype: disable=pyi-error
+from rasa.shared.core import events
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     LOOP_NAME,
@@ -41,9 +40,10 @@ from rasa.shared.core.constants import (
     LOOP_REJECTED,
     TRIGGER_MESSAGE,
     LOOP_INTERRUPTED,
+    ACTION_SESSION_START_NAME,
 )
-from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
-from rasa.shared.core.events import (  # pytype: disable=pyi-error
+from rasa.shared.core.conversation import Dialogue
+from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
@@ -56,10 +56,10 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
     SessionStarted,
     ActionExecutionRejected,
 )
-from rasa.shared.core.domain import Domain, State  # pytype: disable=pyi-error
+from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 
@@ -121,8 +121,8 @@ class DialogueStateTracker:
 
         The dump should be an array of dumped events. When restoring
         the tracker, these events will be replayed to recreate the state."""
-
         evts = events.deserialise_events(events_as_dict)
+
         return cls.from_events(sender_id, evts, slots, max_event_history)
 
     @classmethod
@@ -130,13 +130,15 @@ class DialogueStateTracker:
         cls,
         sender_id: Text,
         evts: List[Event],
-        slots: Optional[List[Slot]] = None,
+        slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
     ):
         tracker = cls(sender_id, slots, max_event_history, sender_source)
+
         for e in evts:
             tracker.update(e)
+
         return tracker
 
     def __init__(
@@ -408,8 +410,11 @@ class DialogueStateTracker:
         yield tracker
 
     def applied_events(self) -> List[Event]:
-        """Returns all actions that should be applied - w/o reverted events."""
+        """Returns all actions that should be applied - w/o reverted events.
 
+        Returns:
+            The events applied to the tracker.
+        """
         loop_names = [
             event.name
             for event in self.events
@@ -761,7 +766,6 @@ class DialogueStateTracker:
         ]
         return new_slots
 
-    # pytype: disable=bad-return-type
     @property
     def active_loop_name(self) -> Optional[Text]:
         """Get the name of the currently active loop.
@@ -772,8 +776,6 @@ class DialogueStateTracker:
             return None
 
         return self.active_loop.get(LOOP_NAME)
-
-    # pytype: enable=bad-return-type
 
     @property
     def latest_action_name(self) -> Optional[Text]:
@@ -815,3 +817,29 @@ def is_prev_action_listen_in_state(state: State) -> bool:
     """
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME
+
+
+def get_trackers_for_conversation_sessions(
+    tracker: DialogueStateTracker,
+) -> List[DialogueStateTracker]:
+    """Generate trackers for `tracker` that are split by conversation sessions.
+
+    Args:
+        tracker: Instance of `DialogueStateTracker` to split.
+
+    Returns:
+        The trackers split by conversation sessions.
+    """
+    split_conversations = events.split_events(
+        tracker.events,
+        ActionExecuted,
+        {"action_name": ACTION_SESSION_START_NAME},
+        include_splitting_event=True,
+    )
+
+    return [
+        DialogueStateTracker.from_events(
+            tracker.sender_id, evts, tracker.slots, sender_source=tracker.sender_source,
+        )
+        for evts in split_conversations
+    ]
