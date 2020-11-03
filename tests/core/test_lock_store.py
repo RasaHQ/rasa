@@ -16,7 +16,13 @@ from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.lock import TicketLock
-from rasa.core.lock_store import InMemoryLockStore, LockError, LockStore, RedisLockStore, DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+from rasa.core.lock_store import (
+    InMemoryLockStore,
+    LockError,
+    LockStore,
+    RedisLockStore,
+    DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
+)
 
 
 class FakeRedisLockStore(RedisLockStore):
@@ -318,7 +324,10 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
 
     prefix = "chatbot42"
     lock_store._set_key_prefix(prefix)
-    assert lock_store._get_key_prefix() == prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+    assert (
+        lock_store._get_key_prefix()
+        == prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+    )
 
     monkeypatch.setattr(
         lock_store,

@@ -138,13 +138,13 @@ def test_tracker_store_endpoint_config_loading():
 def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
     store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
     tracker_store = RedisTrackerStore(
-            domain=default_domain,
-            host="localhost",
-            port=6379,
-            db=0,
-            password="password",
-            record_exp=3000,
-        )
+        domain=default_domain,
+        host="localhost",
+        port=6379,
+        db=0,
+        password="password",
+        record_exp=3000,
+    )
 
     assert isinstance(tracker_store, type(TrackerStore.create(store, default_domain)))
 
@@ -179,7 +179,10 @@ def test_redis_tracker_store_valid_key_prefix(default_domain: Domain):
         record_exp=3000,
     )
 
-    assert tracker_store._get_key_prefix() == f"{test_valid_key_prefix}:{DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX}"
+    assert (
+        tracker_store._get_key_prefix()
+        == f"{test_valid_key_prefix}:{DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX}"
+    )
 
 
 def test_exception_tracker_store_from_endpoint_config(
