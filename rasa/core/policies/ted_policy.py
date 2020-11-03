@@ -998,6 +998,14 @@ class TED(TransformerRasaModel):
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
+        """Calculates the loss for the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The loss of the given batch.
+        """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
@@ -1028,6 +1036,14 @@ class TED(TransformerRasaModel):
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
+        """Predicts the output of the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The output to predict.
+        """
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )

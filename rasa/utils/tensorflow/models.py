@@ -938,7 +938,6 @@ class TransformerRasaModel(RasaModel):
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
     ) -> Optional[tf.Tensor]:
         """Creates dense labels for negative sampling."""
-
         # if there are dense features - we can use them
         for f in features:
             if not isinstance(f, tf.SparseTensor):

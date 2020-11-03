@@ -206,8 +206,11 @@ class FeatureArray(np.ndarray):
 
 
 class FeatureSignature(NamedTuple):
-    """Stores the number of units, the type (sparse vs dense), and the number of
-    dimensions of features."""
+    """Signature of feature arrays.
+
+    Stores the number of units, the type (sparse vs dense), and the number of
+    dimensions of features.
+    """
 
     is_sparse: bool
     units: Optional[int]
