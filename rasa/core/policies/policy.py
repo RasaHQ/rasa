@@ -31,6 +31,19 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.shared.core.constants import (
+    USER,
+    SLOTS,
+    PREVIOUS_ACTION,
+    ACTIVE_LOOP,
+)
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    INTENT,
+    TEXT,
+    ACTION_TEXT,
+    ACTION_NAME,
+)
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -316,6 +329,53 @@ class Policy:
         """
 
         return [0.0] * domain.num_actions
+
+    def format_tracker_states(self, states: List[Dict]) -> Text:
+        """Format tracker states to human readable format on debug log.
+
+        Args:
+            states: list of tracker states dicts
+
+        Returns:
+            the string of the states with user intents and actions
+        """
+        # empty string to insert line break before first state
+        formatted_states = [""]
+        if states:
+            for index, state in enumerate(states):
+                state_messages = []
+                if state:
+                    if USER in state:
+                        if TEXT in state[USER]:
+                            state_messages.append(
+                                f"user text: {str(state[USER][TEXT])}"
+                            )
+                        if INTENT in state[USER]:
+                            state_messages.append(
+                                f"user intent: {str(state[USER][INTENT])}"
+                            )
+                        if ENTITIES in state[USER]:
+                            state_messages.append(
+                                f"user entities: {str(state[USER][ENTITIES])}"
+                            )
+                    if PREVIOUS_ACTION in state:
+                        if ACTION_NAME in state[PREVIOUS_ACTION]:
+                            state_messages.append(
+                                f"previous action name: {str(state[PREVIOUS_ACTION][ACTION_NAME])}"
+                            )
+                        if ACTION_TEXT in state[PREVIOUS_ACTION]:
+                            state_messages.append(
+                                f"previous action text: {str(state[PREVIOUS_ACTION][ACTION_TEXT])}"
+                            )
+                    if ACTIVE_LOOP in state:
+                        state_messages.append(f"active loop: {str(state[ACTIVE_LOOP])}")
+                    if SLOTS in state:
+                        state_messages.append(f"slots: {str(state[SLOTS])}")
+                    state_message_formatted = " | ".join(state_messages)
+                    state_formatted = f"[state {str(index)}] {state_message_formatted}"
+                    formatted_states.append(state_formatted)
+
+        return "\n".join(formatted_states)
 
 
 def confidence_scores_for(
