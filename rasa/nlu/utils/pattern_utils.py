@@ -54,8 +54,9 @@ def _generate_lookup_regex(
     # sanitize the regex, escape special characters
     elements_sanitized = [re.escape(e) for e in elements_to_regex]
     not_boundary_language = ["zh", "ja", "th"]
-    if str(config_language).lower() in not_boundary_language:
-        return "(" + "|".join(elements_sanitized) + ")"
+    if config_language:
+        if str(config_language).lower() in not_boundary_language:
+            return "(" + "|".join(elements_sanitized) + ")"
     # regex matching elements with word boundaries on either side
     return "(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"
 
