@@ -98,7 +98,7 @@ types:
 
 CHOCO_CACHE_LOCATION ?= %TEMP%
 prepare-tests-windows-dependencies:
-	cat ./system_test_dependencies/windows.txt | xargs -r -L1 choco install --cache-location=$(CHOCO_CACHE_LOCATION)
+	foreach($dep in Get-Content ./system_test_dependencies/windows.txt) {choco install $dep --cache-location=$(CHOCO_CACHE_LOCATION)}
 
 prepare-tests-macos-dependencies:
 	# FIXME: why do we do '|| true' ?
