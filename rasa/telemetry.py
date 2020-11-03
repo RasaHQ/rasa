@@ -126,8 +126,11 @@ def _write_default_telemetry_configuration(
         CONFIG_FILE_TELEMETRY_KEY, new_config
     )
 
-    if is_enabled and success:
+    # Do not show info if user has enabled/disabled telemetry via env var
+    telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
+    if is_enabled and success and telemetry_environ is None:
         print_telemetry_reporting_info()
+
     return success
 
 
@@ -148,7 +151,7 @@ def _is_telemetry_enabled_in_configuration() -> bool:
     except ValueError as e:
         logger.debug(f"Could not read telemetry settings from configuration file: {e}")
 
-        # seems like there is no config, we'll create on and enable telemetry
+        # seems like there is no config, we'll create one and enable telemetry
         success = _write_default_telemetry_configuration()
         # if writing the configuration failed, telemetry will be disabled
         return TELEMETRY_ENABLED_BY_DEFAULT and success
@@ -162,15 +165,15 @@ def is_telemetry_enabled() -> bool:
     """
     telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
 
-    if telemetry_environ is None:
-        try:
-            return rasa_utils.read_global_config_value(
-                CONFIG_FILE_TELEMETRY_KEY, unavailable_ok=False
-            )[CONFIG_TELEMETRY_ENABLED]
-        except ValueError:
-            return False
-    else:
+    if telemetry_environ is not None:
         return telemetry_environ.lower() == "true"
+
+    try:
+        return rasa_utils.read_global_config_value(
+            CONFIG_FILE_TELEMETRY_KEY, unavailable_ok=False
+        )[CONFIG_TELEMETRY_ENABLED]
+    except ValueError:
+        return False
 
 
 def initialize_telemetry() -> bool:
@@ -190,8 +193,8 @@ def initialize_telemetry() -> bool:
 
         if telemetry_environ is None:
             return is_enabled_in_configuration
-        else:
-            return telemetry_environ.lower() == "true"
+
+        return telemetry_environ.lower() == "true"
     except Exception as e:  # skipcq:PYL-W0703
         logger.exception(
             f"Failed to initialize telemetry reporting: {e}."
@@ -210,10 +213,6 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     Returns:
         Return wrapped function
     """
-    # checks if telemetry is enabled and creates a default config if this is the first
-    # call to it
-    initialize_telemetry()
-
     # allows us to use the decorator for async and non async functions
     if asyncio.iscoroutinefunction(f):
 
@@ -224,15 +223,14 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
             return None
 
         return decorated
-    else:
 
-        @wraps(f)
-        def decorated(*args, **kwargs):
-            if is_telemetry_enabled():
-                return f(*args, **kwargs)
-            return None
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if is_telemetry_enabled():
+            return f(*args, **kwargs)
+        return None
 
-        return decorated
+    return decorated
 
 
 def _fetch_write_key(tool: Text, environment_variable: Text) -> Optional[Text]:
@@ -641,19 +639,21 @@ def initialize_error_reporting() -> None:
         environment="development" if in_continuous_integration() else "production",
     )
 
-    if telemetry_id:
-        with configure_scope() as scope:
-            # sentry added these more recently, just a protection in a case where a
-            # user has installed an older version of sentry
-            if hasattr(scope, "set_user"):
-                scope.set_user({"id": telemetry_id})
+    if not telemetry_id:
+        return
 
-            default_context = _default_context_fields()
-            if hasattr(scope, "set_context"):
-                if "os" in default_context:
-                    # os is a nested dict, hence we report it separately
-                    scope.set_context("Operating System", default_context.pop("os"))
-                scope.set_context("Environment", default_context)
+    with configure_scope() as scope:
+        # sentry added these more recently, just a protection in a case where a
+        # user has installed an older version of sentry
+        if hasattr(scope, "set_user"):
+            scope.set_user({"id": telemetry_id})
+
+        default_context = _default_context_fields()
+        if hasattr(scope, "set_context"):
+            if "os" in default_context:
+                # os is a nested dict, hence we report it separately
+                scope.set_context("Operating System", default_context.pop("os"))
+            scope.set_context("Environment", default_context)
 
 
 @async_generator.asynccontextmanager
