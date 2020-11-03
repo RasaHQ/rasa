@@ -482,3 +482,4 @@ class SlackInput(InputChannel):
 
     def set_output_channel(self, channel: Text) -> None:
         self.slack_channel = channel
+        
