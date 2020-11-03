@@ -11,7 +11,7 @@ import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted, UserUttered, UserUtteranceReverted
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
@@ -596,60 +596,66 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         )
 
     def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
-        """Transforms list of trackers to lists of states for prediction."""
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+    ) -> List[List[State]]:
+        """Transforms list of trackers to lists of states for prediction.
 
-        copy_trackers = copy.deepcopy(trackers)
+        Args:
+            trackers: The trackers to transform
+            domain: The domain,
+            use_text_for_last_user_input: boolean
 
-        # print(len(trackers[0].events), len(copy_trackers[0].events))
+        Returns:
+            A list of states.
+        """
+        # Create a copy of trackers
+        duplicate_trackers = [tracker.copy() for tracker in trackers]
 
-        # tracker length is always 1 at prediction time
-        # popped_event = copy_trackers[0].events.pop()
-
-        # print(len(trackers[0].events), len(copy_trackers[0].events))
+        # Remove the last user uttered event
+        for tracker in duplicate_trackers:
+            tracker.update(UserUtteranceReverted(), domain)
 
         trackers_as_states = [
-            self._create_states(tracker, domain) for tracker in copy_trackers
+            self._create_states(tracker, domain) for tracker in duplicate_trackers
         ]
-        # print(trackers_as_states)
-
-        # remove last state because we expect latest UserUttered event to have been added to incoming tracker also.
-        # TODO: add a None in the beginning as well, otherwise effectively max history is reduced by 1 here
-        trackers_as_states = [
-            self.slice_state_history(states, self.max_history)[:-1]
-            for states in trackers_as_states
-        ]
-
-        # print('sliced states for prediction', trackers_as_states)
 
         return trackers_as_states
 
-    # def featurize_trackers(
-    #     self, trackers: List[DialogueStateTracker], domain: Domain,
-    #     interpreter: NaturalLanguageInterpreter,
-    # ) -> DialogueTrainingData:
-    #     """Create training data."""
+    # def prediction_states(
+    #     self, trackers: List[DialogueStateTracker], domain: Domain, use_
+    # ) -> List[List[Dict[Text, float]]]:
+    #     """Transforms list of trackers to lists of states for prediction."""
     #
-    #     if self.state_featurizer is None:
-    #         raise ValueError(
-    #             "Variable 'state_featurizer' is not set. Provide "
-    #             "'SingleStateFeaturizer' class to featurize trackers."
-    #         )
+    #     copy_trackers = copy.deepcopy(trackers)
     #
-    #     self.state_featurizer.prepare_from_domain(domain)
+    #     # print(len(trackers[0].events), len(copy_trackers[0].events))
     #
-    #     (trackers_as_states, trackers_as_actions) = self.training_states_and_actions(
-    #         trackers, domain
-    #     )
+    #     # tracker length is always 1 at prediction time
+    #     # popped_event = copy_trackers[0].events.pop()
     #
-    #     # noinspection PyPep8Naming
-    #     X, true_lengths = self._featurize_states(trackers_as_states)
-    #     y = self._featurize_labels(trackers_as_actions, domain)
+    #     # print(len(trackers[0].events), len(copy_trackers[0].events))
     #
-    #     return MultiLabelDialogueTrainingData(X, y, true_lengths)
+    #     trackers_as_states = [
+    #         self._create_states(tracker, domain) for tracker in copy_trackers
+    #     ]
+    #     # print(trackers_as_states)
+    #
+    #     # remove last state because we expect latest UserUttered event to have been added to incoming tracker also.
+    #     # TODO: add a None in the beginning as well, otherwise effectively max history is reduced by 1 here
+    #     trackers_as_states = [
+    #         self.slice_state_history(states, self.max_history)[:-1]
+    #         for states in trackers_as_states
+    #     ]
+    #
+    #     # print('sliced states for prediction', trackers_as_states)
+    #
+    #     return trackers_as_states
 
-    def _serialize_state_feature(self, features_list):
+    @staticmethod
+    def _serialize_state_feature(features_list):
 
         feats = []
         for state in features_list:

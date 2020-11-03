@@ -334,12 +334,14 @@ class UserUttered(Event):
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
+        is_probable: bool = True,
     ) -> None:
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
         self.input_channel = input_channel
         self.message_id = message_id
+        self.is_probable = is_probable
 
         super().__init__(timestamp, metadata)
 
@@ -533,6 +535,9 @@ class UserUttered(Event):
             entities=entity_list or [],
             input_channel=input_channel,
         )
+
+    def set_as_not_probable(self):
+        self.is_probable = False
 
 
 # noinspection PyProtectedMember

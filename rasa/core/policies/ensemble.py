@@ -30,7 +30,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.events import DefinePrevUserUtteredFeaturization
-from rasa.shared.core.events import ActionExecutionRejected, ActionExecuted
+from rasa.shared.core.events import ActionExecutionRejected, ActionExecuted, UserUttered
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -580,12 +580,30 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         ):
             rejected_action_name = last_action_event.action_name
 
-        predictions = {
-            f"policy_{i}_{type(p).__name__}": self._get_prediction(
-                p, tracker, domain, interpreter
+        predictions = {}
+        for i, p in enumerate(self.policies):
+            prediction = self._get_prediction(p, tracker, domain, interpreter)
+            if type(p).__name__ == "IntentTEDPolicy":
+                continue
+            predictions[f"policy_{i}_{type(p).__name__}"] = prediction
+
+        if "IntentTEDPolicy" in [type(p).__name__ for p in self.policies]:
+            # Log improbable intents
+            last_user_event: Optional[UserUttered] = tracker.get_last_event_for(
+                UserUttered
             )
-            for i, p in enumerate(self.policies)
-        }
+            if last_user_event:
+                # If this is not the first intent
+                if not last_user_event.is_probable:
+                    logger.info(
+                        f"Last user intent '{last_user_event.intent_name}' is not "
+                        f"a likely intent according to the stories in the training data. "
+                        f"The dialogue policies may not be able to predict the correct "
+                        f"action for future user steps of the conversation. "
+                        f"You should pay attention to this conversation and add the story for it "
+                        f"to training data so that the dialogue policies "
+                        f"learn the correct actions for this conversation."
+                    )
 
         if rejected_action_name:
             logger.debug(

@@ -80,7 +80,9 @@ from rasa.core.policies.ted_policy import (
     STATE_LEVEL_FEATURES,
     FEATURES_TO_ENCODE,
 )
-from rasa.shared.nlu.constants import INTENT
+from rasa.shared.nlu.constants import INTENT, TEXT
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.events import UserUttered
 
 logger = logging.getLogger(__name__)
 
@@ -399,11 +401,6 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
-            dict(self._label_data.data),
-        )
-
-        io_utils.pickle_dump(
             model_path / f"{SAVE_MODEL_FILE_NAME}.intent_thresholds.pkl",
             dict(self.intent_thresholds),
         )
@@ -451,7 +448,7 @@ class IntentTEDPolicy(TEDPolicy):
         )
         meta = train_utils.update_similarity_type(meta)
 
-        model = TED.load(
+        model = IntentTED.load(
             str(tf_model_file),
             model_data_example,
             data_signature=model_data_example.get_signature(),
@@ -481,8 +478,80 @@ class IntentTEDPolicy(TEDPolicy):
             priority=priority,
             model=model,
             zero_state_features=zero_state_features,
-            intent_thresholds=intent_thresholds ** meta,
+            intent_thresholds=intent_thresholds,
+            **meta,
         )
+
+    @staticmethod
+    def _default_predictions(domain: Domain) -> List[float]:
+        """Creates a list of zeros.
+
+        Args:
+            domain: the :class:`rasa.shared.core.domain.Domain`
+        Returns:
+            the list of the length of the number of actions
+        """
+
+        return [0.0] * len(domain.intents)
+
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> Tuple[List[float], Optional[bool]]:
+
+        if self.model is None:
+            return self._default_predictions(domain), False
+
+        # create model data from tracker
+        tracker_state_features = []
+        if (
+            INTENT in self.zero_state_features
+            or not tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # the first example in a batch uses intent
+            # or current prediction is not after user utterance
+            tracker_state_features += self.featurizer.create_state_features(
+                [tracker], domain, interpreter, use_text_for_last_user_input=False
+            )
+        if (
+            TEXT in self.zero_state_features
+            and tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # the second - text, but only after user utterance
+            tracker_state_features += self.featurizer.create_state_features(
+                [tracker], domain, interpreter, use_text_for_last_user_input=True
+            )
+
+        model_data = self._create_model_data(tracker_state_features)
+
+        output = self.model.predict(model_data)
+
+        # take the last prediction in the sequence
+        confidences = output["intent_scores"].numpy()[:, -1, :]
+
+        # Get the last intent prediction from tracker
+        last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
+        if last_user_event:
+            # If this is not the first intent
+            query_intent = last_user_event.intent_name
+            query_intent_id = domain.index_for_intent(query_intent)
+            query_intent_prob = confidences[0][query_intent_id]
+
+            if query_intent_id in self.intent_thresholds:
+                # Check is only valid in this case, for all
+                # other cases it means that this intent did not appear in stories.
+                logger.debug(
+                    f"User intent {query_intent} is probable with "
+                    f"{query_intent_prob}, while threshold is {self.intent_thresholds[query_intent_id]}"
+                )
+                if query_intent_prob < self.intent_thresholds[query_intent_id]:
+                    # Mark the corresponding user turn as interesting
+                    last_user_event.set_as_not_probable()
+
+        return confidences.tolist(), False  # pytype: disable=bad-return-type
 
 
 class IntentTED(TED):
@@ -629,39 +698,6 @@ class IntentTED(TED):
         )
 
         return {"intent_scores": scores, "sim_all": sim_all}
-
-    def predict(self, predict_data: RasaModelData) -> Dict[Text, tf.Tensor]:
-        if self._predict_function is None:
-            logger.debug("There is no tensorflow prediction graph.")
-            self.build_for_predict(predict_data)
-
-        self._training = False  # needed for eager mode
-
-        all_outputs = {"intent_scores": None, "similarities": None}
-
-        # Prepare multiple batches and collect outputs
-        # total_num_examples = predict_data.number_of_examples()
-        # batch_size = 1
-        # for index in range(0, total_num_examples, batch_size):
-        #
-        #     current_batch_size = min(batch_size, total_num_examples - index)
-        #     batch_in = predict_data.prepare_batch(start=index, end=index+current_batch_size)
-        #     batch_output = self._predict_function(batch_in)
-        #     all_outputs["similarities"] = (
-        #         tf.stack(all_outputs["similarities"], batch_output["similarities"])
-        #         if all_outputs["similarities"]
-        #         else batch_output["similarities"]
-        #     )
-        #     all_outputs["intent_scores"] = (
-        #         tf.stack(all_outputs["intent_scores"], batch_output["intent_scores"])
-        #         if all_outputs["intent_scores"]
-        #         else batch_output["intent_scores"]
-        #     )
-
-        batch_in = predict_data.prepare_batch()
-        batch_output = self._predict_function(batch_in)
-
-        return batch_output
 
     def compute_thresholds(self, model_data: RasaModelData, label_ids):
 
