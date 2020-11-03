@@ -271,7 +271,9 @@ def _configure_logging(args: argparse.Namespace):
 
 def is_rasa_project_setup(args: argparse.Namespace, project_path: Text) -> bool:
     config_path = _get_config_path(args)
-    mandatory_files = [config_path, DEFAULT_DOMAIN_PATH]
+    domain_path = _get_domain_path(args)
+
+    mandatory_files = [config_path, domain_path]
 
     for f in mandatory_files:
         if not os.path.exists(os.path.join(project_path, f)):
@@ -306,7 +308,8 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
             "directory (see https://rasa.com/docs/rasa/command-line-interface#rasa-init)."
         )
 
-    _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
+    domain_path = _get_domain_path(args)
+    _validate_domain(os.path.join(project_path, domain_path))
 
     if args.data and not os.path.exists(args.data):
         rasa.shared.utils.cli.print_warning(
@@ -404,6 +407,14 @@ def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
     return config_path
 
 
+def _get_domain_path(args: argparse.Namespace,) -> Optional[Text]:
+    domain_path = rasa.cli.utils.get_validated_path(
+        args.domain, "domain", DEFAULT_DOMAIN_PATH
+    )
+
+    return domain_path
+
+
 def _get_credentials_and_endpoints_paths(
     args: argparse.Namespace,
 ) -> Tuple[Optional[Text], Optional[Text]]:
@@ -445,13 +456,19 @@ def run_locally(args: argparse.Namespace):
     process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
 
     config_path = _get_config_path(args)
+    domain_path = _get_domain_path(args)
 
     telemetry.track_rasa_x_local()
 
     # noinspection PyBroadException
     try:
         local.main(
-            args, project_path, args.data, token=rasa_x_token, config_path=config_path
+            args,
+            project_path,
+            args.data,
+            token=rasa_x_token,
+            config_path=config_path,
+            domain_path=domain_path,
         )
     except RasaXTermsError:
         # User didn't accept the Rasa X terms.
