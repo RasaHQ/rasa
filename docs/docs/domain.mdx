@@ -28,7 +28,7 @@ rasa train --domain path_to_domain_directory
 The `intents` key in your domain file lists all intents
 used in your [NLU data](./nlu-training-data.mdx) and [conversation training data](./training-data-format#conversation-training-data).
 
-### Ignoring entities for certain intents
+### Ignoring Entities for Certain Intents
 
 To ignore all entities for certain intents, you can
 add the `use_entities: []` parameter to the intent in your domain
@@ -118,23 +118,35 @@ slots:
 
 ### Slots and Conversation Behavior
 
-You can specify whether or not a slot influences the conversation with the property
-`influence_conversation`. If you want to store information but don't want a slot to
-influence the conversation, set the `influence_conversation` property of your slot
-to `false`.
-By default all slot types will influence the conversation except slots of the type
-`any`. Depending on the [slot type](./domain.mdx#slot-types), a slot with the
-`influence_conversation` property set to `true` will cause different behavior of
-your assistant.
+You can specify whether or not a slot influences the conversation with the
+`influence_conversation` property. 
 
-For example, if your user should provide their home city, you might
-use a slot called `home_city` to store this information. If the user asks for the
-weather, and you *don't* know their home city, you will have to ask
-them for it. You could make `home_city` a `text` slot and set the
-`influence_conversation` property to `true`. A [`text` slot](domain.mdx#text-slot) will
+If you want to store information in a slot without it influencing the conversation,
+set `influence_conversation: false` when defining your slot. 
+
+The following example defines a slot `age` which will store information about the
+user's age, but which will *not* influence the flow of the conversation. This means
+that the assistant will ignore the value of the slot each time it predicts the next action.
+
+```yaml
+slots:
+  age:
+    type: text
+    # this slot will not influence the predictions
+    # of the dialogue policies
+    influence_conversation: false
+```
+
+When defining a slot, if you leave out `influence_conversation` or set it to `true`,
+that slot will influence the next action prediction, unless it has slot type `any`.
+The way the slot influences the conversation
+will depend on its [slot type](./domain.mdx#slot-types).
+
+The following example defines a slot `home_city` that influences the conversation. 
+A [`text` slot](domain.mdx#text-slot) will
 influence the assistant's behavior depending on whether the slot has a value.
 The specific value of a `text` slot (e.g. *Bangalore* or *New York* or *Hong Kong*)
-doesn't make any difference.
+doesn't make any difference. 
 
 ```yaml
 slots:
@@ -145,18 +157,11 @@ slots:
     influence_conversation: true
 ```
 
-The following example defines a slot `age` which will store information about the
-user's age, but which will *not* influence the flow of the conversation. This means
-that the assistant will ignore the value of the slot during the conversation.
-
-```yaml
-slots:
-  age:
-    type: text
-    # this slot will not influence the predictions
-    # of the dialogue policies
-    influence_conversation: false
-```
+As an example, consider the two inputs "What is the weather like?" and "What is the
+weather like in Bangalore?" The conversation should diverge based on whether
+the `home_city` slot was set automatically by the NLU. If the slot is already set, the bot
+can predict the `action_forecast` action. If the slot is not set, it needs to get the `home_city`
+information before it is able to predict the weather.
 
 ### Slot Types
 
