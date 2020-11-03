@@ -335,8 +335,10 @@ You can also validate only the story structure by running this command:
 rasa data validate stories
 ```
 
-Note: The `rasa data validate` and `rasa data validate stories` commands do **not** test if your [rules](./rules.mdx) 
-are consistent with your stories. 
+:::note
+Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
+If any such conflicts occur, however, training of the `RulePolicy` will fail.
+:::
 
 To interrupt validation even for minor issues such as unused intents or responses, use the `--fail-on-warnings` flag.
 
