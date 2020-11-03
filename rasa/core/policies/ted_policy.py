@@ -787,7 +787,6 @@ class TED(TransformerRasaModel):
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
-
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
         mask = self._compute_mask(dialogue_lengths)
 
@@ -810,7 +809,7 @@ class TED(TransformerRasaModel):
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Optional[tf.Tensor]:
-        """Encodes features for a given attribute
+        """Encodes features for a given attribute.
 
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks
@@ -888,8 +887,10 @@ class TED(TransformerRasaModel):
         attribute_features: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> tf.Tensor:
-        """Transform attribute features back to original shape:
-        batch x dialogue length x units
+        """Transform attribute features back to original shape.
+
+        Given shape: combined batch and dialogue dimension x 1 x units
+        Original shape: batch x dialogue length x units
 
         Args:
             attribute_features: the features to convert
@@ -931,8 +932,9 @@ class TED(TransformerRasaModel):
     def _process_batch_data(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> tf.Tensor:
-        """Encodes batch data; combines intent and text and action name and action
-        text if both are present.
+        """Encodes batch data.
+
+        Combines intent and text and action name and action text if both are present.
 
         Args:
             tf_batch_data: dictionary mapping every attribute to its features and masks

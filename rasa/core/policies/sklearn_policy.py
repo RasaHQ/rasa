@@ -164,13 +164,15 @@ class SklearnPolicy(Policy):
     def _get_features_for_attribute(
         self, attribute_data: Dict[Text, List[FeatureArray]]
     ):
-        """
-        Given a list of all features for one attribute, turn it into a numpy array;
+        """Given a list of all features for one attribute, turn it into a numpy array.
+
         shape_attribute = features[SENTENCE][0][0].shape[-1]
             (Shape of features of one attribute)
+
         Args:
-            attribute_data: all features in the attribute stored in a np.array;
-        Output:
+            attribute_data: all features in the attribute stored in a np.array
+
+        Returns:
             2D np.ndarray with features for an attribute with
                 shape [num_dialogs x (max_history * shape_attribute)]
         """
