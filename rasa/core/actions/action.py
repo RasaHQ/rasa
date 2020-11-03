@@ -124,9 +124,7 @@ def action_for_name(
     if action_name not in domain.action_names:
         domain.raise_action_not_found_exception(action_name)
 
-    return action_from_name(
-        action_name, domain, action_endpoint, domain.retrieval_intents
-    )
+    return action_from_name(action_name, domain, action_endpoint)
 
 
 def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> bool:
@@ -150,10 +148,7 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 
 
 def action_from_name(
-    name: Text,
-    domain: Domain,
-    action_endpoint: Optional[EndpointConfig],
-    retrieval_intents: Optional[List[Text]] = None,
+    name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
 ) -> "Action":
     """Retrieves an action by its name.
 
@@ -161,7 +156,6 @@ def action_from_name(
         name: The name of the action.
         domain: The current model domain.
         action_endpoint: The endpoint to execute custom actions.
-        retrieval_intents: Retrieval intents used by the current model.
 
     Returns:
         The instantiated action.
@@ -172,7 +166,7 @@ def action_from_name(
         return defaults[name]
 
     if name.startswith(UTTER_PREFIX) and is_retrieval_action(
-        name, retrieval_intents or []
+        name, domain.retrieval_intents
     ):
         return ActionRetrieveResponse(name)
 
