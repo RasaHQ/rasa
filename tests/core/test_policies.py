@@ -359,6 +359,10 @@ class TestTEDPolicy(PolicyTestCollection):
         batch_size = 2
         (
             batch_label_ids,
+            batch_action_name_mask,
+            batch_action_name_sentence_1,
+            batch_action_name_sentence_2,
+            batch_action_name_sentence_3,
             batch_entities_mask,
             batch_entities_sentence_1,
             batch_entities_sentence_2,
@@ -371,18 +375,20 @@ class TestTEDPolicy(PolicyTestCollection):
             batch_slots_sentence_1,
             batch_slots_sentence_2,
             batch_slots_sentence_3,
-            batch_action_name_mask,
-            batch_action_name_sentence_1,
-            batch_action_name_sentence_2,
-            batch_action_name_sentence_3,
             batch_dialogue_length,
         ) = next(model_data._gen_batch(batch_size=batch_size))
 
         assert (
-            batch_intent_mask.shape[0] == batch_size
-            and batch_action_name_mask.shape[0] == batch_size
-            and batch_entities_mask.shape[0] == batch_size
-            and batch_slots_mask.shape[0] == batch_size
+            batch_label_ids.shape[0] == batch_size
+            and batch_dialogue_length.shape[0] == batch_size
+        )
+        # batch and dialogue dimensions are combined
+        first_dimension_size = batch_size if self.max_history <= 1 else batch_size + 1
+        assert (
+            batch_slots_mask.shape[0] == first_dimension_size
+            and batch_intent_mask.shape[0] == first_dimension_size
+            and batch_entities_mask.shape[0] == first_dimension_size
+            and batch_action_name_mask.shape[0] == first_dimension_size
         )
         assert (
             batch_intent_sentence_3[1]
@@ -417,10 +423,8 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         assert (
-            batch_intent_mask.shape[0] == batch_size
-            and batch_action_name_mask.shape[0] == batch_size
-            and batch_entities_mask.shape[0] == batch_size
-            and batch_slots_mask.shape[0] == batch_size
+            batch_label_ids.shape[0] == batch_size
+            and batch_dialogue_length.shape[0] == batch_size
         )
         assert (
             batch_intent_sentence_3[1]

@@ -67,6 +67,7 @@ COSINE = "cosine"
 BALANCED = "balanced"
 
 SEQUENCE = "sequence"
+SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
 SENTENCE = "sentence"
 
 POOLING = "pooling"

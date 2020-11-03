@@ -96,7 +96,7 @@ async def model_data() -> RasaModelData:
                                 [
                                     scipy.sparse.csr_matrix(
                                         np.random.randint(5, size=(3, 10))
-                                    ),
+                                    )
                                 ],
                                 [
                                     scipy.sparse.csr_matrix(
@@ -123,13 +123,13 @@ async def model_data() -> RasaModelData:
                                     np.random.rand(1, 14),
                                     np.random.rand(3, 14),
                                 ],
-                                [np.random.rand(5, 14), np.random.rand(2, 14),],
+                                [np.random.rand(5, 14), np.random.rand(2, 14)],
                                 [
                                     np.random.rand(5, 14),
                                     np.random.rand(1, 14),
                                     np.random.rand(3, 14),
                                 ],
-                                [np.random.rand(3, 14),],
+                                [np.random.rand(3, 14)],
                                 [
                                     np.random.rand(3, 14),
                                     np.random.rand(1, 14),
@@ -383,12 +383,12 @@ def test_get_num_of_features(model_data: RasaModelData):
                                 np.random.rand(7, 10),
                             ]
                         ),
-                        np.array([np.random.rand(2, 10),]),
+                        np.array([np.random.rand(2, 10)]),
                     ]
                 ),
                 number_of_dimensions=4,
             ),
-            (3, 4, 7, 10),
+            (8, 7, 10),
         ),
     ],
 )
@@ -466,14 +466,14 @@ def test_pad_dense_data(incoming_data: FeatureArray, expected_shape: np.ndarray)
                             [
                                 scipy.sparse.csr_matrix(
                                     np.random.randint(10, size=(2, 10))
-                                ),
+                                )
                             ]
                         ),
                     ]
                 ),
                 number_of_dimensions=4,
             ),
-            (3, 4, 7, 10),
+            (8, 7, 10),
         ),
     ],
 )

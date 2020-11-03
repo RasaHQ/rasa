@@ -7,7 +7,7 @@ import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable, Type, Any
+from typing import Optional, Text, List, Callable, Type, Any, Tuple
 from unittest.mock import patch, Mock
 
 from rasa.core.actions.action import ActionUtterTemplate

@@ -7,7 +7,7 @@ from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
-from rasa.utils.tensorflow.constants import SEQUENCE, MASK
+from rasa.utils.tensorflow.constants import MASK
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -318,41 +318,36 @@ def _features_for_attribute(
     sparse_features = {}
     dense_features = {}
 
-    # vstack serves as removing dimension in case we are not dealing with a sequence
     for key, values in _sparse_features.items():
-        if key == SEQUENCE:
-            if consider_dialogue_dimension:
-                sparse_features[key] = FeatureArray(
-                    np.array(values), number_of_dimensions=4
-                )
-            else:
-                sparse_features[key] = FeatureArray(
-                    np.array([v[0] for v in values]), number_of_dimensions=3
-                )
-        else:
-            features = [scipy.sparse.vstack(value) for value in values]
+        if consider_dialogue_dimension:
             sparse_features[key] = FeatureArray(
-                np.array(features), number_of_dimensions=3
+                np.array(values), number_of_dimensions=4
             )
-    for key, values in _dense_features.items():
-        if key == SEQUENCE:
-            if consider_dialogue_dimension:
-                dense_features[key] = FeatureArray(
-                    np.array(values), number_of_dimensions=4
-                )
-            else:
-                dense_features[key] = FeatureArray(
-                    np.array([v[0] for v in values]), number_of_dimensions=3
-                )
         else:
-            features = [np.vstack(value) for value in values]
-            dense_features[key] = FeatureArray(
-                np.array(features), number_of_dimensions=3
+            sparse_features[key] = FeatureArray(
+                np.array([v[0] for v in values]), number_of_dimensions=3
             )
 
-    attribute_to_feature_arrays = {
-        MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=3)]
-    }
+    for key, values in _dense_features.items():
+        if consider_dialogue_dimension:
+            dense_features[key] = FeatureArray(np.array(values), number_of_dimensions=4)
+        else:
+            dense_features[key] = FeatureArray(
+                np.array([v[0] for v in values]), number_of_dimensions=3
+            )
+
+    if consider_dialogue_dimension:
+        attribute_to_feature_arrays = {
+            MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=4)]
+        }
+    else:
+        attribute_to_feature_arrays = {
+            MASK: [
+                FeatureArray(
+                    np.array(np.squeeze(attribute_masks, -1)), number_of_dimensions=3
+                )
+            ]
+        }
 
     feature_types = set()
     feature_types.update(list(dense_features.keys()))
@@ -403,9 +398,7 @@ def _extract_features(
 
         # create a mask for every state
         # to capture which turn has which input
-        attribute_mask = np.expand_dims(
-            np.ones(len(list_of_list_of_features), np.float32), -1
-        )
+        attribute_mask = np.ones(len(list_of_list_of_features), np.float32)
 
         for i, list_of_features in enumerate(list_of_list_of_features):
 
@@ -415,9 +408,10 @@ def _extract_features(
                 list_of_features = zero_features
 
             for features in list_of_features:
-                # in case of ENTITIES, if the attribute type matches either 'entity', 'role', or 'group' the
-                # features correspond to the tag ids of that entity type
-                # in order to distinguish later on between the different tag ids, we use the entity type as key
+                # in case of ENTITIES, if the attribute type matches either 'entity',
+                # 'role', or 'group' the features correspond to the tag ids of that
+                # entity type in order to distinguish later on between the different
+                # tag ids, we use the entity type as key
                 if attribute == ENTITIES and features.attribute in [
                     ENTITY_ATTRIBUTE_TYPE,
                     ENTITY_ATTRIBUTE_GROUP,
@@ -438,6 +432,9 @@ def _extract_features(
         for key, value in dialogue_dense_features.items():
             dense_features[key].append(value)
 
+        # add additional dimensions to attribute mask to get a 3D vector
+        # resulting shape dialogue length x 1 x 1
+        attribute_mask = np.expand_dims(np.expand_dims(attribute_mask, -1), -1)
         attribute_masks.append(attribute_mask)
 
     return attribute_masks, dense_features, sparse_features

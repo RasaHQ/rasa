@@ -80,9 +80,10 @@ from rasa.core.policies.ted_policy import (
     STATE_LEVEL_FEATURES,
     FEATURES_TO_ENCODE,
 )
-from rasa.shared.nlu.constants import INTENT, TEXT
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.nlu.constants import INTENT, TEXT, ENTITIES, ACTION_TEXT, ACTION_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, SLOTS, ACTIVE_LOOP
 from rasa.shared.core.events import UserUttered
+from rasa.utils.tensorflow.constants import HIDDEN_LAYERS_SIZES, CONCAT_DIMENSION
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,24 @@ class IntentTEDPolicy(TEDPolicy):
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
-        DENSE_DIMENSION: 20,
+        # Hidden layer sizes for layers before the embedding layers for user message
+        # and labels.
+        # The number of hidden layers is equal to the length of the corresponding
+        # list.
+        HIDDEN_LAYERS_SIZES: {TEXT: [], ACTION_TEXT: []},
+        DENSE_DIMENSION: {
+            TEXT: 128,
+            ACTION_TEXT: 128,
+            ENTITIES: 128,
+            SLOTS: 128,
+            ACTIVE_LOOP: 128,
+            f"{LABEL}_{ACTION_TEXT}": 20,
+            INTENT: 20,
+            ACTION_NAME: 20,
+            f"{LABEL}_{ACTION_NAME}": 20,
+            f"{LABEL}_{INTENT}": 20,
+        },
+        CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128},
         ENCODING_DIMENSION: 50,
         # Number of units in transformer
         TRANSFORMER_SIZE: 128,
@@ -619,9 +637,6 @@ class IntentTED(TED):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-        # print("tf_batch_data keys", tf_batch_data.keys())
-
-        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
@@ -636,7 +651,7 @@ class IntentTED(TED):
 
         dialogue_in = self._process_batch_data(tf_batch_data)
         dialogue_embed, dialogue_mask = self._emebed_dialogue(
-            dialogue_in, dialogue_lengths
+            dialogue_in, tf_batch_data
         )
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
@@ -660,13 +675,11 @@ class IntentTED(TED):
 
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
-
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
         dialogue_in = self._process_batch_data(tf_batch_data)
         dialogue_embed, dialogue_mask = self._emebed_dialogue(
-            dialogue_in, dialogue_lengths
+            dialogue_in, tf_batch_data
         )
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
@@ -690,14 +703,12 @@ class IntentTED(TED):
             batch_in, self.predict_data_signature
         )
 
-        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
-
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
 
         dialogue_in = self._process_batch_data(tf_batch_data)
         dialogue_embed, dialogue_mask = self._emebed_dialogue(
-            dialogue_in, dialogue_lengths
+            dialogue_in, tf_batch_data
         )
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
