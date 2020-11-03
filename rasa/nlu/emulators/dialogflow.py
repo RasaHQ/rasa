@@ -1,4 +1,5 @@
 import uuid
+from collections import defaultdict
 from typing import Any, Dict, Text
 
 from rasa.shared.nlu.constants import (
@@ -29,13 +30,7 @@ class DialogflowEmulator(Emulator):
         Returns:
             The transformed input data.
         """
-        entities = {
-            entity_type: []
-            for entity_type in {
-                entity[ENTITY_ATTRIBUTE_TYPE] for entity in data[ENTITIES]
-            }
-        }
-
+        entities = defaultdict(list)
         for entity in data[ENTITIES]:
             entities[entity[ENTITY_ATTRIBUTE_TYPE]].append(
                 entity[ENTITY_ATTRIBUTE_VALUE]
