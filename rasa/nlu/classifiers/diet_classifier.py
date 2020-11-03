@@ -892,12 +892,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return predicted_tags, confidence_values
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        """Augment the message with intents and entities."""
-
-        self.process_with_diagnostics(message, **kwargs)
-
-    def process_with_diagnostics(
+    def process(
         self, message: Message, **kwargs: Any
     ) -> Optional[Dict[Text, Any]]:
         """Augment the message with intents and entities and return diagnostic data."""
