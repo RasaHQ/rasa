@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 class LuisReader(JsonTrainingDataReader):
+    """Reads LUIS training data."""
+
     @staticmethod
     def _extract_regex_features(js: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         regex_features: List[Dict[Text, Any]] = []
