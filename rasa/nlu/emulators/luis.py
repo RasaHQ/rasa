@@ -47,16 +47,9 @@ class LUISEmulator(Emulator):
 
         return {top["intent"]: {"score": top["score"]}}
 
-    def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
-        """Transform response JSON to LUIS format.
-
-        Args:
-            data: input JSON data as a dictionary.
-
-        Returns:
-            The transformed input data.
-        """
-        top = self._top_intent(data)
+    def _entities(self, data) -> Optional[Dict[Text, Any]]:
+        if ENTITIES not in data:
+            return {}
 
         entities = {"$instance": {}}
         for e in data[ENTITIES]:
@@ -78,6 +71,18 @@ class LUISEmulator(Emulator):
                     "modelType": "Entity Extractor",
                 }
             )
+        return entities
+
+    def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Transform response JSON to LUIS format.
+
+        Args:
+            data: input JSON data as a dictionary.
+
+        Returns:
+            The transformed input data.
+        """
+        top = self._top_intent(data)
 
         return {
             "query": data[TEXT],
@@ -85,6 +90,6 @@ class LUISEmulator(Emulator):
                 "normalizedQuery": data[TEXT],
                 "topIntent": top[INTENT] if top else None,
                 "intents": self._intents(data),
-                "entities": entities,
+                "entities": self._entities(data),
             },
         }
