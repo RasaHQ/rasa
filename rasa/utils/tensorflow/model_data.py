@@ -92,7 +92,8 @@ class FeatureArray(np.ndarray):
             "at": ufunc.at,
             "__call__": ufunc,
         }
-        # convert the inputs to np.ndarray to prevent recursion, call the function, then cast it back as FeatureArray
+        # convert the inputs to np.ndarray to prevent recursion, call the function,
+        # then cast it back as FeatureArray
         output = FeatureArray(
             f[method](*(i.view(np.ndarray) for i in inputs), **kwargs),
             number_of_dimensions=kwargs["number_of_dimensions"],
@@ -140,20 +141,21 @@ class FeatureArray(np.ndarray):
                 dim = i
                 break
 
-        # If the resulting sub_array is sparse, the remaining number of dimensions should be at least 2
+        # If the resulting sub_array is sparse, the remaining number of dimensions
+        # should be at least 2
         if isinstance(_sub_array, scipy.sparse.spmatrix):
             if dim > 2:
                 raise ValueError(
-                    f"Given number of dimensions '{number_of_dimensions}' does not match dimensiona of given input "
-                    f"array: {input_array}."
+                    f"Given number of dimensions '{number_of_dimensions}' does not "
+                    f"match dimensiona of given input array: {input_array}."
                 )
         # If the resulting sub_array is dense, the sub_array should be a single number
         elif not np.issubdtype(type(_sub_array), np.integer) and not isinstance(
             _sub_array, (np.float32, np.float64)
         ):
             raise ValueError(
-                f"Given number of dimensions '{number_of_dimensions}' does not match dimensiona of given input "
-                f"array: {input_array}."
+                f"Given number of dimensions '{number_of_dimensions}' does not match "
+                f"dimensions of given input array: {input_array}."
             )
 
     def get_shape_type_info(
@@ -177,13 +179,13 @@ class FeatureArray(np.ndarray):
             A list of type tuples.
         """
         if self.is_sparse:
+            # 4D tensors were converted into 3D tensors during padding
+            number_of_dimensions = (
+                self.number_of_dimensions if self.number_of_dimensions != 4 else 3
+            )
             # scipy matrix is converted into indices, data, shape
             return (
-                [
-                    (None, self.number_of_dimensions),
-                    (None,),
-                    (self.number_of_dimensions),
-                ],
+                [(None, number_of_dimensions), (None,), (number_of_dimensions)],
                 [tf.int64, tf.float32, tf.int64],
             )
 
@@ -197,13 +199,18 @@ class FeatureArray(np.ndarray):
             return [(None, None, self.units)], [tf.float32]
 
         if self.number_of_dimensions == 4:
-            return [(None, None, None, self.units)], [tf.float32]
+            # 4D tensors were converted into 3D tensors during padding
+            return [(None, None, self.units)], [tf.float32]
 
         return [], []
 
 
 class FeatureSignature(NamedTuple):
-    """Stores the number of units, the type (sparse vs dense), and the number of dimensions of features."""
+    """Signature of feature arrays.
+
+    Stores the number of units, the type (sparse vs dense), and the number of
+    dimensions of features.
+    """
 
     is_sparse: bool
     units: Optional[int]
@@ -483,15 +490,27 @@ class RasaModelData:
         self.data[key][sub_key] = []
 
         for features in self.data[from_key][from_sub_key]:
-            if len(features) > 0:
-                if features.number_of_dimensions == 4:
-                    lengths = np.array([x[0].shape[0] for x in features])
-                else:
-                    lengths = np.array([x.shape[0] for x in features])
-                self.data[key][sub_key].extend(
-                    [FeatureArray(lengths, number_of_dimensions=1)]
+            if len(features) == 0:
+                continue
+
+            if features.number_of_dimensions == 4:
+                lengths = FeatureArray(
+                    np.array(
+                        [
+                            # add one more dim so that dialogue dim
+                            # would be a sequence
+                            np.array([[[x.shape[0]]] for x in _features])
+                            for _features in features
+                        ]
+                    ),
+                    number_of_dimensions=4,
                 )
-                break
+            else:
+                lengths = FeatureArray(
+                    np.array([x.shape[0] for x in features]), number_of_dimensions=1
+                )
+            self.data[key][sub_key].extend([lengths])
+            break
 
     def split(
         self, number_of_test_examples: int, random_seed: int
@@ -1055,8 +1074,15 @@ class RasaModelData:
     def _pad_4d_dense_data(array_of_array_of_dense: FeatureArray) -> np.ndarray:
         # in case of dialogue data we may have 4 dimensions
         # batch size x dialogue history length x sequence length x number of features
-        data_size = len(array_of_array_of_dense)
-        max_dialogue_len = max(
+
+        # as transformers cannot handle 4D tensors pad and reshape the data
+        # so that the resulting tensor is 3D
+        # the shape is (sum of dialogue history length for all tensors in the
+        # batch x max sequence length x number of features)
+        # the original shape and the original dialogue length is passed on to the model
+        # it can be used to transform the 3D tensor back into 4D
+
+        combined_dialogue_len = sum(
             len(array_of_dense) for array_of_dense in array_of_array_of_dense
         )
         max_seq_len = max(
@@ -1069,17 +1095,18 @@ class RasaModelData:
 
         data_padded = np.zeros(
             [
-                data_size,
-                max_dialogue_len,
+                combined_dialogue_len,
                 max_seq_len,
                 array_of_array_of_dense[0][0].shape[-1],
             ],
             dtype=array_of_array_of_dense[0][0].dtype,
         )
 
+        current_sum_dialogue_len = 0
         for i, array_of_dense in enumerate(array_of_array_of_dense):
             for j, dense in enumerate(array_of_dense):
-                data_padded[i, j, : dense.shape[0], :] = dense
+                data_padded[current_sum_dialogue_len + j, : dense.shape[0], :] = dense
+            current_sum_dialogue_len += len(array_of_dense)
 
         return data_padded.astype(np.float32)
 
@@ -1123,9 +1150,18 @@ class RasaModelData:
         ]
 
     @staticmethod
-    def _4d_scipy_matrix_to_values(array_of_array_of_sparse: FeatureArray):
+    def _4d_scipy_matrix_to_values(
+        array_of_array_of_sparse: FeatureArray,
+    ) -> List[np.ndarray]:
         # in case of dialogue data we may have 4 dimensions
         # batch size x dialogue history length x sequence length x number of features
+
+        # transformers cannot handle 4D tensors, therefore pad and reshape the data
+        # so that the resulting tensor is 3D
+        # the shape is (sum of dialogue history length for all tensors in the
+        # batch x max sequence length x number of features)
+        # the original shape and the original dialogue length is passed on to the model
+        # it can be used to transform the 3D tensor back into 4D
 
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
@@ -1135,8 +1171,8 @@ class RasaModelData:
                 for array_of_sparse in array_of_array_of_sparse
             ]
 
-        max_dialogue_len = max(
-            [len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse]
+        combined_dialogue_len = sum(
+            len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse
         )
         max_seq_len = max(
             [
@@ -1149,7 +1185,15 @@ class RasaModelData:
         indices = np.hstack(
             [
                 np.vstack(
-                    [i * np.ones_like(x.row), j * np.ones_like(x.row), x.row, x.col]
+                    [
+                        sum(
+                            len(array_of_sparse)
+                            for array_of_sparse in array_of_array_of_sparse[:i]
+                        )
+                        + j * np.ones_like(x.row),
+                        x.row,
+                        x.col,
+                    ]
                 )
                 for i, array_of_sparse in enumerate(array_of_array_of_sparse)
                 for j, x in enumerate(array_of_sparse)
@@ -1165,14 +1209,7 @@ class RasaModelData:
         )
 
         number_of_features = array_of_array_of_sparse[0][0].shape[-1]
-        shape = np.array(
-            (
-                len(array_of_array_of_sparse),
-                max_dialogue_len,
-                max_seq_len,
-                number_of_features,
-            )
-        )
+        shape = np.array((combined_dialogue_len, max_seq_len, number_of_features))
 
         return [
             indices.astype(np.int64),

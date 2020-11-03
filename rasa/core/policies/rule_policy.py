@@ -842,7 +842,7 @@ class RulePolicy(MemoizationPolicy):
             self._prediction_source = DEFAULT_RULES
             return self._prediction_result(default_action_name, tracker, domain), False
 
-        # A loop has priority over any other rule.
+        # A loop has priority over any other rule except defaults.
         # The rules or any other prediction will be applied only if a loop was rejected.
         # If we are in a loop, and the loop didn't run previously or rejected, we can
         # simply force predict the loop.
@@ -865,6 +865,7 @@ class RulePolicy(MemoizationPolicy):
 
         (
             rules_action_name_from_intent,
+            # we want to remember the source even if rules didn't predict any action
             self._prediction_source,
         ) = self._find_action_from_rules(
             tracker, domain, use_text_for_last_user_input=False

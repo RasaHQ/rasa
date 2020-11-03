@@ -7,7 +7,6 @@ import numpy as np
 import os
 import scipy.sparse
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTuple
 
@@ -90,6 +89,7 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     SEQUENCE,
     SENTENCE,
+    SEQUENCE_LENGTH,
     DENSE_DIMENSION,
     MASK,
 )
@@ -99,7 +99,6 @@ logger = logging.getLogger(__name__)
 
 SPARSE = "sparse"
 DENSE = "dense"
-SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = "ids"
 TAG_IDS = "tag_ids"
@@ -1285,39 +1284,6 @@ class DIET(TransformerRasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
-    def _prepare_input_layers(self, name: Text) -> None:
-        self._prepare_ffnn_layer(
-            name, self.config[HIDDEN_LAYERS_SIZES][name], self.config[DROP_RATE]
-        )
-
-        for feature_type in [SENTENCE, SEQUENCE]:
-            if (
-                name not in self.data_signature
-                or feature_type not in self.data_signature[name]
-            ):
-                continue
-
-            self._prepare_sparse_dense_dropout_layers(
-                f"{name}_{feature_type}", self.config[DROP_RATE]
-            )
-            self._prepare_sparse_dense_layers(
-                self.data_signature[name][feature_type],
-                f"{name}_{feature_type}",
-                self.config[DENSE_DIMENSION][name],
-            )
-            self._prepare_ffnn_layer(
-                f"{name}_{feature_type}",
-                [self.config[CONCAT_DIMENSION][name]],
-                self.config[DROP_RATE],
-                prefix="concat_layer",
-            )
-
-    def _prepare_sequence_layers(self, name: Text) -> None:
-        self._prepare_input_layers(name)
-        self._prepare_transformer_layer(
-            name, self.config[DROP_RATE], self.config[DROP_RATE_ATTENTION]
-        )
-
     def _prepare_mask_lm_layers(self, name: Text) -> None:
         self._tf_layers[f"{name}_input_mask"] = layers.InputMask()
 
@@ -1350,100 +1316,6 @@ class DIET(TransformerRasaModel):
                 f"tags.{name}",
             )
 
-    def _features_as_seq_ids(
-        self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
-    ) -> Optional[tf.Tensor]:
-        """Creates dense labels for negative sampling."""
-
-        # if there are dense features - we can use them
-        for f in features:
-            if not isinstance(f, tf.SparseTensor):
-                seq_ids = tf.stop_gradient(f)
-                # add a zero to the seq dimension for the sentence features
-                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
-                return seq_ids
-
-        # use additional sparse to dense layer
-        for f in features:
-            if isinstance(f, tf.SparseTensor):
-                seq_ids = tf.stop_gradient(
-                    self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
-                )
-                # add a zero to the seq dimension for the sentence features
-                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
-                return seq_ids
-
-        return None
-
-    def _combine_sequence_sentence_features(
-        self,
-        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        mask_sequence: tf.Tensor,
-        mask_text: tf.Tensor,
-        name: Text,
-        sparse_dropout: bool = False,
-        dense_dropout: bool = False,
-    ) -> tf.Tensor:
-        sequence_x = self._combine_sparse_dense_features(
-            sequence_features,
-            f"{name}_{SEQUENCE}",
-            mask_sequence,
-            sparse_dropout,
-            dense_dropout,
-        )
-        sentence_x = self._combine_sparse_dense_features(
-            sentence_features, f"{name}_{SENTENCE}", None, sparse_dropout, dense_dropout
-        )
-
-        if sequence_x is not None and sentence_x is None:
-            return sequence_x
-
-        if sequence_x is None and sentence_x is not None:
-            return sentence_x
-
-        if sequence_x is not None and sentence_x is not None:
-            return self._concat_sequence_sentence_features(
-                sequence_x, sentence_x, name, mask_text
-            )
-
-        raise ValueError(
-            "No features are present. Please check your configuration file."
-        )
-
-    def _concat_sequence_sentence_features(
-        self,
-        sequence_x: tf.Tensor,
-        sentence_x: tf.Tensor,
-        name: Text,
-        mask_text: tf.Tensor,
-    ):
-        if sequence_x.shape[-1] != sentence_x.shape[-1]:
-            sequence_x = self._tf_layers[f"concat_layer.{name}_{SEQUENCE}"](
-                sequence_x, self._training
-            )
-            sentence_x = self._tf_layers[f"concat_layer.{name}_{SENTENCE}"](
-                sentence_x, self._training
-            )
-
-        # we need to concatenate the sequence features with the sentence features
-        # we cannot use tf.concat as the sequence features are padded
-
-        # (1) get position of sentence features in mask
-        last = mask_text * tf.math.cumprod(
-            1 - mask_text, axis=1, exclusive=True, reverse=True
-        )
-        # (2) multiply by sentence features so that we get a matrix of
-        #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
-        #     for the sentence features
-        sentence_x = last * sentence_x
-
-        # (3) add a zero to the end of sequence matrix to match the final shape
-        sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
-
-        # (4) sum up sequence features and sentence features
-        return sequence_x + sentence_x
-
     def _create_bow(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
@@ -1466,52 +1338,6 @@ class DIET(TransformerRasaModel):
         )
         x = tf.reduce_sum(x, axis=1)  # convert to bag-of-words
         return self._tf_layers[f"ffnn.{name}"](x, self._training)
-
-    def _create_sequence(
-        self,
-        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
-        mask_sequence: tf.Tensor,
-        mask: tf.Tensor,
-        name: Text,
-        sparse_dropout: bool = False,
-        dense_dropout: bool = False,
-        masked_lm_loss: bool = False,
-        sequence_ids: bool = False,
-    ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
-        if sequence_ids:
-            seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
-        else:
-            seq_ids = None
-
-        inputs = self._combine_sequence_sentence_features(
-            sequence_features,
-            sentence_features,
-            mask_sequence,
-            mask,
-            name,
-            sparse_dropout,
-            dense_dropout,
-        )
-        inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
-
-        if masked_lm_loss:
-            transformer_inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
-                inputs, mask, self._training
-            )
-        else:
-            transformer_inputs = inputs
-            lm_mask_bool = None
-
-        outputs = self._tf_layers[f"transformer.{name}"](
-            transformer_inputs, 1 - mask, self._training
-        )
-
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
-            # apply activation
-            outputs = tfa.activations.gelu(outputs)
-
-        return outputs, inputs, seq_ids, lm_mask_bool
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
@@ -1598,35 +1424,20 @@ class DIET(TransformerRasaModel):
 
         return loss, f1, logits
 
-    @staticmethod
-    def _get_sequence_lengths(
-        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
-        key: Text,
-        sub_key: Text,
-        batch_dim: int = 1,
-    ) -> tf.Tensor:
-        # sentence features have a sequence lengths of 1
-        # if sequence features are present we add the sequence lengths of those
-
-        sequence_lengths = tf.ones([batch_dim], dtype=tf.int32)
-        if key in tf_batch_data and sub_key in tf_batch_data[key]:
-            sequence_lengths += tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
-
-        return sequence_lengths
-
-    @staticmethod
-    def _get_batch_dim(tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]) -> int:
-        if TEXT in tf_batch_data and SEQUENCE in tf_batch_data[TEXT]:
-            return tf.shape(tf_batch_data[TEXT][SEQUENCE][0])[0]
-
-        return tf.shape(tf_batch_data[TEXT][SENTENCE][0])[0]
-
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
+        """Calculates the loss for the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The loss of the given batch.
+        """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        batch_dim = self._get_batch_dim(tf_batch_data)
+        batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
         mask_sequence_text = self._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
         sequence_lengths = self._get_sequence_lengths(
             tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
@@ -1763,6 +1574,14 @@ class DIET(TransformerRasaModel):
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
+        """Predicts the output of the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The output to predict.
+        """
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
