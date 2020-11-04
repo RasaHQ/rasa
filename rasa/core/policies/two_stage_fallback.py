@@ -176,7 +176,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             )
             result = self.fallback_scores(domain, self.core_threshold)
 
-        return PolicyPrediction(result, policy_priority=self.priority)
+        return self._prediction(result)
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
         action_requires_input = tracker.latest_action.get(ACTION_NAME) in [

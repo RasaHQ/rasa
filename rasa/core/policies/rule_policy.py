@@ -834,9 +834,8 @@ class RulePolicy(MemoizationPolicy):
         default_action_name = self._find_action_from_default_actions(tracker)
         if default_action_name:
             self._prediction_source = DEFAULT_RULES
-            return PolicyPrediction(
-                self._prediction_result(default_action_name, tracker, domain),
-                policy_priority=self.priority,
+            return self._prediction(
+                self._prediction_result(default_action_name, tracker, domain)
             )
 
         # A loop has priority over any other rule.
@@ -846,9 +845,8 @@ class RulePolicy(MemoizationPolicy):
         loop_happy_path_action_name = self._find_action_from_loop_happy_path(tracker)
         if loop_happy_path_action_name:
             self._prediction_source = LOOP_RULES
-            return PolicyPrediction(
-                self._prediction_result(loop_happy_path_action_name, tracker, domain),
-                policy_priority=self.priority,
+            return self._prediction(
+                self._prediction_result(loop_happy_path_action_name, tracker, domain)
             )
 
         (
@@ -864,9 +862,7 @@ class RulePolicy(MemoizationPolicy):
         if rules_action_name:
             result = self._prediction_result(rules_action_name, tracker, domain)
 
-        return PolicyPrediction(
-            result, policy_priority=self.priority, events=policy_events
-        )
+        return self._prediction(result, events=policy_events)
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)

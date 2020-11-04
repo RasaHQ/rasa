@@ -234,7 +234,7 @@ class MemoizationPolicy(Policy):
         else:
             logger.debug("There is no memorised next action")
 
-        return PolicyPrediction(result, policy_priority=self.priority)
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {

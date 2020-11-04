@@ -378,9 +378,7 @@ class TEDPolicy(Policy):
         See the docstring of the parent class `Policy` for more information.
         """
         if self.model is None:
-            return PolicyPrediction(
-                self._default_predictions(domain), policy_priority=self.priority
-            )
+            return self._prediction(self._default_predictions(domain))
 
         # create model data from tracker
         tracker_state_features = self.featurizer.create_state_features(
@@ -397,7 +395,7 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return PolicyPrediction(confidence.tolist(), policy_priority=self.priority)
+        return self._prediction(confidence.tolist())
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""

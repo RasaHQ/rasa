@@ -21,8 +21,6 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
 from rasa.shared.nlu.constants import ACTION_NAME
 
-from rasa.utils import common as common_utils
-
 
 logger = logging.getLogger(__name__)
 
@@ -146,11 +144,7 @@ class FormPolicy(MemoizationPolicy):
 
                 if tracker.active_loop.get(LOOP_REJECTED):
                     if self.state_is_unhappy(tracker, domain):
-                        return PolicyPrediction(
-                            result,
-                            policy_priority=self.priority,
-                            events=[LoopInterrupted(True)],
-                        )
+                        return self._prediction(result, events=[LoopInterrupted(True)])
 
                 result = self._prediction_result(
                     tracker.active_loop_name, tracker, domain
@@ -163,7 +157,7 @@ class FormPolicy(MemoizationPolicy):
         else:
             logger.debug("There is no active form")
 
-        return PolicyPrediction(result, policy_priority=self.priority)
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {"priority": self.priority, "lookup": self.lookup}

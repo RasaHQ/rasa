@@ -188,7 +188,7 @@ class FallbackPolicy(Policy):
             )
             result = self.fallback_scores(domain, self.core_threshold)
 
-        return PolicyPrediction(result, policy_priority=self.priority)
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {

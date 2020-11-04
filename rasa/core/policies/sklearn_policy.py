@@ -276,9 +276,7 @@ class SklearnPolicy(Policy):
         )
         Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
-        return PolicyPrediction(
-            self._postprocess_prediction(y_proba, domain), policy_priority=self.priority
-        )
+        return self._prediction(self._postprocess_prediction(y_proba, domain))
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy properties (see parent class for more information)."""

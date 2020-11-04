@@ -228,6 +228,22 @@ class Policy:
         """
         raise NotImplementedError("Policy must have the capacity to predict.")
 
+    def _prediction(
+        self,
+        probabilities: List[float],
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
+        is_end_to_end_prediction: bool = False,
+    ) -> "PolicyPrediction":
+        return PolicyPrediction(
+            probabilities,
+            self.__class__.__name__,
+            self.priority,
+            events,
+            optional_events,
+            is_end_to_end_prediction,
+        )
+
     def _metadata(self) -> Optional[Dict[Text, Any]]:
         """Returns this policy's attributes that should be persisted.
 
@@ -359,6 +375,7 @@ class PolicyPrediction:
     def __init__(
         self,
         probabilities: List[float],
+        policy_name: Text,
         policy_priority: int,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
@@ -368,6 +385,7 @@ class PolicyPrediction:
 
         Args:
             probabilities: The probabilities for each action.
+            policy_name: Name of the policy which made the prediction.
             policy_priority: The priority of the policy which made the prediction.
             events: Events which the `Policy` needs to have applied to the tracker
                 after the prediction. These events are applied independent of whether
@@ -381,6 +399,7 @@ class PolicyPrediction:
                 user message instead of the intent.
         """
         self.probabilities = probabilities
+        self.policy_name = policy_name
         self.policy_priority = (policy_priority,)
         self.events = events or []
         self.optional_events = optional_events or []
