@@ -125,7 +125,6 @@ def validate_empty_pipeline(pipeline: List["Component"]) -> None:
     Args:
         pipeline: the list of the :class:`rasa.nlu.components.Component`.
     """
-
     if len(pipeline) == 0:
         raise InvalidConfigError(
             "Can not train an empty pipeline. "

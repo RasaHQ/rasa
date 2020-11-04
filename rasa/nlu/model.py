@@ -161,7 +161,6 @@ class Trainer:
         self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
     ) -> List[Component]:
         """Transform the passed names of the pipeline components into classes."""
-
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
