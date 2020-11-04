@@ -59,7 +59,7 @@ DEFAULT_ACTION_MAPPINGS = {
 RULES = "rules"
 RULES_FOR_LOOP_UNHAPPY_PATH = "rules_for_loop_unhappy_path"
 
-DO_NOT_VALIDATE_LOOP = "do_not_validate_loop"
+LOOP_WAS_INTERRUPTED = "do_not_validate_loop"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
 DEFAULT_RULES = "predicting default action"
@@ -251,7 +251,7 @@ class RulePolicy(MemoizationPolicy):
                 is_prev_action_listen_in_state(states[-1])
                 and action == active_loop
             ):
-                lookup[feature_key] = DO_NOT_VALIDATE_LOOP
+                lookup[feature_key] = LOOP_WAS_INTERRUPTED
             elif (
                 # some action other than active_loop is predicted in unhappy path,
                 # therefore active_loop shouldn't be predicted by the rule
@@ -796,7 +796,7 @@ class RulePolicy(MemoizationPolicy):
                 # do not predict anything
                 predicted_action_name = None
 
-            if DO_NOT_VALIDATE_LOOP in unhappy_path_conditions:
+            if LOOP_WAS_INTERRUPTED in unhappy_path_conditions:
                 logger.debug(
                     "Returning from unhappy path. Loop will be notified that "
                     "it was interrupted."
