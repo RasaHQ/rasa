@@ -219,7 +219,7 @@ class YAMLStoryWriter(StoryWriter):
             user_utterance.use_text_for_featurization
             or user_utterance.use_text_for_featurization is None
         ):
-            result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
+            result[KEY_USER_MESSAGE] = user_utterance.as_story_string()
 
         if len(user_utterance.entities):
             entities = []
