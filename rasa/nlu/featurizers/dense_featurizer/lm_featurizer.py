@@ -70,17 +70,29 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         skip_model_load: bool = False,
+        hf_transformers_loaded: bool = False,
     ) -> None:
         """Initializes LanguageModelFeaturizer with the specified model.
 
         Args:
             component_config: Configuration for the component.
             skip_model_load: Skip loading the model for pytests.
+            hf_transformers_loaded: Skip loading of model and metadata, use
+            HFTransformers output instead.
         """
         super(LanguageModelFeaturizer, self).__init__(component_config)
-
+        if hf_transformers_loaded:
+            return
         self._load_model_metadata()
         self._load_model_instance(skip_model_load)
+
+    @classmethod
+    def create(
+        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+    ) -> "DenseFeaturizer":
+        # TODO: remove this when HFTransformersNLP is removed for good
+        hf_transformers_loaded = "HFTransformersNLP" in config.component_names
+        return cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
 
     def _load_model_metadata(self) -> None:
         """Load the metadata for the specified model and sets these properties.
