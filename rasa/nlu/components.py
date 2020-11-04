@@ -91,32 +91,32 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
         )
 
 
-def validate_component_keys(pipeline: List["Component"]) -> None:
+def validate_component_keys(
+    component: "Component", component_config: Dict[Text, Any]
+) -> None:
     """Validates that all keys for a component are valid.
 
     Raises:
-        InvalidConfigError: If any component has a key specified that is not used
+        UserWarning: If the component has a key specified that is not used
             by the component class, it is likely a mistake in the pipeline
 
     Args:
-        pipeline: The list of components in the piopeline
-    """
-    from rasa.nlu import registry
+        component: The component class
 
-    for component in pipeline:
-        component_name = component.get("name")
-        component_class = registry.get_component_class(component_name)
-        allowed_keys = set(component_class.defaults.keys())
-        provided_keys = set(component.keys())
-        provided_keys.remove("name")
-        list_separator = "\n- "
-        for key in provided_keys:
-            if key not in allowed_keys:
-                rasa.shared.utils.io.raise_warning(
-                    f"You have provided an invalid key `{key}` for component `{component_name}` in your pipeline. "
-                    f"Valid options for `{component_name}` are:\n- "
-                    f"{list_separator.join(allowed_keys)}"
-                )
+        component_config: The user-provided config for the component in the pipeline
+    """
+    component_name = component_config.get("name")
+    allowed_keys = set(component.defaults.keys())
+    provided_keys = set(component_config.keys())
+    provided_keys.remove("name")
+    list_separator = "\n- "
+    for key in provided_keys:
+        if key not in allowed_keys:
+            rasa.shared.utils.io.raise_warning(
+                f"You have provided an invalid key `{key}` for component `{component_name}` in your pipeline. "
+                f"Valid options for `{component_name}` are:\n- "
+                f"{list_separator.join(allowed_keys)}"
+            )
 
 
 def validate_empty_pipeline(pipeline: List["Component"]) -> None:
