@@ -52,7 +52,7 @@ class LUISEmulator(Emulator):
 
             entities.update({key: [e[ENTITY_ATTRIBUTE_VALUE]]})
 
-            entities["$instance"].update(
+            entities["$instance"][key] = [
                 {
                     "role": e.get(ENTITY_ATTRIBUTE_ROLE),
                     "type": e[ENTITY_ATTRIBUTE_TYPE],
@@ -64,7 +64,7 @@ class LUISEmulator(Emulator):
                     "score": e.get(PREDICTED_CONFIDENCE_KEY),
                     "modelType": e.get(EXTRACTOR),
                 }
-            )
+            ]
         return entities
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:

@@ -44,13 +44,17 @@ def test_luis_response():
             "entities": {
                 "roleCuisine": ["italian"],
                 "$instance": {
-                    "role": "roleCuisine",
-                    "type": "cuisine",
-                    "text": "italian",
-                    "startIndex": 7,
-                    "length": len("italian"),
-                    "score": None,
-                    "modelType": "SpacyEntityExtractor",
+                    "roleCuisine": [
+                        {
+                            "role": "roleCuisine",
+                            "type": "cuisine",
+                            "text": "italian",
+                            "startIndex": 7,
+                            "length": len("italian"),
+                            "score": None,
+                            "modelType": "SpacyEntityExtractor",
+                        }
+                    ]
                 },
             },
         },
@@ -77,13 +81,17 @@ def test_luis_response_without_role():
             "entities": {
                 "cuisine": ["italian"],
                 "$instance": {
-                    "role": None,
-                    "type": "cuisine",
-                    "text": "italian",
-                    "startIndex": None,
-                    "length": None,
-                    "score": None,
-                    "modelType": None,
+                    "cuisine": [
+                        {
+                            "role": None,
+                            "type": "cuisine",
+                            "text": "italian",
+                            "startIndex": None,
+                            "length": None,
+                            "score": None,
+                            "modelType": None,
+                        }
+                    ]
                 },
             },
         },
@@ -107,13 +115,17 @@ def test_luis_response_without_intent_ranking():
             "entities": {
                 "roleCuisine": ["italian"],
                 "$instance": {
-                    "role": "roleCuisine",
-                    "type": "cuisine",
-                    "text": "italian",
-                    "startIndex": None,
-                    "length": None,
-                    "score": None,
-                    "modelType": None,
+                    "roleCuisine": [
+                        {
+                            "role": "roleCuisine",
+                            "type": "cuisine",
+                            "text": "italian",
+                            "startIndex": None,
+                            "length": None,
+                            "score": None,
+                            "modelType": None,
+                        }
+                    ]
                 },
             },
         },
