@@ -716,7 +716,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and prediction.probabilities is not None
-            and prediction.max_index == domain.index_for_action(ACTION_LISTEN_NAME)
+            and prediction.max_confidence_index
+            == domain.index_for_action(ACTION_LISTEN_NAME)
             and self.is_not_memo_policy(policy_name, prediction.max_confidence)
         ):
             probabilities, policy_name = self._fallback_after_listen(

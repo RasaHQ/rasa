@@ -407,7 +407,7 @@ class PolicyPrediction:
         )
 
     @property
-    def max_index(self) -> int:
+    def max_confidence_index(self) -> int:
         """Gets the index of the action prediction with the highest confidence.
 
         Returns:
@@ -417,7 +417,7 @@ class PolicyPrediction:
 
     @property
     def max_confidence(self) -> float:
-        """Get the highest predicted probability.
+        """Gets the highest predicted probability.
 
         Returns:
             The highest predicted probability.

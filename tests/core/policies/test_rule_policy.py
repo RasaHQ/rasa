@@ -441,7 +441,7 @@ def assert_predicted_action(
     confidence: float = 1.0,
 ) -> None:
     assert prediction.max_confidence == confidence
-    index_of_predicted_action = prediction.max_index
+    index_of_predicted_action = prediction.max_confidence_index
     prediction_action_name = domain.action_names[index_of_predicted_action]
     assert prediction_action_name == expected_action_name
 
