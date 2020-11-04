@@ -215,14 +215,9 @@ class YAMLStoryWriter(StoryWriter):
                 user_utterance.inline_comment(), KEY_USER_INTENT
             )
 
-        # TOOD merge conflict
-        # if user_utterance.text and (
-        #     user_utterance.use_text_for_featurization
-        #     or user_utterance.use_text_for_featurization is None
-        if (
-            is_test_story
-            and YAMLStoryWriter._text_is_real_message(user_utterance)
-            and user_utterance.text
+        if user_utterance.text and (
+            user_utterance.use_text_for_featurization
+            or user_utterance.use_text_for_featurization is None
         ):
             result[KEY_USER_MESSAGE] = LiteralScalarString(user_utterance.text)
 
