@@ -4,8 +4,6 @@ import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
-import numpy as np
-
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -15,6 +13,7 @@ from rasa.core.channels.channel import (
     UserMessage,
 )
 import rasa.core.utils
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -120,17 +119,17 @@ class MessageProcessor:
             )
             return None
 
-        probabilities, policy = self._get_next_action_probabilities(tracker)
+        prediction = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
         scores = [
             {"action": a, "score": p}
-            for a, p in zip(self.domain.action_names, probabilities)
+            for a, p in zip(self.domain.action_names, prediction.probabilities)
         ]
         return {
             "scores": scores,
-            "policy": policy,
-            "confidence": np.max(probabilities),
+            "policy": prediction.policy_name,
+            "confidence": prediction.max_confidence,
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
         }
 
@@ -303,25 +302,25 @@ class MessageProcessor:
 
     def predict_next_action(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[rasa.core.actions.action.Action, Optional[Text], float]:
+    ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action."""
 
-        action_confidences, policy = self._get_next_action_probabilities(tracker)
+        prediction = self._get_next_action_probabilities(tracker)
 
-        max_confidence_index = int(np.argmax(action_confidences))
+        max_confidence_index = prediction.max_confidence_index
         action = rasa.core.actions.action.action_for_index(
             max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
             f"Predicted next action '{action.name()}' with confidence "
-            f"{action_confidences[max_confidence_index]:.2f}."
+            f"{prediction.max_confidence:.2f}."
         )
 
-        return action, policy, action_confidences[max_confidence_index]
+        return action, prediction
 
     @staticmethod
     def _is_reminder(e: Event, name: Text) -> bool:
@@ -583,10 +582,10 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
-            action, policy, confidence = self.predict_next_action(tracker)
+            action, prediction = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
-                action, tracker, output_channel, self.nlg, policy, confidence
+                action, tracker, output_channel, self.nlg, prediction
             )
             num_predicted_actions += 1
 
@@ -690,8 +689,7 @@ class MessageProcessor:
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
-        policy: Optional[Text] = None,
-        confidence: Optional[float] = None,
+        prediction: PolicyPrediction,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
@@ -703,7 +701,11 @@ class MessageProcessor:
                 action.metadata = metadata
             events = await action.run(output_channel, nlg, tracker, self.domain)
         except rasa.core.actions.action.ActionExecutionRejection:
-            events = [ActionExecutionRejected(action.name(), policy, confidence)]
+            events = [
+                ActionExecutionRejected(
+                    action.name(), prediction.policy_name, prediction.max_confidence
+                )
+            ]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
         except Exception:
@@ -715,7 +717,7 @@ class MessageProcessor:
             )
             events = []
 
-        self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
+        self._log_action_on_tracker(tracker, action.name(), events, prediction)
         if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
             UTTER_PREFIX
         ):
@@ -760,8 +762,7 @@ class MessageProcessor:
         tracker: DialogueStateTracker,
         action_name: Text,
         events: Optional[List[Event]],
-        policy: Optional[Text],
-        confidence: Optional[float],
+        prediction: PolicyPrediction,
     ) -> None:
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
@@ -780,7 +781,11 @@ class MessageProcessor:
         )
         if action_name is not None and not action_was_rejected_manually:
             # log the action and its produced events
-            tracker.update(ActionExecuted(action_name, policy, confidence))
+            tracker.update(
+                ActionExecuted(
+                    action_name, prediction.policy_name, prediction.max_confidence
+                )
+            )
 
         for e in events:
             # this makes sure the events are ordered by timestamp -
@@ -828,33 +833,37 @@ class MessageProcessor:
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
 
-    def _prob_array_for_action(self, action_name: Text) -> Tuple[List[float], None]:
-        idx = self.domain.index_for_action(action_name)
-        if idx is not None:
-            result = [0.0] * self.domain.num_actions
-            result[idx] = 1.0
-            return result, None
-        else:
-            return [], None
-
     def _get_next_action_probabilities(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> PolicyPrediction:
         """Collect predictions from ensemble and return action and predictions."""
-
         followup_action = tracker.followup_action
         if followup_action:
             tracker.clear_followup_action()
-            result = self._prob_array_for_action(followup_action)
-            if result:
-                return result
-            else:
-                logger.error(
-                    f"Trying to run unknown follow-up action '{followup_action}'!"
-                    "Instead of running that, we will ignore the action "
-                    "and predict the next action."
+            if followup_action in self.domain.action_names:
+                return PolicyPrediction.for_action_name(
+                    self.domain, followup_action, "followup_action"
                 )
 
-        return self.policy_ensemble.probabilities_using_best_policy(
+            logger.error(
+                f"Trying to run unknown follow-up action '{followup_action}'!"
+                "Instead of running that, we will ignore the action "
+                "and predict the next action."
+            )
+
+        prediction = self.policy_ensemble.probabilities_using_best_policy(
             tracker, self.domain, self.interpreter
         )
+
+        if isinstance(prediction, PolicyPrediction):
+            return prediction
+
+        rasa.shared.utils.io.raise_warning(
+            "Returning a tuple of probabilities and policy name for "
+            "`PolicyEnsemble.probabilities_using_best_policy` is deprecated and will "
+            "be removed in Rasa Open Source 3.0. Please return a `PolicyPrediction` "
+            "object instead.",
+            category=FutureWarning,
+        )
+        probabilities, policy_name = prediction
+        return PolicyPrediction(probabilities, policy_name)

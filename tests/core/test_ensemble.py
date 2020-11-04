@@ -118,6 +118,7 @@ class ConstantPolicy(Policy):
 
         return PolicyPrediction(
             result,
+            self.__class__.__name__,
             policy_priority=self.priority,
             is_end_to_end_prediction=self.is_end_to_end_prediction,
             events=self.events,
@@ -140,18 +141,18 @@ def test_policy_priority():
     )
 
     i = 1  # index of priority_2 in ensemble_0
-    result, best_policy = policy_ensemble_0.probabilities_using_best_policy(
+    prediction = policy_ensemble_0.probabilities_using_best_policy(
         tracker, domain, RegexInterpreter()
     )
-    assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
-    assert result == priority_2_result.probabilities
+    assert prediction.policy_name == "policy_{}_{}".format(i, type(priority_2).__name__)
+    assert prediction.probabilities == priority_2_result.probabilities
 
     i = 0  # index of priority_2 in ensemble_1
-    result, best_policy = policy_ensemble_1.probabilities_using_best_policy(
+    prediction = policy_ensemble_1.probabilities_using_best_policy(
         tracker, domain, RegexInterpreter()
     )
-    assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
-    assert result == priority_2_result.probabilities
+    assert prediction.policy_name == "policy_{}_{}".format(i, type(priority_2).__name__)
+    assert prediction.probabilities == priority_2_result.probabilities
 
 
 def test_fallback_mapping_restart():
@@ -171,16 +172,18 @@ def test_fallback_mapping_restart():
         [two_stage_fallback_policy, mapping_policy]
     )
 
-    result, best_policy = mapping_fallback_ensemble.probabilities_using_best_policy(
+    prediction = mapping_fallback_ensemble.probabilities_using_best_policy(
         tracker, domain, RegexInterpreter()
     )
-    max_confidence_index = result.index(max(result))
     index_of_mapping_policy = 1
     next_action = rasa.core.actions.action.action_for_index(
-        max_confidence_index, domain, None
+        prediction.max_confidence_index, domain, None
     )
 
-    assert best_policy == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
+    assert (
+        prediction.policy_name
+        == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
+    )
     assert next_action.name() == ACTION_RESTART_NAME
 
 
@@ -214,17 +217,19 @@ def test_mapping_wins_over_form(events: List[Event]):
             FallbackPolicy(),
         ]
     )
-    result, best_policy = ensemble.probabilities_using_best_policy(
+    prediction = ensemble.probabilities_using_best_policy(
         tracker, domain, RegexInterpreter()
     )
 
-    max_confidence_index = result.index(max(result))
     next_action = rasa.core.actions.action.action_for_index(
-        max_confidence_index, domain, None
+        prediction.max_confidence_index, domain, None
     )
 
     index_of_mapping_policy = 0
-    assert best_policy == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
+    assert (
+        prediction.policy_name
+        == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
+    )
     assert next_action.name() == ACTION_RESTART_NAME
 
 
@@ -255,17 +260,18 @@ def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
         utilities.user_uttered("test", 1),
     ]
     tracker = DialogueStateTracker.from_events("test", events, [])
-    result, best_policy = ensemble.probabilities_using_best_policy(
+    prediction = ensemble.probabilities_using_best_policy(
         tracker, domain, RegexInterpreter()
     )
 
-    max_confidence_index = result.index(max(result))
     next_action = rasa.core.actions.action.action_for_index(
-        max_confidence_index, domain, None
+        prediction.max_confidence_index, domain, None
     )
 
     index_of_form_policy = 0
-    assert best_policy == f"policy_{index_of_form_policy}_{FormPolicy.__name__}"
+    assert (
+        prediction.policy_name == f"policy_{index_of_form_policy}_{FormPolicy.__name__}"
+    )
     assert next_action.name() == form_name
 
 
@@ -280,16 +286,18 @@ def test_fallback_wins_over_mapping():
 
     ensemble = SimplePolicyEnsemble([FallbackPolicy(), MappingPolicy()])
 
-    result, best_policy = ensemble.probabilities_using_best_policy(
+    prediction = ensemble.probabilities_using_best_policy(
         tracker, domain, RegexInterpreter()
     )
-    max_confidence_index = result.index(max(result))
     index_of_fallback_policy = 0
     next_action = rasa.core.actions.action.action_for_index(
-        max_confidence_index, domain, None
+        prediction.max_confidence_index, domain, None
     )
 
-    assert best_policy == f"policy_{index_of_fallback_policy}_{FallbackPolicy.__name__}"
+    assert (
+        prediction.policy_name
+        == f"policy_{index_of_fallback_policy}_{FallbackPolicy.__name__}"
+    )
     assert next_action.name() == ACTION_DEFAULT_FALLBACK_NAME
 
 
@@ -473,13 +481,13 @@ def test_end_to_end_prediction_supersedes_others(default_domain: Domain):
     )
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
-    prediction, winning_policy = ensemble.probabilities_using_best_policy(
+    prediction = ensemble.probabilities_using_best_policy(
         tracker, default_domain, RegexInterpreter()
     )
 
-    assert max(prediction) == expected_confidence
-    assert prediction.index(max(prediction)) == expected_action_index
-    assert winning_policy == f"policy_1_{ConstantPolicy.__name__}"
+    assert prediction.max_confidence == expected_confidence
+    assert prediction.max_confidence_index == expected_action_index
+    assert prediction.policy_name == f"policy_1_{ConstantPolicy.__name__}"
 
 
 def test_prediction_applies_must_have_policy_events(default_domain: Domain):
@@ -493,15 +501,15 @@ def test_prediction_applies_must_have_policy_events(default_domain: Domain):
     )
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
-    prediction, winning_policy = ensemble.probabilities_using_best_policy(
+    prediction = ensemble.probabilities_using_best_policy(
         tracker, default_domain, RegexInterpreter()
     )
 
     # Policy 0 won due to higher prio
-    assert winning_policy == f"policy_0_{ConstantPolicy.__name__}"
+    assert prediction.policy_name == f"policy_0_{ConstantPolicy.__name__}"
 
     # Events of losing policy were applied nevertheless
-    assert list(tracker.events) == must_have_events
+    assert prediction.events == must_have_events
 
 
 def test_prediction_applies_optional_policy_events(default_domain: Domain):
@@ -521,17 +529,17 @@ def test_prediction_applies_optional_policy_events(default_domain: Domain):
     )
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
-    prediction, winning_policy = ensemble.probabilities_using_best_policy(
+    prediction = ensemble.probabilities_using_best_policy(
         tracker, default_domain, RegexInterpreter()
     )
 
     # Policy 0 won due to higher prio
-    assert winning_policy == f"policy_0_{ConstantPolicy.__name__}"
+    assert prediction.policy_name == f"policy_0_{ConstantPolicy.__name__}"
 
     # Events of losing policy were applied nevertheless
-    assert len(tracker.events) == len(optional_events) + len(must_have_events)
-    assert all(event in tracker.events for event in optional_events)
-    assert all(event in tracker.events for event in must_have_events)
+    assert len(prediction.events) == len(optional_events) + len(must_have_events)
+    assert all(event in prediction.events for event in optional_events)
+    assert all(event in prediction.events for event in must_have_events)
 
 
 def test_with_float_returning_policy(default_domain: Domain):
@@ -555,9 +563,9 @@ def test_with_float_returning_policy(default_domain: Domain):
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
     with pytest.warns(DeprecationWarning):
-        prediction, winning_policy = ensemble.probabilities_using_best_policy(
+        prediction = ensemble.probabilities_using_best_policy(
             tracker, default_domain, RegexInterpreter()
         )
 
-    assert winning_policy == f"policy_1_{OldPolicy.__name__}"
-    assert prediction.index(max(prediction)) == expected_index
+    assert prediction.policy_name == f"policy_1_{OldPolicy.__name__}"
+    assert prediction.max_confidence_index == expected_index

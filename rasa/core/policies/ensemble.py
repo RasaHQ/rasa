@@ -10,6 +10,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple, NamedTuple, Union
 
 import rasa.core
 import rasa.core.training.training
+from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -203,7 +204,7 @@ class PolicyEnsemble:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> PolicyPrediction:
         raise NotImplementedError
 
     def _max_histories(self) -> List[Optional[int]]:
@@ -454,17 +455,19 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     @staticmethod
     def is_not_memo_policy(
-        policy_name: Text, max_confidence: Optional[float] = None
+        policy_name: Optional[Text], max_confidence: Optional[float] = None
     ) -> bool:
         """Checks if the policy is the `MemoizationPolicy` or one of its subclasses.
 
         Args:
-            policy_name: Name of the policy which should be checked.
-            max_confidence: The prediction confidence since predictions with a max
-                confidence of `0.0` don't count as predictions.
+            policy_name: The name of the policy.
+            max_confidence: The max confidence of the policy's prediction.
 
         Returns: `True` if it's a `MemoizationPolicy`, `False` otherwise.
         """
+        if not policy_name:
+            return True
+
         is_memo = policy_name.endswith("_" + MemoizationPolicy.__name__)
         is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
         # also check if confidence is 0, than it cannot be count as prediction
@@ -487,11 +490,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return policy_name.endswith("_" + FormPolicy.__name__)
 
     def _pick_best_policy(
-        self,
-        predictions: Dict[Text, PolicyPrediction],
-        tracker: DialogueStateTracker,
-        domain: Domain,
-    ) -> Tuple[PolicyPrediction, Optional[Text]]:
+        self, predictions: Dict[Text, PolicyPrediction]
+    ) -> PolicyPrediction:
         """Picks the best policy prediction based on probabilities and policy priority.
 
         Args:
@@ -499,7 +499,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                          and predictions as values
 
         Returns:
-            The best prediction and the name of the policy which did this prediction.
+            The best prediction.
         """
         best_confidence = (-1, -1)
         best_policy_name = None
@@ -544,17 +544,20 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         # Apply policy events to tracker
         policy_events += best_prediction.optional_events
 
-        for event in policy_events:
-            tracker.update(event, domain)
-
-        return best_prediction, best_policy_name
+        return PolicyPrediction(
+            best_prediction.probabilities,
+            best_policy_name,
+            best_prediction.policy_priority,
+            policy_events,
+            is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
+        )
 
     def _best_policy_prediction(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> Tuple[PolicyPrediction, Optional[Text]]:
+    ) -> PolicyPrediction:
         """Finds the best policy prediction.
 
         Args:
@@ -564,8 +567,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 additional features.
 
         Returns:
-            probabilities: the list of probabilities for the next actions
-            policy_name: the name of the picked policy
+            The winning policy prediction.
         """
         # find rejected action before running the policies
         # because some of them might add events
@@ -601,7 +603,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     domain.index_for_action(rejected_action_name)
                 ] = 0.0
 
-        return self._pick_best_policy(predictions, tracker, domain)
+        return self._pick_best_policy(predictions)
 
     @staticmethod
     def _get_prediction(
@@ -643,13 +645,15 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 "a list of floats will be removed in Rasa Open Source 3.0.",
                 category=DeprecationWarning,
             )
-            prediction = PolicyPrediction(prediction, policy_priority=policy.priority)
+            prediction = PolicyPrediction(
+                prediction, policy.__class__.__name__, policy_priority=policy.priority
+            )
 
         return prediction
 
     def _fallback_after_listen(
-        self, domain: Domain, probabilities: List[float], policy_name: Text
-    ) -> Tuple[List[float], Text]:
+        self, domain: Domain, prediction: PolicyPrediction
+    ) -> PolicyPrediction:
         """Triggers fallback if `action_listen` is predicted after a user utterance.
 
         This is done on the condition that:
@@ -660,31 +664,31 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         Args:
             domain: the :class:`rasa.shared.core.domain.Domain`
-            probabilities: the list of probabilities for the next actions
-            policy_name: the name of the picked policy
+            prediction: The winning prediction.
 
         Returns:
-            probabilities: the list of probabilities for the next actions
-            policy_name: the name of the picked policy
+            The prediction for the next action.
         """
 
         fallback_idx_policy = [
             (i, p) for i, p in enumerate(self.policies) if isinstance(p, FallbackPolicy)
         ]
 
-        if fallback_idx_policy:
-            fallback_idx, fallback_policy = fallback_idx_policy[0]
+        if not fallback_idx_policy:
+            return prediction
 
-            logger.debug(
-                f"Action 'action_listen' was predicted after "
-                f"a user message using {policy_name}. Predicting "
-                f"fallback action: {fallback_policy.fallback_action_name}"
-            )
+        fallback_idx, fallback_policy = fallback_idx_policy[0]
 
-            probabilities = fallback_policy.fallback_scores(domain)
-            policy_name = f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
+        logger.debug(
+            f"Action '{ACTION_LISTEN_NAME}' was predicted after "
+            f"a user message using {prediction.policy_name}. Predicting "
+            f"fallback action: {fallback_policy.fallback_action_name}"
+        )
 
-        return probabilities, policy_name
+        probabilities = fallback_policy.fallback_scores(domain)
+        policy_name = f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
+
+        return PolicyPrediction(probabilities, policy_name, FALLBACK_POLICY_PRIORITY)
 
     def probabilities_using_best_policy(
         self,
@@ -692,7 +696,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Picks the best policy prediction based on probabilities and policy priority.
@@ -709,23 +713,21 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_policy_name: the name of the picked policy
         """
 
-        prediction, policy_name = self._best_policy_prediction(
-            tracker, domain, interpreter
-        )
+        winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME
-            and prediction.probabilities is not None
-            and prediction.max_confidence_index
+            and winning_prediction.probabilities is not None
+            and winning_prediction.max_confidence_index
             == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_not_memo_policy(policy_name, prediction.max_confidence)
-        ):
-            probabilities, policy_name = self._fallback_after_listen(
-                domain, prediction.probabilities, policy_name
+            and self.is_not_memo_policy(
+                winning_prediction.policy_name, winning_prediction.max_confidence
             )
+        ):
+            winning_prediction = self._fallback_after_listen(domain, winning_prediction)
 
-        logger.debug(f"Predicted next action using {policy_name}.")
-        return prediction.probabilities, policy_name
+        logger.debug(f"Predicted next action using {winning_prediction.policy_name}.")
+        return winning_prediction
 
 
 def _check_policy_for_forms_available(

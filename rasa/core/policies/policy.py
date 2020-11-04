@@ -32,19 +32,8 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.shared.core.constants import (
-    USER,
-    SLOTS,
-    PREVIOUS_ACTION,
-    ACTIVE_LOOP,
-)
-from rasa.shared.nlu.constants import (
-    ENTITIES,
-    INTENT,
-    TEXT,
-    ACTION_TEXT,
-    ACTION_NAME,
-)
+from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
+from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -375,8 +364,8 @@ class PolicyPrediction:
     def __init__(
         self,
         probabilities: List[float],
-        policy_name: Text,
-        policy_priority: int,
+        policy_name: Optional[Text],
+        policy_priority: int = 1,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
@@ -404,6 +393,25 @@ class PolicyPrediction:
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
+
+    @staticmethod
+    def for_action_name(
+        domain: Domain, action_name: Text, policy_name: Text, confidence: float = 1
+    ) -> "PolicyPrediction":
+        """Create a prediction for a given action.
+
+        Args:
+            domain: The current model domain
+            action_name: The action which should be predicted.
+            policy_name: The policy which did the prediction.
+            confidence: The prediction confidence.
+
+        Returns:
+            The prediction.
+        """
+        probabilities = confidence_scores_for(action_name, confidence, domain)
+
+        return PolicyPrediction(probabilities, policy_name)
 
     def __eq__(self, other: Any) -> bool:
         """Checks if the two objects are equal.
@@ -441,7 +449,7 @@ class PolicyPrediction:
         Returns:
             The highest predicted probability.
         """
-        return max(self.probabilities)
+        return max(self.probabilities, default=0)
 
 
 def confidence_scores_for(
