@@ -28,7 +28,7 @@ from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
     FailSafeTrackerStore,
@@ -554,8 +554,11 @@ class Agent:
         """Handle a single message."""
 
         processor = self.create_processor()
+        prediction = PolicyPrediction.for_action_name(
+            self.domain, action, policy, confidence
+        )
         return await processor.execute_action(
-            sender_id, action, output_channel, self.nlg, policy, confidence
+            sender_id, action, output_channel, self.nlg, prediction
         )
 
     async def trigger_intent(

@@ -10,7 +10,11 @@ from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any, Tuple
 from unittest.mock import patch, Mock
 
-from rasa.core.actions.action import ActionUtterTemplate
+from rasa.core.actions.action import (
+    ActionUtterTemplate,
+    ActionListen,
+    ActionExecutionRejection,
+)
 import rasa.core.policies.policy
 from rasa.core.policies.policy import PolicyPrediction
 from tests.utilities import latest_request
@@ -30,6 +34,7 @@ from rasa.shared.core.events import (
     Event,
     SlotSet,
     ActionExecutionRejected,
+    LoopInterrupted,
 )
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -903,3 +908,122 @@ def test_predict_next_action_with_deprecated_ensemble(
 
     assert action.name() == expected_action
     assert prediction == PolicyPrediction(expected_probabilities, expected_policy_name)
+
+
+async def test_policy_events_are_applied_to_tracker(
+    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
+):
+    expected_action = ACTION_LISTEN_NAME
+    policy_events = [LoopInterrupted(True)]
+    conversation_id = "test_policy_events_are_applied_to_tracker"
+    user_message = "/greet"
+
+    expected_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(user_message, intent={"name": "greet"}),
+        *policy_events,
+    ]
+
+    class ConstantEnsemble(PolicyEnsemble):
+        def probabilities_using_best_policy(
+            self,
+            tracker: DialogueStateTracker,
+            domain: Domain,
+            interpreter: NaturalLanguageInterpreter,
+            **kwargs: Any,
+        ) -> PolicyPrediction:
+            prediction = PolicyPrediction.for_action_name(
+                default_processor.domain, expected_action, "some policy"
+            )
+            prediction.events = policy_events
+
+            return prediction
+
+    monkeypatch.setattr(default_processor, "policy_ensemble", ConstantEnsemble([]))
+
+    action_received_events = False
+
+    async def mocked_run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        # The action already has access to the policy events
+        nonlocal action_received_events
+        action_received_events = list(tracker.events) == expected_events
+        return []
+
+    monkeypatch.setattr(ActionListen, ActionListen.run.__name__, mocked_run)
+
+    await default_processor.handle_message(
+        UserMessage(user_message, sender_id=conversation_id)
+    )
+
+    assert action_received_events
+
+    tracker = default_processor.get_tracker(conversation_id)
+    # The action was logged on the tracker as well
+    expected_events.append(ActionExecuted(ACTION_LISTEN_NAME))
+
+    for event, expected in zip(tracker.events, expected_events):
+        assert event == expected
+
+
+# noinspection PyTypeChecker
+@pytest.mark.parametrize(
+    "reject_fn",
+    [
+        lambda: [ActionExecutionRejected(ACTION_LISTEN_NAME)],
+        lambda: (_ for _ in ()).throw(ActionExecutionRejection(ACTION_LISTEN_NAME)),
+    ],
+)
+async def test_policy_events_not_applied_if_rejected(
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+    reject_fn: Callable[[], List[Event]],
+):
+    expected_action = ACTION_LISTEN_NAME
+    expected_events = [LoopInterrupted(True)]
+    conversation_id = "test_policy_events_are_applied_to_tracker"
+    user_message = "/greet"
+
+    class ConstantEnsemble(PolicyEnsemble):
+        def probabilities_using_best_policy(
+            self,
+            tracker: DialogueStateTracker,
+            domain: Domain,
+            interpreter: NaturalLanguageInterpreter,
+            **kwargs: Any,
+        ) -> PolicyPrediction:
+            prediction = PolicyPrediction.for_action_name(
+                default_processor.domain, expected_action, "some policy"
+            )
+            prediction.events = expected_events
+
+            return prediction
+
+    monkeypatch.setattr(default_processor, "policy_ensemble", ConstantEnsemble([]))
+
+    async def mocked_run(*args: Any, **kwargs: Any) -> List[Event]:
+        return reject_fn()
+
+    monkeypatch.setattr(ActionListen, ActionListen.run.__name__, mocked_run)
+
+    await default_processor.handle_message(
+        UserMessage(user_message, sender_id=conversation_id)
+    )
+
+    tracker = default_processor.get_tracker(conversation_id)
+    expected_events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(user_message, intent={"name": "greet"}),
+        ActionExecutionRejected(ACTION_LISTEN_NAME),
+    ]
+    for event, expected in zip(tracker.events, expected_events):
+        assert event == expected

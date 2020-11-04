@@ -56,7 +56,7 @@ class PolicyEnsemble:
         self.policies = policies
         self.date_trained = None
 
-        self.action_fingerprints = action_fingerprints
+        self.action_fingerprints = action_fingerprints or []
 
         self._check_priorities()
         self._check_for_important_policies()
@@ -541,7 +541,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         best_prediction = predictions[best_policy_name]
 
-        # Apply policy events to tracker
         policy_events += best_prediction.optional_events
 
         return PolicyPrediction(
@@ -637,13 +636,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             )
 
         if isinstance(prediction, list):
-            rasa.shared.utils.io.raise_warning(
+            rasa.shared.utils.io.raise_deprecation_warning(
                 f"The function `predict_action_probabilities` of "
                 f"the `Policy` interface was changed to return "
                 f"a `{PolicyPrediction.__name__}` object. Please make sure to "
                 "adapt your custom `Policy` implementation. Support for returning "
-                "a list of floats will be removed in Rasa Open Source 3.0.",
-                category=DeprecationWarning,
+                "a list of floats will be removed in Rasa Open Source 3.0."
             )
             prediction = PolicyPrediction(
                 prediction, policy.__class__.__name__, policy_priority=policy.priority

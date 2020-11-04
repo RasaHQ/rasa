@@ -562,7 +562,7 @@ def test_with_float_returning_policy(default_domain: Domain):
     )
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(FutureWarning):
         prediction = ensemble.probabilities_using_best_policy(
             tracker, default_domain, RegexInterpreter()
         )

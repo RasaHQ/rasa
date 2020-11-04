@@ -396,7 +396,10 @@ class PolicyPrediction:
 
     @staticmethod
     def for_action_name(
-        domain: Domain, action_name: Text, policy_name: Text, confidence: float = 1
+        domain: Domain,
+        action_name: Text,
+        policy_name: Optional[Text] = None,
+        confidence: float = 1,
     ) -> "PolicyPrediction":
         """Create a prediction for a given action.
 

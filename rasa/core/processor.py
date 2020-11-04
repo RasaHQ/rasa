@@ -162,6 +162,9 @@ class MessageProcessor:
                 output_channel=output_channel,
                 nlg=self.nlg,
                 metadata=metadata,
+                prediction=PolicyPrediction.for_action_name(
+                    self.domain, ACTION_SESSION_START_NAME
+                ),
             )
 
     async def fetch_tracker_and_update_session(
@@ -284,8 +287,7 @@ class MessageProcessor:
         action_name: Text,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
-        policy: Text,
-        confidence: float,
+        prediction: PolicyPrediction,
     ) -> Optional[DialogueStateTracker]:
 
         # we have a Tracker instance for each user
@@ -293,7 +295,8 @@ class MessageProcessor:
         tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
 
         action = self._get_action(action_name)
-        await self._run_action(action, tracker, output_channel, nlg, policy, confidence)
+
+        await self._run_action(action, tracker, output_channel, nlg, prediction)
 
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -699,7 +702,14 @@ class MessageProcessor:
             # be passed to the SessionStart event. Otherwise the metadata will be lost.
             if action.name() == ACTION_SESSION_START_NAME:
                 action.metadata = metadata
-            events = await action.run(output_channel, nlg, tracker, self.domain)
+
+            # Use temporary tracker as we might need to discard the policy events in
+            # case of a rejection.
+            temporary_tracker = tracker.copy()
+            temporary_tracker.update_with_events(prediction.events, self.domain)
+            events = await action.run(
+                output_channel, nlg, temporary_tracker, self.domain
+            )
         except rasa.core.actions.action.ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(
@@ -770,16 +780,15 @@ class MessageProcessor:
         if events is None:
             events = []
 
-        logger.debug(
-            f"Action '{action_name}' ended with events '{[e for e in events]}'."
-        )
-
         self._warn_about_new_slots(tracker, action_name, events)
 
         action_was_rejected_manually = any(
             isinstance(event, ActionExecutionRejected) for event in events
         )
         if action_name is not None and not action_was_rejected_manually:
+            logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
+            tracker.update_with_events(prediction.events, self.domain)
+
             # log the action and its produced events
             tracker.update(
                 ActionExecuted(
@@ -787,13 +796,8 @@ class MessageProcessor:
                 )
             )
 
-        for e in events:
-            # this makes sure the events are ordered by timestamp -
-            # since the event objects are created somewhere else,
-            # the timestamp would indicate a time before the time
-            # of the action executed
-            e.timestamp = time.time()
-            tracker.update(e, self.domain)
+        logger.debug(f"Action '{action_name}' ended with events '{events}'.")
+        tracker.update_with_events(events, self.domain)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.
@@ -858,12 +862,11 @@ class MessageProcessor:
         if isinstance(prediction, PolicyPrediction):
             return prediction
 
-        rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "Returning a tuple of probabilities and policy name for "
             "`PolicyEnsemble.probabilities_using_best_policy` is deprecated and will "
             "be removed in Rasa Open Source 3.0. Please return a `PolicyPrediction` "
-            "object instead.",
-            category=FutureWarning,
+            "object instead."
         )
         probabilities, policy_name = prediction
         return PolicyPrediction(probabilities, policy_name)
