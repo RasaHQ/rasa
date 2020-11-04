@@ -26,10 +26,7 @@ def test_dialogflow_response():
             "fulfillmentText": "",
             "fulfillmentMessages": [],
             "outputContexts": [],
-            "intent": {
-                "name": "inform",
-                "displayName": "inform"
-            },
+            "intent": {"name": "inform", "displayName": "inform"},
             "intentDetectionConfidence": 0.4794813722432127,
         },
     }
