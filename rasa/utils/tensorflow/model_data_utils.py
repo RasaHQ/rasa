@@ -54,11 +54,12 @@ def convert_training_examples(
         attribute_to_features = {}
         for attribute in attributes:
             if attribute == ENTITIES:
+                attribute_to_features[attribute] = []
                 # in case of entities add the tag_ids
                 for tag_spec in entity_tag_specs:
-                    attribute_to_features[attribute] = [
+                    attribute_to_features[attribute].append(
                         _get_tag_ids(example, tag_spec, bilou_tagging)
-                    ]
+                    )
             elif attribute in example.data:
                 attribute_to_features[attribute] = example.get_all_features(
                     attribute, featurizers
