@@ -141,7 +141,7 @@ Redis store for ticket locks.
 #### \_\_init\_\_
 
 ```python
- | __init__(host: Text = "localhost", port: int = 6379, db: int = 1, password: Optional[Text] = None, use_ssl: bool = False, socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
+ | __init__(host: Text = "localhost", port: int = 6379, db: int = 1, password: Optional[Text] = None, use_ssl: bool = False, key_prefix: Optional[Text] = None, socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
 ```
 
 Create a lock store which uses Redis for persistence.
@@ -155,6 +155,8 @@ Create a lock store which uses Redis for persistence.
 - `password` - The password which should be used for authentication with the
   Redis database.
 - `use_ssl` - `True` if SSL should be used for the connection to Redis.
+- `key_prefix` - prefix to prepend to all keys used by the lock store. Must be
+  alphanumeric.
 - `socket_timeout` - Timeout in seconds after which an exception will be raised
   in case Redis doesn&#x27;t respond within `socket_timeout` seconds.
 

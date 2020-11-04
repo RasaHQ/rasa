@@ -179,13 +179,11 @@ To set up Rasa Open Source with Redis the following steps are required:
      type: redis
      url: <url of the redis instance, e.g. localhost>
      port: <port of your redis instance, usually 6379>
+     key_prefix: <alphanumeric value to prepend to tracker store keys>
      db: <number of your database within redis, e.g. 0>
      password: <password used for authentication>
      use_ssl: <whether or not the communication is encrypted, default `false`>
  ```
-
-3. To start the Rasa server using your configured Redis instance,
- add the `--endpoints` flag, e.g.:
 
  ```bash
  rasa run -m models --endpoints endpoints.yml
@@ -207,17 +205,19 @@ To set up Rasa Open Source with Redis the following steps are required:
       url: <url of the redis instance, e.g. localhost>
       port: <port of your redis instance, usually 6379>
       db: <number of your database within redis, e.g. 0>
+      key_prefix: <alphanumeric value to prepend to tracker store keys>
       password: <password used for authentication>
       use_ssl: <whether or not the communication is encrypted, default `false`>
  ```
-
-#### Configuration Parameters
 
 * `url` (default: `localhost`): The url of your redis instance
 
 * `port` (default: `6379`): The port which redis is running on
 
 * `db` (default: `0`): The number of your redis database
+
+* `key_prefix` (default: `None`): The prefix to prepend to tracker store keys. Must
+    be alphanumeric
 
 * `password` (default: `None`): Password used for authentication
 (`None` equals no authentication)
