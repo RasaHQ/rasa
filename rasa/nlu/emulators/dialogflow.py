@@ -39,13 +39,16 @@ class DialogflowEmulator(Emulator):
         return {
             "responseId": str(uuid.uuid1()),
             "queryResult": {
-                "resolvedQuery": data[TEXT],
+                "queryText": data[TEXT],
                 "action": data[INTENT][INTENT_NAME_KEY],
-                "contexts": [],
                 "parameters": entities,
                 "fulfillmentText": "",
                 "fulfillmentMessages": [],
                 "outputContexts": [],
+                "intent": {
+                    "name": data[INTENT][INTENT_NAME_KEY],
+                    "displayName": data[INTENT][INTENT_NAME_KEY],
+                },
                 "intentDetectionConfidence": data[INTENT][PREDICTED_CONFIDENCE_KEY],
             },
         }

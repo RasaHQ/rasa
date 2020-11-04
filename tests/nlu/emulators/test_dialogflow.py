@@ -20,13 +20,16 @@ def test_dialogflow_response():
     assert norm == {
         "responseId": norm["responseId"],
         "queryResult": {
-            "resolvedQuery": data["text"],
-            "action": data["intent"]["name"],
-            "contexts": [],
+            "queryText": "I want italian food",
+            "action": "inform",
             "parameters": {"cuisine": ["italian"]},
             "fulfillmentText": "",
             "fulfillmentMessages": [],
             "outputContexts": [],
-            "intentDetectionConfidence": data["intent"]["confidence"],
+            "intent": {
+                "name": "inform",
+                "displayName": "inform"
+            },
+            "intentDetectionConfidence": 0.4794813722432127,
         },
     }
