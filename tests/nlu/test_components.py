@@ -7,7 +7,7 @@ from rasa.nlu import registry, train
 from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
 from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Metadata
-from rasa.shared.constants import DEFAULT_DATA_PATH
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
