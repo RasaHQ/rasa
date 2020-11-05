@@ -99,7 +99,7 @@ async def test_example_component(component_builder: ComponentBuilder, tmp_path: 
 
     (trainer, trained, persisted_path) = await train(
         _config,
-        data="./data/examples/rasa/demo-rasa.json",
+        data=DEFAULT_DATA_PATH,
         path=str(tmp_path),
         component_builder=component_builder,
     )
@@ -199,7 +199,7 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
 
     with pytest.raises(InvalidConfigError):
         await train(
-            _config, data="./data/examples/rasa/demo-rasa.json", path=str(tmp_path),
+            _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
         )
 
 
