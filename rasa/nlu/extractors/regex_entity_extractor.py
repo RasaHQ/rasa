@@ -56,7 +56,7 @@ class RegexEntityExtractor(EntityExtractor):
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
             use_only_entities=True,
-            config_language=config.language,
+            config_language=lambda config: config.language if config else None,
         )
 
         if not self.patterns:
