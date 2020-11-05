@@ -137,6 +137,89 @@ word vectors in your pipeline.
   by passing in your language identifier as the `language` option.
 
 
+### HFTransformersNLP
+
+    :::caution Deprecated
+    The `HFTransformersNLP` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+    now implements its behavior.
+    :::
+
+    * **Short**
+
+      HuggingFace's Transformers based pre-trained language model initializer
+
+
+
+    * **Outputs**
+
+      Nothing
+
+
+
+    * **Requires**
+
+      Nothing
+
+
+
+    * **Description**
+
+      Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
+      featurization to compute sequence and sentence level representations for each example in the training data.
+      Include [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) to utilize the output of this
+      component for downstream NLU models.
+
+      :::note
+      To use `HFTransformersNLP` component, install Rasa Open Source with `pip3 install rasa[transformers]`.
+
+      :::
+
+
+
+    * **Configuration**
+
+      You should specify what language model to load via the parameter `model_name`. See the below table for the
+      available language models.
+      Additionally, you can also specify the architecture variation of the chosen language model by specifying the
+      parameter `model_weights`.
+      The full list of supported architectures can be found in the
+      [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
+      If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+
+      ```
+      +----------------+--------------+-------------------------+
+      | Language Model | Parameter    | Default value for       |
+      |                | "model_name" | "model_weights"         |
+      +----------------+--------------+-------------------------+
+      | BERT           | bert         | rasa/LaBSE              |
+      +----------------+--------------+-------------------------+
+      | GPT            | gpt          | openai-gpt              |
+      +----------------+--------------+-------------------------+
+      | GPT-2          | gpt2         | gpt2                    |
+      +----------------+--------------+-------------------------+
+      | XLNet          | xlnet        | xlnet-base-cased        |
+      +----------------+--------------+-------------------------+
+      | DistilBERT     | distilbert   | distilbert-base-uncased |
+      +----------------+--------------+-------------------------+
+      | RoBERTa        | roberta      | roberta-base            |
+      +----------------+--------------+-------------------------+
+      ```
+
+      The following configuration loads the language model BERT:
+
+      ```yaml-rasa
+      pipeline:
+        - name: HFTransformersNLP
+          # Name of the language model to use
+          model_name: "bert"
+          # Pre-Trained weights to be loaded
+          model_weights: "rasa/LaBSE"
+
+          # An optional path to a specific directory to download and cache the pre-trained model weights.
+          # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+          cache_dir: null
+      ```
+
 
   ## Tokenizers
 
@@ -325,6 +408,113 @@ word vectors in your pipeline.
     ```
 
 
+  ### ConveRTTokenizer
+
+:::caution Deprecated
+The `ConveRTTokenizer` is deprecated and will be removed in a future release. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
+now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
+:::
+
+  * **Short**
+
+    Tokenizer using [ConveRT](https://github.com/PolyAI-LDN/polyai-models#convert) model.
+
+
+
+  * **Outputs**
+
+    `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+  * **Requires**
+
+    Nothing
+
+
+
+  * **Description**
+
+    Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is used.
+
+    :::note
+    Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
+    be used if your training data is in English language.
+
+    :::
+
+    :::note
+    To use `ConveRTTokenizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
+
+    :::
+
+
+
+  * **Configuration**
+
+    ```yaml-rasa
+    pipeline:
+    - name: "ConveRTTokenizer"
+      # Flag to check whether to split intents
+      "intent_tokenization_flag": False
+      # Symbol on which intent should be split
+      "intent_split_symbol": "_"
+      # Regular expression to detect tokens
+      "token_pattern": None
+      # Remote URL/Local directory of model files(Required)
+      "model_url": None
+    ```
+
+  :::note
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
+
+
+  ### LanguageModelTokenizer
+
+:::caution Deprecated
+The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+now implements its behavior.
+:::
+
+  * **Short**
+
+    Tokenizer from pre-trained language models
+
+
+
+  * **Outputs**
+
+    `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+  * **Requires**
+
+    [HFTransformersNLP](./components.mdx#hftransformersnlp)
+
+
+
+  * **Description**
+
+    Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
+    Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
+
+
+
+  * **Configuration**
+
+    ```yaml-rasa
+    pipeline:
+    - name: "LanguageModelTokenizer"
+      # Flag to check whether to split intents
+      "intent_tokenization_flag": False
+      # Symbol on which intent should be split
+      "intent_split_symbol": "_"
+    ```
+
 
 ## Featurizers
 
@@ -500,15 +690,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```yaml-rasa
   pipeline:
   - name: "ConveRTFeaturizer"
-    # Remote URL/Local directory of model files(Required)
-    "model_url": None
   ```
-
-  :::note
-  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
-  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
-
-  :::
 
 
 ### LanguageModelFeaturizer
@@ -518,15 +700,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   Creates a vector representation of user message and response (if specified) using a pre-trained language model.
 
-* **Description**
-    Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).
-  The component applies language model specific tokenization and featurization to compute sequence and sentence level
-  representations for each example in the training data.
 
-  :::note
-  To use `LanguageModelFeaturizer` component, install Rasa Open Source with `pip3 install rasa[transformers]`.
-
-  :::
 
 * **Outputs**
 
@@ -2586,11 +2760,6 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 You can create a custom component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
 Below is the specification of the `rasa.nlu.components.Component`] class with the methods you'll need to implement.
 
-:::tip follow the tutorial
-There is a detailed tutorial on building custom components on the [Rasa Blog](https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/).
-
-:::
-
 You can add a custom component to your pipeline by adding the module path.
 So if you have a module called `sentiment`
 containing a `SentimentAnalyzer` class:
@@ -2633,21 +2802,4 @@ features. The sequence features are a matrix of size `(number-of-tokens x featur
 the matrix contains a feature vector for every token in the sequence.
 The sentence features are represented by a matrix of size `(1 x feature-dimension)`.
 
-:::
-
-## Deprecated Components
-
-:::caution Deprecated
-The `LanguageModelTokenizer` is deprecated. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements
-its behavior.
-:::
-
-:::caution Deprecated
-The `HFTransformersNLP` is deprecated. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements
-its behavior.
-:::
-
-:::caution Deprecated
-The `ConveRTTokenizer` is deprecated. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer) now implements
-its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
