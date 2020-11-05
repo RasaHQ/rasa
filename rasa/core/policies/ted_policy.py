@@ -27,6 +27,7 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     VALID_FEATURE_TYPES,
     FEATURE_TYPE_SENTENCE,
+    ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy
@@ -656,6 +657,9 @@ class TED(TransformerRasaModel):
 
         self._prepare_layers()
 
+        self.text_seq_transformer_output: Optional[tf.Tensor] = None
+        self.dialogue_transformer_output: Optional[tf.Tensor] = None
+
     def _check_data(self) -> None:
         if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
             raise ValueError(
@@ -795,6 +799,8 @@ class TED(TransformerRasaModel):
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
+        self.dialogue_transformer_output = dialogue_transformed
+
         if self.max_history_tracker_featurizer_used:
             # pick last vector if max history featurizer is used
             dialogue_transformed = tf.expand_dims(
@@ -844,7 +850,8 @@ class TED(TransformerRasaModel):
                 sequence_ids=False,
             )
 
-            # TODO entities
+            if attribute == TEXT:
+                self.text_seq_transformer_output = attribute_features
 
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
@@ -889,6 +896,76 @@ class TED(TransformerRasaModel):
             )
 
         return attribute_features
+
+    def _batch_loss_entities(
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
+    ) -> List[tf.Tensor]:
+        _sequence_lengths = tf.cast(
+            tf_batch_data[TEXT][SEQUENCE_LENGTH][0], dtype=tf.int32
+        )
+        _sequence_lengths = tf.squeeze(_sequence_lengths, axis=-1)
+        sequence_lengths = _sequence_lengths + 1
+        mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
+
+        sequence_lengths -= 1  # remove sentence features
+
+        entity_tags = None
+
+        if ENTITY_ATTRIBUTE_TYPE not in tf_batch_data.get(ENTITIES, {}):
+            return []
+
+        # text_seq_transformer: 1260 x  5 x 128 -> 64 x 28 x 5 x 128
+        # dialogue_transformer:   64 x 28 x 128 -> 64 x 28 x 1 x 128
+        # tag_ids:              1260 x  5 x 1   -> 64 x 28 x 5 x 1
+        # sequence_length:      1260 x  1       -> 64 x 28 x 1
+        # mask:                 1260 x  5 x 1   -> 64 x 28 x 5 x 1
+
+        text_transformed = tf.concat(
+            [self.text_seq_transformer_output, self.dialogue_transformer_output]
+        )
+
+        tag_ids = tf_batch_data[ENTITIES][ENTITY_ATTRIBUTE_TYPE][0]
+        # add a zero (no entity) for the sentence features to match the shape of
+        # inputs
+        tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
+
+        loss, f1, _logits = self._calculate_entity_loss(
+            text_transformed,
+            tag_ids,
+            mask_text,
+            sequence_lengths,
+            ENTITY_ATTRIBUTE_TYPE,
+            entity_tags,
+        )
+
+        return [loss]
+
+    def _calculate_entity_loss(
+        self,
+        inputs: tf.Tensor,
+        tag_ids: tf.Tensor,
+        mask: tf.Tensor,
+        sequence_lengths: tf.Tensor,
+        tag_name: Text,
+        entity_tags: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+
+        tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
+
+        if entity_tags is not None:
+            _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
+            inputs = tf.concat([inputs, _tags], axis=-1)
+
+        logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
+
+        # should call first to build weights
+        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
+        loss = self._tf_layers[f"crf.{tag_name}"].loss(
+            logits, tag_ids, sequence_lengths
+        )
+        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
+
+        return loss, f1, logits
 
     @staticmethod
     def _convert_to_original_shape(
@@ -1035,6 +1112,12 @@ class TED(TransformerRasaModel):
             all_label_ids,
             dialogue_mask,
         )
+
+        if (
+            self.dialogue_transformer_output is not None
+            and self.text_seq_transformer_output is not None
+        ):
+            self._batch_loss_entities(tf_batch_data)
 
         self.action_loss.update_state(loss)
         self.action_acc.update_state(acc)
