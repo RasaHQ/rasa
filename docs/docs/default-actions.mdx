@@ -150,15 +150,10 @@ by sending a "/back" message to the assistant if the [RulePolicy](./policies.mdx
                                                                                                                                                                                                                                                                         |
 ## Form Action
 
-By default Rasa Open Source uses the inbuilt `FormAction` for processing any
+By default Rasa Open Source uses `FormAction` for processing any
 [form logic](forms.mdx). You can override this default action with a custom action by
-adding a custom action with the form's name to the domain. This can e.g. be used to use
-the deprecated `FormAction` which is part of the Rasa SDK and used to implement forms
-for Rasa Open Source 1.
-
-:::caution
+adding a custom action with the form's name to the domain.
 Overriding the default action for forms should **only** be used during the process of
-migrating from Rasa Open Source 1 to 2. It is highly discouraged to use this to
-implement custom form versions. Instead we recommend to use the customizations which
-are described in the [Advanced Usage](forms.mdx#advanced-usage) section of forms.
-:::
+migrating from Rasa Open Source 1 to 2. In this case you can override the default
+action to instruct Rasa Open Source to use the deprecated `FormAction` which is part of
+the Rasa SDK.
