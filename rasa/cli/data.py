@@ -9,6 +9,7 @@ import rasa.shared.core.domain
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
+from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
 import rasa.nlu.convert
 from rasa.shared.constants import (
@@ -121,25 +122,12 @@ def _add_data_convert_parsers(
         help="Migrate model configuration between Rasa Open Source versions.",
     )
     migrate_config_parser.set_defaults(func=_migrate_model_config)
-    _add_migrate_config_arguments(migrate_config_parser)
-
-
-def _add_migrate_config_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "-c",
-        "--config",
-        default=DEFAULT_CONFIG_PATH,
-        help="Path to the model configuration which should be migrated",
-    )
-    parser.add_argument(
-        "-d", "--domain", default=DEFAULT_DOMAIN_PATH, help="Path to the model domain"
-    )
-    parser.add_argument(
-        "-o",
-        "--out",
-        type=str,
+    default_arguments.add_config_param(migrate_config_parser)
+    default_arguments.add_domain_param(migrate_config_parser)
+    default_arguments.add_out_param(
+        migrate_config_parser,
         default=os.path.join(DEFAULT_DATA_PATH, "rules.yml"),
-        help="Path to the file which should contain any rules which are created as "
+        help_text="Path to the file which should contain any rules which are created as "
         "part of the migration. If the file doesn't exist, it will be created.",
     )
 
