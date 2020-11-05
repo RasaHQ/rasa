@@ -15,6 +15,7 @@ def _convert_lookup_tables_to_regex(
         training_data: The training data.
         use_only_entities: If True only regex features with a name equal to a entity
           are considered.
+        config_language: The language what in your config file.
 
     Returns:
         A list of regex patterns.
@@ -30,8 +31,7 @@ def _convert_lookup_tables_to_regex(
 
 
 def _generate_lookup_regex(
-    lookup_table: Dict[Text, Union[Text, List[Text]]],
-    config_language: Text = None,
+    lookup_table: Dict[Text, Union[Text, List[Text]]], config_language: Text = None
 ) -> Text:
     """Creates a regex pattern from the given lookup table.
 
@@ -39,6 +39,7 @@ def _generate_lookup_regex(
 
     Args:
         lookup_table: The lookup table.
+        config_language: The language what in your config file.
 
     Returns:
         The regex pattern.
@@ -67,7 +68,6 @@ def read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
 
     Args:
         lookup_table_file: the file path to the lookup table
-
     Returns:
         Elements listed in the lookup table file.
     """
@@ -97,7 +97,6 @@ def _collect_regex_features(
         training_data: The training data
         use_only_entities: If True only regex features with a name equal to a entity
           are considered.
-
     Returns:
         Regex features.
     """
@@ -129,6 +128,7 @@ def extract_patterns(
           equal to a entity are considered.
         use_regexes: Boolean indicating whether to use regex features or not.
         use_lookup_tables: Boolean indicating whether to use lookup tables or not.
+        config_language: The language what in your config file.
 
     Returns:
         The list of regex patterns.
