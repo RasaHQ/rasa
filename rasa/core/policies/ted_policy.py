@@ -311,8 +311,7 @@ class TEDPolicy(Policy):
 
         _tag_specs = []
 
-        # TODO
-        tag_id_index_mapping = {"O": 0, "emotion": 1, "account_number": 2, "item": 3}
+        tag_id_index_mapping = self.featurizer.state_featurizer.get_entity_tag_ids()
 
         if tag_id_index_mapping:
             _tag_specs.append(
