@@ -177,7 +177,7 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         loading: bool = False,
-        eager: bool = True,
+        eager: bool = False,
     ) -> None:
         """Fit model data"""
 
@@ -309,7 +309,7 @@ class RasaModel(tf.keras.models.Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     def build_for_predict(
-        self, predict_data: RasaModelData, eager: bool = True
+        self, predict_data: RasaModelData, eager: bool = False
     ) -> None:
         self._training = False  # needed for tf graph mode
         self._predict_function = self._get_tf_call_model_function(

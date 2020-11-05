@@ -20,6 +20,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     TEXT,
     NO_ENTITY_TAG,
+    ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
@@ -137,13 +138,18 @@ class SingleStateFeaturizer:
 
         _tags = []
         for token in parsed_text.get(TOKENS_NAMES[TEXT]):
-            _tag = determine_token_labels(token, entities, attribute_key="entity")
+            _tag = determine_token_labels(
+                token, entities, attribute_key=ENTITY_ATTRIBUTE_TYPE
+            )
             _tags.append(tag_id_mapping[_tag])
 
         # transpose to have seq_len x 1
         return [
             Features(
-                np.array([_tags]).T, FEATURE_TYPE_SEQUENCE, "entity", TAG_ID_ORIGIN
+                np.array([_tags]).T,
+                FEATURE_TYPE_SEQUENCE,
+                ENTITY_ATTRIBUTE_TYPE,
+                TAG_ID_ORIGIN,
             )
         ]
 

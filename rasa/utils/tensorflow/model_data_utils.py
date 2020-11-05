@@ -260,7 +260,7 @@ def convert_to_data_format(
     num_examples = 1
     for _features in attribute_to_features.values():
         num_examples = max(num_examples, len(_features))
-        dialogue_length = max(dialogue_length, max(len(f) for f in _features))
+        dialogue_length = max(dialogue_length, len(_features[0]))
     empty_features = [[None] * dialogue_length] * num_examples
 
     for attribute in attributes:

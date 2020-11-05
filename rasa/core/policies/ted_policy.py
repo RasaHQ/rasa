@@ -976,7 +976,10 @@ class TED(TransformerRasaModel):
             return []
 
         # if no tags are present at all, we can skip training
-        # TODO is there a better solution?
+        # check if there is any tag other than 0, which maps to NO_ENTITY_TAG
+        # TODO
+        #  If we remove this check the CRF layer is throwing an error.
+        #  Is there a better solution?
         if tf.reduce_max(tf_batch_data[ENTITIES][ENTITY_ATTRIBUTE_TYPE][0]) == 0.0:
             return []
 

@@ -29,6 +29,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ACTION_TEXT,
     ACTION_NAME,
+    ENTITIES,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -68,7 +69,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # same as State but with Dict[...] substituted with FrozenSet[Tuple[...]]
-FrozenState = FrozenSet[Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text]]]]]]
+FrozenState = FrozenSet[
+    Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text, FrozenSet]]]]]
+]
 
 
 class EventVerbosity(Enum):
@@ -235,9 +238,9 @@ class DialogueStateTracker:
         frozen_state = {}
         for key, values in state_copy.items():
             if isinstance(values, dict):
-                if "entities" in values and isinstance(values["entities"][0], dict):
-                    values["entities"] = tuple(
-                        [frozenset(e.items()) for e in values["entities"]]
+                if ENTITIES in values and isinstance(values[ENTITIES][0], dict):
+                    values[ENTITIES] = tuple(
+                        [frozenset(e.items()) for e in values[ENTITIES]]
                     )
                 frozen_state[key] = frozenset(values.items())
             else:
