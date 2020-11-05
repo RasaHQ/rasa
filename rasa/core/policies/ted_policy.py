@@ -1013,6 +1013,8 @@ class TED(TransformerRasaModel):
         )
         # add the output of the dialogue transformer to the output of the text
         # sequence transformer (adding context)
+        # resulting shape
+        # (combined batch and dialogue dimension x sequence length x units)
         text_transformed = tf.add(
             text_seq_transformer_output, dialogue_transformer_output
         )
@@ -1042,13 +1044,17 @@ class TED(TransformerRasaModel):
             indices = tf.stack([dialogue_indices, sequence_indices], axis=2)
 
             # get all last dialogues from text_transformed using the above indices
+            # resulting shape (batch size x sequence length x units)
             text_transformed = tf.gather_nd(text_transformed, indices)
             # do the same for the other tensors
             tag_ids = tf.gather_nd(tag_ids, indices)
             mask = tf.gather_nd(mask, indices)
-            sequence_lengths = tf.gather(
-                tf.squeeze(sequence_lengths), last_dialogue_indices
+            sequence_lengths = tf.gather_nd(
+                sequence_lengths, tf.expand_dims(last_dialogue_indices, axis=1)
             )
+            # TODO
+            #  inside the LSTM of the CRF layer the check len(mask.shape) == 2
+            #  fails. mask is created from the sequence length.
 
         loss, f1, _ = self._calculate_entity_loss(
             text_transformed,
