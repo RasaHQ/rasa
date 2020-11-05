@@ -999,6 +999,9 @@ class TED(TransformerRasaModel):
         # inputs
         tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
 
+        # shape of the following two tensors
+        # (combined batch and dialogue dimension x sequence length x units)
+        # in case of dialogue_transformer_output sequence length is 1
         text_seq_transformer_output = self.text_seq_transformer_output
         dialogue_transformer_output = self._combine_batch_and_dialogue_dimension(
             self.dialogue_transformer_output, tf_batch_data
@@ -1049,8 +1052,8 @@ class TED(TransformerRasaModel):
             # do the same for the other tensors
             tag_ids = tf.gather_nd(tag_ids, indices)
             mask = tf.gather_nd(mask, indices)
-            sequence_lengths = tf.gather_nd(
-                sequence_lengths, tf.expand_dims(last_dialogue_indices, axis=1)
+            sequence_lengths = tf.gather(
+                tf.squeeze(sequence_lengths), last_dialogue_indices
             )
             # TODO
             #  inside the LSTM of the CRF layer the check len(mask.shape) == 2
