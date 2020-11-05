@@ -1,0 +1,17 @@
+# install poetry
+pip install poetry
+
+# install torch
+pip install torch==1.7.0+cpu torchvision==0.8.1+cpu torchaudio===0.7.0 -f https://download.pytorch.org/whl/torch_stable.html
+
+# install spacy-nightly
+pip install -U spacy-nightly[transformers] --pre
+
+# install rasa from source
+poetry install
+
+# BUILD DOCKER
+docker build . -t rasa-with-custom_ner:latest
+# RUN DOCKER
+docker run -it --entrypoint /bin/bash rasa-with-custom_ner:latest
+

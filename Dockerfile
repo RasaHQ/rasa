@@ -40,6 +40,10 @@ WORKDIR /build
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U 'pip<20' && \
+  pip install torch==1.7.0+cpu torchvision==0.8.1+cpu \
+  torchaudio==0.7.0 -f https://download.pytorch.org/whl/torch_stable.html && \
+  pip install -U spacy-nightly[transformers] --pre && \
+  python -m spacy download en_core_web_md && \
   poetry install --no-dev --no-root --no-interaction && \
   poetry build -f wheel -n && \
   pip install --no-deps dist/*.whl && \
@@ -56,8 +60,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # update permissions & change user to not run as root
 WORKDIR /app
-RUN chgrp -R 0 /app && chmod -R g=u /app
-USER 1001
+#RUN chgrp -R 0 /app && chmod -R g=u /app
+#USER 1001
+COPY examples/custom_ner /app
 
 # create a volume for temporary data
 VOLUME /tmp
