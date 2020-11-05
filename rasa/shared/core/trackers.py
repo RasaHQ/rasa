@@ -596,11 +596,16 @@ class DialogueStateTracker:
         domain: Optional[Domain],
         override_timestamp: bool = True,
     ) -> None:
+        """Adds multiple events to the tracker.
+
+        Args:
+            new_events: Events to apply.
+            domain: The current model's domain.
+            override_timestamp: If `True` reset all timestamps of the events. As the
+                events are usually created at some earlier point, this makes sure that
+                all new events come after any current tracker events.
+        """
         for e in new_events:
-            # this makes sure the events are ordered by timestamp -
-            # since the event objects are created somewhere else,
-            # the timestamp would indicate a time before the time
-            # of the action executed
             if override_timestamp:
                 e.timestamp = time.time()
             self.update(e, domain)

@@ -423,13 +423,14 @@ class PolicyPrediction:
             other: Any other object.
 
         Returns:
-            `True` if it's the same classes and the values are the same.
+            `True` if other has the same type and the values are the same.
         """
         if not isinstance(other, PolicyPrediction):
             return False
 
         return (
             self.probabilities == other.probabilities
+            and self.policy_name == other.policy_name
             and self.policy_priority == other.policy_priority
             and self.events == other.events
             and self.optional_events == other.events

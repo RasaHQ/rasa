@@ -295,7 +295,6 @@ class MessageProcessor:
         tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
 
         action = self._get_action(action_name)
-
         await self._run_action(action, tracker, output_channel, nlg, prediction)
 
         # save tracker state to continue conversation from this state
@@ -309,13 +308,12 @@ class MessageProcessor:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
-        ML to predict the action. Returns the index of the next action."""
-
+        ML to predict the action. Returns the index of the next action.
+        """
         prediction = self._get_next_action_probabilities(tracker)
 
-        max_confidence_index = prediction.max_confidence_index
         action = rasa.core.actions.action.action_for_index(
-            max_confidence_index, self.domain, self.action_endpoint
+            prediction.max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
@@ -850,8 +848,8 @@ class MessageProcessor:
                 )
 
             logger.error(
-                f"Trying to run unknown follow-up action '{followup_action}'!"
-                "Instead of running that, we will ignore the action "
+                f"Trying to run unknown follow-up action '{followup_action}'. "
+                "Instead of running that, Rasa Open Source will ignore the action "
                 "and predict the next action."
             )
 

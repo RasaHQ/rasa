@@ -667,7 +667,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         Returns:
             The prediction for the next action.
         """
-
         fallback_idx_policy = [
             (i, p) for i, p in enumerate(self.policies) if isinstance(p, FallbackPolicy)
         ]
@@ -683,10 +682,11 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             f"fallback action: {fallback_policy.fallback_action_name}"
         )
 
-        probabilities = fallback_policy.fallback_scores(domain)
-        policy_name = f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
-
-        return PolicyPrediction(probabilities, policy_name, FALLBACK_POLICY_PRIORITY)
+        return PolicyPrediction(
+            fallback_policy.fallback_scores(domain),
+            f"policy_{fallback_idx}_{type(fallback_policy).__name__}",
+            FALLBACK_POLICY_PRIORITY,
+        )
 
     def probabilities_using_best_policy(
         self,
@@ -710,7 +710,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_probabilities: the list of probabilities for the next actions
             best_policy_name: the name of the picked policy
         """
-
         winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
 
         if (

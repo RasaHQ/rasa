@@ -552,7 +552,6 @@ class Agent:
         confidence: float,
     ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
-
         processor = self.create_processor()
         prediction = PolicyPrediction.for_action_name(
             self.domain, action, policy, confidence
