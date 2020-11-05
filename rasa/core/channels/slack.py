@@ -201,11 +201,12 @@ class SlackInput(InputChannel):
     def _raise_deprecation_warnings(self) -> None:
         """Raises any deprecation warning regarding configuration parameters."""
         if self.slack_signing_secret is None:
-            rasa.shared.utils.io.raise_warning(
+            rasa.shared.utils.io.raise_deprecation_warning(
                 "Your slack bot is missing a configured signing secret. Running a "
                 "bot without a signing secret is deprecated and will be removed in "
-                "the next release. You should add a `slack_signing_secret` parameter "
-                "to your channel configuration.",
+                "the next release (2.1.0). You should add a `slack_signing_secret` "
+                "parameter to your channel configuration.",
+                warn_until_version="2.1.0",
                 docs=DOCS_URL_CONNECTORS_SLACK,
             )
 
@@ -431,8 +432,8 @@ class SlackInput(InputChannel):
 
         slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
 
-        slack_signature = request.headers.get("X-Slack-Signature")
-        slack_request_timestamp = request.headers.get("X-Slack-Request-Timestamp")
+        slack_signature = request.headers.get("X-Slack-Signature", "")
+        slack_request_timestamp = request.headers.get("X-Slack-Request-Timestamp", "")
 
         prefix = f"v0:{slack_request_timestamp}:".encode("utf-8")
         basestring = prefix + request.body
