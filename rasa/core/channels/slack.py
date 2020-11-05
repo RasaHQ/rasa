@@ -1,9 +1,12 @@
+import hashlib
+import hmac
 import json
 import logging
 import re
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -137,6 +140,7 @@ class SlackInput(InputChannel):
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
+            credentials.get("slack_signing_secret", None),
         )
         # pytype: enable=attribute-error
 
@@ -149,6 +153,7 @@ class SlackInput(InputChannel):
         slack_retry_number_header: Optional[Text] = None,
         errors_ignore_retry: Optional[List[Text]] = None,
         use_threads: Optional[bool] = False,
+        slack_signing_secret: Optional[Text] = None,
     ) -> None:
         """Create a Slack input channel.
 
@@ -166,14 +171,20 @@ class SlackInput(InputChannel):
                 If not set, messages will be sent back
                 to the "App" DM channel of your bot's name.
             proxy: A Proxy Server to route your traffic through
-            slack_retry_reason_header: Slack HTTP header name indicating reason that slack send retry request.
-            slack_retry_number_header: Slack HTTP header name indicating the attempt number
+            slack_retry_reason_header: Slack HTTP header name indicating reason
+                that slack send retry request.
+            slack_retry_number_header: Slack HTTP header name indicating
+                the attempt number
             errors_ignore_retry: Any error codes given by Slack
                 included in this list will be ignored.
                 Error codes are listed
                 `here <https://api.slack.com/events-api#errors>`_.
-            use_threads: If set to True, your bot will send responses in Slack as a threaded message.
-                Responses will appear as a normal Slack message if set to False.
+            use_threads: If set to True, your bot will send responses in Slack as
+                a threaded message. Responses will appear as a normal Slack message
+                if set to False.
+            slack_signing_secret: Slack creates a unique string for your app and
+                shares it with you. This allows us to verify requests from Slack
+                with confidence by verifying signatures using your signing secret.
 
         """
         self.slack_token = slack_token
@@ -183,6 +194,20 @@ class SlackInput(InputChannel):
         self.retry_reason_header = slack_retry_reason_header
         self.retry_num_header = slack_retry_number_header
         self.use_threads = use_threads
+        self.slack_signing_secret = slack_signing_secret
+
+        self._raise_deprecation_warnings()
+
+    def _raise_deprecation_warnings(self) -> None:
+        """Raises any deprecation warning regarding configuration parameters."""
+        if self.slack_signing_secret is None:
+            rasa.shared.utils.io.raise_warning(
+                "Your slack bot is missing a configured signing secret. Running a "
+                "bot without a signing secret is deprecated and will be removed in "
+                "the next release. You should add a `slack_signing_secret` parameter "
+                "to your channel configuration.",
+                docs=DOCS_URL_CONNECTORS_SLACK,
+            )
 
     @staticmethod
     def _is_app_mention(slack_event: Dict) -> bool:
@@ -199,9 +224,9 @@ class SlackInput(InputChannel):
             return False
 
     @staticmethod
-    def _is_user_message(slack_event: Dict) -> bool:
+    def _is_user_message(slack_event: Dict[Text, Any]) -> bool:
         return (
-            slack_event.get("event")
+            slack_event.get("event") is not None
             and (
                 slack_event.get("event", {}).get("type") == "message"
                 or slack_event.get("event", {}).get("type") == "app_mention"
@@ -387,6 +412,34 @@ class SlackInput(InputChannel):
 
         return {}
 
+    def is_request_from_slack_authentic(self, request: Request) -> bool:
+        """Validate a request from Slack for its authenticity.
+
+        Checks if the signature matches the one we expect from Slack. Ensures
+        we don't process request from a third-party disguising as slack.
+
+        Args:
+            request: incoming request to be checked
+
+        Returns:
+            `True` if the request came from Slack.
+        """
+        if self.slack_signing_secret is None:
+            # this is done for backwards compatibility, but will be removed in
+            # the next release
+            return True
+        slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
+
+        slack_signature = request.headers.get("X-Slack-Signature")
+        slack_request_timestamp = request.headers.get("X-Slack-Request-Timestamp")
+
+        prefix = f"v0:{slack_request_timestamp}:".encode("utf-8")
+        basestring = prefix + request.body
+        digest = hmac.new(slack_signing_secret, basestring, hashlib.sha256).hexdigest()
+        computed_signature = f"v0={digest}"
+
+        return hmac.compare_digest(computed_signature, slack_signature)
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -399,7 +452,16 @@ class SlackInput(InputChannel):
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
             content_type = request.headers.get("content-type")
-            # Slack API sends either a JSON-encoded or a URL-encoded body depending on the content
+
+            if not self.is_request_from_slack_authentic(request):
+                return response.text(
+                    "Message is not properly signed with a valid "
+                    "X-Slack-Signature header",
+                    status=400,
+                )
+
+            # Slack API sends either a JSON-encoded or a URL-encoded body
+            # depending on the content
 
             if content_type == "application/json":
                 # if JSON-encoded message is received
