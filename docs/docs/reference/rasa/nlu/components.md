@@ -40,6 +40,19 @@ Validates that all required importable python packages are installed.
 
 - `component_names` - The list of component names.
 
+#### validate\_component\_keys
+
+```python
+validate_component_keys(component: "Component", component_config: Dict[Text, Any]) -> None
+```
+
+Validates that all keys for a component are valid.
+
+**Arguments**:
+
+- `component` - The component class
+- `component_config` - The user-provided config for the component in the pipeline
+
 #### validate\_empty\_pipeline
 
 ```python
