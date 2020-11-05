@@ -137,6 +137,25 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
     return decorator
 
 
+def ensure_conversation_exists(app: Sanic):
+    """Wraps a request handler ensuring the conversation exists.
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            conversation_id = kwargs["conversation_id"]
+            tracker = app.agent.create_processor().get_tracker(conversation_id)
+            if tracker is not None:
+                return f(*args, **kwargs)
+            else:
+                raise ErrorResponse(404, "Not found", "Conversation ID not found.")
+
+        return decorated
+
+    return decorator
+
+
 def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
     """Wraps a request handler with token authentication."""
 
@@ -531,6 +550,7 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/tracker")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
 
@@ -648,6 +668,7 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")

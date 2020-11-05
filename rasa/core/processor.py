@@ -183,7 +183,7 @@ class MessageProcessor:
         Returns:
               Tracker for `sender_id`.
         """
-        tracker = self.get_tracker(sender_id)
+        tracker = self.get_or_create_tracker(sender_id)
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
@@ -206,7 +206,7 @@ class MessageProcessor:
         Returns:
               Tracker for `sender_id`.
         """
-        tracker = self.get_tracker(sender_id)
+        tracker = self.get_or_create_tracker(sender_id)
 
         # run session start only if the tracker is empty
         if not tracker.events:
@@ -214,7 +214,19 @@ class MessageProcessor:
 
         return tracker
 
-    def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
+    def get_tracker(self, conversation_id: Text) -> Optional[DialogueStateTracker]:
+        """Get the tracker for a conversation.
+
+        Args:
+            conversation_id: The ID of the conversation for which the history should be
+                retrieved.
+
+        Returns:
+            Tracker for the conversation or None if it was not found.
+        """
+        return self.tracker_store.retrieve(conversation_id)
+
+    def get_or_create_tracker(self, conversation_id: Text) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
         In contrast to `fetch_tracker_and_update_session` this does not add any
