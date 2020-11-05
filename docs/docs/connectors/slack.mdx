@@ -17,7 +17,7 @@ Connecting a bot to Slack requires you to configure it to send messages
 
 ## Sending Messages
 
-Create a new file `credentials.yml` in the root folder of your rasa open source
+Create a new file `credentials.yml` in the root folder of your Rasa Open Source
 project (if you've used `rasa init` this file should already exist and you can
 just edit it). Add the following lines to the file:
 
@@ -83,7 +83,7 @@ In the next couple steps, you'll create a Slack App to get the values for
 
    <Image img={secretImg} caption="Signing Secret" alt="Signing Secret Screenshot" max-width="500px"/>
 
-   Copy the signing secret into your `configuration.yml` as the value for `slack_signing_secret`:
+   Copy the signing secret into your `credentials.yml` as the value for `slack_signing_secret`:
 
    ```yaml-rasa title="credentials.yml" line={4}
    slack:
@@ -96,8 +96,7 @@ This setup will allow your bot to send messages. Now let's head over to the setu
 for receiving and reacting to messages.
 
 ## Receiving Messages
-Make sure you've gone through [Sending Messages](./slack.mdx#sending-messages) first
-and you have a ready to go `credentials.yml`.
+Before continuing, make sure you have configured a Slack App for [Sending Messages](./slack.mdx#sending-messages) and have added Slack credentials to your `credentials.yml` file.
 
 To receive messages, you will need a publicly available URL for Slack to reach
 your bot and tell you about new messages. If you are running locally, you can
@@ -133,7 +132,7 @@ your bot and tell you about new messages. If you are running locally, you can
 
    Make sure to hit **Save Changes** at the bottom of the page after you've added these events.
 
-   (If you missed to grant all needed permissions to your app while setting up
+   (If you didn't grant all required permissions to your app while setting up
    sending of messages, you'll be prompted to **reinstall your app** which you will
    need to do. Otherwise, Slack will confirm your change with a **Success!**)
 
@@ -141,12 +140,12 @@ Your bot is now ready to go and will receive webhook notifications about new mes
 ## Optional: Interactive Components
 After you've completed [Sending Messages](./slack.mdx#sending-messages) and
 [Receiving Messages](./slack.mdx#receiving-messages) your bot is ready to go. If you
-want to use Slacks "Interactive" elements (buttons or menus), you'll need to do
+want to use Slack's [interactive components](https://api.slack.com/block-kit/interactivity) (buttons or menus), you'll need to do
 some additional configuration:
 
 Open the **Interactivity & Shortcuts** page and toggle **Interactivity** to be on.
 Afterwards, you'll need to enter the same url into the **Request URL** field which
-you used in Step 2. of Receiving Messages, e.g. `https://<host>/webhooks/slack/webhook`.
+you used in Step 2 of [Receiving Messages](./slack.mdx#receiving-messages), e.g. `https://<host>/webhooks/slack/webhook`.
 
 <Image img={interactivityImg} caption="Enabling Interactivity" alt="Interactivity Screenshot" max-width="500px"/>
 
