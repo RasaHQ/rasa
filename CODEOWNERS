@@ -1,4 +1,4 @@
 # Code in the `rasa.shared` package is potentially re-used by downstream dependencies
 # such as Rasa X. Hence, changes within this package require double checking.
-/rasa/shared/ @backend
+/rasa/shared/ @RasaHQ/backend
 /docs/docs/prototype-an-assistant.mdx @ricwo @alwx

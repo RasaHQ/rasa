@@ -7,11 +7,23 @@ from rasa.nlu.model import Interpreter, Trainer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu.conftest import DEFAULT_DATA_PATH
-from typing import Any, Dict, List, Tuple, Text
+from typing import Any, Dict, List, Tuple, Text, Union, Optional
+
+COMPONENTS_TEST_PARAMS = {
+    "DIETClassifier": {EPOCHS: 1},
+    "ResponseSelector": {EPOCHS: 1},
+    "HFTransformersNLP": {"model_name": "bert", "model_weights": "bert-base-uncased"},
+}
+
+
+def get_test_params_for_component(component: Text) -> Dict[Text, Union[Text, int]]:
+    return (
+        COMPONENTS_TEST_PARAMS[component] if component in COMPONENTS_TEST_PARAMS else {}
+    )
 
 
 def as_pipeline(*components):
-    return [{"name": c, EPOCHS: 1} for c in components]
+    return [{**{"name": c}, **get_test_params_for_component(c)} for c in components]
 
 
 def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
