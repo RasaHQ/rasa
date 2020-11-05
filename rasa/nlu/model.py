@@ -201,9 +201,6 @@ class Trainer:
         working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            if isinstance(component, (EntityExtractor, IntentClassifier)):
-                working_data = working_data.without_empty_e2e_examples()
-
             logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)

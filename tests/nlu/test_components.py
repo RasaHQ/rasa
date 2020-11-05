@@ -1,13 +1,16 @@
+from pathlib import Path
+from typing import List, Optional, Text, Type
+
 import pytest
 
 from rasa.nlu import registry, train
-from rasa.nlu.components import find_unavailable_packages
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
+from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Metadata
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_no_components_with_same_name(component_class):
+def test_no_components_with_same_name(component_class: Type[Component]):
     """The name of the components need to be unique as they will
     be referenced by name when defining processing pipelines."""
 
@@ -18,7 +21,7 @@ def test_no_components_with_same_name(component_class):
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_required_components_can_be_satisfied(component_class):
+def test_all_required_components_can_be_satisfied(component_class: Type[Component]):
     """Checks that all required_components are present in the registry."""
 
     def _required_component_in_registry(component):
@@ -45,7 +48,9 @@ def test_find_unavailable_packages():
     assert unavailable == {"my_made_up_package_name", "foo_bar"}
 
 
-def test_builder_create_by_module_path(component_builder, blank_config):
+def test_builder_create_by_module_path(
+    component_builder: ComponentBuilder, blank_config: RasaNLUModelConfig
+):
     from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
     path = "rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer"
@@ -67,7 +72,11 @@ def test_builder_create_by_module_path(component_builder, blank_config):
     ],
 )
 def test_create_component_exception_messages(
-    component_builder, blank_config, test_input, expected_output, error
+    component_builder: ComponentBuilder,
+    blank_config: RasaNLUModelConfig,
+    test_input: Text,
+    expected_output: Text,
+    error: Exception,
 ):
 
     with pytest.raises(error):
@@ -75,14 +84,14 @@ def test_create_component_exception_messages(
         component_builder.create_component(component_config, blank_config)
 
 
-def test_builder_load_unknown(component_builder):
+def test_builder_load_unknown(component_builder: ComponentBuilder):
     with pytest.raises(Exception) as excinfo:
         component_meta = {"name": "my_made_up_componment"}
         component_builder.load_component(component_meta, "", Metadata({}, None))
     assert "Cannot find class" in str(excinfo.value)
 
 
-async def test_example_component(component_builder, tmp_path):
+async def test_example_component(component_builder: ComponentBuilder, tmp_path: Path):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
@@ -124,7 +133,10 @@ async def test_example_component(component_builder, tmp_path):
     ],
 )
 def test_can_handle_language_logically_correctness(
-    supported_language_list, not_supported_language_list, language, expected
+    supported_language_list: Optional[List[Text]],
+    not_supported_language_list: Optional[List[Text]],
+    language: Text,
+    expected: bool,
 ):
     from rasa.nlu.components import Component
 
@@ -155,7 +167,9 @@ def test_can_handle_language_logically_correctness(
     ],
 )
 def test_can_handle_language_guard_clause(
-    supported_language_list, not_supported_language_list, expected_exec_msg
+    supported_language_list: Optional[List[Text]],
+    not_supported_language_list: Optional[List[Text]],
+    expected_exec_msg: Text,
 ):
     from rasa.nlu.components import Component
     from rasa.shared.exceptions import RasaException
@@ -172,3 +186,17 @@ def test_can_handle_language_guard_clause(
     with pytest.raises(RasaException) as excinfo:
         SampleComponent.can_handle_language("random_string")
     assert expected_exec_msg in str(excinfo.value)
+
+
+async def test_validate_requirements_raises_exception_on_component_without_name(
+    tmp_path: Path,
+):
+    _config = RasaNLUModelConfig(
+        # config with a component that does not have a `name` property
+        {"pipeline": [{"parameter": 4}]}
+    )
+
+    with pytest.raises(InvalidConfigError):
+        await train(
+            _config, data="./data/examples/rasa/demo-rasa.json", path=str(tmp_path),
+        )

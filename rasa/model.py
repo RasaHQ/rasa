@@ -1,3 +1,4 @@
+import copy
 import glob
 import hashlib
 import logging
@@ -305,6 +306,8 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
 
     responses = domain.templates
 
+    # Do a copy of the domain to not change the actual domain (shallow is enough)
+    domain = copy.copy(domain)
     # don't include the response texts in the fingerprint.
     # Their fingerprint is separate.
     domain.templates = []

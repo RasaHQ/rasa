@@ -5,7 +5,7 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Text, Optional, Tuple, Dict, Union
 
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.constants import LEGACY_DOCS_BASE_URL
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -152,7 +152,7 @@ class MarkdownReader(TrainingDataReader):
             rasa.shared.utils.io.raise_warning(
                 f"Incorrect training data format ('{{{json_str}}}'), make sure your "
                 f"data is valid. For more information about the format visit "
-                f"{DOCS_URL_TRAINING_DATA_NLU}."
+                f"{LEGACY_DOCS_BASE_URL}/nlu/training-data-format/."
             )
             raise e
 

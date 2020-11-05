@@ -14,6 +14,8 @@ help:
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
 	@echo "        Lint code with flake8, and check if black formatter should be applied."
+	@echo "    lint-docstrings"
+	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
 	@echo "        Check for type errors using pytype."
 	@echo "    prepare-tests-ubuntu"
@@ -59,8 +61,21 @@ formatter:
 	poetry run black rasa tests
 
 lint:
-	poetry run flake8 rasa tests
+     # Ignore docstring errors when running on the entire project
+	poetry run flake8 rasa tests --extend-ignore D
 	poetry run black --check rasa tests
+	make lint-docstrings
+
+BRANCH ?= master # Compare against `master` if no branch was provided
+lint-docstrings:
+	# Lint docstrings only against the the diff to avoid too many errors.
+	# Check only production code. Ignore other flake errors which are captured by `lint`
+	# Diff of committed changes (shows only changes introduced by your branch)
+	if [[ -n "$(BRANCH)" ]]; then \
+	    git diff $(BRANCH)...HEAD -- rasa | poetry run flake8 --select D --diff; \
+	fi
+	# Diff of uncommitted changes for running locally
+	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 
 types:
 	poetry run pytype --keep-going rasa -j 16

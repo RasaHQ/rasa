@@ -38,7 +38,7 @@ then
     # FIXME: this doesn't support all types of docs updates on an existing version at the moment,
     # For instance if we were to make significant updates to the documentation pages
     # (creating new page, deleting some, updating the sidebar), these changes wouldn't work here.
-    cp -R docs/docs/ $TMP_DOCS_FOLDER/docs/versioned_docs/version-$EXISTING_VERSION/
+    cp -R docs/docs/* $TMP_DOCS_FOLDER/docs/versioned_docs/version-$EXISTING_VERSION/
 else
     echo "Updating the docs..."
     # remove everything in the previous docs/ folder, except versioned_docs/*, versioned_sidebars/*

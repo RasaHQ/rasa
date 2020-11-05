@@ -291,7 +291,7 @@ async def test_remote_action_without_endpoint(
         await remote_action.run(
             default_channel, default_nlg, default_tracker, default_domain
         )
-    assert "Failed to execute custom action." in str(execinfo.value)
+    assert "Failed to execute custom action" in str(execinfo.value)
 
 
 async def test_remote_action_endpoint_not_running(

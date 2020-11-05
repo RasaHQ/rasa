@@ -105,7 +105,8 @@
           "skipUrlPatterns": [
             "^https://github\\.com/rasahq/rasa/issues/[0-9]+$",
             "\\.prototyping\\.rasa\\.com",
-            "^https://github\\.com/mit-nlp/MITIE/releases/download/v0\\.4/MITIE-models-v0\\.2\\.tar\\.bz2$"
+            "^https://github\\.com/mit-nlp/MITIE/releases/download/v0\\.4/MITIE-models-v0\\.2\\.tar\\.bz2$",
+            "^https://forum.rasa.com/t/rasa-open-source-2-0-is-out-now-internal-draft/35577$"
           ]
         }
       ]

@@ -547,8 +547,7 @@ class FormAction(LoopAction):
     # helpers
     @staticmethod
     def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it is not a list, `None` converted to empty list.
-        """
+        """Convert object to a list if it is not a list, `None` converted to empty list."""
         if x is None:
             x = []
         elif not isinstance(x, list):
@@ -579,10 +578,10 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         """Return a list of events from `self.validate(...)`.
 
-         Validation is required if:
-            - the form is active
-            - the form is called after `action_listen`
-            - form validation was not cancelled
+        Validation is required if:
+           - the form is active
+           - the form is called after `action_listen`
+           - form validation was not cancelled
         """
         # no active_loop means that it is called during activation
         needs_validation = not tracker.active_loop or (

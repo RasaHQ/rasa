@@ -453,9 +453,15 @@ word vectors in your pipeline.
       "intent_split_symbol": "_"
       # Regular expression to detect tokens
       "token_pattern": None
-      # Remote URL of hosted model
-      "model_url": TF_HUB_MODULE_URL
+      # Remote URL/Local directory of model files(Required)
+      "model_url": None
     ```
+
+  :::note
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 
   ### LanguageModelTokenizer
@@ -1393,6 +1399,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
 |                                 |                  | Batch size will be linearly increased for each epoch.        |
+|                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
 |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
@@ -1977,7 +1984,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 * **Description**
 
-  This component extract entities using the lookup tables and regexes defined in the training data.
+  This component extract entities using the [lookup tables](nlu-training-data.mdx#lookup-tables) and [regexes](nlu-training-data.mdx#regular-expressions-for-entity-extraction) defined in the training data.
   The component checks if the user message contains an entry of one of the lookup tables or matches one of the
   regexes. If a match is found, the value is extracted as entity.
 
@@ -1994,11 +2001,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
       pipeline:
       - name: RegexEntityExtractor
         # text will be processed with case insensitive as default
-        "case_sensitive": False
+        case_sensitive: False
         # use lookup tables to extract entities
-        "use_lookup_tables": True
+        use_lookup_tables: True
         # use regexes to extract entities
-        "use_regexes": True
+        use_regexes: True
   ```
 
 
@@ -2232,6 +2239,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   +---------------------------------+------------------+--------------------------------------------------------------+
   | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
   |                                 |                  | Batch size will be linearly increased for each epoch.        |
+  |                                 |                  | If constant `batch_size` is required, pass an int, e.g. `8`. |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
   |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
@@ -2574,7 +2582,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | unidirectional_encoder          | False             | Use a unidirectional or bidirectional encoder.               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| batch_size                      | [8, 32]           | Initial and final value for batch sizes.                     |
+| batch_size                      | [64, 256]         | Initial and final value for batch sizes.                     |
 |                                 |                   | Batch size will be linearly increased for each epoch.        |
 |                                 |                   | If constant `batch_size` is required, pass an int, e.g. `8`. |
 +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -2689,11 +2697,6 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 You can create a custom component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
 Below is the specification of the `rasa.nlu.components.Component`] class with the methods you'll need to implement.
-
-:::tip follow the tutorial
-There is a detailed tutorial on building custom components on the [Rasa Blog](https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/).
-
-:::
 
 You can add a custom component to your pipeline by adding the module path.
 So if you have a module called `sentiment`

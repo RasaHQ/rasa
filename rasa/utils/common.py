@@ -8,10 +8,7 @@ from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar
 
 import rasa.core.utils
 import rasa.utils.io
-from rasa.constants import (
-    DEFAULT_LOG_LEVEL_LIBRARIES,
-    ENV_LOG_LEVEL_LIBRARIES,
-)
+from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
 
@@ -68,6 +65,7 @@ def set_log_level(log_level: Optional[int] = None):
 
     update_tensorflow_log_level()
     update_asyncio_log_level()
+    update_matplotlib_log_level()
     update_apscheduler_log_level()
     update_socketio_log_level()
 
@@ -154,6 +152,16 @@ def update_asyncio_log_level() -> None:
     variable 'LOG_LEVEL_LIBRARIES'."""
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
     logging.getLogger("asyncio").setLevel(log_level)
+
+
+def update_matplotlib_log_level() -> None:
+    """Set the log level of matplotlib to the log level specified in the environment
+    variable 'LOG_LEVEL_LIBRARIES'."""
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+    logging.getLogger("matplotlib.backends.backend_pdf").setLevel(log_level)
+    logging.getLogger("matplotlib.colorbar").setLevel(log_level)
+    logging.getLogger("matplotlib.font_manager").setLevel(log_level)
+    logging.getLogger("matplotlib.ticker").setLevel(log_level)
 
 
 def set_log_and_warnings_filters() -> None:

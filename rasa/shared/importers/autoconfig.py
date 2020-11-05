@@ -2,9 +2,11 @@ import copy
 import logging
 import os
 from enum import Enum
+from pathlib import Path
 from typing import Text, Dict, Any, List, Set, Optional
 
 import rasa.shared.constants
+from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -165,14 +167,14 @@ def _dump_config(
 
     autoconfig_lines = _get_commented_out_autoconfig_lines(config, auto_configured_keys)
 
-    with open(
-        config_file_path, "r+", encoding=rasa.shared.utils.io.DEFAULT_ENCODING
-    ) as f:
-        lines = f.readlines()
-        updated_lines = _get_lines_including_autoconfig(lines, autoconfig_lines)
-        f.seek(0)
-        for line in updated_lines:
-            f.write(line)
+    current_config_content = rasa.shared.utils.io.read_file(config_file_path)
+    current_config_lines = current_config_content.splitlines(keepends=True)
+
+    updated_lines = _get_lines_including_autoconfig(
+        current_config_lines, autoconfig_lines
+    )
+
+    rasa.shared.utils.io.write_text_file("".join(updated_lines), config_file_path)
 
     auto_configured_keys = rasa.shared.utils.common.transform_collection_to_sentence(
         auto_configured_keys
@@ -191,7 +193,7 @@ def _is_config_file_as_expected(
 ) -> bool:
     try:
         content = rasa.shared.utils.io.read_config_file(config_file_path)
-    except ValueError:
+    except FileNotFoundException:
         content = ""
 
     return (

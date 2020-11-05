@@ -41,12 +41,12 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
 
         # check if source file is test stories file
         if MarkdownStoryReader.is_test_stories_file(source_path):
-            reader = MarkdownStoryReader(is_used_for_conversion=True, use_e2e=True)
+            reader = MarkdownStoryReader(is_used_for_training=False, use_e2e=True)
             output_core_path = cls._generate_path_for_converted_test_data_file(
                 source_path, output_path
             )
         else:
-            reader = MarkdownStoryReader(is_used_for_conversion=True)
+            reader = MarkdownStoryReader(is_used_for_training=False)
             output_core_path = cls.generate_path_for_converted_training_data_file(
                 source_path, output_path
             )
@@ -65,7 +65,11 @@ class StoryMarkdownToYamlConverter(TrainingDataConverter):
             )
 
         writer = YAMLStoryWriter()
-        writer.dump(output_core_path, steps)
+        writer.dump(
+            output_core_path,
+            steps,
+            is_test_story=MarkdownStoryReader.is_test_stories_file(source_path),
+        )
 
         print_success(f"Converted Core file: '{source_path}' >> '{output_core_path}'.")
 

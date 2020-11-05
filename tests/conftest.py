@@ -6,7 +6,6 @@ import sys
 import uuid
 
 from sanic.request import Request
-from sanic.testing import SanicTestClient
 
 from typing import Iterator, Callable
 
@@ -273,12 +272,6 @@ def project() -> Text:
     create_initial_project(directory)
 
     return directory
-
-
-def get_test_client(server: Sanic) -> SanicTestClient:
-    test_client = server.test_client
-    test_client.port = None
-    return test_client
 
 
 def write_endpoint_config_to_yaml(

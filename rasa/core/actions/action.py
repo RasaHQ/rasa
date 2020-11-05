@@ -595,15 +595,14 @@ class RemoteAction(Action):
     ) -> List[Event]:
         json_body = self._action_call_format(tracker, domain)
         if not self.action_endpoint:
-            logger.error(
-                f"The model predicted the custom action '{self.name()}', "
-                f"but you didn't configure an endpoint to "
-                f"run this custom action. Please take a look at "
+            raise RasaException(
+                f"Failed to execute custom action '{self.name()}' "
+                f"because no endpoint is configured to run this "
+                f"custom action. Please take a look at "
                 f"the docs and set an endpoint configuration via the "
                 f"--endpoints flag. "
                 f"{DOCS_BASE_URL}/custom-actions"
             )
-            raise Exception("Failed to execute custom action.")
 
         try:
             logger.debug(
@@ -633,7 +632,7 @@ class RemoteAction(Action):
                 logger.error(exception.message)
                 raise exception
             else:
-                raise Exception("Failed to execute custom action.") from e
+                raise RasaException("Failed to execute custom action.") from e
 
         except aiohttp.ClientConnectionError as e:
             logger.error(
@@ -641,7 +640,7 @@ class RemoteAction(Action):
                 "to the server at '{}'. Is the server running? "
                 "Error: {}".format(self.name(), self.action_endpoint.url, e)
             )
-            raise Exception("Failed to execute custom action.")
+            raise RasaException("Failed to execute custom action.")
 
         except aiohttp.ClientError as e:
             # not all errors have a status attribute, but
@@ -649,14 +648,13 @@ class RemoteAction(Action):
 
             # noinspection PyUnresolvedReferences
             status = getattr(e, "status", None)
-            logger.error(
+            raise RasaException(
                 "Failed to run custom action '{}'. Action server "
                 "responded with a non 200 status code of {}. "
                 "Make sure your action server properly runs actions "
                 "and returns a 200 once the action is executed. "
                 "Error: {}".format(self.name(), status, e)
             )
-            raise Exception("Failed to execute custom action.")
 
     def name(self) -> Text:
         return self._name

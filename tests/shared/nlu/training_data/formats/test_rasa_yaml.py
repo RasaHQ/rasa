@@ -3,6 +3,7 @@ from typing import Text
 
 import pytest
 
+from rasa.shared.exceptions import YamlException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import (
@@ -115,7 +116,7 @@ def test_wrong_format_raises():
     """
 
     parser = RasaYAMLReader()
-    with pytest.raises(ValueError):
+    with pytest.raises(YamlSyntaxException):
         parser.reads(wrong_yaml_nlu_content)
 
 
@@ -125,7 +126,7 @@ def test_wrong_format_raises():
 def test_wrong_schema_raises(example: Text):
 
     parser = RasaYAMLReader()
-    with pytest.raises(ValueError):
+    with pytest.raises(YamlException):
         parser.reads(example)
 
 
@@ -175,6 +176,30 @@ def test_yaml_examples_are_written(example: Text):
 
     training_data = parser.reads(example)
     assert example.strip() == writer.dumps(training_data).strip()
+
+
+def test_training_data_as_yaml_dict():
+    from collections import OrderedDict
+
+    parser = RasaYAMLReader()
+    writer = RasaYAMLWriter()
+
+    training_data = parser.reads(
+        """
+nlu:
+- intent: some_intent
+  examples: |
+    - an example
+responses:
+  utter_something:
+    - text: hello world
+    """
+    )
+    structure = writer.training_data_to_dict(training_data)
+
+    assert isinstance(structure, OrderedDict)
+    assert "nlu" in structure
+    assert "responses" in structure
 
 
 def test_multiline_intent_example_is_skipped_when_no_leading_symbol():

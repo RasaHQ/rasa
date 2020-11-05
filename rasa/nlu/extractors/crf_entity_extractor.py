@@ -172,9 +172,7 @@ class CRFEntityExtractor(EntityExtractor):
         self._update_crf_order(training_data)
 
         # filter out pre-trained entity examples
-        entity_examples = self.filter_trainable_entities(
-            training_data.training_examples
-        )
+        entity_examples = self.filter_trainable_entities(training_data.nlu_examples)
 
         dataset = [self._convert_to_crf_tokens(example) for example in entity_examples]
 

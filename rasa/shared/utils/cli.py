@@ -4,8 +4,17 @@ from typing import Any, Text, NoReturn
 import rasa.shared.utils.io
 
 
-def print_color(*args: Any, color: Text):
-    print(rasa.shared.utils.io.wrap_with_color(*args, color=color))
+def print_color(*args: Any, color: Text) -> None:
+    output = rasa.shared.utils.io.wrap_with_color(*args, color=color)
+    try:
+        # colorama is used to fix a regression where colors can not be printed on
+        # windows. https://github.com/RasaHQ/rasa/issues/7053
+        from colorama import AnsiToWin32  # type:ignore
+
+        stream = AnsiToWin32(sys.stdout).stream
+        print(output, file=stream)
+    except ImportError:
+        print(output)
 
 
 def print_success(*args: Any):

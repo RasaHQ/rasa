@@ -391,7 +391,7 @@ async def test_eval_data(component_builder, tmpdir, project):
     interpreter = Interpreter.load(persisted_path, component_builder)
 
     data = await data_importer.get_nlu_data()
-    intent_results, response_selection_results, entity_results, = get_eval_data(
+    (intent_results, response_selection_results, entity_results,) = get_eval_data(
         interpreter, data
     )
 

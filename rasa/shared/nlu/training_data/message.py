@@ -131,24 +131,6 @@ class Message:
             # pytype: enable=unsupported-operands
         return cls(data, **kwargs)
 
-    @classmethod
-    def build_from_action(
-        cls,
-        action_text: Optional[Text] = "",
-        action_name: Optional[Text] = "",
-        **kwargs: Any,
-    ) -> "Message":
-        """
-        Build a `Message` from `ActionExecuted` data.
-        Args:
-            action_text: text of a bot's utterance
-            action_name: name of an action executed
-        Returns:
-            Message
-        """
-        action_data = {ACTION_TEXT: action_text, ACTION_NAME: action_name}
-        return cls(data=action_data, **kwargs)
-
     def get_full_intent(self) -> Text:
         """Get intent as it appears in training data"""
 
@@ -320,6 +302,27 @@ class Message:
                 combined_features.combine_with_features(f)
 
         return combined_features
+
+    def is_core_message(self) -> bool:
+        """Checks whether the message is a core message or not.
+
+        E.g. a core message is created from a story, not from the NLU data.
+
+        Returns:
+            True, if message is a core message, false otherwise.
+        """
+        return bool(
+            self.data.get(ACTION_NAME)
+            or self.data.get(ACTION_TEXT)
+            or (
+                (self.data.get(INTENT) or self.data.get(RESPONSE))
+                and not self.data.get(TEXT)
+            )
+            or (
+                self.data.get(TEXT)
+                and not (self.data.get(INTENT) or self.data.get(RESPONSE))
+            )
+        )
 
 
 def ordered(obj: Any) -> Any:
