@@ -35,6 +35,7 @@ module.exports = {
       label: 'Legacy 1.x',
       href: 'https://legacy-docs-v1.rasa.com',
       target: '_blank',
+      rel: 'nofollow noopener noreferrer',
     }],
     redocPages: [
       {
