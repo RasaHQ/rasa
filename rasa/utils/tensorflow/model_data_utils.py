@@ -295,8 +295,8 @@ def _features_for_attribute(
         attribute_to_features: features for every example
         training: boolean indicating whether we are currently in training or not
         zero_features: zero features
-        consider_dialogue_dimension: If set to false the dialogue dimension will be removed from the resulting sequence
-            features.
+        consider_dialogue_dimension: If set to false the dialogue dimension will be
+          removed from the resulting sequence features.
 
     Returns:
         A dictionary of feature type to actual features for the given attribute.

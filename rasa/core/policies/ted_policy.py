@@ -12,6 +12,7 @@ import tensorflow_addons as tfa
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
 
 import rasa.utils.io as io_utils
+from nlu.classifiers.diet_classifier import EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
@@ -267,6 +268,7 @@ class TEDPolicy(Policy):
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
+        entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -284,6 +286,8 @@ class TEDPolicy(Policy):
 
         self.model = model
 
+        self._entity_tag_specs = entity_tag_specs
+
         self.zero_state_features = zero_state_features or defaultdict(list)
 
         self._label_data: Optional[RasaModelData] = None
@@ -297,6 +301,28 @@ class TEDPolicy(Policy):
 
         self.config = train_utils.update_similarity_type(self.config)
         self.config = train_utils.update_evaluation_parameters(self.config)
+
+    def _create_entity_tag_specs(self) -> List[EntityTagSpec]:
+        """Create entity tag specifications with their respective tag id mappings."""
+
+        _tag_specs = []
+
+        # TODO
+        tag_id_index_mapping = {"O": 0, "emotion": 1}
+
+        if tag_id_index_mapping:
+            _tag_specs.append(
+                EntityTagSpec(
+                    tag_name=ENTITY_ATTRIBUTE_TYPE,
+                    tags_to_ids=tag_id_index_mapping,
+                    ids_to_tags={
+                        value: key for key, value in tag_id_index_mapping.items()
+                    },
+                    num_tags=len(tag_id_index_mapping),
+                )
+            )
+
+        return _tag_specs
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
@@ -418,6 +444,8 @@ class TEDPolicy(Policy):
             )
             return
 
+        self._entity_tag_specs = self._create_entity_tag_specs()
+
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
@@ -426,6 +454,7 @@ class TEDPolicy(Policy):
             self.config,
             isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
             self._label_data,
+            self._entity_tag_specs,
         )
 
         self.model.fit(
@@ -551,6 +580,16 @@ class TEDPolicy(Policy):
             dict(self._label_data.data),
         )
 
+        entity_tag_specs = (
+            [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
+            if self._entity_tag_specs
+            else []
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.entity_tag_specs.json",
+            entity_tag_specs,
+        )
+
     @classmethod
     def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
         """Loads a policy from the storage.
@@ -585,6 +624,22 @@ class TEDPolicy(Policy):
         priority = io_utils.json_unpickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
         )
+        entity_tag_specs = rasa.shared.utils.io.read_json_file(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.entity_tag_specs.json"
+        )
+        entity_tag_specs = [
+            EntityTagSpec(
+                tag_name=tag_spec["tag_name"],
+                ids_to_tags={
+                    int(key): value for key, value in tag_spec["ids_to_tags"].items()
+                },
+                tags_to_ids={
+                    key: int(value) for key, value in tag_spec["tags_to_ids"].items()
+                },
+                num_tags=tag_spec["num_tags"],
+            )
+            for tag_spec in entity_tag_specs
+        ]
 
         model_data_example = RasaModelData(
             label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
@@ -600,6 +655,7 @@ class TEDPolicy(Policy):
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
             label_data=label_data,
+            entity_tag_specs=entity_tag_specs,
         )
 
         # build the graph for prediction
@@ -621,6 +677,7 @@ class TEDPolicy(Policy):
             priority=priority,
             model=model,
             zero_state_features=zero_state_features,
+            entity_tag_specs=entity_tag_specs,
             **meta,
         )
 
@@ -632,6 +689,7 @@ class TED(TransformerRasaModel):
         config: Dict[Text, Any],
         max_history_tracker_featurizer_used: bool,
         label_data: RasaModelData,
+        entity_tag_specs: Optional[List[EntityTagSpec]],
     ) -> None:
         super().__init__("TED", config, data_signature, label_data)
 
@@ -643,6 +701,8 @@ class TED(TransformerRasaModel):
             if feature_name
             in STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
         }
+
+        self._entity_tag_specs = entity_tag_specs
 
         # optimizer
         self.optimizer = tf.keras.optimizers.Adam()
@@ -699,6 +759,7 @@ class TED(TransformerRasaModel):
         self._prepare_embed_layers(LABEL)
 
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
+        self._prepare_entity_recognition_layers()
 
     def _prepare_sparse_dense_layer_for(
         self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
@@ -900,77 +961,71 @@ class TED(TransformerRasaModel):
     def _batch_loss_entities(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> List[tf.Tensor]:
-        _sequence_lengths = tf.cast(
-            tf_batch_data[TEXT][SEQUENCE_LENGTH][0], dtype=tf.int32
-        )
-        _sequence_lengths = tf.squeeze(_sequence_lengths, axis=-1)
-        sequence_lengths = _sequence_lengths + 1
-        mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
-
-        sequence_lengths -= 1  # remove sentence features
-
-        entity_tags = None
-
         if ENTITY_ATTRIBUTE_TYPE not in tf_batch_data.get(ENTITIES, {}):
             return []
 
-        # text_seq_transformer: 1260 x  5 x 128 -> 64 x 28 x 5 x 128
-        # dialogue_transformer:   64 x 28 x 128 -> 64 x 28 x 1 x 128
-        # tag_ids:              1260 x  5 x 1   -> 64 x 28 x 5 x 1
-        # sequence_length:      1260 x  1       -> 64 x 28 x 1
-        # mask:                 1260 x  5 x 1   -> 64 x 28 x 5 x 1
-
-        text_transformed = tf.concat(
-            [self.text_seq_transformer_output, self.dialogue_transformer_output]
+        sequence_lengths = tf.cast(
+            tf_batch_data[TEXT][SEQUENCE_LENGTH][0], dtype=tf.int32
         )
+        sequence_lengths = tf.squeeze(sequence_lengths, axis=-1)
+        sequence_lengths += 1  # add sentence features
+        mask = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
+        sequence_lengths -= 1  # remove sentence features
+
+        # convert from (combined batch and dialogue dimension x 1) to
+        # (batch-dim x dialogue length x 1)
+        sequence_lengths = tf.squeeze(
+            self._convert_to_original_shape(
+                tf.expand_dims(sequence_lengths, axis=-1), tf_batch_data, False
+            ),
+            axis=-1,
+        )
+        # convert from (combined batch and dialogue dimension x sequence length x 1) to
+        # (batch-dim x dialogue length x sequence length x 1)
+        mask = self._convert_to_original_shape(mask, tf_batch_data, False)
 
         tag_ids = tf_batch_data[ENTITIES][ENTITY_ATTRIBUTE_TYPE][0]
         # add a zero (no entity) for the sentence features to match the shape of
         # inputs
         tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
+        # convert from (combined batch and dialogue dimension x sequence length x 1) to
+        # (batch-dim x dialogue length x sequence length x 1)
+        tag_ids = self._convert_to_original_shape(tag_ids, tf_batch_data, False)
+
+        # convert from (combined batch and dialogue dimension x sequence length x units)
+        # to (batch-dim x dialogue length x sequence length x units)
+        text_seq_transformer_output = self._convert_to_original_shape(
+            self.text_seq_transformer_output, tf_batch_data, False
+        )
+
+        # repeat the dialogue transformer output sequence-length-times to get the
+        # same shape as the text sequence transformer output
+        dialogue_transformer_output = tf.repeat(
+            tf.expand_dims(self.dialogue_transformer_output, axis=2),
+            text_seq_transformer_output.shape[2],
+            axis=2,
+        )
+        # add the output of the dialogue transformer to the output of the text
+        # sequence transformer (adding context)
+        text_transformed = tf.add(
+            text_seq_transformer_output, dialogue_transformer_output
+        )
+
+        # TODO get last dialogue if max history
+        # check if this should happen before concat due to performance
+        # TODO CRF is currently failing, is it not compatible with 4D?
 
         loss, f1, _logits = self._calculate_entity_loss(
-            text_transformed,
-            tag_ids,
-            mask_text,
-            sequence_lengths,
-            ENTITY_ATTRIBUTE_TYPE,
-            entity_tags,
+            text_transformed, tag_ids, mask, sequence_lengths, ENTITY_ATTRIBUTE_TYPE
         )
 
         return [loss]
-
-    def _calculate_entity_loss(
-        self,
-        inputs: tf.Tensor,
-        tag_ids: tf.Tensor,
-        mask: tf.Tensor,
-        sequence_lengths: tf.Tensor,
-        tag_name: Text,
-        entity_tags: Optional[tf.Tensor] = None,
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-
-        tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
-
-        if entity_tags is not None:
-            _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
-            inputs = tf.concat([inputs, _tags], axis=-1)
-
-        logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
-
-        # should call first to build weights
-        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
-        loss = self._tf_layers[f"crf.{tag_name}"].loss(
-            logits, tag_ids, sequence_lengths
-        )
-        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
-
-        return loss, f1, logits
 
     @staticmethod
     def _convert_to_original_shape(
         attribute_features: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        squeeze_sequence_dimension: bool = True,
     ) -> tf.Tensor:
         """Transform attribute features back to original shape.
 
@@ -998,6 +1053,7 @@ class TED(TransformerRasaModel):
 
         batch_dim = tf.size(dialogue_lengths)
         dialogue_dim = tf.reduce_max(dialogue_lengths)
+        sequence_dim = attribute_features.shape[-2]
         units = attribute_features.shape[-1]
 
         batch_indices = tf.repeat(tf.range(batch_dim), dialogue_lengths)
@@ -1010,9 +1066,13 @@ class TED(TransformerRasaModel):
         ).values
         indices = tf.stack([batch_indices, dialogue_indices], axis=1)
 
-        shape = tf.convert_to_tensor([batch_dim, dialogue_dim, units])
+        if squeeze_sequence_dimension:
+            attribute_features = tf.squeeze(attribute_features, axis=1)
+            shape = tf.convert_to_tensor([batch_dim, dialogue_dim, units])
+        else:
+            shape = tf.convert_to_tensor([batch_dim, dialogue_dim, sequence_dim, units])
 
-        return tf.scatter_nd(indices, tf.squeeze(attribute_features, axis=1), shape)
+        return tf.scatter_nd(indices, attribute_features, shape)
 
     def _process_batch_data(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
@@ -1104,6 +1164,8 @@ class TED(TransformerRasaModel):
         )
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
+        losses = []
+
         loss, acc = self._tf_layers[f"loss.{LABEL}"](
             dialogue_embed,
             labels_embed,
@@ -1112,17 +1174,18 @@ class TED(TransformerRasaModel):
             all_label_ids,
             dialogue_mask,
         )
+        losses.append(loss)
 
         if (
             self.dialogue_transformer_output is not None
             and self.text_seq_transformer_output is not None
         ):
-            self._batch_loss_entities(tf_batch_data)
+            losses.extend(self._batch_loss_entities(tf_batch_data))
 
         self.action_loss.update_state(loss)
         self.action_acc.update_state(acc)
 
-        return loss
+        return tf.math.add_n(losses)
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]

@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Text, Set
 from collections import defaultdict
 
 import rasa.shared.utils.io
-from nlu.constants import TOKENS_NAMES
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
@@ -19,10 +19,11 @@ from rasa.shared.nlu.constants import (
     INTENT,
     FEATURE_TYPE_SEQUENCE,
     TEXT,
+    NO_ENTITY_TAG,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
-from utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
+from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 logger = logging.getLogger(__name__)
 
@@ -102,24 +103,42 @@ class SingleStateFeaturizer:
         )
         return [features]
 
+    def get_entity_tag_ids(self) -> Dict[Text, int]:
+        """Returns the tag to index mapping for entities.
+
+        Returns:
+            Tag to index mapping.
+        """
+        if ENTITIES not in self._default_feature_states:
+            return {}
+
+        tag_ids = {
+            tag: idx + 1  # +1 to keep 0 for the NO_ENTITY_TAG
+            for tag, idx in self._default_feature_states[ENTITIES].items()
+        }
+        tag_ids[NO_ENTITY_TAG] = 0
+        return tag_ids
+
     def _create_entity_tag_features(
         self, sub_state: SubState, interpreter: NaturalLanguageInterpreter
     ) -> List["Features"]:
         from rasa.nlu.test import determine_token_labels
 
-        # TODO what about roles and groups
+        # TODO
+        #  The entity states used to create the tag-idx-mapping contains the
+        #  entities and the concatenated entity and roles/groups. We do not
+        #  distinguish between entities and roles/groups right now.
+        # TODO
+        #  Should we support BILOU tagging?
 
         parsed_text = interpreter.featurize_message(Message({TEXT: sub_state[TEXT]}))
         entities = [dict(entity) for entity in sub_state[ENTITIES]]
+        tag_id_mapping = self.get_entity_tag_ids()
 
         _tags = []
         for token in parsed_text.get(TOKENS_NAMES[TEXT]):
             _tag = determine_token_labels(token, entities, attribute_key="entity")
-            if _tag in self._default_feature_states[ENTITIES]:
-                # +1 to keep the 0 for the NO ENTITY TAG
-                _tags.append(self._default_feature_states[ENTITIES][_tag] + 1)
-            else:
-                _tags.append(0)
+            _tags.append(tag_id_mapping[_tag])
 
         # transpose to have seq_len x 1
         return [

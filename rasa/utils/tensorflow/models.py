@@ -54,6 +54,7 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     CONCAT_DIMENSION,
     DROP_RATE_ATTENTION,
+    SCALE_LOSS,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -176,7 +177,7 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         loading: bool = False,
-        eager: bool = False,
+        eager: bool = True,
     ) -> None:
         """Fit model data"""
 
@@ -308,7 +309,7 @@ class RasaModel(tf.keras.models.Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     def build_for_predict(
-        self, predict_data: RasaModelData, eager: bool = False
+        self, predict_data: RasaModelData, eager: bool = True
     ) -> None:
         self._training = False  # needed for tf graph mode
         self._predict_function = self._get_tf_call_model_function(
@@ -826,6 +827,22 @@ class TransformerRasaModel(RasaModel):
             name, self.config[DROP_RATE], self.config[DROP_RATE_ATTENTION]
         )
 
+    def _prepare_entity_recognition_layers(self) -> None:
+        for tag_spec in self._entity_tag_specs:
+            name = tag_spec.tag_name
+            num_tags = tag_spec.num_tags
+            self._tf_layers[f"embed.{name}.logits"] = layers.Embed(
+                num_tags, self.config[REGULARIZATION_CONSTANT], f"logits.{name}"
+            )
+            self._tf_layers[f"crf.{name}"] = layers.CRF(
+                num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
+            )
+            self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                self.config[EMBEDDING_DIMENSION],
+                self.config[REGULARIZATION_CONSTANT],
+                f"tags.{name}",
+            )
+
     def _combine_sparse_dense_features(
         self,
         features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
@@ -1054,6 +1071,33 @@ class TransformerRasaModel(RasaModel):
             return tf.shape(attribute_data[SEQUENCE][0])[0]
 
         return tf.shape(attribute_data[SENTENCE][0])[0]
+
+    def _calculate_entity_loss(
+        self,
+        inputs: tf.Tensor,
+        tag_ids: tf.Tensor,
+        mask: tf.Tensor,
+        sequence_lengths: tf.Tensor,
+        tag_name: Text,
+        entity_tags: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+
+        tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
+
+        if entity_tags is not None:
+            _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
+            inputs = tf.concat([inputs, _tags], axis=-1)
+
+        logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
+
+        # should call first to build weights
+        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
+        loss = self._tf_layers[f"crf.{tag_name}"].loss(
+            logits, tag_ids, sequence_lengths
+        )
+        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
+
+        return loss, f1, logits
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
