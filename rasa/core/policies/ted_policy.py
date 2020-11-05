@@ -4,7 +4,6 @@ from pathlib import Path
 from collections import defaultdict
 
 import numpy as np
-from tensorflow import RaggedTensorSpec
 
 import rasa.shared.utils.io
 import tensorflow as tf
@@ -12,7 +11,7 @@ import tensorflow_addons as tfa
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
 
 import rasa.utils.io as io_utils
-from nlu.classifiers.diet_classifier import EntityTagSpec
+from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
@@ -308,7 +307,7 @@ class TEDPolicy(Policy):
         _tag_specs = []
 
         # TODO
-        tag_id_index_mapping = {"O": 0, "emotion": 1}
+        tag_id_index_mapping = {"O": 0, "emotion": 1, "account_number": 2, "item": 3}
 
         if tag_id_index_mapping:
             _tag_specs.append(
@@ -1011,9 +1010,33 @@ class TED(TransformerRasaModel):
             text_seq_transformer_output, dialogue_transformer_output
         )
 
-        # TODO get last dialogue if max history
-        # check if this should happen before concat due to performance
-        # TODO CRF is currently failing, is it not compatible with 4D?
+        if self.max_history_tracker_featurizer_used:
+            # get last dialogue turn for every batch example
+            # resulting shapes are
+            # text_transformed (batch-dim x sequence length x units)
+            # mask             (batch-dim x sequence length x 1)
+            # tag_ids          (batch-dim x sequence length x 1)
+            # sequence_lengths (batch-dim)
+            dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
+            text_transformed = tf.squeeze(
+                tf.expand_dims(self._last_token(text_transformed, dialogue_lengths), 1),
+                axis=1,
+            )
+            mask = tf.squeeze(
+                tf.expand_dims(self._last_token(mask, dialogue_lengths), 1), axis=1
+            )
+            tag_ids = tf.squeeze(
+                tf.expand_dims(self._last_token(tag_ids, dialogue_lengths), 1), axis=1
+            )
+            sequence_lengths = tf.squeeze(
+                tf.expand_dims(self._last_token(sequence_lengths, dialogue_lengths), 1)
+            )
+
+        else:
+            # TODO
+            #   CRF cannot handle 4D tensors, convert text_transformed back to
+            #   combined batch and dialogue dimenstion x sequence length x untis
+            return []
 
         loss, f1, _logits = self._calculate_entity_loss(
             text_transformed, tag_ids, mask, sequence_lengths, ENTITY_ATTRIBUTE_TYPE
