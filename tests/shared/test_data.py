@@ -273,14 +273,7 @@ def test_same_file_names_get_resolved(tmp_path):
                 "data/examples/dialogflow/package.json",
             ],
         ),
-        (
-            "luis",
-            [
-                "data/examples/luis/demo-restaurants_v2.json",
-                "data/examples/luis/demo-restaurants_v4.json",
-                "data/examples/luis/demo-restaurants_v5.json",
-            ],
-        ),
+        ("luis", ["data/examples/luis/demo-restaurants_v7.json",],),
         (
             "rasa",
             [
