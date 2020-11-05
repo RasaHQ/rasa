@@ -51,7 +51,7 @@ class SingleStateFeaturizer:
 
         self._default_feature_states[INTENT] = convert_to_dict(domain.intents)
         self._default_feature_states[ACTION_NAME] = convert_to_dict(domain.action_names)
-        self._default_feature_states[ENTITIES] = convert_to_dict(domain.entities)
+        self._default_feature_states[ENTITIES] = convert_to_dict(domain.entity_states)
         self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.action_texts = domain.action_texts
