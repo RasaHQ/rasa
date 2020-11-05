@@ -103,7 +103,7 @@ def validate_component_keys(
     component_name = component_config.get("name")
     allowed_keys = set(component.defaults.keys())
     provided_keys = set(component_config.keys())
-    provided_keys = (key for key in provided_keys if key != "name")
+    provided_keys.discard("name")
     list_separator = "\n- "
     for key in provided_keys:
         if key not in allowed_keys:

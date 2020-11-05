@@ -167,7 +167,7 @@ class Trainer:
         for index, pipeline_component in enumerate(cfg.pipeline):
             component_cfg = cfg.for_component(index)
             component = component_builder.create_component(component_cfg, cfg)
-            components.validate_component_keys(component, cfg.pipeline[index])
+            components.validate_component_keys(component, pipeline_component)
             pipeline.append(component)
 
         if not self.skip_validation:
