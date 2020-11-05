@@ -237,7 +237,7 @@ class SlackInput(InputChannel):
         )
 
     @staticmethod
-    def _sanitize_user_message(text, uids_to_remove) -> Text:
+    def _sanitize_user_message(text, uids_to_remove: Optional[List[Text]]) -> Text:
         """Remove superfluous/wrong/problematic tokens from a message.
 
         Probably a good starting point for pre-formatting of user-provided text
@@ -253,6 +253,8 @@ class SlackInput(InputChannel):
             str: parsed and cleaned version of the input text
         """
 
+        uids_to_remove = uids_to_remove or []
+
         for uid_to_remove in uids_to_remove:
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
@@ -264,9 +266,10 @@ class SlackInput(InputChannel):
             ]:
                 text = re.sub(regex, replacement, text)
 
-        """Find multiple mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and substitute it with original content
-        """
-
+        # Find multiple mailto or http links like
+        # <mailto:xyz@rasa.com|xyz@rasa.com> or
+        # <http://url.com|url.com> in text and substitute
+        # it with original content
         pattern = r"(\<(?:mailto|http|https):\/\/.*?\|.*?\>)"
         match = re.findall(pattern, text)
 
@@ -476,23 +479,22 @@ class SlackInput(InputChannel):
                 if "challenge" in output:
                     return response.json(output.get("challenge"))
 
-                elif self._is_user_message(output) and self._is_supported_channel(
-                    output, metadata
-                ):
-                    return await self.process_message(
-                        request,
-                        on_new_message,
-                        text=self._sanitize_user_message(
-                            user_message, metadata["users"]
-                        ),
-                        sender_id=sender_id,
-                        metadata=metadata,
-                    )
-                else:
+                if not self._is_user_message(output):
+                    return response.text("Bot message delivered.")
+
+                if not self._is_supported_channel(output, metadata):
                     logger.warning(
                         f"Received message on unsupported channel: {metadata['out_channel']}"
                     )
+                    return response.text("channel not supported.")
 
+                return await self.process_message(
+                    request,
+                    on_new_message,
+                    text=self._sanitize_user_message(user_message, metadata["users"]),
+                    sender_id=sender_id,
+                    metadata=metadata,
+                )
             elif content_type == "application/x-www-form-urlencoded":
                 # if URL-encoded message is received
                 output = request.form
