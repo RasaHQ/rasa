@@ -9,7 +9,10 @@ title: rasa.nlu.emulators.dialogflow
 class DialogflowEmulator(Emulator)
 ```
 
-Emulates DialogFlow responses.
+Emulates the response format of the DialogFlow projects.agent.environments.users.sessions.detectIntent
+
+https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/projects.agent.environments.users.sessions/detectIntent
+https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse
 
 #### normalise\_response\_json
 
@@ -17,5 +20,14 @@ Emulates DialogFlow responses.
  | normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
-Transform data to Dialogflow format.
+&quot;Transform response JSON to DialogFlow format.
+
+**Arguments**:
+
+- `data` - input JSON data as a dictionary.
+  
+
+**Returns**:
+
+  The transformed input data.
 
