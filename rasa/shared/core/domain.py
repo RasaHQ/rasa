@@ -104,7 +104,7 @@ class Domain:
 
     @classmethod
     def empty(cls) -> "Domain":
-        return cls([], [], [], {}, [], [])
+        return cls([], [], [], {}, [], {})
 
     @classmethod
     def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
