@@ -1,0 +1,75 @@
+title: "Named Entity Recognition (WikiNER)"
+description: "Simple example of downloading and converting source data and training a named entity recognition model. The example uses the WikiNER corpus, which was constructed semi-automatically. The main advantage of this corpus is that it's freely available, so the data can be downloaded as a project asset. The WikiNER corpus is distributed in IOB format, a fairly common text encoding for sequence data. The `corpus` subcommand splits the corpus into training, development and testing partitions, and uses `spacy convert` to convert them into spaCy's binary format. You can then edit the config to try out different settings, and trigger training with the `train` subcommand."
+
+# Variables can be referenced across the project.yml using ${vars.var_name}
+vars:
+  config: "default"
+#  config: "transformer"
+  gpu: -1
+
+remotes:
+  default: gs://galaxy-state/spacy-v3-benchmarks
+
+# These are the directories that the project needs. The project CLI will make
+# sure that they always exist.
+directories: ["training", "configs", "metrics", "corpus"]
+
+assets:
+  -
+    dest: "ner/data"
+    description: "training corpus."
+
+workflows:
+  all:
+    - corpus
+    - train
+    - evaluate
+
+commands:
+  -
+    name: init-config
+    help: "Generate a default English NER config"
+    script:
+      - "python -m spacy init config --lang en --pipeline ner --optimize efficiency -C configs/${vars.config}.cfg"
+
+  - name: corpus
+    help: "Convert the data to spaCy's format"
+    # Make sure we specify the branch in the command string, so that the
+    # caching works correctly.
+    script:
+      - "python scripts/partition.py ner/data/data.iob ner/iob"
+      - "python -m spacy convert ner/iob corpus --n-sents 10"
+    deps:
+      - "ner/data"
+    outputs:
+      - "corpus/train.spacy"
+      - "corpus/dev.spacy"
+      - "corpus/test.spacy"
+
+  - name: train
+    help: "Train the full pipeline"
+    script:
+      - "python -m spacy train configs/${vars.config}.cfg -o training/ --gpu-id ${vars.gpu} --paths.train corpus/train.spacy --paths.dev corpus/dev.spacy"
+    deps:
+      - "corpus/train.spacy"
+      - "corpus/dev.spacy"
+      - "configs/${vars.config}.cfg"
+    outputs:
+      - "training/model-best"
+
+  - name: evaluate
+    help: "Evaluate on the test data and save the metrics"
+    script:
+      - "python -m spacy evaluate ./training/model-best ./corpus/test.spacy --output ./metrics/${vars.config}.json --gpu-id ${vars.gpu}"
+    deps:
+      - "training/model-best"
+      - "corpus/test.spacy"
+    outputs:
+      - "metrics/${vars.config}.json"
+
+  - name: clean
+    help: "Remove intermediate files"
+    script:
+      - "rm -rf training/*"
+      - "rm -rf metrics/*"
+      - "rm -rf corpus/*"
