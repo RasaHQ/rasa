@@ -780,7 +780,7 @@ def test_is_slack_message_none():
 
     payload = {}
     slack_message = json.loads(json.dumps(payload))
-    assert SlackInput._is_user_message(slack_message) is None
+    assert SlackInput._is_user_message(slack_message) is False
 
 
 def test_is_slack_message_true():

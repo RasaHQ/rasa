@@ -428,6 +428,7 @@ class SlackInput(InputChannel):
             # this is done for backwards compatibility, but will be removed in
             # the next release
             return True
+
         slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
 
         slack_signature = request.headers.get("X-Slack-Signature")
