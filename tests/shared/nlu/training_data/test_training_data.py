@@ -57,6 +57,7 @@ def test_dialogflow_data():
     assert len(td.entity_examples) == 5
     assert len(td.intent_examples) == 24
     assert len(td.training_examples) == 24
+    assert len(td.regex_features) == 1
     assert len(td.lookup_tables) == 2
     assert td.intents == {"affirm", "goodbye", "hi", "inform"}
     assert td.entities == {"cuisine", "location"}
