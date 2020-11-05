@@ -30,7 +30,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
 )
-from rasa.shared.core import events  # pytype: disable=pyi-error
+from rasa.shared.core import events
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     LOOP_NAME,
@@ -42,8 +42,8 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
     ACTION_SESSION_START_NAME,
 )
-from rasa.shared.core.conversation import Dialogue  # pytype: disable=pyi-error
-from rasa.shared.core.events import (  # pytype: disable=pyi-error
+from rasa.shared.core.conversation import Dialogue
+from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
@@ -56,7 +56,7 @@ from rasa.shared.core.events import (  # pytype: disable=pyi-error
     SessionStarted,
     ActionExecutionRejected,
 )
-from rasa.shared.core.domain import Domain, State  # pytype: disable=pyi-error
+from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
@@ -630,10 +630,12 @@ class DialogueStateTracker:
             YAMLStoryWriter,
         )
 
-        append = not os.path.exists(export_path)
+        append = os.path.exists(export_path)
 
         rasa.shared.utils.io.write_text_file(
-            self.export_stories(YAMLStoryWriter()) + "\n", export_path, append=append
+            self.export_stories(YAMLStoryWriter(), should_append_stories=append) + "\n",
+            export_path,
+            append=append,
         )
 
     def get_last_event_for(
@@ -773,7 +775,7 @@ class DialogueStateTracker:
         if not self.active_loop or self.active_loop.get(LOOP_NAME) == SHOULD_NOT_BE_SET:
             return None
 
-        return self.active_loop.get(LOOP_NAME)  # pytype: disable=bad-return-type
+        return self.active_loop.get(LOOP_NAME)
 
     @property
     def latest_action_name(self) -> Optional[Text]:

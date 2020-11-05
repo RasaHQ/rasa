@@ -18,6 +18,9 @@ from rasa.shared.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     IS_EXTERNAL,
     LOOP_INTERRUPTED,
+    ENTITY_LABEL_SEPARATOR,
+    ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -28,6 +31,8 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
 )
 
 if TYPE_CHECKING:
@@ -164,6 +169,24 @@ def split_events(
         sub_events.append(current)
 
     return sub_events
+
+
+def do_events_begin_with_session_start(events: List["Event"]) -> bool:
+    """Determines whether `events` begins with a session start sequence.
+
+    A session start sequence is a sequence of two events: an executed
+    `action_session_start` as well as a logged `session_started`.
+
+    Args:
+        events: The events to inspect.
+
+    Returns:
+        Whether or not `events` begins with a session start sequence.
+    """
+    return len(events) > 1 and events[:2] == [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+    ]
 
 
 # noinspection PyProtectedMember
@@ -394,6 +417,23 @@ class UserUttered(Event):
             a dictionary with intent name, text and entities
         """
         entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
+        entities.extend(
+            (
+                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
+                f"{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
+            )
+            for entity in self.entities
+            if ENTITY_ATTRIBUTE_ROLE in entity
+        )
+        entities.extend(
+            (
+                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
+                f"{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
+            )
+            for entity in self.entities
+            if ENTITY_ATTRIBUTE_GROUP in entity
+        )
+
         out = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
@@ -437,18 +477,17 @@ class UserUttered(Event):
             else:
                 ent_string = ""
 
-            parse_string = "{intent}{entities}".format(
-                intent=self.intent.get(INTENT_NAME_KEY, ""), entities=ent_string
-            )
+            parse_string = f"{self.intent.get(INTENT_NAME_KEY, '')}{ent_string}"
+
             if e2e:
                 message = md_format_message(
                     self.text, self.intent.get(INTENT_NAME_KEY), self.entities
                 )
-                return "{}: {}".format(self.intent.get(INTENT_NAME_KEY), message)
-            else:
-                return parse_string
-        else:
-            return self.text
+                return f"{self.intent.get(INTENT_NAME_KEY)}: {message}"
+
+            return parse_string
+
+        return self.text
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.latest_message = self
@@ -653,8 +692,6 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        from rasa.shared.core.constants import ACTION_LISTEN_NAME
-
         tracker._reset()
         tracker.trigger_followup_action(ACTION_LISTEN_NAME)
 

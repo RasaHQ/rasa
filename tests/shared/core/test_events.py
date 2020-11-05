@@ -9,7 +9,7 @@ from typing import Type, Optional, Text, List, Any, Dict
 
 import rasa.shared.utils.common
 import rasa.shared.core.events
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.shared.core.events import (
     Event,
     UserUttered,
@@ -469,3 +469,41 @@ def test_split_events(
         assert all(
             isinstance(events[0], event_type_to_split_on) for events in split_events[1:]
         )
+
+
+@pytest.mark.parametrize(
+    "test_events,begin_with_session_start",
+    [
+        # a typical session start
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                SessionStarted(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            True,
+        ),
+        # also a session start, but with timestamps
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+                SessionStarted(timestamp=2),
+                ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+            ],
+            True,
+        ),
+        # providing a single `action_listen` is not a session start
+        ([ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)], False,),
+        # providing a single `action_session_start` is not a session start
+        ([ActionExecuted(ACTION_SESSION_START_NAME)], False,),
+        # providing no events is not a session start
+        ([], False,),
+    ],
+)
+def test_events_begin_with_session_start(
+    test_events: List[Event], begin_with_session_start: bool,
+):
+    assert (
+        rasa.shared.core.events.do_events_begin_with_session_start(test_events)
+        == begin_with_session_start
+    )

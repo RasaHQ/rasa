@@ -35,6 +35,7 @@ from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
     RedisTrackerStore,
+    DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,
     SQLTrackerStore,
     DynamoTrackerStore,
     FailSafeTrackerStore,
@@ -146,6 +147,42 @@ def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
     )
 
     assert isinstance(tracker_store, type(TrackerStore.create(store, default_domain)))
+
+
+def test_redis_tracker_store_invalid_key_prefix(default_domain: Domain):
+
+    test_invalid_key_prefix = "$$ &!"
+
+    tracker_store = RedisTrackerStore(
+        domain=default_domain,
+        host="localhost",
+        port=6379,
+        db=0,
+        password="password",
+        key_prefix=test_invalid_key_prefix,
+        record_exp=3000,
+    )
+
+    assert tracker_store._get_key_prefix() == DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+
+
+def test_redis_tracker_store_valid_key_prefix(default_domain: Domain):
+    test_valid_key_prefix = "spanish"
+
+    tracker_store = RedisTrackerStore(
+        domain=default_domain,
+        host="localhost",
+        port=6379,
+        db=0,
+        password="password",
+        key_prefix=test_valid_key_prefix,
+        record_exp=3000,
+    )
+
+    assert (
+        tracker_store._get_key_prefix()
+        == f"{test_valid_key_prefix}:{DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX}"
+    )
 
 
 def test_exception_tracker_store_from_endpoint_config(
@@ -271,7 +308,7 @@ def test_deprecated_pickle_deserialisation():
         assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
     assert len(record) == 1
     assert (
-        "Deserialisation of pickled trackers is deprecated" in record[0].message.args[0]
+        "Deserialization of pickled trackers is deprecated" in record[0].message.args[0]
     )
 
 

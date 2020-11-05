@@ -58,6 +58,9 @@ logger = logging.getLogger(__name__)
 POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
 POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
+# default value for key prefix in RedisTrackerStore
+DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
+
 
 class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
@@ -125,12 +128,15 @@ class TrackerStore:
             max_event_history: Value to update the tracker store's max event history to.
             append_action_listen: Whether or not to append an initial `action_listen`.
         """
-        tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
+
+        tracker = self.retrieve(sender_id)
+
         if tracker is None:
             tracker = self.create_tracker(
                 sender_id, append_action_listen=append_action_listen
             )
+
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
@@ -154,16 +160,13 @@ class TrackerStore:
 
         Returns:
             The newly created tracker for `sender_id`.
-
         """
-
         tracker = self.init_tracker(sender_id)
 
-        if tracker:
-            if append_action_listen:
-                tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+        if append_action_listen:
+            tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-            self.save(tracker)
+        self.save(tracker)
 
         return tracker
 
@@ -212,6 +215,7 @@ class TrackerStore:
     def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""
         old_tracker = self.retrieve(sender_id)
+
         return len(old_tracker.events) if old_tracker else 0
 
     def keys(self) -> Iterable[Text]:
@@ -226,16 +230,18 @@ class TrackerStore:
         return json.dumps(dialogue.as_dict())
 
     @staticmethod
-    def _deserialise_dialogue_from_pickle(
+    def _deserialize_dialogue_from_pickle(
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
-
+        # TODO: Remove in Rasa Open Source 3.0
         rasa.shared.utils.io.raise_deprecation_warning(
             f"Found pickled tracker for "
-            f"conversation ID '{sender_id}'. Deserialisation of pickled "
-            f"trackers is deprecated. Rasa will perform any "
-            f"future save operations of this tracker using json serialisation."
+            f"conversation ID '{sender_id}'. Deserialization of pickled "
+            f"trackers is deprecated and will be removed in Rasa Open Source 3.0. Rasa "
+            f"will perform any future save operations of this tracker using json "
+            f"serialisation."
         )
+
         return pickle.loads(serialised_tracker)
 
     def deserialise_tracker(
@@ -244,13 +250,11 @@ class TrackerStore:
         """Deserializes the tracker and returns it."""
 
         tracker = self.init_tracker(sender_id)
-        if not tracker:
-            return None
 
         try:
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
         except UnicodeDecodeError:
-            dialogue = self._deserialise_dialogue_from_pickle(
+            dialogue = self._deserialize_dialogue_from_pickle(
                 sender_id, serialised_tracker
             )
 
@@ -282,9 +286,10 @@ class InMemoryTrackerStore(TrackerStore):
         if sender_id in self.store:
             logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
-        else:
-            logger.debug(f"Creating a new tracker for id '{sender_id}'.")
-            return None
+
+        logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+
+        return None
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Tracker Store in memory"""
@@ -303,6 +308,7 @@ class RedisTrackerStore(TrackerStore):
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
+        key_prefix: Optional[Text] = None,
         use_ssl: bool = False,
         **kwargs: Dict[Text, Any],
     ) -> None:
@@ -312,7 +318,24 @@ class RedisTrackerStore(TrackerStore):
             host=host, port=port, db=db, password=password, ssl=use_ssl
         )
         self.record_exp = record_exp
+
+        self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        if key_prefix:
+            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            self._set_key_prefix(key_prefix)
+
         super().__init__(domain, event_broker, **kwargs)
+
+    def _set_key_prefix(self, key_prefix: Text) -> None:
+        if isinstance(key_prefix, str) and key_prefix.isalnum():
+            self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        else:
+            logger.warning(
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+            )
+
+    def _get_key_prefix(self) -> Text:
+        return self.key_prefix
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
@@ -323,10 +346,10 @@ class RedisTrackerStore(TrackerStore):
             timeout = self.record_exp
 
         serialised_tracker = self.serialise_tracker(tracker)
-        self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
+        self.red.set(self.prefix + tracker.sender_id, serialised_tracker, ex=timeout)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        stored = self.red.get(sender_id)
+        stored = self.red.get(self.prefix + sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
         else:
@@ -334,7 +357,7 @@ class RedisTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store"""
-        return self.red.keys()
+        return self.red.keys(self.prefix + "*")
 
 
 class DynamoTrackerStore(TrackerStore):

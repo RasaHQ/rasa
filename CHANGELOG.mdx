@@ -16,6 +16,44 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.0.3] - 2020-10-29
+                       
+
+### Bugfixes
+- [#7089](https://github.com/rasahq/rasa/issues/7089): Fix [ConveRTTokenizer](components.mdx#converttokenizer) failing because of wrong model URL by making the `model_url` parameter of `ConveRTTokenizer` mandatory.
+
+  Since the ConveRT model was taken [offline](https://github.com/RasaHQ/rasa/issues/6806), we can no longer use 
+  the earlier public URL of the model. Additionally, since the licence for the model is unknown, 
+  we cannot host it ourselves. Users can still use the component by setting `model_url` to a community/self-hosted 
+  model URL or path to a local directory containing model files. For example:
+  ```yaml
+  pipeline:
+      - name: ConveRTTokenizer
+        model_url: <remote/local path to model>
+  ```
+- [#7108](https://github.com/rasahq/rasa/issues/7108): Update example formbot to use `FormValidationAction` for slot validation
+
+
+## [2.0.2] - 2020-10-22
+                       
+
+### Bugfixes
+- [#6691](https://github.com/rasahq/rasa/issues/6691): Fix description of previous event in output of `rasa data validate stories`
+- [#7053](https://github.com/rasahq/rasa/issues/7053): Fixed command line coloring for windows command lines running an encoding other than `utf-8`.
+
+### Miscellaneous internal changes
+- [#7057](https://github.com/rasahq/rasa/issues/7057)
+
+
+## [2.0.1] - 2020-10-20
+                       
+
+### Bugfixes
+- [#7018](https://github.com/rasahq/rasa/issues/7018): Create correct `KafkaProducer` for `PLAINTEXT` and `SASL_SSL` security protocols.
+- [#7033](https://github.com/rasahq/rasa/issues/7033): - Fix `YAMLStoryReader` not being able to represent [`OR` statements](stories.mdx#or-statements) in conversion mode.
+  - Fix `MarkdownStoryWriter` not being able to write stories with `OR` statements (when loaded in conversion mode).
+
+
 ## [2.0.0] - 2020-10-07
                        
 

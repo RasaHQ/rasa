@@ -7,6 +7,7 @@ from functools import partial
 from typing import Any, List, Optional, Text, Union
 
 import rasa.core.utils
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.utils
 import rasa.utils.common
@@ -65,12 +66,12 @@ def _create_single_channel(channel, credentials) -> Any:
             )
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
-            raise Exception(
-                "Failed to find input channel class for '{}'. Unknown "
-                "input channel. Check your credentials configuration to "
-                "make sure the mentioned channel is not misspelled. "
-                "If you are creating your own channel, make sure it "
-                "is a proper name of a class in a module.".format(channel)
+            raise RasaException(
+                f"Failed to find input channel class for '{channel}'. Unknown "
+                f"input channel. Check your credentials configuration to "
+                f"make sure the mentioned channel is not misspelled. "
+                f"If you are creating your own channel, make sure it "
+                f"is a proper name of a class in a module."
             )
 
 

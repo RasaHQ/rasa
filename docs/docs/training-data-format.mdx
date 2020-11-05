@@ -3,7 +3,7 @@ id: training-data-format
 sidebar_label: Training Data Format
 title: Training Data Format
 description: Description of the YAML format for training data
-abstract: This page provides an overview of the different types of training data
+abstract: This page describes the different types of training data
   that go into a Rasa assistant and how this training data is structured.
 ---
 
@@ -13,10 +13,9 @@ Rasa Open Source uses [YAML](https://yaml.org/spec/1.2/spec.html) as
 a unified and extendable way to manage all training data,
 including NLU data, stories and rules.
 
-With the YAML format, training data can be split over any number of YAML files,
-and every file can contain any kind of data.
-The training data parser will read the top level keys in each file to decide
-what kind of data is in a section at training time.
+You can split the training data over any number of YAML files,
+and each file can contain any combination of NLU data, stories, and rules.
+The training data parser determines the training data type using top level keys.
 
 The [domain](glossary.mdx#domain) uses
 the same YAML format as the training data and can also be split across
@@ -26,29 +25,26 @@ See the [documentation for the domain](domain.mdx) for information on how to for
 
 :::note Legacy Formats
 Looking for Rasa Open Source 1.x data formats? They are now deprecated, but
-you can still find the documentation for
-[markdown NLU data](https://legacy-docs-v1.rasa.com/nlu/training-data-format/) and
-[markdown stories](https://legacy-docs-v1.rasa.com/core/stories/).
+you can still find the documentation for <a href="https://legacy-docs-v1.rasa.com/nlu/training-data-format/" target="_blank" rel="nofollow noopener noreferrer">markdown NLU data</a> and <a href="https://legacy-docs-v1.rasa.com/core/stories/" target="_blank" rel="nofollow noopener noreferrer">markdown stories</a>.
 :::
 
 ### High-Level Structure
 
 Each file can contain one or more **keys** with corresponding training
-data. One file can contain multiple keys, as long as there is not more
-than one of a certain key in a single file. The available keys are:
+data. One file can contain multiple keys, but each key can only appear
+once in a single file. The available keys are:
 
 - `version`
 - `nlu`
 - `stories`
 - `rules`
 
-All YAML training data files should specify the `version` key to be parsed
-correctly. If you don't specify a version key in your training data file, Rasa
+You should specify the `version` key in all YAML training data files.
+If you don't specify a version key in your training data file, Rasa
 will assume you are using the latest training data format specification supported
 by the version of Rasa Open Source you have installed.
-Training data files with a version greater than is currently available in
-the version of Rasa Open Source you have installed will be
-skipped.
+Training data files with a Rasa Open Source version greater than the version you have
+installed on your machine will be skipped.
 Currently, the latest training data format specification for Rasa 2.x is 2.0.
 
 ### Example
@@ -86,7 +82,7 @@ rules:
 
 ```
 
-If you want to specify your test stories, you need to put them into a separate file:
+To specify your test stories, you need to put them into a separate file:
 ```yaml-rasa title="tests/test_stories.yml"
 stories:
 - story: greet and ask language
@@ -100,7 +96,8 @@ stories:
     intent: faq/language
   - action: utter_faq
 ```
-They use the same format as the story training data.
+[Test stories](#test-stories) use the same format as the story training data and should be placed
+in a separate file with the prefix `test_`.
 
 ## NLU Training Data
 
@@ -182,8 +179,10 @@ nlu:
       hey there!
 ```
 
-The `metadata` key can contain arbitrary key-value data that stays with an example and is accessible by the components in the NLU pipeline. In the example above, the sentiment of
-the example could be used by a custom component in the pipeline for sentiment analysis.
+The `metadata` key can contain arbitrary key-value data that is tied to an example and
+accessible by the components in the NLU pipeline.
+In the example above, the sentiment metadata could be used by a custom component in
+the pipeline for sentiment analysis.
 
 You can also specify this metadata at the intent level:
 
@@ -199,7 +198,7 @@ nlu:
       hey there!
 ```
 
-In this case, the content of the `metadata` key is passed on to every intent example.
+In this case, the content of the `metadata` key is passed to every intent example.
 
 
 If you want to specify [retrieval intents](glossary.mdx#retrieval-intent), then your NLU examples will look as follows:
@@ -220,8 +219,8 @@ nlu:
     - I like sunny days in Berlin.
 ```
 All retrieval intents have a suffix
-added to them which identifies a particular response key for your assistant, in the
-above example `ask_name` and `ask_weather` are the suffixes. The suffix is separated from
+added to them which identifies a particular response key for your assistant. In the
+above example, `ask_name` and `ask_weather` are the suffixes. The suffix is separated from
 the retrieval intent name by a `/` delimiter.
 
 :::note Special meaning of `/`
@@ -233,9 +232,9 @@ name of your intents.
 
 ### Entities
 
-[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message. 
+[Entities](glossary.mdx#entity) are structured pieces of information that can be extracted from a user's message.
 
-Entities are annotated in training examples with minimally the entity's name.
+Entities are annotated in training examples with the entity's name.
 In addition to the entity name, you can annotate an entity with [synonyms](nlu-training-data.mdx#synonyms), [roles, or groups](nlu-training-data.mdx#entities-roles-and-groups).
 
 In training examples, entity annotation would look like this:
@@ -257,15 +256,15 @@ The full possible syntax for annotating an entity is:
 ```
 
 The keywords `role`, `group`, and `value` are optional in this notation.
-The `value` keyword refers to synonyms. To understand what the labels `role` and `group` are
+The `value` field refers to synonyms. To understand what the labels `role` and `group` are
 for, see the section on [entity roles and groups](./nlu-training-data.mdx#entities-roles-and-groups).
 
 
 ### Synonyms
 
-Synonyms provide a way to normalize your training data by mapping an
+Synonyms normalize your training data by mapping an
 extracted entity to a value other than the literal text extracted.
-Synonyms can be defined in the format:
+You can define synonyms using the format:
 
 ```yaml-rasa
 nlu:
@@ -275,7 +274,7 @@ nlu:
     - credit account
 ```
 
-Synonyms can also be defined in-line in your training examples by
+You can also define synonyms in-line in your training examples by
 specifying the `value` of the entity:
 
 ```yaml-rasa
@@ -291,7 +290,7 @@ Read more about synonyms on the [NLU Training Data page](./nlu-training-data.mdx
 ### Regular Expressions
 
 You can use regular expressions to improve intent classification and
-entity extraction in combination with the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components in the pipeline.
+entity extraction using the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components.
 
 The format for defining a regular expression is as follows:
 
@@ -389,9 +388,9 @@ key and an optional `entities:` key.
 
 While writing stories, you do not have to deal with the specific
 contents of the messages that the users send. Instead, you can take
-advantage of the output from the NLU pipeline, which lets you use
-the combination of an intent and entities to refer to all the possible
-messages the users can send to mean the same thing.
+advantage of the output from the NLU pipeline, which uses
+a combination of an intent and entities to refer to all possible
+messages the users can send with the same meaning.
 
 User messages follow the format:
 
@@ -458,11 +457,11 @@ stories:
 A [form](glossary.mdx#form) is a specific kind of custom action that contains the logic to loop over
 a set of required slots and ask the user for this information. You
 [define a form](forms.mdx#defining-a-form) in the `forms` section in your domain.
-Once defined, the [happy path](glossary.mdx#happy--unhappy-paths)
-for a form should be specified as a [rule](forms.mdx), but interruptions of forms or
-other "unhappy paths" should be included in stories so that the model can
+Once defined, you should specify the [happy path](glossary.mdx#happy--unhappy-paths)
+for a form as a [rule](forms.mdx). You should include interruptions of forms or
+other "unhappy paths" in stories so that the model can
 generalize to unseen conversation sequences.
-As a step in a story, a form takes the following basic format:
+As a step in a story, a form takes the following format:
 
 
 ```yaml-rasa
@@ -645,15 +644,14 @@ rules:
 
 For more information about writing rules, see [Rules](rules.mdx#writing-a-rule).
 
-## Test Conversations
+## Test Stories
 
-Test conversations use stories to test your bot. The tests check if a message is
-classified correctly as well as the action predictions.
+Test stories check if a message is classified correctly as well as the action predictions.
 
 Test stories use the same format as [stories](#stories),
 except that user message steps can include a `user` to specify the actual
 text and entity annotations of the user message. Here's an example of a
-test conversation:
+test story:
 
 ```yaml-rasa
 stories:
@@ -673,7 +671,7 @@ stories:
   - action: utter_ask_price
 ```
 
-Running the tests can be done using the CLI:
+You can run the tests using the following command:
 ```bash
 rasa test
 ```

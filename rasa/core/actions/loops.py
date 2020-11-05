@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
-class LoopAction(Action, ABC):  # pytype: disable=base-class-error
+class LoopAction(Action, ABC):
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -43,13 +43,11 @@ class LoopAction(Action, ABC):  # pytype: disable=base-class-error
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> bool:
-        # pytype: disable=attribute-error
         return tracker.active_loop_name == self.name()
-        # pytype: enable=attribute-error
 
     # default implementation checks if form active
     def _default_activation_events(self) -> List[Event]:
-        return [ActiveLoop(self.name())]  # pytype: disable=attribute-error
+        return [ActiveLoop(self.name())]
 
     async def activate(
         self,

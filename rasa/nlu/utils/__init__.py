@@ -3,6 +3,7 @@ import re
 from typing import Any, Optional, Text
 from pathlib import Path
 
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 
 
@@ -46,11 +47,24 @@ def is_model_dir(model_dir: Text) -> bool:
 
 
 def is_url(resource_name: Text) -> bool:
-    """Return True if string is an http, ftp, or file URL path.
+    """Check whether the url specified is a well formed one.
 
-    This implementation is the same as the one used by matplotlib"""
+    Regex adapted from https://stackoverflow.com/a/7160778/3001665
 
-    URL_REGEX = re.compile(r"http://|https://|ftp://|file://|file:\\")
+    Args:
+        resource_name: Remote URL to validate
+
+    Returns: `True` if valid, otherwise `False`.
+    """
+    URL_REGEX = re.compile(
+        r"^(?:http|ftp|file)s?://"  # http:// or https:// or file://
+        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"  # domain
+        r"localhost|"  # localhost
+        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # or ip
+        r"(?::\d+)?"  # optional port
+        r"(?:/?|[/?]\S+)$",
+        re.IGNORECASE,
+    )
     return URL_REGEX.match(resource_name) is not None
 
 
@@ -62,7 +76,8 @@ def remove_model(model_dir: Text) -> bool:
         shutil.rmtree(model_dir)
         return True
     else:
-        raise ValueError(
-            "Cannot remove {}, it seems it is not a model "
-            "directory".format(model_dir)
+        raise RasaException(
+            f"Failed to remove {model_dir}, it seems it is not a model "
+            f"directory. E.g. a directory which contains sub directories "
+            f"is considered unsafe to remove."
         )
