@@ -5,7 +5,7 @@ from typing import Any, Optional, Text, List, Type, Dict, Tuple
 
 from rasa.core.utils import get_dict_hash
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.components import Component
+from rasa.nlu.components import Component, UnsupportedLanguageError
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.features import Features
@@ -90,6 +90,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def create(
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
     ) -> "DenseFeaturizer":
+        language = config.language
+        if not cls.can_handle_language(language):
+            # check failed
+            raise UnsupportedLanguageError(cls.name, language)
         # TODO: remove this when HFTransformersNLP is removed for good
         hf_transformers_loaded = "HFTransformersNLP" in config.component_names
         return cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
