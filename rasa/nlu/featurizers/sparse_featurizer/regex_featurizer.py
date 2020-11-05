@@ -66,7 +66,7 @@ class RegexFeaturizer(SparseFeaturizer):
             training_data,
             use_lookup_tables=self.component_config["use_lookup_tables"],
             use_regexes=self.component_config["use_regexes"],
-            config_language=config.language,
+            config_language=lambda config: config.language if config else None,
         )
 
         for example in training_data.training_examples:
