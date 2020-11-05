@@ -613,7 +613,8 @@ class DialogueStateTracker:
     def as_story(self, include_source: bool = False) -> "Story":
         """Dump the tracker as a story in the Rasa Core story format.
 
-        Returns the dumped tracker as a string."""
+        Returns the dumped tracker as a string.
+        """
         from rasa.shared.core.training_data.structures import Story
 
         story_name = (

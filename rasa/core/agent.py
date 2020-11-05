@@ -548,13 +548,13 @@ class Agent:
         sender_id: Text,
         action: Text,
         output_channel: OutputChannel,
-        policy: Text,
-        confidence: float,
+        policy: Optional[Text],
+        confidence: Optional[float],
     ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
         processor = self.create_processor()
         prediction = PolicyPrediction.for_action_name(
-            self.domain, action, policy, confidence
+            self.domain, action, policy, confidence or 1
         )
         return await processor.execute_action(
             sender_id, action, output_channel, self.nlg, prediction

@@ -105,11 +105,38 @@ class MessageProcessor:
         return None
 
     async def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
+        """Predict the next action for the current conversation state.
 
+        Args:
+            sender_id: Conversation ID.
+
+        Returns:
+            The prediction for the next action. `None` if no domain or policies loaded.
+        """
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.fetch_tracker_and_update_session(sender_id)
+        result = self.predict_next_with_tracker(tracker)
 
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
+
+        return result
+
+    def predict_next_with_tracker(
+        self,
+        tracker: DialogueStateTracker,
+        verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART,
+    ) -> Optional[Dict[Text, Any]]:
+        """Predict the next action for a given conversation state.
+
+        Args:
+            tracker: A tracker representing a conversation state.
+            verbosity: Verbosity for the returned conversation state.
+
+        Returns:
+            The prediction for the next action. `None` if no domain or policies loaded.
+        """
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             rasa.shared.utils.io.raise_warning(
@@ -120,8 +147,7 @@ class MessageProcessor:
             return None
 
         prediction = self._get_next_action_probabilities(tracker)
-        # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+
         scores = [
             {"action": a, "score": p}
             for a, p in zip(self.domain.action_names, prediction.probabilities)
@@ -130,7 +156,7 @@ class MessageProcessor:
             "scores": scores,
             "policy": prediction.policy_name,
             "confidence": prediction.max_confidence,
-            "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
+            "tracker": tracker.current_state(verbosity),
         }
 
     async def _update_tracker_session(
@@ -289,7 +315,22 @@ class MessageProcessor:
         nlg: NaturalLanguageGenerator,
         prediction: PolicyPrediction,
     ) -> Optional[DialogueStateTracker]:
+        """Execute an action for a conversation.
 
+        Note that this might lead to unexpected bot behavior. Rather use an intent
+        to execute certain behavior within a conversation (e.g. by using
+        `trigger_external_user_uttered`).
+
+        Args:
+            sender_id: The ID of the conversation.
+            action_name: The name of the action which should be executed.
+            output_channel: The output channel which should be used for bot responses.
+            nlg: The response generator.
+            prediction: The prediction for the action.
+
+        Returns:
+            The new conversation state. Note that the new state is also persisted.
+        """
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
@@ -652,8 +693,8 @@ class MessageProcessor:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
         Reminders with the same `id` property will overwrite one another
-        (i.e. only one of them will eventually run)."""
-
+        (i.e. only one of them will eventually run).
+        """
         for e in events:
             if not isinstance(e, ReminderScheduled):
                 continue
@@ -673,7 +714,6 @@ class MessageProcessor:
         events: List[Event], tracker: DialogueStateTracker
     ) -> None:
         """Cancel reminders that match the `ReminderCancelled` event."""
-
         # All Reminders specified by ReminderCancelled events will be cancelled
         for event in events:
             if isinstance(event, ReminderCancelled):
