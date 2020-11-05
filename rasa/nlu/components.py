@@ -7,7 +7,6 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.shared.constants import DEFAULT_DATA_PATH
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
