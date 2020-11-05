@@ -49,8 +49,7 @@ class LUISEmulator(Emulator):
             # (it's possible because its roles are unique):
             # https://docs.microsoft.com/en-us/azure/cognitive-services/LUIS/luis-migration-api-v3#entity-role-name-instead-of-entity-name
             key = e.get(ENTITY_ATTRIBUTE_ROLE, e[ENTITY_ATTRIBUTE_TYPE])
-
-            entities.update({key: [e[ENTITY_ATTRIBUTE_VALUE]]})
+            entities[key] = [e[ENTITY_ATTRIBUTE_VALUE]]
 
             entities["$instance"][key] = [
                 {
