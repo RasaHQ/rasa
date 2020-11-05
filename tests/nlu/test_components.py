@@ -210,7 +210,7 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: P
 
     with pytest.warns(UserWarning) as record:
         await train(
-            _config, data="./data/examples/rasa/demo-rasa.json", path=str(tmp_path),
+            _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
         )
 
     assert "You have provided an invalid key" in record[0].message.args[0]

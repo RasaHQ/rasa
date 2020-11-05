@@ -164,7 +164,7 @@ class Trainer:
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
-        for i in range(len(cfg.pipeline)):
+        for index, pipeline_component in enumerate(cfg.pipeline):
             component_cfg = cfg.for_component(i)
             component = component_builder.create_component(component_cfg, cfg)
             components.validate_component_keys(component, cfg.pipeline[i])

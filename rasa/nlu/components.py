@@ -96,13 +96,8 @@ def validate_component_keys(
 ) -> None:
     """Validates that all keys for a component are valid.
 
-    Raises:
-        UserWarning: If the component has a key specified that is not used
-            by the component class, it is likely a mistake in the pipeline
-
     Args:
         component: The component class
-
         component_config: The user-provided config for the component in the pipeline
     """
     component_name = component_config.get("name")
