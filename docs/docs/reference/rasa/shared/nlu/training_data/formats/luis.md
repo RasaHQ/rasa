@@ -9,6 +9,8 @@ title: rasa.shared.nlu.training_data.formats.luis
 class LuisReader(JsonTrainingDataReader)
 ```
 
+Reads LUIS training data.
+
 #### read\_from\_json
 
 ```python
