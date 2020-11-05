@@ -363,27 +363,31 @@ def _intent_response_key_from_parsed_data(parsed: Dict[Text, Any]) -> Text:
 
     base_intent = parsed.get(INTENT, {}).get(INTENT_NAME_KEY, {})
 
-    # return only base intent if intent is not a retrieval intent
-    if (
-        base_intent
-        not in parsed[RESPONSE_SELECTOR][RESPONSE_SELECTOR_RETRIEVAL_INTENTS]
-    ):
+    try:
+        # return only base intent if intent is not a retrieval intent
+        if (
+            base_intent
+            not in parsed[RESPONSE_SELECTOR][RESPONSE_SELECTOR_RETRIEVAL_INTENTS]
+        ):
+            return base_intent
+
+        # extract full retrieval intent
+        # if the response selector parameter was not specified in config,
+        # the response selector contains a "default" key
+        if RESPONSE_SELECTOR_DEFAULT_INTENT in parsed.get(RESPONSE_SELECTOR, {}):
+            full_retrieval_intent = parsed[RESPONSE_SELECTOR][
+                RESPONSE_SELECTOR_DEFAULT_INTENT
+            ][RESPONSE][INTENT_RESPONSE_KEY]
+        else:
+            # if specified, the response selector contains the base intent as key
+            full_retrieval_intent = parsed[RESPONSE_SELECTOR][base_intent][RESPONSE][
+                INTENT_RESPONSE_KEY
+            ]
+
+        return full_retrieval_intent
+
+    except KeyError:
         return base_intent
-
-    # extract full retrieval intent
-    # if the response selector parameter was not specified in config,
-    # the response selector contains a "default" key
-    if RESPONSE_SELECTOR_DEFAULT_INTENT in parsed.get(RESPONSE_SELECTOR, {}):
-        full_retrieval_intent = parsed[RESPONSE_SELECTOR][
-            RESPONSE_SELECTOR_DEFAULT_INTENT
-        ][RESPONSE][INTENT_RESPONSE_KEY]
-    else:
-        # if specified, the response selector contains the base intent as key
-        full_retrieval_intent = parsed[RESPONSE_SELECTOR][base_intent][RESPONSE][
-            INTENT_RESPONSE_KEY
-        ]
-
-    return full_retrieval_intent
 
 
 def _collect_user_uttered_predictions(
