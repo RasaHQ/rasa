@@ -1045,8 +1045,11 @@ class RasaModelData:
     ) -> Union[List[List[np.ndarray]], List[List[scipy.sparse.spmatrix]]]:
         return list(
             filter(
+                # filter empty lists created by another filter
                 lambda x: len(x) > 0,
                 [
+                    # filter all the "fake" inputs, we know the input is "fake",
+                    # when sequence dimension is `0`
                     list(filter(lambda x: x.shape[0] > 0, array_of_features))
                     for array_of_features in array_of_array_of_features
                 ],
@@ -1096,9 +1099,13 @@ class RasaModelData:
         # the original shape and the original dialogue length is passed on to the model
         # it can be used to transform the 3D tensor back into 4D
 
+        number_of_features = array_of_array_of_dense[0][0].shape[-1]
         array_of_array_of_dense = RasaModelData._filter_4d_arrays(
             array_of_array_of_dense
         )
+        if not array_of_array_of_dense:
+            # return empty 3d array with appropriate last dims
+            return np.zeros((0, 0, number_of_features), dtype=np.float32)
 
         combined_dialogue_len = sum(
             len(array_of_dense) for array_of_dense in array_of_array_of_dense
@@ -1112,11 +1119,7 @@ class RasaModelData:
         )
 
         data_padded = np.zeros(
-            [
-                combined_dialogue_len,
-                max_seq_len,
-                array_of_array_of_dense[0][0].shape[-1],
-            ],
+            [combined_dialogue_len, max_seq_len, number_of_features,],
             dtype=array_of_array_of_dense[0][0].dtype,
         )
 
@@ -1181,9 +1184,17 @@ class RasaModelData:
         # the original shape and the original dialogue length is passed on to the model
         # it can be used to transform the 3D tensor back into 4D
 
+        number_of_features = array_of_array_of_sparse[0][0].shape[-1]
         array_of_array_of_sparse = RasaModelData._filter_4d_arrays(
             array_of_array_of_sparse
         )
+        if not array_of_array_of_sparse:
+            # create empty array with appropriate last dims
+            return [
+                np.empty((0, 3), dtype=np.int64),
+                np.array([], dtype=np.float32),
+                np.array([0, 0, number_of_features], dtype=np.int64),
+            ]
 
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
@@ -1223,7 +1234,6 @@ class RasaModelData:
             ]
         )
 
-        number_of_features = array_of_array_of_sparse[0][0].shape[-1]
         shape = np.array((combined_dialogue_len, max_seq_len, number_of_features))
 
         return [

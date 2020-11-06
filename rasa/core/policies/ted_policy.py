@@ -761,9 +761,9 @@ class TED(TransformerRasaModel):
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
-
+        # labels cannot have all features "fake"
         all_labels_encoded = {
-            key: self._encode_features_per_attribute(self.tf_label_data, key)
+            key: self._encode_real_features_per_attribute(self.tf_label_data, key)
             for key in self.tf_label_data.keys()
             if key != LABEL_KEY
         }
@@ -815,7 +815,38 @@ class TED(TransformerRasaModel):
 
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
-    ) -> Optional[tf.Tensor]:
+    ) -> tf.Tensor:
+
+        return tf.cond(
+            tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
+            lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),
+            lambda: self._encode_fake_features_per_attribute(tf_batch_data, attribute),
+        )
+
+    def _encode_fake_features_per_attribute(
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
+    ) -> tf.Tensor:
+        attribute_features_list = tf_batch_data[attribute][SENTENCE]
+        attribute_mask = tf_batch_data[attribute][MASK][0]
+
+        batch_dim = tf.shape(attribute_mask)[0]
+        dialogue_dim = tf.shape(attribute_mask)[1]
+
+        if attribute in set(SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE):
+            units = self.config[ENCODING_DIMENSION]
+        else:
+            units = 0
+            for f in attribute_features_list:
+                if isinstance(f, tf.SparseTensor):
+                    units += self.config[DENSE_DIMENSION][attribute]
+                else:
+                    units += f.shape[-1]
+
+        return tf.zeros((batch_dim, dialogue_dim, units), dtype=tf.float32)
+
+    def _encode_real_features_per_attribute(
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
+    ) -> tf.Tensor:
         """Encodes features for a given attribute.
 
         Args:
@@ -917,7 +948,6 @@ class TED(TransformerRasaModel):
         Returns:
             The converted attribute features
         """
-        #
 
         # in order to convert the attribute features with shape
         # combined batch-size and dialogue length x 1 x units
