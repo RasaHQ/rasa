@@ -4,7 +4,6 @@ from pathlib import Path
 from collections import defaultdict
 
 import numpy as np
-from tensorflow import RaggedTensorSpec
 
 import rasa.shared.utils.io
 import tensorflow as tf
@@ -819,8 +818,6 @@ class TED(TransformerRasaModel):
         Returns:
             A tensor combining  all features for `attribute`
         """
-        # attribute_mask = tf_batch_data[attribute][MASK][0]
-
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
             _sequence_lengths = tf.cast(
                 tf_batch_data[attribute][SEQUENCE_LENGTH][0], dtype=tf.int32
