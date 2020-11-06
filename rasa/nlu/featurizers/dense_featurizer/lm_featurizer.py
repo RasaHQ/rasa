@@ -3,7 +3,7 @@ import logging
 
 from typing import Any, Optional, Text, List, Type, Dict, Tuple
 
-from rasa.core.utils import get_dict_hash
+import rasa.core.utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component, UnsupportedLanguageError
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
@@ -177,7 +177,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         """
         weights = component_meta.get("model_weights") or {}
 
-        return f"{cls.name}-{component_meta.get('model_name')}-{get_dict_hash(weights)}"
+        return (
+            f"{cls.name}-{component_meta.get('model_name')}-"
+            f"{rasa.core.utils.get_dict_hash(weights)}"
+        )
 
     @classmethod
     def required_packages(cls) -> List[Text]:

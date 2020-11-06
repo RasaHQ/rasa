@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 
 import rasa.shared.utils.io
-from rasa.core.utils import get_dict_hash
+import rasa.core.utils
 from rasa.utils import common
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.model import Metadata
@@ -402,7 +402,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         Returns: key of the cache for future retrievals.
         """
         _config = common.update_existing_keys(cls.defaults, component_meta)
-        return f"{cls.name}-{get_dict_hash(_config)}"
+        return f"{cls.name}-{rasa.core.utils.get_dict_hash(_config)}"
 
     def provide_context(self) -> Dict[Text, Any]:
         """Store the model in pipeline context for future use."""

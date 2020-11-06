@@ -139,86 +139,86 @@ word vectors in your pipeline.
 
 ### HFTransformersNLP
 
-    :::caution Deprecated
-    The `HFTransformersNLP` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
-    now implements its behavior.
-    :::
+:::caution Deprecated
+The `HFTransformersNLP` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+now implements its behavior.
+:::
 
-    * **Short**
+* **Short**
 
-      HuggingFace's Transformers based pre-trained language model initializer
-
-
-
-    * **Outputs**
-
-      Nothing
+  HuggingFace's Transformers based pre-trained language model initializer
 
 
 
-    * **Requires**
+* **Outputs**
 
-      Nothing
-
-
-
-    * **Description**
-
-      Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
-      featurization to compute sequence and sentence level representations for each example in the training data.
-      Include [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) to utilize the output of this
-      component for downstream NLU models.
-
-      :::note
-      To use `HFTransformersNLP` component, install Rasa Open Source with `pip3 install rasa[transformers]`.
-
-      :::
+  Nothing
 
 
 
-    * **Configuration**
+* **Requires**
 
-      You should specify what language model to load via the parameter `model_name`. See the below table for the
-      available language models.
-      Additionally, you can also specify the architecture variation of the chosen language model by specifying the
-      parameter `model_weights`.
-      The full list of supported architectures can be found in the
-      [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
-      If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+  Nothing
 
-      ```
-      +----------------+--------------+-------------------------+
-      | Language Model | Parameter    | Default value for       |
-      |                | "model_name" | "model_weights"         |
-      +----------------+--------------+-------------------------+
-      | BERT           | bert         | rasa/LaBSE              |
-      +----------------+--------------+-------------------------+
-      | GPT            | gpt          | openai-gpt              |
-      +----------------+--------------+-------------------------+
-      | GPT-2          | gpt2         | gpt2                    |
-      +----------------+--------------+-------------------------+
-      | XLNet          | xlnet        | xlnet-base-cased        |
-      +----------------+--------------+-------------------------+
-      | DistilBERT     | distilbert   | distilbert-base-uncased |
-      +----------------+--------------+-------------------------+
-      | RoBERTa        | roberta      | roberta-base            |
-      +----------------+--------------+-------------------------+
-      ```
 
-      The following configuration loads the language model BERT:
 
-      ```yaml-rasa
-      pipeline:
-        - name: HFTransformersNLP
-          # Name of the language model to use
-          model_name: "bert"
-          # Pre-Trained weights to be loaded
-          model_weights: "rasa/LaBSE"
+* **Description**
 
-          # An optional path to a specific directory to download and cache the pre-trained model weights.
-          # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
-          cache_dir: null
-      ```
+  Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
+  featurization to compute sequence and sentence level representations for each example in the training data.
+  Include [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) to utilize the output of this
+  component for downstream NLU models.
+
+  :::note
+  To use `HFTransformersNLP` component, install Rasa Open Source with `pip3 install rasa[transformers]`.
+
+  :::
+
+
+
+* **Configuration**
+
+  You should specify what language model to load via the parameter `model_name`. See the below table for the
+  available language models.
+  Additionally, you can also specify the architecture variation of the chosen language model by specifying the
+  parameter `model_weights`.
+  The full list of supported architectures can be found in the
+  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
+  If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+
+  ```
+  +----------------+--------------+-------------------------+
+  | Language Model | Parameter    | Default value for       |
+  |                | "model_name" | "model_weights"         |
+  +----------------+--------------+-------------------------+
+  | BERT           | bert         | rasa/LaBSE              |
+  +----------------+--------------+-------------------------+
+  | GPT            | gpt          | openai-gpt              |
+  +----------------+--------------+-------------------------+
+  | GPT-2          | gpt2         | gpt2                    |
+  +----------------+--------------+-------------------------+
+  | XLNet          | xlnet        | xlnet-base-cased        |
+  +----------------+--------------+-------------------------+
+  | DistilBERT     | distilbert   | distilbert-base-uncased |
+  +----------------+--------------+-------------------------+
+  | RoBERTa        | roberta      | roberta-base            |
+  +----------------+--------------+-------------------------+
+  ```
+
+  The following configuration loads the language model BERT:
+
+  ```yaml-rasa
+  pipeline:
+    - name: HFTransformersNLP
+      # Name of the language model to use
+      model_name: "bert"
+      # Pre-Trained weights to be loaded
+      model_weights: "rasa/LaBSE"
+
+      # An optional path to a specific directory to download and cache the pre-trained model weights.
+      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      cache_dir: null
+  ```
 
 
   ## Tokenizers
@@ -417,7 +417,7 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
 
   * **Short**
 
-    Tokenizer using [ConveRT](https://github.com/PolyAI-LDN/polyai-models#convert) model.
+    Tokenizer using [ConveRT](ht tps://github.com/PolyAI-LDN/polyai-models#convert) model.
 
 
 
@@ -479,41 +479,41 @@ The `LanguageModelTokenizer` is deprecated and will be removed in a future relea
 now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
 
-  * **Short**
+* **Short**
 
-    Tokenizer from pre-trained language models
-
-
-
-  * **Outputs**
-
-    `tokens` for user messages, responses (if present), and intents (if specified)
+Tokenizer from pre-trained language models
 
 
 
-  * **Requires**
+* **Outputs**
 
-    [HFTransformersNLP](./components.mdx#hftransformersnlp)
-
-
-
-  * **Description**
-
-    Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
-    Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
+`tokens` for user messages, responses (if present), and intents (if specified)
 
 
 
-  * **Configuration**
+* **Requires**
 
-    ```yaml-rasa
-    pipeline:
-    - name: "LanguageModelTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-    ```
+[HFTransformersNLP](./components.mdx#hftransformersnlp)
+
+
+
+* **Description**
+
+Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
+Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
+
+
+
+* **Configuration**
+
+```yaml-rasa
+pipeline:
+- name: "LanguageModelTokenizer"
+  # Flag to check whether to split intents
+  "intent_tokenization_flag": False
+  # Symbol on which intent should be split
+  "intent_split_symbol": "_"
+```
 
 
 ## Featurizers
