@@ -10,7 +10,7 @@ pipeline:
     min_ngram: 1
     max_ngram: 4
   - name: DIETClassifier
-    epochs: 2
+    epochs: 200
 policies:
 - name: TEDPolicy
-  epochs: 2
+  epochs: 200
