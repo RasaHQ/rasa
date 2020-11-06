@@ -522,6 +522,14 @@ class PikaMessageProcessor:
                 "messages on this worker."
             )
 
+    def _run_pika_io_loop_in_thread(self) -> None:
+        thread = threading.Thread(target=self._run_pika_io_loop, daemon=True)
+        thread.start()
+
+    def _run_pika_io_loop(self) -> None:
+        # noinspection PyUnresolvedReferences
+        self._connection.ioloop.start()
+
     def run(self, queue: "multiprocessing.Queue"):
         """Run the message processor by connecting to RabbitMQ and then
         starting the IOLoop to block and allow the SelectConnection to operate.
@@ -531,9 +539,7 @@ class PikaMessageProcessor:
         """
         self._process_queue = queue
         self._connection = self._connect()
-
-        # noinspection PyUnresolvedReferences
-        self._connection.ioloop.start()
+        self._run_pika_io_loop_in_thread()
 
 
 class PikaEventBroker(EventBroker):
