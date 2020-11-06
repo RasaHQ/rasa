@@ -76,7 +76,7 @@ from tests.nlu.utilities import write_file_config
 
 
 @pytest.yield_fixture(scope="session")
-def event_loop(_: Request) -> Iterator[asyncio.AbstractEventLoop]:
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
