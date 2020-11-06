@@ -254,6 +254,8 @@ def test_same_file_names_get_resolved(tmp_path):
                 "data/examples/dialogflow/entities/cuisine.json",
                 "data/examples/dialogflow/entities/cuisine_entries_en.json",
                 "data/examples/dialogflow/entities/cuisine_entries_es.json",
+                "data/examples/dialogflow/entities/flightNumber.json",
+                "data/examples/dialogflow/entities/flightNumber_entries_en.json",
                 "data/examples/dialogflow/entities/location.json",
                 "data/examples/dialogflow/entities/location_entries_en.json",
                 "data/examples/dialogflow/entities/location_entries_es.json",
@@ -273,14 +275,7 @@ def test_same_file_names_get_resolved(tmp_path):
                 "data/examples/dialogflow/package.json",
             ],
         ),
-        (
-            "luis",
-            [
-                "data/examples/luis/demo-restaurants_v2.json",
-                "data/examples/luis/demo-restaurants_v4.json",
-                "data/examples/luis/demo-restaurants_v5.json",
-            ],
-        ),
+        ("luis", ["data/examples/luis/demo-restaurants_v7.json",],),
         (
             "rasa",
             [
