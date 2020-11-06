@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import time
 from collections import deque
 from enum import Enum
 from typing import (
@@ -589,10 +590,31 @@ class DialogueStateTracker:
             for e in domain.slots_for_entities(event.parse_data["entities"]):
                 self.update(e)
 
+    def update_with_events(
+        self,
+        new_events: List[Event],
+        domain: Optional[Domain],
+        override_timestamp: bool = True,
+    ) -> None:
+        """Adds multiple events to the tracker.
+
+        Args:
+            new_events: Events to apply.
+            domain: The current model's domain.
+            override_timestamp: If `True` reset all timestamps of the events. As the
+                events are usually created at some earlier point, this makes sure that
+                all new events come after any current tracker events.
+        """
+        for e in new_events:
+            if override_timestamp:
+                e.timestamp = time.time()
+            self.update(e, domain)
+
     def as_story(self, include_source: bool = False) -> "Story":
         """Dump the tracker as a story in the Rasa Core story format.
 
-        Returns the dumped tracker as a string."""
+        Returns the dumped tracker as a string.
+        """
         from rasa.shared.core.training_data.structures import Story
 
         story_name = (
@@ -839,7 +861,7 @@ def get_trackers_for_conversation_sessions(
 
     return [
         DialogueStateTracker.from_events(
-            tracker.sender_id, evts, tracker.slots, sender_source=tracker.sender_source,
+            tracker.sender_id, evts, tracker.slots, sender_source=tracker.sender_source
         )
         for evts in split_conversations
     ]
