@@ -122,6 +122,14 @@ for more implementation.
 
   A deep copy of the current domain.
 
+#### \_\_hash\_\_
+
+```python
+ | __hash__() -> int
+```
+
+Returns a unique hash for the domain.
+
 #### user\_actions\_and\_forms
 
 ```python

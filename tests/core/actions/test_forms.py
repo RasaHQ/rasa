@@ -1101,12 +1101,9 @@ async def test_ask_for_slot(
     monkeypatch.setattr(action, action.action_from_name.__name__, action_from_name)
 
     form = FormAction("my_form", endpoint_config)
+    domain = Domain.from_dict(domain)
     await form._ask_for_slot(
-        Domain.from_dict(domain),
-        None,
-        None,
-        slot_name,
-        DialogueStateTracker.from_events("dasd", []),
+        domain, None, None, slot_name, DialogueStateTracker.from_events("dasd", [])
     )
 
-    action_from_name.assert_called_once_with(expected_action, endpoint_config, ANY)
+    action_from_name.assert_called_once_with(expected_action, domain, endpoint_config)

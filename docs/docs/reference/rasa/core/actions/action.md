@@ -81,10 +81,21 @@ the corresponding retrieval intent name.
 #### action\_from\_name
 
 ```python
-action_from_name(name: Text, action_endpoint: Optional[EndpointConfig], user_actions: List[Text], should_use_form_action: bool = False, retrieval_intents: Optional[List[Text]] = None) -> "Action"
+action_from_name(name: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]) -> "Action"
 ```
 
-Return an action instance for the name.
+Retrieves an action by its name.
+
+**Arguments**:
+
+- `name` - The name of the action.
+- `domain` - The current model domain.
+- `action_endpoint` - The endpoint to execute custom actions.
+  
+
+**Returns**:
+
+  The instantiated action.
 
 #### create\_bot\_utterance
 
