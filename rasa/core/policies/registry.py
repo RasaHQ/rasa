@@ -8,6 +8,9 @@ from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 
 # noinspection PyUnresolvedReferences
+from rasa.core.policies.sts_fallback import STSFallbackPolicy
+
+# noinspection PyUnresolvedReferences
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 
 # noinspection PyUnresolvedReferences
