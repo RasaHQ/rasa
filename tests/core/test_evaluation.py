@@ -274,8 +274,6 @@ async def test_retrieval_intent_wrong_prediction(
 
     failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
-    print(failed_stories)
-
     # check if the predicted entry contains full retrieval intent
     assert (
         f"- intent: mood_unhappy  # predicted: chitchat/ask_name: What is your name?"
