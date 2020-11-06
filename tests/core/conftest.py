@@ -38,6 +38,8 @@ INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
+RETRIEVAL_INTENT_STORY_FILE = "data/test_evaluation/retrieval_intent_story.yml"
+
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
 STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
@@ -215,6 +217,20 @@ async def form_bot_agent(trained_async) -> Agent:
         training_files=[
             "examples/formbot/data/rules.yml",
             "examples/formbot/data/stories.yml",
+        ],
+    )
+
+    return Agent.load_local_model(zipped_model)
+
+
+@pytest.fixture
+async def response_selector_agent(trained_async) -> Agent:
+    zipped_model = await trained_async(
+        domain="examples/responseselectorbot/domain.yml",
+        config="examples/responseselectorbot/config.yml",
+        training_files=[
+            "examples/responseselectorbot/data/rules.yml",
+            "examples/responseselectorbot/data/stories.yml",
         ],
     )
 

@@ -28,6 +28,7 @@ from tests.core.conftest import (
     END_TO_END_STORY_FILE,
     E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER,
     STORY_FILE_TRIPS_CIRCUIT_BREAKER,
+    RETRIEVAL_INTENT_STORY_FILE,
 )
 
 
@@ -242,3 +243,15 @@ def test_event_has_proper_implementation(
     actual_entities = _clean_entity_results(text, [entity])
 
     assert actual_entities[0] == expected_entity
+
+
+async def test_retrieval_intent(response_selector_agent: Agent):
+    generator = await _create_data_generator(
+        RETRIEVAL_INTENT_STORY_FILE, response_selector_agent, use_e2e=True
+    )
+    test_stories = generator.generate_story_trackers()
+
+    story_evaluation, num_stories = await _collect_story_predictions(
+        test_stories, response_selector_agent, use_e2e=True
+    )
+    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
