@@ -300,7 +300,12 @@ class ResponseSelector(DIETClassifier):
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
+
+        Args:
+            training_data: training data to preprocessed.
         """
+        # Collect all retrieval intents present in the data before filtering
+        self.all_retrieval_intents = list(training_data.retrieval_intents)
 
         if self.retrieval_intent:
             training_data = training_data.filter_training_examples(
@@ -321,7 +326,6 @@ class ResponseSelector(DIETClassifier):
         )
 
         self.responses = training_data.responses
-        self.all_retrieval_intents = list(training_data.retrieval_intents)
 
         if not label_id_index_mapping:
             # no labels are present to train
