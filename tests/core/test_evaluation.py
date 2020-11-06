@@ -29,6 +29,7 @@ from tests.core.conftest import (
     E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER,
     STORY_FILE_TRIPS_CIRCUIT_BREAKER,
     RETRIEVAL_INTENT_STORY_FILE,
+    RETRIEVAL_INTENT_WRONG_PREDICTION,
 )
 
 
@@ -254,4 +255,29 @@ async def test_retrieval_intent(response_selector_agent: Agent):
     story_evaluation, num_stories = await _collect_story_predictions(
         test_stories, response_selector_agent, use_e2e=True
     )
+    # check that test story can either specify base intent or full retrieval intent
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+
+
+async def test_retrieval_intent_wrong_prediction(
+    tmpdir: Path, response_selector_agent: Agent
+):
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await evaluate_stories(
+        stories=RETRIEVAL_INTENT_WRONG_PREDICTION,
+        agent=response_selector_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
+
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
+
+    print(failed_stories)
+
+    # check if the predicted entry contains full retrieval intent
+    assert (
+        f"- intent: mood_unhappy  # predicted: chitchat/ask_name: What is your name?"
+        in failed_stories
+    )

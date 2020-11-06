@@ -40,6 +40,10 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 RETRIEVAL_INTENT_STORY_FILE = "data/test_evaluations/retrieval_intent_story.yml"
 
+RETRIEVAL_INTENT_WRONG_PREDICTION = (
+    "data/test_evaluations/retrieval_intent_wrong_prediction.yml"
+)
+
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
 STORY_FILE_TRIPS_CIRCUIT_BREAKER = (
