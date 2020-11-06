@@ -1114,6 +1114,12 @@ class TED(TransformerRasaModel):
         Returns:
             The output to predict.
         """
+        if self.all_labels_embed is None:
+            raise ValueError(
+                "The model was not prepared for prediction. "
+                "Call `prepare_for_predict` first."
+            )
+
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
