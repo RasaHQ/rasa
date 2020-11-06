@@ -238,20 +238,13 @@ class TrainingDataGenerator:
         else:
             return f"data generation round {phase}"
 
-    def generate(self, include_rules: bool = True) -> List[TrackerWithCachedStates]:
+    def generate(self) -> List[TrackerWithCachedStates]:
         """Generate trackers from stories and rules.
-
-        Args:
-            include_rules: Whether to include rules in the graph
 
         Returns:
             The generated trackers.
         """
-        return (
-            self.generate_story_trackers() + self._generate_rule_trackers()
-            if include_rules
-            else self.generate_story_trackers()
-        )
+        return self.generate_story_trackers() + self._generate_rule_trackers()
 
     def generate_story_trackers(self) -> List[TrackerWithCachedStates]:
         """Generate trackers from stories (exclude rule trackers).
