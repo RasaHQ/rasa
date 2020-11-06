@@ -174,14 +174,14 @@ class SlackInput(InputChannel):
             slack_retry_reason_header: Slack HTTP header name indicating reason
                 that slack send retry request.
             slack_retry_number_header: Slack HTTP header name indicating
-                the attempt number
+                the attempt number.
             errors_ignore_retry: Any error codes given by Slack
                 included in this list will be ignored.
                 Error codes are listed
                 `here <https://api.slack.com/events-api#errors>`_.
-            use_threads: If set to True, your bot will send responses in Slack as
+            use_threads: If set to `True`, your bot will send responses in Slack as
                 a threaded message. Responses will appear as a normal Slack message
-                if set to False.
+                if set to `False`.
             slack_signing_secret: Slack creates a unique string for your app and
                 shares it with you. This allows us to verify requests from Slack
                 with confidence by verifying signatures using your signing secret.
@@ -237,7 +237,7 @@ class SlackInput(InputChannel):
         )
 
     @staticmethod
-    def _sanitize_user_message(text, uids_to_remove: Optional[List[Text]]) -> Text:
+    def _sanitize_user_message(text: Text, uids_to_remove: Optional[List[Text]]) -> Text:
         """Remove superfluous/wrong/problematic tokens from a message.
 
         Probably a good starting point for pre-formatting of user-provided text
@@ -462,7 +462,7 @@ class SlackInput(InputChannel):
                 return response.text(
                     "Message is not properly signed with a valid "
                     "X-Slack-Signature header",
-                    status=400,
+                    status=HTTPStatus.BAD_REQUEST,
                 )
 
             # Slack API sends either a JSON-encoded or a URL-encoded body
