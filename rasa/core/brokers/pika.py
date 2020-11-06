@@ -1,10 +1,9 @@
 import json
 import logging
 import os
-import sys
 import time
-import multiprocessing
-import threading
+import asyncio
+import aio_pika
 from contextlib import contextmanager
 from typing import (
     Callable,
@@ -19,6 +18,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import rasa.utils.common
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 from rasa.core.brokers.broker import EventBroker
@@ -488,8 +488,7 @@ class PikaMessageProcessor:
 
         self._channel = channel
 
-        thread = threading.Thread(target=self._process_messages)
-        thread.start()
+        self._process_messages()
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
@@ -539,19 +538,6 @@ class PikaMessageProcessor:
 class PikaEventBroker(EventBroker):
     """Pika-based event broker for publishing messages to RabbitMQ."""
 
-    NUMBER_OF_MP_WORKERS = 1
-    MP_CONTEXT = None
-
-    if sys.platform == "darwin" and sys.version_info < (3, 8):
-        # On macOS, Python 3.8 has switched the default start method to "spawn". To
-        # quote the documentation: "The fork start method should be considered
-        # unsafe as it can lead to crashes of the subprocess". Apply this fix when
-        # running on macOS on Python <= 3.7.x as well.
-
-        # See:
-        # https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
-        MP_CONTEXT = "spawn"
-
     def __init__(
         self,
         host: Text,
@@ -588,20 +574,15 @@ class PikaEventBroker(EventBroker):
         self.password = password
         self.port = port
         self.queues = queues
-        self.process: Optional[multiprocessing.Process] = None
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
         self.raise_on_failure = raise_on_failure
         self.pika_message_processor: Optional[PikaMessageProcessor] = None
-        self.process_queue: multiprocessing.Queue = self._get_mp_context().Queue()
 
-        self._connect()
+        # rasa.utils.common.run_in_loop(self.run())
 
     def __del__(self) -> None:
-        if self.pika_message_processor:
-            self.pika_message_processor.close()
-
-        if self.process and self.process.is_alive():
-            self.process.terminate()
+        # TODO(alwx)
+        pass
 
     def close(self) -> None:
         """Close the Pika connector."""
@@ -624,54 +605,27 @@ class PikaEventBroker(EventBroker):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def _connect(self) -> None:
-        parameters = _get_pika_parameters(
-            self.host, self.username, self.password, self.port
+    async def run(self) -> None:
+        self.connection = await aio_pika.connect_robust(
+            host=self.host,
+            login=self.username,
+            password=self.password,
+            port=self.port,
+            loop=asyncio.get_event_loop()
         )
 
-        self.pika_message_processor = PikaMessageProcessor(
-            parameters,
-            queues=self.queues
-        )
-        self.pika_connection_process = self._start_pika_connection_process()
+        channel = await self.connection.channel()
+        await channel.set_qos(prefetch_count=1)
 
-    def _get_mp_context(self) -> multiprocessing.context.BaseContext:
-        return multiprocessing.get_context(self.MP_CONTEXT)
+        await channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type=aio_pika.ExchangeType.FANOUT)
+        for queue in self.queues:
+            channel.declare_queue(queue=queue, durable=True)
 
-    def _start_pika_connection_process(self) -> Optional[multiprocessing.Process]:
-        if self.pika_message_processor:
-            process = multiprocessing.Process(
-                target=self.pika_message_processor.run, args=(self.process_queue,), daemon=True
-            )
-            process.start()
-            return process
 
-        return None
 
-    def _publish(self, body: Text, headers: MessageHeaders = None) -> None:
+    async def _publish(self, body: Text, headers: MessageHeaders = None) -> None:
         if not self.pika_message_processor:
-            self._connect()
-
-        self.process_queue.put((body, headers))
-
-    def is_ready(
-        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
-    ) -> bool:
-        """Spin until Pika is ready to process messages.
-
-        It typically takes 50 ms or so for the pika channel to open. We'll wait up
-        to 10 seconds just in case.
-
-        Args:
-            attempts: Number of retries.
-            wait_time_between_attempts_in_seconds: Wait time between retries.
-
-        Returns:
-            `True` if the channel is available, `False` otherwise.
-        """
-        return self.pika_message_processor and self.pika_message_processor.is_ready(
-            attempts, wait_time_between_attempts_in_seconds
-        )
+            await self.run()
 
     def publish(
         self,
