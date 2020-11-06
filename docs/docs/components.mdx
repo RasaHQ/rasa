@@ -476,7 +476,7 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
 
 :::caution Deprecated
 The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
-now implements its behavior.
+now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
 
   * **Short**
@@ -723,7 +723,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 * **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
-  Uses the pre-trained language model to compute vector representations of input text.
+  Uses a pre-trained language model to compute vector representations of input text.
 
   :::note
   Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
