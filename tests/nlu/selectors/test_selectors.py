@@ -122,7 +122,7 @@ def test_preprocess_selector_multiple_retrieval_intents():
 
     response_selector.preprocess_train_data(training_data)
 
-    assert response_selector.all_retrieval_intents == ["chitchat", "faq"]
+    assert sorted(response_selector.all_retrieval_intents) == ["chitchat", "faq"]
 
 
 @pytest.mark.parametrize(
