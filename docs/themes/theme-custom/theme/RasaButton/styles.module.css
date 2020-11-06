@@ -14,7 +14,7 @@
     cursor: pointer;
 }
 
-.rasaButton[disabled] {
+.button[disabled] {
     background-color: var(--ifm-color-gray-500);
     cursor: default;
 }
