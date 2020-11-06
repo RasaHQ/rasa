@@ -67,7 +67,7 @@ PREV_PREFIX = "prev_"
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
-SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
+SubState = Dict[Text, Union[Text, Tuple[Union[float, Text, Dict]]]]
 State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
