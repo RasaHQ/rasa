@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import multiprocessing
+import threading
 from contextlib import contextmanager
 from typing import (
     Callable,
@@ -301,7 +302,6 @@ class PikaMessageProcessor:
     def __init__(
         self,
         parameters: "Parameters",
-        get_message: Callable[[], Message],
         queues: Union[List[Text], Tuple[Text], Text, None],
     ) -> None:
         """Initialise Pika connector.
@@ -312,10 +312,10 @@ class PikaMessageProcessor:
         """
         self.parameters: "Parameters" = parameters
         self.queues: List[Text] = self._get_queues_from_args(queues)
-        self.get_message: Callable[[], Message] = get_message
 
         self._connection: Optional["SelectConnection"] = None
         self._channel: Optional["Channel"] = None
+        self._process_queue: Optional["multiprocessing.Queue"] = None
         self._closing = False
 
     def __del__(self) -> None:
@@ -476,18 +476,20 @@ class PikaMessageProcessor:
     def _on_channel_open(self, channel: "Channel") -> None:
         logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
 
-        self._channel = channel
-        self._channel.add_on_close_callback(self._on_channel_closed)
+        channel.add_on_close_callback(self._on_channel_closed)
 
         # declare exchange of type 'fanout' in order to publish to multiple queues
         # (https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
-        self._channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
+        channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
 
         for queue in self.queues:
-            self._channel.queue_declare(queue=queue, durable=True)
-            self._channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
+            channel.queue_declare(queue=queue, durable=True)
+            channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
-        self.process_messages()
+        self._channel = channel
+
+        thread = threading.Thread(target=self._process_messages)
+        thread.start()
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
@@ -503,12 +505,11 @@ class PikaMessageProcessor:
             properties=self._get_message_properties(headers),
         )
 
-    def process_messages(self) -> None:
+    def _process_messages(self) -> None:
         """Start to process messages."""
-
         try:
             while True:
-                message = self.get_message()
+                message = self._process_queue.get()
                 self._publish(message)
                 logger.debug(
                     f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
@@ -521,13 +522,14 @@ class PikaMessageProcessor:
                 "messages on this worker."
             )
 
-    def run(self):
+    def run(self, queue: "multiprocessing.Queue"):
         """Run the message processor by connecting to RabbitMQ and then
         starting the IOLoop to block and allow the SelectConnection to operate.
 
         This function is blocking and indefinite thus it
         should be started in a separate process.
         """
+        self._process_queue = queue
         self._connection = self._connect()
 
         # noinspection PyUnresolvedReferences
@@ -590,6 +592,7 @@ class PikaEventBroker(EventBroker):
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
         self.raise_on_failure = raise_on_failure
         self.pika_message_processor: Optional[PikaMessageProcessor] = None
+        self.process_queue: multiprocessing.Queue = self._get_mp_context().Queue()
 
         self._connect()
 
@@ -626,21 +629,19 @@ class PikaEventBroker(EventBroker):
             self.host, self.username, self.password, self.port
         )
 
-        self.process_queue = self._get_mp_context().Queue()
         self.pika_message_processor = PikaMessageProcessor(
             parameters,
-            queues=self.queues,
-            get_message=lambda: self.process_queue.get(),
+            queues=self.queues
         )
-        self.process = self._start_pika_process()
+        self.pika_connection_process = self._start_pika_connection_process()
 
     def _get_mp_context(self) -> multiprocessing.context.BaseContext:
         return multiprocessing.get_context(self.MP_CONTEXT)
 
-    def _start_pika_process(self) -> Optional[multiprocessing.Process]:
+    def _start_pika_connection_process(self) -> Optional[multiprocessing.Process]:
         if self.pika_message_processor:
             process = multiprocessing.Process(
-                target=self.pika_message_processor.run, daemon=True
+                target=self.pika_message_processor.run, args=(self.process_queue,), daemon=True
             )
             process.start()
             return process
@@ -651,10 +652,7 @@ class PikaEventBroker(EventBroker):
         if not self.pika_message_processor:
             self._connect()
 
-        if (
-            self.process and self.process.is_alive()
-        ) or self.should_keep_unpublished_messages:
-            self.process_queue.put((body, headers))
+        self.process_queue.put((body, headers))
 
     def is_ready(
         self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
