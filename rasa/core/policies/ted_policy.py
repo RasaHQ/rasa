@@ -1100,6 +1100,9 @@ class TED(TransformerRasaModel):
 
         return loss
 
+    def prepare_for_predict(self) -> None:
+        _, self.all_labels_embed = self._create_all_labels_embed()
+
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
@@ -1114,9 +1117,6 @@ class TED(TransformerRasaModel):
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
-
-        if self.all_labels_embed is None:
-            _, self.all_labels_embed = self._create_all_labels_embed()
 
         dialogue_in = self._process_batch_data(tf_batch_data)
         dialogue_embed, dialogue_mask = self._emebed_dialogue(
