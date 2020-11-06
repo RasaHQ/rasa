@@ -740,10 +740,11 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     @staticmethod
     def confidence_and_energy_from_sim(sim: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
-        # denominator of softmax is the Helmholz free energy
-        energy = tf.reduce_sum(tf.exp(sim), None)
+        # denominator of softmax is related to the Helmholz free energy
+        denominator = tf.reduce_sum(tf.exp(sim), None)
+        energy = -tf.math.log(denominator)
         # normalize result to [0, 1] with softmax
-        scores = tf.exp(sim) / energy
+        scores = tf.exp(sim) / denominator
         return scores, energy
 
     def _train_sim(
