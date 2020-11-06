@@ -716,7 +716,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=["random_name", "random_name"],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -726,7 +726,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[TextSlot("random_name"), TextSlot("random_name")],
             templates={},
             action_names=[],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -736,7 +736,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=[],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
