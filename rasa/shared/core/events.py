@@ -1151,6 +1151,7 @@ class ActionExecuted(Event):
         self.confidence = confidence
         self.unpredictable = False
         self.action_text = action_text
+        self.energy = metadata["energy"] if metadata and "energy" in metadata else None
 
         super().__init__(timestamp, metadata)
 
@@ -1174,6 +1175,9 @@ class ActionExecuted(Event):
 
     def as_story_string(self) -> Text:
         return self.action_name
+
+    def inline_comment(self) -> Text:
+        return f"energy: {self.energy}, confidence: {self.confidence}"
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:

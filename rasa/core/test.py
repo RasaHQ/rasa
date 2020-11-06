@@ -237,11 +237,12 @@ class WronglyPredictedAction(ActionExecuted):
         metadata: Optional[Dict] = None,
     ) -> None:
         self.action_name_prediction = action_name_prediction
+        self.energy = metadata["energy"] if metadata and "energy" in metadata else None
         super().__init__(action_name_target, policy, confidence, timestamp, metadata)
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
-        return f"predicted: {self.action_name_prediction}"
+        return f"predicted: {self.action_name_prediction} (energy: {self.energy}, confidence: {self.confidence})"
 
     def as_story_string(self) -> Text:
         return f"{self.action_name}   <!-- {self.inline_comment()} -->"
@@ -429,6 +430,7 @@ def _collect_action_executed_predictions(
     else:
         action, prediction = processor.predict_next_action(partial_tracker)
         predicted = action.name()
+        energy = prediction.energy
 
         if (
             prediction.policy_name
@@ -460,6 +462,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
+                metadata={"energy": energy},
             )
         )
         if fail_on_prediction_errors:
@@ -483,6 +486,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
+                metadata={"energy": energy},
             )
         )
 

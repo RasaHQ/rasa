@@ -388,6 +388,7 @@ class TEDPolicy(Policy):
 
         output = self.model.predict(model_data)
 
+        energy: float = output["energy"].numpy().item()
         confidence = output["action_scores"].numpy()
         # remove batch dimension and take the last prediction in the sequence
         confidence = confidence[0, -1, :]
@@ -395,7 +396,7 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return self._prediction(confidence.tolist())
+        return self._prediction(confidence.tolist(), energy=energy)
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
@@ -831,8 +832,8 @@ class TED(TransformerRasaModel):
             dialogue_mask,
         )
 
-        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
-            sim_all, self.config[SIMILARITY_TYPE]
+        scores, energy = self._tf_layers[f"loss.{LABEL}"].confidence_and_energy_from_sim(
+            sim_all #, self.config[SIMILARITY_TYPE]
         )
 
-        return {"action_scores": scores}
+        return {"action_scores": scores, "energy": energy}

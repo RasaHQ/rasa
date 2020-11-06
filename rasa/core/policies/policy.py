@@ -223,6 +223,7 @@ class Policy:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
+        energy: Optional[float] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -231,6 +232,7 @@ class Policy:
             events,
             optional_events,
             is_end_to_end_prediction,
+            energy,
         )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
@@ -369,6 +371,7 @@ class PolicyPrediction:
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         is_end_to_end_prediction: bool = False,
+        energy: Optional[float] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -386,6 +389,9 @@ class PolicyPrediction:
                 you return as they can potentially influence the conversation flow.
             is_end_to_end_prediction: `True` if the prediction used the text of the
                 user message instead of the intent.
+            energy: Helmholz free energy score of the prediction, if available. This
+                can be used for out-of-distribution detection. The higher the energy, 
+                the more unusual was the input for the model.
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
@@ -393,6 +399,7 @@ class PolicyPrediction:
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.energy = energy
 
     @staticmethod
     def for_action_name(
@@ -435,6 +442,7 @@ class PolicyPrediction:
             and self.events == other.events
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
+            and self.energy == other.energy
         )
 
     @property

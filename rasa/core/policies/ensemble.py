@@ -549,6 +549,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_prediction.policy_priority,
             policy_events,
             is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
+            energy=best_prediction.energy
         )
 
     def _best_policy_prediction(

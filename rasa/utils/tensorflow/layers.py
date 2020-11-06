@@ -738,6 +738,14 @@ class DotProductLoss(tf.keras.layers.Layer):
             # normalize result to [0, 1] with softmax
             return tf.nn.softmax(sim)
 
+    @staticmethod
+    def confidence_and_energy_from_sim(sim: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
+        # denominator of softmax is the Helmholz free energy
+        energy = tf.reduce_sum(tf.exp(sim), None)
+        # normalize result to [0, 1] with softmax
+        scores = tf.exp(sim) / energy
+        return scores, energy
+
     def _train_sim(
         self,
         pos_inputs_embed: tf.Tensor,
