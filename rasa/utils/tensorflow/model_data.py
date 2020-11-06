@@ -1040,6 +1040,18 @@ class RasaModelData:
         raise ValueError("Unsupported label_ids dimensions")
 
     @staticmethod
+    def _filter_4d_arrays(array_of_array_of_features):
+        return list(
+            filter(
+                lambda x: len(x) > 0,
+                [
+                    list(filter(lambda x: x.shape[0] > 0, array_of_features))
+                    for array_of_features in array_of_array_of_features
+                ],
+            )
+        )
+
+    @staticmethod
     def _pad_dense_data(array_of_dense: FeatureArray) -> np.ndarray:
         """Pad data of different lengths.
 
@@ -1081,6 +1093,10 @@ class RasaModelData:
         # batch x max sequence length x number of features)
         # the original shape and the original dialogue length is passed on to the model
         # it can be used to transform the 3D tensor back into 4D
+
+        array_of_array_of_dense = RasaModelData._filter_4d_arrays(
+            array_of_array_of_dense
+        )
 
         combined_dialogue_len = sum(
             len(array_of_dense) for array_of_dense in array_of_array_of_dense
@@ -1163,6 +1179,10 @@ class RasaModelData:
         # the original shape and the original dialogue length is passed on to the model
         # it can be used to transform the 3D tensor back into 4D
 
+        array_of_array_of_sparse = RasaModelData._filter_4d_arrays(
+            array_of_array_of_sparse
+        )
+
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
         if not isinstance(array_of_array_of_sparse[0][0], scipy.sparse.coo_matrix):
@@ -1171,9 +1191,10 @@ class RasaModelData:
                 for array_of_sparse in array_of_array_of_sparse
             ]
 
-        combined_dialogue_len = sum(
+        dialogue_len = [
             len(array_of_sparse) for array_of_sparse in array_of_array_of_sparse
-        )
+        ]
+        combined_dialogue_len = sum(dialogue_len)
         max_seq_len = max(
             [
                 x.shape[0]
@@ -1185,15 +1206,7 @@ class RasaModelData:
         indices = np.hstack(
             [
                 np.vstack(
-                    [
-                        sum(
-                            len(array_of_sparse)
-                            for array_of_sparse in array_of_array_of_sparse[:i]
-                        )
-                        + j * np.ones_like(x.row),
-                        x.row,
-                        x.col,
-                    ]
+                    [sum(dialogue_len[:i]) + j * np.ones_like(x.row), x.row, x.col,]
                 )
                 for i, array_of_sparse in enumerate(array_of_array_of_sparse)
                 for j, x in enumerate(array_of_sparse)

@@ -819,13 +819,20 @@ class TED(TransformerRasaModel):
         Returns:
             A tensor combining  all features for `attribute`
         """
-        attribute_mask = tf_batch_data[attribute][MASK][0]
+        # attribute_mask = tf_batch_data[attribute][MASK][0]
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
             _sequence_lengths = tf.cast(
                 tf_batch_data[attribute][SEQUENCE_LENGTH][0], dtype=tf.int32
             )
-            _sequence_lengths = tf.squeeze(_sequence_lengths, axis=-1)
+            _mask_sequence_lengths = tf.cast(_sequence_lengths, dtype=tf.bool)
+            # extract only nonzero lengths
+            _sequence_lengths = tf.boolean_mask(
+                _sequence_lengths, _mask_sequence_lengths
+            )
+            # boolean mask returns flatten tensor
+            _sequence_lengths = tf.expand_dims(_sequence_lengths, axis=-1)
+
             mask_sequence_text = tf.squeeze(
                 self._compute_mask(_sequence_lengths), axis=1
             )
@@ -859,9 +866,7 @@ class TED(TransformerRasaModel):
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = self._combine_sparse_dense_features(
-                tf_batch_data[attribute][SENTENCE],
-                f"{attribute}_{SENTENCE}",
-                mask=attribute_mask,
+                tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}",
             )
 
         if attribute in set(
@@ -873,8 +878,8 @@ class TED(TransformerRasaModel):
                 attribute_features
             )
 
-        attribute_features = attribute_features * attribute_mask
-
+        # attribute_mask has shape batch x dialogue_len x 1
+        attribute_mask = tf_batch_data[attribute][MASK][0]
         if attribute in set(
             SENTENCE_FEATURES_TO_ENCODE
             + SEQUENCE_FEATURES_TO_ENCODE
@@ -884,8 +889,13 @@ class TED(TransformerRasaModel):
             # combined batch dimension and dialogue length x 1 x units
             # convert them back to their original shape of
             # batch size x dialogue length x units
+            dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
             attribute_features = self._convert_to_original_shape(
-                attribute_features, tf_batch_data
+                attribute_features, attribute_mask, dialogue_lengths
+            )
+        elif attribute in LABEL_FEATURES_TO_ENCODE:
+            attribute_features = self._convert_to_original_shape(
+                attribute_features, attribute_mask
             )
 
         return attribute_features
@@ -893,7 +903,8 @@ class TED(TransformerRasaModel):
     @staticmethod
     def _convert_to_original_shape(
         attribute_features: tf.Tensor,
-        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        attribute_mask: tf.Tensor,
+        dialogue_lengths: Optional[tf.Tensor] = None,
     ) -> tf.Tensor:
         """Transform attribute features back to original shape.
 
@@ -909,7 +920,6 @@ class TED(TransformerRasaModel):
         """
         # dialogue lengths contains the actual dialogue length
         # shape is batch-size x 1
-        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
         # in order to convert the attribute features with shape
         # combined batch-size and dialogue length x 1 x units
@@ -919,11 +929,18 @@ class TED(TransformerRasaModel):
         # mapping the values of attribute features to the position in the resulting
         # tensor.
 
-        batch_dim = tf.size(dialogue_lengths)
-        dialogue_dim = tf.reduce_max(dialogue_lengths)
+        batch_dim = tf.shape(attribute_mask)[0]
+        dialogue_dim = tf.shape(attribute_mask)[1]
         units = attribute_features.shape[-1]
+        if dialogue_lengths is None:
+            dialogue_lengths = tf.ones((batch_dim,), dtype=tf.int32)
 
-        batch_indices = tf.repeat(tf.range(batch_dim), dialogue_lengths)
+        attribute_mask = tf.cast(tf.squeeze(attribute_mask, axis=-1), tf.int32)
+        # sum of attribute mask contains number of dialogue turns with "real" features
+        non_fake_dialogue_lengths = tf.reduce_sum(attribute_mask, axis=-1)
+
+        batch_indices = tf.repeat(tf.range(batch_dim), non_fake_dialogue_lengths)
+
         dialogue_indices = (
             tf.map_fn(
                 tf.range,
@@ -931,6 +948,18 @@ class TED(TransformerRasaModel):
                 fn_output_signature=tf.RaggedTensorSpec(shape=[None], dtype=tf.int32),
             )
         ).values
+
+        # attribute_mask has shape (batch x dialogue_len x 1), while
+        # dialogue_indices has shape (combined_dialoge_len,)
+        # in order to find positions of real input we use need to flatten
+        # attribute mask to (combined_dialoge_len,)
+        combined_dialoge_len_mask = tf.sequence_mask(dialogue_lengths, dtype=tf.int32)
+        dialogue_indices_mask = tf.boolean_mask(
+            attribute_mask, combined_dialoge_len_mask
+        )
+        # pick only those indices that contain "real" input
+        dialogue_indices = tf.boolean_mask(dialogue_indices, dialogue_indices_mask)
+
         indices = tf.stack([batch_indices, dialogue_indices], axis=1)
 
         shape = tf.convert_to_tensor([batch_dim, dialogue_dim, units])
