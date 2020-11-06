@@ -132,6 +132,9 @@ class SingleStateFeaturizer:
         # TODO
         #  Should we support BILOU tagging?
 
+        if TEXT not in sub_state:
+            return []
+
         parsed_text = interpreter.featurize_message(Message({TEXT: sub_state[TEXT]}))
         entities = [dict(entity) for entity in sub_state[ENTITIES]]
         tag_id_mapping = self.get_entity_tag_ids()
