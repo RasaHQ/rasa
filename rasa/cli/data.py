@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, List, Text, Tuple, TYPE_CHECKING
+from typing import Dict, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -347,11 +347,17 @@ def _migrate_responses(args: argparse.Namespace) -> None:
 
     It does so modifying the stories and domain files.
     """
-    _migrate_responses_in_domain(args)
-    rasa.utils.common.run_in_loop(
-        _convert_to_yaml(args, StoryResponsePrefixConverter())
-    )
-    telemetry.track_data_convert(args.format, "responses")
+    if args.format == "yaml":
+        _migrate_responses_in_domain(args)
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args, StoryResponsePrefixConverter())
+        )
+        telemetry.track_data_convert(args.format, "responses")
+    else:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Could not recognize output format. Supported output formats: "
+            "'yaml'. Specify the desired output format with '--format'."
+        )
 
 
 def _migrate_responses_in_domain(args: argparse.Namespace):
