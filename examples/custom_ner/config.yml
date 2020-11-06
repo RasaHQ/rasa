@@ -18,5 +18,5 @@ pipeline:
   epochs: 1
 
 policies:
-  - name: MemoizationPolicy
+  - name: STSFallbackPolicy
   - name: MappingPolicy
