@@ -488,7 +488,7 @@ class PikaMessageProcessor:
 
         self._channel = channel
 
-        thread = threading.Thread(target=self._process_messages)
+        thread = threading.Thread(target=self._process_messages, daemon=True)
         thread.start()
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
