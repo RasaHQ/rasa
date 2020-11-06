@@ -337,7 +337,7 @@ rasa data validate stories
 
 :::note
 Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
-If any such conflicts occur, however, training of the `RulePolicy` will fail.
+However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
 :::
 
 To interrupt validation even for minor issues such as unused intents or responses, use the `--fail-on-warnings` flag.
