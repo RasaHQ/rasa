@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Text
 
 import pytest
 from aioresponses import aioresponses
@@ -97,7 +97,7 @@ def test_domain_action_instantiation():
         slots=[],
         templates={},
         action_names=["my_module.ActionTest", "utter_test", "utter_chitchat"],
-        forms=[],
+        forms={},
     )
 
     instantiated_actions = [
@@ -693,7 +693,17 @@ async def test_action_default_ask_rephrase(
     ]
 
 
-def test_get_form_action():
+@pytest.mark.parametrize(
+    "slot_mapping",
+    [
+        """
+    my_slot:
+    - type:from_text
+    """,
+        "",
+    ],
+)
+def test_get_form_action(slot_mapping: Text):
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
         f"""
@@ -701,8 +711,7 @@ def test_get_form_action():
     - my_action
     forms:
       {form_action_name}:
-        my_slot:
-        - type: from_text
+        {slot_mapping}
     """
     )
 
@@ -710,14 +719,31 @@ def test_get_form_action():
     assert isinstance(actual, FormAction)
 
 
-def test_get_form_action_without_slot_mapping():
+def test_get_form_action_with_rasa_open_source_1_forms():
+    form_action_name = "my_business_logic"
+    with pytest.warns(FutureWarning):
+        domain = Domain.from_yaml(
+            f"""
+        actions:
+        - my_action
+        forms:
+        - {form_action_name}
+        """
+        )
+
+    actual = action.action_for_name(form_action_name, domain, None)
+    assert isinstance(actual, RemoteAction)
+
+
+def test_overridden_form_action():
     form_action_name = "my_business_logic"
     domain = Domain.from_yaml(
         f"""
     actions:
     - my_action
-    forms:
     - {form_action_name}
+    forms:
+        {form_action_name}:
     """
     )
 
