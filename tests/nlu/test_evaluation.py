@@ -1,8 +1,9 @@
 import asyncio
+import datetime
 import json
 import os
 from pathlib import Path
-from typing import Text, Iterator, List, Dict, Any, Set
+from typing import Text, Iterator, List, Dict, Any, Set, Optional
 
 import pytest
 from sanic.request import Request
@@ -13,6 +14,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.nlu import train
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.components import ComponentBuilder, Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
@@ -52,8 +54,17 @@ from rasa.nlu.test import (
     determine_token_labels,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.constants import NO_ENTITY_TAG
+from rasa.shared.nlu.constants import (
+    NO_ENTITY_TAG,
+    INTENT,
+    INTENT_RANKING_KEY,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+)
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.test import compare_nlu_models
 from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
 from tests.nlu.conftest import DEFAULT_DATA_PATH
@@ -1092,3 +1103,53 @@ def test_collect_entity_predictions(
 
     assert len(errors) == len(actual)
     assert errors == actual
+
+
+class ConstantInterpreter(Interpreter):
+    def __init__(self, prediction_to_return: Dict[Text, Any]) -> None:
+        # add intent classifier to make sure intents are evaluated
+        super().__init__([FallbackClassifier()], None)
+        self.prediction = prediction_to_return
+
+    def parse(
+        self,
+        text: Text,
+        time: Optional[datetime.datetime] = None,
+        only_output_properties: bool = True,
+    ) -> Dict[Text, Any]:
+        return self.prediction
+
+
+def test_replacing_fallback_intent():
+    expected_intent = "greet"
+    expected_confidence = 0.345
+    fallback_prediction = {
+        INTENT: {
+            INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
+            PREDICTED_CONFIDENCE_KEY: 1,
+        },
+        INTENT_RANKING_KEY: [
+            {
+                INTENT_NAME_KEY: DEFAULT_NLU_FALLBACK_INTENT_NAME,
+                PREDICTED_CONFIDENCE_KEY: 1,
+            },
+            {
+                INTENT_NAME_KEY: expected_intent,
+                PREDICTED_CONFIDENCE_KEY: expected_confidence,
+            },
+            {INTENT_NAME_KEY: "some", PREDICTED_CONFIDENCE_KEY: 0.1},
+        ],
+    }
+
+    interpreter = ConstantInterpreter(fallback_prediction)
+    training_data = TrainingData(
+        [Message.build("hi", "greet"), Message.build("bye", "bye")]
+    )
+
+    intent_evaluations, _, _ = get_eval_data(interpreter, training_data)
+
+    assert all(
+        prediction.intent_prediction == expected_intent
+        and prediction.confidence == expected_confidence
+        for prediction in intent_evaluations
+    )
