@@ -1040,7 +1040,9 @@ class RasaModelData:
         raise ValueError("Unsupported label_ids dimensions")
 
     @staticmethod
-    def _filter_4d_arrays(array_of_array_of_features):
+    def _filter_4d_arrays(
+        array_of_array_of_features: FeatureArray,
+    ) -> Union[List[List[np.ndarray]], List[List[scipy.sparse.spmatrix]]]:
         return list(
             filter(
                 lambda x: len(x) > 0,
