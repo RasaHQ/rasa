@@ -4,4 +4,4 @@ stories:
   - user: |
       What is your name?
     intent: chitchat/ask_name
-  - action: utter_chitchat/ask_name
+  - action: utter_chitchat
