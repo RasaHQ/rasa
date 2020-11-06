@@ -1,23 +1,26 @@
-from pathlib import Path
-
-from sanic.request import Request
-from typing import Text, Iterator, List, Dict, Any
-
 import asyncio
+import json
+import os
+from pathlib import Path
+from typing import Text, Iterator, List, Dict, Any, Set
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
+from sanic.request import Request
 
+import rasa.nlu.test
+import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.shared.nlu.constants import NO_ENTITY_TAG
+from rasa.nlu import train
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.components import ComponentBuilder, Component
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.test import compare_nlu_models
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import (
     is_token_within_entity,
     do_entities_overlap,
@@ -41,22 +44,19 @@ from rasa.nlu.test import (
     collect_incorrect_entity_predictions,
     merge_confidences,
     _get_entity_confidences,
+    is_response_selector_present,
+    get_eval_data,
+    does_token_cross_borders,
+    align_entity_predictions,
+    determine_intersection,
+    determine_token_labels,
 )
-from rasa.nlu.test import does_token_cross_borders
-from rasa.nlu.test import align_entity_predictions
-from rasa.nlu.test import determine_intersection
-from rasa.nlu.test import determine_token_labels
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token
-import json
-import os
-import rasa.shared.nlu.training_data.loading
-from tests.nlu.conftest import DEFAULT_DATA_PATH
-from rasa.nlu.selectors.response_selector import ResponseSelector
-from rasa.nlu.test import is_response_selector_present, get_eval_data
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
-from rasa.nlu import train
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import NO_ENTITY_TAG
+from rasa.test import compare_nlu_models
+from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -65,7 +65,7 @@ from tests.nlu.utilities import write_file_config
 
 
 @pytest.yield_fixture(scope="session")
-def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+def event_loop(_: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
@@ -346,7 +346,7 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
-def test_run_evaluation(unpacked_trained_moodbot_path):
+def test_run_evaluation(unpacked_trained_moodbot_path: Text):
     result = run_evaluation(
         DEFAULT_DATA_PATH,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),
@@ -358,7 +358,9 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     assert result.get("intent_evaluation")
 
 
-async def test_eval_data(component_builder, tmpdir, project):
+async def test_eval_data(
+    component_builder: ComponentBuilder, tmp_path: Path, project: Text
+):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -382,7 +384,7 @@ async def test_eval_data(component_builder, tmpdir, project):
 
     (_, _, persisted_path) = await train(
         _config,
-        path=tmpdir.strpath,
+        path=str(tmp_path),
         data=data_importer,
         component_builder=component_builder,
         persist_nlu_training_data=True,
@@ -391,7 +393,7 @@ async def test_eval_data(component_builder, tmpdir, project):
     interpreter = Interpreter.load(persisted_path, component_builder)
 
     data = await data_importer.get_nlu_data()
-    (intent_results, response_selection_results, entity_results,) = get_eval_data(
+    (intent_results, response_selection_results, entity_results) = get_eval_data(
         interpreter, data
     )
 
@@ -401,7 +403,7 @@ async def test_eval_data(component_builder, tmpdir, project):
 
 
 @pytest.mark.timeout(240)  # these can take a longer time than the default timeout
-def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
+def test_run_cv_evaluation(pretrained_embeddings_spacy_config: RasaNLUModelConfig):
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
     )
@@ -673,14 +675,16 @@ def test_response_evaluation_report(tmp_path: Path):
         ([ResponseSelector()], set()),
     ],
 )
-def test_get_entity_extractors(components, expected_extractors):
+def test_get_entity_extractors(
+    components: List[Component], expected_extractors: Set[Text]
+):
     mock_interpreter = Interpreter(components, None)
     extractors = get_entity_extractors(mock_interpreter)
 
     assert extractors == expected_extractors
 
 
-def test_entity_evaluation_report(tmp_path):
+def test_entity_evaluation_report(tmp_path: Path):
     class EntityExtractorA(EntityExtractor):
 
         provides = ["entities"]
@@ -866,7 +870,7 @@ def test_evaluate_entities_cv():
     }, "Wrong entity prediction alignment"
 
 
-def test_remove_pretrained_extractors(component_builder):
+def test_remove_pretrained_extractors(component_builder: ComponentBuilder):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -1073,7 +1077,11 @@ def test_nlu_comparison(tmp_path: Path):
     ],
 )
 def test_collect_entity_predictions(
-    entity_results, targets, predictions, successes, errors
+    entity_results: List[EntityEvaluationResult],
+    targets: List[Text],
+    predictions: List[Text],
+    successes: List[Dict[Text, Any]],
+    errors: List[Dict[Text, Any]],
 ):
     actual = collect_successful_entity_predictions(entity_results, targets, predictions)
 

@@ -1270,7 +1270,7 @@ def get_eval_data(
     List[IntentEvaluationResult],
     List[ResponseSelectionEvaluationResult],
     List[EntityEvaluationResult],
-]:  # pragma: no cover
+]:
     """Runs the model for the test set and extracts targets and predictions.
 
     Returns intent results (intent targets and predictions, the original
@@ -1485,7 +1485,7 @@ def run_evaluation(
     if output_directory:
         rasa.shared.utils.io.create_directory(output_directory)
 
-    (intent_results, response_selection_results, entity_results,) = get_eval_data(
+    (intent_results, response_selection_results, entity_results) = get_eval_data(
         interpreter, test_data
     )
 
