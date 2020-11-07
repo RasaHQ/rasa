@@ -62,7 +62,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 #RUN chgrp -R 0 /app && chmod -R g=u /app
 #USER 1001
-COPY examples/custom_ner /app
+COPY examples/custom_nlu /app
 
 # create a volume for temporary data
 VOLUME /tmp
