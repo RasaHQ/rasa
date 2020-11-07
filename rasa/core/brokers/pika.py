@@ -436,9 +436,10 @@ class PikaMessageProcessor:
 
         return False
 
-    def _connect(self) -> "SelectConnection":
+    def _connect(self) -> None:
         """Establish a connection to Pika."""
-        return initialise_pika_select_connection(
+        self._run_pika_io_loop_in_thread()
+        self._connection = initialise_pika_select_connection(
             self.parameters, self._on_open_connection, self._on_open_connection_error
         )
 
@@ -457,6 +458,7 @@ class PikaMessageProcessor:
     def _on_connection_closed(self, _, reason: Any):
         self._channel = None
         if self._closing:
+            logger.warning(f"Connection closing")
             # noinspection PyUnresolvedReferences
             self._connection.ioloop.stop()
         else:
@@ -469,9 +471,7 @@ class PikaMessageProcessor:
         self._connection.ioloop.stop()
 
         if not self._closing:
-            self._connection = self._connect()
-            # noinspection PyUnresolvedReferences
-            self._connection.ioloop.start()
+            self._connect()
 
     def _on_channel_open(self, channel: "Channel") -> None:
         logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
@@ -487,9 +487,7 @@ class PikaMessageProcessor:
             channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
         self._channel = channel
-
-        thread = threading.Thread(target=self._process_messages, daemon=True)
-        thread.start()
+        self._process_messages()
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
@@ -507,14 +505,19 @@ class PikaMessageProcessor:
 
     def _process_messages(self) -> None:
         """Start to process messages."""
+        logger.debug("Running pika message processing...")
+
         try:
             while True:
-                message = self._process_queue.get()
-                self._publish(message)
-                logger.debug(
-                    f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-                    f"'{self.parameters.host}':\n{message[0]}"
-                )
+                if not self._process_queue.empty():
+                    message = self._process_queue.get_nowait()
+                    self._publish(message)
+                    logger.debug(
+                        f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
+                        f"'{self.parameters.host}':\n{message[0]}"
+                    )
+                logger.debug("Sleep 0.5s")
+                time.sleep(0.5)
         except EOFError:
             # Will most likely happen when shutting down Rasa X.
             logger.debug(
@@ -523,7 +526,8 @@ class PikaMessageProcessor:
             )
 
     def _run_pika_io_loop_in_thread(self) -> None:
-        thread = threading.Thread(target=self._run_pika_io_loop, daemon=True)
+        logger.debug("Running pika thread...")
+        thread = threading.Thread(target=self._run_pika_io_loop)
         thread.start()
 
     def _run_pika_io_loop(self) -> None:
@@ -538,8 +542,7 @@ class PikaMessageProcessor:
         should be started in a separate process.
         """
         self._process_queue = queue
-        self._connection = self._connect()
-        self._run_pika_io_loop_in_thread()
+        self._connect()
 
 
 class PikaEventBroker(EventBroker):
@@ -639,7 +642,7 @@ class PikaEventBroker(EventBroker):
             parameters,
             queues=self.queues
         )
-        self.pika_connection_process = self._start_pika_connection_process()
+        self.process = self._start_pika_connection_process()
 
     def _get_mp_context(self) -> multiprocessing.context.BaseContext:
         return multiprocessing.get_context(self.MP_CONTEXT)
@@ -655,9 +658,6 @@ class PikaEventBroker(EventBroker):
         return None
 
     def _publish(self, body: Text, headers: MessageHeaders = None) -> None:
-        if not self.pika_message_processor:
-            self._connect()
-
         self.process_queue.put((body, headers))
 
     def is_ready(
