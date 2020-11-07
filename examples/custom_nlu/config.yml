@@ -18,5 +18,4 @@ pipeline:
   epochs: 1
 
 policies:
-  - name: STSFallbackPolicy
   - name: MappingPolicy
