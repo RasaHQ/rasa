@@ -1291,7 +1291,11 @@ async def test_trigger_intent_with_not_existing_intent(rasa_app: SanicASGITestCl
         ([], None, CollectingOutputChannel),
         ([RestInput()], "slack", CollectingOutputChannel),
         ([RestInput()], "rest", CollectingOutputChannel),
-        ([RestInput(), SlackInput("test")], "slack", SlackBot),
+        (
+            [RestInput(), SlackInput("test", slack_signing_secret="foobar")],
+            "slack",
+            SlackBot,
+        ),
     ],
 )
 def test_get_output_channel(
@@ -1313,7 +1317,7 @@ def test_get_output_channel(
     [
         ([], CollectingOutputChannel),
         ([RestInput()], CollectingOutputChannel),
-        ([RestInput(), SlackInput("test")], SlackBot),
+        ([RestInput(), SlackInput("test", slack_signing_secret="foobar")], SlackBot),
     ],
 )
 def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):
