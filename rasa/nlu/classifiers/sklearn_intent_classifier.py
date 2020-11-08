@@ -231,10 +231,11 @@ class SklearnIntentClassifier(IntentClassifier):
 
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
+        model_dir = Path(model_dir)
         if self.clf and self.le:
-            io_utils.json_pickle(Path(model_dir) / encoder_file_name, self.le.classes_)
+            io_utils.json_pickle(model_dir / encoder_file_name, self.le.classes_)
             io_utils.json_pickle(
-                Path(model_dir) / classifier_file_name, self.clf.best_estimator_
+                model_dir / classifier_file_name, self.clf.best_estimator_
             )
         return {"classifier": classifier_file_name, "encoder": encoder_file_name}
 
@@ -249,10 +250,12 @@ class SklearnIntentClassifier(IntentClassifier):
     ) -> "SklearnIntentClassifier":
         from sklearn.preprocessing import LabelEncoder
 
-        classifier_file = Path(model_dir) / meta.get("classifier")
-        encoder_file = Path(model_dir) / meta.get("encoder")
+        model_dir = Path(model_dir)
 
-        if Path(classifier_file).exists():
+        classifier_file = model_dir / meta.get("classifier")
+        encoder_file = model_dir / meta.get("encoder")
+
+        if classifier_file.exists():
             classifier = io_utils.json_unpickle(classifier_file)
             classes = io_utils.json_unpickle(encoder_file)
             encoder = LabelEncoder()

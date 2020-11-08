@@ -232,15 +232,15 @@ class Trainer:
             model_name = NLU_MODEL_NAME_PREFIX + timestamp
 
         dir_path = Path(path).resolve() / model_name
-        dir_name = str(dir_path)
-        rasa.shared.utils.io.create_directory(dir_name)
+        dir_path_string = str(dir_path)
+        rasa.shared.utils.io.create_directory(dir_path_string)
 
         if self.training_data and persist_nlu_training_data:
-            metadata.update(self.training_data.persist(dir_name))
+            metadata.update(self.training_data.persist(dir_path_string))
 
         for i, component in enumerate(self.pipeline):
             file_name = self._file_name(i, component.name)
-            update = component.persist(file_name, dir_name)
+            update = component.persist(file_name, dir_path_string)
             component_meta = component.component_config
             if update:
                 component_meta.update(update)
@@ -248,12 +248,12 @@ class Trainer:
 
             metadata["pipeline"].append(component_meta)
 
-        Metadata(metadata, dir_name).persist(dir_name)
+        Metadata(metadata, dir_path_string).persist(dir_path_string)
 
         if persistor is not None:
-            persistor.persist(dir_name, model_name)
-        logger.info("Successfully saved model into '{}'".format(dir_path))
-        return dir_name
+            persistor.persist(dir_path_string, model_name)
+        logger.info(f"Successfully saved model into {dir_path_string}")
+        return dir_path_string
 
 
 class Interpreter:

@@ -40,11 +40,10 @@ def is_model_dir(model_dir: Text) -> bool:
     if not dir_tree.is_dir():
         return False
 
-    iter_dir = [d for d in dir_tree.iterdir()]
-    if [d for d in iter_dir if d.is_dir()]:  # look for subdirectories
+    if any([d.is_dir() for d in dir_tree.iterdir()]):  # look for subdirectories
         return False
 
-    file_extenstions = [PurePath(f).suffix for f in iter_dir]
+    file_extenstions = [PurePath(f).suffix for f in list(dir_tree.iterdir())]
     only_valid_files = all([ext in allowed_extensions for ext in file_extenstions])
     return only_valid_files
 

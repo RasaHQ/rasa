@@ -1039,7 +1039,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir: Text,
     ) -> "RasaModel":
         file_name = meta.get("file")
-        tf_model_file = file_name + ".tf_model"
+        tf_model_file = f"{file_name}.tf_model"
         tf_model_file = Path(model_dir) / tf_model_file
 
         label_key = LABEL_KEY if meta[INTENT_CLASSIFICATION] else None

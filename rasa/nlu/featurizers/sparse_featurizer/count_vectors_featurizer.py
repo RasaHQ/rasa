@@ -677,7 +677,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         file_name = meta.get("file")
         featurizer_file = Path(model_dir) / file_name
 
-        if not Path(featurizer_file).exists():
+        if not featurizer_file.exists():
             return cls(meta)
 
         vocabulary = io_utils.json_unpickle(featurizer_file)

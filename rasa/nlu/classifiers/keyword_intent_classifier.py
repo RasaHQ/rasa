@@ -146,7 +146,7 @@ class KeywordIntentClassifier(IntentClassifier):
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
             keyword_file = Path(model_dir) / file_name
-            if Path(keyword_file).exists():
+            if keyword_file.exists():
                 intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
             else:
                 rasa.shared.utils.io.raise_warning(

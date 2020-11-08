@@ -104,7 +104,7 @@ class MitieIntentClassifier(IntentClassifier):
         if not file_name:
             return cls(meta)
         classifier_file = Path(model_dir) / file_name
-        if Path(classifier_file).exists():
+        if classifier_file.exists():
             classifier = mitie.text_categorizer(classifier_file)
             return cls(meta, classifier)
         else:
@@ -113,7 +113,7 @@ class MitieIntentClassifier(IntentClassifier):
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
 
         if self.clf:
-            file_name = file_name + ".dat"
+            file_name = f"{file_name}.dat"
             classifier_file = Path(model_dir) / file_name
             self.clf.save_to_disk(classifier_file, pure_model=True)
             return {"file": file_name}
