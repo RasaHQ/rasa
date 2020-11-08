@@ -83,6 +83,8 @@ async def train(
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
     persist_nlu_training_data: bool = False,
+    finetune: bool = False,
+    finetune_model_path: Optional[Text] = None,
     **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
@@ -94,7 +96,13 @@ async def train(
     # Ensure we are training a model that we can save in the end
     # WARN: there is still a race condition if a model with the same name is
     # trained in another subprocess
-    trainer = Trainer(nlu_config, component_builder)
+
+    trainer = Trainer(
+        nlu_config,
+        component_builder,
+        finetune_mode=finetune,
+        finetune_model_path=finetune_model_path,
+    )
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
         training_data = await load_data_from_endpoint(

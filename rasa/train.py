@@ -14,12 +14,7 @@ from rasa.nlu.model import Interpreter
 import rasa.utils.common
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.shared.utils.cli import (
-    print_success,
-    print_warning,
-    print_error,
-    print_color,
-)
+from rasa.shared.utils.cli import print_success, print_warning, print_error, print_color
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
@@ -39,6 +34,7 @@ def train(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
+    finetune: bool = False,
 ) -> Optional[Text]:
     return rasa.utils.common.run_in_loop(
         train_async(
@@ -51,6 +47,7 @@ def train(
             persist_nlu_training_data=persist_nlu_training_data,
             core_additional_arguments=core_additional_arguments,
             nlu_additional_arguments=nlu_additional_arguments,
+            finetune_model=finetune,
         ),
         loop,
     )
@@ -66,6 +63,8 @@ async def train_async(
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
+    finetune_model: bool = False,
+    finetune_model_path: Optional[Text] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -81,6 +80,8 @@ async def train_async(
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
                                   method of each NLU component.
+        finetune_model: `True` if a previously trained model should be finetuned.
+        finetune_model_path: Path to a previously trained model that should be finetuned.
 
     Returns:
         Path of the trained model archive.
@@ -108,6 +109,8 @@ async def train_async(
             persist_nlu_training_data,
             core_additional_arguments=core_additional_arguments,
             nlu_additional_arguments=nlu_additional_arguments,
+            finetune_model=finetune_model,
+            finetune_model_path=finetune_model_path,
         )
 
 
@@ -134,6 +137,8 @@ async def _train_async_internal(
     persist_nlu_training_data: bool,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
+    finetune_model: bool = False,
+    finetune_model_path: Optional[Text] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
@@ -148,6 +153,8 @@ async def _train_async_internal(
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
                                   method of each NLU component.
+        finetune_model: `True` if a previously trained model should be finetuned.
+        finetune_model_path: Path to a previously trained model that should be finetuned.
 
     Returns:
         Path of the trained model archive.
@@ -185,6 +192,10 @@ async def _train_async_internal(
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
+    print(old_model)
+    model_to_finetune = finetune_model_path if finetune_model_path else old_model
+
+    # TODO: Check if finetuning is possible.
 
     if not force_training:
         fingerprint_comparison = model.should_retrain(
@@ -205,6 +216,7 @@ async def _train_async_internal(
                 core_additional_arguments=core_additional_arguments,
                 nlu_additional_arguments=nlu_additional_arguments,
                 old_model_zip_path=old_model,
+                finetune=finetune_model,
             )
 
         return model.package_model(
@@ -231,6 +243,7 @@ async def _do_training(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     old_model_zip_path: Optional[Text] = None,
+    finetune: bool = False,
 ):
     if not fingerprint_comparison_result:
         fingerprint_comparison_result = FingerprintComparisonResult()
@@ -244,6 +257,8 @@ async def _do_training(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
+            finetune=finetune,
+            finetune_model_path=old_model_zip_path,
         )
         interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
     else:
@@ -520,6 +535,8 @@ async def _train_nlu_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     additional_arguments: Optional[Dict] = None,
+    finetune: bool = False,
+    finetune_model_path: Optional[Text] = None,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
 
@@ -544,6 +561,8 @@ async def _train_nlu_with_validated_data(
                 _train_path,
                 fixed_model_name="nlu",
                 persist_nlu_training_data=persist_nlu_training_data,
+                finetune=finetune,
+                finetune_model_path=finetune_model_path,
                 **additional_arguments,
             )
         print_color(

@@ -26,6 +26,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
+from rasa import model
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +139,8 @@ class Trainer:
         cfg: RasaNLUModelConfig,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        finetune_mode: bool = False,
+        finetune_model_path: Optional[Text] = None,
     ):
 
         self.config = cfg
@@ -155,12 +158,44 @@ class Trainer:
             components.validate_requirements(cfg.component_names)
 
         # build pipeline
-        self.pipeline = self._build_pipeline(cfg, component_builder)
+        self.pipeline = self._build_pipeline(
+            cfg,
+            component_builder,
+            finetune_mode=finetune_mode,
+            old_model_path=finetune_model_path,
+        )
 
-    def _build_pipeline(
+    @staticmethod
+    def _load_pipeline_for_finetuning(model_path, component_builder):
+
+        context = {"finetune_mode": True}
+        pipeline = []
+
+        with model.unpack_model(model_path) as unpacked:
+            _, old_nlu = model.get_model_subdirectories(unpacked)
+            model_metadata = Metadata.load(old_nlu)
+
+            for i in range(model_metadata.number_of_components):
+                component_meta = model_metadata.for_component(i)
+                component = component_builder.load_component(
+                    component_meta, model_metadata.model_dir, model_metadata, **context
+                )
+                try:
+                    updates = component.provide_context()
+                    if updates:
+                        context.update(updates)
+                    pipeline.append(component)
+                except components.MissingArgumentError as e:
+                    raise Exception(
+                        "Failed to initialize component '{}'. "
+                        "{}".format(component.name, e)
+                    )
+        return pipeline
+
+    def _build_pipeline_for_training_from_scratch(
         self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
-    ) -> List[Component]:
-        """Transform the passed names of the pipeline components into classes."""
+    ):
+
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
@@ -172,6 +207,26 @@ class Trainer:
 
         if not self.skip_validation:
             components.validate_pipeline(pipeline)
+
+        return pipeline
+
+    def _build_pipeline(
+        self,
+        cfg: RasaNLUModelConfig,
+        component_builder: ComponentBuilder,
+        finetune_mode: bool = False,
+        old_model_path: Optional[Text] = None,
+    ) -> List[Component]:
+        """Transform the passed names of the pipeline components into classes."""
+
+        if finetune_mode:
+            pipeline = self._load_pipeline_for_finetuning(
+                old_model_path, component_builder
+            )
+        else:
+            pipeline = self._build_pipeline_for_training_from_scratch(
+                cfg, component_builder
+            )
 
         return pipeline
 
@@ -325,7 +380,7 @@ class Interpreter:
     ) -> "Interpreter":
         """Load stored model and components defined by the provided metadata."""
 
-        context = {}
+        context = {"finetune_mode": False}
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result

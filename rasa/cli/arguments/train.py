@@ -26,6 +26,9 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_persist_nlu_data_param(parser)
     add_force_param(parser)
 
+    add_finetune_flag_param(parser)
+    add_finetune_model_path_param(parser)
+
 
 def set_train_core_arguments(parser: argparse.ArgumentParser):
     add_stories_param(parser)
@@ -152,4 +155,24 @@ def add_persist_nlu_data_param(
         "--persist-nlu-data",
         action="store_true",
         help="Persist the nlu training data in the saved model.",
+    )
+
+
+def add_finetune_flag_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
+    parser.add_argument(
+        "--finetune",
+        action="store_true",
+        default=False,
+        help="Fine-tune a previously trained model",
+    )
+
+
+def add_finetune_model_path_param(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--model-to-finetune",
+        type=str,
+        help="Path to a previously trained model which should be fine-tuned."
+        "If unset, the most recent model is picked for fine-tuning.",
     )

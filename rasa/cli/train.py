@@ -78,6 +78,8 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
+    print(args.finetune)
+
     return rasa.train(
         domain=domain,
         config=config,
@@ -88,6 +90,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         persist_nlu_training_data=args.persist_nlu_data,
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
+        finetune=args.finetune,
     )
 
 
