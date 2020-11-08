@@ -1,9 +1,15 @@
+import hashlib
+import hmac
+from http import HTTPStatus
 import json
 import logging
+import math
 import re
+import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -136,6 +142,7 @@ class SlackInput(InputChannel):
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
+            credentials.get("slack_signing_secret", None),
         )
 
     def __init__(
@@ -147,6 +154,7 @@ class SlackInput(InputChannel):
         slack_retry_number_header: Optional[Text] = None,
         errors_ignore_retry: Optional[List[Text]] = None,
         use_threads: Optional[bool] = False,
+        slack_signing_secret: Optional[Text] = None,
     ) -> None:
         """Create a Slack input channel.
 
@@ -164,14 +172,20 @@ class SlackInput(InputChannel):
                 If not set, messages will be sent back
                 to the "App" DM channel of your bot's name.
             proxy: A Proxy Server to route your traffic through
-            slack_retry_reason_header: Slack HTTP header name indicating reason that slack send retry request.
-            slack_retry_number_header: Slack HTTP header name indicating the attempt number
+            slack_retry_reason_header: Slack HTTP header name indicating reason
+                that slack send retry request.
+            slack_retry_number_header: Slack HTTP header name indicating
+                the attempt number.
             errors_ignore_retry: Any error codes given by Slack
                 included in this list will be ignored.
                 Error codes are listed
                 `here <https://api.slack.com/events-api#errors>`_.
-            use_threads: If set to True, your bot will send responses in Slack as a threaded message.
-                Responses will appear as a normal Slack message if set to False.
+            use_threads: If set to `True`, your bot will send responses in Slack as
+                a threaded message. Responses will appear as a normal Slack message
+                if set to `False`.
+            slack_signing_secret: Slack creates a unique string for your app and
+                shares it with you. This allows us to verify requests from Slack
+                with confidence by verifying signatures using your signing secret.
 
         """
         self.slack_token = slack_token
@@ -181,6 +195,21 @@ class SlackInput(InputChannel):
         self.retry_reason_header = slack_retry_reason_header
         self.retry_num_header = slack_retry_number_header
         self.use_threads = use_threads
+        self.slack_signing_secret = slack_signing_secret
+
+        self._raise_deprecation_warnings()
+
+    def _raise_deprecation_warnings(self) -> None:
+        """Raises any deprecation warning regarding configuration parameters."""
+        if self.slack_signing_secret is None:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "Your slack bot is missing a configured signing secret. Running a "
+                "bot without a signing secret is deprecated and will be removed in "
+                "the next release (2.1.0). You should add a `slack_signing_secret` "
+                "parameter to your channel configuration.",
+                warn_until_version="2.1.0",
+                docs=DOCS_URL_CONNECTORS_SLACK,
+            )
 
     @staticmethod
     def _is_app_mention(slack_event: Dict) -> bool:
@@ -197,9 +226,9 @@ class SlackInput(InputChannel):
             return False
 
     @staticmethod
-    def _is_user_message(slack_event: Dict) -> bool:
+    def _is_user_message(slack_event: Dict[Text, Any]) -> bool:
         return (
-            slack_event.get("event")
+            slack_event.get("event") is not None
             and (
                 slack_event.get("event", {}).get("type") == "message"
                 or slack_event.get("event", {}).get("type") == "app_mention"
@@ -209,7 +238,9 @@ class SlackInput(InputChannel):
         )
 
     @staticmethod
-    def _sanitize_user_message(text: Text, uids_to_remove: List[Text]) -> Text:
+    def _sanitize_user_message(
+        text: Text, uids_to_remove: Optional[List[Text]]
+    ) -> Text:
         """Remove superfluous/wrong/problematic tokens from a message.
 
         Probably a good starting point for pre-formatting of user-provided text
@@ -225,6 +256,8 @@ class SlackInput(InputChannel):
             str: parsed and cleaned version of the input text
         """
 
+        uids_to_remove = uids_to_remove or []
+
         for uid_to_remove in uids_to_remove:
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
@@ -236,9 +269,10 @@ class SlackInput(InputChannel):
             ]:
                 text = re.sub(regex, replacement, text)
 
-        """Find multiple mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and substitute it with original content
-        """
-
+        # Find multiple mailto or http links like
+        # <mailto:xyz@rasa.com|xyz@rasa.com> or
+        # <http://url.com|url.com> in text and substitute
+        # it with original content
         pattern = r"(\<(?:mailto|http|https):\/\/.*?\|.*?\>)"
         match = re.findall(pattern, text)
 
@@ -318,7 +352,9 @@ class SlackInput(InputChannel):
                 f" due to {retry_reason}."
             )
 
-            return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
+            return response.text(
+                None, status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": 1}
+            )
 
         if metadata is not None:
             output_channel = metadata.get("out_channel")
@@ -399,6 +435,51 @@ class SlackInput(InputChannel):
 
         return {}
 
+    def is_request_from_slack_authentic(self, request: Request) -> bool:
+        """Validate a request from Slack for its authenticity.
+
+        Checks if the signature matches the one we expect from Slack. Ensures
+        we don't process request from a third-party disguising as slack.
+
+        Args:
+            request: incoming request to be checked
+
+        Returns:
+            `True` if the request came from Slack.
+        """
+        if self.slack_signing_secret is None:
+            # this is done for backwards compatibility, but will be removed in
+            # the next release
+            return True
+
+        try:
+            slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
+
+            slack_signature = request.headers.get("X-Slack-Signature", "")
+            slack_request_timestamp = request.headers.get(
+                "X-Slack-Request-Timestamp", "0"
+            )
+
+            if abs(time.time() - int(slack_request_timestamp)) > 60 * 5:
+                # The request timestamp is more than five minutes from local time.
+                # It could be a replay attack, so let's ignore it.
+                return False
+
+            prefix = f"v0:{slack_request_timestamp}:".encode("utf-8")
+            basestring = prefix + request.body
+            digest = hmac.new(
+                slack_signing_secret, basestring, hashlib.sha256
+            ).hexdigest()
+            computed_signature = f"v0={digest}"
+
+            return hmac.compare_digest(computed_signature, slack_signature)
+        except Exception as e:
+            logger.error(
+                f"Failed to validate slack request authenticity. "
+                f"Assuming invalid request. Error: {e}"
+            )
+            return False
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -411,7 +492,16 @@ class SlackInput(InputChannel):
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
             content_type = request.headers.get("content-type")
-            # Slack API sends either a JSON-encoded or a URL-encoded body depending on the content
+
+            if not self.is_request_from_slack_authentic(request):
+                return response.text(
+                    "Message is not properly signed with a valid "
+                    "X-Slack-Signature header",
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+
+            # Slack API sends either a JSON-encoded or a URL-encoded body
+            # depending on the content
 
             if content_type == "application/json":
                 # if JSON-encoded message is received
@@ -424,23 +514,26 @@ class SlackInput(InputChannel):
                 if "challenge" in output:
                     return response.json(output.get("challenge"))
 
-                elif self._is_user_message(output) and self._is_supported_channel(
-                    output, metadata
-                ):
-                    return await self.process_message(
-                        request,
-                        on_new_message,
-                        text=self._sanitize_user_message(
-                            user_message, metadata["users"]
-                        ),
-                        sender_id=sender_id,
-                        metadata=metadata,
+                if not self._is_user_message(output):
+                    logger.debug(
+                        "Received message from Slack which doesn't look like "
+                        "a user message. Skipping message."
                     )
-                else:
+                    return response.text("Bot message delivered.")
+
+                if not self._is_supported_channel(output, metadata):
                     logger.warning(
                         f"Received message on unsupported channel: {metadata['out_channel']}"
                     )
+                    return response.text("channel not supported.")
 
+                return await self.process_message(
+                    request,
+                    on_new_message,
+                    text=self._sanitize_user_message(user_message, metadata["users"]),
+                    sender_id=sender_id,
+                    metadata=metadata,
+                )
             elif content_type == "application/x-www-form-urlencoded":
                 # if URL-encoded message is received
                 output = request.form
@@ -458,7 +551,8 @@ class SlackInput(InputChannel):
                         # link buttons don't have "value", don't send their clicks to bot
                         return response.text("User clicked link button")
                 return response.text(
-                    "The input message could not be processed.", status=500
+                    "The input message could not be processed.",
+                    status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 )
 
             return response.text("Bot message delivered.")

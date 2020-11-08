@@ -104,7 +104,7 @@ class Domain:
 
     @classmethod
     def empty(cls) -> "Domain":
-        return cls([], [], [], {}, [], [])
+        return cls([], [], [], {}, [], {})
 
     @classmethod
     def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
@@ -175,7 +175,7 @@ class Domain:
             slots,
             utter_templates,
             data.get(KEY_ACTIONS, []),
-            data.get(KEY_FORMS, []),
+            data.get(KEY_FORMS, {}),
             data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
@@ -507,13 +507,14 @@ class Domain:
         self.intent_properties = self.collect_intent_properties(
             intents, self.entities, self.roles, self.groups
         )
-        self.overriden_default_intents = self._collect_overridden_default_intents(
+        self.overridden_default_intents = self._collect_overridden_default_intents(
             intents
         )
 
-        self.forms: Dict[Text, Any] = {}
-        self.form_names: List[Text] = []
-        self._initialize_forms(forms)
+        self.form_names, self.forms, overridden_form_actions = self._initialize_forms(
+            forms
+        )
+        action_names += overridden_form_actions
 
         self.slots = slots
         self.templates = templates
@@ -528,7 +529,11 @@ class Domain:
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
             self._combine_user_with_default_actions(self.user_actions)
-            + self.form_names
+            + [
+                form_name
+                for form_name in self.form_names
+                if form_name not in self._custom_actions
+            ]
             + self.action_texts
         )
 
@@ -569,34 +574,55 @@ class Domain:
         }
         return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
 
-    def _initialize_forms(self, forms: Union[Dict[Text, Any], List[Text]]) -> None:
-        """Initialize the domain's `self.form` and `self.form_names` attributes.
+    @staticmethod
+    def _initialize_forms(
+        forms: Union[Dict[Text, Any], List[Text]]
+    ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
+        """Retrieves the initial values for the Domain's form fields.
 
         Args:
             forms: Form names (if forms are a list) or a form dictionary. Forms
                 provided in dictionary format have the form names as keys, and either
                 empty dictionaries as values, or objects containing
                 `SlotMapping`s.
+
+        Returns:
+            The form names, a mapping of form names and slot mappings, and custom
+            actions.
+            Returning custom actions for each forms means that Rasa Open Source should
+            not use the default `FormAction` for the forms, but rather a custom action
+            for it. This can e.g. be used to run the deprecated Rasa Open Source 1
+            `FormAction` which is implemented in the Rasa SDK.
         """
-        if not forms:
-            # empty dict or empty list
-            return
-        elif isinstance(forms, dict):
+        if isinstance(forms, dict):
             # dict with slot mappings
-            self.forms = forms
-            self.form_names = list(forms.keys())
-        elif isinstance(forms, list) and isinstance(forms[0], str):
-            # list of form names
-            self.forms = {form_name: {} for form_name in forms}
-            self.form_names = forms
-        else:
+            return list(forms.keys()), forms, []
+
+        if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
+            # list of form names (Rasa Open Source 1 format)
             rasa.shared.utils.io.raise_warning(
-                f"The `forms` section in the domain needs to contain a dictionary. "
-                f"Instead found an object of type '{type(forms)}'.",
+                "The `forms` section in the domain used the old Rasa Open Source 1 "
+                "list format to define forms. Rasa Open Source will be configured to "
+                "use the deprecated `FormAction` within the Rasa SDK. If you want to "
+                "use the new Rasa Open Source 2 `FormAction` adapt your `forms` "
+                "section as described in the documentation. Support for the "
+                "deprecated `FormAction` in the Rasa SDK will be removed in Rasa Open "
+                "Source 3.0.",
                 docs=rasa.shared.constants.DOCS_URL_FORMS,
+                category=FutureWarning,
             )
+            return forms, {form_name: {} for form_name in forms}, forms
+
+        rasa.shared.utils.io.raise_warning(
+            f"The `forms` section in the domain needs to contain a dictionary. "
+            f"Instead found an object of type '{type(forms)}'.",
+            docs=rasa.shared.constants.DOCS_URL_FORMS,
+        )
+
+        return [], {}, []
 
     def __hash__(self) -> int:
+        """Returns a unique hash for the domain."""
         self_as_dict = self.as_dict()
         self_as_dict[
             KEY_INTENTS
@@ -1032,7 +1058,7 @@ class Domain:
         for intent_name, intent_props in intent_properties.items():
             if (
                 intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
-                and intent_name not in self.overriden_default_intents
+                and intent_name not in self.overridden_default_intents
             ):
                 # Default intents should be not dumped with the domain
                 continue

@@ -22,6 +22,8 @@ def _get_lock_lifetime() -> int:
 LOCK_LIFETIME = _get_lock_lifetime()
 DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 10
 
+DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX = "lock:"
+
 
 # noinspection PyUnresolvedReferences
 class LockError(RasaException):
@@ -199,6 +201,7 @@ class RedisLockStore(LockStore):
         db: int = 1,
         password: Optional[Text] = None,
         use_ssl: bool = False,
+        key_prefix: Optional[Text] = None,
         socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
     ) -> None:
         """Create a lock store which uses Redis for persistence.
@@ -211,6 +214,8 @@ class RedisLockStore(LockStore):
             password: The password which should be used for authentication with the
                 Redis database.
             use_ssl: `True` if SSL should be used for the connection to Redis.
+            key_prefix: prefix to prepend to all keys used by the lock store. Must be
+                alphanumeric.
             socket_timeout: Timeout in seconds after which an exception will be raised
                 in case Redis doesn't respond within `socket_timeout` seconds.
         """
@@ -224,19 +229,36 @@ class RedisLockStore(LockStore):
             ssl=use_ssl,
             socket_timeout=socket_timeout,
         )
+
+        self.key_prefix = DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+        if key_prefix:
+            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            self._set_key_prefix(key_prefix)
+
         super().__init__()
 
+    def _set_key_prefix(self, key_prefix: Text) -> None:
+        if isinstance(key_prefix, str) and key_prefix.isalnum():
+            self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+        else:
+            logger.warning(
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+            )
+
+    def _get_key_prefix(self) -> Text:
+        return self.key_prefix
+
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
-        serialised_lock = self.red.get(conversation_id)
+        serialised_lock = self.red.get(self.key_prefix + conversation_id)
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))
 
     def delete_lock(self, conversation_id: Text) -> None:
-        deletion_successful = self.red.delete(conversation_id)
+        deletion_successful = self.red.delete(self.key_prefix + conversation_id)
         self._log_deletion(conversation_id, deletion_successful)
 
     def save_lock(self, lock: TicketLock) -> None:
-        self.red.set(lock.conversation_id, lock.dumps())
+        self.red.set(self.key_prefix + lock.conversation_id, lock.dumps())
 
 
 class InMemoryLockStore(LockStore):

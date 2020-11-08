@@ -91,13 +91,35 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
         )
 
 
+def validate_component_keys(
+    component: "Component", component_config: Dict[Text, Any]
+) -> None:
+    """Validates that all keys for a component are valid.
+
+    Args:
+        component: The component class
+        component_config: The user-provided config for the component in the pipeline
+    """
+    component_name = component_config.get("name")
+    allowed_keys = set(component.defaults.keys())
+    provided_keys = set(component_config.keys())
+    provided_keys.discard("name")
+    list_separator = "\n- "
+    for key in provided_keys:
+        if key not in allowed_keys:
+            rasa.shared.utils.io.raise_warning(
+                f"You have provided an invalid key `{key}` for component `{component_name}` in your pipeline. "
+                f"Valid options for `{component_name}` are:\n- "
+                f"{list_separator.join(allowed_keys)}"
+            )
+
+
 def validate_empty_pipeline(pipeline: List["Component"]) -> None:
     """Ensures the pipeline is not empty.
 
     Args:
         pipeline: the list of the :class:`rasa.nlu.components.Component`.
     """
-
     if len(pipeline) == 0:
         raise InvalidConfigError(
             "Can not train an empty pipeline. "

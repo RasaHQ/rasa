@@ -1,43 +1,65 @@
 {
-  "luis_schema_version": "5.0.0",
+  "luis_schema_version": "7.0.0",
   "versionId": "0.1",
   "name": "demo-restaurants",
   "desc": "",
   "culture": "en-us",
   "tokenizerVersion": "1.0.0",
+  "patternAnyEntities": [],
+  "regex_entities": [
+    {
+      "name": "flightNumber",
+      "regexPattern": "flight [A-Z]{2} [0-9]{4}",
+      "roles": []
+    }
+  ],
+  "phraselists": [],
+  "regex_features": [],
+  "patterns": [],
+  "settings": [],
   "intents": [
     {
-      "name": "affirm"
+      "name": "affirm",
+      "features": []
     },
     {
-      "name": "goodbye"
+      "name": "goodbye",
+      "features": []
     },
     {
-      "name": "greet"
+      "name": "greet",
+      "features": []
     },
     {
-      "name": "inform"
+      "name": "inform",
+      "features": []
     },
     {
-      "name": "None"
+      "name": "None",
+      "features": []
     }
   ],
   "entities": [
     {
-      "name": "cuisine"
+      "name": "cuisine",
+      "children": [],
+      "roles": [],
+      "features": []
     },
     {
-      "name": "location"
+      "name": "location",
+      "children": [],
+      "roles": [
+        "to",
+        "from"
+      ],
+      "features": []
     }
   ],
+  "hierarchicals": [],
   "composites": [],
   "closedLists": [],
-  "patternAnyEntities": [],
-  "regex_entities": [],
   "prebuiltEntities": [],
-  "model_features": [],
-  "regex_features": [],
-  "patterns": [],
   "utterances": [
     {
       "text": "hello",
@@ -75,8 +97,10 @@
       "entities": [
         {
           "entity": "location",
+          "role": "to",
           "startPos": 31,
-          "endPos": 35
+          "endPos": 35,
+          "children": []
         }
       ]
     },
@@ -87,7 +111,8 @@
         {
           "entity": "cuisine",
           "startPos": 8,
-          "endPos": 14
+          "endPos": 14,
+          "children": []
         }
       ]
     },
@@ -113,12 +138,14 @@
         {
           "entity": "cuisine",
           "startPos": 10,
-          "endPos": 16
+          "endPos": 16,
+          "children": []
         },
         {
           "entity": "location",
           "startPos": 31,
-          "endPos": 36
+          "endPos": 36,
+          "children": []
         }
       ]
     },
@@ -164,7 +191,8 @@
         {
           "entity": "location",
           "startPos": 16,
-          "endPos": 19
+          "endPos": 19,
+          "children": []
         }
       ]
     },
@@ -175,12 +203,14 @@
         {
           "entity": "cuisine",
           "startPos": 8,
-          "endPos": 13
+          "endPos": 13,
+          "children": []
         },
         {
           "entity": "location",
           "startPos": 0,
-          "endPos": 6
+          "endPos": 6,
+          "children": []
         }
       ]
     },
@@ -211,7 +241,8 @@
         {
           "entity": "cuisine",
           "startPos": 21,
-          "endPos": 30
+          "endPos": 30,
+          "children": []
         }
       ]
     },
@@ -222,7 +253,8 @@
         {
           "entity": "cuisine",
           "startPos": 12,
-          "endPos": 18
+          "endPos": 18,
+          "children": []
         }
       ]
     },
@@ -233,10 +265,10 @@
         {
           "entity": "cuisine",
           "startPos": 4,
-          "endPos": 13
+          "endPos": 13,
+          "children": []
         }
       ]
     }
-  ],
-  "settings": []
+  ]
 }
