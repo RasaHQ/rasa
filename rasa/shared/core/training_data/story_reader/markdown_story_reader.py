@@ -131,8 +131,8 @@ class MarkdownStoryReader(StoryReader):
         except Exception as e:
             raise ValueError(
                 "Invalid to parse arguments in line "
-                "'{}'. Failed to decode parameters"
-                "as a json object. Make sure the event"
+                "'{}'. Failed to decode parameters "
+                "as a json object. Make sure the event "
                 "name is followed by a proper json "
                 "object. Error: {}".format(line, e)
             )
