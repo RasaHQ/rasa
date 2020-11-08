@@ -143,7 +143,7 @@ class SlackInput(InputChannel):
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
-            credentials.get("slack_signing_secret"),
+            credentials.get("slack_signing_secret", ""),
         )
 
     def __init__(
