@@ -1,5 +1,6 @@
 import copy
 import logging
+import random
 
 from rasa.shared.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
@@ -56,7 +57,8 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             )
 
             if suitable_templates:
-                return np.random.choice(suitable_templates)
+                return random.choice(suitable_templates)
+                # return np.random.choice(suitable_templates)
             else:
                 return None
         else:
