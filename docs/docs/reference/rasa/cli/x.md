@@ -42,3 +42,15 @@ Generate a hexadecimal secret token used to access the Rasa X API.
 
 A new token is generated on every `rasa x` command.
 
+#### run\_locally
+
+```python
+run_locally(args: argparse.Namespace) -> None
+```
+
+Run a Rasa X instance locally.
+
+**Arguments**:
+
+- `args` - commandline arguments
+
