@@ -393,3 +393,80 @@ The following arguments are available for `rasa x`:
 
 ```text [rasa x --help]
 ```
+
+## Command Line Plugins
+
+You can extend the Rasa Open Source command line interface with custom plugins.
+Plugins extending the `rasa` command line interface can implement new or custom
+behavior which is not included within Rasa Open Source by default.
+
+:::note
+It is currently not possible to overwrite existing `rasa` commands. For example it is
+not possible to use a plugin `rasa-train` to override the `rasa train` command.
+:::
+
+### Installing a Plugin
+
+A command line plugin is nothing more than an executable file, whose name begins with
+`rasa-`. Once it's installed, it is available on the command line via
+`rasa <plugin name>`.
+
+To make the plugin discoverable, it has to be in your `PATH` environment. You can see
+all potential directories in your `PATH` by running `echo $PATH`.
+Assuming that `/usr/local/bin` is in your `PATH`, make your plugin discoverable by
+moving it to there:
+
+```bash
+sudo mv ./rasa-hello  /usr/local/bin
+```
+
+Make sure that the executable name begins with `rasa-`.
+
+### Listing Available Plugins
+
+You can use `rasa plugins` to list command line plugins which are discoverable by
+Rasa Open Source. Rasa Open Source discovers command line plugins by searching your
+`PATH` environment for executables which begin with the prefix `rasa-`.
+
+### Writing a Plugin
+
+You can write a plugin in any programming language or script that allows you
+to write command-line commands. The command that your plugin provides, is
+determined based on the name of your plugin's executable. Everything after the first dash
+will be considered the plugin name. This means an executable `rasa-my-plugin` will
+be available via `rasa my-plugin`.
+
+The following snippet is the example of a plugin which prints `Hello world!` if you
+run `rasa hello` without additional parameters.
+
+```bash
+#!/bin/bash
+if [[ $# -eq 0 ]]
+then
+    echo "Hello world!"
+else
+    echo "Hello $1"
+fi
+```
+
+A plugin has to be executable. To make the script from above executable run:
+
+```bash
+chmod +x ./rasa-hello
+```
+
+Then add your plugin to your `PATH` as described
+[here](command-line-interface.mdx#installing-a-plugin).
+You can now invoke your plugin, by running:
+
+```bash
+rasa hello
+# Hello world!
+```
+
+All arguments which you pass to your command, will be passed to your plugin as they are:
+
+```bash
+rasa hello universe
+# Hello universe!
+```
