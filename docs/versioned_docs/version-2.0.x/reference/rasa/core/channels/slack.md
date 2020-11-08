@@ -22,7 +22,7 @@ Slack input channel implementation. Based on the HTTPInputChannel.
 #### \_\_init\_\_
 
 ```python
- | __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False) -> None
+ | __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False, slack_signing_secret: Optional[Text] = None) -> None
 ```
 
 Create a Slack input channel.
@@ -42,14 +42,20 @@ https://github.com/slackapi/python-slackclient
   If not set, messages will be sent back
   to the &quot;App&quot; DM channel of your bot&#x27;s name.
 - `proxy` - A Proxy Server to route your traffic through
-- `slack_retry_reason_header` - Slack HTTP header name indicating reason that slack send retry request.
-- `slack_retry_number_header` - Slack HTTP header name indicating the attempt number
+- `slack_retry_reason_header` - Slack HTTP header name indicating reason
+  that slack send retry request.
+- `slack_retry_number_header` - Slack HTTP header name indicating
+  the attempt number.
 - `errors_ignore_retry` - Any error codes given by Slack
   included in this list will be ignored.
   Error codes are listed
   `here &lt;https://api.slack.com/events-api#errors&gt;`_.
-- `use_threads` - If set to True, your bot will send responses in Slack as a threaded message.
-  Responses will appear as a normal Slack message if set to False.
+- `use_threads` - If set to `True`, your bot will send responses in Slack as
+  a threaded message. Responses will appear as a normal Slack message
+  if set to `False`.
+- `slack_signing_secret` - Slack creates a unique string for your app and
+  shares it with you. This allows us to verify requests from Slack
+  with confidence by verifying signatures using your signing secret.
 
 #### process\_message
 
@@ -78,4 +84,24 @@ Extracts the metadata from a slack API event (https://api.slack.com/types/event)
 
   Metadata extracted from the sent event payload. This includes the output channel for the response,
   and users that have installed the bot.
+
+#### is\_request\_from\_slack\_authentic
+
+```python
+ | is_request_from_slack_authentic(request: Request) -> bool
+```
+
+Validate a request from Slack for its authenticity.
+
+Checks if the signature matches the one we expect from Slack. Ensures
+we don&#x27;t process request from a third-party disguising as slack.
+
+**Arguments**:
+
+- `request` - incoming request to be checked
+  
+
+**Returns**:
+
+  `True` if the request came from Slack.
 

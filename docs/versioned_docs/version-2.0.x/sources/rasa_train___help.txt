@@ -1,10 +1,3 @@
-(0lqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk(B
-(0x(B Rasa Open Source reports anonymous usage telemetry to help improve the product (0x(B
-(0x(B for all its users.                                                             (0x(B
-(0x(B                                                                                (0x(B
-(0x(B If you'd like to opt-out, you can use `rasa telemetry disable`.                (0x(B
-(0x(B To learn more, check out https://rasa.com/docs/rasa/telemetry/telemetry.       (0x(B
-(0mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj(B
 usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
