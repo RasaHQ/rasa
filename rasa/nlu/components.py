@@ -7,7 +7,8 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
+from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
@@ -58,7 +59,7 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
     failed_imports = {}
     for component_name in component_names:
         if component_name is None:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 "Your pipeline configuration contains a component that is missing "
                 "a name. Please double check your configuration or if this is a "
                 "custom component make sure to implement the name property for "
@@ -121,7 +122,7 @@ def validate_empty_pipeline(pipeline: List["Component"]) -> None:
         pipeline: the list of the :class:`rasa.nlu.components.Component`.
     """
     if len(pipeline) == 0:
-        raise InvalidConfigError(
+        raise InvalidConfigException(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
             "the configuration using the 'pipeline' key."
@@ -143,7 +144,7 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
             tokenizer_names.append(component.name)
 
     if len(tokenizer_names) > 1:
-        raise InvalidConfigError(
+        raise InvalidConfigException(
             f"The pipeline configuration contains more than one tokenizer, "
             f"which is not possible at this time. You can only use one tokenizer. "
             f"The pipeline contains the following tokenizers: {tokenizer_names}. "
@@ -186,7 +187,7 @@ def validate_required_components(pipeline: List["Component"]) -> None:
         missing_components_str = ", ".join(f"'{c}'" for c in missing_components)
 
         if missing_components:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"The pipeline configuration contains errors. The component "
                 f"'{component.name}' requires {missing_components_str} to be "
                 f"placed before it in the pipeline. Please "

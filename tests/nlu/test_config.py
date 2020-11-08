@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.shared.exceptions import YamlSyntaxException
+from rasa.shared.exceptions import InvalidConfigException, YamlSyntaxException
 from rasa.shared.importers import autoconfig
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
@@ -41,7 +41,7 @@ def test_invalid_many_tokenizers_in_config():
         "pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyTokenizer"}]
     }
 
-    with pytest.raises(config.InvalidConfigError) as execinfo:
+    with pytest.raises(InvalidConfigException) as execinfo:
         Trainer(config.RasaNLUModelConfig(nlu_config))
     assert "The pipeline configuration contains more than one" in str(execinfo.value)
 
@@ -62,7 +62,7 @@ def test_invalid_many_tokenizers_in_config():
 )
 @pytest.mark.skip_on_windows
 def test_missing_required_component(_config):
-    with pytest.raises(config.InvalidConfigError) as execinfo:
+    with pytest.raises(InvalidConfigException) as execinfo:
         Trainer(config.RasaNLUModelConfig(_config))
     assert "The pipeline configuration contains errors" in str(execinfo.value)
 
@@ -71,7 +71,7 @@ def test_missing_required_component(_config):
     "pipeline_config", [{"pipeline": [{"name": "CountVectorsFeaturizer"}]}]
 )
 def test_missing_property(pipeline_config):
-    with pytest.raises(config.InvalidConfigError) as execinfo:
+    with pytest.raises(InvalidConfigException) as execinfo:
         Trainer(config.RasaNLUModelConfig(pipeline_config))
     assert "The pipeline configuration contains errors" in str(execinfo.value)
 

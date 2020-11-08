@@ -11,6 +11,7 @@ from sanic.compat import Header
 from sanic.request import Request
 
 from rasa.core.channels import SlackInput
+from rasa.shared.exceptions import InvalidConfigException
 from tests.utilities import json_of_latest_request, latest_request
 
 logger = logging.getLogger(__name__)
@@ -750,16 +751,9 @@ def prepare_slack_request(headers: Dict[Text, Any]) -> Request:
     return request
 
 
-def test_slack_verify_signature_is_always_true_if_there_is_no_key():
-    request = prepare_slack_request(
-        {
-            "x-slack-signature": "foobar",  # this is an invalid signature
-            "x-slack-request-timestamp": str(int(time.time())),
-        }
-    )
-    slack = SlackInput("mytoken", slack_signing_secret=None)
-
-    assert slack.is_request_from_slack_authentic(request) is True
+def test_slack_fails_if_signature_is_missing():
+    with pytest.raises(InvalidConfigException):
+        SlackInput("mytoken")
 
 
 @mock.patch("time.time", mock.MagicMock(return_value=1604586653))

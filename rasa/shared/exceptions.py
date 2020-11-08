@@ -69,3 +69,7 @@ class FileNotFoundException(RasaException, FileNotFoundError):
 
 class FileIOException(RasaException):
     """Raised if there is an error while doing file IO."""
+
+
+class InvalidConfigException(ValueError, RasaException):
+    """Raised if an invalid configuration is encountered."""
