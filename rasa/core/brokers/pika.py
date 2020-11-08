@@ -653,9 +653,6 @@ class PikaEventBroker(EventBroker):
 
         return None
 
-    def _publish(self, body: Text, headers: MessageHeaders = None) -> None:
-        self.process_queue.put((body, headers))
-
     def is_ready(
         self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
     ) -> bool:
@@ -693,21 +690,4 @@ class PikaEventBroker(EventBroker):
                 `headers` attribute of the message's `BasicProperties`.
         """
         body = json.dumps(event)
-
-        while retries:
-            try:
-                self._publish(body, headers)
-                return
-            except Exception as e:
-                logger.error(
-                    f"Could not open Pika channel at host '{self.host}'. "
-                    f"Failed with error: {e}"
-                )
-                self.close()
-                if self.raise_on_failure:
-                    raise e
-
-            retries -= 1
-            time.sleep(retry_delay_in_seconds)
-
-        logger.error(f"Failed to publish Pika event on host '{self.host}':\n{body}")
+        self.process_queue.put((body, headers))
