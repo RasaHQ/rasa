@@ -438,10 +438,10 @@ class PikaMessageProcessor:
 
     def _connect(self) -> None:
         """Establish a connection to Pika."""
-        self._run_pika_io_loop_in_thread()
         self._connection = initialise_pika_select_connection(
             self.parameters, self._on_open_connection, self._on_open_connection_error
         )
+        self._run_pika_io_loop_in_thread()
 
     def _on_open_connection(self, connection: "SelectConnection") -> None:
         logger.debug(
@@ -487,7 +487,8 @@ class PikaMessageProcessor:
             channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
         self._channel = channel
-        self._process_messages()
+        thread = threading.Thread(target=self._process_messages)
+        thread.start()
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
@@ -505,19 +506,15 @@ class PikaMessageProcessor:
 
     def _process_messages(self) -> None:
         """Start to process messages."""
-        logger.debug("Running pika message processing...")
-
+        logger.debug("Start processing messages...")
         try:
             while True:
-                if not self._process_queue.empty():
-                    message = self._process_queue.get_nowait()
-                    self._publish(message)
-                    logger.debug(
-                        f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-                        f"'{self.parameters.host}':\n{message[0]}"
-                    )
-                logger.debug("Sleep 0.5s")
-                time.sleep(0.5)
+                message = self._process_queue.get()
+                self._publish(message)
+                logger.debug(
+                    f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
+                    f"'{self.parameters.host}':\n{message[0]}"
+                )
         except EOFError:
             # Will most likely happen when shutting down Rasa X.
             logger.debug(
@@ -526,7 +523,6 @@ class PikaMessageProcessor:
             )
 
     def _run_pika_io_loop_in_thread(self) -> None:
-        logger.debug("Running pika thread...")
         thread = threading.Thread(target=self._run_pika_io_loop)
         thread.start()
 
@@ -650,7 +646,7 @@ class PikaEventBroker(EventBroker):
     def _start_pika_connection_process(self) -> Optional[multiprocessing.Process]:
         if self.pika_message_processor:
             process = multiprocessing.Process(
-                target=self.pika_message_processor.run, args=(self.process_queue,), daemon=True
+                target=self.pika_message_processor.run, args=(self.process_queue,)
             )
             process.start()
             return process
