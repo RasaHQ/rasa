@@ -1,8 +1,11 @@
 import hashlib
 import hmac
+from http import HTTPStatus
 import json
 import logging
+import math
 import re
+import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
@@ -237,7 +240,9 @@ class SlackInput(InputChannel):
         )
 
     @staticmethod
-    def _sanitize_user_message(text: Text, uids_to_remove: Optional[List[Text]]) -> Text:
+    def _sanitize_user_message(
+        text: Text, uids_to_remove: Optional[List[Text]]
+    ) -> Text:
         """Remove superfluous/wrong/problematic tokens from a message.
 
         Probably a good starting point for pre-formatting of user-provided text
@@ -349,7 +354,9 @@ class SlackInput(InputChannel):
                 f" due to {retry_reason}."
             )
 
-            return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
+            return response.text(
+                None, status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": 1}
+            )
 
         if metadata is not None:
             output_channel = metadata.get("out_channel")
@@ -433,17 +440,33 @@ class SlackInput(InputChannel):
             # the next release
             return True
 
-        slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
+        try:
+            slack_signing_secret = bytes(self.slack_signing_secret, "utf-8")
 
-        slack_signature = request.headers.get("X-Slack-Signature", "")
-        slack_request_timestamp = request.headers.get("X-Slack-Request-Timestamp", "")
+            slack_signature = request.headers.get("X-Slack-Signature", "")
+            slack_request_timestamp = request.headers.get(
+                "X-Slack-Request-Timestamp", "0"
+            )
 
-        prefix = f"v0:{slack_request_timestamp}:".encode("utf-8")
-        basestring = prefix + request.body
-        digest = hmac.new(slack_signing_secret, basestring, hashlib.sha256).hexdigest()
-        computed_signature = f"v0={digest}"
+            if abs(time.time() - int(slack_request_timestamp)) > 60 * 5:
+                # The request timestamp is more than five minutes from local time.
+                # It could be a replay attack, so let's ignore it.
+                return False
 
-        return hmac.compare_digest(computed_signature, slack_signature)
+            prefix = f"v0:{slack_request_timestamp}:".encode("utf-8")
+            basestring = prefix + request.body
+            digest = hmac.new(
+                slack_signing_secret, basestring, hashlib.sha256
+            ).hexdigest()
+            computed_signature = f"v0={digest}"
+
+            return hmac.compare_digest(computed_signature, slack_signature)
+        except Exception as e:
+            logger.error(
+                f"Failed to validate slack request authenticity. "
+                f"Assuming invalid request. Error: {e}"
+            )
+            return False
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -480,6 +503,10 @@ class SlackInput(InputChannel):
                     return response.json(output.get("challenge"))
 
                 if not self._is_user_message(output):
+                    logger.debug(
+                        "Received message from Slack which doesn't look like "
+                        "a user message. Skipping message."
+                    )
                     return response.text("Bot message delivered.")
 
                 if not self._is_supported_channel(output, metadata):
@@ -512,7 +539,8 @@ class SlackInput(InputChannel):
                         # link buttons don't have "value", don't send their clicks to bot
                         return response.text("User clicked link button")
                 return response.text(
-                    "The input message could not be processed.", status=500
+                    "The input message could not be processed.",
+                    status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 )
 
             return response.text("Bot message delivered.")

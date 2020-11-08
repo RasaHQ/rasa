@@ -1,5 +1,8 @@
 import json
 import logging
+import time
+from typing import Any, Dict, Text
+from unittest import mock
 from unittest.mock import Mock
 
 from aioresponses import aioresponses
@@ -367,7 +370,6 @@ def test_slackbot_init_three_parameter():
 
 # Use monkeypatch for sending attachments, images and plain text.
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_attachment_only():
     from rasa.core.channels.slack import SlackBot
 
@@ -396,7 +398,6 @@ async def test_slackbot_send_attachment_only():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_attachment_only_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -426,7 +427,6 @@ async def test_slackbot_send_attachment_only_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_attachment_with_text():
     from rasa.core.channels.slack import SlackBot
 
@@ -456,7 +456,6 @@ async def test_slackbot_send_attachment_with_text():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_attachment_with_text_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -487,7 +486,6 @@ async def test_slackbot_send_attachment_with_text_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_image_url():
     from rasa.core.channels.slack import SlackBot
 
@@ -516,7 +514,6 @@ async def test_slackbot_send_image_url():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_image_url_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -546,7 +543,6 @@ async def test_slackbot_send_image_url_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_text():
     from rasa.core.channels.slack import SlackBot
 
@@ -574,7 +570,6 @@ async def test_slackbot_send_text():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_text_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -603,7 +598,6 @@ async def test_slackbot_send_text_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_text_with_buttons():
     from rasa.core.channels.slack import SlackBot
 
@@ -647,7 +641,6 @@ async def test_slackbot_send_text_with_buttons():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_text_with_buttons_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -692,7 +685,6 @@ async def test_slackbot_send_text_with_buttons_threaded():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_custom_json():
     from rasa.core.channels.slack import SlackBot
 
@@ -719,7 +711,6 @@ async def test_slackbot_send_custom_json():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@pytest.mark.asyncio
 async def test_slackbot_send_custom_json_threaded():
     from rasa.core.channels.slack import SlackBot
 
@@ -746,7 +737,7 @@ async def test_slackbot_send_custom_json_threaded():
         }
 
 
-def prepare_slack_request(headers):
+def prepare_slack_request(headers: Dict[Text, Any]) -> Request:
     request = Request(
         b"/webhooks/slack/webhook",
         headers=Header(headers),
@@ -763,7 +754,7 @@ def test_slack_verify_signature_is_always_true_if_there_is_no_key():
     request = prepare_slack_request(
         {
             "x-slack-signature": "foobar",  # this is an invalid signature
-            "x-slack-request-timestamp": "1604586653",
+            "x-slack-request-timestamp": str(int(time.time())),
         }
     )
     slack = SlackInput("mytoken", slack_signing_secret=None)
@@ -771,18 +762,55 @@ def test_slack_verify_signature_is_always_true_if_there_is_no_key():
     assert slack.is_request_from_slack_authentic(request) is True
 
 
+@mock.patch("time.time", mock.MagicMock(return_value=1604586653))
 def test_slack_verify_signature():
     request = prepare_slack_request(
         {
             "x-slack-signature": "v0=80a3bd62ce5af04d8d80781134f165df"
             "185b90342d467abf5c74a27d2d0dd1f5",
-            "x-slack-request-timestamp": "1604586653",
+            "x-slack-request-timestamp": str(int(time.time())),
         }
     )
     input_with_right_secret = SlackInput("mytoken", slack_signing_secret="foobar")
-    input_with_wrong_secret = SlackInput("mytoken", slack_signing_secret="foobaz")
 
     assert input_with_right_secret.is_request_from_slack_authentic(request) is True
+
+
+def test_slack_fail_on_old_timestamp():
+    request = prepare_slack_request(
+        {
+            "x-slack-signature": "v0=80a3bd62ce5af04d8d80781134f165df"
+            "185b90342d467abf5c74a27d2d0dd1f5",
+            "x-slack-request-timestamp": str(int(time.time()) - 10 * 60),
+        }
+    )
+    input_with_right_secret = SlackInput("mytoken", slack_signing_secret="foobar")
+
+    assert input_with_right_secret.is_request_from_slack_authentic(request) is False
+
+
+def test_slack_handles_invalid_timestamp():
+    request = prepare_slack_request(
+        {
+            "x-slack-signature": "v0=80a3bd62ce5af04d8d80781134f165df"
+            "185b90342d467abf5c74a27d2d0dd1f5",
+            "x-slack-request-timestamp": "foobar",
+        }
+    )
+    input_with_right_secret = SlackInput("mytoken", slack_signing_secret="foobar")
+
+    assert input_with_right_secret.is_request_from_slack_authentic(request) is False
+
+
+def test_slack_verify_wrong_signature():
+    request = prepare_slack_request(
+        {
+            "x-slack-signature": "v0=80a3bd62ce5af04d8d80781134f165df"
+            "185b90342d467abf5c74a27d2d0dd1f5",
+            "x-slack-request-timestamp": str(int(time.time())),
+        }
+    )
+    input_with_wrong_secret = SlackInput("mytoken", slack_signing_secret="foobaz")
 
     assert input_with_wrong_secret.is_request_from_slack_authentic(request) is False
 
