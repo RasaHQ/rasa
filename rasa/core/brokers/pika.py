@@ -2,7 +2,9 @@ import json
 import logging
 import os
 import time
+import sys
 from threading import Thread
+import multiprocessing
 from collections import deque
 from contextlib import contextmanager
 from typing import (
@@ -34,8 +36,7 @@ logger = logging.getLogger(__name__)
 
 RABBITMQ_EXCHANGE = "rasa-exchange"
 DEFAULT_QUEUE_NAME = "rasa_core_events"
-MessageHeaders = Optional[Dict[Text, Text]]
-Message = Tuple[Text, MessageHeaders]
+Message = Tuple[Text, Dict[Text, Text]]
 
 
 @contextmanager
@@ -196,7 +197,7 @@ def close_pika_connection(connection: "Connection") -> None:
         logger.exception("Failed to close Pika connection with host.")
 
 
-def _get_message_properties(headers: MessageHeaders = None) -> "BasicProperties":
+def _get_message_properties(headers: Optional[Dict[Text, Text]] = None) -> "BasicProperties":
     """Create RabbitMQ message `BasicProperties`.
 
     The `app_id` property is set to the value of `RASA_ENVIRONMENT` env variable
@@ -287,6 +288,19 @@ def _get_queues_from_args(
 class PikaEventBroker(EventBroker):
     """Pika-based event broker for publishing messages to RabbitMQ."""
 
+    NUMBER_OF_MP_WORKERS = 1
+    MP_CONTEXT = None
+
+    if sys.platform == "darwin" and sys.version_info < (3, 8):
+        # On macOS, Python 3.8 has switched the default start method to "spawn". To
+        # quote the documentation: "The fork start method should be considered
+        # unsafe as it can lead to crashes of the subprocess". Apply this fix when
+        # running on macOS on Python <= 3.7.x as well.
+
+        # See:
+        # https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
+        MP_CONTEXT = "spawn"
+
     def __init__(
         self,
         host: Text,
@@ -323,14 +337,14 @@ class PikaEventBroker(EventBroker):
         self.password = password
         self.port = port
         self.queues = _get_queues_from_args(queues, kwargs)
-        self.should_keep_unpublished_messages = should_keep_unpublished_messages
         self.raise_on_failure = raise_on_failure
 
         self._connection: Optional["SelectConnection"] = None
         self._channel: Optional["Channel"] = None
-        self._unpublished_messages: Deque[Text] = deque()
 
-        self.run()
+        self._process_queue = self._get_mp_context().Queue()
+        self._process = multiprocessing.Process(target=self.run)
+        self._process.start()
 
     def __del__(self) -> None:
         if self._channel:
@@ -432,7 +446,7 @@ class PikaEventBroker(EventBroker):
             self._channel.queue_declare(queue=queue, durable=True)
             self._channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
-        self._publish_unpublished_messages()
+        self._process_messages()
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
@@ -445,60 +459,28 @@ class PikaEventBroker(EventBroker):
             self._connection.ioloop.stop()
         self._run_pika_io_loop_in_thread()
 
-    def _publish_unpublished_messages(self) -> None:
-        while self._unpublished_messages:
-            # Send unpublished messages
-            message = self._unpublished_messages.popleft()
+    def _process_messages(self):
+        logger.debug("Start processing incoming messages...")
+        while True:
+            message = self._process_queue.get()
             self._publish(message)
-            logger.debug(
-                f"Published message from queue of unpublished messages. "
-                f"Remaining unpublished messages: {len(self._unpublished_messages)}."
-            )
 
-    def _publish(self, body: Text, headers: MessageHeaders = None) -> None:
-        if not self.is_connected and self.should_keep_unpublished_messages:
-            logger.warning(
-                f"RabbitMQ channel has not been assigned. Adding message to "
-                f"list of unpublished messages and trying to publish them "
-                f"later. Current number of unpublished messages is "
-                f"{len(self._unpublished_messages)}."
-            )
-            self._unpublished_messages.append(body)
-            return
+    def _publish(self, message: Message) -> None:
+        body, headers = message
 
+        logger.debug(
+            f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
+            f"'{self.host}':\n{body}\n{headers}"
+        )
         self._channel.basic_publish(
             exchange=RABBITMQ_EXCHANGE,
             routing_key="",
             body=body.encode(rasa.shared.utils.io.DEFAULT_ENCODING),
             properties=_get_message_properties(headers),
         )
-        logger.debug(
-            f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-            f"'{self.host}':\n{body}"
-        )
 
-    def is_ready(
-        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
-    ) -> bool:
-        """Spin until Pika is ready to process messages.
-
-        It typically takes 50 ms or so for the pika channel to open. We'll wait up
-        to 10 seconds just in case.
-
-        Args:
-            attempts: Number of retries.
-            wait_time_between_attempts_in_seconds: Wait time between retries.
-
-        Returns:
-            `True` if the channel is available, `False` otherwise.
-        """
-        while attempts:
-            if self.is_connected:
-                return True
-            time.sleep(wait_time_between_attempts_in_seconds)
-            attempts -= 1
-
-        return False
+    def _get_mp_context(self) -> multiprocessing.context.BaseContext:
+        return multiprocessing.get_context(self.MP_CONTEXT)
 
     def publish(
         self,
@@ -521,7 +503,7 @@ class PikaEventBroker(EventBroker):
 
         while retries:
             try:
-                self._publish(body, headers)
+                self._process_queue.put((body, headers))
                 return
             except Exception as e:
                 logger.error(
