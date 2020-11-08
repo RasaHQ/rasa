@@ -83,7 +83,9 @@ def test_slack_metadata():
     }
 
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -129,7 +131,9 @@ def test_slack_form_metadata():
     form_event = {"payload": [json.dumps(payload)]}
 
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -171,7 +175,9 @@ def test_slack_metadata_missing_keys():
     }
 
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -213,7 +219,9 @@ def test_slack_form_metadata_missing_keys():
     form_event = {"payload": [json.dumps(payload)]}
 
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -227,7 +235,9 @@ def test_slack_form_metadata_missing_keys():
 
 def test_slack_no_metadata():
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -291,20 +301,22 @@ def test_slack_message_sanitization():
     )
 
 
-def test_slack_init_one_parameter():
-    ch = SlackInput("xoxb-test")
+def test_slack_init_token_parameter():
+    ch = SlackInput("xoxb-test", slack_signing_secret="foobar")
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel is None
 
 
-def test_slack_init_two_parameters():
-    ch = SlackInput("xoxb-test", "test")
+def test_slack_init_token_channel_parameters():
+    ch = SlackInput("xoxb-test", "test", slack_signing_secret="foobar")
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
 
 
-def test_slack_init_three_parameters():
-    ch = SlackInput("xoxb-test", "test", use_threads=True)
+def test_slack_init_token_channel_threads_parameters():
+    ch = SlackInput(
+        "xoxb-test", "test", slack_signing_secret="foobar", use_threads=True
+    )
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
     assert ch.use_threads is True
