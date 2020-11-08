@@ -590,9 +590,11 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         interpreter: NaturalLanguageInterpreter,
     ) -> Prediction:
         number_of_arguments_in_rasa_1_0 = 2
-        arguments = rasa.shared.utils.common.arguments_of(
-            policy.predict_action_probabilities
-        )
+        arguments = policy.predict_action_probabilities.__code__.co_varnames
+
+        # arguments = rasa.shared.utils.common.arguments_of(
+        #     policy.predict_action_probabilities
+        # )
         if (
             len(arguments) > number_of_arguments_in_rasa_1_0
             and "interpreter" in arguments
