@@ -1,7 +1,8 @@
 import copy
+import functools
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
+from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING, Callable
 
 import aiohttp
 
@@ -34,6 +35,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
+    ACTION_TWO_STAGE_FALLBACK_NAME,
 )
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
@@ -60,22 +62,25 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
+@functools.lru_cache()
+def default_actions(
+    action_endpoint: Optional[EndpointConfig] = None
+) -> Dict[Text, Callable]:
     """List default actions."""
     from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
 
-    return [
-        ActionListen(),
-        ActionRestart(),
-        ActionSessionStart(),
-        ActionDefaultFallback(),
-        ActionDeactivateLoop(),
-        ActionRevertFallbackEvents(),
-        ActionDefaultAskAffirmation(),
-        ActionDefaultAskRephrase(),
-        TwoStageFallbackAction(action_endpoint),
-        ActionBack(),
-    ]
+    return {
+        ACTION_LISTEN_NAME: ActionListen,
+        ACTION_RESTART_NAME: ActionRestart,
+        ACTION_SESSION_START_NAME: ActionSessionStart,
+        ACTION_DEFAULT_FALLBACK_NAME: ActionDefaultFallback,
+        ACTION_DEACTIVATE_LOOP_NAME: ActionDeactivateLoop,
+        ACTION_REVERT_FALLBACK_EVENTS_NAME: ActionRevertFallbackEvents,
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME: ActionDefaultAskAffirmation,
+        ACTION_DEFAULT_ASK_REPHRASE_NAME: ActionDefaultAskRephrase,
+        ACTION_TWO_STAGE_FALLBACK_NAME: lambda: TwoStageFallbackAction(action_endpoint),
+        ACTION_BACK_NAME: ActionBack,
+    }
 
 
 def action_for_index(
@@ -160,10 +165,9 @@ def action_from_name(
     Returns:
         The instantiated action.
     """
-    defaults = {a.name(): a for a in default_actions(action_endpoint)}
-
+    defaults = default_actions(action_endpoint)
     if name in defaults and name not in domain.user_actions_and_forms:
-        return defaults[name]
+        return defaults[name]()
 
     if name.startswith(UTTER_PREFIX) and is_retrieval_action(
         name, domain.retrieval_intents
