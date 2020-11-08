@@ -5,11 +5,9 @@ import time
 import sys
 from threading import Thread
 import multiprocessing
-from collections import deque
 from contextlib import contextmanager
 from typing import (
     Dict,
-    Deque,
     Optional,
     Text,
     Union,
@@ -343,8 +341,7 @@ class PikaEventBroker(EventBroker):
         self._channel: Optional["Channel"] = None
 
         self._process_queue = self._get_mp_context().Queue()
-        self._process = multiprocessing.Process(target=self.run)
-        self._process.start()
+        self._run_connection_process()
 
     def __del__(self) -> None:
         if self._channel:
@@ -387,7 +384,6 @@ class PikaEventBroker(EventBroker):
 
     def run(self) -> None:
         self._connect()
-
         # Run Pika io loop in extra thread so it's not blocking
         self._run_pika_io_loop_in_thread()
 
@@ -402,8 +398,11 @@ class PikaEventBroker(EventBroker):
             parameters,
             on_open_callback=self._on_open_callback,
             on_open_error_callback=self._on_open_error_callback,
-            on_close_callback=self._on_connection_closed,
         )
+
+    def _run_connection_process(self) -> None:
+        self._process = multiprocessing.Process(target=self.run)
+        self._process.start()
 
     def _run_pika_io_loop_in_thread(self) -> None:
         thread = Thread(target=self._run_pika_io_loop, daemon=True)
@@ -421,16 +420,8 @@ class PikaEventBroker(EventBroker):
 
     def _on_open_error_callback(self, _, error: Text) -> None:
         logger.warning(
-            f"Connecting to '{self.host}' failed with error '{error}'. Trying again."
+            f"Connecting to '{self.host}' failed with error '{error}'."
         )
-        # noinspection PyUnresolvedReferences
-        self._connection.ioloop.call_later(5, self._reconnect)
-
-    def _on_connection_closed(self, _, reason: Any):
-        self._channel = None
-        logger.warning(f"Connection closed, reopening in 5 seconds: {reason}")
-        # noinspection PyUnresolvedReferences
-        self._connection.ioloop.call_later(5, self._reconnect)
 
     def _on_channel_open(self, channel: "Channel") -> None:
         logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
@@ -453,11 +444,11 @@ class PikaEventBroker(EventBroker):
         self._channel = None
         self._connection.close()
 
-    def _reconnect(self):
+    def _restart(self) -> None:
         if self._connection:
             # noinspection PyUnresolvedReferences
             self._connection.ioloop.stop()
-        self._run_pika_io_loop_in_thread()
+        self.run()
 
     def _process_messages(self):
         logger.debug("Start processing incoming messages...")
@@ -499,22 +490,8 @@ class PikaEventBroker(EventBroker):
                 dictionary). The headers can be retrieved in the consumer from the
                 `headers` attribute of the message's `BasicProperties`.
         """
+        if not self._process or not self._process.is_alive():
+            self._run_connection_process()
+
         body = json.dumps(event)
-
-        while retries:
-            try:
-                self._process_queue.put((body, headers))
-                return
-            except Exception as e:
-                logger.error(
-                    f"Could not open Pika channel at host '{self.host}'. "
-                    f"Failed with error: {e}"
-                )
-                self.close()
-                if self.raise_on_failure:
-                    raise e
-
-            retries -= 1
-            time.sleep(retry_delay_in_seconds)
-
-        logger.error(f"Failed to publish Pika event on host '{self.host}':\n{body}")
+        self._process_queue.put((body, headers))
