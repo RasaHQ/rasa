@@ -1405,7 +1405,17 @@ class Domain:
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
-        return self.as_dict() == Domain.empty().as_dict()
+
+        return (
+            not self.user_actions
+            and not self.slots
+            and not self.entities
+            and not {
+                intent
+                for intent in self.intents
+                if intent not in rasa.shared.core.constants.DEFAULT_INTENTS
+            }
+        )
 
     @staticmethod
     def is_domain_file(filename: Text) -> bool:
