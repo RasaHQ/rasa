@@ -1,4 +1,5 @@
 import asyncio
+import cProfile
 from typing import Any, Dict, Text, List, Callable, Optional
 from unittest.mock import Mock
 
@@ -399,3 +400,16 @@ async def test_load_agent_on_not_existing_path():
 async def test_agent_load_on_invalid_model_path(model_path: Optional[Text]):
     with pytest.raises(ModelNotFound):
         Agent.load(model_path)
+
+
+async def test_inference_performance(stack_agent: Agent):
+    text = "/greet"
+    message = UserMessage(text, sender_id="test_agent_handle_message")
+    profile = cProfile.Profile()
+    profile.enable()
+    for _ in range(1000):
+        result = await stack_agent.handle_message(message)
+    profile.disable()
+
+    profile.dump_stats("./test_inference.prof")
+    assert result

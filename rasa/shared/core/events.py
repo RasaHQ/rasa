@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 import re
@@ -290,19 +291,38 @@ class Event:
         type_name: Text, default: Optional[Type["Event"]] = None
     ) -> Optional[Type["Event"]]:
         """Returns a slots class by its type name."""
+        # for cls in rasa.shared.utils.common.all_subclasses(Event):
+        type = Event.all_events().get(type_name, -1)
+        if isinstance(type, Event) or type is None:
+            return type
 
-        for cls in rasa.shared.utils.common.all_subclasses(Event):
-            if cls.type_name == type_name:
-                return cls
-        if type_name == "topic":
-            return None  # backwards compatibility to support old TopicSet evts
-        elif default is not None:
+        if type == -1 and default:
             return default
-        else:
-            raise ValueError(f"Unknown event name '{type_name}'.")
+
+        raise ValueError(f"Unknown event name '{type_name}'.")
+
+        # type = type or default
+        # for cls in all_events:
+        #     if cls.type_name == type_name:
+        #         return cls
+        # if type_name == "topic":
+        #     return None  # backwards compatibility to support old TopicSet evts
+        # elif default is not None:
+        #     return default
+        # else:
+        #     raise ValueError(f"Unknown event name '{type_name}'.")
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         pass
+
+    @staticmethod
+    @functools.lru_cache(maxsize=1)
+    def all_events() -> Dict[Text, Type["Event"]]:
+        events = all_events = rasa.shared.utils.common.all_subclasses(Event)
+        events = {event_type.type_name: event_type for event_type in events}
+        # backwards compatibility to support old TopicSet evts
+        events["topic"] = None
+        return events
 
 
 # noinspection PyProtectedMember
