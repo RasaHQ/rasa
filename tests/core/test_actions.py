@@ -47,6 +47,7 @@ from rasa.shared.core.constants import (
     ACTION_TWO_STAGE_FALLBACK_NAME,
     RULE_SNIPPET_ACTION_NAME,
     ACTIVE_LOOP,
+    FOLLOWUP_ACTION,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -162,7 +163,7 @@ async def test_remote_action_runs(
                 "sender_id": "my-sender",
                 "paused": False,
                 "latest_event_time": None,
-                "followup_action": "action_listen",
+                FOLLOWUP_ACTION: "action_listen",
                 "slots": {"name": None},
                 "events": [],
                 "latest_input_channel": None,
@@ -216,7 +217,7 @@ async def test_remote_action_logs_events(
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
-                "followup_action": "action_listen",
+                FOLLOWUP_ACTION: ACTION_LISTEN_NAME,
                 "latest_event_time": None,
                 "slots": {"name": None},
                 "events": [],

@@ -20,6 +20,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     REQUESTED_SLOT,
     SLOTS,
+    FOLLOWUP_ACTION,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -884,7 +885,7 @@ class MessageProcessor:
             tracker.clear_followup_action()
             if followup_action in self.domain.action_names:
                 return PolicyPrediction.for_action_name(
-                    self.domain, followup_action, "followup_action"
+                    self.domain, followup_action, FOLLOWUP_ACTION
                 )
 
             logger.error(

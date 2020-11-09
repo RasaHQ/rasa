@@ -42,6 +42,7 @@ from rasa.shared.core.constants import (
     TRIGGER_MESSAGE,
     LOOP_INTERRUPTED,
     ACTION_SESSION_START_NAME,
+    FOLLOWUP_ACTION,
 )
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.events import (
@@ -208,7 +209,7 @@ class DialogueStateTracker:
             "slots": self.current_slot_values(),
             "latest_message": self.latest_message.parse_data,
             "latest_event_time": latest_event_time,
-            "followup_action": self.followup_action,
+            FOLLOWUP_ACTION: self.followup_action,
             "paused": self.is_paused(),
             "events": _events,
             "latest_input_channel": self.get_latest_input_channel(),
