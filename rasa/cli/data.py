@@ -146,7 +146,7 @@ def _add_data_convert_parsers(
         ),
     )
     convert_responses_parser.set_defaults(func=_migrate_responses)
-    default_arguments.add_stories_param(convert_responses_parser)
+    arguments.set_convert_arguments(convert_responses_parser, data_type="Rasa NLU")
     default_arguments.add_domain_param(convert_responses_parser)
 
 
@@ -371,6 +371,7 @@ def _migrate_responses_in_domain(args: argparse.Namespace):
     Args:
         args: the CLI arguments
     """
+    output = Path(args.out)
     domain_file = Path(args.domain)
     domain = _get_domain(domain_file)
 
@@ -381,7 +382,7 @@ def _migrate_responses_in_domain(args: argparse.Namespace):
     ]
 
     new_domain = Domain.from_dict(domain_dict)
-    new_domain.persist_clean(domain_file)
+    new_domain.persist_clean(output / domain_file)
 
 
 async def _convert_to_yaml(

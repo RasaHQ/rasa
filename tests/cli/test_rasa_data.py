@@ -340,6 +340,96 @@ def test_rasa_data_convert_nlg_to_yaml(
     )
 
 
+def test_rasa_data_convert_responses(
+    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
+):
+    converted_data_folder = "converted_data"
+    os.mkdir(converted_data_folder)
+    expected_data_folder = "expected_data"
+    os.mkdir(expected_data_folder)
+
+    domain = (
+        "version: '2.0'\n"
+        "session_config:\n"
+        "  session_expiration_time: 60\n"
+        "  carry_over_slots_to_new_session: true\n"
+        "actions:\n"
+        "- respond_chitchat\n"
+        "- utter_greet\n"
+        "- utter_cheer_up"
+    )
+
+    expected_domain = (
+        "session_config:\n"
+        "  session_expiration_time: 60\n"
+        "  carry_over_slots_to_new_session: true\n"
+        "actions:\n"
+        "- utter_chitchat\n"
+        "- utter_greet\n"
+        "- utter_cheer_up\n"
+        "version: '2.0'\n"
+    )
+
+    with open(f"{expected_data_folder}/domain.yml", "w") as f:
+        f.write(expected_domain)
+
+    with open("domain.yml", "w") as f:
+        f.write(domain)
+
+    stories = (
+        "stories:\n"
+        "- story: sad path\n"
+        "  steps:\n"
+        "  - intent: greet\n"
+        "  - action: utter_greet\n"
+        "  - intent: mood_unhappy\n"
+        "- story: chitchat\n"
+        "  steps:\n"
+        "  - intent: chitchat\n"
+        "  - action: respond_chitchat\n"
+    )
+
+    expected_stories = (
+        'version: "2.0"\n'
+        "stories:\n"
+        "- story: sad path\n"
+        "  steps:\n"
+        "  - intent: greet\n"
+        "  - action: utter_greet\n"
+        "  - intent: mood_unhappy\n"
+        "- story: chitchat\n"
+        "  steps:\n"
+        "  - intent: chitchat\n"
+        "  - action: utter_chitchat\n"
+    )
+
+    with open(f"{expected_data_folder}/stories.yml", "w") as f:
+        f.write(expected_stories)
+
+    with open("data/stories.yml", "w") as f:
+        f.write(stories)
+
+    run_in_simple_project(
+        "data",
+        "convert",
+        "responses",
+        "--data",
+        "data",
+        "--out",
+        converted_data_folder,
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "domain.yml",
+        Path(expected_data_folder) / "domain.yml",
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "stories_converted.yml",
+        Path(expected_data_folder) / "stories.yml",
+    )
+
+
 def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
     run_in_simple_project: Callable[..., RunResult]
 ):

@@ -61,6 +61,6 @@ class StoryResponsePrefixConverter(TrainingDataConverter):
     def normalize_response_name(action_name: Text) -> Text:
         return (
             f"{UTTER_PREFIX}{action_name[len(OBSOLETE_RESPOND_PREFIX):]}"
-            if action_name.starswith(OBSOLETE_RESPOND_PREFIX)
+            if action_name.startswith(OBSOLETE_RESPOND_PREFIX)
             else action_name
         )
