@@ -901,10 +901,10 @@ class MessageProcessor:
             return prediction
 
         rasa.shared.utils.io.raise_deprecation_warning(
-            "Returning a tuple of probabilities and policy name for "
-            "`PolicyEnsemble.probabilities_using_best_policy` is deprecated and will "
-            "be removed in Rasa Open Source 3.0. Please return a `PolicyPrediction` "
-            "object instead."
+            f"Returning a tuple of probabilities and policy name for "
+            f"`{PolicyEnsemble.probabilities_using_best_policy.__name__}` is "
+            f"deprecated and will be removed in Rasa Open Source 3.0.0. Please return "
+            f"a `{PolicyPrediction.__name__}` object instead."
         )
         probabilities, policy_name = prediction
         return PolicyPrediction(probabilities, policy_name)
