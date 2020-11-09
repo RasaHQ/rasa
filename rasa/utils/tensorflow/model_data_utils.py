@@ -191,7 +191,7 @@ def _create_zero_features(
         )
     )
 
-    # create zero_features for nones
+    # create zero_features for Nones
     zero_features = []
     for _features in example_features:
         new_features = copy.deepcopy(_features)

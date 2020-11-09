@@ -1040,7 +1040,7 @@ class RasaModelData:
         raise ValueError("Unsupported label_ids dimensions")
 
     @staticmethod
-    def _filter_4d_arrays(
+    def _filter_out_fake_inputs(
         array_of_array_of_features: FeatureArray,
     ) -> Union[List[List[np.ndarray]], List[List[scipy.sparse.spmatrix]]]:
         return list(
@@ -1100,7 +1100,7 @@ class RasaModelData:
         # it can be used to transform the 3D tensor back into 4D
 
         number_of_features = array_of_array_of_dense[0][0].shape[-1]
-        array_of_array_of_dense = RasaModelData._filter_4d_arrays(
+        array_of_array_of_dense = RasaModelData._filter_out_fake_inputs(
             array_of_array_of_dense
         )
         if not array_of_array_of_dense:
@@ -1185,7 +1185,7 @@ class RasaModelData:
         # it can be used to transform the 3D tensor back into 4D
 
         number_of_features = array_of_array_of_sparse[0][0].shape[-1]
-        array_of_array_of_sparse = RasaModelData._filter_4d_arrays(
+        array_of_array_of_sparse = RasaModelData._filter_out_fake_inputs(
             array_of_array_of_sparse
         )
         if not array_of_array_of_sparse:

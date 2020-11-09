@@ -816,7 +816,7 @@ class TED(TransformerRasaModel):
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> tf.Tensor:
-
+        # the input contains
         return tf.cond(
             tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
             lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),
@@ -911,27 +911,28 @@ class TED(TransformerRasaModel):
 
         # attribute_mask has shape batch x dialogue_len x 1
         attribute_mask = tf_batch_data[attribute][MASK][0]
-        if attribute in set(SENTENCE_FEATURES_TO_ENCODE + STATE_LEVEL_FEATURES):
-            # attribute features have shape
-            # combined batch dimension and dialogue length x 1 x units
-            # convert them back to their original shape of
-            # batch size x dialogue length x units
-            dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
-            attribute_features = self._convert_to_original_shape(
-                attribute_features, attribute_mask, dialogue_lengths
-            )
-        elif attribute in LABEL_FEATURES_TO_ENCODE:
-            attribute_features = self._convert_to_original_shape(
-                attribute_features, attribute_mask
-            )
 
-        return attribute_features
+        if attribute in set(SENTENCE_FEATURES_TO_ENCODE + STATE_LEVEL_FEATURES):
+            dialogue_lengths = tf.cast(
+                tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32
+            )
+        else:
+            # for labels, dialogue length is a fake dim and equal to 1
+            dialogue_lengths = tf.ones((tf.shape(attribute_mask)[0],), dtype=tf.int32)
+
+        # attribute features have shape
+        # (combined batch dimension and dialogue length x 1 x units)
+        # convert them back to their original shape of
+        # batch size x dialogue length x units
+        return self._convert_to_original_shape(
+            attribute_features, attribute_mask, dialogue_lengths
+        )
 
     @staticmethod
     def _convert_to_original_shape(
         attribute_features: tf.Tensor,
         attribute_mask: tf.Tensor,
-        dialogue_lengths: Optional[tf.Tensor] = None,
+        dialogue_lengths: tf.Tensor,
     ) -> tf.Tensor:
         """Transform attribute features back to original shape.
 
@@ -959,11 +960,6 @@ class TED(TransformerRasaModel):
         batch_dim = tf.shape(attribute_mask)[0]
         dialogue_dim = tf.shape(attribute_mask)[1]
         units = attribute_features.shape[-1]
-        if dialogue_lengths is None:
-            # if dialogue lengths are not provided,
-            # this method is called to create all labels,
-            # so dialogue length is a fake dim and is equal to 1
-            dialogue_lengths = tf.ones((batch_dim,), dtype=tf.int32)
 
         # attribute_mask has shape (batch x dialogue_len x 1), remove last dimension
         attribute_mask = tf.cast(tf.squeeze(attribute_mask, axis=-1), tf.int32)
