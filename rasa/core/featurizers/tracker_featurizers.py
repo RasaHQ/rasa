@@ -492,6 +492,21 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
 
 class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
+    @staticmethod
+    def _create_extra_listen_state(last_state):
+        if not last_state:
+            return {"prev_action": {"action_name": "action_listen"}}
+
+        if "user" in last_state:
+            extra_state = {
+                "user": last_state["user"],
+                "prev_action": {"action_name": "action_listen"},
+            }
+        else:
+            extra_state = {"prev_action": {"action_name": "action_listen"}}
+        # extra_state["prev_action"]["action_name"] = "action_listen"
+        return extra_state
+
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]]]:
@@ -529,10 +544,13 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
 
                 if isinstance(event, UserUttered):
 
-                    # only actions which can be
-                    # predicted at a stories start
                     sliced_states = self.slice_state_history(
                         states[:states_length_for_intent], self.max_history
+                    )
+
+                    # add an extra listen action
+                    sliced_states.append(
+                        self._create_extra_listen_state(sliced_states[-1])
                     )
 
                     # TODO: If there are duplicate tracker states with different intents as labels,
@@ -593,7 +611,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         # Create a copy of trackers
         duplicate_trackers = [tracker.copy() for tracker in trackers]
 
-        # Remove the last user uttered event
+        # Remove last user event
         for tracker in duplicate_trackers:
             tracker.update(UserUtteranceReverted(), domain)
 
@@ -605,6 +623,11 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             self.slice_state_history(states, self.max_history)
             for states in trackers_as_states
         ]
+
+        for states in trackers_as_states:
+            states.append(self._create_extra_listen_state(states[-1]))
+
+        # print(trackers_as_states)
 
         return trackers_as_states
 
@@ -680,6 +703,9 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         trackers_as_states, trackers_as_actions = self.training_states_and_actions(
             trackers, domain
         )
+
+        # for tracker_states, tracker_actions in zip(trackers_as_states, trackers_as_actions):
+        #     print(tracker_states, tracker_actions)
 
         # print("Featurizing states")
 

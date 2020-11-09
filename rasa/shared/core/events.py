@@ -413,7 +413,8 @@ class UserUttered(Event):
     def __str__(self) -> Text:
         return (
             f"UserUttered(text: {self.text}, intent: {self.intent}, "
-            f"entities: {self.entities})"
+            f"entities: {self.entities}), "
+            f"is probable: {self.is_probable}"
         )
 
     @staticmethod

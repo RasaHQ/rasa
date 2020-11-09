@@ -594,6 +594,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             )
             if last_user_event:
                 # If this is not the first intent
+                # print(last_user_event.__str__())
                 if not last_user_event.is_probable:
                     logger.info(
                         f"Last user intent '{last_user_event.intent_name}' is not "

@@ -224,6 +224,14 @@ class IntentTEDPolicy(TEDPolicy):
         # Specify what features to use as sequence and sentence features.
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
+        # Whether to use augmented stories for evaluation
+        "use_augmentation_for_thresholds": True,
+        # Whether to flag retrieval intents
+        "flag_retrieval_intents": False,
+        # Other intents to ignore
+        "ignore_intents": [],
+        # revert unseen intent events
+        "revert_unseen_intents": True,
     }
 
     def __init__(
@@ -242,6 +250,10 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
         self.intent_thresholds = intent_thresholds
+        self.use_augmentation_for_evaluation = self.config[
+            "use_augmentation_for_thresholds"
+        ]
+        self.flag_retrieval_intents = self.config["flag_retrieval_intents"]
 
     @staticmethod
     def supported_data() -> SupportedData:
@@ -574,14 +586,15 @@ class IntentTEDPolicy(TEDPolicy):
                     f"User intent {query_intent} is probable with "
                     f"{query_intent_prob}, while threshold is {self.intent_thresholds[query_intent_id]}"
                 )
-                print(
-                    f"User intent {query_intent} is probable with "
-                    f"{query_intent_prob}, while threshold is {self.intent_thresholds[query_intent_id]}"
-                )
+                # print(
+                #     f"User intent {query_intent} is probable with "
+                #     f"{query_intent_prob}, while threshold is {self.intent_thresholds[query_intent_id]}"
+                # )
                 if query_intent_prob < self.intent_thresholds[query_intent_id]:
 
                     # Mark the corresponding user turn as interesting
                     last_user_event.set_as_not_probable()
+                    # print("marked as improbable")
 
         return confidences.tolist(), False  # pytype: disable=bad-return-type
 
@@ -593,13 +606,11 @@ class IntentTED(TED):
 
         # print("data layers")
         for name in self.data_signature.keys():
-            print(name)
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
             self._prepare_encoding_layers(name)
 
         # print("label layers")
         for name in self.label_signature.keys():
-            print(name)
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
             self._prepare_encoding_layers(name)
 

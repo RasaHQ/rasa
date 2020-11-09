@@ -86,12 +86,16 @@ class TrainingDataWriter:
         # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
         # entity annotation
         if not text.startswith(INTENT_MESSAGE_PREFIX):
-            entities = sorted(message.get("entities", []), key=lambda k: k["start"])
 
-            for entity in entities:
-                md += text[pos : entity["start"]]
-                md += TrainingDataWriter.generate_entity(text, entity)
-                pos = entity["end"]
+            try:
+                entities = sorted(message.get("entities", []), key=lambda k: k["start"])
+
+                for entity in entities:
+                    md += text[pos : entity["start"]]
+                    md += TrainingDataWriter.generate_entity(text, entity)
+                    pos = entity["end"]
+            except Exception as e:
+                print(message.__str__())
 
         md += text[pos:]
 
