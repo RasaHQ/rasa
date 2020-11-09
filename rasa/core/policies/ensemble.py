@@ -454,10 +454,10 @@ class SimplePolicyEnsemble(PolicyEnsemble):
     """Default implementation of a `Policy` ensemble."""
 
     @staticmethod
-    def is_not_memo_policy(
+    def is_in_training_data(
         policy_name: Optional[Text], max_confidence: Optional[float] = None
     ) -> bool:
-        """Checks if the policy is the `MemoizationPolicy` or one of its subclasses.
+        """Checks if the prediction is by a policy which memoized the training data.
 
         Args:
             policy_name: The name of the policy.
@@ -717,7 +717,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             and winning_prediction.probabilities is not None
             and winning_prediction.max_confidence_index
             == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_not_memo_policy(
+            and self.is_in_training_data(
                 winning_prediction.policy_name, winning_prediction.max_confidence
             )
         ):
