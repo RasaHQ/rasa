@@ -816,7 +816,23 @@ class TED(TransformerRasaModel):
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> tf.Tensor:
-        # the input is a representation of 4d input in 3d
+        # The input is a representation of 4d tensor of
+        # shape (batch-size x dialogue-len x sequence-len x units) in 3d of shape
+        # (sum of dialogue history length for all tensors in the batch x
+        # max sequence length x number of features).
+
+        # However, some dialogue turns contain non existent state features,
+        # e.g. `intent` and `text` features are mutually exclusive,
+        # as well as `action_name` and `action_text` are mutually exclusive,
+        # or some dialogue turns don't contain any `slots`.
+        # In order to create 4d full tensors, we created "fake" zero features for
+        # these non existent state features. And filtered them during batch generation.
+        # Therefore the first dimensions for different attributes are different.
+        # It could happen that some batches don't contain "real" features at all,
+        # e.g. large number of stories don't contain any `slots`.
+        # Therefore actual input tensors will be empty.
+        # Since we need actual numbers to create dialogue turn features, we create
+        # zero tensors in `_encode_fake_features_per_attribute` for these attributes.
         return tf.cond(
             tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
             lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),

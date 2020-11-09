@@ -1099,6 +1099,9 @@ class RasaModelData:
         # the original shape and the original dialogue length is passed on to the model
         # it can be used to transform the 3D tensor back into 4D
 
+        # in order to create 4d tensor inputs, we created "fake" zero features
+        # for nonexistent inputs. To save calculation we filter this features before
+        # input to tf methods.
         number_of_features = array_of_array_of_dense[0][0].shape[-1]
         array_of_array_of_dense = RasaModelData._filter_out_fake_inputs(
             array_of_array_of_dense
@@ -1184,6 +1187,9 @@ class RasaModelData:
         # the original shape and the original dialogue length is passed on to the model
         # it can be used to transform the 3D tensor back into 4D
 
+        # in order to create 4d tensor inputs, we created "fake" zero features
+        # for nonexistent inputs. To save calculation we filter this features before
+        # input to tf methods.
         number_of_features = array_of_array_of_sparse[0][0].shape[-1]
         array_of_array_of_sparse = RasaModelData._filter_out_fake_inputs(
             array_of_array_of_sparse
