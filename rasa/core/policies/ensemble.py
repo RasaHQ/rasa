@@ -511,6 +511,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         form_confidence = None
         form_policy_name = None
+        # End-to-end predictions overrule all other predictions.
         use_only_end_to_end = any(
             prediction.is_end_to_end_prediction for prediction in predictions.values()
         )
