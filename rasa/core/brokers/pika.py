@@ -17,6 +17,7 @@ from typing import (
     Tuple,
     Generator,
     TYPE_CHECKING,
+    NoReturn,
 )
 
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
@@ -487,8 +488,6 @@ class PikaMessageProcessor:
             channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
         self._channel = channel
-        thread = threading.Thread(target=self._process_messages)
-        thread.start()
 
     def _on_channel_closed(self, channel: "Channel", reason: Any):
         logger.warning(f"Channel {channel} was closed: {reason}")
@@ -507,6 +506,9 @@ class PikaMessageProcessor:
     def _process_messages(self) -> None:
         """Start to process messages."""
         logger.debug("Start processing messages...")
+
+        assert self.is_ready()
+
         try:
             while True:
                 message = self._process_queue.get()
@@ -530,15 +532,17 @@ class PikaMessageProcessor:
         # noinspection PyUnresolvedReferences
         self._connection.ioloop.start()
 
-    def run(self, queue: "multiprocessing.Queue"):
+    def run(self, queue: "multiprocessing.Queue") -> NoReturn:
         """Run the message processor by connecting to RabbitMQ and then
         starting the IOLoop to block and allow the SelectConnection to operate.
 
         This function is blocking and indefinite thus it
         should be started in a separate process.
         """
+        # TODO: Fix logging
         self._process_queue = queue
         self._connect()
+        self._process_messages()
 
 
 class PikaEventBroker(EventBroker):
@@ -635,8 +639,7 @@ class PikaEventBroker(EventBroker):
         )
 
         self.pika_message_processor = PikaMessageProcessor(
-            parameters,
-            queues=self.queues
+            parameters, queues=self.queues
         )
         self.process = self._start_pika_connection_process()
 
@@ -668,6 +671,7 @@ class PikaEventBroker(EventBroker):
         Returns:
             `True` if the channel is available, `False` otherwise.
         """
+        # TODO: This is broken
         return self.pika_message_processor and self.pika_message_processor.is_ready(
             attempts, wait_time_between_attempts_in_seconds
         )
@@ -690,4 +694,8 @@ class PikaEventBroker(EventBroker):
                 `headers` attribute of the message's `BasicProperties`.
         """
         body = json.dumps(event)
+        if not self.process.is_alive():
+            # TODO: Change exception
+            raise Exception("Event broker process died.")
+
         self.process_queue.put((body, headers))
