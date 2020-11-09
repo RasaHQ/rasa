@@ -657,9 +657,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         This is done on the condition that:
         - a fallback policy is present,
-        - there was just a user message and the predicted
-          action is action_listen by a policy
-          other than the MemoizationPolicy
+        - we received a user message and the predicted action is `action_listen`
+          by a policy other than the `MemoizationPolicy` or one of its subclasses.
 
         Args:
             domain: the :class:`rasa.shared.core.domain.Domain`

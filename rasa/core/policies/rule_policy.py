@@ -742,6 +742,17 @@ class RulePolicy(MemoizationPolicy):
     def _find_action_from_rules(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[Text], Optional[Text], bool]:
+        """Predicts the next action based on the memoized rules.
+
+        Args:
+            tracker: The current conversation tracker.
+            domain: The domain of the current model.
+
+        Returns:
+            A tuple of the predicted action name (or `None` if no matching rule was
+            found), a description of the matching rule, and `True` if a loop action
+            was predicted after the loop has been in an unhappy path before.
+        """
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
         current_states = self.format_tracker_states(states)
@@ -749,8 +760,9 @@ class RulePolicy(MemoizationPolicy):
         logger.debug(f"Current tracker state:{current_states}")
 
         # Tracks if we are returning after an unhappy loop path. If this becomes `True`
-        # the policy returns an event which disables the slot validation for the next
-        # loop execution.
+        # the policy returns an event which notifies the loop action that it
+        # is returning after an unhappy path. For example, the `FormAction` uses this
+        # to skip the validation of slots for its first execution after an unhappy path.
         returning_from_unhappy_path = False
 
         rule_keys = self._get_possible_keys(self.lookup[RULES], states)
