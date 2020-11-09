@@ -1,0 +1,3 @@
+[allowlist]
+  description = "Allow some test Slack tokens"
+  regexes = ['xoxb-[a-zA-Z0-9]{10}']
