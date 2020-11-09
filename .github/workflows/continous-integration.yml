@@ -73,7 +73,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -145,7 +145,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -288,7 +288,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v1
+      uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
