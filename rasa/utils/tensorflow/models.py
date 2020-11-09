@@ -154,6 +154,12 @@ class RasaModel(tf.keras.models.Model):
         raise NotImplementedError
 
     def prepare_for_predict(self) -> None:
+        """Prepares tf graph fpr prediction.
+
+        This method should contain necessary tf calculations
+        and set self variables that are used in `batch_predict`.
+        For example, pre calculation of `self.all_labels_embed`.
+        """
         pass
 
     def batch_predict(
