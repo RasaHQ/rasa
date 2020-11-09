@@ -816,7 +816,7 @@ class TED(TransformerRasaModel):
     def _encode_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> tf.Tensor:
-        # the input contains
+        # the input is a representation of 4d input in 3d
         return tf.cond(
             tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
             lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),

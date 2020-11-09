@@ -426,9 +426,9 @@ def _extract_features(
         for key, value in dialogue_dense_features.items():
             dense_features[key].append(value)
 
-        # add additional dimensions to attribute mask to get a 3D vector
-        # resulting shape dialogue length x 1
-        # but keep attribute_mask in 3d: (batch x dialogue_len x 1)
+        # add additional dimension to attribute mask
+        # to get a vector of shape (dialogue length x 1),
+        # the batch dim will be added later
         attribute_mask = np.expand_dims(attribute_mask, -1)
         attribute_masks.append(attribute_mask)
 
