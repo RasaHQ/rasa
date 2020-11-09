@@ -982,7 +982,7 @@ class TED(TransformerRasaModel):
 
         # attribute_mask has shape (batch x dialogue_len x 1), while
         # dialogue_indices has shape (combined_dialogue_len,)
-        # in order to find positions of real input we use need to flatten
+        # in order to find positions of real input we need to flatten
         # attribute mask to (combined_dialogue_len,)
         dialogue_indices_mask = tf.boolean_mask(
             attribute_mask, tf.sequence_mask(dialogue_lengths, dtype=tf.int32)
