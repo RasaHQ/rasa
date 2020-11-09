@@ -1,3 +1,4 @@
+version: "2.0"
 stories:
 - story: Happy path
   steps:
@@ -11,6 +12,7 @@ stories:
   - action: restaurant_form
   - active_loop: restaurant_form
   - active_loop: null
+  - action: utter_submit
   - action: utter_slots_values
   - user: |
       thanks
@@ -33,6 +35,7 @@ stories:
     intent: inform
   - action: restaurant_form
   - active_loop: null
+  - action: utter_submit
   - action: utter_slots_values
   - user: |
       thanks
@@ -56,6 +59,7 @@ stories:
   - action: utter_chitchat
   - action: restaurant_form
   - active_loop: null
+  - action: utter_submit
   - action: utter_slots_values
   - user: |
       thanks
