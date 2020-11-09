@@ -554,7 +554,7 @@ class Agent:
         """Handle a single message."""
         processor = self.create_processor()
         prediction = PolicyPrediction.for_action_name(
-            self.domain, action, policy, confidence or 1
+            self.domain, action, policy, confidence or 0.0
         )
         return await processor.execute_action(
             sender_id, action, output_channel, self.nlg, prediction
