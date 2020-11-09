@@ -303,7 +303,8 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         rasa.shared.utils.cli.print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
-            "directory (see https://rasa.com/docs/rasa/command-line-interface#rasa-init)."
+            "directory (see "
+            "https://rasa.com/docs/rasa/command-line-interface#rasa-init)."
         )
 
     _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
@@ -422,15 +423,33 @@ def _get_credentials_and_endpoints_paths(
     return credentials_path, endpoints_config_path
 
 
-def run_locally(args: argparse.Namespace):
+def _prevent_failure_if_git_is_not_available() -> None:
+    """Rasa X uses the `git` package, which will fail to import if git is not available.
+
+    Git isn't needed locally, which means we can silence this error to allow
+    users to use local mode even if git is not available on their machine.
+    Fixes regression https://github.com/RasaHQ/rasa/issues/7140
+    """
+    if os.environ.get("GIT_PYTHON_REFRESH") is None:
+        os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+
+
+def run_locally(args: argparse.Namespace) -> None:
+    """Run a Rasa X instance locally.
+
+    Args:
+        args: commandline arguments
+    """
+    _prevent_failure_if_git_is_not_available()
+
     try:
         # noinspection PyUnresolvedReferences
         from rasax.community import local
     except ModuleNotFoundError:
         raise MissingDependencyException(
-            f"Rasa X does not seem to be installed, but it is needed for this CLI command."
-            f"You can find more information on how to install Rasa X in local mode"
-            f"in the documentation: "
+            f"Rasa X does not seem to be installed, but it is needed for this "
+            f"CLI command. You can find more information on how to install Rasa X "
+            f"in local mode in the documentation: "
             f"{DOCS_BASE_URL_RASA_X}/installation-and-setup/install/local-mode"
         )
 
