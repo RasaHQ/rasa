@@ -962,7 +962,7 @@ class TED(TransformerRasaModel):
         units = attribute_features.shape[-1]
 
         # attribute_mask has shape (batch x dialogue_len x 1), remove last dimension
-        attribute_mask = tf.cast(tf.squeeze(attribute_mask, axis=-1), tf.int32)
+        attribute_mask = tf.cast(tf.squeeze(attribute_mask, axis=-1), dtype=tf.int32)
         # sum of attribute mask contains number of dialogue turns with "real" features
         non_fake_dialogue_lengths = tf.reduce_sum(attribute_mask, axis=-1)
 
