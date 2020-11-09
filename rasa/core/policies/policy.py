@@ -399,7 +399,7 @@ class PolicyPrediction:
         domain: Domain,
         action_name: Text,
         policy_name: Optional[Text] = None,
-        confidence: float = 1,
+        confidence: float = 1.0,
     ) -> "PolicyPrediction":
         """Create a prediction for a given action.
 
@@ -453,7 +453,7 @@ class PolicyPrediction:
         Returns:
             The highest predicted probability.
         """
-        return max(self.probabilities, default=0)
+        return max(self.probabilities, default=0.0)
 
 
 def confidence_scores_for(
