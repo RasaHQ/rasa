@@ -360,21 +360,21 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             batch_label_ids,
             batch_action_name_mask,
-            batch_action_name_sentence_1,
-            batch_action_name_sentence_2,
-            batch_action_name_sentence_3,
+            batch_action_name_sentence_indices,
+            batch_action_name_sentence_data,
+            batch_action_name_sentence_shape,
             batch_entities_mask,
-            batch_entities_sentence_1,
-            batch_entities_sentence_2,
-            batch_entities_sentence_3,
+            batch_entities_sentence_indices,
+            batch_entities_sentence_data,
+            batch_entities_sentence_shape,
             batch_intent_mask,
-            batch_intent_sentence_1,
-            batch_intent_sentence_2,
-            batch_intent_sentence_3,
+            batch_intent_sentence_indices,
+            batch_intent_sentence_data,
+            batch_intent_sentence_shape,
             batch_slots_mask,
-            batch_slots_sentence_1,
-            batch_slots_sentence_2,
-            batch_slots_sentence_3,
+            batch_slots_sentence_indices,
+            batch_slots_sentence_data,
+            batch_slots_sentence_shape,
             batch_dialogue_length,
         ) = next(model_data._gen_batch(batch_size=batch_size))
 
@@ -382,39 +382,57 @@ class TestTEDPolicy(PolicyTestCollection):
             batch_label_ids.shape[0] == batch_size
             and batch_dialogue_length.shape[0] == batch_size
         )
-        # batch and dialogue dimensions are combined
-        first_dimension_size = batch_size if self.max_history <= 1 else batch_size + 1
+        # batch and dialogue dimensions are NOT combined for masks
         assert (
-            batch_slots_mask.shape[0] == first_dimension_size
-            and batch_intent_mask.shape[0] == first_dimension_size
-            and batch_entities_mask.shape[0] == first_dimension_size
-            and batch_action_name_mask.shape[0] == first_dimension_size
+            batch_slots_mask.shape[0] == batch_size
+            and batch_intent_mask.shape[0] == batch_size
+            and batch_entities_mask.shape[0] == batch_size
+            and batch_action_name_mask.shape[0] == batch_size
+        )
+        # some features might be "fake" so there sequence is `0`
+        seq_len = max(
+            [
+                batch_intent_sentence_shape[1],
+                batch_action_name_sentence_shape[1],
+                batch_entities_sentence_shape[1],
+                batch_slots_sentence_shape[1],
+            ]
         )
         assert (
-            batch_intent_sentence_3[1]
-            == batch_action_name_sentence_3[1]
-            == batch_entities_sentence_3[1]
-            == batch_slots_sentence_3[1]
+            batch_intent_sentence_shape[1] == seq_len
+            or batch_intent_sentence_shape[1] == 0
+        )
+        assert (
+            batch_action_name_sentence_shape[1] == seq_len
+            or batch_action_name_sentence_shape[1] == 0
+        )
+        assert (
+            batch_entities_sentence_shape[1] == seq_len
+            or batch_entities_sentence_shape[1] == 0
+        )
+        assert (
+            batch_slots_sentence_shape[1] == seq_len
+            or batch_slots_sentence_shape[1] == 0
         )
 
         (
             batch_label_ids,
-            batch_entities_mask,
-            batch_entities_sentence_1,
-            batch_entities_sentence_2,
-            batch_entities_sentence_3,
-            batch_intent_mask,
-            batch_intent_sentence_1,
-            batch_intent_sentence_2,
-            batch_intent_sentence_3,
-            batch_slots_mask,
-            batch_slots_sentence_1,
-            batch_slots_sentence_2,
-            batch_slots_sentence_3,
             batch_action_name_mask,
-            batch_action_name_sentence_1,
-            batch_action_name_sentence_2,
-            batch_action_name_sentence_3,
+            batch_action_name_sentence_indices,
+            batch_action_name_sentence_data,
+            batch_action_name_sentence_shape,
+            batch_entities_mask,
+            batch_entities_sentence_indices,
+            batch_entities_sentence_data,
+            batch_entities_sentence_shape,
+            batch_intent_mask,
+            batch_intent_sentence_indices,
+            batch_intent_sentence_data,
+            batch_intent_sentence_shape,
+            batch_slots_mask,
+            batch_slots_sentence_indices,
+            batch_slots_sentence_data,
+            batch_slots_sentence_shape,
             batch_dialogue_length,
         ) = next(
             model_data._gen_batch(
@@ -426,11 +444,30 @@ class TestTEDPolicy(PolicyTestCollection):
             batch_label_ids.shape[0] == batch_size
             and batch_dialogue_length.shape[0] == batch_size
         )
+        # some features might be "fake" so there sequence is `0`
+        seq_len = max(
+            [
+                batch_intent_sentence_shape[1],
+                batch_action_name_sentence_shape[1],
+                batch_entities_sentence_shape[1],
+                batch_slots_sentence_shape[1],
+            ]
+        )
         assert (
-            batch_intent_sentence_3[1]
-            == batch_action_name_sentence_3[1]
-            == batch_entities_sentence_3[1]
-            == batch_slots_sentence_3[1]
+            batch_intent_sentence_shape[1] == seq_len
+            or batch_intent_sentence_shape[1] == 0
+        )
+        assert (
+            batch_action_name_sentence_shape[1] == seq_len
+            or batch_action_name_sentence_shape[1] == 0
+        )
+        assert (
+            batch_entities_sentence_shape[1] == seq_len
+            or batch_entities_sentence_shape[1] == 0
+        )
+        assert (
+            batch_slots_sentence_shape[1] == seq_len
+            or batch_slots_sentence_shape[1] == 0
         )
 
 
