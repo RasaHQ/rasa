@@ -382,7 +382,8 @@ def _migrate_responses_in_domain(args: argparse.Namespace):
     ]
 
     new_domain = Domain.from_dict(domain_dict)
-    new_domain.persist_clean(output / domain_file)
+    new_domain.persist_clean(output / domain_file.name)
+    rasa.shared.utils.cli.print_info(f"Converted {domain_file}, saved in '{output}'.")
 
 
 async def _convert_to_yaml(
