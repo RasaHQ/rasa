@@ -406,6 +406,23 @@ class RestaurantFormValidator(FormValidationAction):
             return {"cuisine": None}
 ```
 
+You can also migrate forms from Rasa SDK to Rasa Open Source 2 iteratively. You can for
+example migrate one form to the Rasa Open Source 2 implementation while continue using
+the deprecated Rasa SDK implementation for another form. To continue to use
+the deprecated Rasa SDK `FormAction`s, add a custom action with the name of your form to your domain. Note that you should complete the migration as soon as possible as the deprecated `FormAction`
+will be removed from the Rasa SDK in Rasa Open Source 3.
+
+```yaml-rasa title="domain.yml"
+actions:
+# Adding a custom action for a form will
+# instruct Rasa Open Source to use the
+# deprecated Rasa SDK implementation of forms.
+- my_form
+
+forms:
+ my_form:
+```
+
 See the [forms](./forms.mdx) documentation for more details.
 
 ### Response Selectors
