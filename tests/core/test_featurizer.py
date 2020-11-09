@@ -118,7 +118,7 @@ def test_single_state_featurizer_creates_encoded_all_actions():
         entities=[],
         slots=[],
         templates={},
-        forms=[],
+        forms={},
         action_names=["a", "b", "c", "d"],
     )
     f = SingleStateFeaturizer()
