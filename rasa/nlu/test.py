@@ -24,7 +24,7 @@ import rasa.utils.io as io_utils
 import rasa.utils.common
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
-from rasa.nlu.classifiers import fallback_classifier
+import rasa.nlu.classifiers.fallback_classifier
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -34,7 +34,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
 )
-from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
@@ -48,7 +47,6 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
-    INTENT_RANKING_KEY,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
@@ -1313,10 +1311,14 @@ def get_eval_data(
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
-            if fallback_classifier.is_fallback_classifier_prediction(result):
+            if rasa.nlu.classifiers.fallback_classifier.is_fallback_classifier_prediction(
+                result
+            ):
                 # Revert fallback prediction to not shadow the wrongly predicted intent
                 # during the test phase.
-                result = fallback_classifier.undo_fallback_prediction(result)
+                result = rasa.nlu.classifiers.fallback_classifier.undo_fallback_prediction(
+                    result
+                )
             intent_prediction = result.get(INTENT, {}) or {}
 
             intent_results.append(
