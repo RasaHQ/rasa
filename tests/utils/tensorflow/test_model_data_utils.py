@@ -43,7 +43,7 @@ def test_create_zero_features():
     zero_features = model_data_utils._create_zero_features(features)
     assert len(zero_features) == 1
     assert zero_features[0].is_dense()
-    assert (zero_features[0].features == np.zeros(shape)).all()
+    assert zero_features[0].features.shape == (0, shape)
 
     # SPARSE FEATURES
     sparse_feature_sentence_features = Features(
@@ -56,7 +56,8 @@ def test_create_zero_features():
     zero_features = model_data_utils._create_zero_features(features)
     assert len(zero_features) == 1
     assert zero_features[0].is_sparse()
-    assert (zero_features[0].features != scipy.sparse.coo_matrix((1, shape))).nnz == 0
+    assert zero_features[0].features.shape == (0, shape)
+    assert zero_features[0].features.nnz == 0
 
 
 def test_surface_attributes():
@@ -168,7 +169,7 @@ def test_extract_features():
         dense_features,
         sparse_features,
     ) = model_data_utils._extract_features(tracker_features, zero_features_list, INTENT)
-    expected_mask = np.array([[[1], [0], [1]], [[0], [0], [1]], [[1], [1], [1]]])
+    expected_mask = np.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
 
     assert np.all(np.squeeze(np.array(attribute_masks), 2) == expected_mask)
     assert np.array(dense_features[SENTENCE]).shape[-1] == zero_features.shape[-1]
