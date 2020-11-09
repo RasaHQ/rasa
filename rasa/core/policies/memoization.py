@@ -23,8 +23,8 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
-from shared.core.constants import USER
-from shared.nlu.constants import ENTITIES, ENTITY_ATTRIBUTE_TYPE
+from rasa.shared.core.constants import USER
+from rasa.shared.nlu.constants import ENTITIES, ENTITY_ATTRIBUTE_TYPE
 
 logger = logging.getLogger(__name__)
 

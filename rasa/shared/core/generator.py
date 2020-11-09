@@ -31,7 +31,7 @@ from rasa.shared.core.training_data.structures import (
 )
 from rasa.shared.utils.io import is_logging_disabled
 import rasa.shared.utils.io
-from shared.nlu.constants import ENTITIES
+from rasa.shared.nlu.constants import ENTITIES
 
 logger = logging.getLogger(__name__)
 
