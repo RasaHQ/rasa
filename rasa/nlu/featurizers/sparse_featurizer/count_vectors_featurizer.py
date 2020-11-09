@@ -582,7 +582,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     self.component_config[FEATURIZER_CLASS_ALIAS],
                 )
                 message.add_features(final_sentence_features)
-                print(attribute, message.get("text"), sentence_features[i].toarray())
 
     def train(
         self,
@@ -786,8 +785,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             vectorizers = cls._create_independent_vocab_vectorizers(
                 meta, vocabulary=vocabulary
             )
-
-        print(vectorizers[TEXT].vocabulary)
 
         ftr = cls(meta, vectorizers, finetune_mode)
 

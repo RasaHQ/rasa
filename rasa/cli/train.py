@@ -78,8 +78,6 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
-    print(args.finetune)
-
     return rasa.train(
         domain=domain,
         config=config,

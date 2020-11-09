@@ -192,7 +192,6 @@ async def _train_async_internal(
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
-    print(old_model)
     model_to_finetune = finetune_model_path if finetune_model_path else old_model
 
     # TODO: Check if finetuning is possible.
