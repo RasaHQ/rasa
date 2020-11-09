@@ -95,7 +95,12 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
         # TODO: remove this when HFTransformersNLP is removed for good
-        hf_transformers_loaded = "HFTransformersNLP" in config.component_names
+        if isinstance(config, Metadata):
+            hf_transformers_loaded = "HFTransformersNLP" in [
+                c["name"] for c in config.metadata["pipeline"]
+            ]
+        else:
+            hf_transformers_loaded = "HFTransformersNLP" in config.component_names
         return cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
 
     def _load_model_metadata(self) -> None:
