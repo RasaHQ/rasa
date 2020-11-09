@@ -602,7 +602,7 @@ class DialogueStateTracker:
         Args:
             new_events: Events to apply.
             domain: The current model's domain.
-            override_timestamp: If `True` reset all timestamps of the events. As the
+            override_timestamp: If `True` refresh all timestamps of the events. As the
                 events are usually created at some earlier point, this makes sure that
                 all new events come after any current tracker events.
         """
