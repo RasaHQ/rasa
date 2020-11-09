@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Text, List, Optional, Union, Any, Dict, Tuple, Set
 import logging
 import json
@@ -6,7 +5,7 @@ import json
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.shared.core.domain import Domain, InvalidDomain, SlotMapping
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
@@ -27,16 +26,6 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-
-class SlotMapping(Enum):
-    FROM_ENTITY = 0
-    FROM_INTENT = 1
-    FROM_TRIGGER_INTENT = 2
-    FROM_TEXT = 3
-
-    def __str__(self) -> Text:
-        return self.name.lower()
 
 
 class FormAction(LoopAction):
