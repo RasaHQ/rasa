@@ -75,7 +75,7 @@ async def test_create_train_data_no_history(default_domain):
     assert hashed == [
         "[{}]",
         '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
-        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}]',
         '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
         '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
         '[{"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
@@ -83,7 +83,7 @@ async def test_create_train_data_no_history(default_domain):
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
         '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}]',
     ]
 
 
@@ -104,13 +104,13 @@ async def test_create_train_data_with_history(default_domain):
     hashed = sorted(hashed)
 
     assert hashed == [
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
         '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": [{"end": 22, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
         '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
@@ -158,7 +158,7 @@ async def test_create_train_data_unfeaturized_entities():
     assert hashed == [
         "[{}]",
         '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
-        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"entities": [{"end": 81, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}]',
         '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
         '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "why"}}]',
         '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "thank"}}]',
@@ -168,9 +168,9 @@ async def test_create_train_data_unfeaturized_entities():
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "thank"}}]',
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [{"end": 81, "entity": "name", "start": 5, "value": "Peter"}], "intent": "greet"}}]',
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [], "intent": "default"}}]',
         '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": [], "intent": "ask"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -1057,7 +1057,7 @@ def test_get_featurized_entities():
 
     featurized_entities = domain._get_featurized_entities(user_uttered)
 
-    assert featurized_entities == set()
+    assert featurized_entities == []
 
     user_uttered = UserUttered(
         text="I am going to London",
@@ -1067,4 +1067,6 @@ def test_get_featurized_entities():
 
     featurized_entities = domain._get_featurized_entities(user_uttered)
 
-    assert featurized_entities == {"GPE", f"GPE{ENTITY_LABEL_SEPARATOR}destination"}
+    assert featurized_entities == [
+        {"entity": "GPE", "role": "destination", "value": "London"}
+    ]

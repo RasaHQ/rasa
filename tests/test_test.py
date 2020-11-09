@@ -197,8 +197,6 @@ def test_write_classification_errors():
         - story: default
           steps:
           - intent: greet  # predicted: goodbye: Hello
-            user: |-
-              Hello
           - action: utter_greet  # predicted: utter_goodbye
 
     """

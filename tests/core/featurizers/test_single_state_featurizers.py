@@ -15,6 +15,10 @@ from rasa.shared.nlu.constants import (
     INTENT,
     FEATURE_TYPE_SEQUENCE,
     FEATURE_TYPE_SENTENCE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
 )
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -184,28 +188,51 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
     interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
 
     f = SingleStateFeaturizer()
-    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
+    f._default_feature_states[INTENT] = {"inform": 0, "greet": 1}
     f._default_feature_states[ENTITIES] = {
-        "c": 0,
-        "d": 1,
-        f"d{ENTITY_LABEL_SEPARATOR}e": 2,
+        "city": 0,
+        "name": 1,
+        f"city{ENTITY_LABEL_SEPARATOR}to": 2,
+        f"city{ENTITY_LABEL_SEPARATOR}from": 3,
     }
-    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
-    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
-    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
+    f._default_feature_states[ACTION_NAME] = {
+        "utter_ask_where_to": 0,
+        "utter_greet": 1,
+        "action_listen": 2,
+    }
+    f._default_feature_states[SLOTS] = {"slot_1": 0, "slot_2": 1, "slot_3": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {
+        "active_loop_1": 0,
+        "active_loop_2": 1,
+        "active_loop_3": 2,
+        "active_loop_4": 3,
+    }
     encoded = f.encode_state(
         {
             "user": {
-                "text": "a ball",
-                "intent": "b",
-                "entities": ["c", f"d{ENTITY_LABEL_SEPARATOR}e"],
+                "text": "I am flying from London to Paris",
+                "intent": "inform",
+                "entities": [
+                    {
+                        ENTITY_ATTRIBUTE_TYPE: "city",
+                        ENTITY_ATTRIBUTE_VALUE: "London",
+                        ENTITY_ATTRIBUTE_START: 17,
+                        ENTITY_ATTRIBUTE_END: 23,
+                    },
+                    {
+                        ENTITY_ATTRIBUTE_TYPE: f"city{ENTITY_LABEL_SEPARATOR}to",
+                        ENTITY_ATTRIBUTE_VALUE: "Paris",
+                        ENTITY_ATTRIBUTE_START: 27,
+                        ENTITY_ATTRIBUTE_END: 32,
+                    },
+                ],
             },
             "prev_action": {
                 "action_name": "action_listen",
                 "action_text": "throw a ball",
             },
-            "active_loop": {"name": "k"},
-            "slots": {"e": (1.0,)},
+            "active_loop": {"name": "active_loop_4"},
+            "slots": {"slot_1": (1.0,)},
         },
         interpreter=interpreter,
     )
@@ -213,7 +240,7 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
     assert sorted(list(encoded.keys())) == sorted(
         [TEXT, ENTITIES, ACTION_NAME, SLOTS, ACTIVE_LOOP, INTENT, ACTION_TEXT]
     )
-    assert np.all(encoded[ENTITIES][0].features.toarray() == [1, 0, 1])
+    assert np.all(encoded[ENTITIES][0].features.toarray() == [1, 0, 1, 0])
 
 
 def test_single_state_featurizer_uses_dtype_float():
@@ -241,21 +268,51 @@ def test_single_state_featurizer_with_interpreter_state_with_action_listen(
     interpreter = Agent.load(unpacked_trained_moodbot_path).interpreter
 
     f = SingleStateFeaturizer()
-    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
-    f._default_feature_states[ENTITIES] = {"c": 0}
-    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1, "action_listen": 2}
-    f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
-    f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
-
+    f._default_feature_states[INTENT] = {"inform": 0, "greet": 1}
+    f._default_feature_states[ENTITIES] = {
+        "city": 0,
+        "name": 1,
+        f"city{ENTITY_LABEL_SEPARATOR}to": 2,
+        f"city{ENTITY_LABEL_SEPARATOR}from": 3,
+    }
+    f._default_feature_states[ACTION_NAME] = {
+        "utter_ask_where_to": 0,
+        "utter_greet": 1,
+        "action_listen": 2,
+    }
+    f._default_feature_states[SLOTS] = {"slot_1": 0, "slot_2": 1, "slot_3": 2}
+    f._default_feature_states[ACTIVE_LOOP] = {
+        "active_loop_1": 0,
+        "active_loop_2": 1,
+        "active_loop_3": 2,
+        "active_loop_4": 3,
+    }
     encoded = f.encode_state(
         {
-            "user": {"text": "a ball", "intent": "b", "entities": ["c"]},
+            "user": {
+                "text": "I am flying from London to Paris",
+                "intent": "inform",
+                "entities": [
+                    {
+                        ENTITY_ATTRIBUTE_TYPE: "city",
+                        ENTITY_ATTRIBUTE_VALUE: "London",
+                        ENTITY_ATTRIBUTE_START: 17,
+                        ENTITY_ATTRIBUTE_END: 23,
+                    },
+                    {
+                        ENTITY_ATTRIBUTE_TYPE: f"city{ENTITY_LABEL_SEPARATOR}to",
+                        ENTITY_ATTRIBUTE_VALUE: "Paris",
+                        ENTITY_ATTRIBUTE_START: 27,
+                        ENTITY_ATTRIBUTE_END: 32,
+                    },
+                ],
+            },
             "prev_action": {
                 "action_name": "action_listen",
                 "action_text": "throw a ball",
             },
-            "active_loop": {"name": "k"},
-            "slots": {"e": (1.0,)},
+            "active_loop": {"name": "active_loop_4"},
+            "slots": {"slot_1": (1.0,)},
         },
         interpreter=interpreter,
     )
