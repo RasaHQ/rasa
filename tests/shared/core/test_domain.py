@@ -38,7 +38,7 @@ from tests.core.conftest import (
 )
 
 
-def test_slots_states_before_user_utterance(default_domain):
+def test_slots_states_before_user_utterance(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer()
     tracker = DialogueStateTracker.from_events(
         "bla",
@@ -55,7 +55,7 @@ def test_slots_states_before_user_utterance(default_domain):
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(default_domain):
+async def test_create_train_data_no_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
@@ -87,7 +87,7 @@ async def test_create_train_data_no_history(default_domain):
     ]
 
 
-async def test_create_train_data_with_history(default_domain):
+async def test_create_train_data_with_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
@@ -132,8 +132,6 @@ def check_for_too_many_entities_and_remove_them(state: State) -> State:
 
 
 async def test_create_train_data_unfeaturized_entities():
-    import copy
-
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"
     domain = Domain.load(domain_file)
@@ -718,7 +716,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=["random_name", "random_name"],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -728,7 +726,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[TextSlot("random_name"), TextSlot("random_name")],
             templates={},
             action_names=[],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -738,7 +736,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=[],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -872,7 +870,7 @@ def test_clean_domain_for_file():
     assert cleaned == expected
 
 
-def test_add_knowledge_base_slots(default_domain):
+def test_add_knowledge_base_slots(default_domain: Domain):
     # don't modify default domain as it is used in other tests
     test_domain = copy.deepcopy(default_domain)
 
@@ -999,7 +997,7 @@ def test_domain_deepcopy():
 
     # equalities
     assert new_domain.intent_properties == domain.intent_properties
-    assert new_domain.overriden_default_intents == domain.overriden_default_intents
+    assert new_domain.overridden_default_intents == domain.overridden_default_intents
     assert new_domain.entities == domain.entities
     assert new_domain.forms == domain.forms
     assert new_domain.form_names == domain.form_names
@@ -1014,7 +1012,9 @@ def test_domain_deepcopy():
     # not the same objects
     assert new_domain is not domain
     assert new_domain.intent_properties is not domain.intent_properties
-    assert new_domain.overriden_default_intents is not domain.overriden_default_intents
+    assert (
+        new_domain.overridden_default_intents is not domain.overridden_default_intents
+    )
     assert new_domain.entities is not domain.entities
     assert new_domain.forms is not domain.forms
     assert new_domain.form_names is not domain.form_names

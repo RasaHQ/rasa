@@ -382,7 +382,7 @@ class RetrievalModelsDataImporter(TrainingDataImporter):
             RetrievalModelsDataImporter._construct_retrieval_action_names(
                 retrieval_intents
             ),
-            [],
+            {},
         )
 
     async def get_stories(
