@@ -579,7 +579,7 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     in_training_data = [
         a["action"]
         for a in action_list
-        if a["policy"] and not SimplePolicyEnsemble.is_in_training_data(a["policy"])
+        if a["policy"] and not SimplePolicyEnsemble.is_not_in_training_data(a["policy"])
     ]
 
     return len(in_training_data) / len(action_list) if action_list else 0

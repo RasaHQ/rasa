@@ -4,6 +4,7 @@ from typing import List, Any, Text, Optional
 import pytest
 import copy
 
+from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 
 from rasa.shared.core.domain import Domain
@@ -569,3 +570,22 @@ def test_with_float_returning_policy(default_domain: Domain):
 
     assert prediction.policy_name == f"policy_1_{OldPolicy.__name__}"
     assert prediction.max_confidence_index == expected_index
+
+
+@pytest.mark.parametrize(
+    "policy_name, confidence, not_in_training_data",
+    [
+        (f"policy_1_{MemoizationPolicy.__name__}", 1.0, False),
+        (f"policy_1_{AugmentedMemoizationPolicy.__name__}", 1.0, False),
+        (f"policy_1_{AugmentedMemoizationPolicy.__name__}", None, False),
+        (f"policy_1_{RulePolicy.__name__}", 1.0, False),
+        ("any", 0.0, True),
+    ],
+)
+def test_is_not_in_training_data(
+    policy_name: Text, confidence: Optional[float], not_in_training_data: bool
+):
+    assert (
+        SimplePolicyEnsemble.is_not_in_training_data(policy_name, confidence)
+        == not_in_training_data
+    )

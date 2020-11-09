@@ -454,7 +454,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
     """Default implementation of a `Policy` ensemble."""
 
     @staticmethod
-    def is_in_training_data(
+    def is_not_in_training_data(
         policy_name: Optional[Text], max_confidence: Optional[float] = None
     ) -> bool:
         """Checks if the prediction is by a policy which memoized the training data.
@@ -468,10 +468,18 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         if not policy_name:
             return True
 
-        is_memo = policy_name.endswith("_" + MemoizationPolicy.__name__)
-        is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
+        memorizing_policies = [
+            RulePolicy.__name__,
+            MemoizationPolicy.__name__,
+            AugmentedMemoizationPolicy.__name__,
+        ]
+        is_memorized = any(
+            policy_name.endswith(f"_{memoizing_policy}")
+            for memoizing_policy in memorizing_policies
+        )
+
         # also check if confidence is 0, than it cannot be count as prediction
-        return not (is_memo or is_augmented) or max_confidence == 0.0
+        return not is_memorized or max_confidence == 0.0
 
     @staticmethod
     def _is_not_mapping_policy(
@@ -717,7 +725,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             and winning_prediction.probabilities is not None
             and winning_prediction.max_confidence_index
             == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_in_training_data(
+            and self.is_not_in_training_data(
                 winning_prediction.policy_name, winning_prediction.max_confidence
             )
         ):
