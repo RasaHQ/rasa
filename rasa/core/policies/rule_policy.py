@@ -59,7 +59,7 @@ DEFAULT_ACTION_MAPPINGS = {
 RULES = "rules"
 RULES_FOR_LOOP_UNHAPPY_PATH = "rules_for_loop_unhappy_path"
 
-LOOP_WAS_INTERRUPTED = "do_not_validate_loop"
+LOOP_WAS_INTERRUPTED = "loop_was_interrupted"
 DO_NOT_PREDICT_LOOP_ACTION = "do_not_predict_loop_action"
 
 DEFAULT_RULES = "predicting default action"
