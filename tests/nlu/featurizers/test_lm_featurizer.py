@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 import logging
 
+from _pytest.logging import LogCaptureFixture
+
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
@@ -748,7 +750,7 @@ def test_hf_transformers_number_of_sub_tokens(text, expected_number_of_sub_token
 
 
 @pytest.mark.parametrize("text", [("hi there")])
-def test_log_deprecation_warning_with_old_config(text, caplog):
+def test_log_deprecation_warning_with_old_config(text: str, caplog: LogCaptureFixture):
     message = Message.build(text)
 
     transformers_nlp = HFTransformersNLP(
@@ -760,7 +762,9 @@ def test_log_deprecation_warning_with_old_config(text, caplog):
     lm_tokenizer = LanguageModelTokenizer()
     lm_tokenizer.process(message)
     lm_featurizer = LanguageModelFeaturizer()
-    lm_featurizer.process(message)
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        lm_featurizer.process(message)
 
     assert "deprecated component HFTransformersNLP" in caplog.text
 
