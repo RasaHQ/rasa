@@ -319,6 +319,6 @@ number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> i
 Get the number of Sanic workers to use in `app.run()`.
 
 If the environment variable constants.ENV_SANIC_WORKERS is set and is not equal to
-1, that value will only be permitted if the used lock store supports shared
-resources across multiple workers (e.g. ``RedisLockStore``).
+1, that value will only be permitted if the used lock store is not the
+`InMemoryLockStore`.
 
