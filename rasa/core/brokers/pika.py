@@ -656,26 +656,6 @@ class PikaEventBroker(EventBroker):
 
         return None
 
-    def is_ready(
-        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
-    ) -> bool:
-        """Spin until Pika is ready to process messages.
-
-        It typically takes 50 ms or so for the pika channel to open. We'll wait up
-        to 10 seconds just in case.
-
-        Args:
-            attempts: Number of retries.
-            wait_time_between_attempts_in_seconds: Wait time between retries.
-
-        Returns:
-            `True` if the channel is available, `False` otherwise.
-        """
-        # TODO: This is broken
-        return self.pika_message_processor and self.pika_message_processor.is_ready(
-            attempts, wait_time_between_attempts_in_seconds
-        )
-
     def publish(
         self,
         event: Dict[Text, Any],
