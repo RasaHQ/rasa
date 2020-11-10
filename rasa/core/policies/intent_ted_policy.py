@@ -270,6 +270,12 @@ class IntentTEDPolicy(TEDPolicy):
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
+
+        # TODO: Change TED also to do this before label data is created.
+        #  Currently call to this is made inside featurize_trackers which masks
+        #  the problem that labels may also need to be featurized from states prepared from domain.
+        state_featurizer.prepare_from_domain(domain)
+
         encoded_all_labels = state_featurizer.encode_all_intents(domain, interpreter)
         # print("encoded all labels", encoded_all_labels)
 
