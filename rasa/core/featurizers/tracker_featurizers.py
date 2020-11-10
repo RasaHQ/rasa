@@ -493,6 +493,14 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
 class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
     @staticmethod
+    def _hash_states(states: List[State], tracker: DialogueStateTracker) -> int:
+        """Hash states for efficient collection of multiple labels."""
+        frozen_states = tuple(
+            s if s is None else tracker.freeze_current_state(s) for s in states
+        )
+        return hash(frozen_states)
+
+    @staticmethod
     def _create_extra_listen_state(last_state):
         if not last_state:
             return {"prev_action": {"action_name": "action_listen"}}
@@ -521,8 +529,14 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         # we only need to keep one.
         hashed_examples = set()
 
+        # We keep all the unique sequence of states hashed
+        # so that we can efficiently collect multiple labels for each unique sequence.
+        hashed_states = set()
+
+        states_indices = dict()
+
         logger.debug(
-            "Creating states and action examples from "
+            "Creating states and intent examples from "
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
@@ -533,6 +547,9 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             desc="Processed trackers",
             disable=rasa.shared.utils.io.is_logging_disabled(),
         )
+
+        example_index = 0
+
         for tracker in pbar:
 
             states = self._create_states(tracker, domain)
@@ -556,25 +573,49 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                     # TODO: If there are duplicate tracker states with different intents as labels,
                     #  then collect all intents here itself to construct the list of multiple labels
                     if self.remove_duplicates:
-                        hashed = self._hash_example(
+                        hashed_example = self._hash_example(
                             sliced_states, event.intent["name"], tracker
                         )
 
+                        hashed_state = self._hash_states(sliced_states, tracker)
+
                         # only continue with tracker_states that created a
                         # hashed_featurization we haven't observed
-                        if hashed not in hashed_examples:
-                            hashed_examples.add(hashed)
+                        if hashed_example not in hashed_examples:
+                            hashed_examples.add(hashed_example)
+
+                            if hashed_state not in hashed_states:
+                                hashed_states.add(hashed_state)
+                                trackers_as_states.append(sliced_states)
+                                trackers_as_actions.append([event.intent["name"]])
+                                states_indices[hashed_state] = example_index
+                                example_index += 1
+
+                            else:
+                                # We have seen this sequence of state before, so append only the new intent label
+                                trackers_as_actions[
+                                    states_indices[hashed_state]
+                                ].append(event.intent["name"])
+                    else:
+                        hashed_state = self._hash_states(sliced_states, tracker)
+                        if hashed_state not in hashed_states:
+                            hashed_states.add(hashed_state)
                             trackers_as_states.append(sliced_states)
                             trackers_as_actions.append([event.intent["name"]])
-                    else:
-                        trackers_as_states.append(sliced_states)
-                        trackers_as_actions.append([event.intent["name"]])
+                            states_indices[hashed_state] = example_index
+                            example_index += 1
+
+                        else:
+                            # We have seen this sequence of state before, so append only the new intent label
+                            trackers_as_actions[states_indices[hashed_state]].append(
+                                event.intent["name"]
+                            )
 
                     pbar.set_postfix(
-                        {"# actions": "{:d}".format(len(trackers_as_actions))}
+                        {"# intents": "{:d}".format(len(trackers_as_actions))}
                     )
 
-        logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
+        logger.debug("Created {} intent examples.".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
 
@@ -704,9 +745,6 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             trackers, domain
         )
 
-        # for tracker_states, tracker_actions in zip(trackers_as_states, trackers_as_actions):
-        #     print(tracker_states, tracker_actions)
-
         # print("Featurizing states")
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
@@ -714,7 +752,10 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         # print("Featurizing labels")
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
 
-        label_ids = self._collect_multiple_labels(tracker_state_features, label_ids)
+        # for tracker_states, tracker_actions, label_id in zip(trackers_as_states, trackers_as_actions, label_ids):
+        #     print(tracker_states, tracker_actions, label_id)
+
+        # label_ids = self._collect_multiple_labels(tracker_state_features, label_ids)
 
         # print(domain.intents)
         # print(domain.action_names)

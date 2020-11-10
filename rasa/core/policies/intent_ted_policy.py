@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 from pathlib import Path
+from tqdm import tqdm
 
 import numpy as np
 import tensorflow as tf
@@ -371,11 +372,14 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
         if self.use_augmentation_for_thresholds:
+
+            # print("Computing feats")
             # Featurize augmented trackers for threshold computation
             model_threshold_data, threshold_label_ids = self._featurize_for_model(
                 domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
             )
 
+            # print("Computing thresholds")
             self.intent_thresholds = self.model.compute_thresholds(
                 model_threshold_data,
                 threshold_label_ids,
@@ -538,7 +542,7 @@ class IntentTEDPolicy(TEDPolicy):
 
         if self.ignore_retrieval_intents and intent in domain.retrieval_intents:
             return False
-        if intent not in self.intent_thresholds:
+        if domain.index_for_intent(intent) not in self.intent_thresholds:
             # This means the intent was never present in a story
             return False
         if intent in self.ignore_intent_list:
@@ -705,7 +709,7 @@ class IntentTED(TED):
 
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        all_label_ids, all_labels_embed = self._create_all_labels_embed()
+        _, all_labels_embed = self._create_all_labels_embed()
 
         dialogue_in = self._process_batch_data(tf_batch_data)
         dialogue_embed, dialogue_mask = self._emebed_dialogue(
@@ -757,12 +761,28 @@ class IntentTED(TED):
     def compute_thresholds(
         self, model_data: RasaModelData, label_ids, use_probability_thresholds: bool
     ):
-
-        batch_in = model_data.prepare_batch()
-
-        # Directly use eager mode for inference
         self._training = False
-        batch_output = self.batch_infer_during_training(batch_in)
+
+        scores = None
+        sims = None
+
+        # Todo: Make this use the config batch size
+        batch_size = 64
+        progress_bar = tqdm(
+            range(0, label_ids.shape[0], batch_size),
+            desc="Calculating Thresholds",
+            disable=rasa.shared.utils.io.is_logging_disabled(),
+        )
+        for index in progress_bar:
+            batch_in = model_data.prepare_batch(start=index, end=index + batch_size)
+            batch_output = self.batch_infer_during_training(batch_in)
+            if index == 0:
+                scores = batch_output["intent_scores"].numpy()
+                sims = batch_output["sim_all"].numpy()
+            else:
+                scores = np.vstack([scores, batch_output["intent_scores"].numpy()])
+                sims = np.vstack([sims, batch_output["sim_all"].numpy()])
+            # print(index)
 
         thresholds = {}
 
@@ -774,13 +794,17 @@ class IntentTED(TED):
                 thresholds[first_pos_label_id] = []
 
             thresholds[first_pos_label_id].append(
-                batch_output["intent_scores"][index, 0, first_pos_label_id].numpy()
+                scores[index, 0, first_pos_label_id]
                 if use_probability_thresholds
-                else batch_output["sim_all"][index, 0, first_pos_label_id].numpy()
+                else sims[index, 0, first_pos_label_id]
             )
 
         for label_id in thresholds:
-            thresholds[label_id] = min(0.5, min(thresholds[label_id]))
+            thresholds[label_id] = (
+                min(0.5, min(thresholds[label_id]))
+                if use_probability_thresholds
+                else min(0.0, min(thresholds[label_id]))
+            )
             # thresholds[label_id] = min(thresholds[label_id])
 
         print(thresholds)
