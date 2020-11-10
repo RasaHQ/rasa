@@ -550,7 +550,6 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/tracker")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    @ensure_conversation_exists(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
 
@@ -693,6 +692,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists(app)
     async def execute_action(request: Request, conversation_id: Text):
         request_params = request.json
 
@@ -797,6 +797,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
+    @ensure_conversation_exists(app)
     async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format
