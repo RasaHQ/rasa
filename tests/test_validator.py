@@ -47,6 +47,18 @@ async def test_verify_valid_responses():
     assert validator.verify_utterances_in_stories()
 
 
+async def test_verify_valid_responses_in_rules():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=[
+            DEFAULT_NLU_DATA,
+            "data/test_stories/rules_without_stories_and_wrong_names.md",
+        ],
+    )
+    validator = await Validator.from_importer(importer)
+    assert not validator.verify_utterances_in_stories()
+
+
 async def test_verify_story_structure():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
@@ -63,6 +75,15 @@ async def test_verify_bad_story_structure():
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_story_structure(ignore_warnings=False)
+
+
+async def test_verify_story_structure_ignores_rules():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_with_rules_conflicting.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_story_structure(ignore_warnings=False)
 
 
 async def test_verify_bad_story_structure_ignore_warnings():
