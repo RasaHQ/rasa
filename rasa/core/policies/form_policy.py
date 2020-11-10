@@ -3,6 +3,7 @@ from typing import List, Dict, Text, Optional, Any, Union, Tuple
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -19,8 +20,6 @@ from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.constants import FORM_POLICY_PRIORITY
 from rasa.shared.nlu.constants import ACTION_NAME
-
-from rasa.utils import common as common_utils
 
 
 logger = logging.getLogger(__name__)
@@ -132,8 +131,8 @@ class FormPolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
-        """Predicts the corresponding form action if there is an active form"""
+    ) -> PolicyPrediction:
+        """Predicts the corresponding form action if there is an active form."""
         result = self._default_predictions(domain)
 
         if tracker.active_loop_name:
@@ -145,8 +144,7 @@ class FormPolicy(MemoizationPolicy):
 
                 if tracker.active_loop.get(LOOP_REJECTED):
                     if self.state_is_unhappy(tracker, domain):
-                        tracker.update(LoopInterrupted(True))
-                        return result
+                        return self._prediction(result, events=[LoopInterrupted(True)])
 
                 result = self._prediction_result(
                     tracker.active_loop_name, tracker, domain
@@ -159,7 +157,7 @@ class FormPolicy(MemoizationPolicy):
         else:
             logger.debug("There is no active form")
 
-        return result
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {"priority": self.priority, "lookup": self.lookup}
