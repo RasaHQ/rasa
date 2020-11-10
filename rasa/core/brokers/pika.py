@@ -97,7 +97,7 @@ def _pika_log_level(temporary_log_level: int) -> Generator[None, None, None]:
 
 
 def create_rabbitmq_ssl_options(
-        rabbitmq_host: Optional[Text] = None,
+    rabbitmq_host: Optional[Text] = None,
 ) -> Optional["pika.SSLOptions"]:
     """Create RabbitMQ SSL options.
 
@@ -295,6 +295,7 @@ def close_pika_connection(connection: "Connection") -> None:
     except AMQPError:
         logger.exception("Failed to close Pika connection with host.")
 
+
 MessageHeaders = Optional[Dict[Text, Text]]
 Message = Tuple[Text, MessageHeaders]
 
@@ -303,9 +304,9 @@ class PikaMessageProcessor:
     """A class that holds all the Pika connection details and processes Pika messages."""
 
     def __init__(
-            self,
-            parameters: "Parameters",
-            queues: Union[List[Text], Tuple[Text], Text, None],
+        self,
+        parameters: "Parameters",
+        queues: Union[List[Text], Tuple[Text], Text, None],
     ) -> None:
         """Initialise Pika connector.
 
@@ -336,7 +337,7 @@ class PikaMessageProcessor:
 
     @staticmethod
     def _get_queues_from_args(
-            queues_arg: Union[List[Text], Tuple[Text], Text, None]
+        queues_arg: Union[List[Text], Tuple[Text], Text, None]
     ) -> List[Text]:
         """Get queues for this event broker.
 
@@ -417,7 +418,7 @@ class PikaMessageProcessor:
         return self._connection and self._channel
 
     def is_ready(
-            self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
+        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
     ) -> bool:
         """Spin until the connector is ready to process messages.
 
@@ -564,18 +565,18 @@ class PikaEventBroker(EventBroker):
         MP_CONTEXT = "spawn"
 
     def __init__(
-            self,
-            host: Text,
-            username: Text,
-            password: Text,
-            port: Union[int, Text] = 5672,
-            queues: Union[List[Text], Tuple[Text], Text, None] = None,
-            should_keep_unpublished_messages: bool = True,
-            raise_on_failure: bool = False,
-            log_level: Union[Text, int] = os.environ.get(
-                ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-            ),
-            **kwargs: Any,
+        self,
+        host: Text,
+        username: Text,
+        password: Text,
+        port: Union[int, Text] = 5672,
+        queues: Union[List[Text], Tuple[Text], Text, None] = None,
+        should_keep_unpublished_messages: bool = True,
+        raise_on_failure: bool = False,
+        log_level: Union[Text, int] = os.environ.get(
+            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
+        ),
+        **kwargs: Any,
     ) -> None:
         """Initialise RabbitMQ event broker.
 
@@ -620,7 +621,7 @@ class PikaEventBroker(EventBroker):
 
     @classmethod
     def from_endpoint_config(
-            cls, broker_config: Optional["EndpointConfig"]
+        cls, broker_config: Optional["EndpointConfig"]
     ) -> Optional["PikaEventBroker"]:
         """Initialise `PikaEventBroker` from `EndpointConfig`.
 
@@ -659,11 +660,11 @@ class PikaEventBroker(EventBroker):
         return None
 
     def publish(
-            self,
-            event: Dict[Text, Any],
-            retries: int = 60,
-            retry_delay_in_seconds: int = 5,
-            headers: Optional[Dict[Text, Text]] = None,
+        self,
+        event: Dict[Text, Any],
+        retries: int = 60,
+        retry_delay_in_seconds: int = 5,
+        headers: Optional[Dict[Text, Text]] = None,
     ) -> None:
         """Publish `event` into Pika queue.
 
