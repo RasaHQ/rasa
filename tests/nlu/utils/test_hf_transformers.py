@@ -437,11 +437,7 @@ def test_attention_mask(
 )
 @pytest.mark.skip_on_windows
 def test_hf_transformer_edge_cases(
-    model_name,
-    model_weights,
-    texts,
-    expected_tokens,
-    expected_indices,
+    model_name, model_weights, texts, expected_tokens, expected_indices
 ):
 
     if model_weights is None:
