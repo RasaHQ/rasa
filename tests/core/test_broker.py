@@ -52,9 +52,7 @@ def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
 
 # noinspection PyProtectedMember
 def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
-    pika_processor = PikaMessageProcessor(
-        TEST_CONNECTION_PARAMETERS, queues=None, get_message=lambda: ("", None)
-    )
+    pika_processor = PikaMessageProcessor(TEST_CONNECTION_PARAMETERS, queues=None)
 
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
@@ -93,10 +91,7 @@ def test_pika_queues_from_args(
 ):
     with pytest.warns(warning):
         pika_processor = PikaMessageProcessor(
-            TEST_CONNECTION_PARAMETERS,
-            queues=queues_arg,
-            queue=queue_arg,
-            get_message=lambda: ("", None),
+            TEST_CONNECTION_PARAMETERS, queues=queues_arg, queue=queue_arg,
         )
 
     assert pika_processor.queues == expected

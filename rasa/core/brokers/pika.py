@@ -307,6 +307,7 @@ class PikaMessageProcessor:
         self,
         parameters: "Parameters",
         queues: Union[List[Text], Tuple[Text], Text, None],
+        **kwargs: Any,
     ) -> None:
         """Initialise Pika connector.
 
@@ -315,7 +316,7 @@ class PikaMessageProcessor:
             queues: Pika queues to declare and publish to
         """
         self.parameters: "Parameters" = parameters
-        self.queues: List[Text] = self._get_queues_from_args(queues)
+        self.queues: List[Text] = self._get_queues_from_args(queues, kwargs)
 
         self._connection: Optional["SelectConnection"] = None
         self._channel: Optional["Channel"] = None
@@ -337,24 +338,33 @@ class PikaMessageProcessor:
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None]
-    ) -> List[Text]:
+        queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any
+    ) -> Union[List[Text], Tuple[Text]]:
         """Get queues for this event broker.
-
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
-        publish to is `queues` (as of Rasa Open Source version 1.8.2). This method
+        publish to is `queues` (as of Rasa Open Source version 1.8.2). This function
+        ensures backwards compatibility with the old `queue` argument. This method
         can be removed in the future, and `self.queues` should just receive the value of
         the `queues` kwarg in the constructor.
-
         Args:
             queues_arg: Value of the supplied `queues` argument.
-
+            kwargs: Additional kwargs supplied to the `PikaEventBroker` constructor.
+                If `queues_arg` is not supplied, the `queue` kwarg will be used instead.
         Returns:
             Queues this event broker publishes to.
-
         Raises:
-            `ValueError` if no valid `queues` argument was found.
+            `ValueError` if no valid `queue` or `queues` argument was found.
         """
+        queue_arg = kwargs.pop("queue", None)
+
+        if queue_arg:
+            raise_warning(
+                "Your Pika event broker config contains the deprecated `queue` key. "
+                "Please use the `queues` key instead.",
+                FutureWarning,
+                docs=DOCS_URL_PIKA_EVENT_BROKER,
+            )
+
         if queues_arg and isinstance(queues_arg, (list, tuple)):
             return list(queues_arg)
 
@@ -366,8 +376,14 @@ class PikaMessageProcessor:
             )
             return [queues_arg]
 
+        if queue_arg and isinstance(queue_arg, str):
+            return [queue_arg]
+
+        if queue_arg:
+            return queue_arg  # pytype: disable=bad-return-type
+
         raise_warning(
-            f"No `queues` argument provided. It is suggested to "
+            f"No `queues` or `queue` argument provided. It is suggested to "
             f"explicitly specify a queue as described in "
             f"{DOCS_URL_PIKA_EVENT_BROKER}. "
             f"Using the default queue '{DEFAULT_QUEUE_NAME}' for now."
