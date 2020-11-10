@@ -141,7 +141,11 @@ def _last_n_intent_names(
 ) -> List[Text]:
     intent_names = []
     for i in range(number_of_last_intent_names):
-        message = tracker.get_last_event_for(UserUttered, skip=i)
+        message = tracker.get_last_event_for(
+            (UserUttered, UserUtteranceReverted),
+            skip=i,
+            event_verbosity=EventVerbosity.AFTER_RESTART,
+        )
         if isinstance(message, UserUttered):
             intent_names.append(message.intent.get("name"))
 
