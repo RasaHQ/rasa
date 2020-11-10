@@ -12,6 +12,7 @@ from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
 
 import rasa.core
+from rasa.core.tracker_store import SQLTrackerStore
 from rasa.exceptions import ModelNotFound
 import rasa.shared.utils.common
 from rasa.core.policies.form_policy import FormPolicy
@@ -412,4 +413,37 @@ async def test_inference_performance(stack_agent: Agent):
     profile.disable()
 
     profile.dump_stats("./test_inference.prof")
+    assert result
+
+
+async def test_inference_performance_with_sara_and_postgres():
+    # docker run -e POSTGRES_DB=rasa -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
+    tracker_store = SQLTrackerStore(
+        None,
+        dialect="postgresql",
+        host="localhost",
+        db="rasa",
+        username="postgres",
+        password="password",
+        port=5432,
+    )
+
+    agent = Agent.load("sara/20201028-175605.tar.gz", tracker_store=tracker_store)
+    text = "/greet"
+
+    messages = ["/why_rasa", "/ask_question_in_forum", "/thank", "/bye", "/canthelp"]
+    runs = 50
+    nr_users = int(runs / len(messages))
+    profile = cProfile.Profile()
+    profile.enable()
+    message = UserMessage(text, sender_id="test_agent_handle_message")
+
+    for i in range(nr_users):
+        message.sender_id = f"sender-{i}"
+        for text in messages:
+            message.text = text
+            result = await agent.handle_message(message)
+    profile.disable()
+
+    profile.dump_stats("./prod-interference.prof")
     assert result
