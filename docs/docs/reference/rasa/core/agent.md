@@ -111,7 +111,7 @@ Append a message to a dialogue - does not predict actions.
 #### execute\_action
 
 ```python
- | async execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Text, confidence: float) -> Optional[DialogueStateTracker]
+ | async execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Optional[Text], confidence: Optional[float]) -> Optional[DialogueStateTracker]
 ```
 
 Handle a single message.

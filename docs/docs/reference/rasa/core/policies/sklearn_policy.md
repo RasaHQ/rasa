@@ -36,3 +36,11 @@ Create a new sklearn policy.
 - `shuffle` - Whether to shuffle training data.
 - `zero_state_features` - Contains default feature values for attributes
 
+#### persist
+
+```python
+ | persist(path: Union[Text, Path]) -> None
+```
+
+Persists the policy properties (see parent class for more information).
+

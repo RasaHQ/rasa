@@ -97,7 +97,7 @@ Trains the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> List[float]
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> "PolicyPrediction"
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -112,7 +112,7 @@ Predicts the next action the bot should take after seeing the tracker.
 
 **Returns**:
 
-  the list of probabilities for the next actions
+  The policy&#x27;s prediction (e.g. the probabilities for the actions).
 
 #### persist
 
@@ -160,6 +160,102 @@ Format tracker states to human readable format on debug log.
 **Returns**:
 
   the string of the states with user intents and actions
+
+## PolicyPrediction Objects
+
+```python
+class PolicyPrediction()
+```
+
+Stores information about the prediction of a `Policy`.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False) -> None
+```
+
+Creates a `PolicyPrediction`.
+
+**Arguments**:
+
+- `probabilities` - The probabilities for each action.
+- `policy_name` - Name of the policy which made the prediction.
+- `policy_priority` - The priority of the policy which made the prediction.
+- `events` - Events which the `Policy` needs to have applied to the tracker
+  after the prediction. These events are applied independent of whether
+  the policy wins against other policies or not. Be careful which events
+  you return as they can potentially influence the conversation flow.
+- `optional_events` - Events which the `Policy` needs to have applied to the
+  tracker after the prediction in case it wins. These events are only
+  applied in case the policy&#x27;s prediction wins. Be careful which events
+  you return as they can potentially influence the conversation flow.
+- `is_end_to_end_prediction` - `True` if the prediction used the text of the
+  user message instead of the intent.
+
+#### for\_action\_name
+
+```python
+ | @staticmethod
+ | for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0) -> "PolicyPrediction"
+```
+
+Create a prediction for a given action.
+
+**Arguments**:
+
+- `domain` - The current model domain
+- `action_name` - The action which should be predicted.
+- `policy_name` - The policy which did the prediction.
+- `confidence` - The prediction confidence.
+  
+
+**Returns**:
+
+  The prediction.
+
+#### \_\_eq\_\_
+
+```python
+ | __eq__(other: Any) -> bool
+```
+
+Checks if the two objects are equal.
+
+**Arguments**:
+
+- `other` - Any other object.
+  
+
+**Returns**:
+
+  `True` if other has the same type and the values are the same.
+
+#### max\_confidence\_index
+
+```python
+ | @property
+ | max_confidence_index() -> int
+```
+
+Gets the index of the action prediction with the highest confidence.
+
+**Returns**:
+
+  The index of the action with the highest confidence.
+
+#### max\_confidence
+
+```python
+ | @property
+ | max_confidence() -> float
+```
+
+Gets the highest predicted probability.
+
+**Returns**:
+
+  The highest predicted probability.
 
 #### confidence\_scores\_for
 

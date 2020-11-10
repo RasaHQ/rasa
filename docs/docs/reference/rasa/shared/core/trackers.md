@@ -286,6 +286,22 @@ of this tracker exactly.
 
 Modify the state of the tracker according to an ``Event``.
 
+#### update\_with\_events
+
+```python
+ | update_with_events(new_events: List[Event], domain: Optional[Domain], override_timestamp: bool = True) -> None
+```
+
+Adds multiple events to the tracker.
+
+**Arguments**:
+
+- `new_events` - Events to apply.
+- `domain` - The current model&#x27;s domain.
+- `override_timestamp` - If `True` refresh all timestamps of the events. As the
+  events are usually created at some earlier point, this makes sure that
+  all new events come after any current tracker events.
+
 #### as\_story
 
 ```python

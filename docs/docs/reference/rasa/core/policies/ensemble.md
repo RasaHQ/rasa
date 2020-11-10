@@ -35,24 +35,34 @@ Persists the policy to storage.
 
 Loads policy and domain specification from storage
 
-## Prediction Objects
-
-```python
-class Prediction(NamedTuple)
-```
-
-Stores the probabilities and the priority of the prediction.
-
 ## SimplePolicyEnsemble Objects
 
 ```python
 class SimplePolicyEnsemble(PolicyEnsemble)
 ```
 
+Default implementation of a `Policy` ensemble.
+
+#### is\_not\_in\_training\_data
+
+```python
+ | @staticmethod
+ | is_not_in_training_data(policy_name: Optional[Text], max_confidence: Optional[float] = None) -> bool
+```
+
+Checks if the prediction is by a policy which memoized the training data.
+
+**Arguments**:
+
+- `policy_name` - The name of the policy.
+- `max_confidence` - The max confidence of the policy&#x27;s prediction.
+  
+- `Returns` - `True` if it&#x27;s a `MemoizationPolicy`, `False` otherwise.
+
 #### probabilities\_using\_best\_policy
 
 ```python
- | probabilities_using_best_policy(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[List[float], Optional[Text]]
+ | probabilities_using_best_policy(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.

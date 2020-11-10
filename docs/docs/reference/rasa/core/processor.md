@@ -17,6 +17,41 @@ class MessageProcessor()
 
 Handle a single message with this processor.
 
+#### predict\_next
+
+```python
+ | async predict_next(sender_id: Text) -> Optional[Dict[Text, Any]]
+```
+
+Predict the next action for the current conversation state.
+
+**Arguments**:
+
+- `sender_id` - Conversation ID.
+  
+
+**Returns**:
+
+  The prediction for the next action. `None` if no domain or policies loaded.
+
+#### predict\_next\_with\_tracker
+
+```python
+ | predict_next_with_tracker(tracker: DialogueStateTracker, verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART) -> Optional[Dict[Text, Any]]
+```
+
+Predict the next action for a given conversation state.
+
+**Arguments**:
+
+- `tracker` - A tracker representing a conversation state.
+- `verbosity` - Verbosity for the returned conversation state.
+  
+
+**Returns**:
+
+  The prediction for the next action. `None` if no domain or policies loaded.
+
 #### fetch\_tracker\_and\_update\_session
 
 ```python
@@ -114,10 +149,35 @@ Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
 can be skipped if the tracker returned by this method is used for further
 processing and saved at a later stage.
 
+#### execute\_action
+
+```python
+ | async execute_action(sender_id: Text, action_name: Text, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, prediction: PolicyPrediction) -> Optional[DialogueStateTracker]
+```
+
+Execute an action for a conversation.
+
+Note that this might lead to unexpected bot behavior. Rather use an intent
+to execute certain behavior within a conversation (e.g. by using
+`trigger_external_user_uttered`).
+
+**Arguments**:
+
+- `sender_id` - The ID of the conversation.
+- `action_name` - The name of the action which should be executed.
+- `output_channel` - The output channel which should be used for bot responses.
+- `nlg` - The response generator.
+- `prediction` - The prediction for the action.
+  
+
+**Returns**:
+
+  The new conversation state. Note that the new state is also persisted.
+
 #### predict\_next\_action
 
 ```python
- | predict_next_action(tracker: DialogueStateTracker) -> Tuple[rasa.core.actions.action.Action, Optional[Text], float]
+ | predict_next_action(tracker: DialogueStateTracker) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]
 ```
 
 Predicts the next action the bot should take after seeing x.

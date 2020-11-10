@@ -44,11 +44,12 @@ Train the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> List[float]
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
-Predict the next action the bot should take.
-Return the list of probabilities for the next actions.
+Predicts the next action the bot should take.
+
+See the docstring of the parent class `Policy` for more information.
 
 #### persist
 

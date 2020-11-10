@@ -55,3 +55,11 @@ Create a `RulePolicy` object.
 - `enable_fallback_prediction` - If `True` `core_fallback_action_name` is
   predicted in case no rule matched.
 
+#### predict\_action\_probabilities
+
+```python
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+```
+
+Predicts the next action (see parent class for more information).
+
