@@ -110,17 +110,7 @@ LABEL_FEATURES_TO_ENCODE = [
     f"{LABEL}_{INTENT}",
 ]
 SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
-SEQUENCE_FEATURES_TO_ENCODE = [
-    TEXT,
-    ACTION_TEXT,
-    f"{LABEL}_{ACTION_TEXT}",
-    f"{LABEL}_{INTENT}",
-]
-LABEL_FEATURES_TO_ENCODE = [
-    f"{LABEL}_{ACTION_NAME}",
-    f"{LABEL}_{ACTION_TEXT}",
-    f"{LABEL}_{INTENT}",
-]
+SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
@@ -857,6 +847,8 @@ class TED(TransformerRasaModel):
         # Therefore actual input tensors will be empty.
         # Since we need actual numbers to create dialogue turn features, we create
         # zero tensors in `_encode_fake_features_per_attribute` for these attributes.
+        # print("encoding for", attribute)
+        # print(tf_batch_data[attribute][SENTENCE])
         return tf.cond(
             tf.shape(tf_batch_data[attribute][SENTENCE][0])[0] > 0,
             lambda: self._encode_real_features_per_attribute(tf_batch_data, attribute),
@@ -1007,7 +999,6 @@ class TED(TransformerRasaModel):
         non_fake_dialogue_lengths = tf.reduce_sum(attribute_mask, axis=-1)
 
         batch_indices = tf.repeat(tf.range(batch_dim), non_fake_dialogue_lengths)
-
         dialogue_indices = (
             tf.map_fn(
                 tf.range,

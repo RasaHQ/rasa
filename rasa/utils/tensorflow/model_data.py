@@ -668,15 +668,19 @@ class RasaModelData:
             data = self.data
 
         batch_data = []
+        index = 0
 
         for key, attribute_data in data.items():
             for sub_key, f_data in attribute_data.items():
+                # print(key, sub_key, index)
                 # add None for not present values during processing
                 if not f_data:
                     if tuple_sizes:
                         batch_data += [None] * tuple_sizes[key]
+                        index += tuple_sizes[key]
                     else:
                         batch_data.append(None)
+                        index += 1
                     continue
 
                 for v in f_data:
@@ -691,8 +695,14 @@ class RasaModelData:
 
                     if _data.is_sparse:
                         batch_data.extend(self._scipy_matrix_to_values(_data))
+                        index += 3
                     else:
                         batch_data.append(self._pad_dense_data(_data))
+                        index += 1
+                        # if key == "dialogue" and sub_key == "length":
+                        #     print("adding to batch in prepare")
+                        #     print(self._pad_dense_data(_data).shape)
+                        #     print(index)
 
         # len of batch_data is equal to the number of keys in model data
         return tuple(batch_data)

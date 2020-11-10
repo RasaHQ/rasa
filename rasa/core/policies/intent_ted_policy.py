@@ -224,10 +224,12 @@ class IntentTEDPolicy(TEDPolicy):
         # Specify what features to use as sequence and sentence features.
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
-        # Whether to use augmented stories for evaluation
+        # Whether to use augmented stories for threshold computation
         "use_augmentation_for_thresholds": True,
+        # What to use for thresholds
+        "use_probability_thresholds": True,
         # Whether to flag retrieval intents
-        "flag_retrieval_intents": False,
+        "ignore_retrieval_intents": True,
         # Other intents to ignore
         "ignore_intents": [],
         # revert unseen intent events
@@ -250,10 +252,12 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
         self.intent_thresholds = intent_thresholds
-        self.use_augmentation_for_evaluation = self.config[
+        self.use_augmentation_for_thresholds = self.config[
             "use_augmentation_for_thresholds"
         ]
-        self.flag_retrieval_intents = self.config["flag_retrieval_intents"]
+        self.use_probability_thresholds = self.config["use_probability_thresholds"]
+        self.ignore_intent_list = self.config["ignore_intents"]
+        self.ignore_retrieval_intents = self.config["ignore_retrieval_intents"]
 
     @staticmethod
     def supported_data() -> SupportedData:
@@ -340,8 +344,6 @@ class IntentTEDPolicy(TEDPolicy):
             domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
         )
 
-        # print("model_data signature", model_train_data.get_signature())
-
         if model_train_data.is_empty():
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
@@ -368,26 +370,28 @@ class IntentTEDPolicy(TEDPolicy):
             batch_strategy=self.config[BATCH_STRATEGY],
         )
 
-        # Featurize augmented trackers for threshold computation
-        model_threshold_data, threshold_label_ids = self._featurize_for_model(
-            domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
-        )
+        if self.use_augmentation_for_thresholds:
+            # Featurize augmented trackers for threshold computation
+            model_threshold_data, threshold_label_ids = self._featurize_for_model(
+                domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
+            )
 
-        self.intent_thresholds = self.model.compute_thresholds(
-            model_threshold_data, threshold_label_ids
-        )
+            self.intent_thresholds = self.model.compute_thresholds(
+                model_threshold_data,
+                threshold_label_ids,
+                self.use_probability_thresholds,
+            )
+        else:
+            self.intent_thresholds = self.model.compute_thresholds(
+                model_train_data, train_label_ids, self.use_probability_thresholds
+            )
 
     def _featurize_for_model(
-        self,
-        domain,
-        encoded_all_labels,
-        interpreter,
-        non_augmented_trackers,
-        **kwargs: Any,
+        self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
     ):
         # dealing with training data
         tracker_state_features, label_ids = self.featurize_for_training(
-            non_augmented_trackers, domain, interpreter, **kwargs
+            trackers, domain, interpreter, **kwargs
         )
         # extract actual training data to feed to model
         model_data = self._create_model_data(
@@ -530,6 +534,18 @@ class IntentTEDPolicy(TEDPolicy):
 
         return [0.0] * len(domain.intents)
 
+    def _should_check_for_intent(self, intent: Text, domain: Domain):
+
+        if self.ignore_retrieval_intents and intent in domain.retrieval_intents:
+            return False
+        if intent not in self.intent_thresholds:
+            # This means the intent was never present in a story
+            return False
+        if intent in self.ignore_intent_list:
+            return False
+
+        return True
+
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -582,10 +598,7 @@ class IntentTEDPolicy(TEDPolicy):
             query_intent_id = domain.index_for_intent(query_intent)
             query_intent_prob = confidences[0][query_intent_id]
 
-            if (
-                query_intent_id in self.intent_thresholds
-                and query_intent not in domain.retrieval_intents
-            ):
+            if self._should_check_for_intent(query_intent, domain):
                 # Check is only valid in this case, for all
                 # other cases it means that this intent did not appear in stories.
                 logger.debug(
@@ -741,7 +754,9 @@ class IntentTED(TED):
 
         return {"intent_scores": scores, "sim_all": sim_all}
 
-    def compute_thresholds(self, model_data: RasaModelData, label_ids):
+    def compute_thresholds(
+        self, model_data: RasaModelData, label_ids, use_probability_thresholds: bool
+    ):
 
         batch_in = model_data.prepare_batch()
 
@@ -760,10 +775,13 @@ class IntentTED(TED):
 
             thresholds[first_pos_label_id].append(
                 batch_output["intent_scores"][index, 0, first_pos_label_id].numpy()
+                if use_probability_thresholds
+                else batch_output["sim_all"][index, 0, first_pos_label_id].numpy()
             )
 
         for label_id in thresholds:
             thresholds[label_id] = min(0.5, min(thresholds[label_id]))
+            # thresholds[label_id] = min(thresholds[label_id])
 
         print(thresholds)
 

@@ -562,6 +562,7 @@ class RasaModel(tf.keras.models.Model):
         idx = 0
         for key, values in data_signature.items():
             for sub_key, signature in values.items():
+                # print(key, sub_key, idx)
                 for is_sparse, feature_dimension, number_of_dimensions in signature:
                     number_of_dimensions = (
                         number_of_dimensions if number_of_dimensions != 4 else 3
@@ -583,6 +584,11 @@ class RasaModel(tf.keras.models.Model):
                             batch_data[key][sub_key].append(batch[idx])
                         else:
                             # convert to Tensor
+                            # if key == "dialogue" and sub_key == "length":
+                            #     print("adding to batch data")
+                            #     print(signature)
+                            #     print(batch[idx].shape)
+                            #     print(idx)
                             batch_data[key][sub_key].append(
                                 tf.constant(batch[idx], dtype=tf.float32)
                             )
