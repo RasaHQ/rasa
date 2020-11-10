@@ -9,6 +9,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
+    SlotSet,
     ActiveLoop,
     BotUttered,
     UserUtteranceReverted,
@@ -68,6 +69,9 @@ async def test_1st_affirmation_is_successful():
     tracker = DialogueStateTracker.from_events(
         "some-sender",
         evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+            SlotSet("some_slot", "example_value"),
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
             ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
@@ -93,6 +97,9 @@ async def test_1st_affirmation_is_successful():
 
     applied_events = tracker.applied_events()
     assert applied_events == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+        SlotSet("some_slot", "example_value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("hi", {"name": "greet", "confidence": 1.0}),
     ]
@@ -168,6 +175,9 @@ async def test_ask_rephrasing_successful():
     tracker = DialogueStateTracker.from_events(
         "some-sender",
         evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+            SlotSet("some_slot", "example_value"),
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
             ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
@@ -198,6 +208,9 @@ async def test_ask_rephrasing_successful():
 
     applied_events = tracker.applied_events()
     assert applied_events == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+        SlotSet("some_slot", "example_value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("hi", {"name": "greet"}),
     ]

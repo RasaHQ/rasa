@@ -106,7 +106,7 @@ class TwoStageFallbackAction(LoopAction):
 
         return await self._revert_fallback_events(
             output_channel, nlg, tracker, domain, events_so_far
-        ) + _message_clarification(tracker)
+        )
 
     async def _revert_fallback_events(
         self,
@@ -125,10 +125,10 @@ class TwoStageFallbackAction(LoopAction):
         while temp_tracker.latest_message and not await self.is_done(
             output_channel, nlg, temp_tracker, domain, []
         ):
-            temp_tracker.update(revert_events[-1])
+            temp_tracker.update(UserUtteranceReverted())
             revert_events.append(UserUtteranceReverted())
 
-        return revert_events
+        return revert_events + _message_clarification(tracker)
 
     async def _give_up(
         self,
