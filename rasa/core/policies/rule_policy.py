@@ -664,12 +664,15 @@ class RulePolicy(MemoizationPolicy):
         return bool(
             # rule is shorter than current turn index
             turn_index >= len(reversed_rule_states)
-            # current rule and state turns are empty
-            or (not reversed_rule_states[turn_index] and not conversation_state)
+            # current rule and state turns are conversation starters
+            or (
+                not reversed_rule_states[turn_index].get(PREVIOUS_ACTION)
+                and not conversation_state.get(PREVIOUS_ACTION)
+            )
             # check that current rule turn features are present in current state turn
             or (
-                reversed_rule_states[turn_index]
-                and conversation_state
+                reversed_rule_states[turn_index].get(PREVIOUS_ACTION)
+                and conversation_state.get(PREVIOUS_ACTION)
                 and self._does_rule_match_state(
                     reversed_rule_states[turn_index], conversation_state
                 )
