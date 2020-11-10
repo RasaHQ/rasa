@@ -10,6 +10,34 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.0 to Rasa 2.1
+
+### Deprecations
+
+`ConveRTTokenizer` is now deprecated. [ConveRTFeaturizer](./components.mdx#convertfeaturizer) now implements
+its behaviour. To migrate, replace `ConveRTTokenizer` with any other tokenizer, for e.g.:
+
+```yaml
+pipeline:
+    - name: WhitespaceTokenizer
+    - name: ConveRTFeaturizer
+      model_url: <Remote/Local path to model files>
+    ...
+```
+
+`HFTransformersNLP` and `LanguageModelTokenizer` components are now deprecated.
+[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) now implements their behaviour.
+To migrate, replace both the above components with any tokenizer and specify the model architecture and model weights
+as part of `LanguageModelFeaturizer`, for e.g.:
+
+```yaml
+pipeline:
+    - name: WhitespaceTokenizer
+    - name: LanguageModelFeaturizer
+      model_name: "bert"
+      model_weights: "rasa/LaBSE"
+    ...
+```
 
 ## Rasa 1.10 to Rasa 2.0
 
