@@ -21,6 +21,8 @@ https://github.com/RasaHQ/rasa/tree/master/changelog/ . -->
 
 ### Bugfixes
 - [#6629](https://github.com/rasahq/rasa/issues/6629): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](lock-stores.mdx). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](lock-stores.mdx#redislockstore).
+- [#7176](https://github.com/rasahq/rasa/issues/7176): Fixed a bug in the [`TwoStageFallback`](fallback-handoff.mdx#two-stage-fallback) action which
+  reverted too many events after the user successfully rephrased.
 
 
 ## [2.0.5] - 2020-11-10
