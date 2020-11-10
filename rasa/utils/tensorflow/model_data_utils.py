@@ -244,6 +244,7 @@ def convert_to_data_format(
         features = [[dicts] for dicts in features]
 
     attribute_to_features = _surface_attributes(features, featurizers)
+    print(attribute_to_features.keys())
 
     attribute_data = {}
 
@@ -310,6 +311,7 @@ def _features_for_attribute(
     # in case some features for a specific attribute are
     # missing, replace them with a feature vector of zeros
     if training:
+        print("Creating ZERO features for ", attribute)
         zero_features[attribute] = _create_zero_features(features)
 
     (attribute_masks, _dense_features, _sparse_features) = _extract_features(

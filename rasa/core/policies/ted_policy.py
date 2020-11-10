@@ -351,7 +351,12 @@ class TEDPolicy(Policy):
                 LABEL_SUB_KEY,
                 [FeatureArray(label_ids, number_of_dimensions=3)],
             )
-
+            print(self.featurizer)
+            print("tracker state feats")
+            for state in tracker_state_features:
+                print(">>>")
+                for state1 in state:
+                    print(state1.keys())
             attribute_data, self.zero_state_features = convert_to_data_format(
                 tracker_state_features, featurizers=self.config[FEATURIZERS]
             )
@@ -396,7 +401,17 @@ class TEDPolicy(Policy):
                 f"Skipping training of the policy."
             )
             return
+        from rasa.shared.core.events import ActionExecuted
 
+        [
+            print(
+                type(e),
+                (e.action_name, e.action_text)
+                if isinstance(e, ActionExecuted)
+                else (e.intent, e.text),
+            )
+            for e in training_trackers[0].events
+        ]
         # dealing with training data
         tracker_state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
@@ -452,6 +467,8 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         tracker_state_features = []
+        print("zero_state_features", self.zero_state_features.keys())
+        print(tracker.latest_action_name)
         if (
             INTENT in self.zero_state_features
             or not tracker.latest_action_name == ACTION_LISTEN_NAME
@@ -461,6 +478,7 @@ class TEDPolicy(Policy):
             tracker_state_features += self.featurizer.create_state_features(
                 [tracker], domain, interpreter, use_text_for_last_user_input=False
             )
+            print("DO NOT use_text_for_last_user_input")
         if (
             TEXT in self.zero_state_features
             and tracker.latest_action_name == ACTION_LISTEN_NAME
@@ -469,6 +487,7 @@ class TEDPolicy(Policy):
             tracker_state_features += self.featurizer.create_state_features(
                 [tracker], domain, interpreter, use_text_for_last_user_input=True
             )
+            print("DO use_text_for_last_user_input")
 
         model_data = self._create_model_data(tracker_state_features)
 
@@ -500,6 +519,8 @@ class TEDPolicy(Policy):
                     is_e2e_prediction = False
             else:
                 is_e2e_prediction = None
+
+        print("E2E", is_e2e_prediction)
 
         # take correct batch dimension
         confidence = confidences[batch_index, :]
@@ -695,6 +716,7 @@ class TED(TransformerRasaModel):
         self._prepare_embed_layers(LABEL)
 
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
+        exit()
 
     def _prepare_sparse_dense_layer_for(
         self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
@@ -707,6 +729,7 @@ class TED(TransformerRasaModel):
             name: the attribute name
             signature: data signature
         """
+        print("preparing sparse-dense for", name)
         for feature_type in VALID_FEATURE_TYPES:
             if name not in signature or feature_type not in signature[name]:
                 # features for feature type are not present
@@ -722,6 +745,7 @@ class TED(TransformerRasaModel):
                 f"{name}_{feature_type}",
                 self.config[DENSE_DIMENSION][name],
             )
+            print(feature_type)
 
     def _prepare_encoding_layers(self, name: Text) -> None:
         """Create ffnn layer for given attribute name. The layer is used just before
@@ -730,6 +754,7 @@ class TED(TransformerRasaModel):
         Args:
             name: attribute name
         """
+
         # create encoding layers only for the features which should be encoded;
         if name not in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
             return
@@ -745,6 +770,7 @@ class TED(TransformerRasaModel):
             and FEATURE_TYPE_SENTENCE not in self.label_signature[name]
         ):
             return
+        print("preparing encoding for", name)
 
         self._prepare_ffnn_layer(
             f"{name}",
@@ -1015,6 +1041,14 @@ class TED(TransformerRasaModel):
             The loss of the given batch.
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+
+        for k, v in tf_batch_data.items():
+            print(k)
+            for _k, _v in v.items():
+                print("  ", _k)
+                for __v in _v:
+                    print("    ", __v.shape)
+        # exit()
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
