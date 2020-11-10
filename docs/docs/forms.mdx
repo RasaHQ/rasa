@@ -361,74 +361,150 @@ to fully customize the validation process.
 If none of the predefined [Slot Mappings](./forms.mdx#slot-mappings) fit your use
 case, you can use the
 [Custom Action](./actions.mdx#custom-actions) `validate_{form_name}` to write your own
-extraction code. Rasa Open Source will trigger this function when the form is run.
+extraction code. Rasa Open Source will trigger this action when the form is run.
 
-Make sure your custom action returns `SlotSet` events for every extracted value.
+If you're using the Rasa SDK we recommend you to extend the provided
+`FormValidationAction`. When using the `FormValidationAction`, two things are needed to
+extract customs slots:
+
+1. Override `required_slots`. It should return a list of slot names which your form
+   requires to be filled.
+2. Define a method `extract_<slot_name>` for every custom slot which you want to
+   extract.
+
 The following example shows the implementation of a custom slot mapping which sets
-a slot based on the length of the last user message.
+the slot `outdoor_seating` based on whether the keyword `outdoor` was present in the
+last user message.
 
 ```python
-from typing import Dict, Text, List
+from typing import Dict, Text, List, Optional, Any
 
 from rasa_sdk import Tracker
-from rasa_sdk.events import EventType
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk import Action
-from rasa_sdk.events import SlotSet
+from rasa_sdk.forms import FormValidationAction
 
 
-class ValidateRestaurantForm(Action):
+class ValidateRestaurantForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
 
-    def run(
+    async def required_slots(
+        self,
+        dispatcher: "CollectingDispatcher",
+        tracker: "Tracker",
+        domain: "DomainDict",
+    ) -> Optional[List[Text]]:
+        return ["outdoor_seating"]
+
+    async def extract_outdoor_seating(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
-    ) -> List[EventType]:
+    ) -> Dict[Text, Any]:
         text_of_last_user_message = tracker.latest_message.get("text")
+        sit_outside = "outdoor" in text_of_last_user_message
 
-        return [SlotSet("user_message_length", len(text_of_last_user_message))]
+        return {"outdoor_seating": sit_outside}
 ```
 
-### Requesting Extra Slots
+By default the `FormValidationAction`
+will automatically set the [`requested_slot`](forms.mdx#the-requested_slot-slot) to the
+first slot specified in `required_slots` which is not filled.
 
-If you make frequent changes to the required slots and don't want to retrain your
-assistant when your form changes, you can also use a
-[Custom Action](./actions.mdx#custom-actions) `validate_{form_name}` to define
-which slots should be requested. Rasa Open Source will run your custom action whenever
-the form validates user input. Set the slot `requested_slot` to the name of the slot
-which should be extracted next. If all desired slots are filled, set `requested_slot`
-to `None`.
+### Changing the Next Slot to Request
 
-The following example shows the implementation of a custom action which requests
-the three slots `cuisine`, `num_people`, and `outdoor_seating`.
+By default Rasa Open Source will ask for the next
+[`requested_slot`](forms.mdx#the-requested_slot-slot) defined in the slot mappings
+in our domain, which is not filled. If you use
+[custom slot mappings](forms.mdx#custom-slot-mappings) and the `FormValidationAction`,
+it will ask for the first empty slot returned by your `required_slots` method. If all
+slots in `required_slots` are filled, it will check if all domain slot mappings are
+filled as well and then notify the form that it can be deactivated.
+
+You can change the way the next slot is requested by overriding `next_requested_slot`.
+Return `SlotSet(requested_slot", "my_slot")` to ask the user to fill slot `my_slot`
+next. Return `SlotSet("requested_slot": None)` to notify Rasa Open Source that all
+required slots are filled and that the form should be deactivated.
 
 ```python
-from typing import Dict, Text, List
+from typing import Dict, Text, List, Optional, Any
 
 from rasa_sdk import Tracker
-from rasa_sdk.events import EventType
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk import Action
-from rasa_sdk.events import SlotSet
+from rasa_sdk.forms import FormValidationAction
+from rasa_sdk.events import EventType, SlotSet
 
-
-class ValidateRestaurantForm(Action):
+class ValidateRestaurantForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
 
-    def run(
+    async def required_slots(
+        self,
+        dispatcher: "CollectingDispatcher",
+        tracker: "Tracker",
+        domain: "DomainDict",
+    ) -> Optional[List[Text]]:
+        return ["outdoor_seating"]
+
+    async def extract_outdoor_seating(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
-    ) -> List[EventType]:
-        required_slots = ["cuisine", "num_people", "outdoor_seating"]
+    ) -> Dict[Text, Any]:
+        text_of_last_user_message = tracker.latest_message.get("text")
+        sit_outside = "outdoor" in text_of_last_user_message
 
-        for slot_name in required_slots:
-            if tracker.slots.get(slot_name) is None:
-                # The slot is not filled yet. Request the user to fill this slot next.
-                return [SlotSet("requested_slot", slot_name)]
+        return {"outdoor_seating": sit_outside}
 
-        # All slots are filled.
-        return [SlotSet("requested_slot", None)]
+    async def next_requested_slot(
+        self,
+        dispatcher: "CollectingDispatcher",
+        tracker: "Tracker",
+        domain: "DomainDict",
+    ) -> Optional[EventType]:
+        for slot_name in await self.required_slots(dispatcher, tracker, domain):
+            if not tracker.slots.get(slot_name):
+                return SlotSet("requested_slot", slot_name)
+
+        # all required slots are filled
+        return SlotSet("requested_slot", None)
 ```
+
+### Dynamic Slot Mappings
+
+If needed, you can update the required slots of your form dynamically.
+This is for example useful when you need further details based on how
+a previous slot was filled.
+
+If you are using the Rasa SDK, we recommend you to use the `FormValidationAction` and
+override `required_slots` to fit your dynamic behavior.
+The example below will ask the user if they want to sit in
+the shade or in the sun in case they told us that they want to sit outside.
+
+```python
+from typing import Text, List, Optional
+
+from rasa_sdk.forms import FormValidationAction
+
+class ValidateRestaurantForm(FormValidationAction):
+    def name(self) -> Text:
+        return "validate_restaurant_form"
+
+    async def required_slots(
+        self,
+        dispatcher: "CollectingDispatcher",
+        tracker: "Tracker",
+        domain: "DomainDict",
+    ) -> Optional[List[Text]]:
+        required_slots = ["outdoor_seating"]
+        if tracker.slots.get("outdoor_seating") is True:
+            # If the user wants to sit outside, ask
+            # if they want to sit in the shade or in the sun.
+            required_slots.append("shade_or_sun")
+
+        return required_slots
+```
+
+`required_slots` is called with the latest slot values during the execution of
+[`next_requested_slot`](forms.mdx#changing-the-next-slot-to-request) which means that
+the `FormValidation` action will take the latest state in account when deciding which
+slot to request next.
 
 ### The requested_slot slot
 
