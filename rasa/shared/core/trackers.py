@@ -165,7 +165,8 @@ class DialogueStateTracker:
         self.sender_id = sender_id
         # slots that can be filled in this domain
         if slots is not None:
-            self.slots = {slot.name: copy.copy(slot) for slot in slots}
+            # self.slots = {slot.name: copy.copy(slot) for slot in slots}
+            self.slots = {slot.name: slot for slot in slots}
         else:
             self.slots = AnySlotDict()
         # file source of the messages
