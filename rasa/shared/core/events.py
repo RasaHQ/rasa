@@ -292,11 +292,13 @@ class Event:
     ) -> Optional[Type["Event"]]:
         """Returns a slots class by its type name."""
         # for cls in rasa.shared.utils.common.all_subclasses(Event):
-        type = Event.all_events().get(type_name, -1)
-        if isinstance(type, Event) or type is None:
-            return type
 
-        if type == -1 and default:
+        no_event = -1
+        event_constructor = Event.all_events().get(type_name, no_event)
+        if event_constructor != no_event or event_constructor is None:
+            return event_constructor
+
+        if event_constructor == no_event and default:
             return default
 
         raise ValueError(f"Unknown event name '{type_name}'.")
@@ -318,7 +320,7 @@ class Event:
     @staticmethod
     @functools.lru_cache(maxsize=1)
     def all_events() -> Dict[Text, Type["Event"]]:
-        events = all_events = rasa.shared.utils.common.all_subclasses(Event)
+        events = rasa.shared.utils.common.all_subclasses(Event)
         events = {event_type.type_name: event_type for event_type in events}
         # backwards compatibility to support old TopicSet evts
         events["topic"] = None
