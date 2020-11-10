@@ -495,7 +495,7 @@ class Component(metaclass=ComponentMetaclass):
         if cached_component:
             return cached_component
 
-        return cls.create(meta, model_metadata)
+        return cls(meta)
 
     @classmethod
     def create(

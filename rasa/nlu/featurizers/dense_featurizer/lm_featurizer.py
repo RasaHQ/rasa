@@ -103,6 +103,44 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             hf_transformers_loaded = "HFTransformersNLP" in config.component_names
         return cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
 
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional["Metadata"] = None,
+        cached_component: Optional["Component"] = None,
+        **kwargs: Any,
+    ) -> "Component":
+        """Load this component from file.
+
+        After a component has been trained, it will be persisted by
+        calling `persist`. When the pipeline gets loaded again,
+        this component needs to be able to restore itself.
+        Components can rely on any context attributes that are
+        created by :meth:`components.Component.create`
+        calls to components previous to this one.
+
+        This method differs from the parent method only in that it calls create
+        rather than the constructor if the component is not found. This is to
+        trigger the check for HFTransformersNLP and the method can be removed
+        when HFTRansformersNLP is removed.
+
+        Args:
+                meta: Any configuration parameter related to the model.
+                model_dir: The directory to load the component from.
+                model_metadata: The model's :class:`rasa.nlu.model.Metadata`.
+                cached_component: The cached component.
+
+        Returns:
+                the loaded component
+        """
+        # TODO: remove this when HFTransformersNLP is removed for good
+        if cached_component:
+            return cached_component
+
+        return cls.create(meta, model_metadata)
+
     def _load_model_metadata(self) -> None:
         """Load the metadata for the specified model and sets these properties.
 
