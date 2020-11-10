@@ -635,7 +635,7 @@ class DialogueStateTracker:
 
     def get_last_event_for(
         self,
-        event_type: Type[Event],
+        event_type: Union[Type[Event], Tuple[Type, ...]],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
