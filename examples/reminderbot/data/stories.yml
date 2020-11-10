@@ -1,0 +1,8 @@
+version: "2.0"
+stories:
+  - story: Happy path
+    steps:
+    - intent: greet
+    - action: utter_what_can_do
+    - intent: ask_remind_call
+    - action: action_set_reminder

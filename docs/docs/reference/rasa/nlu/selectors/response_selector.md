@@ -36,6 +36,10 @@ Prepares data for training.
 
 Performs sanity checks on training data, extracts encodings for labels.
 
+**Arguments**:
+
+- `training_data` - training data to preprocessed.
+
 #### process
 
 ```python
