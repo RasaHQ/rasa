@@ -69,7 +69,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -125,7 +125,6 @@ jobs:
     name: Run Tests
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 3
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
@@ -141,7 +140,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -284,7 +283,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
@@ -342,9 +341,9 @@ jobs:
         shell: bash
         run: |
           if [ -z "${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" ]; then
-            echo ::set-env name=MERGE_TOKEN::${{ secrets.GITHUB_TOKEN }}
+            echo "MERGE_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
           else
-            echo ::set-env name=MERGE_TOKEN::${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}
+            echo "MERGE_TOKEN=${{ secrets.RASABOT_AUTOMERGE_GITHUB_TOKEN }}" >> $GITHUB_ENV
           fi
       - uses: rasahq/merge-pal-action@master
         with:

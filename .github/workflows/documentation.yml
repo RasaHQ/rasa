@@ -38,7 +38,7 @@ jobs:
 
     - name: Read Poetry Version 🔢
       run: |
-        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄

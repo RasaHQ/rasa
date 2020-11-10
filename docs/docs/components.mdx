@@ -139,6 +139,10 @@ word vectors in your pipeline.
 
 ### HFTransformersNLP
 
+:::caution Deprecated
+The `HFTransformersNLP` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+now implements its behavior.
+:::
 
 * **Short**
 
@@ -187,7 +191,7 @@ word vectors in your pipeline.
   | Language Model | Parameter    | Default value for       |
   |                | "model_name" | "model_weights"         |
   +----------------+--------------+-------------------------+
-  | BERT           | bert         | bert-base-uncased       |
+  | BERT           | bert         | rasa/LaBSE              |
   +----------------+--------------+-------------------------+
   | GPT            | gpt          | openai-gpt              |
   +----------------+--------------+-------------------------+
@@ -209,7 +213,7 @@ word vectors in your pipeline.
       # Name of the language model to use
       model_name: "bert"
       # Pre-Trained weights to be loaded
-      model_weights: "bert-base-uncased"
+      model_weights: "rasa/LaBSE"
 
       # An optional path to a specific directory to download and cache the pre-trained model weights.
       # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
@@ -406,6 +410,10 @@ word vectors in your pipeline.
 
   ### ConveRTTokenizer
 
+:::caution Deprecated
+The `ConveRTTokenizer` is deprecated and will be removed in a future release. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
+now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
+:::
 
   * **Short**
 
@@ -466,42 +474,46 @@ word vectors in your pipeline.
 
   ### LanguageModelTokenizer
 
+:::caution Deprecated
+The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
+:::
 
-  * **Short**
+* **Short**
 
-    Tokenizer from pre-trained language models
-
-
-
-  * **Outputs**
-
-    `tokens` for user messages, responses (if present), and intents (if specified)
+Tokenizer from pre-trained language models
 
 
 
-  * **Requires**
+* **Outputs**
 
-    [HFTransformersNLP](./components.mdx#hftransformersnlp)
-
-
-
-  * **Description**
-
-    Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
-    Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
+`tokens` for user messages, responses (if present), and intents (if specified)
 
 
 
-  * **Configuration**
+* **Requires**
 
-    ```yaml-rasa
-    pipeline:
-    - name: "LanguageModelTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-    ```
+[HFTransformersNLP](./components.mdx#hftransformersnlp)
+
+
+
+* **Description**
+
+Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
+Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
+
+
+
+* **Configuration**
+
+```yaml-rasa
+pipeline:
+- name: "LanguageModelTokenizer"
+  # Flag to check whether to split intents
+  "intent_tokenization_flag": False
+  # Symbol on which intent should be split
+  "intent_split_symbol": "_"
+```
 
 
 ## Featurizers
@@ -644,7 +656,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [ConveRTTokenizer](./components.mdx#converttokenizer)
+  `tokens`
 
 
 
@@ -667,7 +679,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   :::
 
   :::note
-  To use `ConveRTTokenizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
+  To use `ConveRTFeaturizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
 
   :::
 
@@ -698,7 +710,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Requires**
 
-  [HFTransformersNLP](./components.mdx#hftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer)
+  `tokens`.
 
 
 
@@ -711,8 +723,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 * **Description**
 
   Creates features for entity extraction, intent classification, and response selection.
-  Uses the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component to compute vector
-  representations of input text.
+  Uses a pre-trained language model to compute vector representations of input text.
 
   :::note
   Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
@@ -724,14 +735,49 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  Include [HFTransformersNLP](./components.mdx#hftransformersnlp) and [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) components before this component. Use
-  [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) to ensure tokens are correctly set for all components throughout the pipeline.
+  Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
+
+  You should specify what language model to load via the parameter `model_name`. See the below table for the
+  available language models.
+  Additionally, you can also specify the architecture variation of the chosen language model by specifying the
+  parameter `model_weights`.
+  The full list of supported architectures can be found in the
+  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
+  If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+
+  ```
+  +----------------+--------------+-------------------------+
+  | Language Model | Parameter    | Default value for       |
+  |                | "model_name" | "model_weights"         |
+  +----------------+--------------+-------------------------+
+  | BERT           | bert         | rasa/LaBSE              |
+  +----------------+--------------+-------------------------+
+  | GPT            | gpt          | openai-gpt              |
+  +----------------+--------------+-------------------------+
+  | GPT-2          | gpt2         | gpt2                    |
+  +----------------+--------------+-------------------------+
+  | XLNet          | xlnet        | xlnet-base-cased        |
+  +----------------+--------------+-------------------------+
+  | DistilBERT     | distilbert   | distilbert-base-uncased |
+  +----------------+--------------+-------------------------+
+  | RoBERTa        | roberta      | roberta-base            |
+  +----------------+--------------+-------------------------+
+  ```
+
+  The following configuration loads the language model BERT:
 
   ```yaml-rasa
   pipeline:
-  - name: "LanguageModelFeaturizer"
-  ```
+    - name: LanguageModelFeaturizer
+      # Name of the language model to use
+      model_name: "bert"
+      # Pre-Trained weights to be loaded
+      model_weights: "rasa/LaBSE"
 
+      # An optional path to a specific directory to download and cache the pre-trained model weights.
+      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      cache_dir: null
+  ```
 
 ### RegexFeaturizer
 
@@ -1497,6 +1543,18 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
 |                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
 +---------------------------------+------------------+--------------------------------------------------------------+
+| split_entities_by_comma         | True             | Splits a list of extracted entities by comma to treat each   |
+|                                 |                  | one of them as a single entity. Can either be `True`/`False` |
+|                                 |                  | globally, or set per entity type, such as:                   |
+|                                 |                  | ```                                                          |
+|                                 |                  | ...                                                          |
+|                                 |                  | - name: DIETClassifier                                       |
+|                                 |                  |   split_entities_by_comma:                                   |
+|                                 |                  |     address: True                                            |
+|                                 |                  |     ...                                                      |
+|                                 |                  | ...                                                          |
+|                                 |                  | ```                                                          |
++---------------------------------+------------------+--------------------------------------------------------------+
 ```
 
 :::note
@@ -1848,6 +1906,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
     # Name of dense featurizers to use.
     # If list is empty all available dense features are used.
     "featurizers": []
+    # Indicated whether a list of extracted entities should be split into individual entities for a given entity type
+    "split_entities_by_comma":
+        address: False
+        email: True
   ```
 
   :::note

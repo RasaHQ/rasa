@@ -5,11 +5,20 @@ import multiprocessing
 import os
 import tempfile
 import traceback
-import typing
 from functools import reduce, wraps
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Text, Union, Dict
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    Text,
+    Union,
+    Dict,
+    TYPE_CHECKING,
+    NoReturn,
+)
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -27,7 +36,6 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.utils import common as common_utils
 from rasa import model
 from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
@@ -37,7 +45,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
 )
-from rasa.shared.core.domain import InvalidDomain
+from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
@@ -45,6 +53,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+import rasa.shared.core.events
 from rasa.shared.core.events import Event
 from rasa.core.lock_store import LockStore
 from rasa.core.test import test
@@ -55,7 +64,7 @@ from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from ssl import SSLContext
     from rasa.core.processor import MessageProcessor
 
@@ -227,36 +236,90 @@ def event_verbosity_parameter(
         )
 
 
-async def get_tracker(
-    processor: "MessageProcessor", conversation_id: Text
+def get_test_stories(
+    processor: "MessageProcessor",
+    conversation_id: Text,
+    until_time: Optional[float],
+    fetch_all_sessions: bool = False,
+) -> Text:
+    """Retrieves test stories from `processor` for all conversation sessions for
+    `conversation_id`.
+
+    Args:
+        processor: An instance of `MessageProcessor`.
+        conversation_id: Conversation ID to fetch stories for.
+        until_time: Timestamp up to which to include events.
+        fetch_all_sessions: Whether to fetch stories for all conversation sessions.
+            If `False`, only the last conversation session is retrieved.
+
+    Returns:
+        The stories for `conversation_id` in test format.
+    """
+    if fetch_all_sessions:
+        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+    else:
+        trackers = [processor.get_tracker(conversation_id)]
+
+    if until_time is not None:
+        trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
+        # keep only non-empty trackers
+        trackers = [tracker for tracker in trackers if len(tracker.events)]
+
+    logger.debug(
+        f"Fetched trackers for {len(trackers)} conversation sessions "
+        f"for conversation ID {conversation_id}."
+    )
+
+    story_steps = []
+
+    more_than_one_story = len(trackers) > 1
+
+    for i, tracker in enumerate(trackers, 1):
+        tracker.sender_id = conversation_id
+
+        if more_than_one_story:
+            tracker.sender_id += f", story {i}"
+
+        story_steps += tracker.as_story().story_steps
+
+    return YAMLStoryWriter().dumps(story_steps, is_test_story=True)
+
+
+async def update_conversation_with_events(
+    conversation_id: Text,
+    processor: "MessageProcessor",
+    domain: Domain,
+    events: List[Event],
 ) -> DialogueStateTracker:
-    """Get tracker object from `MessageProcessor`."""
-    tracker = await processor.get_tracker_with_session_start(conversation_id)
-    _validate_tracker(tracker, conversation_id)
+    """Fetches or creates a tracker for `conversation_id` and appends `events` to it.
 
-    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
-    return tracker  # pytype: disable=bad-return-type
+    Args:
+        conversation_id: The ID of the conversation to update the tracker for.
+        processor: An instance of `MessageProcessor`.
+        domain: The domain associated with the current `Agent`.
+        events: The events to append to the tracker.
+
+    Returns:
+        The tracker for `conversation_id` with the updated events.
+    """
+    if rasa.shared.core.events.do_events_begin_with_session_start(events):
+        tracker = processor.get_tracker(conversation_id)
+    else:
+        tracker = await processor.fetch_tracker_with_initial_session(conversation_id)
+
+    for event in events:
+        tracker.update(event, domain)
+
+    return tracker
 
 
-def _validate_tracker(
-    tracker: Optional[DialogueStateTracker], conversation_id: Text
-) -> None:
-    if not tracker:
-        raise ErrorResponse(
-            409,
-            "Conflict",
-            f"Could not retrieve tracker with ID '{conversation_id}'. Most likely "
-            f"because there is no domain set on the agent.",
-        )
-
-
-def validate_request_body(request: Request, error_message: Text):
+def validate_request_body(request: Request, error_message: Text) -> None:
     """Check if `request` has a body."""
     if not request.body:
         raise ErrorResponse(400, "BadRequest", error_message)
 
 
-async def authenticate(request: Request):
+async def authenticate(_: Request) -> NoReturn:
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "
@@ -474,7 +537,9 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
+        tracker = await app.agent.create_processor().fetch_tracker_with_initial_session(
+            conversation_id
+        )
 
         try:
             if until_time is not None:
@@ -504,20 +569,21 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 processor = app.agent.create_processor()
-                tracker = processor.get_tracker(conversation_id)
-                output_channel = _get_output_channel(request, tracker)
-                _validate_tracker(tracker, conversation_id)
-
                 events = _get_events_from_request_body(request)
 
-                for event in events:
-                    tracker.update(event, app.agent.domain)
+                tracker = await update_conversation_with_events(
+                    conversation_id, processor, app.agent.domain, events
+                )
+
+                output_channel = _get_output_channel(request, tracker)
+
                 if rasa.utils.endpoints.bool_arg(
                     request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
                 ):
                     await processor.execute_side_effects(
                         events, tracker, output_channel
                     )
+
                 app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
@@ -584,19 +650,19 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-
-        # retrieve tracker and set to requested state
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
-
         until_time = rasa.utils.endpoints.float_arg(request, "until")
+        fetch_all_sessions = rasa.utils.endpoints.bool_arg(
+            request, "all_sessions", default=False
+        )
 
         try:
-            if until_time is not None:
-                tracker = tracker.travel_back_in_time(until_time)
-
-            # dump and return tracker
-            state = YAMLStoryWriter().dumps(tracker.as_story().story_steps)
-            return response.text(state)
+            stories = get_test_stories(
+                app.agent.create_processor(),
+                conversation_id,
+                until_time,
+                fetch_all_sessions=fetch_all_sessions,
+            )
+            return response.text(stories)
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -625,9 +691,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
-                    app.agent.create_processor(), conversation_id
+                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
+                    conversation_id
                 )
+
                 output_channel = _get_output_channel(request, tracker)
                 await app.agent.execute_action(
                     conversation_id,
@@ -643,7 +710,6 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -674,8 +740,8 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
-                    app.agent.create_processor(), conversation_id
+                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
+                    conversation_id
                 )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
@@ -757,6 +823,7 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 tracker = await app.agent.log_message(user_message)
+
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -788,8 +855,6 @@ def create_app(
 
             from rasa import train as train_model
 
-            # Declare `model_path` upfront to avoid pytype `name-error`
-            model_path: Optional[Text] = None
             # pass `None` to run in default executor
             model_path = await loop.run_in_executor(
                 None, functools.partial(train_model, **training_payload)
@@ -902,7 +967,7 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request) -> HTTPResponse:
-        """ Given a list of events, predicts the next action"""
+        """Given a list of events, predicts the next action."""
         validate_request_body(
             request,
             "No events defined in request_body. Add events to request body in order to "
@@ -925,23 +990,11 @@ def create_app(
             )
 
         try:
-            policy_ensemble = app.agent.policy_ensemble
-            probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, app.agent.domain, app.agent.interpreter
+            result = app.agent.create_processor().predict_next_with_tracker(
+                tracker, verbosity
             )
 
-            scores = [
-                {"action": a, "score": p}
-                for a, p in zip(app.agent.domain.action_names, probabilities)
-            ]
-
-            return response.json(
-                {
-                    "scores": scores,
-                    "policy": policy,
-                    "tracker": tracker.current_state(verbosity),
-                }
-            )
+            return response.json(result)
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -1187,7 +1240,7 @@ def _validate_json_training_payload(rjs: Dict):
         )
 
 
-def _training_payload_from_yaml(request: Request,) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_yaml(request: Request) -> Dict[Text, Union[Text, bool]]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)

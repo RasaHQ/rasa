@@ -444,7 +444,7 @@ def run_locally(args: argparse.Namespace) -> None:
 
     try:
         # noinspection PyUnresolvedReferences
-        from rasax.community import local  # pytype: disable=import-error
+        from rasax.community import local
     except ModuleNotFoundError:
         raise MissingDependencyException(
             f"Rasa X does not seem to be installed, but it is needed for this "

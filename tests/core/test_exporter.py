@@ -95,7 +95,7 @@ def test_fetch_events_within_time_range():
 
     # create mock tracker store
     tracker_store = Mock()
-    tracker_store.retrieve.side_effect = _get_tracker
+    tracker_store.retrieve_full_tracker.side_effect = _get_tracker
     tracker_store.keys.return_value = conversation_ids
 
     exporter = MockExporter(tracker_store)
@@ -115,9 +115,9 @@ def test_fetch_events_within_time_range():
 
 
 def test_fetch_events_within_time_range_tracker_does_not_err():
-    # create mock tracker store that returns `None` on `retrieve()`
+    # create mock tracker store that returns `None` on `retrieve_full_tracker()`
     tracker_store = Mock()
-    tracker_store.retrieve.return_value = None
+    tracker_store.retrieve_full_tracker.return_value = None
     tracker_store.keys.return_value = [uuid.uuid4()]
 
     exporter = MockExporter(tracker_store)
@@ -129,9 +129,9 @@ def test_fetch_events_within_time_range_tracker_does_not_err():
 
 
 def test_fetch_events_within_time_range_tracker_contains_no_events():
-    # create mock tracker store that returns `None` on `retrieve()`
+    # create mock tracker store that returns `None` on `retrieve_full_tracker()`
     tracker_store = Mock()
-    tracker_store.retrieve.return_value = DialogueStateTracker.from_events(
+    tracker_store.retrieve_full_tracker.return_value = DialogueStateTracker.from_events(
         "a great ID", []
     )
     tracker_store.keys.return_value = ["a great ID"]

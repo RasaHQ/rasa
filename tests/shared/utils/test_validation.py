@@ -140,6 +140,8 @@ def test_validate_entity_dict_is_throwing_exceptions(invalid_data):
         {"entity": "e", "role": "c", "value": "text"},
         {"entity": "e", "group": "a", "value": "text"},
         {"entity": "e", "group": "a", "role": "c"},
+        {"entity": "e", "value": 3},
+        {"entity": "e", "value": "3"},
     ],
 )
 def test_entity_dict_is_valid(data):
