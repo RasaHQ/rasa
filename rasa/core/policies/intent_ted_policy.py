@@ -586,8 +586,13 @@ class IntentTEDPolicy(TEDPolicy):
         output = self.model.predict(model_data)
 
         # take the last prediction in the sequence
-        confidences = output["intent_scores"].numpy()[:, -1, :]
+        confidences = (
+            output["intent_scores"].numpy()[:, -1, :]
+            if self.use_probability_thresholds
+            else output["sim_all"].numpy()[:, -1, :]
+        )
 
+        # Todo: remove this, as this was just for printing
         intent_confidences = {}
         for index, intent in enumerate(domain.intents):
             intent_confidences[intent] = confidences[0][index]
