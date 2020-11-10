@@ -941,7 +941,7 @@ class TED(TransformerRasaModel):
         attribute_features = tf.zeros(
             (batch_dim, dialogue_dim, units), dtype=tf.float32
         )
-        return attribute_features, None
+        return attribute_features, tf.zeros(([1]))
 
     def _encode_real_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
@@ -956,7 +956,7 @@ class TED(TransformerRasaModel):
         Returns:
             A tensor combining  all features for `attribute`
         """
-        text_transformer_output = None
+        text_transformer_output = tf.zeros([1])
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
             # sequence_lengths contain `0` for "fake" features, while
@@ -1071,6 +1071,7 @@ class TED(TransformerRasaModel):
 
         # convert the output of the text sequence transformer to shape
         # batch-size x dialogue length x sequence length x 1
+        # TODO text_transformer_output shape is unknown in non-eager mode
         text_seq_transformer_output = self._convert_to_original_shape(
             text_transformer_output,
             tf_batch_data[TEXT][MASK][0],
@@ -1247,7 +1248,6 @@ class TED(TransformerRasaModel):
 
         batch_dim = tf.shape(attribute_mask)[0]
         dialogue_dim = tf.shape(attribute_mask)[1]
-        sequence_length = tf.shape(attribute_features)[1]
         units = attribute_features.shape[-1]
 
         # attribute_mask has shape (batch x dialogue_len x 1), remove last dimension
@@ -1278,6 +1278,7 @@ class TED(TransformerRasaModel):
         indices = tf.stack([batch_indices, dialogue_indices], axis=1)
 
         if consider_sequence_dimension:
+            sequence_length = tf.shape(attribute_features)[1]
             shape = tf.convert_to_tensor(
                 [batch_dim, dialogue_dim, sequence_length, units]
             )
@@ -1302,7 +1303,7 @@ class TED(TransformerRasaModel):
              Tensor: encoding of all features in the batch, combined;
         """
         # encode each attribute present in tf_batch_data
-        text_transformer_output = None
+        text_transformer_output = tf.zeros([1])
 
         batch_encoded = {}
         for key in tf_batch_data.keys():
@@ -1312,7 +1313,7 @@ class TED(TransformerRasaModel):
                 )
 
                 batch_encoded[key] = attribute_features
-                if _text_transformer_output is not None:
+                if tf.reduce_max(_text_transformer_output) > 0:
                     text_transformer_output = _text_transformer_output
 
         # if both action text and action name are present, combine them; otherwise,
