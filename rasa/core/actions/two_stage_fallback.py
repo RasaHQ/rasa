@@ -104,31 +104,8 @@ class TwoStageFallbackAction(LoopAction):
         if _two_fallbacks_in_a_row(tracker) or _second_affirmation_failed(tracker):
             return await self._give_up(output_channel, nlg, tracker, domain)
 
-        return await self._revert_fallback_events(
-            output_channel, nlg, tracker, domain, events_so_far
-        )
-
-    async def _revert_fallback_events(
-        self,
-        output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        events_so_far: List[Event],
-    ) -> List[Event]:
-        revert_events = [UserUtteranceReverted(), UserUtteranceReverted()]
-
-        temp_tracker = DialogueStateTracker.from_events(
-            tracker.sender_id, tracker.applied_events() + events_so_far + revert_events
-        )
-
-        while temp_tracker.latest_message and not await self.is_done(
-            output_channel, nlg, temp_tracker, domain, []
-        ):
-            temp_tracker.update(UserUtteranceReverted())
-            revert_events.append(UserUtteranceReverted())
-
-        return revert_events + _message_clarification(tracker)
+        # revert fallback events
+        return [UserUtteranceReverted()] + _message_clarification(tracker)
 
     async def _give_up(
         self,
