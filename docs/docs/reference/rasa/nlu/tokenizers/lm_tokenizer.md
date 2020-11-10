@@ -6,11 +6,22 @@ title: rasa.nlu.tokenizers.lm_tokenizer
 ## LanguageModelTokenizer Objects
 
 ```python
-class LanguageModelTokenizer(Tokenizer)
+class LanguageModelTokenizer(WhitespaceTokenizer)
 ```
 
-Tokenizer using transformer based language models.
+This tokenizer is deprecated and will be removed in the future.
 
-Uses the output of HFTransformersNLP component to set the tokens
-for dense featurizable attributes of each message object.
+Use the LanguageModelFeaturizer with any other Tokenizer instead.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(component_config: Dict[Text, Any] = None) -> None
+```
+
+Initializes LanguageModelTokenizer for tokenization.
+
+**Arguments**:
+
+- `component_config` - Configuration for the component.
 

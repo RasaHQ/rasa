@@ -9,12 +9,33 @@ title: rasa.nlu.utils.hugging_face.hf_transformers
 class HFTransformersNLP(Component)
 ```
 
-Utility Component for interfacing between Transformers library and Rasa OS.
+This component is deprecated and will be removed in the future.
 
-The transformers(https://github.com/huggingface/transformers) library
-is used to load pre-trained language models like BERT, GPT-2, etc.
-The component also tokenizes and featurizes dense featurizable attributes of each
-message.
+Use the LanguageModelFeaturizer instead.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, skip_model_load: bool = False) -> None
+```
+
+Initializes HFTransformsNLP with the models specified.
+
+#### cache\_key
+
+```python
+ | @classmethod
+ | cache_key(cls, component_meta: Dict[Text, Any], model_metadata: Metadata) -> Optional[Text]
+```
+
+Cache the component for future use.
+
+**Arguments**:
+
+- `component_meta` - configuration for the component.
+- `model_metadata` - configuration for the whole pipeline.
+  
+- `Returns` - key of the cache for future retrievals.
 
 #### train
 
