@@ -8,7 +8,7 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBA
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import (
@@ -151,13 +151,12 @@ class FallbackPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         """Predicts a fallback action.
 
         The fallback action is predicted if the NLU confidence is low
         or no other policy has a high-confidence prediction.
         """
-
         nlu_data = tracker.latest_message.parse_data
 
         if (
@@ -189,7 +188,7 @@ class FallbackPolicy(Policy):
             )
             result = self.fallback_scores(domain, self.core_threshold)
 
-        return result
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {

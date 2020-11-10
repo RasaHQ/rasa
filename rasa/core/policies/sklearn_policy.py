@@ -17,7 +17,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.shared.utils.io
@@ -269,17 +269,17 @@ class SklearnPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         X = self.featurizer.create_state_features([tracker], domain, interpreter)
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )
         Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
-        return self._postprocess_prediction(y_proba, domain)
+        return self._prediction(self._postprocess_prediction(y_proba, domain))
 
     def persist(self, path: Union[Text, Path]) -> None:
-
+        """Persists the policy properties (see parent class for more information)."""
         if self.model:
             self.featurizer.persist(path)
 
