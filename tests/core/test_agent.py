@@ -431,6 +431,9 @@ async def test_inference_performance_with_sara_and_postgres():
     agent = Agent.load("sara/20201028-175605.tar.gz", tracker_store=tracker_store)
     text = "/greet"
 
+    # warm up
+    await agent.handle_message(UserMessage("/bye", sender_id="warm_up"))
+
     messages = ["/why_rasa", "/ask_question_in_forum", "/thank", "/bye", "/canthelp"]
     runs = 50
     nr_users = int(runs / len(messages))

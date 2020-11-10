@@ -97,7 +97,7 @@ class TrackerStore:
                 f"Specifying the `retrieve_events_from_previous_conversation_sessions` "
                 f"kwarg for the `{self.__class__.__name__}` class is deprecated and "
                 f"will be removed in Rasa Open Source 3.0. "
-                f"Please use the `retrieve_full_tracker()` method instead.",
+                f"Please use the `retrieve_full_tracker()` method instead."
             )
             self.retrieve_events_from_previous_conversation_sessions = (
                 retrieve_events_from_previous_conversation_sessions
@@ -1008,6 +1008,7 @@ class SQLTrackerStore(TrackerStore):
 
         with self.session_scope() as session:
             # only store recent events
+            # TODO: Keep track internally
             events = self._additional_events(session, tracker)
 
             for event in events:

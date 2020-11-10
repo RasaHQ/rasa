@@ -661,6 +661,7 @@ class RulePolicy(MemoizationPolicy):
         """Check if rule is satisfied with current state at turn."""
 
         # turn_index goes back in time
+        # TODO: Only do this once
         reversed_rule_states = list(reversed(self._rule_key_to_state(rule_key)))
 
         return bool(

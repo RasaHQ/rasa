@@ -520,6 +520,7 @@ class Agent:
         processor = self.create_processor(message_preprocessor)
 
         async with self.lock_store.lock(message.sender_id):
+            # TODO: with tracker_store.retrieve(message.sender_id) as tracker:
             return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal

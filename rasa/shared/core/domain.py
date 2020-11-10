@@ -948,6 +948,7 @@ class Domain:
 
     def get_active_states(self, tracker: "DialogueStateTracker") -> State:
         """Return a bag of active states from the tracker state."""
+        # TODO: This is a hot spot
         state = {
             rasa.shared.core.constants.USER: self._get_user_sub_state(tracker),
             rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(tracker),
