@@ -38,7 +38,7 @@ nlu:
       - what is the [price range]{"entity": "attribute", "value": "price-range"} of [Berlin Burrito Company]{"entity": "restaurant"}?
       - what is with [I due forni]{"entity": "restaurant"}?
       - Do you also have any [Vietnamese]{"entity": "cuisine"} [restaurants]{"entity": "object_type", "value": "restaurant"}?
-      - What about any [Mexican]{"entity": "cuisine", "value": "mexican"} [restaurants]{"entity": "object_type", "value": "restaurant"}?
+      - What about any [Mexican]{"entity": "cuisine"} [restaurants]{"entity": "object_type", "value": "restaurant"}?
       - Do you also know some [Italian]{"entity": "cuisine"} [restaurants]{"entity": "object_type", "value": "restaurant"}?
       - can you tell me the [price range]{"entity": "attribute", "value": "price-range"} of [that restaurant]{"entity": "mention"}?
       - what [cuisine]{"entity": "attribute"} do [they]{"entity": "mention"} have?
