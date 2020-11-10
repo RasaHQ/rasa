@@ -47,10 +47,17 @@ def _two_stage_clarification_request() -> List[Event]:
     return [ActionExecuted(ACTION_TWO_STAGE_FALLBACK_NAME), BotUttered("please affirm")]
 
 
-async def test_ask_affirmation():
-    tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=_message_requiring_fallback()
-    )
+@pytest.mark.parametrize(
+    "events",
+    [
+        _message_requiring_fallback(),
+        _message_requiring_fallback()
+        + [UserUtteranceReverted()]
+        + _message_requiring_fallback(),
+    ],
+)
+async def test_ask_affirmation(events: List[Event]):
+    tracker = DialogueStateTracker.from_events("some-sender", evts=events)
     domain = Domain.empty()
     action = TwoStageFallbackAction()
 
