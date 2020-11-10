@@ -673,9 +673,9 @@ class PikaEventBroker(EventBroker):
                 dictionary). The headers can be retrieved in the consumer from the
                 `headers` attribute of the message's `BasicProperties`.
         """
-        body = json.dumps(event)
-        if not self.process.is_alive():
-            # TODO: Change exception
-            raise Exception("Event broker process died.")
+        if not self.process or not self.process.is_alive():
+            logger.error("Event broker process has died. Reconnecting...")
+            self._connect()
 
+        body = json.dumps(event)
         self.process_queue.put((body, headers))
