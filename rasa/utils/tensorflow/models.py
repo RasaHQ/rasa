@@ -153,6 +153,15 @@ class RasaModel(tf.keras.models.Model):
         """
         raise NotImplementedError
 
+    def prepare_for_predict(self) -> None:
+        """Prepares tf graph fpr prediction.
+
+        This method should contain necessary tf calculations
+        and set self variables that are used in `batch_predict`.
+        For example, pre calculation of `self.all_labels_embed`.
+        """
+        pass
+
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
@@ -315,6 +324,7 @@ class RasaModel(tf.keras.models.Model):
         self, predict_data: RasaModelData, eager: bool = False
     ) -> None:
         self._training = False  # needed for tf graph mode
+        self.prepare_for_predict()
         self._predict_function = self._get_tf_call_model_function(
             predict_data.as_tf_dataset, self.batch_predict, eager, "prediction"
         )

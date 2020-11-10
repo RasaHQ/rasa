@@ -1580,6 +1580,10 @@ class DIET(TransformerRasaModel):
             self.entity_role_loss.update_state(loss)
             self.entity_role_f1.update_state(f1)
 
+    def prepare_for_predict(self) -> None:
+        if self.config[INTENT_CLASSIFICATION]:
+            _, self.all_labels_embed = self._create_all_labels()
+
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
@@ -1665,7 +1669,10 @@ class DIET(TransformerRasaModel):
     ) -> Dict[Text, tf.Tensor]:
 
         if self.all_labels_embed is None:
-            _, self.all_labels_embed = self._create_all_labels()
+            raise ValueError(
+                "The model was not prepared for prediction. "
+                "Call `prepare_for_predict` first."
+            )
 
         # get sentence feature vector for intent classification
         sentence_vector = self._last_token(text_transformed, sequence_lengths)
