@@ -38,19 +38,28 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### Validating Data and Stories
 
-Data validation verifies that there are no mistakes or major inconsistencies in your domain, NLU 
-data, or conversation data. To validate your data, have your CI run this command:
+Data validation verifies that no mistakes or major inconsistencies appear in your domain, NLU 
+data, or story data. To validate your data, have your CI run this command:
 
 ```bash
-rasa data validate --fail-on-warnings --max-history <max_history>
+rasa data validate
 ```
 
-If you pass a `max_history` value to a Memoization policy in your `config.yml` file, provide the 
-same value in the above validator command. Otherwise, provide the default value of `5`.
+If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the 
+smallest of those values as
 
-If data validation results in errors, training a model will also fail, so it's
+```bash
+rasa data validate --max-history <max_history>
+```
+
+If data validation results in errors, training a model can also fail or yield bad performance, so it's
 always good to run this check before training a model. By including the
 `--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
+
+:::note
+Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
+However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
+:::
 
 To read more about the validator and all of the available options, see [the documentation for 
 `rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
@@ -95,8 +104,10 @@ as you make improvements to your assistant. A good rule of thumb to follow is th
 to be representative of the true distribution of real conversations.
 Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
 
-Note: Running test stories does **not** execute your action code. You will need to
+:::note
+Running test stories does **not** execute your action code. You will need to
 [test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a separate step.
+:::
 
 ### Comparing NLU Performance
 
