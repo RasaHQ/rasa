@@ -136,7 +136,7 @@ class SingleStateFeaturizer:
             return []
 
         parsed_text = interpreter.featurize_message(Message({TEXT: sub_state[TEXT]}))
-        entities = [dict(entity) for entity in sub_state[ENTITIES]]
+        entities = sub_state.get(ENTITIES, [])
         tag_id_mapping = self.get_entity_tag_ids()
 
         _tags = []
@@ -261,7 +261,7 @@ class SingleStateFeaturizer:
                 state_features.update(
                     self._extract_state_features(sub_state, interpreter, sparse=True)
                 )
-                if sub_state.get(ENTITIES):
+                if sub_state.get(TEXT):
                     state_features[ENTITIES] = self._create_features(
                         sub_state, ENTITIES, sparse=True
                     ) + self._create_entity_tag_features(sub_state, interpreter)
