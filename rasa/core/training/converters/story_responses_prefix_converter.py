@@ -23,13 +23,13 @@ class StoryResponsePrefixConverter(TrainingDataConverter):
 
     @classmethod
     def filter(cls, source_path: Path) -> bool:
-        """Only consider YAML story files.
+        """Only accept YAML story files.
 
         Args:
             source_path: Path to the training data file.
 
         Returns:
-            `True` if the given file can is a YAML stories file, `False` otherwise
+            `True` if the given file can is a YAML stories file, `False` otherwise.
         """
         return YAMLStoryReader.is_stories_file(source_path)
 
@@ -41,7 +41,7 @@ class StoryResponsePrefixConverter(TrainingDataConverter):
         with `respond_`. Now, they need to start with `utter_`.
 
         Args:
-            source_path: the source YAML stories file
+            source_path: the source YAML stories file.
             output_path: Path to the output directory.
         """
         reader = YAMLStoryReader()

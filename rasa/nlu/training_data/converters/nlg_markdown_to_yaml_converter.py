@@ -52,13 +52,13 @@ class NLGMarkdownToYamlConverter(TrainingDataConverter):
 
     @staticmethod
     def _normalize_response_name(response_name: Text) -> Text:
-        """During the converstion, ensure responses start with `utter_`
+        """During the conversion, ensure that responses start with `utter_`.
 
         Args:
-            response_name: the name of the response, e.g. "chitchat/ask_name"
+            response_name: The name of the response, e.g. "chitchat/ask_name".
 
         Returns:
-            A normalised response name starting with "utter_"
+            A normalised response name starting with "utter_".
         """
         if not response_name.startswith(UTTER_PREFIX):
             response_name = f"{UTTER_PREFIX}{response_name}"

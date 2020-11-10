@@ -132,8 +132,8 @@ def _add_data_convert_parsers(
     default_arguments.add_out_param(
         migrate_config_parser,
         default=os.path.join(DEFAULT_DATA_PATH, "rules.yml"),
-        help_text="Path to the file which should contain any rules which are created as "
-        "part of the migration. If the file doesn't exist, it will be created.",
+        help_text="Path to the file which should contain any rules which are created "
+        "as part of the migration. If the file doesn't exist, it will be created.",
     )
 
     convert_responses_parser = convert_subparsers.add_parser(
@@ -142,7 +142,8 @@ def _add_data_convert_parsers(
         parents=parents,
         help=(
             "Convert retrieval intent responses between Rasa Open Source versions. "
-            "Please also run `rasa data convert nlg` to convert responses to the right format."
+            "Please also run `rasa data convert nlg` to convert responses "
+            "to the right format."
         ),
     )
     convert_responses_parser.set_defaults(func=_migrate_responses)
@@ -344,7 +345,6 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
 
 def _migrate_responses(args: argparse.Namespace) -> None:
     """Migrate retrieval intent responses to the new 2.0 format.
-
     It does so modifying the stories and domain files.
     """
     if args.format == "yaml":
@@ -363,10 +363,8 @@ def _migrate_responses(args: argparse.Namespace) -> None:
 def _migrate_responses_in_domain(args: argparse.Namespace):
     """Migrate retrieval intent responses to the new 2.0 format.
 
-    Before 2.0, retrieval intent responses needed to start
-    with `respond_`. Now, they need to start with `utter_`.
-
-    This function updates the domain file in place.
+    Before 2.0, retrieval intent responses had `respond_` prefix.
+    Now, the prefix is `utter_`.
 
     Args:
         args: the CLI arguments
