@@ -140,6 +140,9 @@ class FeatureArray(np.ndarray):
             if isinstance(_sub_array, scipy.sparse.spmatrix):
                 dim = i
                 break
+            if isinstance(_sub_array, np.ndarray) and _sub_array.shape[0] == 0:
+                # sequence dimension is 0, we are dealing with "fake" features
+                return
 
         # If the resulting sub_array is sparse, the remaining number of dimensions
         # should be at least 2
@@ -1122,7 +1125,7 @@ class RasaModelData:
         )
 
         data_padded = np.zeros(
-            [combined_dialogue_len, max_seq_len, number_of_features,],
+            [combined_dialogue_len, max_seq_len, number_of_features],
             dtype=array_of_array_of_dense[0][0].dtype,
         )
 
@@ -1225,7 +1228,7 @@ class RasaModelData:
         indices = np.hstack(
             [
                 np.vstack(
-                    [sum(dialogue_len[:i]) + j * np.ones_like(x.row), x.row, x.col,]
+                    [sum(dialogue_len[:i]) + j * np.ones_like(x.row), x.row, x.col]
                 )
                 for i, array_of_sparse in enumerate(array_of_array_of_sparse)
                 for j, x in enumerate(array_of_sparse)
