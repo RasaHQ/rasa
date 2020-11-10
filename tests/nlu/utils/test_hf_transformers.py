@@ -137,7 +137,7 @@ def test_attention_mask(
 # TODO: need to fix this failing test
 @pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
-    "model_name, model_weights, texts, expected_tokens, expected_indices, expected_num_token_ids",
+    "model_name, model_weights, texts, expected_tokens, expected_indices",
     [
         (
             "bert",
@@ -187,7 +187,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [4, 4, 5, 5, 13],
         ),
         (
             "bert",
@@ -210,7 +209,6 @@ def test_attention_mask(
                 [(0, 1), (1, 2), (2, 3), (3, 4)],
                 [(0, 1), (1, 2), (2, 3)],
             ],
-            [3, 4, 4, 3],
         ),
         (
             "gpt",
@@ -249,7 +247,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [2, 1, 2, 3, 3, 9],
         ),
         (
             "gpt2",
@@ -302,7 +299,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [3, 1, 2, 3, 3, 11],
         ),
         (
             "xlnet",
@@ -332,25 +328,6 @@ def test_attention_mask(
                     "ding",
                     "s",
                     "for",
-                ],
-            ],
-            [
-                [(0, 4), (5, 12)],
-                [(0, 5)],
-                [(0, 3), (4, 6)],
-                [(0, 1), (3, 4), (6, 7)],
-                [(0, 4), (5, 6), (7, 11)],
-                [
-                    (0, 4),
-                    (5, 7),
-                    (8, 11),
-                    (12, 20),
-                    (21, 22),
-                    (23, 27),
-                    (28, 33),
-                    (33, 37),
-                    (37, 38),
-                    (39, 42),
                 ],
             ],
             [4, 3, 4, 5, 5, 12],
@@ -403,7 +380,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [4, 4, 5, 5, 13],
         ),
         (
             "roberta",
@@ -456,18 +432,16 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [5, 3, 4, 5, 5, 13],
         ),
     ],
 )
 @pytest.mark.skip_on_windows
-def test_hf_transformers_edge_cases(
+def test_hf_transformer_edge_cases(
     model_name,
     model_weights,
     texts,
     expected_tokens,
     expected_indices,
-    expected_num_token_ids,
 ):
 
     if model_weights is None:
@@ -476,17 +450,15 @@ def test_hf_transformers_edge_cases(
         model_weights_config = {"model_weights": model_weights}
     transformers_config = {**{"model_name": model_name}, **model_weights_config}
 
-    transformers_nlp = HFTransformersNLP(transformers_config)
+    hf_transformer = HFTransformersNLP(transformers_config)
     whitespace_tokenizer = WhitespaceTokenizer()
 
-    for text, gt_tokens, gt_indices, gt_num_indices in zip(
-        texts, expected_tokens, expected_indices, expected_num_token_ids
-    ):
+    for text, gt_tokens, gt_indices in zip(texts, expected_tokens, expected_indices):
 
         message = Message.build(text=text)
         tokens = whitespace_tokenizer.tokenize(message, TEXT)
         message.set(TOKENS_NAMES[TEXT], tokens)
-        transformers_nlp.process(message)
+        hf_transformer.process(message)
 
         assert [t.text for t in tokens] == gt_tokens
         assert [t.start for t in tokens] == [i[0] for i in gt_indices]

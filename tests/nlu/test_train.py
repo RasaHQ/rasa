@@ -116,8 +116,8 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
 def test_all_components_are_in_at_least_one_test_pipeline():
     """There is a template that includes all components to
     test the train-persist-load-use cycle. Ensures that
-    really all components are in there."""
-
+    really all components are in there.
+    """
     all_pipelines = pipelines_for_tests() + pipelines_for_non_windows_tests()
     all_components = [c["name"] for _, p in all_pipelines for c in p]
 

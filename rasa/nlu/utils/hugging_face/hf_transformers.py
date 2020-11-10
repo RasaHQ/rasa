@@ -227,7 +227,6 @@ class HFTransformersNLP(Component):
         Returns:
             Sentence and sequence level representations.
         """
-
         from rasa.nlu.utils.hugging_face.registry import (
             model_embeddings_post_processors,
         )
@@ -269,7 +268,6 @@ class HFTransformersNLP(Component):
             List of token strings and token ids for the corresponding attribute of the
             message.
         """
-
         tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
 
         tokens_out = []
@@ -307,7 +305,6 @@ class HFTransformersNLP(Component):
         Returns:
             List of token strings and token ids for each example in the batch.
         """
-
         batch_token_ids = []
         batch_tokens = []
         for example in batch_examples:
@@ -521,7 +518,6 @@ class HFTransformersNLP(Component):
         Returns:
             Modified sequence embeddings with padding if necessary
         """
-
         if self.max_model_sequence_length == NO_LENGTH_RESTRICTION:
             # No extra padding needed because there wouldn't have been any truncation in the first place
             return sequence_embeddings
@@ -663,7 +659,6 @@ class HFTransformersNLP(Component):
         Returns:
             List of language model docs for each message in batch.
         """
-
         batch_tokens, batch_token_ids = self._get_token_ids_for_batch(
             batch_examples, attribute
         )
@@ -701,7 +696,6 @@ class HFTransformersNLP(Component):
             config: NLU pipeline config consisting of all components.
 
         """
-
         batch_size = 64
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
@@ -736,7 +730,6 @@ class HFTransformersNLP(Component):
         Args:
             message: Incoming message object
         """
-
         # process of all featurizers operates only on TEXT and ACTION_TEXT attributes,
         # because all other attributes are labels which are featurized during training
         # and their features are stored by the model itself.

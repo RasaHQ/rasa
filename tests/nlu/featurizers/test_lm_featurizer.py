@@ -369,7 +369,7 @@ def test_attention_mask(
 # TODO: need to fix this failing test
 @pytest.mark.skip(reason="Results in random crashing of github action workers")
 @pytest.mark.parametrize(
-    "model_name, model_weights, texts, expected_tokens, expected_indices, expected_num_token_ids",
+    "model_name, model_weights, texts, expected_tokens, expected_indices",
     [
         (
             "bert",
@@ -419,7 +419,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [4, 4, 5, 5, 13],
         ),
         (
             "bert",
@@ -442,7 +441,6 @@ def test_attention_mask(
                 [(0, 1), (1, 2), (2, 3), (3, 4)],
                 [(0, 1), (1, 2), (2, 3)],
             ],
-            [3, 4, 4, 3],
         ),
         (
             "gpt",
@@ -481,7 +479,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [2, 1, 2, 3, 3, 9],
         ),
         (
             "gpt2",
@@ -534,7 +531,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [3, 1, 2, 3, 3, 11],
         ),
         (
             "xlnet",
@@ -564,25 +560,6 @@ def test_attention_mask(
                     "ding",
                     "s",
                     "for",
-                ],
-            ],
-            [
-                [(0, 4), (5, 12)],
-                [(0, 5)],
-                [(0, 3), (4, 6)],
-                [(0, 1), (3, 4), (6, 7)],
-                [(0, 4), (5, 6), (7, 11)],
-                [
-                    (0, 4),
-                    (5, 7),
-                    (8, 11),
-                    (12, 20),
-                    (21, 22),
-                    (23, 27),
-                    (28, 33),
-                    (33, 37),
-                    (37, 38),
-                    (39, 42),
                 ],
             ],
             [4, 3, 4, 5, 5, 12],
@@ -635,7 +612,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [4, 4, 5, 5, 13],
         ),
         (
             "roberta",
@@ -688,7 +664,6 @@ def test_attention_mask(
                     (39, 42),
                 ],
             ],
-            [5, 3, 4, 5, 5, 13],
         ),
     ],
 )
@@ -699,7 +674,6 @@ def test_lm_featurizer_edge_cases(
     texts,
     expected_tokens,
     expected_indices,
-    expected_num_token_ids,
 ):
 
     if model_weights is None:
@@ -711,9 +685,7 @@ def test_lm_featurizer_edge_cases(
     lm_featurizer = LanguageModelFeaturizer(transformers_config)
     whitespace_tokenizer = WhitespaceTokenizer()
 
-    for text, gt_tokens, gt_indices, gt_num_indices in zip(
-        texts, expected_tokens, expected_indices, expected_num_token_ids
-    ):
+    for text, gt_tokens, gt_indices in zip(texts, expected_tokens, expected_indices):
 
         message = Message.build(text=text)
         tokens = whitespace_tokenizer.tokenize(message, TEXT)
@@ -729,7 +701,7 @@ def test_lm_featurizer_edge_cases(
     "text, expected_number_of_sub_tokens",
     [("sentence embeddings", [1, 4]), ("this is a test", [1, 1, 1, 1])],
 )
-def test_hf_transformers_number_of_sub_tokens(text, expected_number_of_sub_tokens):
+def test_lm_featurizer_number_of_sub_tokens(text, expected_number_of_sub_tokens):
     config = {
         "model_name": "bert",
         "model_weights": "bert-base-uncased",
@@ -761,7 +733,7 @@ def test_log_deprecation_warning_with_old_config(text: str, caplog: LogCaptureFi
     caplog.set_level(logging.DEBUG)
     lm_tokenizer = LanguageModelTokenizer()
     lm_tokenizer.process(message)
-    lm_featurizer = LanguageModelFeaturizer()
+    lm_featurizer = LanguageModelFeaturizer(skip_model_load=True)
     caplog.clear()
     with caplog.at_level(logging.DEBUG):
         lm_featurizer.process(message)
@@ -769,6 +741,7 @@ def test_log_deprecation_warning_with_old_config(text: str, caplog: LogCaptureFi
     assert "deprecated component HFTransformersNLP" in caplog.text
 
 
+@pytest.mark.skip(reason="Results in random crashing of github action workers")
 def test_preserve_sentence_and_sequence_features_old_config():
     attribute = "text"
     message = Message.build("hi there")

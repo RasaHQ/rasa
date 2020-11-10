@@ -72,7 +72,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
         return ["tensorflow_text", "tensorflow_hub"]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        """Initializes ConveRTFeaturizer with the model and different encoding signatures.
+        """Initializes ConveRTFeaturizer with the model and different
+        encoding signatures.
 
         Args:
             component_config: Configuration for the component.
@@ -248,7 +249,6 @@ class ConveRTFeaturizer(DenseFeaturizer):
         number_of_tokens_in_sentence: List[int],
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Get the sequence and sentence features."""
-
         sentence_embeddings = []
         sequence_embeddings = []
 
@@ -266,8 +266,9 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def _tokens_to_text(list_of_tokens: List[List[Token]]) -> List[Text]:
         """Convert list of tokens to text.
 
-        Add a whitespace between two tokens if the end value of the first tokens is
-        not the same as the end value of the second token."""
+        Add a whitespace between two tokens if the end value of the first tokens
+        is not the same as the end value of the second token.
+        """
         texts = []
         for tokens in list_of_tokens:
             text = ""
