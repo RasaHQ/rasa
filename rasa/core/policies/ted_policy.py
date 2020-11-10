@@ -941,7 +941,7 @@ class TED(TransformerRasaModel):
         attribute_features = tf.zeros(
             (batch_dim, dialogue_dim, units), dtype=tf.float32
         )
-        return attribute_features, tf.zeros(([1]))
+        return attribute_features, tf.zeros(([0, 0, units]))
 
     def _encode_real_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
@@ -956,7 +956,7 @@ class TED(TransformerRasaModel):
         Returns:
             A tensor combining  all features for `attribute`
         """
-        text_transformer_output = tf.zeros([1])
+        text_transformer_output = tf.zeros([0, 0, 0])
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
             # sequence_lengths contain `0` for "fake" features, while
@@ -1037,62 +1037,47 @@ class TED(TransformerRasaModel):
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
         dialogue_transformer_output: tf.Tensor,
         text_transformer_output: tf.Tensor,
-    ) -> List[tf.Tensor]:
+    ) -> tf.Tensor:
         if ENTITY_ATTRIBUTE_TYPE not in tf_batch_data.get(ENTITIES, {}):
-            return []
+            return tf.constant(0)
+
+        # TODO tf.cond
+        if tf.shape(text_transformer_output)[0] == 0:
+            return tf.constant(0)
 
         # To calculate the loss for entities we need the output of the text
         # sequence transformer (shape: combined batch dialogue dimension x
         # sequence length x units), the output of the dialogue transformer
         # (shape: batch size x dialogue length x units) and the tag ids for the
         # entities (shape: combined batch dialogue dimension x sequence length x units)
-        # As the combined batch dialogue dimension for the output of the text sequence
-        # transformer and the tag ids differ, all tensors have different shapes.
+        # The combined batch dialogue dimension for the text sequence transformer
+        # and the tag ids matches.
         # In order to process the tensors, they need to have the same shape.
-        # Convert all tensors to the same
-        #   combined batch dialogue dimension x sequence length x units
-        # shape.
+        # Convert the output of the dialogue transformer to shape
+        # (combined batch dialogue dimension x sequence length x units).
         # Note: The CRF layer cannot handle 4D tensors. E.g. we cannot use the shape
         # batch size x dialogue length x sequence length x units
-
-        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
         tag_ids = tf_batch_data[ENTITIES][ENTITY_ATTRIBUTE_TYPE][0]
         # add a zero (no entity) for the sentence features to match the shape of
         # inputs
         tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
-        # convert tag ids to shape batch-size x dialogue length x sequence length x 1
-        tag_ids = self._convert_to_original_shape(
-            tag_ids, tf_batch_data[ENTITIES][MASK][0], dialogue_lengths, True
-        )
-        # convert tag ids to shape
-        # combined batch dialogue dimension x sequence length x 1
-        tag_ids = self._combine_batch_and_dialogue_dimension(tag_ids, tf_batch_data)
-
-        # convert the output of the text sequence transformer to shape
-        # batch-size x dialogue length x sequence length x 1
-        # TODO text_transformer_output shape is unknown in non-eager mode
-        text_seq_transformer_output = self._convert_to_original_shape(
-            text_transformer_output,
-            tf_batch_data[TEXT][MASK][0],
-            dialogue_lengths,
-            True,
-        )
-        # convert the output of the text sequence transformer to shape
-        # combined batch dialogue dimension x sequence length x units
-        text_seq_transformer_output = self._combine_batch_and_dialogue_dimension(
-            text_seq_transformer_output, tf_batch_data
-        )
 
         # convert the output of the dialogue transformer to shape
         # combined batch dialogue dimension x sequence length x units
+        batch_dim = tf.shape(dialogue_transformer_output)[0]
         dialogue_transformer_output = self._combine_batch_and_dialogue_dimension(
             dialogue_transformer_output, tf_batch_data
+        )
+        # get only the dialogues that contain a user utterance
+        dialogue_transformer_output = tf.boolean_mask(
+            dialogue_transformer_output,
+            tf.squeeze(tf_batch_data[TEXT][SEQUENCE_LENGTH][0], axis=-1),
         )
 
         # repeat the dialogue transformer output sequence-length-times to get the
         # same shape as the text sequence transformer output
-        sequence_dimension = tf.shape(tag_ids)[1]
+        sequence_dimension = tf.shape(text_transformer_output)[1]
         dialogue_transformer_output = tf.repeat(
             tf.expand_dims(dialogue_transformer_output, axis=1),
             sequence_dimension,
@@ -1102,9 +1087,7 @@ class TED(TransformerRasaModel):
         # sequence transformer (adding context)
         # resulting shape
         # (combined batch and dialogue dimension x sequence length x units)
-        text_transformed = tf.add(
-            text_seq_transformer_output, dialogue_transformer_output
-        )
+        text_transformed = tf.add(text_transformer_output, dialogue_transformer_output)
 
         # we need the sequence length and the mask for the CRF layer
         _sequence_lengths = tf_batch_data[TEXT][SEQUENCE_LENGTH][0]
@@ -1118,35 +1101,48 @@ class TED(TransformerRasaModel):
         sequence_lengths = _sequence_lengths + 1
         mask = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
-        # convert mask and sequence length to correct shape
-        mask = self._convert_to_original_shape(
-            mask, tf_batch_data[TEXT][MASK][0], dialogue_lengths, True
-        )
-        mask = self._combine_batch_and_dialogue_dimension(mask, tf_batch_data)
-        sequence_lengths = self._convert_to_original_shape(
-            tf.expand_dims(sequence_lengths, axis=-1),
-            tf_batch_data[TEXT][MASK][0],
-            dialogue_lengths,
-            True,
-        )
-        sequence_lengths = self._combine_batch_and_dialogue_dimension(
-            sequence_lengths, tf_batch_data
-        )
-
         if self.max_history_tracker_featurizer_used:
-            batch_dim = tf.size(dialogue_lengths)
-
-            # the first dimension of text transformed is the combined batch and dialogue
-            # dimension, which corresponds to the sum of all dialogue lengths
             # if the max history tracker featurizer is used we just want the last
-            # dialogues of every batch example
+            # dialogues that contain a user utterance for every batch example
 
-            # TODO the last dialogue turn might not contain any entities
+            # the attribute mask indicates which dialogue contains a user utterance
+            attribute_mask = tf_batch_data[TEXT][MASK][0]
+            # get indices of all dialogues that contain a user utterance
+            # shape: (combined batch dialogue dimension x 2)
+            # TODO it seems like there are sometimes dialogues that do not have any
+            #  text features, but that should not be
+            indices_of_text_dialogues = tf.where(
+                tf.not_equal(tf.squeeze(attribute_mask), 0)
+            )
+            # get the index of the last dialogues indices for every batch example
+            indices_of_last_text_dialogue_indices = (
+                tf.cumsum(
+                    tf.squeeze(
+                        tf.cast(tf.reduce_sum(attribute_mask, axis=1), dtype=tf.int32)
+                    )
+                )
+                - 1
+            )
+            # get only those the indices_of_text_dialogues of the last dialogues
+            # resulting shape of indices (batch size x 2)
+            indices_of_text_dialogues = tf.gather(
+                indices_of_text_dialogues, indices_of_last_text_dialogue_indices
+            )
 
-            # get the indices of all last dialogues
-            last_dialogue_indices = tf.cumsum(dialogue_lengths) - 1
+            # We now hove the indices of the relevant dialogues. However,
+            # text_transformed has a different shape (first dimension is the combined
+            # batch dialogue dimension). Thus we need to map the
+            # indices_of_text_dialogues into this shape.
+            cumsum_sequence_length = tf.squeeze(
+                tf.cast(tf.cumsum(sequence_lengths, axis=0), dtype=tf.int32)
+            )
+            last_dialogue_indices = tf.map_fn(
+                lambda x: cumsum_sequence_length[x[0]] + x[1],
+                tf.cast(indices_of_text_dialogues, dtype=tf.int32),
+            )
 
-            # build up indices to get the last dialogues from text_transformed
+            # build up indices to get the last dialogues from text_transformed and the
+            # other tensors
             dialogue_indices = tf.repeat(
                 tf.expand_dims(last_dialogue_indices, axis=1),
                 sequence_dimension,
@@ -1163,13 +1159,8 @@ class TED(TransformerRasaModel):
             # do the same for the other tensors
             tag_ids = tf.gather_nd(tag_ids, indices)
             mask = tf.gather_nd(mask, indices)
-            sequence_lengths = tf.gather(
-                tf.squeeze(sequence_lengths), last_dialogue_indices
-            )
-
-            # TODO
-            #  inside the LSTM of the CRF layer the check len(mask.shape) == 2
-            #  fails. mask is created from the sequence length.
+            # as sequence_lengths is a 1D tensor use tf.gather instead of tf.gather_nd
+            sequence_lengths = tf.gather(sequence_lengths, last_dialogue_indices)
 
         loss, f1, _ = self._calculate_entity_loss(
             text_transformed,
@@ -1182,7 +1173,7 @@ class TED(TransformerRasaModel):
         self.entity_loss.update_state(loss)
         self.entity_f1.update_state(f1)
 
-        return [loss]
+        return loss
 
     @staticmethod
     def _combine_batch_and_dialogue_dimension(
@@ -1203,7 +1194,7 @@ class TED(TransformerRasaModel):
         """
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
-        batch_dim = tf.size(dialogue_lengths)
+        batch_dim = tf.shape(dialogue_lengths)[0]
         batch_indices = tf.repeat(tf.range(batch_dim), dialogue_lengths)
         dialogue_indices = (
             tf.map_fn(
@@ -1303,17 +1294,17 @@ class TED(TransformerRasaModel):
              Tensor: encoding of all features in the batch, combined;
         """
         # encode each attribute present in tf_batch_data
-        text_transformer_output = tf.zeros([1])
+        text_transformer_output = tf.zeros([0, 0, 0])
 
         batch_encoded = {}
         for key in tf_batch_data.keys():
             if LABEL_KEY not in key and DIALOGUE not in key:
-                attribute_features, _text_transformer_output = self._encode_features_per_attribute(
-                    tf_batch_data, key
-                )
-
+                (
+                    attribute_features,
+                    _text_transformer_output,
+                ) = self._encode_features_per_attribute(tf_batch_data, key)
                 batch_encoded[key] = attribute_features
-                if tf.reduce_max(_text_transformer_output) > 0:
+                if tf.shape(_text_transformer_output)[0] > 0:
                     text_transformer_output = _text_transformer_output
 
         # if both action text and action name are present, combine them; otherwise,
@@ -1382,9 +1373,11 @@ class TED(TransformerRasaModel):
         labels_embed = self._get_labels_embed(label_ids, all_labels_embed)
 
         dialogue_in, text_transformer_output = self._process_batch_data(tf_batch_data)
-        dialogue_embed, dialogue_mask, dialogue_transformer_output = self._emebed_dialogue(
-            dialogue_in, tf_batch_data
-        )
+        (
+            dialogue_embed,
+            dialogue_mask,
+            dialogue_transformer_output,
+        ) = self._emebed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         losses = []
@@ -1399,12 +1392,8 @@ class TED(TransformerRasaModel):
         )
         losses.append(loss)
 
-        if (
-            self.config[ENTITY_RECOGNITION]
-            and dialogue_transformer_output is not None
-            and text_transformer_output is not None
-        ):
-            losses.extend(
+        if self.config[ENTITY_RECOGNITION]:
+            losses.append(
                 self._batch_loss_entities(
                     tf_batch_data, dialogue_transformer_output, text_transformer_output
                 )
@@ -1440,18 +1429,16 @@ class TED(TransformerRasaModel):
         )
 
         dialogue_in, text_transformer_output = self._process_batch_data(tf_batch_data)
-        dialogue_embed, dialogue_mask, dialogue_transformer_output = self._emebed_dialogue(
-            dialogue_in, tf_batch_data
-        )
+        (
+            dialogue_embed,
+            dialogue_mask,
+            dialogue_transformer_output,
+        ) = self._emebed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         predictions = {}
 
-        if (
-            self.config[ENTITY_RECOGNITION]
-            and dialogue_transformer_output is not None
-            and text_transformer_output is not None
-        ):
+        if self.config[ENTITY_RECOGNITION]:
             predictions.update(
                 self._batch_predict_entities(
                     tf_batch_data, dialogue_transformer_output, text_transformer_output
@@ -1479,6 +1466,8 @@ class TED(TransformerRasaModel):
         text_transformer_output: tf.Tensor,
     ) -> Dict[Text, tf.Tensor]:
         predictions: Dict[Text, tf.Tensor] = {}
+
+        # TODO Update according to batch loss entities
 
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
@@ -1547,8 +1536,6 @@ class TED(TransformerRasaModel):
             # dimension, which corresponds to the sum of all dialogue lengths
             # if the max history tracker featurizer is used we just want the last
             # dialogues of every batch example
-
-            # TODO the last dialogue turn might not contain any entities
 
             # get the indices of all last dialogues
             last_dialogue_indices = tf.cumsum(dialogue_lengths) - 1
