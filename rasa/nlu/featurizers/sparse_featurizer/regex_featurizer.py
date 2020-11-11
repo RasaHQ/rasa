@@ -163,7 +163,7 @@ class RegexFeaturizer(SparseFeaturizer):
         file_name = meta.get("file")
         regex_file = Path(model_dir) / file_name
 
-        if Path(regex_file).exists():
+        if regex_file.exists():
             known_patterns = rasa.shared.utils.io.read_json_file(regex_file)
             return RegexFeaturizer(meta, known_patterns=known_patterns)
         else:
