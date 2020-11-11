@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class FormAction(LoopAction):
-    """Action which implements and executes the forms logic."""
+    """Action which implements and executes the form logic."""
 
     def __init__(
         self, form_name: Text, action_endpoint: Optional[EndpointConfig]

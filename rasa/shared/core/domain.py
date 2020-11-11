@@ -1488,7 +1488,8 @@ class SlotMapping(Enum):
         if not isinstance(mapping, dict):
             raise InvalidDomain(
                 f"Please make sure that the slot mappings for slot '{slot_name}' in "
-                f"your form '{form_name}' are valid dictionaries."
+                f"your form '{form_name}' are valid dictionaries. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
             )
 
         validations = {
@@ -1504,22 +1505,28 @@ class SlotMapping(Enum):
         if required_keys is None:
             raise InvalidDomain(
                 f"Your form '{form_name}' uses an invalid slot mapping of type "
-                f"'{mapping_type}' for slot '{slot_name}'."
+                f"'{mapping_type}' for slot '{slot_name}'. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
             )
 
         for required_key in required_keys:
             if mapping.get(required_key) is None:
                 raise InvalidDomain(
                     f"You need to specify a value for the key "
-                    f"'{required_key}' in the slot mapping of type '{mapping_type}'"
-                    f" for slot '{slot_name}' in the form '{form_name}'."
+                    f"'{required_key}' in the slot mapping of type '{mapping_type}' "
+                    f"for slot '{slot_name}' in the form '{form_name}'. Please see "
+                    f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
                 )
 
 
 def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     if isinstance(forms, list):
         if not all(isinstance(form_name, str) for form_name in forms):
-            raise InvalidDomain("Not all form names are strings.")
+            raise InvalidDomain(
+                f"If use the deprecated list syntax for forms, "
+                f"all form names have to be strings. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+            )
 
         return
 
@@ -1531,7 +1538,8 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
             raise InvalidDomain(
                 f"The slots for form '{form_name}' were specified "
                 f"as '{type(slots)}'. They need to be specified "
-                f"as dictionary."
+                f"as dictionary. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
+                f"for more information."
             )
         slots = slots or {}
         for slot_name, slot_mappings in slots.items():
@@ -1540,7 +1548,8 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
                     f"The slot mappings for slot '{slot_name}' in "
                     f"form '{form_name}' have type "
                     f"'{type(slot_mappings)}'. It is required to "
-                    f"provide a list of slot mappings."
+                    f"provide a list of slot mappings. Please see "
+                    f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
                 )
             for slot_mapping in slot_mappings:
                 SlotMapping.validate(slot_mapping, form_name, slot_name)
