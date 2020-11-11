@@ -335,7 +335,7 @@ Dump the tracker as a story to a file.
 #### get\_last\_event\_for
 
 ```python
- | get_last_event_for(event_type: Type[Event], action_names_to_exclude: List[Text] = None, skip: int = 0, event_verbosity: EventVerbosity = EventVerbosity.APPLIED) -> Optional[Event]
+ | get_last_event_for(event_type: Union[Type[Event], Tuple[Type, ...]], action_names_to_exclude: List[Text] = None, skip: int = 0, event_verbosity: EventVerbosity = EventVerbosity.APPLIED) -> Optional[Event]
 ```
 
 Gets the last event of a given type which was actually applied.
