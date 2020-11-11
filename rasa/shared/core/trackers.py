@@ -63,26 +63,28 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
+    from typing_extension import TypedDict
+
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+
+    # precise type definition for `DialogueStateTracker.active_loop`
+    TrackerActiveLoop = TypedDict(
+        "TrackerActiveLoop",
+        {
+            LOOP_NAME: Text,
+            LOOP_INTERRUPTED: bool,
+            LOOP_REJECTED: bool,
+            TRIGGER_MESSAGE: Dict,
+        },
+        total=False,
+    )
 
 
 logger = logging.getLogger(__name__)
 
 # same as State but with Dict[...] substituted with FrozenSet[Tuple[...]]
 FrozenState = FrozenSet[Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text]]]]]]
-
-# precise type definition for `DialogueStateTracker.active_loop`
-TrackerActiveLoop = TypedDict(
-    "TrackerActiveLoop",
-    {
-        LOOP_NAME: Text,
-        LOOP_INTERRUPTED: bool,
-        LOOP_REJECTED: bool,
-        TRIGGER_MESSAGE: Dict,
-    },
-    total=False,
-)
 
 
 class EventVerbosity(Enum):
@@ -200,7 +202,7 @@ class DialogueStateTracker:
         self.latest_message: Optional[Event] = None
         self.latest_bot_utterance = None
         self._reset()
-        self.active_loop: TrackerActiveLoop = {}
+        self.active_loop: "TrackerActiveLoop" = {}
 
     ###
     # Public tracker interface
