@@ -420,7 +420,7 @@ def test_rasa_data_convert_responses(
     )
 
     assert filecmp.cmp(
-        Path(converted_data_folder) / "domain.yml",
+        Path(converted_data_folder) / "domain_converted.yml",
         Path(expected_data_folder) / "domain.yml",
     )
 

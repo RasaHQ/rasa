@@ -11,7 +11,8 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
-from rasa.core.training.converters.story_responses_prefix_converter import (
+from rasa.core.training.converters.responses_prefix_converter import (
+    DomainResponsePrefixConverter,
     StoryResponsePrefixConverter,
 )
 import rasa.nlu.convert
@@ -303,7 +304,7 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
         telemetry.track_data_convert(args.format, "nlu")
     elif args.format == "yaml":
         rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args, NLUMarkdownToYamlConverter())
+            _convert_to_yaml(args.out, args.data, NLUMarkdownToYamlConverter())
         )
         telemetry.track_data_convert(args.format, "nlu")
     else:
@@ -320,7 +321,7 @@ def _convert_core_data(args: argparse.Namespace) -> None:
 
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args, StoryMarkdownToYamlConverter())
+            _convert_to_yaml(args.out, args.data, StoryMarkdownToYamlConverter())
         )
         telemetry.track_data_convert(args.format, "core")
     else:
@@ -337,7 +338,7 @@ def _convert_nlg_data(args: argparse.Namespace) -> None:
 
     if args.format == "yaml":
         rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args, NLGMarkdownToYamlConverter())
+            _convert_to_yaml(args.out, args.data, NLGMarkdownToYamlConverter())
         )
         telemetry.track_data_convert(args.format, "nlg")
     else:
@@ -352,9 +353,11 @@ def _migrate_responses(args: argparse.Namespace) -> None:
     It does so modifying the stories and domain files.
     """
     if args.format == "yaml":
-        _migrate_responses_in_domain(args)
         rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args, StoryResponsePrefixConverter())
+            _convert_to_yaml(args.out, args.domain, DomainResponsePrefixConverter())
+        )
+        rasa.utils.common.run_in_loop(
+            _convert_to_yaml(args.out, args.data, StoryResponsePrefixConverter())
         )
         telemetry.track_data_convert(args.format, "responses")
     else:
@@ -364,42 +367,18 @@ def _migrate_responses(args: argparse.Namespace) -> None:
         )
 
 
-def _migrate_responses_in_domain(args: argparse.Namespace):
-    """Migrate retrieval intent responses to the new 2.0 format.
-
-    Before 2.0, retrieval intent responses had `respond_` prefix.
-    Now, the prefix is `utter_`.
-
-    Args:
-        args: the CLI arguments
-    """
-    output = Path(args.out)
-    domain_file = Path(args.domain)
-    domain = _get_domain(domain_file)
-
-    domain_dict = domain.cleaned_domain()
-    domain_dict["actions"] = [
-        StoryResponsePrefixConverter.normalize_response_name(action)
-        for action in domain_dict["actions"]
-    ]
-
-    new_domain = Domain.from_dict(domain_dict)
-    new_domain.persist_clean(output / domain_file.name)
-    rasa.shared.utils.cli.print_info(f"Converted {domain_file}, saved in '{output}'.")
-
-
 async def _convert_to_yaml(
-    args: argparse.Namespace, converter: TrainingDataConverter
+    out_path: Text, data_path: Text, converter: TrainingDataConverter
 ) -> None:
 
-    output = Path(args.out)
+    output = Path(out_path)
     if not os.path.exists(output):
         rasa.shared.utils.cli.print_error_and_exit(
             f"The output path '{output}' doesn't exist. Please make sure to specify "
             f"an existing directory and try again."
         )
 
-    training_data = Path(args.data)
+    training_data = Path(data_path)
     if not os.path.exists(training_data):
         rasa.shared.utils.cli.print_error_and_exit(
             f"The training data path {training_data} doesn't exist "
