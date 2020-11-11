@@ -394,10 +394,16 @@ class StoryGraph:
             self.story_end_checkpoints = {}
 
     def __hash__(self) -> int:
-        self_as_string = self.as_story_string()
-        text_hash = rasa.shared.utils.io.get_text_hash(self_as_string)
+        return int(self.fingerprint(), 16)
 
-        return int(text_hash, 16)
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the stories which is stable across python runs.
+
+        Returns:
+            fingerprint of the stories
+        """
+        self_as_string = self.as_story_string()
+        return rasa.shared.utils.io.get_text_hash(self_as_string)
 
     def ordered_steps(self) -> List[StoryStep]:
         """Returns the story steps ordered by topological order of the DAG."""

@@ -623,6 +623,14 @@ class Domain:
 
     def __hash__(self) -> int:
         """Returns a unique hash for the domain."""
+        return int(self.fingerprint(), 16)
+
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the domain which is stable across python runs.
+
+        Returns:
+            fingerprint of the domain
+        """
         self_as_dict = self.as_dict()
         self_as_dict[
             KEY_INTENTS
@@ -630,10 +638,7 @@ class Domain:
             self_as_dict[KEY_INTENTS]
         )
         self_as_dict[KEY_ACTIONS] = self.action_names
-        self_as_string = json.dumps(self_as_dict, sort_keys=True)
-        text_hash = rasa.shared.utils.io.get_text_hash(self_as_string)
-
-        return int(text_hash, 16)
+        return rasa.shared.utils.io.get_dictionary_fingerprint(self_as_dict)
 
     @rasa.shared.utils.common.lazy_property
     def user_actions_and_forms(self):

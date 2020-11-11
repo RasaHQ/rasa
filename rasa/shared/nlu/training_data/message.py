@@ -1,3 +1,4 @@
+import json
 from typing import Any, Optional, Tuple, Text, Dict, Set, List
 
 import typing
@@ -86,10 +87,13 @@ class Message:
         if not isinstance(other, Message):
             return False
         else:
-            return ordered(other.data) == ordered(self.data)
+            return other.fingerprint() == self.fingerprint()
 
     def __hash__(self) -> int:
-        return hash(str(ordered(self.data)))
+        return int(self.fingerprint(), 16)
+
+    def fingerprint(self) -> Text:
+        return rasa.shared.utils.io.deep_container_fingerprint(self.data)
 
     @classmethod
     def build(
@@ -322,12 +326,3 @@ class Message:
                 and not (self.data.get(INTENT) or self.data.get(RESPONSE))
             )
         )
-
-
-def ordered(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return sorted((k, ordered(v)) for k, v in obj.items())
-    if isinstance(obj, list):
-        return sorted(ordered(x) for x in obj)
-    else:
-        return obj
