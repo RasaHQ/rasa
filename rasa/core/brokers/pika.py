@@ -478,7 +478,7 @@ class PikaMessageProcessor:
     def _on_connection_closed(self, _, reason: Any):
         self._channel = None
         if self._closing:
-            logger.warning(f"Connection closing")
+            logger.warning("Connection closing")
             # noinspection PyUnresolvedReferences
             self._connection.ioloop.stop()
         else:
