@@ -432,12 +432,57 @@ Response Selectors are a stable feature as of version 2.0.
 The [conversion command](./migration-guide.mdx#training-data-files) will automatically
 convert your `responses.md` file, stories and nlu training data to the new yaml format.
 It will also take care of adding the `utter_` prefix to your responses.
-Additionally, `respond_` actions in your domain file and stories files will need to be
-renamed with the `utter_` prefix instead. You can run the following command to do so:
+Additionally you will need to rename the `respond_` actions in your stories files to use the
+`utter_` prefix instead. Run the following command to apply these changes:
 
 ```bash
 rasa data convert responses --data {SOURCE_DIR} --out={TARGET_DIR}
 ```
+
+You can also apply these changes manually. For example:
+
+```yaml-rasa
+stories:
+  - story: chitchat
+    steps:
+    - intent: chitchat
+    - action: respond_chitchat
+```
+becomes
+
+```yaml-rasa
+stories:
+  - story: chitchat
+    steps:
+    - intent: chitchat
+    - action: utter_chitchat
+```
+
+and you will need to add the `utter_` prefix to the response names in your `responses.md`
+as well. For example:
+
+```yaml-rasa
+responses:
+  chitchat/ask_name:
+    - text: Oh yeah, I am called the retrieval bot.
+
+  chitchat/ask_weather:
+    - text: Oh, it does look sunny right now in Berlin.
+```
+
+becomes
+
+```yaml-rasa
+responses:
+  utter_chitchat/ask_name:
+    - text: Oh yeah, I am called the retrieval bot.
+
+  utter_chitchat/ask_weather:
+    - text: Oh, it does look sunny right now in Berlin.
+```
+
+Finally, you should remove any actions with the `respond_` prefix from the actions
+list in your domain.
 
 This behavior will work fine when defined as a story, but even better when defined
 as a rule. You should consider transferring your retrieval stories to rules. More information
