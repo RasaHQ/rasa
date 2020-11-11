@@ -1176,7 +1176,7 @@ class Domain:
             A string in YAML format representing the domain.
         """
         # setting the `version` key first so that it appears at the top of YAML files
-        # thanks to the `should_preserve_key_order` argument 
+        # thanks to the `should_preserve_key_order` argument
         # of `dump_obj_as_yaml_to_string`
         domain_data: Dict[Text, Any] = {
             KEY_TRAINING_DATA_FORMAT_VERSION: rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION
