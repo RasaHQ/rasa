@@ -8,6 +8,7 @@ on:
 
 env:
   GKE_ZONE: us-central1-a
+  GCLOUD_VERSION: "318.0.0"
 
 jobs:
   read_test_configuration:
@@ -53,6 +54,7 @@ jobs:
       # Setup gcloud CLI
       - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
+          version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
 
@@ -229,6 +231,7 @@ jobs:
       # Setup gcloud CLI
       - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
+          version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
           service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
 
