@@ -671,7 +671,7 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
 
     @staticmethod
     def _get_label_index_after_padding(original_index):
-        return original_index
+        return original_index + 1
 
     def _convert_labels_to_ids(
         self, trackers_as_intents: List[List[Text]], domain: Domain

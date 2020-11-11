@@ -293,17 +293,19 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
         return self._extract_state_features(intent_as_sub_state, interpreter)
 
-    def encode_all_intents(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+    def encode_all_labels(
+        self,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        label_tags: List[Text],
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all intents from the domain using the given interpreter.
         Args:
             domain: The domain that contains the actions.
             interpreter: The interpreter used to encode the actions.
+            label_tags: Labels to be encoded.
         Returns:
             A list of encoded intents.
         """
 
-        # return [self._encode_intent(intent, interpreter) for intent in ["PAD"] + domain.intents]
-
-        return [self._encode_intent(intent, interpreter) for intent in domain.intents]
+        return [self._encode_intent(intent, interpreter) for intent in label_tags]

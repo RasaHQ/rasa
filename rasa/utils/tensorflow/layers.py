@@ -982,6 +982,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             name="expand_pos_labels",
         )
 
+        # tf.print("tensorsssss")
         # tf.print(label_ids)
         # tf.print("------------")
 

@@ -246,6 +246,7 @@ class IntentTEDPolicy(TEDPolicy):
         model: Optional[RasaModel] = None,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
         intent_thresholds: Dict[int, float] = None,
+        all_labels: Dict[Text, int] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -253,6 +254,7 @@ class IntentTEDPolicy(TEDPolicy):
             featurizer, priority, max_history, model, zero_state_features, **kwargs
         )
 
+        self._all_labels = all_labels
         self.intent_thresholds = intent_thresholds
         self.use_augmentation_for_thresholds = self.config[
             "use_augmentation_for_thresholds"
@@ -282,7 +284,12 @@ class IntentTEDPolicy(TEDPolicy):
         #  the problem that labels may also need to be featurized from states prepared from domain.
         state_featurizer.prepare_from_domain(domain)
 
-        encoded_all_labels = state_featurizer.encode_all_intents(domain, interpreter)
+        # Add an extra PAD to the vocabulary of labels
+        self._all_labels = ["PAD"] + domain.intents
+
+        encoded_all_labels = state_featurizer.encode_all_labels(
+            domain, interpreter, self._all_labels
+        )
         # print("encoded all labels", encoded_all_labels)
 
         attribute_data, _ = convert_to_data_format(encoded_all_labels)
@@ -295,7 +302,7 @@ class IntentTEDPolicy(TEDPolicy):
             f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE
         )
 
-        label_ids = np.arange(len(domain.intents))
+        label_ids = np.arange(len(self._all_labels))
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
@@ -324,6 +331,10 @@ class IntentTEDPolicy(TEDPolicy):
 
         return augmented, non_augmented
 
+    @staticmethod
+    def _get_label_key_to_ids_map(labels: List[Text]) -> Dict[Text, int]:
+        return {label: index for index, label in enumerate(labels)}
+
     def train(
         self,
         all_trackers: List[DialogueStateTracker],
@@ -349,10 +360,6 @@ class IntentTEDPolicy(TEDPolicy):
         model_train_data, train_label_ids = self._featurize_for_model(
             domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
         )
-
-        print(model_train_data.get_signature())
-        print(self._label_data.get_signature())
-        # exit(0)
 
         if model_train_data.is_empty():
             logger.error(
@@ -400,7 +407,7 @@ class IntentTEDPolicy(TEDPolicy):
             )
 
         for index in self.intent_thresholds:
-            print(domain.intents[index], index, self.intent_thresholds[index])
+            print(self._all_labels[index], index, self.intent_thresholds[index])
 
     def _featurize_for_model(
         self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
@@ -450,6 +457,8 @@ class IntentTEDPolicy(TEDPolicy):
         if self.model is None:
             return self._default_predictions(domain), False
 
+        label_to_id_map = self._get_label_key_to_ids_map(self._all_labels)
+
         # create model data from tracker
         tracker_state_features = []
         if (
@@ -484,20 +493,20 @@ class IntentTEDPolicy(TEDPolicy):
 
         # Todo: remove this, as this was just for printing
         intent_confidences = {}
-        for index, intent in enumerate(domain.intents):
+        for index, intent in enumerate(self._all_labels):
             intent_confidences[intent] = confidences[0][index]
 
-        for intent in set(domain.intents) - set(
+        for intent in set(self._all_labels) - set(
             rasa.shared.core.constants.DEFAULT_INTENTS
         ):
             # print("Confidences", intent_confidences)
             # print("thresholds", )
-            if domain.index_for_intent(intent) in self.intent_thresholds:
+            if label_to_id_map[intent] in self.intent_thresholds:
                 print(
                     intent,
-                    domain.index_for_intent(intent),
+                    label_to_id_map[intent],
                     intent_confidences[intent],
-                    self.intent_thresholds[domain.index_for_intent(intent)],
+                    self.intent_thresholds[label_to_id_map[intent]],
                 )
         print("======================")
 
@@ -506,7 +515,7 @@ class IntentTEDPolicy(TEDPolicy):
         if last_user_event:
             # If this is not the first intent
             query_label = last_user_event.intent_name
-            query_label_id = domain.index_for_intent(query_label)
+            query_label_id = label_to_id_map[query_label]
             query_label_prob = confidences[0][query_label_id]
 
             if self._should_check_for_intent(query_label, domain):
@@ -570,6 +579,10 @@ class IntentTEDPolicy(TEDPolicy):
             dict(self.intent_thresholds),
         )
 
+        io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.all_label_tags.pkl", self._all_labels
+        )
+
     @classmethod
     def load(cls, path: Union[Text, Path]) -> "TEDPolicy":
         """Loads a policy from the storage.
@@ -601,6 +614,9 @@ class IntentTEDPolicy(TEDPolicy):
         )
         intent_thresholds = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.intent_thresholds.pkl"
+        )
+        all_label_tags = io_utils.pickle_load(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.all_label_tags.pkl"
         )
         label_data = RasaModelData(data=label_data)
         meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
@@ -644,6 +660,7 @@ class IntentTEDPolicy(TEDPolicy):
             model=model,
             zero_state_features=zero_state_features,
             intent_thresholds=intent_thresholds,
+            all_labels=all_label_tags,
             **meta,
         )
 
