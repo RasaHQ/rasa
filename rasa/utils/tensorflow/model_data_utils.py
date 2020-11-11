@@ -191,15 +191,17 @@ def _create_zero_features(
         )
     )
 
-    # create zero_features for nones
+    # create zero_features for Nones
     zero_features = []
     for _features in example_features:
         new_features = copy.deepcopy(_features)
         if _features.is_dense():
-            new_features.features = np.zeros_like(_features.features)
+            new_features.features = np.zeros(
+                (0, _features.features.shape[-1]), _features.features.dtype
+            )
         if _features.is_sparse():
             new_features.features = scipy.sparse.coo_matrix(
-                _features.features.shape, _features.features.dtype
+                (0, _features.features.shape[-1]), _features.features.dtype
             )
         zero_features.append(new_features)
 
@@ -339,18 +341,9 @@ def _features_for_attribute(
                 np.array([v[0] for v in values]), number_of_dimensions=3
             )
 
-    if consider_dialogue_dimension:
-        attribute_to_feature_arrays = {
-            MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=4)]
-        }
-    else:
-        attribute_to_feature_arrays = {
-            MASK: [
-                FeatureArray(
-                    np.array(np.squeeze(attribute_masks, -1)), number_of_dimensions=3
-                )
-            ]
-        }
+    attribute_to_feature_arrays = {
+        MASK: [FeatureArray(np.array(attribute_masks), number_of_dimensions=3)]
+    }
 
     feature_types = set()
     feature_types.update(list(dense_features.keys()))
@@ -435,9 +428,10 @@ def _extract_features(
         for key, value in dialogue_dense_features.items():
             dense_features[key].append(value)
 
-        # add additional dimensions to attribute mask to get a 3D vector
-        # resulting shape dialogue length x 1 x 1
-        attribute_mask = np.expand_dims(np.expand_dims(attribute_mask, -1), -1)
+        # add additional dimension to attribute mask
+        # to get a vector of shape (dialogue length x 1),
+        # the batch dim will be added later
+        attribute_mask = np.expand_dims(attribute_mask, -1)
         attribute_masks.append(attribute_mask)
 
     return attribute_masks, dense_features, sparse_features

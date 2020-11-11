@@ -455,8 +455,6 @@ class DialogueStateTracker:
                 )
                 if event.use_text_for_featurization is None:
                     event.use_text_for_featurization = use_text_for_featurization
-                elif event.use_text_for_featurization != use_text_for_featurization:
-                    logger.debug("Got contradicting user featurization info.")
 
                 applied_events.append(event)
             else:
