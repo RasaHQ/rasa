@@ -245,18 +245,20 @@ def get_dictionary_fingerprint(
     return get_text_hash(stringified, encoding)
 
 
-def get_list_fingerprint(l: List[Any], encoding: Text = DEFAULT_ENCODING) -> Text:
+def get_list_fingerprint(
+    elements: List[Any], encoding: Text = DEFAULT_ENCODING
+) -> Text:
     """Calculate a fingerprint for an unordered list.
 
     Args:
-        l: unordered list
+        elements: unordered list
         encoding: encoding used for dumping objects as strings
 
     Returns:
         the fingerprint of the list
     """
     stringified = json.dumps(
-        [deep_container_fingerprint(element, encoding) for element in l]
+        [deep_container_fingerprint(element, encoding) for element in elements]
     )
     return get_text_hash(stringified, encoding)
 

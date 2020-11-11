@@ -1,3 +1,5 @@
+import copy
+import os
 from pathlib import Path
 
 import pytest
@@ -91,3 +93,34 @@ def test_write_utf_8_yaml_file(tmp_path: Path):
 
     rasa.shared.utils.io.write_yaml(data, file_path)
     assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
+
+
+@pytest.mark.parametrize(
+    "dictionary",
+    [
+        {},
+        {"hello": "world"},
+        {1: 2},
+        {"foo": ["bar"]},
+        {"a": []},
+        [],
+        ["a"],
+        [{}],
+        [None],
+    ],
+)
+def test_fingerprint_dicionaries(dictionary):
+    assert rasa.shared.utils.io.deep_container_fingerprint(
+        dictionary
+    ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(dictionary))
+
+
+def test_fingerprint_does_not_use_string_hashing(monkeypatch):
+    dictionary = {"a": ["b"], "c": {"d": "e"}}
+    f1 = rasa.shared.utils.io.deep_container_fingerprint(dictionary)
+
+    # in case we would rely on string hashes anywhere, using a different seed
+    # would lead to different fingerprints and let this test fail
+    monkeypatch.setenv("PYTHONHASHSEED", "42")
+    f2 = rasa.shared.utils.io.deep_container_fingerprint(dictionary)
+    assert f1 == f2
