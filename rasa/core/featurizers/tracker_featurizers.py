@@ -624,14 +624,25 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         trackers_as_intents: List[List[Text]], domain: Domain
     ) -> np.ndarray:
         # store labels in numpy arrays so that it corresponds to np arrays of input features
-        return np.array(
-            [
-                np.array(
-                    [domain.index_for_intent(intent) for intent in tracker_intents]
-                )
-                for tracker_intents in trackers_as_intents
-            ]
-        )
+        label_ids = [
+            [domain.index_for_intent(intent) for intent in tracker_intents]
+            for tracker_intents in trackers_as_intents
+        ]
+        # new_label_ids = label_ids
+        # # print(label_ids)
+        multiple_labels_count = [len(a) for a in label_ids]
+        max_labels_count = max(multiple_labels_count)
+        paddings_needed = [max_labels_count - len(a) for a in label_ids]
+        new_label_ids = []
+        for ids, num_pads in zip(label_ids, paddings_needed):
+            if num_pads:
+                ids.extend([0 * num_pads])
+            new_label_ids.append(ids)
+
+        new_label_ids = np.array(new_label_ids)
+
+        print("label ids constructed", new_label_ids)
+        return new_label_ids
 
     def prediction_states(
         self,
@@ -751,6 +762,17 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
 
         # print("Featurizing labels")
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
+
+        # print(label_ids)
+        # print(label_ids.shape)
+        #
+        # multiple_labels_count = [a.shape[0] for a in label_ids]
+        # max_labels_count = max(multiple_labels_count)
+        # paddings_needed = [(0, max_labels_count - a.shape[0]) for a in label_ids]
+        # label_ids = np.pad(label_ids, paddings_needed, mode="constant", constant_values=-1, axis=1)
+        #
+        # print(label_ids)
+        # exit(0)
 
         # for tracker_states, tracker_actions, label_id in zip(trackers_as_states, trackers_as_actions, label_ids):
         #     print(tracker_states, tracker_actions, label_id)

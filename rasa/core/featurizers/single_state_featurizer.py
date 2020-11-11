@@ -285,36 +285,6 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
 
 class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
-    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
-        """Create matrix with all actions from domain encoded in rows as bag of words"""
-
-        encoded_all_actions = np.zeros(
-            (len(domain.intent_names), len(self.user_vocab)), dtype=np.int32
-        )
-        d = {k: i for k, i in enumerate(domain.intent_names)}
-        # print("action indices", d)
-        for idx, name in enumerate(domain.intent_names):
-            for t in name.split(self.split_symbol):
-                encoded_all_actions[idx, self.user_vocab[t]] = 1
-        return encoded_all_actions
-
-    @staticmethod
-    def action_as_one_hot(action: Text, domain: Domain) -> np.ndarray:
-        """Encode system action as one-hot vector."""
-
-        if action is None:
-            return np.ones(len(domain.intent_names), dtype=int) * -1
-
-        # y = np.zeros(domain.num_actions, dtype=int)
-        y = np.zeros(len(domain.intent_names), dtype=int)
-        # y[domain.index_for_action(action)] = 1
-        y[domain.index_for_intent(action)] = 1
-        # print('===========')
-        # print('All intents', domain.intent_names)
-        # print('Label intent', domain.index_for_intent(action), action)
-        # print('===========')
-        return y
-
     def _encode_intent(
         self, intent: Text, interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List["Features"]]:
@@ -326,7 +296,7 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def encode_all_intents(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List["Features"]]]:
-        """Encode all action from the domain using the given interpreter.
+        """Encode all intents from the domain using the given interpreter.
         Args:
             domain: The domain that contains the actions.
             interpreter: The interpreter used to encode the actions.

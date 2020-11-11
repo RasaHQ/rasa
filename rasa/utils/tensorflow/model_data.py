@@ -765,9 +765,11 @@ class RasaModelData:
 
         label_ids = self._create_label_ids(data[self.label_key][self.label_sub_key][0])
 
+        # print(label_ids)
         unique_label_ids, counts_label_ids = np.unique(
             label_ids, return_counts=True, axis=0
         )
+        # print(unique_label_ids, counts_label_ids)
         num_label_ids = len(unique_label_ids)
 
         # group data points by their label
@@ -1050,16 +1052,22 @@ class RasaModelData:
         Returns:
             The single dim label array.
         """
+        print(label_ids)
+
         if label_ids.ndim == 1:
+            print("1")
             return label_ids
 
         if label_ids.ndim == 2 and label_ids.shape[-1] == 1:
+            print("2,1")
             return label_ids[:, 0]
 
         if label_ids.ndim == 2:
+            print("2")
             return np.array([" ".join(row.astype("str")) for row in label_ids])
 
         if label_ids.ndim == 3 and label_ids.shape[-1] == 1:
+            print("3,1")
             return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
 
         raise ValueError("Unsupported label_ids dimensions")

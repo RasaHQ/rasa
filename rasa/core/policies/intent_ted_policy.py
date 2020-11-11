@@ -228,13 +228,11 @@ class IntentTEDPolicy(TEDPolicy):
         # Whether to use augmented stories for threshold computation
         "use_augmentation_for_thresholds": True,
         # What to use for thresholds
-        "use_probability_thresholds": True,
+        "use_probability_thresholds": False,
         # Whether to flag retrieval intents
         "ignore_retrieval_intents": True,
         # Other intents to ignore
         "ignore_intents": [],
-        # revert unseen intent events
-        "revert_unseen_intents": True,
     }
 
     def __init__(
@@ -375,20 +373,23 @@ class IntentTEDPolicy(TEDPolicy):
 
             # print("Computing feats")
             # Featurize augmented trackers for threshold computation
-            model_threshold_data, threshold_label_ids = self._featurize_for_model(
+            model_augmented_data, augmented_label_ids = self._featurize_for_model(
                 domain, encoded_all_labels, interpreter, augmented_trackers, **kwargs
             )
 
             # print("Computing thresholds")
             self.intent_thresholds = self.model.compute_thresholds(
-                model_threshold_data,
-                threshold_label_ids,
+                model_augmented_data,
+                augmented_label_ids,
                 self.use_probability_thresholds,
             )
         else:
             self.intent_thresholds = self.model.compute_thresholds(
                 model_train_data, train_label_ids, self.use_probability_thresholds
             )
+
+        for index in self.intent_thresholds:
+            print(domain.intents[index], index, self.intent_thresholds[index])
 
     def _featurize_for_model(
         self, domain, encoded_all_labels, interpreter, trackers, **kwargs: Any
@@ -597,7 +598,19 @@ class IntentTEDPolicy(TEDPolicy):
         for index, intent in enumerate(domain.intents):
             intent_confidences[intent] = confidences[0][index]
 
-        # print("Confidences", intent_confidences)
+        for intent in set(domain.intents) - set(
+            rasa.shared.core.constants.DEFAULT_INTENTS
+        ):
+            # print("Confidences", intent_confidences)
+            # print("thresholds", )
+            if domain.index_for_intent(intent) in self.intent_thresholds:
+                print(
+                    intent,
+                    domain.index_for_intent(intent),
+                    intent_confidences[intent],
+                    self.intent_thresholds[domain.index_for_intent(intent)],
+                )
+        print("======================")
 
         # Get the last intent prediction from tracker
         last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
@@ -675,16 +688,29 @@ class IntentTED(TED):
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
+        # for element in batch_in:
+        #     tf.print(element)
+        #     tf.print("====")
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+
+        tf.print("tf batch data")
+        tf.print(tf_batch_data[LABEL_KEY][LABEL_SUB_KEY])
+        tf.print("------------")
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
         batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][
             0
         ]  # This can have multiple ids
-        # print("Batch label ids shape", batch_label_ids.shape)
+        tf.print("batch label ids")
+        tf.print(batch_label_ids)
+        tf.print("----------------")
 
         batch_labels_embed = self._get_labels_embed(batch_label_ids, all_labels_embed)
+
+        tf.print("batch labels embed")
+        tf.print(batch_labels_embed.shape, batch_label_ids)
+        tf.print("----------------")
 
         # print("Batch labels embed shape", batch_labels_embed.shape)
 
@@ -808,10 +834,7 @@ class IntentTED(TED):
             thresholds[label_id] = (
                 min(0.5, min(thresholds[label_id]))
                 if use_probability_thresholds
-                else min(0.0, min(thresholds[label_id]))
+                else min(thresholds[label_id])
             )
-            # thresholds[label_id] = min(thresholds[label_id])
-
-        print(thresholds)
 
         return thresholds
