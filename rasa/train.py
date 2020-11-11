@@ -14,12 +14,7 @@ from rasa.nlu.model import Interpreter
 import rasa.utils.common
 from rasa.utils.common import TempDirectoryPath
 
-from rasa.shared.utils.cli import (
-    print_success,
-    print_warning,
-    print_error,
-    print_color,
-)
+from rasa.shared.utils.cli import print_success, print_warning, print_error, print_color
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
@@ -86,13 +81,20 @@ async def train_async(
         Path of the trained model archive.
     """
 
+    from guppy import hpy
+
+    h = hpy()
+    print(h.heap())
     file_importer = TrainingDataImporter.load_from_config(
         config, domain, training_files
     )
     with ExitStack() as stack:
         train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
+        print("Loading domain and config file...")
         domain = await file_importer.get_domain()
+        print("Done.")
+        print(h.heap())
 
         if domain.is_empty():
             return await handle_domain_if_not_exists(
@@ -153,9 +155,16 @@ async def _train_async_internal(
         Path of the trained model archive.
     """
 
+    from guppy import hpy
+
+    h = hpy()
+    print(h.heap())
+    print("Loading training data...")
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
+    print("Done.")
+    print(h.heap())
 
     if stories.is_empty() and nlu_data.can_train_nlu_model():
         print_error(

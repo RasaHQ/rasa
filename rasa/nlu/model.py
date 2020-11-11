@@ -177,6 +177,9 @@ class Trainer:
 
     def train(self, data: TrainingData, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""
+        from guppy import hpy
+
+        h = hpy()
 
         self.training_data = data
 
@@ -200,9 +203,11 @@ class Trainer:
 
         for i, component in enumerate(self.pipeline):
             logger.info(f"Starting to train component {component.name}")
+            print(h.heap())
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
+            print(h.heap())
             if updates:
                 context.update(updates)
 
