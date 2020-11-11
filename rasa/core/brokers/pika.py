@@ -17,7 +17,6 @@ from typing import (
     List,
     Tuple,
     Generator,
-    NoReturn,
 )
 
 from rasa.constants import (
@@ -551,7 +550,7 @@ class PikaMessageProcessor:
         # noinspection PyUnresolvedReferences
         self._connection.ioloop.start()
 
-    def run(self, queue: "multiprocessing.Queue") -> NoReturn:
+    def run(self, queue: "multiprocessing.Queue") -> None:
         """Run the message processor by connecting to RabbitMQ and then
         starting the IOLoop to block and allow the SelectConnection to operate.
 
