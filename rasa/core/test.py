@@ -361,7 +361,15 @@ def _clean_entity_results(
 
 
 def _intent_response_key_from_parsed_data(parsed: Dict[Text, Any]) -> Text:
+    """Return either full retrieval intent, if present, or just the normal
+    intent otherwise.
 
+    Args:
+        parsed: user input data.
+
+    Returns:
+        Extracted intent.
+    """
     base_intent = parsed.get(INTENT, {}).get(INTENT_NAME_KEY, {})
 
     try:

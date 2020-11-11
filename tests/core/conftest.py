@@ -5,7 +5,7 @@ from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Generator
+from typing import Text, Generator, Callable
 
 import pytest
 
@@ -37,12 +37,6 @@ DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 INCORRECT_NLU_DATA = "data/test/markdown_single_sections/incorrect_nlu_format.md"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
-
-RETRIEVAL_INTENT_STORY_FILE = "data/test_evaluations/retrieval_intent_story.yml"
-
-RETRIEVAL_INTENT_WRONG_PREDICTION = (
-    "data/test_evaluations/retrieval_intent_wrong_prediction.yml"
-)
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
@@ -227,8 +221,8 @@ async def form_bot_agent(trained_async) -> Agent:
     return Agent.load_local_model(zipped_model)
 
 
-@pytest.fixture
-async def response_selector_agent(trained_async) -> Agent:
+@pytest.fixture(scope="session")
+async def response_selector_agent(trained_async: Callable) -> Agent:
     zipped_model = await trained_async(
         domain="examples/responseselectorbot/domain.yml",
         config="examples/responseselectorbot/config.yml",

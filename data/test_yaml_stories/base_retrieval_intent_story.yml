@@ -2,10 +2,6 @@ stories:
 - story: chitchat name
   steps:
   - user: |
-      What is your name?
-    intent: chitchat/ask_name
-  - action: utter_chitchat
-  - user: |
       What's the weather like today?
     intent: chitchat
   - action: utter_chitchat

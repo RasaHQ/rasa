@@ -28,8 +28,6 @@ from tests.core.conftest import (
     END_TO_END_STORY_FILE,
     E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER,
     STORY_FILE_TRIPS_CIRCUIT_BREAKER,
-    RETRIEVAL_INTENT_STORY_FILE,
-    RETRIEVAL_INTENT_WRONG_PREDICTION,
 )
 
 
@@ -246,9 +244,16 @@ def test_event_has_proper_implementation(
     assert actual_entities[0] == expected_entity
 
 
-async def test_retrieval_intent(response_selector_agent: Agent):
+@pytest.mark.parametrize(
+    "test_file",
+    [
+        ("data/test_yaml_stories/full_retrieval_intent_story.yml"),
+        ("data/test_yaml_stories/base_retrieval_intent_story.yml"),
+    ],
+)
+async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = await _create_data_generator(
-        RETRIEVAL_INTENT_STORY_FILE, response_selector_agent, use_e2e=True
+        test_file, response_selector_agent, use_e2e=True,
     )
     test_stories = generator.generate_story_trackers()
 
@@ -265,7 +270,7 @@ async def test_retrieval_intent_wrong_prediction(
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
     await evaluate_stories(
-        stories=RETRIEVAL_INTENT_WRONG_PREDICTION,
+        stories="data/test_yaml_stories/retrieval_intent_wrong_prediction.yml",
         agent=response_selector_agent,
         out_directory=str(tmpdir),
         max_stories=None,

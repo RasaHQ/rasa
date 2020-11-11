@@ -21,6 +21,7 @@ from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.events import UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.shared.core.training_data.structures import StoryStep
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -307,8 +308,7 @@ class YAMLStoryReader(StoryReader):
 
         # check if this is a retrieval intent
         # in this case check only for the base intent in domain
-        if INTENT_MESSAGE_PREFIX in intent_name:
-            intent_name = intent_name.split(INTENT_MESSAGE_PREFIX)[0]
+        intent_name = Message.separate_intent_response_key(intent_name)[0]
 
         if not self.domain:
             logger.debug(
