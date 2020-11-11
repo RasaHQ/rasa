@@ -304,4 +304,6 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
             A list of encoded intents.
         """
 
+        # return [self._encode_intent(intent, interpreter) for intent in ["PAD"] + domain.intents]
+
         return [self._encode_intent(intent, interpreter) for intent in domain.intents]

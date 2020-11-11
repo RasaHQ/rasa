@@ -953,8 +953,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
     def _get_neg_values(self, tensor, neg_ids):
 
         tensor_expanded = tf.tile(
-            tf.expand_dims(self._make_flat(tensor[:, 0, ...]), 0),
-            (tf.shape(tensor)[0], 1, 1),
+            tf.expand_dims(self._make_flat(tensor), 0), (tf.shape(tensor)[0], 1, 1)
         )
         neg_tensor = tf.gather(tensor_expanded, neg_ids, batch_dims=1)
         neg_tensor = tf.expand_dims(neg_tensor, axis=1)
@@ -983,8 +982,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
             name="expand_pos_labels",
         )
 
-        tf.print(label_ids)
-        tf.print("------------")
+        # tf.print(label_ids)
+        # tf.print("------------")
 
         # print("Pos input embed shape", pos_inputs_embed.shape)
         # print("Pos labels embed shape", pos_labels_embed.shape)
@@ -994,8 +993,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
             tf.shape(inputs_embed)[0], tf.shape(inputs_embed)[0]
         )
 
-        tf.print(neg_ids)
-        tf.print("------------")
+        # tf.print(neg_ids)
+        # tf.print("------------")
 
         # print("Neg ids shape", neg_ids.shape)
         #
@@ -1004,14 +1003,14 @@ class MultiLabelDotProductLoss(DotProductLoss):
         # sample negative labels
         # print("Neg ids", neg_ids.shape)
         # neg_labels_embed = self._get_negs(labels_embed, label_ids, label_ids, neg_ids)
-        neg_labels_embed = self._get_neg_values(labels_embed, neg_ids)
+        neg_labels_embed = self._get_neg_values(labels_embed[:, 0, ...], neg_ids)
         # neg_labels_embed = tf.squeeze(neg_labels_emb)
         # neg_labels_embed = labels_embed
         # neg_label_ids = self._get_negs(label_ids, label_ids, label_ids, neg_ids)
-        neg_labels_ids = self._get_neg_values(label_ids, neg_ids)
+        neg_labels_ids = self._get_neg_values(label_ids[:, 0, ...], neg_ids)
 
-        tf.print(neg_labels_ids)
-        tf.print("------------")
+        # tf.print(neg_labels_ids)
+        # tf.print("------------")
 
         # print("Neg labels embed shape", neg_labels_embed.shape)
         # print("Neg label ids shape", neg_labels_ids.shape)
@@ -1019,18 +1018,18 @@ class MultiLabelDotProductLoss(DotProductLoss):
         # print('Neg labels', neg_labels.shape, 'all_gt_labels', all_gt_labels.shape)
         max_label_id = tf.cast(tf.math.reduce_max(all_label_ids), dtype=tf.int32)
 
-        tf.print(max_label_id)
-        tf.print("------------")
+        # tf.print(max_label_id)
+        # tf.print("------------")
 
-        # dimension size is 1 indexed and hence 1 more than maximum label id
+        # +1 for padding and dimension size is 1 indexed and hence 1 more than maximum label id
         depth_needed = max_label_id + 1
 
         batch_labels_one_hot = tf.one_hot(
             tf.cast(tf.squeeze(label_ids, axis=-1), tf.int32), depth_needed, axis=-1
         )  # bs x num_pos_labels(varied) x num label ids
 
-        tf.print(batch_labels_one_hot)
-        tf.print("------------")
+        # tf.print(batch_labels_one_hot)
+        # tf.print("------------")
 
         # Collapse the extra dimension aggregating all ones
         # Here tf.reduce_any is important and tf.reduce_sum
@@ -1041,16 +1040,16 @@ class MultiLabelDotProductLoss(DotProductLoss):
             tf.float32,
         )  # bs x num label ids
 
-        tf.print(batch_labels_multi_hot)
-        tf.print("------------")
+        # tf.print(batch_labels_multi_hot)
+        # tf.print("------------")
 
         # print("batch mh labels shape", batch_labels_multi_hot.shape)
 
         # Remove extra dimensions for gather
         neg_labels_ids = tf.squeeze(tf.squeeze(neg_labels_ids, 1), -1)
 
-        tf.print(neg_labels_ids)
-        tf.print("------------")
+        # tf.print(neg_labels_ids)
+        # tf.print("------------")
 
         # sample pos neg labels
         pos_neg_labels = tf.gather(
@@ -1061,8 +1060,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         pos_neg_labels = tf.cast(pos_neg_labels, tf.float32)
-        tf.print(pos_neg_labels)
-        tf.print("------------")
+        # tf.print(pos_neg_labels)
+        # tf.print("------------")
         # print("Pos neg labels shape", pos_neg_labels.shape)
 
         # tf.print("Label ids")

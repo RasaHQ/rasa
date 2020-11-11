@@ -1052,22 +1052,17 @@ class RasaModelData:
         Returns:
             The single dim label array.
         """
-        print(label_ids)
 
         if label_ids.ndim == 1:
-            print("1")
             return label_ids
 
         if label_ids.ndim == 2 and label_ids.shape[-1] == 1:
-            print("2,1")
             return label_ids[:, 0]
 
         if label_ids.ndim == 2:
-            print("2")
             return np.array([" ".join(row.astype("str")) for row in label_ids])
 
         if label_ids.ndim == 3 and label_ids.shape[-1] == 1:
-            print("3,1")
             return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
 
         raise ValueError("Unsupported label_ids dimensions")

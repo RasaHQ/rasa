@@ -566,50 +566,59 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                     )
 
                     # add an extra listen action
-                    sliced_states.append(
-                        self._create_extra_listen_state(sliced_states[-1])
-                    )
+                    # sliced_states.append(
+                    #     self._create_extra_listen_state(sliced_states[-1])
+                    # )
+                    # print(sliced_states, event.intent_name)
 
                     # TODO: If there are duplicate tracker states with different intents as labels,
                     #  then collect all intents here itself to construct the list of multiple labels
                     if self.remove_duplicates:
                         hashed_example = self._hash_example(
-                            sliced_states, event.intent["name"], tracker
+                            sliced_states, event.intent_name, tracker
                         )
 
                         hashed_state = self._hash_states(sliced_states, tracker)
+                        # print("hash of state", hashed_state)
 
                         # only continue with tracker_states that created a
                         # hashed_featurization we haven't observed
                         if hashed_example not in hashed_examples:
                             hashed_examples.add(hashed_example)
 
-                            if hashed_state not in hashed_states:
-                                hashed_states.add(hashed_state)
-                                trackers_as_states.append(sliced_states)
-                                trackers_as_actions.append([event.intent["name"]])
-                                states_indices[hashed_state] = example_index
-                                example_index += 1
+                            # First create a new data point for this pair
+                            trackers_as_states.append(sliced_states)
+                            trackers_as_actions.append([event.intent_name])
 
-                            else:
-                                # We have seen this sequence of state before, so append only the new intent label
-                                trackers_as_actions[
-                                    states_indices[hashed_state]
-                                ].append(event.intent["name"])
+                            # print(list(zip(trackers_as_states, trackers_as_actions)))
+
+                            self._update_labels_for_all_states(
+                                event.intent_name,
+                                example_index,
+                                hashed_state,
+                                hashed_states,
+                                states_indices,
+                                trackers_as_actions,
+                            )
+                            # print(list(zip(trackers_as_states, trackers_as_actions)))
+                            # print(states_indices)
+                            example_index += 1
                     else:
                         hashed_state = self._hash_states(sliced_states, tracker)
-                        if hashed_state not in hashed_states:
-                            hashed_states.add(hashed_state)
-                            trackers_as_states.append(sliced_states)
-                            trackers_as_actions.append([event.intent["name"]])
-                            states_indices[hashed_state] = example_index
-                            example_index += 1
+                        # First create a new data point for this pair
+                        trackers_as_states.append(sliced_states)
+                        trackers_as_actions.append([event.intent_name])
 
-                        else:
-                            # We have seen this sequence of state before, so append only the new intent label
-                            trackers_as_actions[states_indices[hashed_state]].append(
-                                event.intent["name"]
-                            )
+                        self._update_labels_for_all_states(
+                            event.intent_name,
+                            example_index,
+                            hashed_state,
+                            hashed_states,
+                            states_indices,
+                            trackers_as_actions,
+                        )
+                        example_index += 1
+                    # print("======================")
 
                     pbar.set_postfix(
                         {"# intents": "{:d}".format(len(trackers_as_actions))}
@@ -620,25 +629,76 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
         return trackers_as_states, trackers_as_actions
 
     @staticmethod
+    def _update_labels_for_all_states(
+        label,
+        example_index,
+        hashed_state,
+        hashed_states,
+        states_indices,
+        trackers_as_actions,
+    ):
+        if hashed_state not in hashed_states:
+            # The sequence of states is an unseen one
+            hashed_states.add(hashed_state)
+            states_indices[hashed_state] = [example_index]
+
+            # trackers_as_states.append(sliced_states)
+            # trackers_as_actions.append([event.intent["name"]])
+
+        else:
+            # We have seen this sequence of state before, so append the new intent
+            # label in all previously seen states and for the new example created
+            # add the already seen labels for this sequence.
+
+            # First get the new example updated. It must have been appended at the end.
+            trackers_as_actions[-1].extend(
+                trackers_as_actions[states_indices[hashed_state][0]]
+            )
+
+            # print("updated new example")
+            # print(trackers_as_actions)
+
+            # print("updating other indices", states_indices[hashed_state])
+            # Get all the other examples with same sequence of states updated
+            for index in states_indices[hashed_state]:
+                # print(index, trackers_as_actions[index])
+                trackers_as_actions[index].append(label)
+
+            # Update the indices where this state occurs
+            states_indices[hashed_state].append(example_index)
+
+        # print("updates states indices", states_indices)
+
+    @staticmethod
+    def _get_label_index_after_padding(original_index):
+        return original_index
+
     def _convert_labels_to_ids(
-        trackers_as_intents: List[List[Text]], domain: Domain
+        self, trackers_as_intents: List[List[Text]], domain: Domain
     ) -> np.ndarray:
+
         # store labels in numpy arrays so that it corresponds to np arrays of input features
         label_ids = [
-            [domain.index_for_intent(intent) for intent in tracker_intents]
+            [
+                self._get_label_index_after_padding(domain.index_for_intent(intent))
+                for intent in tracker_intents
+            ]
             for tracker_intents in trackers_as_intents
         ]
+
         # new_label_ids = label_ids
-        # # print(label_ids)
+        print(label_ids)
         multiple_labels_count = [len(a) for a in label_ids]
         max_labels_count = max(multiple_labels_count)
         paddings_needed = [max_labels_count - len(a) for a in label_ids]
+        # print(paddings_needed)
         new_label_ids = []
         for ids, num_pads in zip(label_ids, paddings_needed):
+            # print(ids, num_pads)
             if num_pads:
-                ids.extend([0 * num_pads])
+                ids.extend([0] * num_pads)
             new_label_ids.append(ids)
-
+        #
         new_label_ids = np.array(new_label_ids)
 
         print("label ids constructed", new_label_ids)
@@ -676,8 +736,8 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
             for states in trackers_as_states
         ]
 
-        for states in trackers_as_states:
-            states.append(self._create_extra_listen_state(states[-1]))
+        # for states in trackers_as_states:
+        #     states.append(self._create_extra_listen_state(states[-1]))
 
         # print(trackers_as_states)
 
@@ -695,34 +755,6 @@ class IntentMaxHistoryFeaturizer(MaxHistoryTrackerFeaturizer):
                     new_state[key].append(feat.features.toarray().tolist())
             feats.append(new_state)
         return feats
-
-    def _collect_multiple_labels(self, tracker_state_features, label_ids) -> np.ndarray:
-
-        multi_labels = []
-
-        for i in range(len(tracker_state_features)):
-            current_tracker_state_feature = self._serialize_state_feature(
-                tracker_state_features[i]
-            )
-            all_labels = [label_ids[i][0]]
-
-            # print(current_tracker_state_feature)
-
-            for j in range(len(tracker_state_features)):
-
-                if i == j:
-                    # Do not duplicate
-                    continue
-                next_label_id = label_ids[j][0]
-                next_tracker_state_feature = self._serialize_state_feature(
-                    tracker_state_features[j]
-                )
-
-                if current_tracker_state_feature == next_tracker_state_feature:
-                    all_labels.append(next_label_id)
-            multi_labels.append(all_labels)
-
-        return np.array(multi_labels)
 
     def featurize_trackers(
         self,

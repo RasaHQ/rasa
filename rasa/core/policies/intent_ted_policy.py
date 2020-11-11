@@ -80,6 +80,9 @@ from rasa.core.policies.ted_policy import (
     LENGTH,
     STATE_LEVEL_FEATURES,
     FEATURES_TO_ENCODE,
+    SEQUENCE_FEATURES_TO_ENCODE,
+    SEQUENCE_LENGTH,
+    SEQUENCE,
 )
 from rasa.shared.nlu.constants import INTENT, TEXT, ENTITIES, ACTION_TEXT, ACTION_NAME
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, SLOTS, ACTIVE_LOOP
@@ -288,6 +291,9 @@ class IntentTEDPolicy(TEDPolicy):
 
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
+        label_data.add_lengths(
+            f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE
+        )
 
         label_ids = np.arange(len(domain.intents))
         label_data.add_features(
@@ -298,8 +304,9 @@ class IntentTEDPolicy(TEDPolicy):
 
         return label_data, encoded_all_labels
 
+    @staticmethod
     def _separate_augmented_trackers(
-        self, all_trackers: List[DialogueStateTracker]
+        all_trackers: List[DialogueStateTracker],
     ) -> Tuple[List[DialogueStateTracker], List[DialogueStateTracker]]:
         """Separate
 
@@ -342,6 +349,10 @@ class IntentTEDPolicy(TEDPolicy):
         model_train_data, train_label_ids = self._featurize_for_model(
             domain, encoded_all_labels, interpreter, non_augmented_trackers, **kwargs
         )
+
+        print(model_train_data.get_signature())
+        print(self._label_data.get_signature())
+        # exit(0)
 
         if model_train_data.is_empty():
             logger.error(
@@ -403,6 +414,115 @@ class IntentTEDPolicy(TEDPolicy):
             tracker_state_features, label_ids, encoded_all_labels
         )
         return model_data, label_ids
+
+    @staticmethod
+    def _default_predictions(domain: Domain) -> List[float]:
+        """Creates a list of zeros.
+
+        Args:
+            domain: the :class:`rasa.shared.core.domain.Domain`
+        Returns:
+            the list of the length of the number of actions
+        """
+
+        return [0.0] * len(domain.intents)
+
+    def _should_check_for_intent(self, intent: Text, domain: Domain):
+
+        if self.ignore_retrieval_intents and intent in domain.retrieval_intents:
+            return False
+        if domain.index_for_intent(intent) not in self.intent_thresholds:
+            # This means the intent was never present in a story
+            return False
+        if intent in self.ignore_intent_list:
+            return False
+
+        return True
+
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> Tuple[List[float], Optional[bool]]:
+
+        if self.model is None:
+            return self._default_predictions(domain), False
+
+        # create model data from tracker
+        tracker_state_features = []
+        if (
+            INTENT in self.zero_state_features
+            or not tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # the first example in a batch uses intent
+            # or current prediction is not after user utterance
+            tracker_state_features += self.featurizer.create_state_features(
+                [tracker], domain, interpreter, use_text_for_last_user_input=False
+            )
+        if (
+            TEXT in self.zero_state_features
+            and tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # the second - text, but only after user utterance
+            tracker_state_features += self.featurizer.create_state_features(
+                [tracker], domain, interpreter, use_text_for_last_user_input=True
+            )
+
+        model_data = self._create_model_data(tracker_state_features)
+
+        output = self.model.predict(model_data)
+
+        # take the last prediction in the sequence
+        confidences = (
+            output["intent_scores"].numpy()[:, -1, :]
+            if self.use_probability_thresholds
+            else output["sim_all"].numpy()[:, -1, :]
+        )
+        print(confidences.shape)
+
+        # Todo: remove this, as this was just for printing
+        intent_confidences = {}
+        for index, intent in enumerate(domain.intents):
+            intent_confidences[intent] = confidences[0][index]
+
+        for intent in set(domain.intents) - set(
+            rasa.shared.core.constants.DEFAULT_INTENTS
+        ):
+            # print("Confidences", intent_confidences)
+            # print("thresholds", )
+            if domain.index_for_intent(intent) in self.intent_thresholds:
+                print(
+                    intent,
+                    domain.index_for_intent(intent),
+                    intent_confidences[intent],
+                    self.intent_thresholds[domain.index_for_intent(intent)],
+                )
+        print("======================")
+
+        # Get the last intent prediction from tracker
+        last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
+        if last_user_event:
+            # If this is not the first intent
+            query_label = last_user_event.intent_name
+            query_label_id = domain.index_for_intent(query_label)
+            query_label_prob = confidences[0][query_label_id]
+
+            if self._should_check_for_intent(query_label, domain):
+                # Check is only valid in this case, for all
+                # other cases it means that this intent did not appear in stories.
+                logger.debug(
+                    f"User intent {query_label} is probable with "
+                    f"{query_label_prob}, while threshold is {self.intent_thresholds[query_label_id]}"
+                )
+                if query_label_prob < self.intent_thresholds[query_label_id]:
+
+                    # Mark the corresponding user turn as interesting
+                    last_user_event.set_as_not_probable()
+                    # print("marked as improbable")
+
+        return confidences.tolist(), False  # pytype: disable=bad-return-type
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
@@ -527,132 +647,20 @@ class IntentTEDPolicy(TEDPolicy):
             **meta,
         )
 
-    @staticmethod
-    def _default_predictions(domain: Domain) -> List[float]:
-        """Creates a list of zeros.
-
-        Args:
-            domain: the :class:`rasa.shared.core.domain.Domain`
-        Returns:
-            the list of the length of the number of actions
-        """
-
-        return [0.0] * len(domain.intents)
-
-    def _should_check_for_intent(self, intent: Text, domain: Domain):
-
-        if self.ignore_retrieval_intents and intent in domain.retrieval_intents:
-            return False
-        if domain.index_for_intent(intent) not in self.intent_thresholds:
-            # This means the intent was never present in a story
-            return False
-        if intent in self.ignore_intent_list:
-            return False
-
-        return True
-
-    def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
-    ) -> Tuple[List[float], Optional[bool]]:
-
-        if self.model is None:
-            return self._default_predictions(domain), False
-
-        # create model data from tracker
-        tracker_state_features = []
-        if (
-            INTENT in self.zero_state_features
-            or not tracker.latest_action_name == ACTION_LISTEN_NAME
-        ):
-            # the first example in a batch uses intent
-            # or current prediction is not after user utterance
-            tracker_state_features += self.featurizer.create_state_features(
-                [tracker], domain, interpreter, use_text_for_last_user_input=False
-            )
-        if (
-            TEXT in self.zero_state_features
-            and tracker.latest_action_name == ACTION_LISTEN_NAME
-        ):
-            # the second - text, but only after user utterance
-            tracker_state_features += self.featurizer.create_state_features(
-                [tracker], domain, interpreter, use_text_for_last_user_input=True
-            )
-
-        model_data = self._create_model_data(tracker_state_features)
-
-        output = self.model.predict(model_data)
-
-        # take the last prediction in the sequence
-        confidences = (
-            output["intent_scores"].numpy()[:, -1, :]
-            if self.use_probability_thresholds
-            else output["sim_all"].numpy()[:, -1, :]
-        )
-
-        # Todo: remove this, as this was just for printing
-        intent_confidences = {}
-        for index, intent in enumerate(domain.intents):
-            intent_confidences[intent] = confidences[0][index]
-
-        for intent in set(domain.intents) - set(
-            rasa.shared.core.constants.DEFAULT_INTENTS
-        ):
-            # print("Confidences", intent_confidences)
-            # print("thresholds", )
-            if domain.index_for_intent(intent) in self.intent_thresholds:
-                print(
-                    intent,
-                    domain.index_for_intent(intent),
-                    intent_confidences[intent],
-                    self.intent_thresholds[domain.index_for_intent(intent)],
-                )
-        print("======================")
-
-        # Get the last intent prediction from tracker
-        last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
-        if last_user_event:
-            # If this is not the first intent
-            query_intent = last_user_event.intent_name
-            query_intent_id = domain.index_for_intent(query_intent)
-            query_intent_prob = confidences[0][query_intent_id]
-
-            if self._should_check_for_intent(query_intent, domain):
-                # Check is only valid in this case, for all
-                # other cases it means that this intent did not appear in stories.
-                logger.debug(
-                    f"User intent {query_intent} is probable with "
-                    f"{query_intent_prob}, while threshold is {self.intent_thresholds[query_intent_id]}"
-                )
-                # print(
-                #     f"User intent {query_intent} is probable with "
-                #     f"{query_intent_prob}, while threshold is {self.intent_thresholds[query_intent_id]}"
-                # )
-                if query_intent_prob < self.intent_thresholds[query_intent_id]:
-
-                    # Mark the corresponding user turn as interesting
-                    last_user_event.set_as_not_probable()
-                    # print("marked as improbable")
-
-        return confidences.tolist(), False  # pytype: disable=bad-return-type
-
 
 class IntentTED(TED):
     def _prepare_layers(self) -> None:
 
-        # print("preparing layers")
-
-        # print("data layers")
         for name in self.data_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.data_signature)
+            if name in SEQUENCE_FEATURES_TO_ENCODE:
+                self._prepare_sequence_layers(name)
             self._prepare_encoding_layers(name)
 
-        # print("label layers")
         for name in self.label_signature.keys():
             self._prepare_sparse_dense_layer_for(name, self.label_signature)
+            if name in SEQUENCE_FEATURES_TO_ENCODE:
+                self._prepare_sequence_layers(name)
             self._prepare_encoding_layers(name)
 
         self._prepare_transformer_layer(
@@ -661,8 +669,6 @@ class IntentTED(TED):
 
         self._prepare_embed_layers(DIALOGUE)
         self._prepare_embed_layers(LABEL)
-
-        # print("layers uptil now - ", self._tf_layers.keys())
 
         self._prepare_multi_label_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
@@ -693,24 +699,24 @@ class IntentTED(TED):
         #     tf.print("====")
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        tf.print("tf batch data")
-        tf.print(tf_batch_data[LABEL_KEY][LABEL_SUB_KEY])
-        tf.print("------------")
+        # tf.print("tf batch data")
+        # tf.print(tf_batch_data[LABEL_KEY][LABEL_SUB_KEY])
+        # tf.print("------------")
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
         batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][
             0
         ]  # This can have multiple ids
-        tf.print("batch label ids")
-        tf.print(batch_label_ids)
-        tf.print("----------------")
+        # tf.print("batch label ids")
+        # tf.print(batch_label_ids)
+        # tf.print("----------------")
 
         batch_labels_embed = self._get_labels_embed(batch_label_ids, all_labels_embed)
 
-        tf.print("batch labels embed")
-        tf.print(batch_labels_embed.shape, batch_label_ids)
-        tf.print("----------------")
+        # tf.print("batch labels embed")
+        # tf.print(batch_labels_embed.shape, batch_label_ids)
+        # tf.print("----------------")
 
         # print("Batch labels embed shape", batch_labels_embed.shape)
 
