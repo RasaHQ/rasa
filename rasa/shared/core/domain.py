@@ -1165,14 +1165,25 @@ class Domain:
         rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
-        if clean_before_dump:
-            domain_data: Dict[Text, Any] = self.cleaned_domain()
-        else:
-            domain_data: Dict[Text, Any] = self.as_dict()
+        """Dump the `Domain` object as a YAML string.
+        This function preserves the orders of the keys in the domain.
 
-        domain_data[
-            KEY_TRAINING_DATA_FORMAT_VERSION
-        ] = f"{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        Args:
+            clean_before_dump: When set to `True`, this method returns
+                               a version of the domain without internal
+                               information. Defaults to `False`.
+        Returns:
+            A string in YAML format representing the domain.
+        """
+        # setting the `version` key first so that it appears at the top of YAML files
+        # thanks to the `should_preserve_key_order` argument of `dump_obj_as_yaml_to_string`
+        domain_data: Dict[Text, Any] = {
+            KEY_TRAINING_DATA_FORMAT_VERSION: rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION
+        }
+        if clean_before_dump:
+            domain_data.update(self.cleaned_domain())
+        else:
+            domain_data.update(self.as_dict())
 
         return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
             domain_data, should_preserve_key_order=True

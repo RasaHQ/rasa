@@ -360,6 +360,7 @@ def test_rasa_data_convert_responses(
     )
 
     expected_domain = (
+        "version: '2.0'\n"
         "session_config:\n"
         "  session_expiration_time: 60\n"
         "  carry_over_slots_to_new_session: true\n"
@@ -367,7 +368,6 @@ def test_rasa_data_convert_responses(
         "- utter_chitchat\n"
         "- utter_greet\n"
         "- utter_cheer_up\n"
-        "version: '2.0'\n"
     )
 
     with open(f"{expected_data_folder}/domain.yml", "w") as f:
