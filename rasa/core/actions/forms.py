@@ -29,9 +29,17 @@ logger = logging.getLogger(__name__)
 
 
 class FormAction(LoopAction):
+    """Action which implements and executes the forms logic."""
+
     def __init__(
         self, form_name: Text, action_endpoint: Optional[EndpointConfig]
     ) -> None:
+        """Creates a `FormAction`.
+
+        Args:
+            form_name: Name of the form.
+            action_endpoint: Endpoint to execute custom actions.
+        """
         self._form_name = form_name
         self.action_endpoint = action_endpoint
         # creating it requires domain, which we don't have in init

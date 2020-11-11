@@ -171,7 +171,7 @@ class Domain:
         intents = data.get(KEY_INTENTS, {})
         forms = data.get(KEY_FORMS, {})
 
-        validate_slot_mappings(forms)
+        _validate_slot_mappings(forms)
 
         return cls(
             intents,
@@ -1473,10 +1473,18 @@ class SlotMapping(Enum):
     FROM_TEXT = 3
 
     def __str__(self) -> Text:
+        """Returns a string representation of the object."""
         return self.name.lower()
 
     @staticmethod
     def validate(mapping: Any, form_name: Text, slot_name: Text) -> None:
+        """Validates a slot mapping.
+
+        Args:
+            mapping: The mapping which is validated.
+            form_name: The name of the form which uses this slot mapping.
+            slot_name: The name of the slot which is mapped by this mapping.
+        """
         if not isinstance(mapping, dict):
             raise InvalidDomain(
                 f"Please make sure that the slot mappings for slot '{slot_name}' in "
@@ -1508,7 +1516,7 @@ class SlotMapping(Enum):
                 )
 
 
-def validate_slot_mappings(forms: Union[Dict, List]) -> None:
+def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     if isinstance(forms, list):
         if not all(isinstance(form_name, str) for form_name in forms):
             raise InvalidDomain("Not all form names are strings.")
