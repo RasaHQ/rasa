@@ -251,7 +251,7 @@ make formatter
 
 #### Type Checking
 
-If you want to check types on the codebase, install `pytype` using `poetry install`.
+If you want to check types on the codebase, install `mypy` using `poetry install`.
 To check the types execute
 ```
 make types

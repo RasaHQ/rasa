@@ -9,7 +9,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import SPACY_DOCS
 
 if typing.TYPE_CHECKING:
-    from spacy.tokens.doc import Doc  # pytype: disable=import-error
+    from spacy.tokens.doc import Doc
 
 
 POS_TAG_KEY = "pos"
