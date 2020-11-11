@@ -55,7 +55,7 @@ Checks if the specified file is a test story file.
 
 ```python
  | @staticmethod
- | is_stories_file(filename: Text) -> bool
+ | is_stories_file(filename: Union[Text, Path]) -> bool
 ```
 
 Checks if the specified file is a story file.

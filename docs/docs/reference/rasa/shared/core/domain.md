@@ -354,6 +354,25 @@ Write domain to a file.
 
 Write cleaned domain to a file.
 
+#### as\_yaml
+
+```python
+ | as_yaml(clean_before_dump: bool = False) -> Text
+```
+
+Dump the `Domain` object as a YAML string.
+This function preserves the orders of the keys in the domain.
+
+**Arguments**:
+
+- `clean_before_dump` - When set to `True`, this method returns
+  a version of the domain without internal
+  information. Defaults to `False`.
+
+**Returns**:
+
+  A string in YAML format representing the domain.
+
 #### intent\_config
 
 ```python

@@ -149,7 +149,8 @@
                 "reference/rasa/core/training/training",
                 {
                   "items": [
-                    "reference/rasa/core/training/converters/story_markdown_to_yaml_converter"
+                    "reference/rasa/core/training/converters/story_markdown_to_yaml_converter",
+                    "reference/rasa/core/training/converters/responses_prefix_converter"
                   ],
                   "label": "rasa.core.training.converters",
                   "type": "category"

@@ -431,8 +431,15 @@ Response Selectors are a stable feature as of version 2.0.
 
 The [conversion command](./migration-guide.mdx#training-data-files) will automatically
 convert your `responses.md` file, stories and nlu training data to the new yaml format.
+It will also take care of adding the `utter_` prefix to your responses.
 Additionally you will need to rename the `respond_` actions in your stories files to use the
-`utter_` prefix instead. For example:
+`utter_` prefix instead. Run the following command to apply these changes:
+
+```bash
+rasa data convert responses --data {SOURCE_DIR} --out={TARGET_DIR}
+```
+
+You can also apply these changes manually. For example:
 
 ```yaml-rasa
 stories:

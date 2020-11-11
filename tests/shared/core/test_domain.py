@@ -284,6 +284,7 @@ def test_domain_to_dict():
 
 def test_domain_to_yaml():
     test_yaml = f"""
+version: '2.0'
 actions:
 - action_save_world
 config:
@@ -299,7 +300,6 @@ session_config:
   carry_over_slots_to_new_session: true
   session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
 slots: {{}}
-version: '2.0'
 """
 
     with pytest.warns(None) as record:
