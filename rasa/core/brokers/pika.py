@@ -558,7 +558,6 @@ class PikaMessageProcessor:
         This function is blocking and indefinite thus it
         should be started in a separate process.
         """
-        # TODO: Fix logging
         self._process_queue = queue
         self._connect()
         self._process_messages()
@@ -660,12 +659,12 @@ class PikaEventBroker(EventBroker):
         self.pika_message_processor = PikaMessageProcessor(
             parameters, queues=self.queues
         )
-        self.process = self._start_pika_connection_process()
+        self.process = self._start_pika_process()
 
     def _get_mp_context(self) -> multiprocessing.context.BaseContext:
         return multiprocessing.get_context(self.MP_CONTEXT)
 
-    def _start_pika_connection_process(self) -> Optional[multiprocessing.Process]:
+    def _start_pika_process(self) -> Optional[multiprocessing.Process]:
         if self.pika_message_processor:
             process = multiprocessing.Process(
                 target=self.pika_message_processor.run, args=(self.process_queue,)
@@ -674,6 +673,26 @@ class PikaEventBroker(EventBroker):
             return process
 
         return None
+
+    def is_ready(
+        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
+    ) -> bool:
+        """Spin until Pika is ready to process messages.
+
+        Args:
+            attempts: Number of retries.
+            wait_time_between_attempts_in_seconds: Wait time between retries.
+
+        Returns:
+            `True` if the process is alive, `False` otherwise.
+        """
+        while attempts:
+            if self.process and self.process.is_alive():
+                return True
+            time.sleep(wait_time_between_attempts_in_seconds)
+            attempts -= 1
+
+        return False
 
     def publish(
         self,
