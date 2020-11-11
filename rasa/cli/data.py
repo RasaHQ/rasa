@@ -104,7 +104,11 @@ def _add_data_convert_parsers(
         "nlg",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Converts NLG data between formats.",
+        help=(
+            "Converts NLG data between formats. If you're migrating from 1.x, "
+            "please run `rasa data convert responses` to adapt the training data "
+            "to the new response selector format."
+        ),
     )
     convert_nlg_parser.set_defaults(func=_convert_nlg_data)
 
@@ -142,12 +146,12 @@ def _add_data_convert_parsers(
         parents=parents,
         help=(
             "Convert retrieval intent responses between Rasa Open Source versions. "
-            "Please also run `rasa data convert nlg` to convert responses "
+            "Please also run `rasa data convert nlg` to convert training data files "
             "to the right format."
         ),
     )
     convert_responses_parser.set_defaults(func=_migrate_responses)
-    arguments.set_convert_arguments(convert_responses_parser, data_type="Rasa NLU")
+    arguments.set_convert_arguments(convert_responses_parser, data_type="Rasa stories")
     default_arguments.add_domain_param(convert_responses_parser)
 
 

@@ -59,6 +59,14 @@ class StoryResponsePrefixConverter(TrainingDataConverter):
 
     @staticmethod
     def normalize_response_name(action_name: Text) -> Text:
+        """Ensure that response names start with `utter_`.
+
+        Args:
+            action_name: The name of the response.
+
+        Returns:
+            The name of the response, starting with `utter_`.
+        """
         return (
             f"{UTTER_PREFIX}{action_name[len(OBSOLETE_RESPOND_PREFIX):]}"
             if action_name.startswith(OBSOLETE_RESPOND_PREFIX)
