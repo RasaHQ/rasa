@@ -7,7 +7,7 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -44,7 +44,7 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
     """Validates that all required importable python packages are installed.
 
     Raises:
-        InvalidConfigError: If one of the component names is `None`, likely
+        InvalidConfigException: If one of the component names is `None`, likely
             indicates that a custom implementation is missing this property
             or that there is an invalid configuration file that we did not
             catch earlier.
@@ -443,7 +443,9 @@ class Component(metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = override_defaults(self.defaults, component_config)
+        self.component_config = rasa.nlu.config.override_defaults(
+            self.defaults, component_config
+        )
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
