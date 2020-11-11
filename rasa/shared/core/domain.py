@@ -67,7 +67,7 @@ PREV_PREFIX = "prev_"
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
-SubState = Dict[Text, Union[Text, Tuple[Union[float, Text, Dict]]]]
+SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
 State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
@@ -822,9 +822,7 @@ class Domain:
             + self.form_names
         )
 
-    def _get_featurized_entities(
-        self, latest_message: UserUttered
-    ) -> List[Dict[Text, Any]]:
+    def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
         intent_name = latest_message.intent.get(
             rasa.shared.nlu.constants.INTENT_NAME_KEY
         )
@@ -855,11 +853,7 @@ class Domain:
         # concatenated entity labels with their corresponding roles and groups labels
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
-        return [
-            entity
-            for entity in latest_message.entities
-            if entity["entity"] in entity_names & wanted_entities
-        ]
+        return entity_names & wanted_entities
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"

@@ -233,7 +233,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        tracker_state_features, label_ids = self.featurize_for_training(
+        tracker_state_features, label_ids, _ = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
         training_data, zero_state_features = model_data_utils.convert_to_data_format(

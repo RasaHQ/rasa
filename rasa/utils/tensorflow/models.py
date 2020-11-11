@@ -732,14 +732,16 @@ class TransformerRasaModel(RasaModel):
     def _prepare_transformer_layer(
         self,
         name: Text,
+        num_layers: int,
+        units: int,
         drop_rate: float,
         drop_rate_attention: float,
         prefix: Text = "transformer",
     ):
         if self.config[NUM_TRANSFORMER_LAYERS] > 0:
             self._tf_layers[f"{prefix}.{name}"] = TransformerEncoder(
-                self.config[NUM_TRANSFORMER_LAYERS],
-                self.config[TRANSFORMER_SIZE],
+                num_layers,
+                units,
                 self.config[NUM_HEADS],
                 self.config[TRANSFORMER_SIZE] * 4,
                 self.config[REGULARIZATION_CONSTANT],
@@ -834,7 +836,11 @@ class TransformerRasaModel(RasaModel):
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
         self._prepare_transformer_layer(
-            name, self.config[DROP_RATE], self.config[DROP_RATE_ATTENTION]
+            name,
+            self.config[NUM_TRANSFORMER_LAYERS],
+            self.config[TRANSFORMER_SIZE],
+            self.config[DROP_RATE],
+            self.config[DROP_RATE_ATTENTION],
         )
 
     def _prepare_entity_recognition_layers(self) -> None:

@@ -29,7 +29,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ACTION_TEXT,
     ACTION_NAME,
-    ENTITIES,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -69,9 +68,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # same as State but with Dict[...] substituted with FrozenSet[Tuple[...]]
-FrozenState = FrozenSet[
-    Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text, FrozenSet]]]]]
-]
+FrozenState = FrozenSet[Tuple[Text, FrozenSet[Tuple[Text, Tuple[Union[float, Text]]]]]]
 
 
 class EventVerbosity(Enum):
@@ -234,19 +231,14 @@ class DialogueStateTracker:
 
     @staticmethod
     def freeze_current_state(state: State) -> FrozenState:
-        state_copy = copy.deepcopy(state)
-        frozen_state = {}
-        for key, values in state_copy.items():
-            if isinstance(values, dict):
-                if ENTITIES in values and isinstance(values[ENTITIES][0], dict):
-                    values[ENTITIES] = tuple(
-                        [frozenset(e.items()) for e in values[ENTITIES]]
-                    )
-                frozen_state[key] = frozenset(values.items())
-            else:
-                frozen_state[key] = frozenset(values)
-
-        return frozenset(frozen_state.items())
+        return frozenset(
+            {
+                key: frozenset(values.items())
+                if isinstance(values, Dict)
+                else frozenset(values)
+                for key, values in state.items()
+            }.items()
+        )
 
     def past_states(self, domain: Domain) -> List[State]:
         """Generate the past states of this tracker based on the history.

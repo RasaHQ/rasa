@@ -143,7 +143,11 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]:
+    ) -> Tuple[
+        List[List[Dict[Text, List["Features"]]]],
+        np.ndarray,
+        List[List[Dict[Text, List["Features"]]]],
+    ]:
         """Transform training trackers into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
@@ -163,7 +167,7 @@ class Policy:
               trackers
         """
 
-        state_features, label_ids = self.featurizer.featurize_trackers(
+        state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
             training_trackers, domain, interpreter
         )
 
@@ -175,8 +179,9 @@ class Policy:
             )
             state_features = state_features[:max_training_samples]
             label_ids = label_ids[:max_training_samples]
+            entity_tags = entity_tags[:max_training_samples]
 
-        return state_features, label_ids
+        return state_features, label_ids, entity_tags
 
     def train(
         self,

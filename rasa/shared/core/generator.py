@@ -31,7 +31,6 @@ from rasa.shared.core.training_data.structures import (
 )
 from rasa.shared.utils.io import is_logging_disabled
 import rasa.shared.utils.io
-from rasa.shared.nlu.constants import ENTITIES
 
 logger = logging.getLogger(__name__)
 
@@ -103,18 +102,10 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
     @staticmethod
     def _unfreeze_states(frozen_states: Deque[FrozenState]) -> List[State]:
-        states = []
-        for frozen_state in frozen_states:
-            state_dict = {}
-            for key, value in dict(frozen_state).items():
-                _value = dict(value)
-                if ENTITIES in _value:
-                    _value[ENTITIES] = [
-                        dict(frozen_entity) for frozen_entity in _value[ENTITIES]
-                    ]
-                state_dict[key] = _value
-            states.append(state_dict)
-        return states
+        return [
+            {key: dict(value) for key, value in dict(frozen_state).items()}
+            for frozen_state in frozen_states
+        ]
 
     def past_states(self, domain: Domain) -> List[State]:
         states_for_hashing = self.past_states_for_hashing(domain)

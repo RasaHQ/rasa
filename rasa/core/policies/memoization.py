@@ -23,8 +23,6 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
-from rasa.shared.core.constants import USER
-from rasa.shared.nlu.constants import ENTITIES, ENTITY_ATTRIBUTE_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -161,22 +159,7 @@ class MemoizationPolicy(Policy):
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
-
-        # Ignore the actual values of entities
-        # We are just interested whether an entity of a certain type was detected or not
-        _states = []
-        for state in states:
-            _state = {}
-            for key, value in state.items():
-                _state[key] = copy.deepcopy(value)
-                if USER == key and ENTITIES in _state[USER]:
-                    _state[USER][ENTITIES] = [
-                        entity[ENTITY_ATTRIBUTE_TYPE]
-                        for entity in _state[USER][ENTITIES]
-                    ]
-            _states.append(_state)
-
-        feature_str = json.dumps(_states, sort_keys=True).replace('"', "")
+        feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(
                 bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)

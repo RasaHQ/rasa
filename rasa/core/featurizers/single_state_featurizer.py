@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import scipy.sparse
-from typing import List, Optional, Dict, Text, Set
+from typing import List, Optional, Dict, Text, Set, Any
 from collections import defaultdict
 
 import rasa.shared.utils.io
@@ -17,14 +17,15 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     INTENT,
-    FEATURE_TYPE_SEQUENCE,
     TEXT,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_TAGS,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
+from rasa.utils.tensorflow.constants import IDS
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,23 @@ class SingleStateFeaturizer:
     def __init__(self) -> None:
         self._default_feature_states = {}
         self.action_texts = []
+        self.tag_id_mapping = {}
+
+    def get_entity_tag_ids(self) -> Dict[Text, int]:
+        """Returns the tag to index mapping for entities.
+
+        Returns:
+            Tag to index mapping.
+        """
+        if ENTITIES not in self._default_feature_states:
+            return {}
+
+        tag_ids = {
+            tag: idx + 1  # +1 to keep 0 for the NO_ENTITY_TAG
+            for tag, idx in self._default_feature_states[ENTITIES].items()
+        }
+        tag_ids[NO_ENTITY_TAG] = 0
+        return tag_ids
 
     def prepare_from_domain(self, domain: Domain) -> None:
         """Gets necessary information for featurization from domain.
@@ -61,6 +79,7 @@ class SingleStateFeaturizer:
         self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.action_texts = domain.action_texts
+        self.tag_id_mapping = self.get_entity_tag_ids()
 
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
@@ -68,7 +87,7 @@ class SingleStateFeaturizer:
         if attribute in {INTENT, ACTION_NAME}:
             return {sub_state[attribute]: 1}
         elif attribute == ENTITIES:
-            return {entity["entity"]: 1 for entity in sub_state.get(ENTITIES, [])}
+            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}
         elif attribute == ACTIVE_LOOP:
             return {sub_state["name"]: 1}
         elif attribute == SLOTS:
@@ -103,58 +122,6 @@ class SingleStateFeaturizer:
             features, FEATURE_TYPE_SENTENCE, attribute, self.__class__.__name__
         )
         return [features]
-
-    def get_entity_tag_ids(self) -> Dict[Text, int]:
-        """Returns the tag to index mapping for entities.
-
-        Returns:
-            Tag to index mapping.
-        """
-        if ENTITIES not in self._default_feature_states:
-            return {}
-
-        tag_ids = {
-            tag: idx + 1  # +1 to keep 0 for the NO_ENTITY_TAG
-            for tag, idx in self._default_feature_states[ENTITIES].items()
-        }
-        tag_ids[NO_ENTITY_TAG] = 0
-        return tag_ids
-
-    def _create_entity_tag_features(
-        self, sub_state: SubState, interpreter: NaturalLanguageInterpreter
-    ) -> List["Features"]:
-        from rasa.nlu.test import determine_token_labels
-
-        # TODO
-        #  The entity states used to create the tag-idx-mapping contains the
-        #  entities and the concatenated entity and roles/groups. We do not
-        #  distinguish between entities and roles/groups right now.
-        # TODO
-        #  Should we support BILOU tagging?
-
-        if TEXT not in sub_state:
-            return []
-
-        parsed_text = interpreter.featurize_message(Message({TEXT: sub_state[TEXT]}))
-        entities = sub_state.get(ENTITIES, [])
-        tag_id_mapping = self.get_entity_tag_ids()
-
-        _tags = []
-        for token in parsed_text.get(TOKENS_NAMES[TEXT]):
-            _tag = determine_token_labels(
-                token, entities, attribute_key=ENTITY_ATTRIBUTE_TYPE
-            )
-            _tags.append(tag_id_mapping[_tag])
-
-        # transpose to have seq_len x 1
-        return [
-            Features(
-                np.array([_tags]).T,
-                FEATURE_TYPE_SEQUENCE,
-                ENTITY_ATTRIBUTE_TYPE,
-                TAG_ID_ORIGIN,
-            )
-        ]
 
     @staticmethod
     def _to_sparse_sentence_features(
@@ -261,10 +228,10 @@ class SingleStateFeaturizer:
                 state_features.update(
                     self._extract_state_features(sub_state, interpreter, sparse=True)
                 )
-                if sub_state.get(TEXT):
+                if sub_state.get(ENTITIES):
                     state_features[ENTITIES] = self._create_features(
                         sub_state, ENTITIES, sparse=True
-                    ) + self._create_entity_tag_features(sub_state, interpreter)
+                    )
 
             if state_type in {SLOTS, ACTIVE_LOOP}:
                 state_features[state_type] = self._create_features(
@@ -272,6 +239,40 @@ class SingleStateFeaturizer:
                 )
 
         return state_features
+
+    def encode_entity(
+        self, entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter
+    ) -> Dict[Text, List["Features"]]:
+        from rasa.nlu.test import determine_token_labels
+
+        # TODO
+        #  The entity states used to create the tag-idx-mapping contains the
+        #  entities and the concatenated entity and roles/groups. We do not
+        #  distinguish between entities and roles/groups right now.
+        # TODO
+        #  Should we support BILOU tagging?
+
+        if TEXT not in entity_data or len(self.tag_id_mapping) < 2:
+            # we cannot build a classifier if there are less than 2 class
+            return {}
+
+        parsed_text = interpreter.featurize_message(Message({TEXT: entity_data[TEXT]}))
+        entities = entity_data.get(ENTITIES, [])
+
+        _tags = []
+        for token in parsed_text.get(TOKENS_NAMES[TEXT]):
+            _tag = determine_token_labels(
+                token, entities, attribute_key=ENTITY_ATTRIBUTE_TYPE
+            )
+            # TODO handle if tag is not in mapping
+            _tags.append(self.tag_id_mapping[_tag])
+
+        # transpose to have seq_len x 1
+        return {
+            ENTITY_TAGS: [
+                Features(np.array([_tags]).T, IDS, ENTITY_TAGS, TAG_ID_ORIGIN,)
+            ]
+        }
 
     def _encode_action(
         self, action: Text, interpreter: NaturalLanguageInterpreter

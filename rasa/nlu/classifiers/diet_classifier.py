@@ -44,6 +44,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
 from rasa.utils.tensorflow.constants import (
     LABEL,
+    IDS,
     HIDDEN_LAYERS_SIZES,
     SHARE_HIDDEN_LAYERS,
     TRANSFORMER_SIZE,
@@ -101,8 +102,7 @@ logger = logging.getLogger(__name__)
 SPARSE = "sparse"
 DENSE = "dense"
 LABEL_KEY = LABEL
-LABEL_SUB_KEY = "ids"
-TAG_IDS = "tag_ids"
+LABEL_SUB_KEY = IDS
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
