@@ -1520,27 +1520,27 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     if isinstance(forms, list):
         if not all(isinstance(form_name, str) for form_name in forms):
             raise InvalidDomain("Not all form names are strings.")
+
         return
 
     if not isinstance(forms, dict):
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
-    if isinstance(forms, dict):
-        for form_name, slots in forms.items():
-            if not isinstance(slots, Dict) and slots is not None:
+    for form_name, slots in forms.items():
+        if not isinstance(slots, Dict) and slots is not None:
+            raise InvalidDomain(
+                f"The slots for form '{form_name}' were specified "
+                f"as '{type(slots)}'. They need to be specified "
+                f"as dictionary."
+            )
+        slots = slots or {}
+        for slot_name, slot_mappings in slots.items():
+            if not isinstance(slot_mappings, list):
                 raise InvalidDomain(
-                    f"The slots for form '{form_name}' were specified "
-                    f"as '{type(slots)}'. They need to be specified "
-                    f"as dictionary."
+                    f"The slot mappings for slot '{slot_name}' in "
+                    f"form '{form_name}' have type "
+                    f"'{type(slot_mappings)}'. It is required to "
+                    f"provide a list of slot mappings."
                 )
-            slots = slots or {}
-            for slot_name, slot_mappings in slots.items():
-                if not isinstance(slot_mappings, list):
-                    raise InvalidDomain(
-                        f"The slot mappings for slot '{slot_name}' in "
-                        f"form '{form_name}' have type "
-                        f"'{type(slot_mappings)}'. It is required to "
-                        f"provide a list of slot mappings."
-                    )
-                for slot_mapping in slot_mappings:
-                    SlotMapping.validate(slot_mapping, form_name, slot_name)
+            for slot_mapping in slot_mappings:
+                SlotMapping.validate(slot_mapping, form_name, slot_name)
