@@ -77,6 +77,10 @@ jobs:
         sudo apt-get -y install libpq-dev
         make install-full
 
+        # 1.10.x doesn't support `pydocstyle` tests yet. Due to caching it's
+        # possible that the necessary libraries is installed anyway
+        pip uninstall flake8-docstrings || true
+
     - name: Lint Code 🎎
       run: make lint
 
