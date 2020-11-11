@@ -150,8 +150,11 @@ class StoryStep:
 
         result = " OR ".join(
             # FIXME: this breaks below because not
-            #        all `as_story_string()` take a `e2e` argument.
-            [element.as_story_string(e2e) for element in story_step_element]  # type: ignore[call-arg]
+            # all `as_story_string()` take a `e2e` argument.
+            [
+                element.as_story_string(e2e)  # type: ignore[call-arg]
+                for element in story_step_element
+            ]
         )
         return f"* {result}\n"
 
