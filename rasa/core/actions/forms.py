@@ -6,7 +6,7 @@ import json
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, InvalidDomain
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
@@ -15,7 +15,13 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
 )
 from rasa.shared.constants import UTTER_PREFIX
-from rasa.shared.core.events import Event, SlotSet, ActionExecuted, ActiveLoop
+from rasa.shared.core.events import (
+    Event,
+    SlotSet,
+    ActionExecuted,
+    ActiveLoop,
+    ActionExecutionRejected,
+)
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
@@ -357,7 +363,7 @@ class FormAction(LoopAction):
                 elif mapping_type == str(SlotMapping.FROM_TEXT):
                     value = tracker.latest_message.text
                 else:
-                    raise ValueError("Provided slot mapping type is not supported")
+                    raise InvalidDomain("Provided slot mapping type is not supported")
 
                 if value is not None:
                     logger.debug(
@@ -371,7 +377,7 @@ class FormAction(LoopAction):
 
     async def validate_slots(
         self,
-        slot_dict: Dict[Text, Any],
+        slot_candidates: Dict[Text, Any],
         tracker: "DialogueStateTracker",
         domain: Domain,
         output_channel: OutputChannel,
@@ -383,7 +389,7 @@ class FormAction(LoopAction):
         them. Otherwise there is no validation.
 
         Args:
-            slot_dict: Extracted slots which are candidates to fill the slots required
+            slot_candidates: Extracted slots which are candidates to fill the slots required
                 by the form.
             tracker: The current conversation tracker.
             domain: The current model domain.
@@ -395,8 +401,10 @@ class FormAction(LoopAction):
             The validation events including potential bot messages and `SlotSet` events
             for the validated slots.
         """
-
-        events = [SlotSet(slot_name, value) for slot_name, value in slot_dict.items()]
+        logger.debug(f"Validating extracted slots: {slot_candidates}")
+        events = [
+            SlotSet(slot_name, value) for slot_name, value in slot_candidates.items()
+        ]
 
         validate_name = f"validate_{self.name()}"
 
@@ -457,18 +465,29 @@ class FormAction(LoopAction):
                 self.extract_requested_slot(tracker, domain, slot_to_fill)
             )
 
-            if not slot_values:
-                # reject to execute the form action
-                # if some slot was requested but nothing was extracted
-                # it will allow other policies to predict another action
-                raise ActionExecutionRejection(
-                    self.name(),
-                    f"Failed to extract slot {slot_to_fill} with action {self.name()}",
-                )
-        logger.debug(f"Validating extracted slots: {slot_values}")
-        return await self.validate_slots(
+        validation_events = await self.validate_slots(
             slot_values, tracker, domain, output_channel, nlg
         )
+
+        some_slots_were_validated = any(
+            isinstance(event, SlotSet) for event in validation_events
+        )
+        user_rejected_manually = any(
+            isinstance(event, ActionExecutionRejected) for event in validation_events
+        )
+        if (
+            slot_to_fill
+            and not some_slots_were_validated
+            and not user_rejected_manually
+        ):
+            # reject to execute the form action
+            # if some slot was requested but nothing was extracted
+            # it will allow other policies to predict another action
+            raise ActionExecutionRejection(
+                self.name(),
+                f"Failed to extract slot {slot_to_fill} with action {self.name()}",
+            )
+        return validation_events
 
     async def request_next_slot(
         self,
@@ -547,9 +566,7 @@ class FormAction(LoopAction):
         logger.debug(f"Request next slot '{slot_name}'")
 
         action_to_ask_for_next_slot = action.action_from_name(
-            self._name_of_utterance(domain, slot_name),
-            self.action_endpoint,
-            domain.user_actions,
+            self._name_of_utterance(domain, slot_name), domain, self.action_endpoint
         )
         events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
@@ -678,6 +695,9 @@ class FormAction(LoopAction):
         domain: "Domain",
         events_so_far: List[Event],
     ) -> bool:
+        if any(isinstance(event, ActionExecutionRejected) for event in events_so_far):
+            return False
+
         # Custom validation actions can decide to terminate the loop early by
         # setting the requested slot to `None` or setting `ActiveLoop(None)`.
         # We explicitly check only the last occurrences for each possible termination

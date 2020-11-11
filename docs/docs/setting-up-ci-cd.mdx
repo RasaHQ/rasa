@@ -38,35 +38,31 @@ you can make a test run only if the pull request has a certain label (e.g. “NL
 
 ### Validating Data and Stories
 
-Data validation verifies that there are no mistakes or
-major inconsistencies in your domain, NLU data, or conversation data. To validate
-your data, have your CI run this command:
+Data validation verifies that no mistakes or major inconsistencies appear in your domain, NLU 
+data, or story data. To validate your data, have your CI run this command:
 
 ```bash
-rasa data validate --fail-on-warnings --max-history <max_history>
+rasa data validate
 ```
 
-By default the validator searches only for errors in the data (e.g. the same
-example being listed as an example for two intents), but does not report other
-minor issues (such as unused intents, responses that are not listed as
-actions) that won't prevent training a model, but might indicate
-messy data.
+If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the 
+smallest of those values as
 
-If data validation results in errors, training a model will also fail, so it's
+```bash
+rasa data validate --max-history <max_history>
+```
+
+If data validation results in errors, training a model can also fail or yield bad performance, so it's
 always good to run this check before training a model. By including the
 `--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
 
-Data validation also includes story structure validation.
-Story validation checks if you have any
-stories where different bot actions follow from the same dialogue history.
-Conflicts between stories will prevent a model from learning the correct
-pattern for a dialogue. Set the `--max-history` parameter to the value of `max_history` for the
-memoization policy in your `config.yml`. If you haven't set one, use the default of `5`.
-
-:::caution check your story names
-The `rasa data validate stories` command assumes that all your story names are unique!
-
+:::note
+Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
+However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
 :::
+
+To read more about the validator and all of the available options, see [the documentation for 
+`rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
 
 ### Training a Model
 
@@ -84,7 +80,7 @@ to your server as part of the continuous deployment process.
 
 ### Testing Your Assistant
 
-Testing your trained model on [test stories](./testing-your-assistant.mdx#end-to-end-testing) is the best way to have confidence in how your assistant
+Testing your trained model on [test stories](./testing-your-assistant.mdx#writing-test-stories) is the best way to have confidence in how your assistant
 will act in certain situations. Written in a modified story
 format, test stories allow you to provide entire conversations and test that, given certain
 user input, your model will behave in the expected manner. This is especially
@@ -108,8 +104,10 @@ as you make improvements to your assistant. A good rule of thumb to follow is th
 to be representative of the true distribution of real conversations.
 Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
 
-Note: Running test stories does **not** execute your action code. You will need to
+:::note
+Running test stories does **not** execute your action code. You will need to
 [test your action code](./setting-up-ci-cd.mdx#testing-action-code) in a separate step.
+:::
 
 ### Comparing NLU Performance
 

@@ -22,12 +22,13 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
+from rasa.shared.exceptions import InvalidParameterException, RasaException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
     FailSafeTrackerStore,
@@ -419,13 +420,15 @@ class Agent:
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
             if os.path.isfile(model_path):
                 model_path = get_model(str(model_path))
-        except ModelNotFound:
-            raise ValueError(
-                "You are trying to load a MODEL from '{}', which is not possible. \n"
-                "The model path should be a 'tar.gz' file or a directory "
-                "containing the various model files in the sub-directories 'core' "
-                "and 'nlu'. \n\nIf you want to load training data instead of "
-                "a model, use `agent.load_data(...)` instead.".format(model_path)
+        except ModelNotFound as e:
+            raise ModelNotFound(
+                f"You are trying to load a model from '{model_path}', "
+                f"which is not possible. \n"
+                f"The model path should be a 'tar.gz' file or a directory "
+                f"containing the various model files in the sub-directories "
+                f"'core' and 'nlu'. \n\n"
+                f"If you want to load training data instead of a model, use "
+                f"`agent.load_data(...)` instead. {e}"
             )
 
         core_model, nlu_model = get_model_subdirectories(model_path)
@@ -508,13 +511,6 @@ class Agent:
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
 
-        if not isinstance(message, UserMessage):
-            # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
-                "Passing a text to `agent.handle_message(...)` is "
-                "not supported anymore. Rather use `agent.handle_text(...)`."
-            )
-
         if not self.is_ready():
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
@@ -539,10 +535,10 @@ class Agent:
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         **kwargs: Any,
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
-
         processor = self.create_processor(message_preprocessor)
+
         return await processor.log_message(message)
 
     async def execute_action(
@@ -550,14 +546,16 @@ class Agent:
         sender_id: Text,
         action: Text,
         output_channel: OutputChannel,
-        policy: Text,
-        confidence: float,
+        policy: Optional[Text],
+        confidence: Optional[float],
     ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
-
         processor = self.create_processor()
+        prediction = PolicyPrediction.for_action_name(
+            self.domain, action, policy, confidence or 0.0
+        )
         return await processor.execute_action(
-            sender_id, action, output_channel, self.nlg, policy, confidence
+            sender_id, action, output_channel, self.nlg, prediction
         )
 
     async def trigger_intent(
@@ -715,16 +713,6 @@ class Agent:
         if not self.is_core_ready():
             raise AgentNotReady("Can't train without a policy ensemble.")
 
-        if isinstance(training_trackers, str):
-            # the user most likely passed in a file name to load training
-            # data from
-            raise Exception(
-                "Passing a file name to `agent.train(...)` is "
-                "not supported anymore. Rather load the data with "
-                "`data = agent.load_data(file_name)` and pass it "
-                "to `agent.train(data)`."
-            )
-
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
         self.policy_ensemble.train(
@@ -792,10 +780,9 @@ class Agent:
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
+        """Visualize the loaded training data from the resource."""
         from rasa.shared.core.training_data.visualization import visualize_stories
         from rasa.shared.core.training_data import loading
-
-        """Visualize the loaded training data from the resource."""
 
         # if the user doesn't provide a max history, we will use the
         # largest value from any policy
@@ -847,10 +834,10 @@ class Agent:
         elif domain is None:
             return Domain.empty()
         else:
-            raise ValueError(
-                "Invalid param `domain`. Expected a path to a domain "
-                "specification or a domain instance. But got "
-                "type '{}' with value '{}'".format(type(domain), domain)
+            raise InvalidParameterException(
+                f"Invalid param `domain`. Expected a path to a domain "
+                f"specification or a domain instance. But got "
+                f"type '{type(domain)}' with value '{domain}'."
             )
 
     @staticmethod
@@ -884,10 +871,10 @@ class Agent:
             return policies
         else:
             passed_type = type(policies).__name__
-            raise ValueError(
-                "Invalid param `policies`. Passed object is "
-                "of type '{}', but should be policy, an array of "
-                "policies, or a policy ensemble.".format(passed_type)
+            raise InvalidParameterException(
+                f"Invalid param `policies`. Passed object is "
+                f"of type '{passed_type}', but should be policy, an array of "
+                f"policies, or a policy ensemble."
             )
 
     @staticmethod

@@ -6,6 +6,8 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa import telemetry
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
@@ -52,6 +54,10 @@ StoryEvaluation = namedtuple(
         "in_training_data_fraction",
     ],
 )
+
+
+class WrongPredictionException(RasaException, ValueError):
+    """Raised if a wrong prediction is encountered."""
 
 
 class EvaluationStore:
@@ -376,11 +382,10 @@ def _collect_user_uttered_predictions(
             WronglyClassifiedUserUtterance(event, user_uttered_eval_store)
         )
         if fail_on_prediction_errors:
-            raise ValueError(
-                "NLU model predicted a wrong intent. Failed Story:"
-                " \n\n{}".format(
-                    YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
-                )
+            story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
+            raise WrongPredictionException(
+                f"NLU model predicted a wrong intent. Failed Story:"
+                f" \n\n{story_dump}"
             )
     else:
         end_to_end_user_utterance = EndToEndUserUtterance(
@@ -412,7 +417,7 @@ def _collect_action_executed_predictions(
     event: ActionExecuted,
     fail_on_prediction_errors: bool,
     circuit_breaker_tripped: bool,
-) -> Tuple[EvaluationStore, Optional[Text], Optional[float]]:
+) -> Tuple[EvaluationStore, PolicyPrediction]:
     from rasa.core.policies.form_policy import FormPolicy
 
     action_executed_eval_store = EvaluationStore()
@@ -420,15 +425,14 @@ def _collect_action_executed_predictions(
     gold = event.action_name or event.action_text
 
     if circuit_breaker_tripped:
+        prediction = PolicyPrediction([], policy_name=None)
         predicted = "circuit breaker tripped"
-        policy = None
-        confidence = None
     else:
-        action, policy, confidence = processor.predict_next_action(partial_tracker)
+        action, prediction = processor.predict_next_action(partial_tracker)
         predicted = action.name()
 
         if (
-            policy
+            prediction.policy_name
             and predicted != gold
             and _form_might_have_been_rejected(
                 processor.domain, partial_tracker, predicted
@@ -438,7 +442,7 @@ def _collect_action_executed_predictions(
             # but it might be Ok if form action is rejected.
             emulate_loop_rejection(partial_tracker)
             # try again
-            action, policy, confidence = processor.predict_next_action(partial_tracker)
+            action, prediction = processor.predict_next_action(partial_tracker)
 
             # Even if the prediction is also wrong, we don't have to undo the emulation
             # of the action rejection as we know that the user explicitly specified
@@ -451,16 +455,20 @@ def _collect_action_executed_predictions(
 
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
-            WronglyPredictedAction(gold, predicted, policy, confidence, event.timestamp)
+            WronglyPredictedAction(
+                gold,
+                predicted,
+                prediction.policy_name,
+                prediction.max_confidence,
+                event.timestamp,
+            )
         )
         if fail_on_prediction_errors:
+            story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             error_msg = (
-                "Model predicted a wrong action. Failed Story: "
-                "\n\n{}".format(
-                    YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
-                )
+                f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
             )
-            if FormPolicy.__name__ in policy:
+            if FormPolicy.__name__ in prediction.policy_name:
                 error_msg += (
                     "FormAction is not run during "
                     "evaluation therefore it is impossible to know "
@@ -468,13 +476,18 @@ def _collect_action_executed_predictions(
                     "If the story is correct, add it to the "
                     "training stories and retrain."
                 )
-            raise ValueError(error_msg)
+            raise WrongPredictionException(error_msg)
     else:
         partial_tracker.update(
-            ActionExecuted(predicted, policy, confidence, event.timestamp)
+            ActionExecuted(
+                predicted,
+                prediction.policy_name,
+                prediction.max_confidence,
+                event.timestamp,
+            )
         )
 
-    return action_executed_eval_store, policy, confidence
+    return action_executed_eval_store, prediction
 
 
 def _form_might_have_been_rejected(
@@ -514,11 +527,7 @@ async def _predict_tracker_actions(
             circuit_breaker_tripped = processor.is_action_limit_reached(
                 num_predicted_actions, should_predict_another_action
             )
-            (
-                action_executed_result,
-                policy,
-                confidence,
-            ) = _collect_action_executed_predictions(
+            (action_executed_result, prediction) = _collect_action_executed_predictions(
                 processor,
                 partial_tracker,
                 event,
@@ -530,8 +539,8 @@ async def _predict_tracker_actions(
                 {
                     "action": action_executed_result.action_targets[0],
                     "predicted": action_executed_result.action_predictions[0],
-                    "policy": policy,
-                    "confidence": confidence,
+                    "policy": prediction.policy_name,
+                    "confidence": prediction.max_confidence,
                 }
             )
             should_predict_another_action = processor.should_predict_another_action(
@@ -571,7 +580,7 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     in_training_data = [
         a["action"]
         for a in action_list
-        if a["policy"] and not SimplePolicyEnsemble.is_not_memo_policy(a["policy"])
+        if a["policy"] and not SimplePolicyEnsemble.is_not_in_training_data(a["policy"])
     ]
 
     return len(in_training_data) / len(action_list) if action_list else 0

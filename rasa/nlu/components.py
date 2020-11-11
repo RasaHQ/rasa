@@ -39,8 +39,14 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
     return failed_imports
 
 
-def validate_requirements(component_names: List[Text]) -> None:
+def validate_requirements(component_names: List[Optional[Text]]) -> None:
     """Validates that all required importable python packages are installed.
+
+    Raises:
+        InvalidConfigError: If one of the component names is `None`, likely
+            indicates that a custom implementation is missing this property
+            or that there is an invalid configuration file that we did not
+            catch earlier.
 
     Args:
         component_names: The list of component names.
@@ -51,6 +57,13 @@ def validate_requirements(component_names: List[Text]) -> None:
     # Validate that all required packages are installed
     failed_imports = {}
     for component_name in component_names:
+        if component_name is None:
+            raise InvalidConfigError(
+                "Your pipeline configuration contains a component that is missing "
+                "a name. Please double check your configuration or if this is a "
+                "custom component make sure to implement the name property for "
+                "the component."
+            )
         component_class = registry.get_component_class(component_name)
         unavailable_packages = find_unavailable_packages(
             component_class.required_packages()
@@ -78,13 +91,35 @@ def validate_requirements(component_names: List[Text]) -> None:
         )
 
 
+def validate_component_keys(
+    component: "Component", component_config: Dict[Text, Any]
+) -> None:
+    """Validates that all keys for a component are valid.
+
+    Args:
+        component: The component class
+        component_config: The user-provided config for the component in the pipeline
+    """
+    component_name = component_config.get("name")
+    allowed_keys = set(component.defaults.keys())
+    provided_keys = set(component_config.keys())
+    provided_keys.discard("name")
+    list_separator = "\n- "
+    for key in provided_keys:
+        if key not in allowed_keys:
+            rasa.shared.utils.io.raise_warning(
+                f"You have provided an invalid key `{key}` for component `{component_name}` in your pipeline. "
+                f"Valid options for `{component_name}` are:\n- "
+                f"{list_separator.join(allowed_keys)}"
+            )
+
+
 def validate_empty_pipeline(pipeline: List["Component"]) -> None:
     """Ensures the pipeline is not empty.
 
     Args:
         pipeline: the list of the :class:`rasa.nlu.components.Component`.
     """
-
     if len(pipeline) == 0:
         raise InvalidConfigError(
             "Can not train an empty pipeline. "
@@ -782,7 +817,7 @@ class ComponentBuilder:
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            raise Exception(
+            raise RasaException(
                 f"Failed to load component from file '{component_meta.get('file')}'. "
                 f"Error: {e}"
             )
@@ -815,7 +850,7 @@ class ComponentBuilder:
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            raise Exception(
+            raise RasaException(
                 f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )

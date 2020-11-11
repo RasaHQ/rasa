@@ -937,7 +937,7 @@ def _write_domain_to_file(
         slots=[],
         templates=templates,
         action_names=collected_actions,
-        forms=[],
+        forms={},
     )
 
     old_domain.merge(new_domain).persist_clean(domain_path)

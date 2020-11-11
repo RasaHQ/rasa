@@ -160,13 +160,13 @@ class Trainer:
         self, cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
     ) -> List[Component]:
         """Transform the passed names of the pipeline components into classes."""
-
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
-        for i in range(len(cfg.pipeline)):
-            component_cfg = cfg.for_component(i)
+        for index, pipeline_component in enumerate(cfg.pipeline):
+            component_cfg = cfg.for_component(index)
             component = component_builder.create_component(component_cfg, cfg)
+            components.validate_component_keys(component, pipeline_component)
             pipeline.append(component)
 
         if not self.skip_validation:

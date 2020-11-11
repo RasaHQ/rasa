@@ -4,8 +4,6 @@ import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
-import numpy as np
-
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -15,12 +13,14 @@ from rasa.core.channels.channel import (
     UserMessage,
 )
 import rasa.core.utils
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     REQUESTED_SLOT,
     SLOTS,
+    FOLLOWUP_ACTION,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -84,8 +84,6 @@ class MessageProcessor:
 
         # preprocess message if necessary
         tracker = await self.log_message(message, should_save_tracker=False)
-        if not tracker:
-            return None
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
@@ -104,20 +102,42 @@ class MessageProcessor:
 
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
-        else:
-            return None
+
+        return None
 
     async def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
+        """Predict the next action for the current conversation state.
 
+        Args:
+            sender_id: Conversation ID.
+
+        Returns:
+            The prediction for the next action. `None` if no domain or policies loaded.
+        """
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = await self.get_tracker_with_session_start(sender_id)
-        if not tracker:
-            logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
-            )
-            return None
+        tracker = await self.fetch_tracker_and_update_session(sender_id)
+        result = self.predict_next_with_tracker(tracker)
 
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
+
+        return result
+
+    def predict_next_with_tracker(
+        self,
+        tracker: DialogueStateTracker,
+        verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART,
+    ) -> Optional[Dict[Text, Any]]:
+        """Predict the next action for a given conversation state.
+
+        Args:
+            tracker: A tracker representing a conversation state.
+            verbosity: Verbosity for the returned conversation state.
+
+        Returns:
+            The prediction for the next action. `None` if no domain or policies loaded.
+        """
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             rasa.shared.utils.io.raise_warning(
@@ -127,18 +147,17 @@ class MessageProcessor:
             )
             return None
 
-        probabilities, policy = self._get_next_action_probabilities(tracker)
-        # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        prediction = self._get_next_action_probabilities(tracker)
+
         scores = [
             {"action": a, "score": p}
-            for a, p in zip(self.domain.action_names, probabilities)
+            for a, p in zip(self.domain.action_names, prediction.probabilities)
         ]
         return {
             "scores": scores,
-            "policy": policy,
-            "confidence": np.max(probabilities),
-            "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
+            "policy": prediction.policy_name,
+            "confidence": prediction.max_confidence,
+            "tracker": tracker.current_state(verbosity),
         }
 
     async def _update_tracker_session(
@@ -170,15 +189,18 @@ class MessageProcessor:
                 output_channel=output_channel,
                 nlg=self.nlg,
                 metadata=metadata,
+                prediction=PolicyPrediction.for_action_name(
+                    self.domain, ACTION_SESSION_START_NAME
+                ),
             )
 
-    async def get_tracker_with_session_start(
+    async def fetch_tracker_and_update_session(
         self,
         sender_id: Text,
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
     ) -> DialogueStateTracker:
-        """Get tracker for `sender_id` or create a new tracker for `sender_id`.
+        """Fetches tracker for `sender_id` and updates its conversation session.
 
         If a new tracker is created, `action_session_start` is run.
 
@@ -188,19 +210,43 @@ class MessageProcessor:
             sender_id: Conversation ID for which to fetch the tracker.
 
         Returns:
-              Tracker for `sender_id` if available, `None` otherwise.
+              Tracker for `sender_id`.
         """
-
         tracker = self.get_tracker(sender_id)
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
         return tracker
 
+    async def fetch_tracker_with_initial_session(
+        self,
+        sender_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None,
+    ) -> DialogueStateTracker:
+        """Fetches tracker for `sender_id` and runs a session start if it's a new
+        tracker.
+
+        Args:
+            metadata: Data sent from client associated with the incoming user message.
+            output_channel: Output channel associated with the incoming user message.
+            sender_id: Conversation ID for which to fetch the tracker.
+
+        Returns:
+              Tracker for `sender_id`.
+        """
+        tracker = self.get_tracker(sender_id)
+
+        # run session start only if the tracker is empty
+        if not tracker.events:
+            await self._update_tracker_session(tracker, output_channel, metadata)
+
+        return tracker
+
     def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
-        In contrast to `get_tracker_with_session_start` this does not add any
+        In contrast to `fetch_tracker_and_update_session` this does not add any
         `action_session_start` or `session_start` events at the beginning of a
         conversation.
 
@@ -241,31 +287,25 @@ class MessageProcessor:
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
-    ) -> Optional[DialogueStateTracker]:
+    ) -> DialogueStateTracker:
         """Log `message` on tracker belonging to the message's conversation_id.
 
         Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
         can be skipped if the tracker returned by this method is used for further
         processing and saved at a later stage.
         """
-
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = await self.get_tracker_with_session_start(
+        tracker = await self.fetch_tracker_and_update_session(
             message.sender_id, message.output_channel, message.metadata
         )
 
-        if tracker:
-            await self._handle_message_with_tracker(message, tracker)
+        await self._handle_message_with_tracker(message, tracker)
 
-            if should_save_tracker:
-                # save tracker state to continue conversation from this state
-                self._save_tracker(tracker)
-        else:
-            logger.warning(
-                f"Failed to retrieve or create tracker for conversation ID "
-                f"'{message.sender_id}'."
-            )
+        if should_save_tracker:
+            # save tracker state to continue conversation from this state
+            self._save_tracker(tracker)
+
         return tracker
 
     async def execute_action(
@@ -274,49 +314,56 @@ class MessageProcessor:
         action_name: Text,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
-        policy: Text,
-        confidence: float,
+        prediction: PolicyPrediction,
     ) -> Optional[DialogueStateTracker]:
+        """Execute an action for a conversation.
 
+        Note that this might lead to unexpected bot behavior. Rather use an intent
+        to execute certain behavior within a conversation (e.g. by using
+        `trigger_external_user_uttered`).
+
+        Args:
+            sender_id: The ID of the conversation.
+            action_name: The name of the action which should be executed.
+            output_channel: The output channel which should be used for bot responses.
+            nlg: The response generator.
+            prediction: The prediction for the action.
+
+        Returns:
+            The new conversation state. Note that the new state is also persisted.
+        """
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
-        if tracker:
-            action = self._get_action(action_name)
-            await self._run_action(
-                action, tracker, output_channel, nlg, policy, confidence
-            )
+        tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
 
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-        else:
-            logger.warning(
-                f"Failed to retrieve or create tracker for conversation ID "
-                f"'{sender_id}'."
-            )
+        action = self._get_action(action_name)
+        await self._run_action(action, tracker, output_channel, nlg, prediction)
+
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
+
         return tracker
 
     def predict_next_action(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[rasa.core.actions.action.Action, Optional[Text], float]:
+    ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
-        ML to predict the action. Returns the index of the next action."""
+        ML to predict the action. Returns the index of the next action.
+        """
+        prediction = self._get_next_action_probabilities(tracker)
 
-        action_confidences, policy = self._get_next_action_probabilities(tracker)
-
-        max_confidence_index = int(np.argmax(action_confidences))
         action = rasa.core.actions.action.action_for_index(
-            max_confidence_index, self.domain, self.action_endpoint
+            prediction.max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
             f"Predicted next action '{action.name()}' with confidence "
-            f"{action_confidences[max_confidence_index]:.2f}."
+            f"{prediction.max_confidence:.2f}."
         )
 
-        return action, policy, action_confidences[max_confidence_index]
+        return action, prediction
 
     @staticmethod
     def _is_reminder(e: Event, name: Text) -> bool:
@@ -342,8 +389,10 @@ class MessageProcessor:
         for e in reversed(tracker.events):
             if MessageProcessor._is_reminder(e, reminder_event.name):
                 return False
-            elif isinstance(e, UserUttered) and e.text:
+
+            if isinstance(e, UserUttered) and e.text:
                 return True
+
         return True  # tracker has probably been restarted
 
     async def handle_reminder(
@@ -354,13 +403,7 @@ class MessageProcessor:
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
-        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
-
-        if not tracker:
-            logger.warning(
-                f"Failed to retrieve tracker for conversation ID '{sender_id}'."
-            )
-            return None
+        tracker = await self.fetch_tracker_and_update_session(sender_id, output_channel)
 
         if (
             reminder_event.kill_on_user_message
@@ -582,10 +625,10 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
-            action, policy, confidence = self.predict_next_action(tracker)
+            action, prediction = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
-                action, tracker, output_channel, self.nlg, policy, confidence
+                action, tracker, output_channel, self.nlg, prediction
             )
             num_predicted_actions += 1
 
@@ -651,8 +694,8 @@ class MessageProcessor:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
         Reminders with the same `id` property will overwrite one another
-        (i.e. only one of them will eventually run)."""
-
+        (i.e. only one of them will eventually run).
+        """
         for e in events:
             if not isinstance(e, ReminderScheduled):
                 continue
@@ -672,7 +715,6 @@ class MessageProcessor:
         events: List[Event], tracker: DialogueStateTracker
     ) -> None:
         """Cancel reminders that match the `ReminderCancelled` event."""
-
         # All Reminders specified by ReminderCancelled events will be cancelled
         for event in events:
             if isinstance(event, ReminderCancelled):
@@ -685,12 +727,11 @@ class MessageProcessor:
 
     async def _run_action(
         self,
-        action,
-        tracker,
-        output_channel,
-        nlg,
-        policy=None,
-        confidence=None,
+        action: rasa.core.actions.action.Action,
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+        prediction: PolicyPrediction,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> bool:
         # events and return values are used to update
@@ -700,9 +741,20 @@ class MessageProcessor:
             # be passed to the SessionStart event. Otherwise the metadata will be lost.
             if action.name() == ACTION_SESSION_START_NAME:
                 action.metadata = metadata
-            events = await action.run(output_channel, nlg, tracker, self.domain)
+
+            # Use temporary tracker as we might need to discard the policy events in
+            # case of a rejection.
+            temporary_tracker = tracker.copy()
+            temporary_tracker.update_with_events(prediction.events, self.domain)
+            events = await action.run(
+                output_channel, nlg, temporary_tracker, self.domain
+            )
         except rasa.core.actions.action.ActionExecutionRejection:
-            events = [ActionExecutionRejected(action.name(), policy, confidence)]
+            events = [
+                ActionExecutionRejected(
+                    action.name(), prediction.policy_name, prediction.max_confidence
+                )
+            ]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
         except Exception:
@@ -714,7 +766,7 @@ class MessageProcessor:
             )
             events = []
 
-        self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
+        self._log_action_on_tracker(tracker, action.name(), events, prediction)
         if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
             UTTER_PREFIX
         ):
@@ -755,7 +807,11 @@ class MessageProcessor:
                         )
 
     def _log_action_on_tracker(
-        self, tracker, action_name, events, policy, confidence
+        self,
+        tracker: DialogueStateTracker,
+        action_name: Text,
+        events: Optional[List[Event]],
+        prediction: PolicyPrediction,
     ) -> None:
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
@@ -763,23 +819,24 @@ class MessageProcessor:
         if events is None:
             events = []
 
-        logger.debug(
-            f"Action '{action_name}' ended with events '{[e for e in events]}'."
-        )
-
         self._warn_about_new_slots(tracker, action_name, events)
 
-        if action_name is not None:
-            # log the action and its produced events
-            tracker.update(ActionExecuted(action_name, policy, confidence))
+        action_was_rejected_manually = any(
+            isinstance(event, ActionExecutionRejected) for event in events
+        )
+        if action_name is not None and not action_was_rejected_manually:
+            logger.debug(f"Policy prediction ended with events '{prediction.events}'.")
+            tracker.update_with_events(prediction.events, self.domain)
 
-        for e in events:
-            # this makes sure the events are ordered by timestamp -
-            # since the event objects are created somewhere else,
-            # the timestamp would indicate a time before the time
-            # of the action executed
-            e.timestamp = time.time()
-            tracker.update(e, self.domain)
+            # log the action and its produced events
+            tracker.update(
+                ActionExecuted(
+                    action_name, prediction.policy_name, prediction.max_confidence
+                )
+            )
+
+        logger.debug(f"Action '{action_name}' ended with events '{events}'.")
+        tracker.update_with_events(events, self.domain)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.
@@ -790,7 +847,6 @@ class MessageProcessor:
         Returns:
             `True` if the session in `tracker` has expired, `False` otherwise.
         """
-
         if not self.domain.session_config.are_sessions_enabled():
             # tracker has never expired if sessions are disabled
             return False
@@ -820,33 +876,36 @@ class MessageProcessor:
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
 
-    def _prob_array_for_action(self, action_name: Text) -> Tuple[List[float], None]:
-        idx = self.domain.index_for_action(action_name)
-        if idx is not None:
-            result = [0.0] * self.domain.num_actions
-            result[idx] = 1.0
-            return result, None
-        else:
-            return [], None
-
     def _get_next_action_probabilities(
         self, tracker: DialogueStateTracker
-    ) -> Tuple[List[float], Optional[Text]]:
+    ) -> PolicyPrediction:
         """Collect predictions from ensemble and return action and predictions."""
-
         followup_action = tracker.followup_action
         if followup_action:
             tracker.clear_followup_action()
-            result = self._prob_array_for_action(followup_action)
-            if result:
-                return result
-            else:
-                logger.error(
-                    f"Trying to run unknown follow-up action '{followup_action}'!"
-                    "Instead of running that, we will ignore the action "
-                    "and predict the next action."
+            if followup_action in self.domain.action_names:
+                return PolicyPrediction.for_action_name(
+                    self.domain, followup_action, FOLLOWUP_ACTION
                 )
 
-        return self.policy_ensemble.probabilities_using_best_policy(
+            logger.error(
+                f"Trying to run unknown follow-up action '{followup_action}'. "
+                "Instead of running that, Rasa Open Source will ignore the action "
+                "and predict the next action."
+            )
+
+        prediction = self.policy_ensemble.probabilities_using_best_policy(
             tracker, self.domain, self.interpreter
         )
+
+        if isinstance(prediction, PolicyPrediction):
+            return prediction
+
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"Returning a tuple of probabilities and policy name for "
+            f"`{PolicyEnsemble.probabilities_using_best_policy.__name__}` is "
+            f"deprecated and will be removed in Rasa Open Source 3.0.0. Please return "
+            f"a `{PolicyPrediction.__name__}` object instead."
+        )
+        probabilities, policy_name = prediction
+        return PolicyPrediction(probabilities, policy_name)

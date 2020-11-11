@@ -17,12 +17,13 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa shell`            |Loads your trained model and lets you talk to your assistant on the command line.                                                         |
 |`rasa run`              |Starts a server with your trained model.                                                                                                  |
 |`rasa run actions`      |Starts an action server using the Rasa SDK.                                                                                               |
-|`rasa visualize`        |Generates a visual representation of your stories.                                                                                                                       |
-|`rasa test`             |Tests a trained Rasa model on any files starting with `test_`.                                                                          |
-|`rasa data split nlu`   |Performs a 80/20 split of your NLU training data.                                                                 |
-|`rasa data convert`     |Converts training data between different formats.                                                                                     |
-|`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                             |
-|`rasa x`                |Launches Rasa X locally.                                                                                                                    |
+|`rasa visualize`        |Generates a visual representation of your stories.                                                                                                                                                            |
+|`rasa test`             |Tests a trained Rasa model on any files starting with `test_`.                                                                            |
+|`rasa data split nlu`   |Performs a 80/20 split of your NLU training data.                                                                                         |
+|`rasa data convert`     |Converts training data between different formats.                                                                                         |
+|`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                                             |
+|`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
+|`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
 
 ## rasa init
@@ -86,7 +87,11 @@ The following arguments can be used to configure the training process:
 
 ## rasa interactive
 
-To start an interactive learning session with your assistant, run:
+You can [use Rasa X in local mode](https://rasa.com/docs/rasa-x) to do interactive learning in a UI,
+check out the [docs](https://rasa.com/docs/rasa-x/user-guide/test-assistant#talk-to-your-bot)
+for more details.
+
+If you'd rather use the command line, you can start an interactive learning session by running:
 
 ```bash
 rasa interactive
@@ -113,7 +118,11 @@ The following arguments can be used to configure the interactive learning sessio
 
 ## rasa shell
 
-To start a chat session with your assistant on the command line, run:
+You can [use Rasa X in local mode](https://rasa.com/docs/rasa-x) to talk to your assistant in a UI.
+Check out the [Rasa X docs](https://rasa.com/docs/rasa-x/user-guide/test-assistant#talk-to-your-bot)
+for more details.
+
+If you'd rather use the command line, you can start a chat session by running:
 
 ```bash
 rasa shell
@@ -302,6 +311,54 @@ You can specify the input file or directory, output directory with the following
 rasa data convert nlg --help
 ```
 
+## rasa data validate
+
+You can check your domain, NLU data, or story data for mistakes and inconsistencies. 
+To validate your data, run this command:
+
+```bash
+rasa data validate
+```
+
+The validator searches for errors in the data, e.g. two intents that have some
+identical training examples.
+The validator also checks if you have any stories where different assistant actions follow from the same 
+dialogue history. Conflicts between stories will prevent a model from learning the correct
+pattern for a dialogue. 
+
+If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the 
+smallest of those values in the validator command using the `--max-history <max_history>` flag. 
+
+You can also validate only the story structure by running this command:
+
+```bash
+rasa data validate stories
+```
+
+:::note
+Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
+However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
+:::
+
+To interrupt validation even for minor issues such as unused intents or responses, use the `--fail-on-warnings` flag.
+
+:::caution check your story names
+The `rasa data validate stories` command assumes that all your story names are unique!
+:::
+
+:::caution experimental feature
+The `rasa data validate stories` command is an experimental feature. We introduce experimental 
+features to get feedback from our community, so we encourage you to try it out! However, the functionality 
+might be changed or removed in the future. If you have feedback (positive or negative) please share 
+it with us on the [Rasa Forum](https://forum.rasa.com/).
+:::
+
+You can use `rasa data validate` with additional arguments, e.g. to specify the location of your data and 
+domain files:
+
+```text [rasa data validate --help]
+```
+
 ## rasa export
 
 To export events from a tracker store using an event broker, run:
@@ -324,8 +381,8 @@ them. Read more about [importing conversations into Rasa X](https://rasa.com/doc
 
 ## rasa x
 
-Rasa X is a toolset that helps you leverage conversations to improve your assistant.
-You can find more information about it <a className="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.You can start Rasa X locally by executing
+Rasa X is a tool for practicing Conversation-Driven Development.
+You can find more information about it <a className="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.You can start Rasa X in local mode by executing
 
 ```bash
 rasa x

@@ -66,7 +66,7 @@ class YAMLStoryReader(StoryReader):
             reader.template_variables,
             reader.use_e2e,
             reader.source_name,
-            reader.is_used_for_conversion,
+            reader._is_used_for_training,
         )
 
     def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
@@ -336,7 +336,9 @@ class YAMLStoryReader(StoryReader):
                 )
                 return
 
-        self.current_step_builder.add_user_messages(utterances)
+        self.current_step_builder.add_user_messages(
+            utterances, self._is_used_for_training
+        )
 
     def _user_intent_from_step(self, step: Dict[Text, Any]) -> Text:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
@@ -390,8 +392,27 @@ class YAMLStoryReader(StoryReader):
         final_entities = []
         for entity in raw_entities:
             if isinstance(entity, dict):
+                _entity_type = None
+                _entity_value = None
+                _entity_role = None
+                _entity_group = None
                 for key, value in entity.items():
-                    final_entities.append({"entity": key, "value": value})
+                    if key == "role":
+                        _entity_role = value
+                    elif key == "group":
+                        _entity_group = value
+                    else:
+                        _entity_type = key
+                        _entity_value = value
+
+                _entity_dict = {
+                    "entity": _entity_type,
+                    "value": _entity_value,
+                    "role": _entity_role,
+                    "group": _entity_group,
+                }
+                _entity_dict = {k: v for k, v in _entity_dict.items() if v is not None}
+                final_entities.append(_entity_dict)
             else:
                 final_entities.append({"entity": entity, "value": ""})
 
