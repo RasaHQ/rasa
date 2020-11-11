@@ -1,5 +1,6 @@
 import logging
-from typing import Optional, Dict, Text, List, Any
+from pathlib import Path
+from typing import Optional, Dict, Text, List, Any, Union
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -70,7 +71,7 @@ class StoryReader:
         raise NotImplementedError
 
     @staticmethod
-    def is_stories_file(filename: Text) -> bool:
+    def is_stories_file(filename: Union[Text, Path]) -> bool:
         """Checks if the specified file is a story file.
 
         Args:

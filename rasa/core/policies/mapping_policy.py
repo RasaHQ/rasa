@@ -19,7 +19,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
@@ -95,13 +95,13 @@ class MappingPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         """Predicts the assigned action.
 
         If the current intent is assigned to an action that action will be
         predicted with the highest probability of all policies. If it is not
-        the policy will predict zero for every action."""
-
+        the policy will predict zero for every action.
+        """
         result = self._default_predictions(domain)
 
         intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
@@ -168,7 +168,7 @@ class MappingPolicy(Policy):
                 "There is no mapped action for the predicted intent, "
                 "'{}'.".format(intent)
             )
-        return result
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {"priority": self.priority}

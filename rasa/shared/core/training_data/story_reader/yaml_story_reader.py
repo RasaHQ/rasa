@@ -132,7 +132,7 @@ class YAMLStoryReader(StoryReader):
         return self.story_steps
 
     @classmethod
-    def is_stories_file(cls, file_path: Text) -> bool:
+    def is_stories_file(cls, file_path: Union[Text, Path]) -> bool:
         """Check if file contains Core training data or rule data in YAML format.
 
         Args:
@@ -151,7 +151,7 @@ class YAMLStoryReader(StoryReader):
         )
 
     @classmethod
-    def is_key_in_yaml(cls, file_path: Text, *keys: Text) -> bool:
+    def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
         """Check if all keys are contained in the parsed dictionary from a yaml file.
 
         Arguments:
