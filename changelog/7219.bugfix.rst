@@ -1,0 +1,1 @@
+Prevent the message handling process in ``PikaEventBroker`` from being terminated.
