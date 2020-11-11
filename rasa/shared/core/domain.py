@@ -1201,7 +1201,6 @@ class Domain:
                 )
 
     def is_empty(self) -> bool:
-        """Check whether the domain is empty."""
         return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod
