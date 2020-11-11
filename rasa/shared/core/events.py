@@ -7,7 +7,7 @@ import time
 import uuid
 from dateutil import parser
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterable
+from typing import List, Dict, Text, Any, Type, Optional, TYPE_CHECKING, Iterable, cast
 
 import rasa.shared.utils.common
 from typing import Union
@@ -1210,7 +1210,9 @@ class ActionExecuted(Event):
         if self.action_name:
             return {ACTION_NAME: self.action_name}
         else:
-            return {ACTION_TEXT: self.action_text}
+            # FIXME: we should define the type better here, and require either
+            #        `action_name` or `action_text`
+            return {ACTION_TEXT: cast(Text, self.action_text)}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.set_latest_action(self.as_sub_state())

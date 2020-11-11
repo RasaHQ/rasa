@@ -59,12 +59,15 @@ class SingleStateFeaturizer:
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
     ) -> Dict[Text, int]:
+        # FIXME: the code below is not type-safe, but fixing it
+        #        would require more refactoring, for instance using
+        #        data classes in our states
         if attribute in {INTENT, ACTION_NAME}:
-            return {sub_state[attribute]: 1}
+            return {sub_state[attribute]: 1}  # type: ignore[dict-item]
         elif attribute == ENTITIES:
             return {entity: 1 for entity in sub_state.get(ENTITIES, [])}
         elif attribute == ACTIVE_LOOP:
-            return {sub_state["name"]: 1}
+            return {sub_state["name"]: 1}  # type: ignore[dict-item]
         elif attribute == SLOTS:
             return {
                 f"{slot_name}_{i}": value

@@ -3,7 +3,7 @@ import os
 import warnings
 import typing
 from collections import defaultdict, namedtuple
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, cast
 
 from rasa import telemetry
 from rasa.core.policies.policy import PolicyPrediction
@@ -422,7 +422,8 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
-    gold = event.action_name or event.action_text
+    # FIXME: mypy doesn't pick up typing guard in `ActionExecuted.__init__`
+    gold = cast(Text, event.action_name or event.action_text)
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)

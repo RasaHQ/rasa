@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 # Type alias for the fingerprint
-Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
+Fingerprint = Dict[Text, Union[Optional[Text], List[Text], int, float]]
 
 FINGERPRINT_FILE_PATH = "fingerprint.json"
 
