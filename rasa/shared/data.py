@@ -23,7 +23,7 @@ def yaml_file_extension() -> Text:
     return YAML_FILE_EXTENSIONS[0]
 
 
-def is_likely_yaml_file(file_path: Text) -> bool:
+def is_likely_yaml_file(file_path: Union[Text, Path]) -> bool:
     """Check if a file likely contains yaml.
 
     Arguments:
