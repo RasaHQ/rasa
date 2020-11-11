@@ -208,7 +208,7 @@ class SlackInput(InputChannel):
                 f"bot without a signing secret is insecure and was removed. "
                 f"You need to add a `slack_signing_secret` parameter to your channel "
                 f"configuration. "
-                f"More info at {DOCS_URL_CONNECTORS_SLACK}"
+                f"More info at {DOCS_URL_CONNECTORS_SLACK} ."
             )
 
     @staticmethod
