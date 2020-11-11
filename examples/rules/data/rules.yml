@@ -44,11 +44,6 @@ rules:
   - intent: ask_possibilities
   - action: utter_list_possibilities
 
-- rule: Another FAQ example
-  steps:
-  - intent: switch_faq
-  - action: action_switch_faq
-
 - rule: FAQ simple
   condition:
   - slot_was_set:

@@ -16,6 +16,7 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
+from rasa.shared.core.events import Event
 
 import rasa.shared.utils.common
 import rasa.utils.common
@@ -31,19 +32,8 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.shared.core.constants import (
-    USER,
-    SLOTS,
-    PREVIOUS_ACTION,
-    ACTIVE_LOOP,
-)
-from rasa.shared.nlu.constants import (
-    ENTITIES,
-    INTENT,
-    TEXT,
-    ACTION_TEXT,
-    ACTION_NAME,
-)
+from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
+from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -213,7 +203,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> "PolicyPrediction":
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
@@ -223,10 +213,25 @@ class Policy:
                 additional features.
 
         Returns:
-             the list of probabilities for the next actions
+             The policy's prediction (e.g. the probabilities for the actions).
         """
-
         raise NotImplementedError("Policy must have the capacity to predict.")
+
+    def _prediction(
+        self,
+        probabilities: List[float],
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
+        is_end_to_end_prediction: bool = False,
+    ) -> "PolicyPrediction":
+        return PolicyPrediction(
+            probabilities,
+            self.__class__.__name__,
+            self.priority,
+            events,
+            optional_events,
+            is_end_to_end_prediction,
+        )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
         """Returns this policy's attributes that should be persisted.
@@ -351,6 +356,104 @@ class Policy:
                     formatted_states.append(state_formatted)
 
         return "\n".join(formatted_states)
+
+
+class PolicyPrediction:
+    """Stores information about the prediction of a `Policy`."""
+
+    def __init__(
+        self,
+        probabilities: List[float],
+        policy_name: Optional[Text],
+        policy_priority: int = 1,
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
+        is_end_to_end_prediction: bool = False,
+    ) -> None:
+        """Creates a `PolicyPrediction`.
+
+        Args:
+            probabilities: The probabilities for each action.
+            policy_name: Name of the policy which made the prediction.
+            policy_priority: The priority of the policy which made the prediction.
+            events: Events which the `Policy` needs to have applied to the tracker
+                after the prediction. These events are applied independent of whether
+                the policy wins against other policies or not. Be careful which events
+                you return as they can potentially influence the conversation flow.
+            optional_events: Events which the `Policy` needs to have applied to the
+                tracker after the prediction in case it wins. These events are only
+                applied in case the policy's prediction wins. Be careful which events
+                you return as they can potentially influence the conversation flow.
+            is_end_to_end_prediction: `True` if the prediction used the text of the
+                user message instead of the intent.
+        """
+        self.probabilities = probabilities
+        self.policy_name = policy_name
+        self.policy_priority = (policy_priority,)
+        self.events = events or []
+        self.optional_events = optional_events or []
+        self.is_end_to_end_prediction = is_end_to_end_prediction
+
+    @staticmethod
+    def for_action_name(
+        domain: Domain,
+        action_name: Text,
+        policy_name: Optional[Text] = None,
+        confidence: float = 1.0,
+    ) -> "PolicyPrediction":
+        """Create a prediction for a given action.
+
+        Args:
+            domain: The current model domain
+            action_name: The action which should be predicted.
+            policy_name: The policy which did the prediction.
+            confidence: The prediction confidence.
+
+        Returns:
+            The prediction.
+        """
+        probabilities = confidence_scores_for(action_name, confidence, domain)
+
+        return PolicyPrediction(probabilities, policy_name)
+
+    def __eq__(self, other: Any) -> bool:
+        """Checks if the two objects are equal.
+
+        Args:
+            other: Any other object.
+
+        Returns:
+            `True` if other has the same type and the values are the same.
+        """
+        if not isinstance(other, PolicyPrediction):
+            return False
+
+        return (
+            self.probabilities == other.probabilities
+            and self.policy_name == other.policy_name
+            and self.policy_priority == other.policy_priority
+            and self.events == other.events
+            and self.optional_events == other.events
+            and self.is_end_to_end_prediction == other.is_end_to_end_prediction
+        )
+
+    @property
+    def max_confidence_index(self) -> int:
+        """Gets the index of the action prediction with the highest confidence.
+
+        Returns:
+            The index of the action with the highest confidence.
+        """
+        return self.probabilities.index(self.max_confidence)
+
+    @property
+    def max_confidence(self) -> float:
+        """Gets the highest predicted probability.
+
+        Returns:
+            The highest predicted probability.
+        """
+        return max(self.probabilities, default=0.0)
 
 
 def confidence_scores_for(
