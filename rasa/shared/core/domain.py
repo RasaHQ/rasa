@@ -1500,7 +1500,7 @@ class SlotMapping(Enum):
             )
 
         for required_key in required_keys:
-            if not mapping.get(required_key):
+            if mapping.get(required_key) is None:
                 raise InvalidDomain(
                     f"You need to specify a value for the key "
                     f"'{required_key}' in the slot mapping of type '{mapping_type}'"

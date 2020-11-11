@@ -478,7 +478,7 @@ def test_merge_domain_with_forms():
     forms:
       my_form3:
         slot1:
-          type: from_text
+        - type: from_text
     """
 
     domain_1 = Domain.from_yaml(test_yaml_1)
@@ -1093,6 +1093,7 @@ def test_get_featurized_entities():
                 "my_form": {"slot_x": [{"type": "from_intent", "value": "some value"}]}
             }
         },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": False}]}}},
         {
             KEY_FORMS: {
                 "my_form": {"slot_x": [{"type": "from_trigger_intent", "value": 5}]}
@@ -1120,6 +1121,8 @@ def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
         {KEY_FORMS: {"my_form": 5}},
         # Slot mappings not defined as list
         {KEY_FORMS: {"my_form": {"slot1": {}}}},
+        # Unknown mapping
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "my slot mapping"}]}}},
         # Mappings with missing keys
         {
             KEY_FORMS: {
