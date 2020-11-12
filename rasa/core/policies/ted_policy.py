@@ -1061,30 +1061,30 @@ class TED(TransformerRasaModel):
                             ),
                         )
                     ).values
-                    # since use_only_last_dialogue_turn is True,
+                    # Since use_only_last_dialogue_turn is True,
                     # we need to find the locations of last dialogue turns in
-                    # (combined batch dimension and dialogue length,) dimension
-                    # so that we can use `_sequence_lengths` as a boolean to pick
-                    # which ones are "real" textual input in these last dialogue turns
+                    # (combined batch dimension and dialogue length,) dimension,
+                    # so that we can use `_sequence_lengths` as a boolean  mask to pick
+                    # which ones are "real" textual input in these last dialogue turns.
 
-                    # in order to do that we can use given `dialogue_lengths`
-                    # for example:
-                    # if we have `dialogue_lengths = [2, 1, 3]`, than
+                    # In order to do that we can use given `dialogue_lengths`.
+                    # For example:
+                    # If we have `dialogue_lengths = [2, 1, 3]`, than
                     # `dialogue_indices = [0, 1, 0, 0, 1, 2]` here we can spot that `0`
                     # always indicates the first dialogue turn,
-                    # which means that previous dialogue turn is the last one,
-                    # combining this with the fact that the last element in
+                    # which means that previous dialogue turn is the last dialogue turn.
+                    # Combining this with the fact that the last element in
                     # `dialogue_indices` is always the last dialogue turn, we can add
                     # a `0` to the end, getting
-                    # `_dialogue_indices = [0, 1, 0, 0, 1, 2, 0]`,
-                    # then remove the first element
+                    # `_dialogue_indices = [0, 1, 0, 0, 1, 2, 0]`.
+                    # Then removing the first element
                     # `_last_dialogue_turn_inverse_indicator = [1, 0, 0, 1, 2, 0]`
-                    # and we see that `0` points to last dialogue turn,
-                    # the rest is to convert all positive numbers to `True` and take
+                    # we see that `0` points to the last dialogue turn.
+                    # We convert all positive numbers to `True` and take
                     # the inverse mask to get
-                    # `last_dialogue_mask = [0, 1, 1, 0, 0, 1]
+                    # `last_dialogue_mask = [0, 1, 1, 0, 0, 1],
                     # which precisely corresponds to the fact that first dialogue is of
-                    # length 2, the second 1 and the third 3
+                    # length 2, the second 1 and the third 3.
                     last_dialogue_mask = tf.math.logical_not(
                         tf.cast(
                             tf.concat(
@@ -1353,7 +1353,12 @@ class TED(TransformerRasaModel):
         text_transformer_output: tf.Tensor,
         text_sequence_lengths: tf.Tensor,
     ) -> tf.Tensor:
-
+        # It could happen that some batches don't contain "real" features for `text`,
+        # e.g. large number of stories are intent only.
+        # Therefore actual `text_transformer_output` will be empty.
+        # We cannot create a loss with empty tensors.
+        # Since we need actual numbers to create a full loss, we output
+        # zero in this case.
         return tf.cond(
             tf.shape(text_transformer_output)[0] > 0,
             lambda: self._real_batch_loss_entities(
@@ -1544,6 +1549,12 @@ class TED(TransformerRasaModel):
         text_transformer_output: tf.Tensor,
         text_sequence_lengths: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
+        # It could happen that current prediction turn don't contain
+        # "real" features for `text`,
+        # Therefore actual `text_transformer_output` will be empty.
+        # We cannot predict entities with empty tensors.
+        # Since we need to output some tensors of the same shape, we output
+        # zero tensors.
         return tf.cond(
             tf.shape(text_transformer_output)[0] > 0,
             lambda: self._real_batch_predict_entities(
