@@ -243,6 +243,17 @@ class SingleStateFeaturizer:
     def encode_entity(
         self, entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List["Features"]]:
+        """Encode the given entity data with the help of the given interpreter.
+
+        Produce numeric entity tags for tokens.
+
+        Args:
+            entity_data: The dict containing the text and entity labels and locations
+            interpreter: The interpreter used to encode the state
+
+        Returns:
+            A dictionary of entity type to list of features.
+        """
         from rasa.nlu.test import determine_token_labels
 
         # TODO

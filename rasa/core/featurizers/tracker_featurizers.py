@@ -115,6 +115,15 @@ class TrackerFeaturizer:
     def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+        """Transforms list of trackers to lists of states, actions and entity data.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+
+        Returns:
+            A tuple of list of states, list of actions and list of entity data.
+        """
         raise NotImplementedError(
             "Featurizer must have the capacity to encode trackers to feature vectors"
         )
@@ -293,16 +302,14 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states and actions.
-
-        Training data is padded up to the length of the longest dialogue with -1.
+        """Transforms list of trackers to lists of states, actions and entity data.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
 
         Returns:
-            A tuple of list of states and list of actions.
+            A tuple of list of states, list of actions and list of entity data.
         """
 
         trackers_as_states = []
@@ -438,16 +445,14 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     def training_states_actions_and_entities(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states and actions.
-
-        Training data is padded up to the length of the longest dialogue with -1.
+        """Transforms list of trackers to lists of states, actions and entity data.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
 
         Returns:
-            A tuple of list of states and list of actions.
+            A tuple of list of states, list of actions and list of entity data.
         """
 
         trackers_as_states = []
