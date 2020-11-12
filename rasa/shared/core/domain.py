@@ -1484,6 +1484,9 @@ class SlotMapping(Enum):
             mapping: The mapping which is validated.
             form_name: The name of the form which uses this slot mapping.
             slot_name: The name of the slot which is mapped by this mapping.
+
+        Raises:
+            InvalidDomain: In case the slot mapping is not valid.
         """
         if not isinstance(mapping, dict):
             raise InvalidDomain(
