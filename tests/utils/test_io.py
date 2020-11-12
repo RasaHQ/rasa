@@ -96,7 +96,7 @@ def test_write_utf_8_yaml_file(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "dictionary",
+    "container",
     [
         {},
         {"hello": "world"},
@@ -109,10 +109,10 @@ def test_write_utf_8_yaml_file(tmp_path: Path):
         [None],
     ],
 )
-def test_fingerprint_dicionaries(dictionary):
+def test_fingerprint_containers(container):
     assert rasa.shared.utils.io.deep_container_fingerprint(
-        dictionary
-    ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(dictionary))
+        container
+    ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(container))
 
 
 def test_fingerprint_does_not_use_string_hashing(monkeypatch):
