@@ -7,6 +7,7 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 import rasa.core.utils
 import rasa.shared.utils.cli
+import rasa.utils.common
 from rasa.cli.arguments import export as arguments
 from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORES
 from rasa.exceptions import PublishingError
@@ -84,7 +85,7 @@ def _get_event_broker(endpoints: "AvailableEndpoints") -> "EventBroker":
     """
     from rasa.core.brokers.broker import EventBroker
 
-    broker = EventBroker.create(endpoints.event_broker)
+    broker = rasa.utils.common.run_in_loop(EventBroker.create(endpoints.event_broker))
 
     if not broker:
         rasa.shared.utils.cli.print_error_and_exit(

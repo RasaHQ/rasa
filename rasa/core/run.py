@@ -250,7 +250,7 @@ async def load_agent_on_start(
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None
 
-    _broker = EventBroker.create(endpoints.event_broker)
+    _broker = await EventBroker.create(endpoints.event_broker, loop=loop)
     _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
     _lock_store = LockStore.create(endpoints.lock_store)
 
