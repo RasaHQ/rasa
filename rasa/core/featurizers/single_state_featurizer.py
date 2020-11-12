@@ -43,7 +43,7 @@ class SingleStateFeaturizer:
     def __init__(self) -> None:
         self._default_feature_states = {}
         self.action_texts = []
-        self.tag_id_mapping = {}
+        self.entity_tag_id_mapping = {}
 
     def get_entity_tag_ids(self) -> Dict[Text, int]:
         """Returns the tag to index mapping for entities.
