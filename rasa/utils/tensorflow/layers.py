@@ -136,7 +136,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         if len(inputs.shape) == 3:
             # reshape back
             outputs = tf.reshape(
-                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
+                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], self.units)
             )
 
         if self.use_bias:

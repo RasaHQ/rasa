@@ -803,7 +803,10 @@ class TransformerRasaModel(RasaModel):
             if not dense:
                 # create dense labels for the input to use in negative sampling
                 self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
-                    units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
+                    units=2,
+                    use_bias=False,
+                    trainable=False,
+                    name=f"sparse_to_dense_ids.{name}",
                 )
 
     def _prepare_input_layers(self, name: Text) -> None:

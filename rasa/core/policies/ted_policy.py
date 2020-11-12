@@ -862,6 +862,7 @@ class TED(TransformerRasaModel):
             f"{name}",
             [self.config[ENCODING_DIMENSION]],
             self.config[DROP_RATE_DIALOGUE],
+            prefix="encoding_layer",
         )
 
     # ---GRAPH BUILDING HELPERS---
@@ -1098,7 +1099,7 @@ class TED(TransformerRasaModel):
             )
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
-            attribute_features = self._tf_layers[f"ffnn.{attribute}"](
+            attribute_features = self._tf_layers[f"encoding_layer.{attribute}"](
                 attribute_features
             )
 
