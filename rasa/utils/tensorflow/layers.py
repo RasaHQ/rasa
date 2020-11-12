@@ -1182,6 +1182,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
         sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask)
+        # sem_neg_ll = self.sim(pos_labels_embed, neg_labels_embed, mask)
 
         # print("Sim pos shape", sim_pos.shape)
         # print("Sim neg_il shape", sim_neg_il.shape)

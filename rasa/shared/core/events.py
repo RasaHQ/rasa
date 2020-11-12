@@ -364,6 +364,7 @@ class UserUttered(Event):
             "text": self.text,
             "message_id": self.message_id,
             "metadata": self.metadata,
+            "is_probable": self.is_probable,
         }
 
         if parse_data:
@@ -387,6 +388,7 @@ class UserUttered(Event):
             input_channel,
             message_id,
             metadata,
+            is_probable=parse_data.get("is_probable", True),
         )
 
     def __hash__(self) -> int:
@@ -539,6 +541,7 @@ class UserUttered(Event):
 
     def set_as_not_probable(self):
         self.is_probable = False
+        self.parse_data["is_probable"] = self.is_probable
 
 
 # noinspection PyProtectedMember

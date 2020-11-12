@@ -489,25 +489,32 @@ class IntentTEDPolicy(TEDPolicy):
             if self.use_probability_thresholds
             else output["sim_all"].numpy()[:, -1, :]
         )
-        print(confidences.shape)
 
         # Todo: remove this, as this was just for printing
         intent_confidences = {}
         for index, intent in enumerate(self._all_labels):
             intent_confidences[intent] = confidences[0][index]
 
+        confidences_to_print = []
         for intent in set(self._all_labels) - set(
             rasa.shared.core.constants.DEFAULT_INTENTS
         ):
             # print("Confidences", intent_confidences)
             # print("thresholds", )
             if label_to_id_map[intent] in self.intent_thresholds:
-                print(
-                    intent,
-                    label_to_id_map[intent],
-                    intent_confidences[intent],
-                    self.intent_thresholds[label_to_id_map[intent]],
+                confidences_to_print.append(
+                    (
+                        intent,
+                        label_to_id_map[intent],
+                        intent_confidences[intent],
+                        self.intent_thresholds[label_to_id_map[intent]],
+                    )
                 )
+        confidences_to_print = reversed(
+            sorted(confidences_to_print, key=lambda x: x[2])
+        )
+        for elem in confidences_to_print:
+            print(elem)
         print("======================")
 
         # Get the last intent prediction from tracker
