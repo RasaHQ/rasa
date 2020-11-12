@@ -103,6 +103,11 @@ pipeline:
   - name: RegexFeaturizer
   - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
+    # Analyzer to use, either 'word' (default), 'char', or 'char_wb'
+    analyzer: "word"
+    # Set the lower and upper boundaries for the n-grams.
+    min_ngram: 1
+    max_ngram: 1
   - name: CountVectorsFeaturizer
     analyzer: "char_wb"
     min_ngram: 1
