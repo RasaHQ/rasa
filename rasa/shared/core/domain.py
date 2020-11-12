@@ -1523,7 +1523,7 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     if isinstance(forms, list):
         if not all(isinstance(form_name, str) for form_name in forms):
             raise InvalidDomain(
-                f"If use the deprecated list syntax for forms, "
+                f"If you use the deprecated list syntax for forms, "
                 f"all form names have to be strings. Please see "
                 f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
             )
