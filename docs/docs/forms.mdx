@@ -43,7 +43,7 @@ forms:
 Once the form action gets called for the first time, the form gets activated and will
 prompt the user for the next required slot value. It does this by
 looking for a [response](./responses.mdx) called
-`utter_ask_{form_name}_{slot_name}` or `utter_ask_{slot_name}` if the former isn't
+`utter_ask_<form_name>_<slot_name>` or `utter_ask_<slot_name>` if the former isn't
 found. Make sure to define these responses in your domain file for
 each required slot.
 
@@ -299,7 +299,7 @@ After extracting a slot value from user input, you can validate the extracted sl
 By default Rasa Open Source only validates if any slot was filled after requesting
 a slot.
 
-You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_{form_name}`
+You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>`
 to validate any extracted slots. Make sure to add this action to the `actions`
 section of your domain:
 
@@ -360,7 +360,7 @@ to fully customize the validation process.
 
 If none of the predefined [Slot Mappings](./forms.mdx#slot-mappings) fit your use
 case, you can use the
-[Custom Action](./actions.mdx#custom-actions) `validate_{form_name}` to write your own
+[Custom Action](./actions.mdx#custom-actions) `validate_<form_name>` to write your own
 extraction code. Rasa Open Source will trigger this action when the form is run.
 
 If you're using the Rasa SDK we recommend you to extend the provided
@@ -555,10 +555,10 @@ Again, it is **strongly** recommended that you use
 ### Using a Custom Action to Ask For the Next Slot
 
 As soon as the form determines which slot has to be filled next by the user, it will
-execute the action `utter_ask_{form_name}_{slot_name}` or `utter_ask_{slot_name}`
+execute the action `utter_ask_<form_name>_<slot_name>` or `utter_ask_<slot_name>`
 to ask the user to provide the necessary information. If a regular utterance is not
-enough, you can also use a custom action `action_ask_{form_name}__{slot_name}` or
-`action_ask_{slot_name}` to ask for the next slot.
+enough, you can also use a custom action `action_ask_<form_name>__<slot_name>` or
+`action_ask_<slot_name>` to ask for the next slot.
 
 ```python
 from typing import Dict, Text, List
