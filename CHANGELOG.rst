@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.17] - 2020-11-12
+^^^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#7219 <https://github.com/rasahq/rasa/issues/7219>`_: Prevent the message handling process in ``PikaEventBroker`` from being terminated.
+
+
 [1.10.16] - 2020-10-15
 ^^^^^^^^^^^^^^^^^^^^^^
 
