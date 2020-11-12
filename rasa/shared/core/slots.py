@@ -166,9 +166,9 @@ class FloatSlot(Slot):
                 covered_range = abs(self.max_value - self.min_value)
             else:
                 covered_range = 1
-            return [(capped_value - self.min_value) / covered_range]
+            return [1.0, (capped_value - self.min_value) / covered_range]
         except (TypeError, ValueError):
-            return [0.0]
+            return [0.0, 0.0]
 
     def persistence_info(self) -> Dict[Text, Any]:
         d = super().persistence_info()
