@@ -79,7 +79,7 @@ class SingleStateFeaturizer:
         self._default_feature_states[SLOTS] = convert_to_dict(domain.slot_states)
         self._default_feature_states[ACTIVE_LOOP] = convert_to_dict(domain.form_names)
         self.action_texts = domain.action_texts
-        self.tag_id_mapping = self.get_entity_tag_ids()
+        self.entity_tag_id_mapping = self.get_entity_tag_ids()
 
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
@@ -252,7 +252,7 @@ class SingleStateFeaturizer:
         # TODO
         #  Should we support BILOU tagging?
 
-        if TEXT not in entity_data or len(self.tag_id_mapping) < 2:
+        if TEXT not in entity_data or len(self.entity_tag_id_mapping) < 2:
             # we cannot build a classifier if there are less than 2 class
             return {}
 
@@ -265,7 +265,7 @@ class SingleStateFeaturizer:
                 token, entities, attribute_key=ENTITY_ATTRIBUTE_TYPE
             )
             # TODO handle if tag is not in mapping
-            _tags.append(self.tag_id_mapping[_tag])
+            _tags.append(self.entity_tag_id_mapping[_tag])
 
         # transpose to have seq_len x 1
         return {
