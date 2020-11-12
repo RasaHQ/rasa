@@ -1027,7 +1027,7 @@ class TED(TransformerRasaModel):
             mask_sequence_text = tf.squeeze(
                 self._compute_mask(sequence_lengths), axis=1
             )
-            sequence_lengths = sequence_lengths + 1
+            sequence_lengths += 1
             mask_text = tf.squeeze(self._compute_mask(sequence_lengths), axis=1)
 
             attribute_features, _, _, _ = self._create_sequence(
