@@ -1,4 +1,3 @@
-import copy
 import zlib
 
 import base64

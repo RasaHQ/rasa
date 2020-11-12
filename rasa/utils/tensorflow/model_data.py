@@ -124,7 +124,7 @@ class FeatureArray(np.ndarray):
     def _validate_number_of_dimensions(
         number_of_dimensions: int, input_array: np.ndarray
     ) -> None:
-        """Validates if the given number of dimensions maps the with the dimensions of the input array.
+        """Validates if the the input array has given number of dimensions.
 
         Args:
             number_of_dimensions: number of dimensions
@@ -142,7 +142,8 @@ class FeatureArray(np.ndarray):
                 break
             if isinstance(_sub_array, np.ndarray) and _sub_array.shape[0] == 0:
                 # sequence dimension is 0, we are dealing with "fake" features
-                return
+                dim = i
+                break
 
         # If the resulting sub_array is sparse, the remaining number of dimensions
         # should be at least 2
@@ -150,7 +151,15 @@ class FeatureArray(np.ndarray):
             if dim > 2:
                 raise ValueError(
                     f"Given number of dimensions '{number_of_dimensions}' does not "
-                    f"match dimensiona of given input array: {input_array}."
+                    f"match dimensions of given input array: {input_array}."
+                )
+        elif isinstance(_sub_array, np.ndarray) and _sub_array.shape[0] == 0:
+            # sequence dimension is 0, we are dealing with "fake" features,
+            # but they should be of dim 2
+            if dim > 2:
+                raise ValueError(
+                    f"Given number of dimensions '{number_of_dimensions}' does not "
+                    f"match dimensions of given input array: {input_array}."
                 )
         # If the resulting sub_array is dense, the sub_array should be a single number
         elif not np.issubdtype(type(_sub_array), np.integer) and not isinstance(
