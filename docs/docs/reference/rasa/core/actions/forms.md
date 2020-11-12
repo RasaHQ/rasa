@@ -9,6 +9,21 @@ title: rasa.core.actions.forms
 class FormAction(LoopAction)
 ```
 
+Action which implements and executes the form logic.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(form_name: Text, action_endpoint: Optional[EndpointConfig]) -> None
+```
+
+Creates a `FormAction`.
+
+**Arguments**:
+
+- `form_name` - Name of the form.
+- `action_endpoint` - Endpoint to execute custom actions.
+
 #### required\_slots
 
 ```python

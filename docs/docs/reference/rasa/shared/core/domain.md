@@ -457,3 +457,39 @@ or a list of them, where the first match will be picked
 
   The slot mapping or an empty dictionary in case no mapping was found.
 
+## SlotMapping Objects
+
+```python
+class SlotMapping(Enum)
+```
+
+Defines the available slot mappings.
+
+#### \_\_str\_\_
+
+```python
+ | __str__() -> Text
+```
+
+Returns a string representation of the object.
+
+#### validate
+
+```python
+ | @staticmethod
+ | validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None
+```
+
+Validates a slot mapping.
+
+**Arguments**:
+
+- `mapping` - The mapping which is validated.
+- `form_name` - The name of the form which uses this slot mapping.
+- `slot_name` - The name of the slot which is mapped by this mapping.
+  
+
+**Raises**:
+
+- `InvalidDomain` - In case the slot mapping is not valid.
+
