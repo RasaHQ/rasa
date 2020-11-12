@@ -3,26 +3,11 @@ import json
 import logging
 import os
 import ssl
-import time
-import typing
 from asyncio import AbstractEventLoop
 from collections import deque
-from contextlib import contextmanager
-from typing import (
-    Callable,
-    Deque,
-    Dict,
-    Optional,
-    Text,
-    Union,
-    Any,
-    List,
-    Tuple,
-    Generator,
-)
+from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
 
 import aio_pika
-from aio_pika import ExchangeType
 
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
@@ -160,7 +145,7 @@ class PikaEventBroker(EventBroker):
         self, channel: aio_pika.RobustChannel
     ) -> aio_pika.Exchange:
         exchange = await channel.declare_exchange(
-            RABBITMQ_EXCHANGE, type=ExchangeType.FANOUT
+            RABBITMQ_EXCHANGE, type=aio_pika.ExchangeType.FANOUT
         )
 
         for queue in self.queues:
