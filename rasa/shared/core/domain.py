@@ -1534,14 +1534,17 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
     for form_name, slots in forms.items():
-        if not isinstance(slots, Dict) and slots is not None:
+        if slots is None:
+            continue
+
+        if not isinstance(slots, Dict):
             raise InvalidDomain(
                 f"The slots for form '{form_name}' were specified "
                 f"as '{type(slots)}'. They need to be specified "
                 f"as dictionary. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
                 f"for more information."
             )
-        slots = slots or {}
+
         for slot_name, slot_mappings in slots.items():
             if not isinstance(slot_mappings, list):
                 raise InvalidDomain(
