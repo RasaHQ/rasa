@@ -1477,7 +1477,7 @@ class SlotMapping(Enum):
         return self.name.lower()
 
     @staticmethod
-    def validate(mapping: Any, form_name: Text, slot_name: Text) -> None:
+    def validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None:
         """Validates a slot mapping.
 
         Args:
