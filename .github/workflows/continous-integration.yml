@@ -104,7 +104,7 @@ jobs:
 
         # Fetch entire history for current branch so that `make lint-docstrings`
         # can calculate the proper diff between the branches
-        git pull --ff-only --unshallow origin ${{ github.head_ref }}
+        git pull --ff-only --unshallow origin "${{ github.head_ref }}"
 
     - name: Lint Code 🎎
       run: |
