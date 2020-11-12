@@ -9,3 +9,6 @@ actions:
 intents:
  - greet
  - mood_great
+
+entities:
+ - bla

@@ -438,6 +438,9 @@ class TEDPolicy(Policy):
             FeatureArray(dialogue_lengths, number_of_dimensions=1)
         ]
 
+        # make sure all keys are in the same order during training and prediction
+        model_data.sort()
+
         return model_data
 
     def train(
@@ -1304,6 +1307,12 @@ class TED(TransformerRasaModel):
         )
 
         text_mask = tf.squeeze(self._compute_mask(text_sequence_lengths), axis=1)
+        # add zeros to match the shape of text_transformed, because
+        # max sequence length might differ, since it is calculated dynamically
+        # based on a subset of sequence lengths
+        sequence_diff = tf.shape(text_transformed)[1] - tf.shape(text_mask)[1]
+        text_mask = tf.pad(text_mask, [[0, 0], [0, sequence_diff], [0, 0]])
+
         # remove additional dims and sentence features
         text_sequence_lengths = tf.reshape(text_sequence_lengths, (-1,)) - 1
 
@@ -1347,7 +1356,8 @@ class TED(TransformerRasaModel):
 
         tag_ids = tf_batch_data[ENTITY_TAGS][IDS][0]
         # add a zero (no entity) for the sentence features to match the shape of inputs
-        tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
+        sequence_diff = tf.shape(text_transformed)[1] - tf.shape(tag_ids)[1]
+        tag_ids = tf.pad(tag_ids, [[0, 0], [0, sequence_diff], [0, 0]])
 
         loss, f1, _ = self._calculate_entity_loss(
             text_transformed,
