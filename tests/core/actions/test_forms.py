@@ -849,22 +849,6 @@ def test_extract_requested_slot_from_entity(
     assert slot_values == expected_slot_values
 
 
-def test_invalid_slot_mapping():
-    form_name = "my_form"
-    form = FormAction(form_name, None)
-    slot_name = "test"
-    tracker = DialogueStateTracker.from_events(
-        "sender", [SlotSet(REQUESTED_SLOT, slot_name)]
-    )
-
-    domain = Domain.from_dict(
-        {"forms": {form_name: {slot_name: [{"type": "invalid"}]}}}
-    )
-
-    with pytest.raises(InvalidDomain):
-        form.extract_requested_slot(tracker, domain)
-
-
 @pytest.mark.parametrize(
     "some_other_slot_mapping, some_slot_mapping, entities, intent, expected_slot_values",
     [
