@@ -19,6 +19,7 @@ from rasa.shared.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     IS_EXTERNAL,
     LOOP_INTERRUPTED,
+    ACTION_SESSION_START_NAME,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -590,10 +591,9 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        from rasa.shared.core.constants import ACTION_LISTEN_NAME
-
+        """Resets the tracker and triggers a followup `ActionSessionStart`."""
         tracker._reset()
-        tracker.trigger_followup_action(ACTION_LISTEN_NAME)
+        tracker.trigger_followup_action(ACTION_SESSION_START_NAME)
 
 
 # noinspection PyProtectedMember
