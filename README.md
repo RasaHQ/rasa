@@ -265,6 +265,61 @@ The static site that gets built is pushed to the `documentation` branch of this 
 We host the site on netlify. On master branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
 the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
+## Releases
+### Release Timeline
+**For Rasa Open Source, we usually commit to time-based releases, specifically on a monthly basis.** 
+This means that we commit beforehand to releasing a specific version of Rasa Open Source on a specific day, 
+and we cannot be 100% sure what will go in a release, because certain features may not be ready. 
+
+At the beginning of each quarter, the Rasa team will review the scheduled release dates for all products and make sure 
+they work for the projected work we have planned for the quarter, as well as work well across products.
+
+**Once the dates are settled upon, we update the respective milestones.**
+
+### Cutting a Major / Minor release
+#### A week before release day
+
+1. **Make sure the [milestone](https://github.com/RasaHQ/rasa/milestones) already exists and is scheduled for the 
+correct date**
+2. **Take a look at the issues & PRs that are in the milestone**: does it look about right for the release highlights 
+we are planning to ship? Does it look like anything is missing? (don't worry about being aware of every PR that should 
+be in, but it's useful to take a moment to evaluate what's assigned to the milestone)
+3. **Post a message on the engineering Slack channel**, letting the team know you'll be the one cutting the upcoming 
+release, as well as:
+    1. Providing the link to the appropriate milestone
+    2. Reminding everyone to go over their issues and PRs and please assign them to the milestone
+    3. Clarifying the scheduled date for the release
+
+#### Release day! 🤘
+
+1. **At the start of the day, post a small message on slack announcing release day!** Communicate you'll be handling 
+the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and 
+cause delays)
+2. **Go over the milestone and evaluate the status of any PR merging that's happening. Follow up with people on their 
+bugs and fixes.** If the release introduces new bugs or regressions that can't be fixed in time, we should discuss on 
+Slack about this and take a decision to go forward or postpone the release. 
+3. Once everything in the milestone is taken care of, post a small message on Slack communicating you are about to 
+start the release process (in case anything is missing).
+4. **You may now do the release by following the instructions outlined in the 
+[Rasa Open Source README](#steps-to-release-a-new-version) !**
+
+### Cutting a Micro release
+
+Micro releases are simpler to cut, since:
+
+- They are meant to contain only bugfixes
+- They require no code freeze
+- They require no general QA pass
+
+**The only things you need to do to cut a micro are:**
+
+1. Notify the engineering team on Slack that you are planning to cut a micro, in case someone has an important fix 
+to add.
+2. Make sure the bugfix(es) are in the release branch you will use (p.e if you are cutting a `2.0.4` micro, you will 
+need your fixes to be on the `2.0.x` release branch)
+3. Once you're ready to release the Rasa Open Source micro, checkout the branch, run `make release` and follow the 
+steps + get the PR merged.
+4. Once the PR is in, pull the `.x` branch again and push the tag!
 
 ## License
 Licensed under the Apache License, Version 2.0.
