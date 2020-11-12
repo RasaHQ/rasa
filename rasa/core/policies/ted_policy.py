@@ -550,6 +550,7 @@ class TEDPolicy(Policy):
         if (
             len(tracker_state_features) == 2
             and np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
+            # TODO maybe compare confidences is better
             and np.max(similarities[1]) > np.max(similarities[0])
         ):
             batch_index = 1
