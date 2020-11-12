@@ -438,7 +438,7 @@ class IntentTEDPolicy(TEDPolicy):
 
         if self.ignore_retrieval_intents and intent in domain.retrieval_intents:
             return False
-        if domain.index_for_intent(intent) not in self.intent_thresholds:
+        if self._all_labels.index(intent) not in self.intent_thresholds:
             # This means the intent was never present in a story
             return False
         if intent in self.ignore_intent_list:
