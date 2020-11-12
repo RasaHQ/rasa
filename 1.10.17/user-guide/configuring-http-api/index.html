@@ -1,0 +1,902 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuring the HTTP API</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Deploying Your Rasa Assistant" href="../how-to-deploy/" />
+    <link rel="prev" title="Validate Data" href="../validate-files/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Configuring the HTTP API" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/user-guide/configuring-http-api" />
+  
+    <meta name="description" content="Find out how to use Rasa’s HTTP API to integrate Rasa
+with your backend components." />
+    <meta itemprop="description" content="Find out how to use Rasa’s HTTP API to integrate Rasa
+with your backend components.">
+    <meta name="twitter:description" content="Find out how to use Rasa’s HTTP API to integrate Rasa
+with your backend components." />
+    <meta property="og:description" content="Find out how to use Rasa’s HTTP API to integrate Rasa
+with your backend components." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Configuring the HTTP API">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/user-guide/configuring-http-api/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate-files/">Validate Data</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.17
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.17/user-guide/configuring-http-api/">1.10.17</a>
+              <a href="../../../1.10.16/user-guide/configuring-http-api/">1.10.16</a>
+              <a href="../../../1.10.15/user-guide/configuring-http-api/">1.10.15</a>
+              <a href="../../../1.10.14/user-guide/configuring-http-api/">1.10.14</a>
+              <a href="../../../1.10.13/user-guide/configuring-http-api/">1.10.13</a>
+              <a href="../../../1.10.12/user-guide/configuring-http-api/">1.10.12</a>
+              <a href="../../../1.10.11/user-guide/configuring-http-api/">1.10.11</a>
+              <a href="../../../1.10.10/user-guide/configuring-http-api/">1.10.10</a>
+              <a href="../../../1.10.9/user-guide/configuring-http-api/">1.10.9</a>
+              <a href="../../../1.10.8/user-guide/configuring-http-api/">1.10.8</a>
+              <a href="../../../1.10.7/user-guide/configuring-http-api/">1.10.7</a>
+              <a href="../../../1.10.6/user-guide/configuring-http-api/">1.10.6</a>
+              <a href="../../../1.10.5/user-guide/configuring-http-api/">1.10.5</a>
+              <a href="../../../1.10.4/user-guide/configuring-http-api/">1.10.4</a>
+              <a href="../../../1.10.3/user-guide/configuring-http-api/">1.10.3</a>
+              <a href="../../../1.10.2/user-guide/configuring-http-api/">1.10.2</a>
+              <a href="../../../1.10.1/user-guide/configuring-http-api/">1.10.1</a>
+              <a href="../../../1.10.0/user-guide/configuring-http-api/">1.10.0</a>
+              <a href="../../../1.9.7/user-guide/configuring-http-api/">1.9.7</a>
+              <a href="../../../1.9.6/user-guide/configuring-http-api/">1.9.6</a>
+              <a href="../../../1.9.5/user-guide/configuring-http-api/">1.9.5</a>
+              <a href="../../../1.9.4/user-guide/configuring-http-api/">1.9.4</a>
+              <a href="../../../1.9.3/user-guide/configuring-http-api/">1.9.3</a>
+              <a href="../../../1.9.2/user-guide/configuring-http-api/">1.9.2</a>
+              <a href="../../../1.9.1/user-guide/configuring-http-api/">1.9.1</a>
+              <a href="../../../1.9.0/user-guide/configuring-http-api/">1.9.0</a>
+              <a href="../../../1.8.3/user-guide/configuring-http-api/">1.8.3</a>
+              <a href="../../../1.8.2/user-guide/configuring-http-api/">1.8.2</a>
+              <a href="../../../1.8.1/user-guide/configuring-http-api/">1.8.1</a>
+              <a href="../../../1.8.0/user-guide/configuring-http-api/">1.8.0</a>
+              <a href="../../../1.7.4/user-guide/configuring-http-api/">1.7.4</a>
+              <a href="../../../1.7.3/user-guide/configuring-http-api/">1.7.3</a>
+              <a href="../../../1.7.2/user-guide/configuring-http-api/">1.7.2</a>
+              <a href="../../../1.7.1/index/">1.7.1</a>
+              <a href="../../../1.7.0/index/">1.7.0</a>
+              <a href="../../../1.6.2/index/">1.6.2</a>
+              <a href="../../../1.5.3/index/">1.5.3</a>
+              <a href="../../../1.4.6/index/">1.4.6</a>
+              <a href="../../../1.3.10/index/">1.3.10</a>
+              <a href="../../../1.2.9/index/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="configuring-the-http-api">
+<span id="configuring-http-api"></span><h1>Configuring the HTTP API<a class="headerlink" href="#configuring-the-http-api" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/configuring-http-api.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#using-rasa-s-http-api" id="id1">Using Rasa’s HTTP API</a></p>
+<ul>
+<li><p><a class="reference internal" href="#fetching-models-from-a-server" id="id2">Fetching Models from a Server</a></p></li>
+<li><p><a class="reference internal" href="#fetching-models-from-a-remote-storage" id="id3">Fetching Models from a Remote Storage</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#configuring-ssl-https" id="id4">Configuring SSL / HTTPS</a></p></li>
+<li><p><a class="reference internal" href="#security-considerations" id="id5">Security Considerations</a></p></li>
+<li><p><a class="reference internal" href="#endpoint-configuration" id="id6">Endpoint Configuration</a></p>
+<ul>
+<li><p><a class="reference internal" href="#connecting-a-tracker-store" id="id7">Connecting a Tracker Store</a></p></li>
+<li><p><a class="reference internal" href="#connecting-an-event-broker" id="id8">Connecting an Event Broker</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="using-rasa-s-http-api">
+<h2><a class="toc-backref" href="#id1">Using Rasa’s HTTP API</a><a class="headerlink" href="#using-rasa-s-http-api" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The instructions below are relevant for configuring how a model is run
+within a Docker container or for testing the HTTP API locally. If you
+want to deploy your assistant to users, see <a class="reference internal" href="../how-to-deploy/#deploying-your-rasa-assistant"><span class="std std-ref">Deploying Your Rasa Assistant</span></a>.</p>
+</div>
+<p>You can run a simple HTTP server that handles requests using your
+trained Rasa model with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --enable-api --log-file out.log
+</pre></div>
+</div>
+<p>All the endpoints this API exposes are documented in <a class="reference internal" href="../../api/http-api/#http-api"><span class="std std-ref">HTTP API</span></a>.</p>
+<p>The different parameters are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-m</span></code>: the path to the folder containing your Rasa model,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--enable-api</span></code>: enable this additional API, and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--log-file</span></code>: the path to the log file.</p></li>
+</ul>
+<p>Rasa can load your model in three different ways:</p>
+<ol class="arabic simple">
+<li><p>Fetch the model from a server (see <a class="reference internal" href="#server-fetch-from-server"><span class="std std-ref">Fetching Models from a Server</span></a>), or</p></li>
+<li><p>Fetch the model from a remote storage (see <a class="reference internal" href="../cloud-storage/#cloud-storage"><span class="std std-ref">Cloud Storage</span></a>).</p></li>
+<li><p>Load the model specified via <code class="docutils literal notranslate"><span class="pre">-m</span></code> from your local storage system,</p></li>
+</ol>
+<p>Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from your local
+storage system if no model server and no remote storage were configured.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
+by enabling an authentication method: <a class="reference internal" href="#server-security"><span class="std std-ref">Security Considerations</span></a>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are using custom actions, make sure your action server is
+running (see <a class="reference internal" href="../command-line-interface/#run-action-server"><span class="std std-ref">Start an Action Server</span></a>). If your actions are running
+on a different machine, or you aren’t using the Rasa SDK, make sure
+to update your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> file.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you start the server with an NLU-only model, not all the available endpoints
+can be called. Be aware that some endpoints will return a 409 status code, as a trained
+Core model is needed to process the request.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, the HTTP server runs as a single process. You can change the number
+of worker processes using the <code class="docutils literal notranslate"><span class="pre">SANIC_WORKERS</span></code> environment variable. It is
+recommended that you set the number of workers to the number of available CPU cores
+(check out the
+<a class="reference external" href="https://sanic.readthedocs.io/en/latest/sanic/deploying.html#workers">Sanic docs</a>
+for more details). This will only work in combination with the
+<code class="docutils literal notranslate"><span class="pre">RedisLockStore</span></code> (see <a class="reference internal" href="../../api/lock-stores/#lock-stores"><span class="std std-ref">Lock Stores</span></a>).</p>
+</div>
+<div class="section" id="fetching-models-from-a-server">
+<span id="server-fetch-from-server"></span><h3><a class="toc-backref" href="#id2">Fetching Models from a Server</a><a class="headerlink" href="#fetching-models-from-a-server" title="Permalink to this headline">¶</a></h3>
+<p>You can configure the HTTP server to fetch models from another URL:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run --enable-api --log-file out.log --endpoints my_endpoints.yml
+</pre></div>
+</div>
+<p>The model server is specified in the endpoint configuration
+(<code class="docutils literal notranslate"><span class="pre">my_endpoints.yml</span></code>), where you specify the server URL Rasa
+regularly queries for zipped Rasa models:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">models</span><span class="p">:</span>
+  <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://my-server.com/models/default@latest</span>
+  <span class="nt">wait_time_between_pulls</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>   <span class="c1"># [optional](default: 100)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you want to pull the model just once from the server, set
+<code class="docutils literal notranslate"><span class="pre">wait_time_between_pulls</span></code> to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Your model server must provide zipped Rasa models, and have
+<code class="docutils literal notranslate"><span class="pre">{&quot;ETag&quot;:</span> <span class="pre">&lt;model_hash_string&gt;}</span></code> as one of its headers. Rasa will
+only download a new model if this model hash has changed.</p>
+</div>
+<p>Rasa sends requests to your model server with an <code class="docutils literal notranslate"><span class="pre">If-None-Match</span></code>
+header that contains the current model hash. If your model server can
+provide a model with a different hash from the one you sent, it should send it
+in as a zip file with an <code class="docutils literal notranslate"><span class="pre">ETag</span></code> header containing the new hash. If not, Rasa
+expects an empty response with a <code class="docutils literal notranslate"><span class="pre">204</span></code> or <code class="docutils literal notranslate"><span class="pre">304</span></code> status code.</p>
+<p>An example request Rasa might make to your model server looks like this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ curl --header <span class="s2">&quot;If-None-Match: d41d8cd98f00b204e9800998ecf8427e&quot;</span> http://my-server.com/models/default@latest
+</pre></div>
+</div>
+</div>
+<div class="section" id="fetching-models-from-a-remote-storage">
+<span id="server-fetch-from-remote-storage"></span><h3><a class="toc-backref" href="#id3">Fetching Models from a Remote Storage</a><a class="headerlink" href="#fetching-models-from-a-remote-storage" title="Permalink to this headline">¶</a></h3>
+<p>You can also configure the Rasa server to fetch your model from a remote storage:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m <span class="m">20190506</span>-100418.tar.gz --enable-api --log-file out.log --remote-storage aws
+</pre></div>
+</div>
+<p>The model will be downloaded and stored in a temporary directory on your local storage system.
+For more information see <a class="reference internal" href="../cloud-storage/#cloud-storage"><span class="std std-ref">Cloud Storage</span></a>.</p>
+</div>
+</div>
+<div class="section" id="configuring-ssl-https">
+<span id="server-ssl"></span><h2><a class="toc-backref" href="#id4">Configuring SSL / HTTPS</a><a class="headerlink" href="#configuring-ssl-https" title="Permalink to this headline">¶</a></h2>
+<p>By default the Rasa server is using HTTP for its communication. To secure the
+communication with SSL, you need to provide a valid certificate and the corresponding
+private key file.</p>
+<p>You can specify these files as part of the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key
+</pre></div>
+</div>
+<p>If you encrypted your keyfile with a password during creation, you need to add
+this password to the command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key --ssl-password mypassword
+</pre></div>
+</div>
+</div>
+<div class="section" id="security-considerations">
+<span id="server-security"></span><h2><a class="toc-backref" href="#id5">Security Considerations</a><a class="headerlink" href="#security-considerations" title="Permalink to this headline">¶</a></h2>
+<p>We recommend to not expose the Rasa Server to the outside world, but
+rather connect to it from your backend over a private connection (e.g.
+between docker containers).</p>
+<p>Nevertheless, there are two authentication methods built in:</p>
+<p><strong>Token Based Auth:</strong></p>
+<p>Pass in the token using <code class="docutils literal notranslate"><span class="pre">--auth-token</span> <span class="pre">thisismysecret</span></code> when starting
+the server:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run <span class="se">\</span>
+    -m models <span class="se">\</span>
+    --enable-api <span class="se">\</span>
+    --log-file out.log <span class="se">\</span>
+    --auth-token thisismysecret
+</pre></div>
+</div>
+<p>Your requests should pass the token, in our case <code class="docutils literal notranslate"><span class="pre">thisismysecret</span></code>,
+as a parameter:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ curl -XGET localhost:5005/conversations/default/tracker?token<span class="o">=</span>thisismysecret
+</pre></div>
+</div>
+<p><strong>JWT Based Auth:</strong></p>
+<p>Enable JWT based authentication using <code class="docutils literal notranslate"><span class="pre">--jwt-secret</span> <span class="pre">thisismysecret</span></code>.
+Requests to the server need to contain a valid JWT token in
+the <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header that is signed using this secret
+and the <code class="docutils literal notranslate"><span class="pre">HS256</span></code> algorithm.</p>
+<p>The user must have <code class="docutils literal notranslate"><span class="pre">username</span></code> and <code class="docutils literal notranslate"><span class="pre">role</span></code> attributes.
+If the <code class="docutils literal notranslate"><span class="pre">role</span></code> is <code class="docutils literal notranslate"><span class="pre">admin</span></code>, all endpoints are accessible.
+If the <code class="docutils literal notranslate"><span class="pre">role</span></code> is <code class="docutils literal notranslate"><span class="pre">user</span></code>, endpoints with a <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> parameter are only accessible
+if the <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> matches the user’s <code class="docutils literal notranslate"><span class="pre">username</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run <span class="se">\</span>
+    -m models <span class="se">\</span>
+    --enable-api <span class="se">\</span>
+    --log-file out.log <span class="se">\</span>
+    --jwt-secret thisismysecret
+</pre></div>
+</div>
+<p>Your requests should have set a proper JWT header:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>&quot;Authorization&quot;: &quot;Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ&quot;
+                 &quot;zdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIi&quot;
+                 &quot;wiaWF0IjoxNTE2MjM5MDIyfQ.qdrr2_a7Sd80gmCWjnDomO&quot;
+                 &quot;Gl8eZFVfKXA6jhncgRn-I&quot;
+</pre></div>
+</div>
+</div>
+<div class="section" id="endpoint-configuration">
+<h2><a class="toc-backref" href="#id6">Endpoint Configuration</a><a class="headerlink" href="#endpoint-configuration" title="Permalink to this headline">¶</a></h2>
+<p>To connect Rasa to other endpoints, you can specify an endpoint
+configuration within a YAML file.
+Then run Rasa with the flag
+<code class="docutils literal notranslate"><span class="pre">--endpoints</span> <span class="pre">&lt;path</span> <span class="pre">to</span> <span class="pre">endpoint</span> <span class="pre">configuration.yml&gt;</span></code>.</p>
+<p>For example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run <span class="se">\</span>
+    --m &lt;Rasa model&gt; <span class="se">\</span>
+    --endpoints &lt;path to endpoint configuration&gt;.yml
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can use environment variables within configuration files by specifying them with <code class="docutils literal notranslate"><span class="pre">${name</span> <span class="pre">of</span> <span class="pre">environment</span> <span class="pre">variable}</span></code>.
+These placeholders are then replaced by the value of the environment variable.</p>
+</div>
+<div class="section" id="connecting-a-tracker-store">
+<h3><a class="toc-backref" href="#id7">Connecting a Tracker Store</a><a class="headerlink" href="#connecting-a-tracker-store" title="Permalink to this headline">¶</a></h3>
+<p>To configure a tracker store within your endpoint configuration,
+see <a class="reference internal" href="../../api/tracker-stores/#tracker-stores"><span class="std std-ref">Tracker Stores</span></a>.</p>
+</div>
+<div class="section" id="connecting-an-event-broker">
+<h3><a class="toc-backref" href="#id8">Connecting an Event Broker</a><a class="headerlink" href="#connecting-an-event-broker" title="Permalink to this headline">¶</a></h3>
+<p>To configure an event broker within your endpoint configuration,
+see <a class="reference internal" href="../../api/event-brokers/#event-brokers"><span class="std std-ref">Event Brokers</span></a>.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>

@@ -1,0 +1,932 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Data Format</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Language Support" href="../language-support/" />
+    <link rel="prev" title="Using NLU Only" href="../using-nlu-only/" />
+
+  <!-- Google Tag Manager -->
+  <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
+   
+  
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Training Data Format" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/nlu/training-data-format" />
+  
+    <meta name="description" content="Read more about how to format training data with Rasa NLU for open
+source natural language processing." />
+    <meta itemprop="description" content="Read more about how to format training data with Rasa NLU for open
+source natural language processing.">
+    <meta name="twitter:description" content="Read more about how to format training data with Rasa NLU for open
+source natural language processing." />
+    <meta property="og:description" content="Read more about how to format training data with Rasa NLU for open
+source natural language processing." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Training Data Format">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
+
+  <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
+  <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
+  <script defer type="text/javascript" src="../../_static/ace/src-min-noconflict/ace.js"></script>
+  <script defer type="text/javascript" src="../../_static/chatblock/rasa-chatblock.min.js"></script>
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/nlu/training-data-format/"/>
+    
+  
+
+
+  </head><body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe data-name="analytics" data-src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="announce-bar" role="banner">
+  These docs are for version 1.x of Rasa Open Source.
+  <a href="https://rasa.com/docs/rasa/">Docs for the new version 2.0 can be found here.</a>
+</div>
+
+<div class="nav-top">
+  <div class="nav-container">
+    <ul class="main-nav nav">
+      <li>
+      <a href="https://rasa.com/docs/" class="brand-link">
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    <span class="logo extension">docs</span>
+    	</a>
+      </li>
+    </ul>
+    <ul class="secondary-nav nav">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  
+    
+      <div class="document">
+    
+  
+
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/setting-up-ci-cd/">Setting up CI/CD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../entity-extraction/">Entity Extraction</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/about/">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/stories/">Stories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: 1.10.17
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>tags</p>
+          <div class="dropdown-content">
+              <a href="../../../1.10.17/nlu/training-data-format/">1.10.17</a>
+              <a href="../../../1.10.16/nlu/training-data-format/">1.10.16</a>
+              <a href="../../../1.10.15/nlu/training-data-format/">1.10.15</a>
+              <a href="../../../1.10.14/nlu/training-data-format/">1.10.14</a>
+              <a href="../../../1.10.13/nlu/training-data-format/">1.10.13</a>
+              <a href="../../../1.10.12/nlu/training-data-format/">1.10.12</a>
+              <a href="../../../1.10.11/nlu/training-data-format/">1.10.11</a>
+              <a href="../../../1.10.10/nlu/training-data-format/">1.10.10</a>
+              <a href="../../../1.10.9/nlu/training-data-format/">1.10.9</a>
+              <a href="../../../1.10.8/nlu/training-data-format/">1.10.8</a>
+              <a href="../../../1.10.7/nlu/training-data-format/">1.10.7</a>
+              <a href="../../../1.10.6/nlu/training-data-format/">1.10.6</a>
+              <a href="../../../1.10.5/nlu/training-data-format/">1.10.5</a>
+              <a href="../../../1.10.4/nlu/training-data-format/">1.10.4</a>
+              <a href="../../../1.10.3/nlu/training-data-format/">1.10.3</a>
+              <a href="../../../1.10.2/nlu/training-data-format/">1.10.2</a>
+              <a href="../../../1.10.1/nlu/training-data-format/">1.10.1</a>
+              <a href="../../../1.10.0/nlu/training-data-format/">1.10.0</a>
+              <a href="../../../1.9.7/nlu/training-data-format/">1.9.7</a>
+              <a href="../../../1.9.6/nlu/training-data-format/">1.9.6</a>
+              <a href="../../../1.9.5/nlu/training-data-format/">1.9.5</a>
+              <a href="../../../1.9.4/nlu/training-data-format/">1.9.4</a>
+              <a href="../../../1.9.3/nlu/training-data-format/">1.9.3</a>
+              <a href="../../../1.9.2/nlu/training-data-format/">1.9.2</a>
+              <a href="../../../1.9.1/nlu/training-data-format/">1.9.1</a>
+              <a href="../../../1.9.0/nlu/training-data-format/">1.9.0</a>
+              <a href="../../../1.8.3/nlu/training-data-format/">1.8.3</a>
+              <a href="../../../1.8.2/nlu/training-data-format/">1.8.2</a>
+              <a href="../../../1.8.1/nlu/training-data-format/">1.8.1</a>
+              <a href="../../../1.8.0/nlu/training-data-format/">1.8.0</a>
+              <a href="../../../1.7.4/nlu/training-data-format/">1.7.4</a>
+              <a href="../../../1.7.3/nlu/training-data-format/">1.7.3</a>
+              <a href="../../../1.7.2/nlu/training-data-format/">1.7.2</a>
+              <a href="../../../1.7.1/nlu/training-data-format/">1.7.1</a>
+              <a href="../../../1.7.0/nlu/training-data-format/">1.7.0</a>
+              <a href="../../../1.6.2/nlu/training-data-format/">1.6.2</a>
+              <a href="../../../1.5.3/nlu/training-data-format/">1.5.3</a>
+              <a href="../../../1.4.6/nlu/training-data-format/">1.4.6</a>
+              <a href="../../../1.3.10/nlu/training-data-format/">1.3.10</a>
+              <a href="../../../1.2.9/nlu/training-data-format/">1.2.9</a>
+          </div>
+      </div>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+
+
+
+
+
+<div class="section" id="training-data-format">
+<span id="id1"></span><h1>Training Data Format<a class="headerlink" href="#training-data-format" title="Permalink to this headline">¶</a></h1>
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/nlu/training-data-format.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
+  </div><div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-formats" id="id4">Data Formats</a></p>
+<ul>
+<li><p><a class="reference internal" href="#markdown-format" id="id5">Markdown Format</a></p></li>
+<li><p><a class="reference internal" href="#json-format" id="id6">JSON Format</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#improving-intent-classification-and-entity-recognition" id="id7">Improving Intent Classification and Entity Recognition</a></p>
+<ul>
+<li><p><a class="reference internal" href="#common-examples" id="id8">Common Examples</a></p></li>
+<li><p><a class="reference internal" href="#regular-expression-features" id="id9">Regular Expression Features</a></p></li>
+<li><p><a class="reference internal" href="#lookup-tables" id="id10">Lookup Tables</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#normalizing-data" id="id11">Normalizing Data</a></p>
+<ul>
+<li><p><a class="reference internal" href="#entity-synonyms" id="id12">Entity Synonyms</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="data-formats">
+<h2><a class="toc-backref" href="#id4">Data Formats</a><a class="headerlink" href="#data-formats" title="Permalink to this headline">¶</a></h2>
+<p>You can provide training data as Markdown or as JSON, as a single file or as a directory containing multiple files.
+Note that Markdown is usually easier to work with.</p>
+<div class="section" id="markdown-format">
+<h3><a class="toc-backref" href="#id5">Markdown Format</a><a class="headerlink" href="#markdown-format" title="Permalink to this headline">¶</a></h3>
+<p>Markdown is the easiest Rasa NLU format for humans to read and write.
+Examples are listed using the unordered list syntax, e.g. minus <code class="docutils literal notranslate"><span class="pre">-</span></code>, asterisk <code class="docutils literal notranslate"><span class="pre">*</span></code>, or plus <code class="docutils literal notranslate"><span class="pre">+</span></code>.
+Examples are grouped by intent, and entities are annotated as Markdown links,
+e.g. <code class="docutils literal notranslate"><span class="pre">[&lt;entity</span> <span class="pre">text&gt;](&lt;entity</span> <span class="pre">name&gt;)</span></code>, or by using the following syntax <code class="docutils literal notranslate"><span class="pre">[&lt;entity-text&gt;]{&quot;entity&quot;:</span> <span class="pre">&quot;&lt;entity</span> <span class="pre">name&gt;&quot;}</span></code>.
+Using the latter syntax, you can also assign synonyms, roles, or groups to an entity, e.g.
+<code class="docutils literal notranslate"><span class="pre">[&lt;entity-text&gt;]{&quot;entity&quot;:</span> <span class="pre">&quot;&lt;entity</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;role&quot;:</span> <span class="pre">&quot;&lt;role</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;group&quot;:</span> <span class="pre">&quot;&lt;group</span> <span class="pre">name&gt;&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;&lt;entity</span> <span class="pre">synonym&gt;&quot;}</span></code>.
+The keywords <code class="docutils literal notranslate"><span class="pre">role</span></code>, <code class="docutils literal notranslate"><span class="pre">group</span></code>, and <code class="docutils literal notranslate"><span class="pre">value</span></code> are optional in this notation.
+To understand what the labels <code class="docutils literal notranslate"><span class="pre">role</span></code> and <code class="docutils literal notranslate"><span class="pre">group</span></code> are for, see section <a class="reference internal" href="../entity-extraction/#entities-roles-groups"><span class="std std-ref">Entities Roles and Groups</span></a>.</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:check_balance
+<span class="k">-</span> what is my balance &lt;!-- no entity --&gt;
+<span class="k">-</span> how much do I have on my [<span class="nt">savings</span>](<span class="na">source_account</span>) &lt;!-- entity &quot;source_account&quot; has value &quot;savings&quot; --&gt;
+<span class="k">-</span> how much do I have on my [savings account]{&quot;entity&quot;: &quot;source_account&quot;, &quot;value&quot;: &quot;savings&quot;} &lt;!-- synonyms, method 1--&gt;
+<span class="k">-</span> Could I pay in [<span class="nt">yen</span>](<span class="na">currency</span>)?  &lt;!-- entity matched by lookup table --&gt;
+
+<span class="gu">##</span> intent:greet
+<span class="k">-</span> hey
+<span class="k">-</span> hello
+
+<span class="gu">##</span> synonym:savings   &lt;!-- synonyms, method 2 --&gt;
+<span class="k">-</span> pink pig
+
+<span class="gu">##</span> regex:zipcode
+<span class="k">-</span> [0-9]{5}
+
+<span class="gu">##</span> lookup:additional_currencies  &lt;!-- specify lookup tables in an external file --&gt;
+path/to/currencies.txt
+</pre></div>
+</div>
+<p>The training data for Rasa NLU is structured into different parts:</p>
+<ul class="simple">
+<li><p>common examples</p></li>
+<li><p>synonyms</p></li>
+<li><p>regex features and</p></li>
+<li><p>lookup tables</p></li>
+</ul>
+<p>While common examples is the only part that is mandatory, including the others will help the NLU model
+learn the domain with fewer examples and also help it be more confident of its predictions.</p>
+<p>Synonyms will map extracted entities to the same name, for example mapping “my savings account” to simply “savings”.
+However, this only happens <em>after</em> the entities have been extracted, so you need to provide examples with the synonyms
+present so that Rasa can learn to pick them up.</p>
+<p>Lookup tables may be specified as plain text files containing newline-separated words or
+phrases. Upon loading the training data, these files are used to generate
+case-insensitive regex patterns that are added to the regex features.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU
+model by providing additional features to the machine learning algorithm during training. Therefore, it must not be
+assumed that having a single example would be enough for the model to robustly identify intents and/or entities
+across all variants of that example.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
+to use it in the name of your intents.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The synonym format to specify synonyms <code class="docutils literal notranslate"><span class="pre">[savings</span> <span class="pre">account](source_account:savings)</span></code> is deprecated. Please use the
+new format <code class="docutils literal notranslate"><span class="pre">[savings</span> <span class="pre">account]{&quot;entity&quot;:</span> <span class="pre">&quot;source_account&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;savings&quot;}</span></code>.</p>
+<p>To update your training data file execute the following command on the terminal of your choice:
+<code class="docutils literal notranslate"><span class="pre">sed</span> <span class="pre">-i</span> <span class="pre">-E</span> <span class="pre">'s/\[([^)]+)\]\(([^)]+):([^)]+)\)/[\1]{&quot;entity&quot;:</span> <span class="pre">&quot;\2&quot;,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;\3&quot;}/g'</span> <span class="pre">&lt;nlu</span> <span class="pre">training</span> <span class="pre">data</span> <span class="pre">file&gt;</span></code>
+Your NLU training data file will contain the new training data format after you executed the above command.
+Depending on your OS you might need to update the syntax of the sed command.</p>
+</div>
+</div>
+<div class="section" id="json-format">
+<h3><a class="toc-backref" href="#id6">JSON Format</a><a class="headerlink" href="#json-format" title="Permalink to this headline">¶</a></h3>
+<p>The JSON format consists of a top-level object called <code class="docutils literal notranslate"><span class="pre">rasa_nlu_data</span></code>, with the keys
+<code class="docutils literal notranslate"><span class="pre">common_examples</span></code>, <code class="docutils literal notranslate"><span class="pre">entity_synonyms</span></code> and <code class="docutils literal notranslate"><span class="pre">regex_features</span></code>.
+The most important one is <code class="docutils literal notranslate"><span class="pre">common_examples</span></code>.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;rasa_nlu_data&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;common_examples&quot;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="nt">&quot;regex_features&quot;</span> <span class="p">:</span> <span class="p">[],</span>
+        <span class="nt">&quot;lookup_tables&quot;</span>  <span class="p">:</span> <span class="p">[],</span>
+        <span class="nt">&quot;entity_synonyms&quot;</span><span class="p">:</span> <span class="p">[]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">common_examples</span></code> are used to train your model. You should put all of your training
+examples in the <code class="docutils literal notranslate"><span class="pre">common_examples</span></code> array.
+Regex features are a tool to help the classifier detect entities or intents and improve the performance.</p>
+</div>
+</div>
+<div class="section" id="improving-intent-classification-and-entity-recognition">
+<h2><a class="toc-backref" href="#id7">Improving Intent Classification and Entity Recognition</a><a class="headerlink" href="#improving-intent-classification-and-entity-recognition" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="common-examples">
+<h3><a class="toc-backref" href="#id8">Common Examples</a><a class="headerlink" href="#common-examples" title="Permalink to this headline">¶</a></h3>
+<p>Common examples have three components: <code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">intent</span></code> and <code class="docutils literal notranslate"><span class="pre">entities</span></code>. The first two are strings while the last
+one is an array.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The <em>text</em> is the user message [required]</p></li>
+<li><p>The <em>intent</em> is the intent that should be associated with the text [optional]</p></li>
+<li><p>The <em>entities</em> are specific parts of the text which need to be identified [optional]</p></li>
+</ul>
+</div></blockquote>
+<p>Entities are specified with a <code class="docutils literal notranslate"><span class="pre">start</span></code> and an <code class="docutils literal notranslate"><span class="pre">end</span></code> value, which together make a range
+to apply to the string, e.g. in the example below, with <code class="docutils literal notranslate"><span class="pre">text=&quot;show</span> <span class="pre">me</span> <span class="pre">chinese</span> <span class="pre">restaurants&quot;</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">text[8:15]</span> <span class="pre">==</span> <span class="pre">'chinese'</span></code>. Entities can span multiple words, and in
+fact the <code class="docutils literal notranslate"><span class="pre">value</span></code> field does not have to correspond exactly to the substring in your example.
+That way you can map synonyms, or misspellings, to the same <code class="docutils literal notranslate"><span class="pre">value</span></code>.</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:restaurant_search
+<span class="k">-</span> show me [<span class="nt">chinese</span>](<span class="na">cuisine</span>) restaurants
+</pre></div>
+</div>
+</div>
+<div class="section" id="regular-expression-features">
+<h3><a class="toc-backref" href="#id9">Regular Expression Features</a><a class="headerlink" href="#regular-expression-features" title="Permalink to this headline">¶</a></h3>
+<p>Regular expressions can be used to support the intent classification and entity extraction. For example, if your entity
+has a deterministic structure (like a zipcode or an email address), you can use a regular expression to ease detection
+of that entity. For the zipcode example it might look like this:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> regex:zipcode
+<span class="k">-</span> [0-9]{5}
+
+<span class="gu">##</span> regex:greet
+<span class="k">-</span> hey[^\\s]*
+</pre></div>
+</div>
+<p>The name doesn’t define the entity nor the intent, it is just a human readable description for you to remember what
+this regex is used for and is the title of the corresponding pattern feature. As you can see in the above example, you
+can also use the regex features to improve the intent
+classification performance.</p>
+<p>Try to create your regular expressions in a way that they match as few words as possible. E.g. using <code class="docutils literal notranslate"><span class="pre">hey[^\s]*</span></code>
+instead of <code class="docutils literal notranslate"><span class="pre">hey.*</span></code>, as the later one might match the whole message whereas the first one only matches a single word.</p>
+<p>Regex features for entity extraction are currently only supported by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component! Hence, other
+entity extractors, like <code class="docutils literal notranslate"><span class="pre">MitieEntityExtractor</span></code> or <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> won’t use the generated features and their
+presence will not improve entity recognition for these extractors. Currently, all intent classifiers make use of
+available regex features.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Regex features don’t define entities nor intents! They simply provide patterns to help the classifier
+recognize entities and related intents. Hence, you still need to provide intent &amp; entity examples as part of your
+training data!</p>
+</div>
+</div>
+<div class="section" id="lookup-tables">
+<span id="id2"></span><h3><a class="toc-backref" href="#id10">Lookup Tables</a><a class="headerlink" href="#lookup-tables" title="Permalink to this headline">¶</a></h3>
+<p>Lookup tables provide a convenient way to supply a list of entity examples.
+The supplied lookup table files must be in a newline-delimited format.
+For example, <code class="docutils literal notranslate"><span class="pre">data/test/lookup_tables/plates.txt</span></code> may contain:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tacos</span>
+<span class="n">beef</span>
+<span class="n">mapo</span> <span class="n">tofu</span>
+<span class="n">burrito</span>
+<span class="n">lettuce</span> <span class="n">wrap</span>
+</pre></div>
+</div>
+<p>And can be loaded and used as shown here:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> lookup:plates
+data/test/lookup_tables/plates.txt
+
+<span class="gu">##</span> intent:food_request
+<span class="k">-</span> I&#39;d like beef [<span class="nt">tacos</span>](<span class="na">plates</span>) and a [<span class="nt">burrito</span>](<span class="na">plates</span>)
+<span class="k">-</span> How about some [<span class="nt">mapo tofu</span>](<span class="na">plates</span>)
+</pre></div>
+</div>
+<p>When lookup tables are supplied in training data, the contents are combined
+into a large, case-insensitive regex pattern that looks for exact matches in
+the training examples. These regexes match over multiple tokens, so
+<code class="docutils literal notranslate"><span class="pre">lettuce</span> <span class="pre">wrap</span></code> would match <code class="docutils literal notranslate"><span class="pre">get</span> <span class="pre">me</span> <span class="pre">a</span> <span class="pre">lettuce</span> <span class="pre">wrap</span> <span class="pre">ASAP</span></code> as <code class="docutils literal notranslate"><span class="pre">[0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">1</span> <span class="pre">1</span> <span class="pre">0]</span></code>.
+These regexes are processed identically to the regular regex patterns
+directly specified in the training data.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For lookup tables to be effective, there must be a few examples of matches in your training data. Otherwise the
+model will not learn to use the lookup table match features.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>You have to be careful when you add data to the lookup table.
+For example if there are false positives or other noise in the table,
+this can hurt performance. So make sure your lookup tables contain
+clean data.</p>
+</div>
+</div>
+</div>
+<div class="section" id="normalizing-data">
+<h2><a class="toc-backref" href="#id11">Normalizing Data</a><a class="headerlink" href="#normalizing-data" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="entity-synonyms">
+<span id="id3"></span><h3><a class="toc-backref" href="#id12">Entity Synonyms</a><a class="headerlink" href="#entity-synonyms" title="Permalink to this headline">¶</a></h3>
+<p>If you define entities as having the same value they will be treated as synonyms. Here is an example of that:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:search
+<span class="k">-</span> in the center of [NYC]{&quot;entity&quot;: &quot;city&quot;, &quot;value&quot;: &quot;New York City&quot;}
+<span class="k">-</span> in the centre of [<span class="nt">New York City</span>](<span class="na">city</span>)
+</pre></div>
+</div>
+<p>As you can see, the entity <code class="docutils literal notranslate"><span class="pre">city</span></code> has the value <code class="docutils literal notranslate"><span class="pre">New</span> <span class="pre">York</span> <span class="pre">City</span></code> in both examples, even though the text in the first
+example states <code class="docutils literal notranslate"><span class="pre">NYC</span></code>. By defining the value attribute to be different from the value found in the text between start
+and end index of the entity, you can define a synonym. Whenever the same text will be found, the value will use the
+synonym instead of the actual text in the message.</p>
+<p>To use the synonyms defined in your training data, you need to make sure the pipeline contains the
+<code class="docutils literal notranslate"><span class="pre">EntitySynonymMapper</span></code> component (see <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>).</p>
+<p>Alternatively, you can add an “entity_synonyms” array to define several synonyms to one entity value. Here is an
+example of that:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> synonym:New York City
+<span class="k">-</span> NYC
+<span class="k">-</span> nyc
+<span class="k">-</span> the big apple
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please note that adding synonyms using the above format does not improve the model’s classification of those entities.
+<strong>Entities must be properly classified before they can be replaced with the synonym value.</strong></p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+
+            <div class="copyright small">
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+
+
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
+  </script>
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(/ /g,'-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
+
+  </script>
+
+  <!-- ACE Editor, Train & download buttons -->
+  <script>
+    let updateIntervalId;
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function fetchTracker(url, chatBlockId, conversationId) {
+      $.ajax({
+        url: url + "/conversations/" + conversationId + "/tracker",
+        method: "get",
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(tracker, status) {
+          initChatBlock(url, chatBlockId, conversationId, tracker);
+        }
+      });
+    }
+
+    function sendMessage(url, chatBlockId, conversationId, tracker, message) {
+      $.ajax({
+        url: url + "/webhooks/rest/webhook",
+        method: "post",
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          sender: conversationId,
+          message: message
+        }),
+        success: function(result, status) {
+          fetchTracker(url, chatBlockId, conversationId);
+        },
+      });
+    }
+
+    function startFetchingTracker(url, chatBlockId, conversationId) {
+      const interval = 2000;
+
+      fetchTracker(url, chatBlockId, conversationId);
+
+      updateIntervalId = setInterval(() => {
+        fetchTracker(url, chatBlockId, conversationId);
+      }, interval);
+    }
+
+    function initChatBlock(url, id, conversationId, tracker) {
+      ChatBlock.default.init({
+        onSendMessage: (message) => {
+          sendMessage(url, id, conversationId, tracker, message);
+        },
+        username: conversationId,
+        tracker: tracker,
+        selector: id
+      });
+    }
+
+    const chatBlockId = '#rasa-chat-block';
+    const trackingId = uuidv4();
+
+    $(document).ready(() => {
+      // make editors work
+      const editors = document.querySelectorAll('.ace-editor');
+
+      const assignTrainingDataToButton = function(e, id, trainButton) {
+        const trainingData = trainButton.data('training');
+
+        trainButton.data('training', JSON.stringify({
+          ...JSON.parse(trainingData || "{}") || {},
+          [id]: e.getValue(),
+        }));
+      };
+
+      ace.config.set('modePath', "/_static/ace/src-min-noconflict");
+
+      Array.from(editors).forEach(function(editor) {
+        const e = ace.edit(editor);
+        const id = editor.dataset['id'];
+        const trackingEndpoint = editor.dataset['tr-endpoint'];
+
+        e.session.setMode("ace/mode/" + editor.dataset['language']);
+        e.renderer.setShowGutter(false);
+        e.renderer.setShowPrintMargin(false);
+        e.renderer.setPadding(24);
+        e.renderer.setScrollMargin(24);
+        e.setHighlightActiveLine(false);
+
+        if (trackingEndpoint) {
+          e.on("change", function() {
+            if (!editor.dataset.hasChanged) {
+              editor.dataset.hasChanged = true;
+              $.ajax({
+                url: trackingEndpoint,
+                method: "POST",
+                data: {editor: id},
+              });
+            }
+          });
+        }
+
+        const trainButton = $('.train__button');
+
+        assignTrainingDataToButton(e, id, trainButton);
+        e.on("blur", function() {
+          assignTrainingDataToButton(e, id, trainButton);
+        });
+
+        editor.style.height = editor.dataset['height'] + 'px';
+      });
+
+      // initialize a chat block
+      initChatBlock("", chatBlockId, trackingId, {});
+    });
+
+    // set train button callback
+    $( ".train__button" ).click(function() {
+      const trainButton = $('.train__button');
+      const trainSpinner = $('.train__spinner');
+      const downloadButton = $('.download__button');
+
+      trainButton.prop("disabled", true);
+      downloadButton.prop("disabled", true);
+      trainSpinner.removeClass('train__spinner--hidden');
+
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+        initChatBlock("", chatBlockId, trackingId, {});
+      }
+
+      $.ajax({
+        url: trainButton.data('endpoint'),
+        method: trainButton.data('method'),
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify({ tracking_id: trackingId, ...JSON.parse(trainButton.data('training')) }),
+        success: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+
+          if (result['project_download_url']) {
+            trainSpinner.addClass('train__spinner--hidden');
+            downloadButton.prop("disabled", false);
+            downloadButton.data("url", result['project_download_url']);
+          }
+
+          if (result['rasa_service_url']) {
+            const conversationId = uuidv4();
+            startFetchingTracker(result['rasa_service_url'], chatBlockId, conversationId);
+          }
+        },
+        error: function(result, status) {
+          trainSpinner.addClass('train__spinner--hidden');
+          trainButton.prop("disabled", false);
+        }
+      });
+    });
+
+    // set download button callback
+    $( ".download__button" ).click(function() {
+      const downloadButton = $('.download__button');
+      const url = downloadButton.data("url");
+
+      if (url) {
+        location.href = url;
+      }
+    });
+  </script>
+
+  <!-- Dismissable announcement banner -->
+  <script>
+    var banners = document.querySelectorAll('.announcement-banner');
+
+    Array.from(banners).forEach(function(banner) {
+      var cookie_id = banner.dataset['cookie-id'];
+
+      if (localStorage.getItem(cookie_id) !== 'true') {
+        banner.classList.add('announcement-banner--visible');
+      }
+
+      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
+
+      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
+        localStorage.setItem(cookie_id, 'true');
+        banner.classList.remove('announcement-banner--visible');
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
+    });
+</script>
+
+  </body>
+</html>
