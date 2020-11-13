@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Text, Tuple, Callable, Union, Any
+from typing import List, Optional, Text, Tuple, Callable, Union, Any, Dict
 import tensorflow as tf
 import tensorflow_addons as tfa
 import rasa.utils.tensorflow.crf
@@ -209,6 +209,90 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         # set fraction of the `kernel` weights to zero according to precomputed mask
         self.kernel.assign(self.kernel * self.kernel_mask)
         return super().call(inputs)
+
+
+class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
+    # TODO add docstring
+    def __init__(
+        self,
+        dropout_rate: float,
+        sparse_dropout: bool,
+        dense_dropout: bool,
+        layer_name_suffix: Text,
+        sparse_to_dense_kw: Dict[Text, Any] = {},
+    ) -> None:
+        super().__init__(name=f"concatenate_sparse_dense_features_{layer_name_suffix}")
+
+        if sparse_dropout:
+            self._sparse_dropout = SparseDropout(rate=dropout_rate)
+
+        if "name" not in sparse_to_dense_kw:
+            sparse_to_dense_kw["name"] = f"sparse_to_dense.{layer_name_suffix}"
+        self._sparse_to_dense = DenseForSparse(**sparse_to_dense_kw)
+
+        if dense_dropout:
+            self._dense_dropout = tf.keras.layers.Dropout(rate=dropout_rate)
+
+    def call(
+        self,
+        features: List[Union[tf.Tensor, tf.SparseTensor]],
+        training: Optional[Union[tf.Tensor, bool]] = None,
+    ) -> tf.Tensor:
+        dense_features = []
+
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                if self._sparse_dropout:
+                    _f = self._sparse_dropout(f, training)
+                else:
+                    _f = f
+
+                dense_f = self._sparse_to_dense(_f)
+
+                # TODO dense features shouldn't use dropout,
+                # only the ones that were originally sparse?
+                if self._dense_dropout:
+                    dense_f = self._dense_dropout(dense_f, training)
+
+                dense_features.append(dense_f)
+            else:
+                dense_features.append(f)
+
+        # if mask is None:
+        return tf.concat(dense_features, axis=-1)
+        # return tf.concat(dense_features, axis=-1) * mask
+
+
+class ConcatenateSequenceSentenceFeatures(tf.keras.layers.Layer):
+    # TODO add docstring
+    def __init__(self, layer_name_suffix: Text) -> None:
+        super().__init__(
+            name=f"concatenate_sequence_sentence_features_{layer_name_suffix}"
+        )
+
+    def call(
+        self,
+        sequence_x: tf.Tensor,
+        sentence_x: tf.Tensor,
+        mask_text: tf.Tensor,
+    ) -> tf.Tensor:
+        # we need to concatenate the sequence features with the sentence features
+        # we cannot use tf.concat as the sequence features are padded
+
+        # (1) get position of sentence features in mask
+        last = mask_text * tf.math.cumprod(
+            1 - mask_text, axis=1, exclusive=True, reverse=True
+        )
+        # (2) multiply by sentence features so that we get a matrix of
+        #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
+        #     for the sentence features
+        sentence_x = last * sentence_x
+
+        # (3) add a zero to the end of sequence matrix to match the final shape
+        sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
+
+        # (4) sum up sequence features and sentence features
+        return sequence_x + sentence_x
 
 
 class Ffnn(tf.keras.layers.Layer):

@@ -809,6 +809,7 @@ class TED(TransformerRasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
+    # TODO get rid of this one
     def _prepare_sparse_dense_layer_for(
         self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
     ) -> None:
@@ -1125,6 +1126,8 @@ class TED(TransformerRasaModel):
             )
 
         else:
+            # TODO ensure we don't need to check if tf_batch_data[attribute][SENTENCE] is empty
+            # TODO call the actual layer
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = self._combine_sparse_dense_features(
