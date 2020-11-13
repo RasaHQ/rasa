@@ -1,63 +1,418 @@
-## intent:affirm
-- yes
-- yep
-- yeah
-- indeed
-- that's right
-- ok
-- great
-- right, thank you
-- correct
-- great choice
-- sounds really good
-
-## intent:goodbye
-- bye
-- goodbye
-- good bye
-- stop
-- end
-- farewell
-- Bye bye
-- have a good one
-
-## intent:greet
-- hey
-- howdy
-- hey there
-- hello
-- hi
-- good morning
-- good evening
-- dear sir
-
-## intent:restaurant_search
-- i'm looking for a place to eat
-- I want to grab lunch
-- I am searching for a dinner spot
-- i'm looking for a place in the [north](location) of town
-- show me [chinese](cuisine) restaurants
-- show me [chines](cuisine:chinese) restaurants in the [north](location)
-- show me a [mexican](cuisine) place in the [centre](location)
-- i am looking for an [indian](cuisine) spot called olaolaolaolaolaola
-- search for restaurants
-- anywhere in the [west](location)
-- anywhere near [18328](location)
-- I am looking for [asian fusion](cuisine) food
-- I am looking a restaurant in [29432](location)
-- I am looking for [mexican indian fusion](cuisine)
-- [central](location) [indian](cuisine) restaurant
-
-## synonym:chinese
-+ Chines
-* Chinese
-
-## synonym:vegetarian
-- vegg
-- veggie
-
-## regex:zipcode
-- [0-9]{5}
-
-## regex:greet
-- hey[^\s]*
+{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "intent": "current_weather",
+        "text": "what's the weather like"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what's the weather like this morning"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather today"
+      },
+      {
+        "intent": "current_weather",
+        "text": "today's weather"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather Paris"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather of New York"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what is the current weather"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what is the current weather in Chicago"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather report"
+      },
+      {
+        "intent": "current_weather",
+        "text": "show me the weather"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather in Costa Rica"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what's is the current weather in Moscow"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what's the weather like in our area"
+      },
+      {
+        "intent": "current_weather",
+        "text": "how's the weather today"
+      },
+      {
+        "intent": "current_weather",
+        "text": "how is the weather in my area"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather Colorado"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather now"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what is the weather like today"
+      },
+      {
+        "intent": "current_weather",
+        "text": "show me the weather in Madrid"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what's the weather supposed to be in Milan"
+      },
+      {
+        "intent": "current_weather",
+        "text": "how's the weather in Berlin"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what's the weather forecast for today"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather this morning"
+      },
+      {
+        "intent": "current_weather",
+        "text": "current weather in Barcelona"
+      },
+      {
+        "intent": "current_weather",
+        "text": "today's weather in Manchester"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what is the weather for Toronto"
+      },
+      {
+        "intent": "current_weather",
+        "text": "find weather in Madagascar"
+      },
+      {
+        "intent": "current_weather",
+        "text": "show me weather for today"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what's the weather like in Seattle"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what is the weather like right now"
+      },
+      {
+        "intent": "current_weather",
+        "text": "I'd like to know the weather"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what's the weather supposed to be"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather forecast in India"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what is today's weather like"
+      },
+      {
+        "intent": "current_weather",
+        "text": "the weather in Los Angeles is what"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what is the weather today"
+      },
+      {
+        "intent": "current_weather",
+        "text": "how is the weather today"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what is the weather in Rotterdam right now"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather outside"
+      },
+      {
+        "intent": "current_weather",
+        "text": "tell me what's the weather like in Ontario"
+      },
+      {
+        "intent": "current_weather",
+        "text": "weather in Quebec for today"
+      },
+      {
+        "intent": "current_weather",
+        "text": "New York weather report"
+      },
+      {
+        "intent": "current_weather",
+        "text": "what's the weather like"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "weather on friday"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "I'd like to get the weather for July 22"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "how's the weather gonna be on Monday"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "weather forecast"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "could you give me the weather forecast for Tokyo please"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what's the weather going to be tomorrow"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what will be the weather like in Chicago on the next friday"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what's the weather tomorrow in Sidney"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "weather forecast in Boston next week"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "tomorrow's weather"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "weather for May 25"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what is the weather forecast for tomorrow morning"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what's the weather like in Seattle tomorrow"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "tell me the weather for the next week"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what will be the weather like on the weekend"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "now tell me the weather forecast in Las Vegas"
+      },
+      {
+        "intent": "current_weather",
+        "entities": [
+          {
+            "start": 22,
+            "end": 29,
+            "value": "celsius",
+            "entity": "unit"
+          }
+        ],
+        "text": "weather in Houston in Celsius"
+      },
+      {
+        "intent": "current_weather",
+        "entities": [
+          {
+            "start": 36,
+            "end": 43,
+            "value": "celsius",
+            "entity": "unit"
+          }
+        ],
+        "text": "I'd like to the weather in Spain in celsius"
+      },
+      {
+        "intent": "current_weather",
+        "entities": [
+          {
+            "start": 23,
+            "end": 30,
+            "value": "celsius",
+            "entity": "unit"
+          }
+        ],
+        "text": "show me the weather in celsius"
+      },
+      {
+        "intent": "current_weather",
+        "entities": [
+          {
+            "start": 34,
+            "end": 44,
+            "value": "fahrenheit",
+            "entity": "unit"
+          }
+        ],
+        "text": "tell me the weather in Sevilla in Fahrenheit"
+      },
+      {
+        "intent": "current_weather",
+        "entities": [
+          {
+            "start": 11,
+            "end": 18,
+            "value": "celsius",
+            "entity": "unit"
+          }
+        ],
+        "text": "weather in celsius"
+      },
+      {
+        "intent": "current_weather",
+        "entities": [
+          {
+            "start": 16,
+            "end": 23,
+            "value": "celsius",
+            "entity": "unit"
+          }
+        ],
+        "text": "weather data in celsius"
+      },
+      {
+        "intent": "weather_forecast",
+        "entities": [
+          {
+            "start": 44,
+            "end": 51,
+            "value": "celsius",
+            "entity": "unit"
+          }
+        ],
+        "text": "what is the weather tomorrow in New York in celsius"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "I'd like to know the weather for May 25 in Paris"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what's the weather supposed to be next monday in Washington"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "weather in Madrid in 5 days"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what's the weather for tomorrow"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "weather for May 3"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "weather on Sunday"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "weather in Rome tomorrow"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "show me the weather in Dublin for Wednesday"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "tomorrow's weather report for Brasilia"
+      },
+      {
+        "intent": "weather_forecast",
+        "text": "what's the weather supposed to be this week"
+      },
+      {
+        "intent": "weather_forecast",
+        "entities": [
+          {
+            "start": 21,
+            "end": 28,
+            "value": "celsius",
+            "entity": "unit"
+          }
+        ],
+        "text": "weather on Sunday in celsius"
+      },
+      {
+        "intent": "weather_forecast",
+        "entities": [
+          {
+            "start": 48,
+            "end": 55,
+            "value": "celsius",
+            "entity": "unit"
+          }
+        ],
+        "text": "what will be the weather like on the weekend in celsius"
+      }
+    ],
+    "regex_features": [],
+    "lookup_tables": [],
+    "entity_synonyms": [
+      {
+        "value": "imperial",
+        "synonyms": [
+          "fahrenheit",
+          "F"
+        ]
+      },
+      {
+        "value": "metric",
+        "synonyms": [
+          "celsius",
+          "C"
+        ]
+      },
+      {
+        "value": "cold",
+        "synonyms": [
+          "freezing"
+        ]
+      }
+    ]
+  }
+}
