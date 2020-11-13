@@ -259,8 +259,6 @@ class TEDPolicy(Policy):
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
-        # TODO Do not communicate this option to users yet as we have to run some
-        #   experiments first.
         ENTITY_RECOGNITION: True,
     }
 
@@ -968,43 +966,71 @@ class TED(TransformerRasaModel):
             lambda: self._encode_fake_features_per_attribute(tf_batch_data, attribute),
         )
 
+    def _get_dense_units(
+        self, attribute_features_list: List[tf.Tensor], attribute: Text
+    ) -> int:
+        units = 0
+        for f in attribute_features_list:
+            if isinstance(f, tf.SparseTensor):
+                units += self.config[DENSE_DIMENSION][attribute]
+            else:
+                units += f.shape[-1]
+        return units
+
+    def _get_concat_units(
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
+    ) -> int:
+        # calculate concat sequence sentence dim
+        sentence_units = self._get_dense_units(
+            tf_batch_data[attribute][SENTENCE], attribute
+        )
+        sequence_units = self._get_dense_units(
+            tf_batch_data[attribute][SEQUENCE], attribute
+        )
+
+        if sequence_units and not sentence_units:
+            return sequence_units
+
+        if sentence_units and not sequence_units:
+            return sentence_units
+
+        if sentence_units != sequence_units:
+            return self.config[CONCAT_DIMENSION][TEXT]
+
+        return sentence_units
+
     def _encode_fake_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        attribute_features_list = tf_batch_data[attribute][SENTENCE]
+        # we need to create real zero tensors with appropriate batch and dialogue dim
+        # because they are passed to dialogue transformer
         attribute_mask = tf_batch_data[attribute][MASK][0]
 
         batch_dim = tf.shape(attribute_mask)[0]
         dialogue_dim = tf.shape(attribute_mask)[1]
-
         if attribute in set(SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE):
             units = self.config[ENCODING_DIMENSION]
         else:
-            units = 0
-            for f in attribute_features_list:
-                if isinstance(f, tf.SparseTensor):
-                    units += self.config[DENSE_DIMENSION][attribute]
-                else:
-                    units += f.shape[-1]
+            units = self._get_dense_units(tf_batch_data[attribute][SENTENCE], attribute)
 
         attribute_features = tf.zeros(
             (batch_dim, dialogue_dim, units), dtype=tf.float32
         )
         if attribute == TEXT:
-            # TODO handle the case if transformer is not created
-            # if self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"] > 0:
-            #     units = self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"]
-            # elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
-            #     units = self.config[HIDDEN_LAYERS_SIZES][TEXT]
-            # else:
-            #     for f in attribute_features_list:
-            #         if isinstance(f, tf.SparseTensor):
-            #             units += self.config[DENSE_DIMENSION][attribute]
-            #         else:
-            #             units += f.shape[-1]
+            # if the input features are fake, we don't process them further,
+            # but we need to calculate correct last dim (units) so that tf could infer
+            # the last shape of the tensors
+            if self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"] > 0:
+                text_transformer_units = self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"]
+            elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
+                text_transformer_units = self.config[HIDDEN_LAYERS_SIZES][TEXT][-1]
+            else:
+                text_transformer_units = self._get_concat_units(
+                    tf_batch_data, attribute
+                )
 
             text_transformer_output = tf.zeros(
-                (0, 0, self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"]), dtype=tf.float32
+                (0, 0, text_transformer_units), dtype=tf.float32
             )
             text_sequence_lengths = tf.zeros((0, 1), dtype=tf.int32)
         else:
