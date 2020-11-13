@@ -99,6 +99,13 @@ stories:
 [Test stories](#test-stories) use the same format as the story training data and should be placed
 in a separate file with the prefix `test_`.
 
+:::note The  `|` symbol
+As shown in the above examples, the `user` and `examples` keys are followed by `|`
+(pipe) symbol. In YAML `|` identifies multi-line strings with preserved indentation.
+This helps to keep special symbols like `"`, `'` and others still available in the
+training examples.
+:::
+
 ## NLU Training Data
 
 [NLU](glossary.mdx#nlu) training data consists of example user utterances categorized by

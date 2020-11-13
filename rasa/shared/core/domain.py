@@ -3,6 +3,7 @@ import collections
 import json
 import logging
 import os
+from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -168,6 +169,9 @@ class Domain:
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
+        forms = data.get(KEY_FORMS, {})
+
+        _validate_slot_mappings(forms)
 
         return cls(
             intents,
@@ -1165,14 +1169,26 @@ class Domain:
         rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
-        if clean_before_dump:
-            domain_data: Dict[Text, Any] = self.cleaned_domain()
-        else:
-            domain_data: Dict[Text, Any] = self.as_dict()
+        """Dump the `Domain` object as a YAML string.
+        This function preserves the orders of the keys in the domain.
 
-        domain_data[
-            KEY_TRAINING_DATA_FORMAT_VERSION
-        ] = f"{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        Args:
+            clean_before_dump: When set to `True`, this method returns
+                               a version of the domain without internal
+                               information. Defaults to `False`.
+        Returns:
+            A string in YAML format representing the domain.
+        """
+        # setting the `version` key first so that it appears at the top of YAML files
+        # thanks to the `should_preserve_key_order` argument
+        # of `dump_obj_as_yaml_to_string`
+        domain_data: Dict[Text, Any] = {
+            KEY_TRAINING_DATA_FORMAT_VERSION: rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION
+        }
+        if clean_before_dump:
+            domain_data.update(self.cleaned_domain())
+        else:
+            domain_data.update(self.as_dict())
 
         return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
             domain_data, should_preserve_key_order=True
@@ -1446,3 +1462,100 @@ class Domain:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
         return self.forms.get(form_name, {})
+
+
+class SlotMapping(Enum):
+    """Defines the available slot mappings."""
+
+    FROM_ENTITY = 0
+    FROM_INTENT = 1
+    FROM_TRIGGER_INTENT = 2
+    FROM_TEXT = 3
+
+    def __str__(self) -> Text:
+        """Returns a string representation of the object."""
+        return self.name.lower()
+
+    @staticmethod
+    def validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None:
+        """Validates a slot mapping.
+
+        Args:
+            mapping: The mapping which is validated.
+            form_name: The name of the form which uses this slot mapping.
+            slot_name: The name of the slot which is mapped by this mapping.
+
+        Raises:
+            InvalidDomain: In case the slot mapping is not valid.
+        """
+        if not isinstance(mapping, dict):
+            raise InvalidDomain(
+                f"Please make sure that the slot mappings for slot '{slot_name}' in "
+                f"your form '{form_name}' are valid dictionaries. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+            )
+
+        validations = {
+            str(SlotMapping.FROM_ENTITY): ["entity"],
+            str(SlotMapping.FROM_INTENT): ["value"],
+            str(SlotMapping.FROM_TRIGGER_INTENT): ["value"],
+            str(SlotMapping.FROM_TEXT): [],
+        }
+
+        mapping_type = mapping.get("type")
+        required_keys = validations.get(mapping_type)
+
+        if required_keys is None:
+            raise InvalidDomain(
+                f"Your form '{form_name}' uses an invalid slot mapping of type "
+                f"'{mapping_type}' for slot '{slot_name}'. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+            )
+
+        for required_key in required_keys:
+            if mapping.get(required_key) is None:
+                raise InvalidDomain(
+                    f"You need to specify a value for the key "
+                    f"'{required_key}' in the slot mapping of type '{mapping_type}' "
+                    f"for slot '{slot_name}' in the form '{form_name}'. Please see "
+                    f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                )
+
+
+def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
+    if isinstance(forms, list):
+        if not all(isinstance(form_name, str) for form_name in forms):
+            raise InvalidDomain(
+                f"If you use the deprecated list syntax for forms, "
+                f"all form names have to be strings. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+            )
+
+        return
+
+    if not isinstance(forms, dict):
+        raise InvalidDomain("Forms have to be specified as dictionary.")
+
+    for form_name, slots in forms.items():
+        if slots is None:
+            continue
+
+        if not isinstance(slots, Dict):
+            raise InvalidDomain(
+                f"The slots for form '{form_name}' were specified "
+                f"as '{type(slots)}'. They need to be specified "
+                f"as dictionary. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
+                f"for more information."
+            )
+
+        for slot_name, slot_mappings in slots.items():
+            if not isinstance(slot_mappings, list):
+                raise InvalidDomain(
+                    f"The slot mappings for slot '{slot_name}' in "
+                    f"form '{form_name}' have type "
+                    f"'{type(slot_mappings)}'. It is required to "
+                    f"provide a list of slot mappings. Please see "
+                    f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                )
+            for slot_mapping in slot_mappings:
+                SlotMapping.validate(slot_mapping, form_name, slot_name)
