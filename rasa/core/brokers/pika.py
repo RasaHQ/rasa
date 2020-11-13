@@ -72,9 +72,9 @@ class PikaEventBroker(EventBroker):
         self.queues = self._get_queues_from_args(queues)
         self.raise_on_failure = raise_on_failure
         self._connection_attempts = connection_attempts
-        self._retry_delay_in_seconds = 1
+        self._retry_delay_in_seconds = retry_delay_in_seconds
 
-        # List to store unpublished messages which hopefully will be published later 🤞
+        # Unpublished messages which hopefully will be published later 🤞
         self._unpublished_events: Deque[Dict[Text, Any]] = deque()
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
 
@@ -82,99 +82,6 @@ class PikaEventBroker(EventBroker):
 
         self._connection: Optional[aio_pika.RobustConnection] = None
         self._exchange: Optional[aio_pika.RobustExchange] = None
-
-    async def connect(self) -> None:
-        """Connects to RabbitMQ."""
-        self._connection = await self._connect()
-        self._connection.add_reconnect_callback(self._on_reconnect)
-        logger.info(f"RabbitMQ connection to '{self.host}' was established.")
-
-        channel = await self._connection.channel()
-        logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
-
-        self._exchange = await self._set_up_exchange(channel)
-
-    async def _connect(self) -> aio_pika.RobustConnection:
-        url = None
-        # The `url` parameter will take precedence over parameters like `login` or
-        # `password`.
-        if self.host.startswith("amqp"):
-            url = self.host
-
-        ssl_options = _create_rabbitmq_ssl_options(self.host)
-        logger.info("Connecting to RabbitMQ ...")
-
-        last_exception = None
-        for _ in range(self._connection_attempts):
-            try:
-                return await aio_pika.connect_robust(
-                    url=url,
-                    host=self.host,
-                    port=self.port,
-                    password=self.password,
-                    login=self.username,
-                    loop=self._loop,
-                    ssl=ssl_options is not None,
-                    ssl_options=ssl_options,
-                )
-            # All sorts of exception can happen until RabbitMQ is in a stable state
-            except Exception as e:
-                last_exception = e
-                logger.debug(
-                    f"Connecting to '{self.host}' failed with error '{e}'. "
-                    f"Trying again."
-                )
-                await asyncio.sleep(self._retry_delay_in_seconds)
-
-        logger.error(
-            f"Connecting to '{self.host}' failed with error '{last_exception}'."
-        )
-        raise last_exception
-
-    def _on_reconnect(self, *_: Any, **__: Any) -> None:
-        while self._unpublished_events:
-            # Send unpublished messages
-            message = self._unpublished_events.popleft()
-            self.publish(message)
-            logger.debug(
-                f"Published message from queue of unpublished messages. "
-                f"Remaining unpublished messages: {len(self._unpublished_events)}."
-            )
-
-    async def _set_up_exchange(
-        self, channel: aio_pika.RobustChannel
-    ) -> aio_pika.Exchange:
-        exchange = await channel.declare_exchange(
-            RABBITMQ_EXCHANGE, type=aio_pika.ExchangeType.FANOUT
-        )
-
-        for queue in self.queues:
-            queue = await channel.declare_queue(queue, durable=True)
-            await queue.bind(exchange, "")
-
-        return exchange
-
-    def __del__(self) -> None:
-        """Closes connection when object is destroyed."""
-        self._loop.run_until_complete(self._close())
-
-    def close(self) -> None:
-        """Close the pika channel and connection."""
-        self.__del__()
-
-    async def _close(self) -> None:
-        if not self._connection:
-            return
-
-        # Entering the context manager does nothing. Exiting closes the channels and
-        # the connection.
-        async with self._connection:
-            logger.debug("Closing RabbitMQ connection.")
-
-    @rasa.shared.utils.common.lazy_property
-    def rasa_environment(self) -> Optional[Text]:
-        """Get value of the `RASA_ENVIRONMENT` environment variable."""
-        return os.environ.get("RASA_ENVIRONMENT")
 
     @staticmethod
     def _get_queues_from_args(
@@ -231,26 +138,118 @@ class PikaEventBroker(EventBroker):
 
         return broker
 
+    async def connect(self) -> None:
+        """Connects to RabbitMQ."""
+        self._connection = await self._connect()
+        self._connection.add_reconnect_callback(self._publish_unpublished_messages)
+        logger.info(f"RabbitMQ connection to '{self.host}' was established.")
+
+        channel = await self._connection.channel()
+        logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
+
+        self._exchange = await self._set_up_exchange(channel)
+
+    async def _connect(self) -> aio_pika.RobustConnection:
+        url = None
+        # The `url` parameter will take precedence over parameters like `login` or
+        # `password`.
+        if self.host.startswith("amqp"):
+            url = self.host
+
+        ssl_options = _create_rabbitmq_ssl_options(self.host)
+        logger.info("Connecting to RabbitMQ ...")
+
+        last_exception = None
+        for _ in range(self._connection_attempts):
+            try:
+                return await aio_pika.connect_robust(
+                    url=url,
+                    host=self.host,
+                    port=self.port,
+                    password=self.password,
+                    login=self.username,
+                    loop=self._loop,
+                    ssl=ssl_options is not None,
+                    ssl_options=ssl_options,
+                )
+            # All sorts of exception can happen until RabbitMQ is in a stable state
+            except Exception as e:
+                last_exception = e
+                logger.debug(
+                    f"Connecting to '{self.host}' failed with error '{e}'. "
+                    f"Trying again."
+                )
+                await asyncio.sleep(self._retry_delay_in_seconds)
+
+        logger.error(
+            f"Connecting to '{self.host}' failed with error '{last_exception}'."
+        )
+        raise last_exception
+
+    def _publish_unpublished_messages(self, *_: Any, **__: Any) -> None:
+        while self._unpublished_events:
+            # Send unpublished messages
+            message = self._unpublished_events.popleft()
+            self.publish(message)
+            logger.debug(
+                f"Published message from queue of unpublished messages. "
+                f"Remaining unpublished messages: {len(self._unpublished_events)}."
+            )
+
+    async def _set_up_exchange(
+        self, channel: aio_pika.RobustChannel
+    ) -> aio_pika.Exchange:
+        exchange = await channel.declare_exchange(
+            RABBITMQ_EXCHANGE, type=aio_pika.ExchangeType.FANOUT
+        )
+
+        await asyncio.gather(
+            [
+                self._bind_queue(queue_name, channel, exchange)
+                for queue_name in self.queues
+            ]
+        )
+
+        return exchange
+
+    @staticmethod
+    async def _bind_queue(
+        queue_name: Text, channel: aio_pika.RobustChannel, exchange: aio_pika.Exchange
+    ) -> None:
+        queue = await channel.declare_queue(queue_name, durable=True)
+        await queue.bind(exchange, "")
+
+    def __del__(self) -> None:
+        """Closes connection when object is destroyed."""
+        self._loop.run_until_complete(self._close())
+
+    def close(self) -> None:
+        """Close the pika channel and connection."""
+        self.__del__()
+
+    async def _close(self) -> None:
+        if not self._connection:
+            return
+
+        # Entering the context manager does nothing. Exiting closes the channels and
+        # the connection.
+        async with self._connection:
+            logger.debug("Closing RabbitMQ connection.")
+
     def is_ready(self) -> bool:
         """Return `True` if a connection was established."""
         return self._exchange is not None
 
     def publish(
-        self,
-        event: Dict[Text, Any],
-        retries: int = 60,
-        retry_delay_in_seconds: int = 5,
-        headers: Optional[Dict[Text, Text]] = None,
+        self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None
     ) -> None:
-        """Publish `event` into Pika queue.
+        """Publishes `event` to Pika queues.
 
         Args:
             event: Serialised event to be published.
-            retries: Number of retries if publishing fails
-            retry_delay_in_seconds: Delay in seconds between retries.
-            headers: Message headers to append to the published message (key-value
-                dictionary). The headers can be retrieved in the consumer from the
-                `headers` attribute of the message's `BasicProperties`.
+            headers: Message headers to append to the published message. The headers
+                can be retrieved in the consumer from the `headers` attribute of the
+                message's `BasicProperties`.
         """
         self._loop.create_task(self._publish(event, headers))
 
@@ -287,6 +286,11 @@ class PikaEventBroker(EventBroker):
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )
 
+    @rasa.shared.utils.common.lazy_property
+    def rasa_environment(self) -> Optional[Text]:
+        """Get value of the `RASA_ENVIRONMENT` environment variable."""
+        return os.environ.get("RASA_ENVIRONMENT")
+
 
 def _create_rabbitmq_ssl_options(
     rabbitmq_host: Optional[Text] = None,
@@ -305,7 +309,7 @@ def _create_rabbitmq_ssl_options(
         rabbitmq_host: RabbitMQ hostname.
 
     Returns:
-        SSL arguments for the RabbitMQ connection.
+        Optional SSL arguments for the RabbitMQ connection.
     """
     client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
     client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
@@ -314,10 +318,10 @@ def _create_rabbitmq_ssl_options(
         "RABBITMQ_SSL_KEY_PASSWORD"
     ):
         rasa.shared.utils.io.raise_warning(
-            f"Specifying 'RABBITMQ_SSL_CA_FILE' or 'RABBITMQ_SSL_KEY_PASSWORD' via "
-            f"environment variables is no longer supported. Please specify this "
-            f"through the RabbitMQ URL as described here: "
-            f"https://www.rabbitmq.com/uri-query-parameters.html "
+            "Specifying 'RABBITMQ_SSL_CA_FILE' or 'RABBITMQ_SSL_KEY_PASSWORD' via "
+            "environment variables is no longer supported. Please specify this "
+            "through the RabbitMQ URL as described here: "
+            "https://www.rabbitmq.com/uri-query-parameters.html "
         )
 
     if client_certificate_path and client_key_path:

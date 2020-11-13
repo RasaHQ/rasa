@@ -5,7 +5,6 @@ from typing import Text, Optional, List, Set, Dict, Any
 
 from tqdm import tqdm
 
-import rasa.cli.utils as cli_utils
 import rasa.shared.utils.cli
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
