@@ -166,7 +166,16 @@ class Trainer:
         )
 
     @staticmethod
-    def _load_pipeline_for_finetuning(model_path, component_builder):
+    def _update_config_with_new_params(
+        component_meta: Dict[Text, Any], component_config: Dict[Text, Any]
+    ):
+        if "epochs" in component_meta and "epochs" in component_config:
+            component_meta["epochs"] = component_config["epochs"]
+        return component_meta
+
+    def _load_pipeline_for_finetuning(
+        self, cfg: RasaNLUModelConfig, model_path, component_builder
+    ):
 
         context = {"finetune_mode": True}
         pipeline = []
@@ -176,7 +185,12 @@ class Trainer:
             model_metadata = Metadata.load(old_nlu)
 
             for i in range(model_metadata.number_of_components):
-                component_meta = model_metadata.for_component(i)
+                component_meta_old_model = model_metadata.for_component(i)
+                component_meta_new = cfg.for_component(i)
+                component_meta = self._update_config_with_new_params(
+                    component_meta_old_model, component_meta_new
+                )
+
                 component = component_builder.load_component(
                     component_meta, model_metadata.model_dir, model_metadata, **context
                 )
@@ -221,7 +235,7 @@ class Trainer:
 
         if finetune_mode:
             pipeline = self._load_pipeline_for_finetuning(
-                old_model_path, component_builder
+                cfg, old_model_path, component_builder
             )
         else:
             pipeline = self._build_pipeline_for_training_from_scratch(
