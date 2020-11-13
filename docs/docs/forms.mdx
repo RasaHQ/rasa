@@ -364,16 +364,19 @@ case, you can use the
 extraction code. Rasa Open Source will trigger this action when the form is run.
 
 If you're using the Rasa SDK we recommend you to extend the provided
-`FormValidationAction`. When using the `FormValidationAction`, two things are needed to
-extract customs slots:
+`FormValidationAction`. When using the `FormValidationAction`, three steps are required
+to extract customs slots:
 
-1. Define a method `extract_<slot_name>` for every custom slot mapping which you want to
-   extract.
-2. Optional: If a slot is not part of your mapped slots in the domain,
-   override `required_slots` to make sure the additional slot is considered by the form.
+1. Define a method `extract_<slot_name>` for every slot that should be mapped in a
+   custom way.
+2. Make sure that in the domain file you list for your form only those slots that don't
+   use custom mappings.
+3. Override `required_slots` to add all slots with custom mappings to the list of slots
+   the form should request.
 
 The following example shows the implementation of a form which extracts a slot
-`outdoor_seating` in addition to the slots which were mapped in the domain.
+`outdoor_seating` in a custom way, in addition to the slots whose mappings are defined
+in the domain.
 The method `extract_outdoor_seating` sets the slot `outdoor_seating` based on whether
 the keyword `outdoor` was present in the last user message.
 
