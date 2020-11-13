@@ -276,7 +276,7 @@ class TEDPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
-        zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
+        fake_features: Optional[Dict[Text, List["Features"]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         **kwargs: Any,
     ) -> None:
@@ -297,7 +297,7 @@ class TEDPolicy(Policy):
 
         self._entity_tag_specs = entity_tag_specs
 
-        self.zero_state_features = zero_state_features or defaultdict(list)
+        self.fake_features = fake_features or defaultdict(list)
 
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
@@ -398,7 +398,7 @@ class TEDPolicy(Policy):
                 [FeatureArray(label_ids, number_of_dimensions=3)],
             )
 
-            attribute_data, self.zero_state_features = convert_to_data_format(
+            attribute_data, self.fake_features = convert_to_data_format(
                 tracker_state_features, featurizers=self.config[FEATURIZERS]
             )
             if self.config[ENTITY_RECOGNITION]:
@@ -418,7 +418,7 @@ class TEDPolicy(Policy):
             # method is called during prediction
             attribute_data, _ = convert_to_data_format(
                 tracker_state_features,
-                self.zero_state_features,
+                self.fake_features,
                 featurizers=self.config[FEATURIZERS],
             )
 
@@ -519,7 +519,7 @@ class TEDPolicy(Policy):
         # create model data from tracker
         tracker_state_features = []
         if (
-            INTENT in self.zero_state_features
+            INTENT in self.fake_features
             or not tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
             # the first example in a batch uses intent
@@ -528,7 +528,7 @@ class TEDPolicy(Policy):
                 [tracker], domain, interpreter, use_text_for_last_user_input=False
             )
         if (
-            TEXT in self.zero_state_features
+            TEXT in self.fake_features
             and tracker.latest_action_name == ACTION_LISTEN_NAME
         ):
             # the second - text, but only after user utterance
@@ -561,7 +561,7 @@ class TEDPolicy(Policy):
         else:  # only one tracker present
             batch_index = 0
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                if TEXT in self.zero_state_features:
+                if TEXT in self.fake_features:
                     is_e2e_prediction = True
                 else:
                     is_e2e_prediction = False
@@ -609,8 +609,8 @@ class TEDPolicy(Policy):
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_state_features.pkl",
-            self.zero_state_features,
+            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl",
+            self.fake_features,
         )
         io_utils.pickle_dump(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
@@ -653,8 +653,8 @@ class TEDPolicy(Policy):
         label_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
-        zero_state_features = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.zero_state_features.pkl"
+        fake_features = io_utils.pickle_load(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl"
         )
         label_data = RasaModelData(data=label_data)
         meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
@@ -713,7 +713,7 @@ class TEDPolicy(Policy):
             featurizer=featurizer,
             priority=priority,
             model=model,
-            zero_state_features=zero_state_features,
+            fake_features=fake_features,
             entity_tag_specs=entity_tag_specs,
             **meta,
         )

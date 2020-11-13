@@ -166,7 +166,7 @@ def _filter_features(features: Optional[List["Features"]], featurizers: List[Tex
     return [f for f in features if f.origin in featurizers]
 
 
-def _create_zero_features(
+def _create_fake_features(
     all_features: List[List[List["Features"]]],
 ) -> List["Features"]:
     """Computes default feature values.
@@ -191,8 +191,8 @@ def _create_zero_features(
         )
     )
 
-    # create zero_features for Nones
-    zero_features = []
+    # create fake_features for Nones
+    fake_features = []
     for _features in example_features:
         new_features = copy.deepcopy(_features)
         if _features.is_dense():
@@ -203,16 +203,16 @@ def _create_zero_features(
             new_features.features = scipy.sparse.coo_matrix(
                 (0, _features.features.shape[-1]), _features.features.dtype
             )
-        zero_features.append(new_features)
+        fake_features.append(new_features)
 
-    return zero_features
+    return fake_features
 
 
 def convert_to_data_format(
     features: Union[
         List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
     ],
-    zero_features: Optional[Dict[Text, List["Features"]]] = None,
+    fake_features: Optional[Dict[Text, List["Features"]]] = None,
     consider_dialogue_dimension: bool = True,
     featurizers: Optional[List[Text]] = None,
 ) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]:
@@ -228,7 +228,7 @@ def convert_to_data_format(
     Args:
         features: a dictionary of attributes to a list of features for all
             examples in the training data
-        zero_features: Contains default feature values for attributes
+        fake_features: Contains default feature values for attributes
         consider_dialogue_dimension: If set to false the dialogue dimension will be
             removed from the resulting sequence features.
         featurizers: the featurizers to consider
@@ -237,9 +237,9 @@ def convert_to_data_format(
         Input in "Data" format and zero features
     """
     training = False
-    if not zero_features:
+    if not fake_features:
         training = True
-        zero_features = defaultdict(list)
+        fake_features = defaultdict(list)
 
     # unify format of incoming features
     if isinstance(features[0], Dict):
@@ -254,7 +254,7 @@ def convert_to_data_format(
     if training:
         attributes = list(attribute_to_features.keys())
     else:
-        attributes = list(zero_features.keys())
+        attributes = list(fake_features.keys())
 
     # In case an attribute is not present during prediction, replace it with
     # None values that will then be replaced by zero features
@@ -271,14 +271,14 @@ def convert_to_data_format(
             empty_features,
             attribute_to_features,
             training,
-            zero_features,
+            fake_features,
             consider_dialogue_dimension,
         )
 
     # ensure that all attributes are in the same order
     attribute_data = OrderedDict(sorted(attribute_data.items()))
 
-    return attribute_data, zero_features
+    return attribute_data, fake_features
 
 
 def _features_for_attribute(
@@ -286,7 +286,7 @@ def _features_for_attribute(
     empty_features: List[Any],
     attribute_to_features: Dict[Text, List[List[List["Features"]]]],
     training: bool,
-    zero_features: Dict[Text, List["Features"]],
+    fake_features: Dict[Text, List["Features"]],
     consider_dialogue_dimension: bool,
 ) -> Dict[Text, List[FeatureArray]]:
     """Create the features for the given attribute from the all examples features.
@@ -296,7 +296,7 @@ def _features_for_attribute(
         empty_features: empty features
         attribute_to_features: features for every example
         training: boolean indicating whether we are currently in training or not
-        zero_features: zero features
+        fake_features: zero features
         consider_dialogue_dimension: If set to false the dialogue dimension will be
           removed from the resulting sequence features.
 
@@ -312,10 +312,10 @@ def _features_for_attribute(
     # in case some features for a specific attribute are
     # missing, replace them with a feature vector of zeros
     if training:
-        zero_features[attribute] = _create_zero_features(features)
+        fake_features[attribute] = _create_fake_features(features)
 
     (attribute_masks, _dense_features, _sparse_features) = _extract_features(
-        features, zero_features[attribute], attribute
+        features, fake_features[attribute], attribute
     )
 
     sparse_features = {}
@@ -363,7 +363,7 @@ def _features_for_attribute(
 
 def _extract_features(
     features: List[List[List["Features"]]],
-    zero_features: List["Features"],
+    fake_features: List["Features"],
     attribute: Text,
 ) -> Tuple[
     List[np.ndarray],
@@ -375,7 +375,7 @@ def _extract_features(
 
     Args:
         features: all features
-        zero_features: list of zero features
+        fake_features: list of zero features
 
     Returns:
         - a list of attribute masks
@@ -399,7 +399,7 @@ def _extract_features(
             if list_of_features is None:
                 # use zero features and set mask to zero
                 attribute_mask[i] = 0
-                list_of_features = zero_features
+                list_of_features = fake_features
 
             for features in list_of_features:
                 # in case of ENTITIES, if the attribute type matches either 'entity',
