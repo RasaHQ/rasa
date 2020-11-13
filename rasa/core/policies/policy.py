@@ -197,6 +197,24 @@ class Policy:
 
         raise NotImplementedError("Policy must have the capacity to train.")
 
+    def train_chunk(
+        self,
+        training_trackers_chunk: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
+        """Trains the policy on given training trackers chunk.
+
+        Args:
+            training_trackers_chunk:
+                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which can be used by the polices for featurization.
+        """
+
+        raise NotImplementedError("Policy must have the capacity to train.")
+
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
