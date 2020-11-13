@@ -240,7 +240,7 @@ class SingleStateFeaturizer:
 
         return state_features
 
-    def encode_entity(
+    def encode_entities(
         self, entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List["Features"]]:
         """Encode the given entity data with the help of the given interpreter.

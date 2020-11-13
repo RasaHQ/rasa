@@ -98,7 +98,7 @@ class TrackerFeaturizer:
     ) -> List[List[Dict[Text, List["Features"]]]]:
         return [
             [
-                self.state_featurizer.encode_entity(entity_data, interpreter)
+                self.state_featurizer.encode_entities(entity_data, interpreter)
                 for entity_data in trackers_entities
             ]
             for trackers_entities in trackers_as_entities

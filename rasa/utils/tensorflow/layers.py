@@ -630,13 +630,15 @@ class DotProductLoss(tf.keras.layers.Layer):
         # create first random array of indices
         out1 = rand_idxs()  # (1, num_neg)
 
-        return tf.while_loop(
-            cond,
-            body,
-            loop_vars=[idx1, out1],
-            shape_invariants=[idx1.shape, tf.TensorShape([None, self.num_neg])],
-            parallel_iterations=self.parallel_iterations,
-            back_prop=False,
+        return tf.nest.map_structure(
+            tf.stop_gradient,
+            tf.while_loop(
+                cond,
+                body,
+                loop_vars=[idx1, out1],
+                shape_invariants=[idx1.shape, tf.TensorShape([None, self.num_neg])],
+                parallel_iterations=self.parallel_iterations,
+            ),
         )[1]
 
     @staticmethod
