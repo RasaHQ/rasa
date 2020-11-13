@@ -990,23 +990,11 @@ def create_app(
             )
 
         try:
-            policy_ensemble = app.agent.policy_ensemble
-            probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, app.agent.domain, app.agent.interpreter
+            result = app.agent.create_processor().predict_next_with_tracker(
+                tracker, verbosity
             )
 
-            scores = [
-                {"action": a, "score": p}
-                for a, p in zip(app.agent.domain.action_names, probabilities)
-            ]
-
-            return response.json(
-                {
-                    "scores": scores,
-                    "policy": policy,
-                    "tracker": tracker.current_state(verbosity),
-                }
-            )
+            return response.json(result)
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(

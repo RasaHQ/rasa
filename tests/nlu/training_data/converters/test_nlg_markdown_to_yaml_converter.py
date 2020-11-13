@@ -32,9 +32,14 @@ async def test_nlu_intents_are_converted(tmpdir: Path):
     training_data_file = Path(training_data_folder) / "responses.md"
 
     simple_nlg_md = (
+        # missing utter_
         "## ask name\n"
         "* chitchat/ask_name\n"
-        "- my name is Sara, Rasa's documentation bot!\n"
+        "- my name is Sara, Rasa's documentation bot!\n\n"
+        # utter_ is already here
+        "## ask location\n"
+        "* utter_faq/ask_location\n"
+        "- We're located in the world\n\n"
     )
 
     with open(training_data_file, "w") as f:
@@ -51,6 +56,8 @@ async def test_nlu_intents_are_converted(tmpdir: Path):
         assert content == (
             f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
             "responses:\n"
-            "  chitchat/ask_name:\n"
+            "  utter_chitchat/ask_name:\n"
             "  - text: my name is Sara, Rasa's documentation bot!\n"
+            "  utter_faq/ask_location:\n"
+            "  - text: We're located in the world\n"
         )
