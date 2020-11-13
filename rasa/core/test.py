@@ -10,6 +10,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
@@ -503,6 +504,12 @@ def _collect_action_executed_predictions(
             # of the action rejection as we know that the user explicitly specified
             # that something else than the form was supposed to run.
             predicted = action.name()
+
+        predicted_base, _ = Message.separate_intent_response_key(predicted)
+
+        # check if test story only specifies base action and only keep predicted base in this case
+        if gold == predicted_base:
+            predicted = predicted_base
 
     action_executed_eval_store.add_to_store(
         action_predictions=[predicted], action_targets=[gold]
