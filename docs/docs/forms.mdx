@@ -367,12 +367,12 @@ If you're using the Rasa SDK we recommend you to extend the provided
 `FormValidationAction`. When using the `FormValidationAction`, two things are needed to
 extract customs slots:
 
-1. Define a method `extract_<slot_name>` for every custom slot which you want to
+1. Define a method `extract_<slot_name>` for every custom slot mapping which you want to
    extract.
-2. Optional: If a custom slot is not part of your mapped slots in the domain,
-   override `required_slots` to include the additional custom slot.
+2. Optional: If a slot is not part of your mapped slots in the domain,
+   override `required_slots` to make sure the additional slot is considered by the form.
 
-The following example shows the implementation of a form which extracts a custom slot
+The following example shows the implementation of a form which extracts a slot
 `outdoor_seating` in addition to the slots which were mapped in the domain.
 The method `extract_outdoor_seating` sets the slot `outdoor_seating` based on whether
 the keyword `outdoor` was present in the last user message.
@@ -426,7 +426,9 @@ This is, for example, useful when you need further details based on how
 a previous slot was filled or you want to change the order in which slots are requested.
 
 If you are using the Rasa SDK, we recommend you to use the `FormValidationAction` and
-override `required_slots` to fit your dynamic behavior.
+override `required_slots` to fit your dynamic behavior. Please remember to implement
+a method `extract_<slot name>` for every slot which isn't defined in the slot mappings
+of your domain as it is described [here](forms.mdx#custom-slot-mappings).
 The example below will ask the user if they want to sit in
 the shade or in the sun in case they told us that they want to sit outside.
 
