@@ -868,6 +868,24 @@ class TED(TransformerRasaModel):
 
     # ---GRAPH BUILDING HELPERS---
 
+    @staticmethod
+    def _compute_dialogue_indices(
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
+    ) -> None:
+        dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32)
+        # wrap in a list, because that's the structure of tf_batch_data
+        tf_batch_data[DIALOGUE][IDS] = [
+            (
+                tf.map_fn(
+                    tf.range,
+                    dialogue_lengths,
+                    fn_output_signature=tf.RaggedTensorSpec(
+                        shape=[None], dtype=tf.int32
+                    ),
+                )
+            ).values
+        ]
+
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
         # labels cannot have all features "fake"
@@ -899,7 +917,7 @@ class TED(TransformerRasaModel):
 
         return all_label_ids, all_labels_embed
 
-    def _emebed_dialogue(
+    def _embed_dialogue(
         self,
         dialogue_in: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
@@ -1047,20 +1065,7 @@ class TED(TransformerRasaModel):
                 text_sequence_lengths = sequence_lengths
 
                 if self.use_only_last_dialogue_turn:
-                    # get the location of all last dialogue inputs
-                    dialogue_lengths = tf.cast(
-                        tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32
-                    )
-                    # TODO precompute dialogue_indices after creation of tf_batch_data
-                    dialogue_indices = (
-                        tf.map_fn(
-                            tf.range,
-                            dialogue_lengths,
-                            fn_output_signature=tf.RaggedTensorSpec(
-                                shape=[None], dtype=tf.int32
-                            ),
-                        )
-                    ).values
+                    # Get the location of all last dialogue inputs.
                     # Since use_only_last_dialogue_turn is True,
                     # we need to find the locations of last dialogue turns in
                     # (combined batch dimension and dialogue length,) dimension,
@@ -1088,7 +1093,10 @@ class TED(TransformerRasaModel):
                     last_dialogue_mask = tf.math.logical_not(
                         tf.cast(
                             tf.concat(
-                                [dialogue_indices, tf.zeros((1,), dtype=tf.int32)],
+                                [
+                                    tf_batch_data[DIALOGUE][IDS][0],
+                                    tf.zeros((1,), dtype=tf.int32),
+                                ],
                                 axis=0,
                             )[1:],
                             dtype=tf.bool,
@@ -1128,23 +1136,12 @@ class TED(TransformerRasaModel):
                 attribute_features
             )
 
-        # attribute_mask has shape batch x dialogue_len x 1
-        attribute_mask = tf_batch_data[attribute][MASK][0]
-
-        if attribute in SENTENCE_FEATURES_TO_ENCODE + STATE_LEVEL_FEATURES:
-            dialogue_lengths = tf.cast(
-                tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32
-            )
-        else:
-            # for labels, dialogue length is a fake dim and equal to 1
-            dialogue_lengths = tf.ones((tf.shape(attribute_mask)[0],), dtype=tf.int32)
-
         # attribute features have shape
         # (combined batch dimension and dialogue length x 1 x units)
         # convert them back to their original shape of
         # batch size x dialogue length x units
         attribute_features = self._convert_to_original_shape(
-            attribute_features, attribute_mask, dialogue_lengths
+            attribute_features, tf_batch_data, attribute
         )
 
         return attribute_features, text_transformer_output, text_sequence_lengths
@@ -1152,8 +1149,8 @@ class TED(TransformerRasaModel):
     @staticmethod
     def _convert_to_original_shape(
         attribute_features: tf.Tensor,
-        attribute_mask: tf.Tensor,
-        dialogue_lengths: tf.Tensor,
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        attribute: Text,
     ) -> tf.Tensor:
         """Transform attribute features back to original shape.
 
@@ -1178,6 +1175,19 @@ class TED(TransformerRasaModel):
         # mapping the values of attribute features to the position in the resulting
         # tensor.
 
+        # attribute_mask has shape batch x dialogue_len x 1
+        attribute_mask = tf_batch_data[attribute][MASK][0]
+
+        if attribute in SENTENCE_FEATURES_TO_ENCODE + STATE_LEVEL_FEATURES:
+            dialogue_lengths = tf.cast(
+                tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32
+            )
+            dialogue_indices = tf_batch_data[DIALOGUE][IDS][0]
+        else:
+            # for labels, dialogue length is a fake dim and equal to 1
+            dialogue_lengths = tf.ones((tf.shape(attribute_mask)[0],), dtype=tf.int32)
+            dialogue_indices = tf.zeros((tf.shape(attribute_mask)[0],), dtype=tf.int32)
+
         batch_dim = tf.shape(attribute_mask)[0]
         dialogue_dim = tf.shape(attribute_mask)[1]
         units = attribute_features.shape[-1]
@@ -1188,14 +1198,6 @@ class TED(TransformerRasaModel):
         non_fake_dialogue_lengths = tf.reduce_sum(attribute_mask, axis=-1)
         # create the batch indices
         batch_indices = tf.repeat(tf.range(batch_dim), non_fake_dialogue_lengths)
-        # TODO precompute dialogue_indices after creation of tf_batch_data
-        dialogue_indices = (
-            tf.map_fn(
-                tf.range,
-                dialogue_lengths,
-                fn_output_signature=tf.RaggedTensorSpec(shape=[None], dtype=tf.int32),
-            )
-        ).values
 
         # attribute_mask has shape (batch x dialogue_len x 1), while
         # dialogue_indices has shape (combined_dialogue_len,)
@@ -1427,6 +1429,7 @@ class TED(TransformerRasaModel):
             The loss of the given batch.
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+        self._compute_dialogue_indices(tf_batch_data)
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 
@@ -1442,7 +1445,7 @@ class TED(TransformerRasaModel):
             dialogue_embed,
             dialogue_mask,
             dialogue_transformer_output,
-        ) = self._emebed_dialogue(dialogue_in, tf_batch_data)
+        ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         losses = []
@@ -1501,6 +1504,7 @@ class TED(TransformerRasaModel):
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
+        self._compute_dialogue_indices(tf_batch_data)
 
         (
             dialogue_in,
@@ -1511,7 +1515,7 @@ class TED(TransformerRasaModel):
             dialogue_embed,
             dialogue_mask,
             dialogue_transformer_output,
-        ) = self._emebed_dialogue(dialogue_in, tf_batch_data)
+        ) = self._embed_dialogue(dialogue_in, tf_batch_data)
         dialogue_mask = tf.squeeze(dialogue_mask, axis=-1)
 
         sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
