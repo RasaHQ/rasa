@@ -1,12 +1,16 @@
 import os
 
-from rasa.nlu.components import Component
+import spacy
+from spacy.training.iob_utils import biluo_tags_from_offsets
+
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata, InvalidModelError
 
-from typing import Any, Optional, Text, Dict
+from typing import Any, Dict, List, Text, Optional, Type
+from rasa.shared.nlu.constants import ENTITIES, TEXT, INTENT, METADATA
 
 
-class SpacyCustomNER(Component):
+class SpacyCustomNER(EntityExtractor):
     """A custom sentiment analysis component"""
     name = "custom_entities"
     provides = ["custom_entities"]
@@ -15,7 +19,11 @@ class SpacyCustomNER(Component):
 
     defaults = {
         "custom_model": None,
-        "project": None
+        "project": None,
+        # by default all dimensions recognized by spacy are returned
+        # dimensions can be configured to contain an array of strings
+        # with the names of the dimensions to filter for
+        "dimensions": None
     }
 
     def __init__(
@@ -49,6 +57,8 @@ class SpacyCustomNER(Component):
         from pathlib import Path
 
         # root = Path(__file__).parent
+        nlp = spacy.blank(cfg.language)
+
         component_config = None
         for pipe in cfg.pipeline:
             if pipe['name'] == str(self.__class__.name):
@@ -59,8 +69,26 @@ class SpacyCustomNER(Component):
             print('Project path from config:{}'.format(root.name))
         else:
             root = Path(os.path.abspath(os.getcwd()))
-        project_assets(root)
-        project_run(root, "all")
+        if training_data.entity_examples:
+            with open(os.path.join(root, 'ner/data/data.iob'), 'w') as fout:
+                for example in training_data.entity_examples:
+                    entities = []
+                    doc = nlp(example.get(TEXT))
+                    for ent in example.get(ENTITIES):
+                        entities.append((ent.get('start'), ent.get('end'), ent.get('entity')))
+
+                    tags = biluo_tags_from_offsets(doc, entities)
+                    tokens = [token.text for token in doc]
+                    ner_training = [tok + '|' + tag for tok, tag in zip(tokens, tags)]
+                    fout.write(' '.join(ner_training) + '\n')
+
+            project_assets(root)
+            project_run(root, "all")
+
+        else:
+            raise Exception(
+                "No example with Entities to train NER model: {}".format(SpacyCustomNER)
+            )
 
     def convert_to_rasa(self, value, confidence=None):
         """Convert model output into the Rasa NLU compatible output format."""
@@ -82,14 +110,32 @@ class SpacyCustomNER(Component):
         """Create bag-of-words representation of the training examples."""
         return ({word: True for word in tokens})
 
+    @staticmethod
+    def extract_entities(doc: "Doc") -> List[Dict[Text, Any]]:
+        entities = [
+            {
+                "entity": ent.label_,
+                "value": ent.text,
+                "start": ent.start_char,
+                "confidence": None,
+                "end": ent.end_char,
+            }
+            for ent in doc.ents
+        ]
+        return entities
+
     def process(self, message, **kwargs):
         """Retrieve the tokens of the new message, pass it to the classifier
             and append prediction results to the message class."""
-        print(message.data)
-        doc = self.nlp(message.data['text'])
-        entity = self.convert_to_rasa(doc)
-
-        message.set("custom_entities", entity, add_to_output=True)
+        doc = self.nlp(message.get(TEXT))
+        all_extracted = self.add_extractor_name(self.extract_entities(doc))
+        dimensions = self.component_config["dimensions"]
+        extracted = SpacyCustomNER.filter_irrelevant_entities(
+            all_extracted, dimensions
+        )
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
+        # entity = self.convert_to_rasa(doc)
+        # message.set(ENTITIES, entity, add_to_output=True)
 
     def persist(self, file_name, model_dir):
         """Pass because a pre-trained model is already persisted"""
@@ -97,7 +143,7 @@ class SpacyCustomNER(Component):
 
     @classmethod
     def load(
-            cls,
+            self,
             meta: Dict[Text, Any],
             model_dir: Text = None,
             model_metadata: "Metadata" = None,
@@ -105,9 +151,9 @@ class SpacyCustomNER(Component):
             **kwargs: Any,
     ) -> "SpacyCustomNER":
         model_path = meta.get("custom_model")
-        nlp = cls.load_model(model_path)
-        cls.ensure_proper_language_model(nlp)
-        return cls(meta, nlp)
+        nlp = self.load_model(model_path)
+        self.ensure_proper_language_model(nlp)
+        return self(meta, nlp)
 
     @staticmethod
     def ensure_proper_language_model(nlp: Optional["Language"]) -> None:
