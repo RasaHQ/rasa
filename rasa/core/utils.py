@@ -272,8 +272,13 @@ def get_file_hash(path: Text) -> Text:
 async def download_file_from_url(url: Text) -> Text:
     """Download a story file from a url and persists it into a temp file.
 
-    Returns the file path of the temp file that contains the
-    downloaded content."""
+    Args:
+        url: url to download from
+
+    Returns:
+        The file path of the temp file that contains the
+        downloaded content.
+    """
     from rasa.nlu import utils as nlu_utils
 
     if not nlu_utils.is_url(url):

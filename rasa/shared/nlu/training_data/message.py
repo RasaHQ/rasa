@@ -90,9 +90,19 @@ class Message:
             return other.fingerprint() == self.fingerprint()
 
     def __hash__(self) -> int:
+        """Calculate a hash for the message.
+
+        Returns:
+            Hash of the message.
+        """
         return int(self.fingerprint(), 16)
 
     def fingerprint(self) -> Text:
+        """Calculate a string fingerprint for the message.
+
+        Returns:
+            Fingerprint of the message.
+        """
         return rasa.shared.utils.io.deep_container_fingerprint(self.data)
 
     @classmethod

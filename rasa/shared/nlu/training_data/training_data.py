@@ -80,8 +80,15 @@ class TrainingData:
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
 
     def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
-        """Return merged instance of this data with other training data."""
+        """Return merged instance of this data with other training data.
 
+        Args:
+            others: other training data instances to merge this one with
+
+        Returns:
+            Merged training data object. Merging is not done in place, this
+            will be a new instance.
+        """
         training_examples = copy.deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = copy.deepcopy(self.regex_features)
@@ -129,6 +136,11 @@ class TrainingData:
         )
 
     def __hash__(self) -> int:
+        """Calculate hash for the training data object.
+
+        Returns:
+            Hash of the training data object.
+        """
         return int(self.fingerprint(), 16)
 
     @staticmethod

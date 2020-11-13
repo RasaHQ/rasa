@@ -394,6 +394,11 @@ class StoryGraph:
             self.story_end_checkpoints = {}
 
     def __hash__(self) -> int:
+        """Return hash for the story step.
+
+        Returns:
+            Hash of the story step.
+        """
         return int(self.fingerprint(), 16)
 
     def fingerprint(self) -> Text:
@@ -407,7 +412,6 @@ class StoryGraph:
 
     def ordered_steps(self) -> List[StoryStep]:
         """Returns the story steps ordered by topological order of the DAG."""
-
         return [self.get(step_id) for step_id in self.ordered_ids]
 
     def cyclic_edges(self) -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]:

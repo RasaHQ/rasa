@@ -231,7 +231,7 @@ def get_dictionary_fingerprint(
         encoding: encoding used for dumping objects as strings
 
     Returns:
-        the hash of the dictionary
+        The hash of the dictionary
     """
     stringified = json.dumps(
         {
