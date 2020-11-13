@@ -189,14 +189,34 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         configured_features = self.component_config["features"]
         sentence_features = []
 
-        for token_idx in range(len(tokens)):
+        # A function can be applied to the same token multiple times if
+        # if configured_features includes functions of the window around a token.
+        # This can become unnecessarily slow if the window size is large.
+        # For efficiency, we memoize the function call on each token.
+        functions = set(
+            [
+                function
+                for token_functions in configured_features
+                for function in token_functions
+            ]
+        )
+        token_to_function_values = []
+        for token_idx, token in enumerate(tokens):
+            function_values = {}
+            for function in functions:
+                function_values[function] = self._get_feature_value(
+                    function, token, token_idx, len(tokens)
+                )
+            token_to_function_values.append(function_values)
+
+        for token_idx, token in enumerate(tokens):
             # get the window size (e.g. before, word, after) of the configured features
             # in case of an even number we will look at one more word before,
             # e.g. window size 4 will result in a window range of
             # [-2, -1, 0, 1] (0 = current word in sentence)
             window_size = len(configured_features)
             half_window_size = window_size // 2
-            window_range = range(-half_window_size, half_window_size + window_size % 2)
+            window_range = [i - half_window_size for i in range(window_size)]
 
             prefixes = [str(i) for i in window_range]
 
@@ -209,15 +229,15 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                 if current_idx < 0 or current_idx >= len(tokens):
                     continue
 
-                token = tokens[token_idx + pointer_position]
+                token = tokens[current_idx]
 
                 current_feature_idx = pointer_position + half_window_size
                 prefix = prefixes[current_feature_idx]
 
                 for feature in configured_features[current_feature_idx]:
-                    token_features[f"{prefix}:{feature}"] = self._get_feature_value(
-                        feature, token, token_idx, pointer_position, len(tokens)
-                    )
+                    token_features[f"{prefix}:{feature}"] = token_to_function_values[
+                        current_idx
+                    ][feature]
 
             sentence_features.append(token_features)
 
@@ -248,18 +268,13 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return one_hot_seq_feature_vector
 
     def _get_feature_value(
-        self,
-        feature: Text,
-        token: Token,
-        token_idx: int,
-        pointer_position: int,
-        token_length: int,
+        self, feature: Text, token: Token, token_position: int, number_of_tokens: int,
     ) -> Union[bool, int, Text]:
         if feature == END_OF_SENTENCE:
-            return token_idx + pointer_position == token_length - 1
+            return token_position == number_of_tokens - 1
 
         if feature == BEGIN_OF_SENTENCE:
-            return token_idx + pointer_position == 0
+            return token_position == 0
 
         if feature not in self.function_dict:
             raise ValueError(
