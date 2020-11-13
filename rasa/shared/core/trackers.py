@@ -231,7 +231,7 @@ class DialogueStateTracker:
 
     @staticmethod
     def freeze_current_state(state: State) -> FrozenState:
-        frozen_state = frozenset(
+        return frozenset(
             {
                 key: frozenset(values.items())
                 if isinstance(values, Dict)
@@ -239,7 +239,6 @@ class DialogueStateTracker:
                 for key, values in state.items()
             }.items()
         )
-        return frozen_state
 
     def past_states(self, domain: Domain) -> List[State]:
         """Generate the past states of this tracker based on the history.

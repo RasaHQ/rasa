@@ -44,6 +44,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
 from rasa.utils.tensorflow.constants import (
     LABEL,
+    IDS,
     HIDDEN_LAYERS_SIZES,
     SHARE_HIDDEN_LAYERS,
     TRANSFORMER_SIZE,
@@ -101,8 +102,7 @@ logger = logging.getLogger(__name__)
 SPARSE = "sparse"
 DENSE = "dense"
 LABEL_KEY = LABEL
-LABEL_SUB_KEY = "ids"
-TAG_IDS = "tag_ids"
+LABEL_SUB_KEY = IDS
 
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
@@ -1309,22 +1309,6 @@ class DIET(TransformerRasaModel):
 
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
-    def _prepare_entity_recognition_layers(self) -> None:
-        for tag_spec in self._entity_tag_specs:
-            name = tag_spec.tag_name
-            num_tags = tag_spec.num_tags
-            self._tf_layers[f"embed.{name}.logits"] = layers.Embed(
-                num_tags, self.config[REGULARIZATION_CONSTANT], f"logits.{name}"
-            )
-            self._tf_layers[f"crf.{name}"] = layers.CRF(
-                num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
-            )
-            self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
-                self.config[EMBEDDING_DIMENSION],
-                self.config[REGULARIZATION_CONSTANT],
-                f"tags.{name}",
-            )
-
     def _create_bow(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
@@ -1405,33 +1389,6 @@ class DIET(TransformerRasaModel):
         return self._tf_layers[f"loss.{LABEL}"](
             text_embed, label_embed, label_ids, all_labels_embed, all_label_ids
         )
-
-    def _calculate_entity_loss(
-        self,
-        inputs: tf.Tensor,
-        tag_ids: tf.Tensor,
-        mask: tf.Tensor,
-        sequence_lengths: tf.Tensor,
-        tag_name: Text,
-        entity_tags: Optional[tf.Tensor] = None,
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-
-        tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
-
-        if entity_tags is not None:
-            _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
-            inputs = tf.concat([inputs, _tags], axis=-1)
-
-        logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
-
-        # should call first to build weights
-        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
-        loss = self._tf_layers[f"crf.{tag_name}"].loss(
-            logits, tag_ids, sequence_lengths
-        )
-        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
-
-        return loss, f1, logits
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
