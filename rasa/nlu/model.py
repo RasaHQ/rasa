@@ -179,6 +179,7 @@ class Trainer:
 
         context = {"finetune_mode": True}
         pipeline = []
+        logger.info(f"Loading model from {model_path}")
 
         with model.unpack_model(model_path) as unpacked:
             _, old_nlu = model.get_model_subdirectories(unpacked)

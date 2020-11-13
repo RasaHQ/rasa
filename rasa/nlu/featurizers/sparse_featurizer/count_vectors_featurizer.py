@@ -362,12 +362,24 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
         available_empty_index = self._get_starting_empty_index(existing_vocabulary)
+        print(
+            attribute, len(existing_vocabulary), available_empty_index, len(vocabulary)
+        )
+        if len(vocabulary) > len(existing_vocabulary):
+            logger.warning(
+                f"New data contains vocabulary of size {len(vocabulary)} for attribute {attribute}"
+                f" which is larger than the maximum vocabulary size({len(existing_vocabulary)})"
+                " of the original model."
+                " Some tokens will have to dropped in order to continue training. It is advised"
+                " to re-train the model from scratch on complete data."
+            )
         for token in vocabulary:
             if token not in existing_vocabulary:
                 existing_vocabulary[token] = available_empty_index
-                del [existing_vocabulary[f"buf_{available_empty_index}"]]
-
+                del existing_vocabulary[f"buf_{available_empty_index}"]
                 available_empty_index += 1
+                if available_empty_index == len(existing_vocabulary):
+                    break
         self.vectorizers[attribute].vocabulary_ = existing_vocabulary
         self.vectorizers[attribute]._validate_vocabulary()
 

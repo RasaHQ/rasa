@@ -164,6 +164,12 @@ async def _train_async_internal(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
 
+    new_fingerprint = await model.model_fingerprint(file_importer)
+    old_model = model.get_latest_model(output_path)
+    model_to_finetune = finetune_model_path if finetune_model_path else old_model
+
+    # TODO: Check if finetuning is possible.
+
     if stories.is_empty() and nlu_data.can_train_nlu_model():
         print_error(
             "No training data given. Please provide stories and NLU data in "
@@ -179,6 +185,8 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             additional_arguments=nlu_additional_arguments,
+            finetune=finetune_model,
+            finetune_model_path=old_model,
         )
 
     if nlu_data.can_train_nlu_model():
@@ -189,12 +197,6 @@ async def _train_async_internal(
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
         )
-
-    new_fingerprint = await model.model_fingerprint(file_importer)
-    old_model = model.get_latest_model(output_path)
-    model_to_finetune = finetune_model_path if finetune_model_path else old_model
-
-    # TODO: Check if finetuning is possible.
 
     if not force_training:
         fingerprint_comparison = model.should_retrain(
