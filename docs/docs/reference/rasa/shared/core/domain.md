@@ -130,6 +130,18 @@ for more implementation.
 
 Returns a unique hash for the domain.
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns a unique hash for the domain which is stable across python runs.
+
+**Returns**:
+
+  fingerprint of the domain
+
 #### user\_actions\_and\_forms
 
 ```python

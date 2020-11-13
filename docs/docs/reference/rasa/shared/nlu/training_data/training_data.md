@@ -11,13 +11,35 @@ class TrainingData()
 
 Holds loaded intent and entity training data.
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Fingerprint the training data.
+
+**Returns**:
+
+  hex string as a fingerprint of the training data.
+
 #### merge
 
 ```python
- | merge(*others: "TrainingData") -> "TrainingData"
+ | merge(*others: Optional["TrainingData"]) -> "TrainingData"
 ```
 
 Return merged instance of this data with other training data.
+
+**Arguments**:
+
+- `others` - other training data instances to merge this one with
+  
+
+**Returns**:
+
+  Merged training data object. Merging is not done in place, this
+  will be a new instance.
 
 #### filter\_training\_examples
 
@@ -35,6 +57,18 @@ Filter training examples.
 **Returns**:
 
 - `TrainingData` - A TrainingData with filtered training examples.
+
+#### \_\_hash\_\_
+
+```python
+ | __hash__() -> int
+```
+
+Calculate hash for the training data object.
+
+**Returns**:
+
+  Hash of the training data object.
 
 #### sanitize\_examples
 

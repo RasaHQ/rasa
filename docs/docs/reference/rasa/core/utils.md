@@ -174,14 +174,6 @@ get_file_hash(path: Text) -> Text
 
 Calculate the md5 hash of a file.
 
-#### get\_dict\_hash
-
-```python
-get_dict_hash(data: Dict, encoding: Text = rasa.shared.utils.io.DEFAULT_ENCODING) -> Text
-```
-
-Calculate the md5 hash of a dictionary.
-
 #### download\_file\_from\_url
 
 ```python
@@ -190,8 +182,15 @@ async download_file_from_url(url: Text) -> Text
 
 Download a story file from a url and persists it into a temp file.
 
-Returns the file path of the temp file that contains the
-downloaded content.
+**Arguments**:
+
+- `url` - url to download from
+  
+
+**Returns**:
+
+  The file path of the temp file that contains the
+  downloaded content.
 
 #### pad\_lists\_to\_size
 

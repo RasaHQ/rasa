@@ -110,6 +110,30 @@ class StoryGraph()
 
 Graph of the story-steps pooled from all stories in the training data.
 
+#### \_\_hash\_\_
+
+```python
+ | __hash__() -> int
+```
+
+Return hash for the story step.
+
+**Returns**:
+
+  Hash of the story step.
+
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns a unique hash for the stories which is stable across python runs.
+
+**Returns**:
+
+  fingerprint of the stories
+
 #### ordered\_steps
 
 ```python
