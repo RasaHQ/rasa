@@ -171,13 +171,19 @@ class FloatSlot(Slot):
             return [0.0, 0.0]
 
     def persistence_info(self) -> Dict[Text, Any]:
+        """Returns relevant information to persist this slot."""
         d = super().persistence_info()
         d["max_value"] = self.max_value
         d["min_value"] = self.min_value
         return d
 
+    def _feature_dimensionality(self) -> int:
+        return len(self.as_feature())
+
 
 class BooleanSlot(Slot):
+    """The value of this slot is as boolean."""
+
     type_name = "bool"
 
     def _as_feature(self) -> List[float]:
