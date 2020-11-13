@@ -369,14 +369,14 @@ to extract customs slots:
 
 1. Define a method `extract_<slot_name>` for every slot that should be mapped in a
    custom way.
-2. Make sure that in the domain file you list for your form only those slots that don't
-   use custom mappings.
+2. Make sure that in the domain file you list for your form only those slots that use 
+[predefined mappings](./forms.mdx#slot-mappings).
 3. Override `required_slots` to add all slots with custom mappings to the list of slots
    the form should request.
 
 The following example shows the implementation of a form which extracts a slot
-`outdoor_seating` in a custom way, in addition to the slots whose mappings are defined
-in the domain.
+`outdoor_seating` in a custom way, in addition to the slots which use 
+[predefined mappings](./forms.mdx#slot-mappings).
 The method `extract_outdoor_seating` sets the slot `outdoor_seating` based on whether
 the keyword `outdoor` was present in the last user message.
 
@@ -417,9 +417,8 @@ first slot specified in `required_slots` which is not filled.
 
 ### Dynamic Form Behavior
 
-By default Rasa Open Source will ask for the next
-[`requested_slot`](forms.mdx#the-requested_slot-slot) defined in the slot mappings
-in the domain, which is not filled yet. If you use
+By default Rasa Open Source will ask for the next empty slot from the slots
+listed for your form in the domain file. If you use
 [custom slot mappings](forms.mdx#custom-slot-mappings) and the `FormValidationAction`,
 it will ask for the first empty slot returned by the `required_slots` method. If all
 slots in `required_slots` are filled the form will be be deactivated.
@@ -430,8 +429,8 @@ a previous slot was filled or you want to change the order in which slots are re
 
 If you are using the Rasa SDK, we recommend you to use the `FormValidationAction` and
 override `required_slots` to fit your dynamic behavior. Please remember to implement
-a method `extract_<slot name>` for every slot which isn't defined in the slot mappings
-of your domain as it is described [here](forms.mdx#custom-slot-mappings).
+a method `extract_<slot name>` for every slot which doesn't use a predefined mapping,
+as described in [Custom Slot Mappings](forms.mdx#custom-slot-mappings).
 The example below will ask the user if they want to sit in
 the shade or in the sun in case they told us that they want to sit outside.
 
