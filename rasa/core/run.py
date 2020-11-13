@@ -243,12 +243,12 @@ async def load_agent_on_start(
     # noinspection PyBroadException
     try:
         rasa.otel.init_tracer_endpoint(endpoints.telemetry)
-        with rasa.otel.start_span("parse_message"):
-            with model.get_model(model_path) as unpacked_model:
-                _, nlu_model = model.get_model_subdirectories(unpacked_model)
-                _interpreter = rasa.core.interpreter.create_interpreter(
-                    endpoints.nlu or nlu_model
-                )
+        #with rasa.otel.start_span("parse_message"):
+        with model.get_model(model_path) as unpacked_model:
+            _, nlu_model = model.get_model_subdirectories(unpacked_model)
+            _interpreter = rasa.core.interpreter.create_interpreter(
+                endpoints.nlu or nlu_model
+            )
     except Exception:
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None

@@ -2,63 +2,123 @@
 import logging
 from typing import Text
 from rasa.core.utils import EndpointConfig
-# Jaeger
-from jaeger_client import Config
-from opentracing import Format, UnsupportedFormatException
-from opentracing.ext import tags
+from opentelemetry import trace, propagators
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.resources import Resource
+# core exporters
+from opentelemetry.sdk.trace.export import (
+    ConsoleSpanExporter,
+    SimpleExportSpanProcessor,
+    BatchExportSpanProcessor,
+)
+# addl exporters
+from opentelemetry.exporter.otlp.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter import jaeger
 
 logger = logging.getLogger(__name__)
 logging.getLogger("").handlers = []
 logging.basicConfig(format="%(message)s", level=logging.DEBUG)
 
 tracer = None
+current_span = None
 
 def init_tracer_endpoint(telemetry):
-    logging.getLogger('').handlers = []
-    logging.basicConfig(format='%(message)s', level=logging.DEBUG)
+    # telemetry is the endpoints.yml / telemetry section
+    logger.debug(f"init_tracer_endpoint: {telemetry.kwargs}")
     service_name = "rasa"
     if telemetry and telemetry.kwargs.get("service_name"):
         service_name = telemetry.kwargs.get("service_name")
 
-    config = Config(
-        config={ # usually read from some yaml config
-            'sampler': {
-                'type': 'const',
-                'param': 1,
-            },
-            'logging': True,
-            'reporter_batch_size': 1,
-        },
-        service_name=service_name,
-    )
+    resource = Resource(attributes={"service.name": service_name})
+    trace.set_tracer_provider(TracerProvider(resource=resource))
+
+    # Setup trace exporters
+    if telemetry and telemetry.kwargs.get("exporters"):
+        trace_exporters = telemetry.kwargs.get("exporters")
+        try:
+            for t in trace_exporters:
+                if t == 'console':
+                    trace.get_tracer_provider().add_span_processor(
+                        SimpleExportSpanProcessor(ConsoleSpanExporter())
+                    )
+                if t == 'otlphttp':
+                    if trace_exporters["otlphttp"]["endpoint"]:
+                        #otlp_exporter = OTLPSpanExporter(endpoint="localhost:55680", insecure=True)
+                        insecure = trace_exporters["otlphttp"]["insecure"] if trace_exporters["otlphttp"]["insecure"] else "True"
+                        otlp_exporter = OTLPSpanExporter(endpoint=trace_exporters["otlphttp"]["endpoint"], insecure=insecure)
+                        trace.get_tracer_provider().add_span_processor(
+                            BatchExportSpanProcessor(otlp_exporter)
+                        )
+                if t == 'jaeger':
+                    if trace_exporters["jaeger"]["agent_hosthame"]:
+                        agent_port = trace_exporters["jaeger"]["agent_port"] if trace_exporters["jaeger"]["agent_port"] else 6831
+                        jaeger_exporter = jaeger.JaegerSpanExporter(
+                            service_name=service_name,
+                            agent_host_name=trace_exporters["jaeger"]["agent_hosthame"],
+                            agent_port=agent_port,
+                        )
+                        trace.get_tracer_provider().add_span_processor(
+                            BatchExportSpanProcessor(jaeger_exporter)
+                        )
+        except:
+            logger.debug(f"error setting up otel exporter: {t}")
 
     # this call also sets opentracing.tracer
     global tracer
-    tracer = config.initialize_tracer()
+    tracer = trace.get_tracer(__name__)  # returns opentelemetry.sdk.trace.Tracer object
     return tracer
 
+def _show_context(msg, span):
+    span_context = span.get_span_context()
+    logger.debug(f"{msg}, trace: {span_context.trace_id}, span: {span_context.span_id}")
 
 def start_span(name, attributes=None):
     #span = self.tracer.start_span(name)
     global tracer
     if tracer:
-        span = tracer.start_active_span(name)
+        context = tracer.start_as_current_span(name)
+        span = context.args[1]
+        _show_context(f"span {name}", span)
         if attributes:
             for k, v in attributes.items():
-                span.span.set_tag(k, v)
-        return span
+                if span.is_recording():
+                    span.set_attribute(k, v)
+                logger.debug(f"set attribute {k} = {v}")
+        return context
+
+def start_span_test(name, attributes=None):
+    #span = self.tracer.start_span(name)
+    global tracer
+    global current_span
+    if tracer:
+        parent_span = current_span
+        if name.startswith('channel') or not parent_span:
+            current_span = tracer.start_span(name)
+        else:
+            current_span = tracer.start_span(name, parent=parent_span)
+        #_show_context(f"span {name}", current_span)
+        with tracer.use_span(current_span, end_on_exit=False):
+            if attributes:
+                for k, v in attributes.items():
+                    if current_span.is_recording():
+                        current_span.set_attribute(k, v)
+                    logger.debug(f"set attribute {k} = {v}")
+        return current_span
 
 def inject(url):
     # https://github.com/yurishkuro/opentracing-tutorial/blob/7ae271badb867635f6697d9dbe5510c798883ff8/python/lesson03/solution/hello.py#L26
     global tracer
     if tracer:
-        span = tracer.active_span
-        logger.debug(f"otel injecting headers, span: {span}")
-        span.set_tag(tags.HTTP_METHOD, 'POST')
-        span.set_tag(tags.HTTP_URL, url)
-        span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
-        headers = {}
-        tracer.inject(span, Format.HTTP_HEADERS, headers)
+        #span = tracer.get_current_span()
+        #span = tracer.active_span
+        #logger.debug(f"otel injecting headers, span: {span}")
+        #span.set_tag(tags.HTTP_METHOD, 'POST')
+        #span.set_tag(tags.HTTP_URL, url)
+        #span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
+        #headers = {}
+        headers = dict()
+        propagators.inject(type(headers).__setitem__, headers)
+        #tracer.inject(span, Format.HTTP_HEADERS, headers)
         #span_header = self.tracer.inject(span, Format.HTTP_HEADERS, headers)
         # tracer.inject(child_span.context, 'zipkin-span-format', text_carrier)
         return headers
