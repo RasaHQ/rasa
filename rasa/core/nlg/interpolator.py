@@ -24,7 +24,7 @@ def interpolate_text(template: Text, values: Dict[Text, Text]) -> Text:
     """
 
     try:
-        text = re.sub(r"{([^\n{}]+?)}", r"{0[\1]}", template)
+        text = re.sub(r"{([^\n{}:]+?)}", r"{0[\1]}", template)
         text = text.format(values)
         if "0[" in text:
             # regex replaced tag but format did not replace
