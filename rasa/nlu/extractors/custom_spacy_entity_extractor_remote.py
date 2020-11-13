@@ -18,8 +18,9 @@ class RemoteSpacyCustomNER(EntityExtractor):
     print('initialised the class')
 
     defaults = {
-        "custom_model": None,
-        "project": None,
+        "host": None,
+        "port": None,
+        "arch": None,
         # by default all dimensions recognized by spacy are returned
         # dimensions can be configured to contain an array of strings
         # with the names of the dimensions to filter for
