@@ -1,5 +1,5 @@
 version: "2.0"
-
+# TODO create a bot that makes sense
 actions:
  - utter_greet
  - utter_happy

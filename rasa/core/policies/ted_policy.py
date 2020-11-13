@@ -108,6 +108,7 @@ logger = logging.getLogger(__name__)
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = IDS
 LENGTH = "length"
+INDICES = "indices"
 SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
 LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
@@ -259,8 +260,6 @@ class TEDPolicy(Policy):
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
         # If set to true, entities are predicted in user utterances.
-        # TODO Do not communicate this option to users yet as we have to run some
-        #   experiments first.
         ENTITY_RECOGNITION: True,
     }
 
@@ -690,7 +689,7 @@ class TEDPolicy(Policy):
             config=meta,
             # during prediction we don't care about previous dialogue turns,
             # so to save computation time, use only the last one
-            use_only_last_dialogue_turn=True,
+            use_only_last_dialogue_turns=True,
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
         )
@@ -724,13 +723,13 @@ class TED(TransformerRasaModel):
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         config: Dict[Text, Any],
-        use_only_last_dialogue_turn: bool,
+        use_only_last_dialogue_turns: bool,
         label_data: RasaModelData,
         entity_tag_specs: Optional[List[EntityTagSpec]],
     ) -> None:
         super().__init__("TED", config, data_signature, label_data)
 
-        self.use_only_last_dialogue_turn = use_only_last_dialogue_turn
+        self.use_only_last_dialogue_turns = use_only_last_dialogue_turns
 
         self.predict_data_signature = {
             feature_name: features
@@ -875,7 +874,7 @@ class TED(TransformerRasaModel):
     ) -> None:
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32)
         # wrap in a list, because that's the structure of tf_batch_data
-        tf_batch_data[DIALOGUE][IDS] = [
+        tf_batch_data[DIALOGUE][INDICES] = [
             (
                 tf.map_fn(
                     tf.range,
@@ -932,7 +931,7 @@ class TED(TransformerRasaModel):
         )
         dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
-        if self.use_only_last_dialogue_turn:
+        if self.use_only_last_dialogue_turns:
             # pick last vector if max history featurizer is used
             dialogue_transformed = tf.expand_dims(
                 self._last_token(dialogue_transformed, dialogue_lengths), 1
@@ -969,43 +968,73 @@ class TED(TransformerRasaModel):
             lambda: self._encode_fake_features_per_attribute(tf_batch_data, attribute),
         )
 
+    def _get_dense_units(
+        self, attribute_features_list: List[tf.Tensor], attribute: Text
+    ) -> int:
+        # TODO this should be done in corresponding layers once in init
+        units = 0
+        for f in attribute_features_list:
+            if isinstance(f, tf.SparseTensor):
+                units += self.config[DENSE_DIMENSION][attribute]
+            else:
+                units += f.shape[-1]
+        return units
+
+    def _get_concat_units(
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
+    ) -> int:
+        # TODO this should be done in corresponding layers once in init
+        # calculate concat sequence sentence dim
+        sentence_units = self._get_dense_units(
+            tf_batch_data[attribute][SENTENCE], attribute
+        )
+        sequence_units = self._get_dense_units(
+            tf_batch_data[attribute][SEQUENCE], attribute
+        )
+
+        if sequence_units and not sentence_units:
+            return sequence_units
+
+        if sentence_units and not sequence_units:
+            return sentence_units
+
+        if sentence_units != sequence_units:
+            return self.config[CONCAT_DIMENSION][TEXT]
+
+        return sentence_units
+
     def _encode_fake_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        attribute_features_list = tf_batch_data[attribute][SENTENCE]
+        # we need to create real zero tensors with appropriate batch and dialogue dim
+        # because they are passed to dialogue transformer
         attribute_mask = tf_batch_data[attribute][MASK][0]
 
         batch_dim = tf.shape(attribute_mask)[0]
         dialogue_dim = tf.shape(attribute_mask)[1]
-
         if attribute in set(SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE):
             units = self.config[ENCODING_DIMENSION]
         else:
-            units = 0
-            for f in attribute_features_list:
-                if isinstance(f, tf.SparseTensor):
-                    units += self.config[DENSE_DIMENSION][attribute]
-                else:
-                    units += f.shape[-1]
+            units = self._get_dense_units(tf_batch_data[attribute][SENTENCE], attribute)
 
         attribute_features = tf.zeros(
             (batch_dim, dialogue_dim, units), dtype=tf.float32
         )
         if attribute == TEXT:
-            # TODO handle the case if transformer is not created
-            # if self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"] > 0:
-            #     units = self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"]
-            # elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
-            #     units = self.config[HIDDEN_LAYERS_SIZES][TEXT]
-            # else:
-            #     for f in attribute_features_list:
-            #         if isinstance(f, tf.SparseTensor):
-            #             units += self.config[DENSE_DIMENSION][attribute]
-            #         else:
-            #             units += f.shape[-1]
+            # if the input features are fake, we don't process them further,
+            # but we need to calculate correct last dim (units) so that tf could infer
+            # the last shape of the tensors
+            if self.config[f"{DIALOGUE}_{NUM_TRANSFORMER_LAYERS}"] > 0:
+                text_transformer_units = self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"]
+            elif self.config[HIDDEN_LAYERS_SIZES][TEXT]:
+                text_transformer_units = self.config[HIDDEN_LAYERS_SIZES][TEXT][-1]
+            else:
+                text_transformer_units = self._get_concat_units(
+                    tf_batch_data, attribute
+                )
 
             text_transformer_output = tf.zeros(
-                (0, 0, self.config[f"{DIALOGUE}_{TRANSFORMER_SIZE}"]), dtype=tf.float32
+                (0, 0, text_transformer_units), dtype=tf.float32
             )
             text_sequence_lengths = tf.zeros((0, 1), dtype=tf.int32)
         else:
@@ -1014,6 +1043,52 @@ class TED(TransformerRasaModel):
             text_sequence_lengths = tf.zeros((0,))
 
         return attribute_features, text_transformer_output, text_sequence_lengths
+
+    @staticmethod
+    def _create_last_dialogue_turns_mask(
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
+    ) -> tf.Tensor:
+        # Since use_only_last_dialogue_turns is True,
+        # we need to find the locations of last dialogue turns in
+        # (combined batch dimension and dialogue length,) dimension,
+        # so that we can use `_sequence_lengths` as a boolean  mask to pick
+        # which ones are "real" textual input in these last dialogue turns.
+
+        # In order to do that we can use given `dialogue_lengths`.
+        # For example:
+        # If we have `dialogue_lengths = [2, 1, 3]`, than
+        # `dialogue_indices = [0, 1, 0, 0, 1, 2]` here we can spot that `0`
+        # always indicates the first dialogue turn,
+        # which means that previous dialogue turn is the last dialogue turn.
+        # Combining this with the fact that the last element in
+        # `dialogue_indices` is always the last dialogue turn, we can add
+        # a `0` to the end, getting
+        # `_dialogue_indices = [0, 1, 0, 0, 1, 2, 0]`.
+        # Then removing the first element
+        # `_last_dialogue_turn_inverse_indicator = [1, 0, 0, 1, 2, 0]`
+        # we see that `0` points to the last dialogue turn.
+        # We convert all positive numbers to `True` and take
+        # the inverse mask to get
+        # `last_dialogue_mask = [0, 1, 1, 0, 0, 1],
+        # which precisely corresponds to the fact that first dialogue is of
+        # length 2, the second 1 and the third 3.
+        last_dialogue_turn_mask = tf.math.logical_not(
+            tf.cast(
+                tf.concat(
+                    [
+                        tf_batch_data[DIALOGUE][INDICES][0],
+                        tf.zeros((1,), dtype=tf.int32),
+                    ],
+                    axis=0,
+                )[1:],
+                dtype=tf.bool,
+            )
+        )
+        # get only the indices of real inputs
+        return tf.boolean_mask(
+            last_dialogue_turn_mask,
+            tf.reshape(tf_batch_data[attribute][SEQUENCE_LENGTH][0], (-1,)),
+        )
 
     def _encode_real_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
@@ -1035,10 +1110,10 @@ class TED(TransformerRasaModel):
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
             # sequence_lengths contain `0` for "fake" features, while
             # tf_batch_data[attribute] contain only "real" features
-            _sequence_lengths = tf_batch_data[attribute][SEQUENCE_LENGTH][0]
+            sequence_lengths = tf_batch_data[attribute][SEQUENCE_LENGTH][0]
             # extract only nonzero lengths and cast to int
             sequence_lengths = tf.cast(
-                tf.boolean_mask(_sequence_lengths, _sequence_lengths), dtype=tf.int32
+                tf.boolean_mask(sequence_lengths, sequence_lengths), dtype=tf.int32
             )
             # boolean mask returns flat tensor
             sequence_lengths = tf.expand_dims(sequence_lengths, axis=-1)
@@ -1065,55 +1140,17 @@ class TED(TransformerRasaModel):
                 text_transformer_output = attribute_features
                 text_sequence_lengths = sequence_lengths
 
-                if self.use_only_last_dialogue_turn:
-                    # Get the location of all last dialogue inputs.
-                    # Since use_only_last_dialogue_turn is True,
-                    # we need to find the locations of last dialogue turns in
-                    # (combined batch dimension and dialogue length,) dimension,
-                    # so that we can use `_sequence_lengths` as a boolean  mask to pick
-                    # which ones are "real" textual input in these last dialogue turns.
-
-                    # In order to do that we can use given `dialogue_lengths`.
-                    # For example:
-                    # If we have `dialogue_lengths = [2, 1, 3]`, than
-                    # `dialogue_indices = [0, 1, 0, 0, 1, 2]` here we can spot that `0`
-                    # always indicates the first dialogue turn,
-                    # which means that previous dialogue turn is the last dialogue turn.
-                    # Combining this with the fact that the last element in
-                    # `dialogue_indices` is always the last dialogue turn, we can add
-                    # a `0` to the end, getting
-                    # `_dialogue_indices = [0, 1, 0, 0, 1, 2, 0]`.
-                    # Then removing the first element
-                    # `_last_dialogue_turn_inverse_indicator = [1, 0, 0, 1, 2, 0]`
-                    # we see that `0` points to the last dialogue turn.
-                    # We convert all positive numbers to `True` and take
-                    # the inverse mask to get
-                    # `last_dialogue_mask = [0, 1, 1, 0, 0, 1],
-                    # which precisely corresponds to the fact that first dialogue is of
-                    # length 2, the second 1 and the third 3.
-                    last_dialogue_mask = tf.math.logical_not(
-                        tf.cast(
-                            tf.concat(
-                                [
-                                    tf_batch_data[DIALOGUE][IDS][0],
-                                    tf.zeros((1,), dtype=tf.int32),
-                                ],
-                                axis=0,
-                            )[1:],
-                            dtype=tf.bool,
-                        )
-                    )
-
-                    # get only the indices of real text inputs
-                    last_dialogue_mask = tf.boolean_mask(
-                        last_dialogue_mask, tf.reshape(_sequence_lengths, (-1,))
+                if self.use_only_last_dialogue_turns:
+                    # get the location of all last dialogue inputs
+                    last_dialogue_turns_mask = self._create_last_dialogue_turns_mask(
+                        tf_batch_data, attribute
                     )
                     # pick last vector if max history featurizer is used
                     text_transformer_output = tf.boolean_mask(
-                        text_transformer_output, last_dialogue_mask
+                        text_transformer_output, last_dialogue_turns_mask
                     )
                     text_sequence_lengths = tf.boolean_mask(
-                        text_sequence_lengths, last_dialogue_mask
+                        text_sequence_lengths, last_dialogue_turns_mask
                     )
 
             # resulting attribute features will have shape
@@ -1185,7 +1222,7 @@ class TED(TransformerRasaModel):
             dialogue_lengths = tf.cast(
                 tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32
             )
-            dialogue_indices = tf_batch_data[DIALOGUE][IDS][0]
+            dialogue_indices = tf_batch_data[DIALOGUE][INDICES][0]
         else:
             # for labels, dialogue length is a fake dim and equal to 1
             dialogue_lengths = tf.ones((tf.shape(attribute_mask)[0],), dtype=tf.int32)
@@ -1309,7 +1346,7 @@ class TED(TransformerRasaModel):
         attribute_mask = tf_batch_data[TEXT][MASK][0]
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], tf.int32)
 
-        if self.use_only_last_dialogue_turn:
+        if self.use_only_last_dialogue_turns:
             # pick last vector if max history featurizer is used
             attribute_mask = tf.expand_dims(
                 self._last_token(attribute_mask, dialogue_lengths), axis=1
