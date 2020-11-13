@@ -3,6 +3,5 @@ stories:
   steps:
   - user: |
       What is your name?
-    intent: mood_unhappy
+    intent: affirm
   - action: utter_chitchat
-  

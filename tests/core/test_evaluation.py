@@ -247,8 +247,8 @@ def test_event_has_proper_implementation(
 @pytest.mark.parametrize(
     "test_file",
     [
-        ("data/test_yaml_stories/full_retrieval_intent_story.yml"),
-        ("data/test_yaml_stories/base_retrieval_intent_story.yml"),
+        ("data/test_yaml_stories/test_full_retrieval_intent_story.yml"),
+        ("data/test_yaml_stories/test_base_retrieval_intent_story.yml"),
     ],
 )
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
@@ -264,13 +264,20 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
 
 
+@pytest.mark.parametrize(
+    "test_file",
+    [
+        ("data/test_yaml_stories/test_full_retrieval_intent_wrong_prediction.yml"),
+        ("data/test_yaml_stories/test_base_retrieval_intent_wrong_prediction.yml"),
+    ],
+)
 async def test_retrieval_intent_wrong_prediction(
-    tmpdir: Path, response_selector_agent: Agent
+    tmpdir: Path, response_selector_agent: Agent, test_file: Text
 ):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
     await evaluate_stories(
-        stories="data/test_yaml_stories/retrieval_intent_wrong_prediction.yml",
+        stories=test_file,
         agent=response_selector_agent,
         out_directory=str(tmpdir),
         max_stories=None,
@@ -280,7 +287,4 @@ async def test_retrieval_intent_wrong_prediction(
     failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
     # check if the predicted entry contains full retrieval intent
-    assert (
-        f"- intent: mood_unhappy  # predicted: chitchat/ask_name: What is your name?"
-        in failed_stories
-    )
+    assert f"# predicted: chitchat/ask_name" in failed_stories

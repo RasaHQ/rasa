@@ -451,15 +451,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         ]
         # TODO there is no prediction support for e2e input right now, therefore
         #  temporary remove TEXT features from USER state during prediction
-        #  also temporary remove full retrieval intent
         for states in trackers_as_states:
             for state in states:
                 if state.get(USER, {}).get(TEXT):
                     del state[USER][TEXT]
-
-                # remove full intent, only keep base intent
-                intent = state.get(USER, {}).get(INTENT)
-                if intent and INTENT_MESSAGE_PREFIX in intent:
-                    state[USER][INTENT] = intent.split(INTENT_MESSAGE_PREFIX)[0]
 
         return trackers_as_states

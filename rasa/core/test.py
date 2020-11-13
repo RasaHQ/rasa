@@ -32,6 +32,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     RESPONSE,
     RESPONSE_SELECTOR,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import ActionExecuted, UserUttered
@@ -361,43 +362,43 @@ def _clean_entity_results(
     return cleaned_entities
 
 
-def _intent_response_key_from_parsed_data(parsed: Dict[Text, Any]) -> Text:
-    """Return either full retrieval intent, if present, or just the normal
-    intent otherwise.
+def _get_full_retrieval_intent(parsed: Dict[Text, Any]) -> Text:
+    """Return full retrieval intent, if it's present, or normal intent otherwise.
 
     Args:
-        parsed: user input data.
+        parsed: Predicted parsed data.
 
     Returns:
-        Extracted intent.
+        The extracted intent.
     """
-    base_intent = parsed.get(INTENT, {}).get(INTENT_NAME_KEY, {})
+    base_intent = parsed.get(INTENT, {}).get(INTENT_NAME_KEY)
 
-    try:
-        # return only base intent if intent is not a retrieval intent
-        if (
-            base_intent
-            not in parsed[RESPONSE_SELECTOR][RESPONSE_SELECTOR_RETRIEVAL_INTENTS]
-        ):
-            return base_intent
-
-        # extract full retrieval intent
-        # if the response selector parameter was not specified in config,
-        # the response selector contains a "default" key
-        if RESPONSE_SELECTOR_DEFAULT_INTENT in parsed.get(RESPONSE_SELECTOR, {}):
-            full_retrieval_intent = parsed[RESPONSE_SELECTOR][
-                RESPONSE_SELECTOR_DEFAULT_INTENT
-            ][RESPONSE][INTENT_RESPONSE_KEY]
-        else:
-            # if specified, the response selector contains the base intent as key
-            full_retrieval_intent = parsed[RESPONSE_SELECTOR][base_intent][RESPONSE][
-                INTENT_RESPONSE_KEY
-            ]
-
-        return full_retrieval_intent
-
-    except KeyError:
+    # return normal intent if it's not a retrieval intent
+    if base_intent not in parsed.get(RESPONSE_SELECTOR, {}).get(
+        RESPONSE_SELECTOR_RETRIEVAL_INTENTS, {}
+    ):
         return base_intent
+
+    # extract full retrieval intent
+    # if the response selector parameter was not specified in config,
+    # the response selector contains a "default" key
+    if RESPONSE_SELECTOR_DEFAULT_INTENT in parsed.get(RESPONSE_SELECTOR, {}):
+        full_retrieval_intent = (
+            parsed.get(RESPONSE_SELECTOR, {})
+            .get(RESPONSE_SELECTOR_DEFAULT_INTENT, {})
+            .get(RESPONSE, {})
+            .get(INTENT_RESPONSE_KEY)
+        )
+        return full_retrieval_intent if full_retrieval_intent else base_intent
+
+    # if specified, the response selector contains the base intent as key
+    full_retrieval_intent = (
+        parsed.get(RESPONSE_SELECTOR, {})
+        .get(base_intent, {})
+        .get(RESPONSE, {})
+        .get(INTENT_RESPONSE_KEY)
+    )
+    return full_retrieval_intent if full_retrieval_intent else base_intent
 
 
 def _collect_user_uttered_predictions(
@@ -409,16 +410,18 @@ def _collect_user_uttered_predictions(
     user_uttered_eval_store = EvaluationStore()
 
     # intent from the test story, may either be base intent or full retrieval intent
-    intent_gold = event.intent.get("name")
+    base_intent = event.intent.get(INTENT_NAME_KEY)
+    full_retrieval_intent = event.intent.get(FULL_RETRIEVAL_INTENT_NAME_KEY)
+    intent_gold = full_retrieval_intent if full_retrieval_intent else base_intent
 
     # predicted intent: note that this is only the base intent at this point
-    predicted_intent = predicted.get(INTENT, {}).get("name")
+    predicted_intent = predicted.get(INTENT, {}).get(INTENT_NAME_KEY)
 
     # if the test story only provides the base intent AND the prediction was correct,
     # we are not interested in full retrieval intents and skip this section.
     # in any other case we are interested in the full retrieval intent (e.g. for report)
     if intent_gold != predicted_intent:
-        predicted_intent = _intent_response_key_from_parsed_data(predicted)
+        predicted_intent = _get_full_retrieval_intent(predicted)
 
     user_uttered_eval_store.add_to_store(
         intent_predictions=[predicted_intent], intent_targets=[intent_gold]
@@ -504,12 +507,6 @@ def _collect_action_executed_predictions(
             # of the action rejection as we know that the user explicitly specified
             # that something else than the form was supposed to run.
             predicted = action.name()
-
-        predicted_base, _ = Message.separate_intent_response_key(predicted)
-
-        # check if test story only specifies base action and only keep predicted base in this case
-        if gold == predicted_base:
-            predicted = predicted_base
 
     action_executed_eval_store.add_to_store(
         action_predictions=[predicted], action_targets=[gold]

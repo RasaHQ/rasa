@@ -1,12 +1,17 @@
 import logging
 from pathlib import Path
-from typing import Dict, Text, List, Any, Optional, Union
+from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
 from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
-from rasa.shared.nlu.constants import ENTITIES, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
+)
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
 
@@ -346,7 +351,9 @@ class YAMLStoryReader(StoryReader):
             utterances, self._is_used_for_training
         )
 
-    def _user_intent_from_step(self, step: Dict[Text, Any]) -> Text:
+    def _user_intent_from_step(
+        self, step: Dict[Text, Any]
+    ) -> Tuple[Text, Optional[Text]]:
         user_intent = step.get(KEY_USER_INTENT, "").strip()
 
         if not user_intent:
@@ -367,13 +374,30 @@ class YAMLStoryReader(StoryReader):
             )
             # Remove leading slash
             user_intent = user_intent[1:]
-        return user_intent
+
+        # StoryStep should never contain a full retrieval intent, only the base intent.
+        # However, users can specify full retrieval intents in their test stories file
+        # for the NLU testing purposes.
+        base_intent, response_key = Message.separate_intent_response_key(user_intent)
+        if response_key and not self.is_test_stories_file(self.source_name):
+            rasa.shared.utils.io.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"User intent '{user_intent}' is a retrieval intent. "
+                f"Stories shouldn't contain full retrieval intents.",
+                docs=self._get_docs_link(),
+            )
+
+        return (base_intent, user_intent) if response_key else (base_intent, None)
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
         from rasa.shared.nlu.interpreter import RegexInterpreter
 
-        intent_name = self._user_intent_from_step(step)
-        intent = {"name": intent_name, "confidence": 1.0}
+        intent_name, full_retrieval_intent = self._user_intent_from_step(step)
+        intent = {
+            INTENT_NAME_KEY: intent_name,
+            FULL_RETRIEVAL_INTENT_NAME_KEY: full_retrieval_intent,
+            PREDICTED_CONFIDENCE_KEY: 1.0,
+        }
 
         if KEY_USER_MESSAGE in step:
             user_message = step[KEY_USER_MESSAGE].strip()
