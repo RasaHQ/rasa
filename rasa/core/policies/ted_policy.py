@@ -969,6 +969,7 @@ class TED(TransformerRasaModel):
     def _get_dense_units(
         self, attribute_features_list: List[tf.Tensor], attribute: Text
     ) -> int:
+        # TODO this should be done in corresponding layers once in init
         units = 0
         for f in attribute_features_list:
             if isinstance(f, tf.SparseTensor):
@@ -980,6 +981,7 @@ class TED(TransformerRasaModel):
     def _get_concat_units(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> int:
+        # TODO this should be done in corresponding layers once in init
         # calculate concat sequence sentence dim
         sentence_units = self._get_dense_units(
             tf_batch_data[attribute][SENTENCE], attribute
