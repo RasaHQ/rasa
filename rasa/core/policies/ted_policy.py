@@ -408,19 +408,22 @@ class TEDPolicy(Policy):
             return
         from rasa.shared.core.events import ActionExecuted
 
-        [
-            print(
-                type(e),
-                (e.action_name, e.action_text)
-                if isinstance(e, ActionExecuted)
-                else (e.intent, e.text),
-            )
-            for e in training_trackers[0].events
-        ]
+        for tracker in training_trackers:
+            print("########## tracker data")
+            [
+                print(
+                    type(e),
+                    (e.action_name, e.action_text)
+                    if isinstance(e, ActionExecuted)
+                    else (e.intent, e.text),
+                )
+                for e in tracker.events
+            ]
         # dealing with training data
         tracker_state_features, label_ids = self.featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
+        print("########### label ids", label_ids)
 
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
@@ -454,6 +457,7 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
+            eager=True,
         )
 
     def predict_action_probabilities(
@@ -681,6 +685,7 @@ class TED(TransformerRasaModel):
         self.all_labels_embed: Optional[tf.Tensor] = None
 
         self._prepare_layers()
+        print("LAYERS", self._tf_layers)
 
     def _check_data(self) -> None:
         if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
@@ -723,7 +728,7 @@ class TED(TransformerRasaModel):
         self._prepare_embed_layers(LABEL)
 
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
-        exit()
+        # exit()
 
     def _prepare_sparse_dense_layer_for(
         self, name: Text, signature: Dict[Text, Dict[Text, List[FeatureSignature]]]
@@ -943,7 +948,8 @@ class TED(TransformerRasaModel):
             # resulting attribute features will have shape
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = self._combine_sparse_dense_features(
-                tf_batch_data[attribute][SENTENCE], f"{attribute}_{SENTENCE}",
+                tf_batch_data[attribute][SENTENCE],
+                f"{attribute}_{SENTENCE}",
             )
 
         if attribute in set(SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE):
@@ -1119,6 +1125,8 @@ class TED(TransformerRasaModel):
                 print("  ", _k)
                 for __v in _v:
                     print("    ", __v.shape)
+                    if k == "label":
+                        print(__v)
         # exit()
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()

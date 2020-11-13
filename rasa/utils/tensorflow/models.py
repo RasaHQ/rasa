@@ -559,6 +559,9 @@ class RasaModel(tf.keras.models.Model):
         for key, values in data_signature.items():
             for sub_key, signature in values.items():
                 for is_sparse, feature_dimension, number_of_dimensions in signature:
+                    print(
+                        f"{key}->{sub_key}: is_sparse {is_sparse} dimension {feature_dimension} #dims {number_of_dimensions}"
+                    )
                     number_of_dimensions = (
                         number_of_dimensions if number_of_dimensions != 4 else 3
                     )
@@ -848,10 +851,13 @@ class TransformerRasaModel(RasaModel):
         if not features:
             return None
 
+        print("############ _combine_sparse_dense_features", name)
+
         dense_features = []
 
         for f in features:
             if isinstance(f, tf.SparseTensor):
+                print("    sparse", f.shape)
                 if sparse_dropout:
                     _f = self._tf_layers[f"sparse_input_dropout.{name}"](
                         f, self._training
@@ -868,6 +874,7 @@ class TransformerRasaModel(RasaModel):
 
                 dense_features.append(dense_f)
             else:
+                print("    dense", f.shape)
                 dense_features.append(f)
 
         if mask is None:
@@ -994,6 +1001,11 @@ class TransformerRasaModel(RasaModel):
             sparse_dropout,
             dense_dropout,
         )
+        """
+        sequence_features = self._tf_layers[f"combine_sparse_dense.{name}-seq"](sequence_features, self._training, sparse_dropout, dense_dropout)
+        sentence_features = self._tf_layers[f"combine_sparse_dense.{name}-sen"](sentence_features, self._training, sparse_dropout, dense_dropout)
+        inputs = self._tf_layers[f"combine_seq_sent.{name}"](sequence_features, sentence_features, self._training)
+        """
         inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
         if masked_lm_loss:
