@@ -428,11 +428,11 @@ This is, for example, useful when you need further details based on how
 a previous slot was filled or you want to change the order in which slots are requested.
 
 If you are using the Rasa SDK, we recommend you to use the `FormValidationAction` and
-override `required_slots` to fit your dynamic behavior. Please remember to implement
+override `required_slots` to fit your dynamic behavior. You should implement
 a method `extract_<slot name>` for every slot which doesn't use a predefined mapping,
 as described in [Custom Slot Mappings](forms.mdx#custom-slot-mappings).
 The example below will ask the user if they want to sit in
-the shade or in the sun in case they told us that they want to sit outside.
+the shade or in the sun in case they said they want to sit outside.
 
 ```python
 from typing import Text, List, Optional
