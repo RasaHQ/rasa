@@ -108,6 +108,7 @@ logger = logging.getLogger(__name__)
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = IDS
 LENGTH = "length"
+INDICES = "indices"
 SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
 LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
@@ -872,7 +873,7 @@ class TED(TransformerRasaModel):
     ) -> None:
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32)
         # wrap in a list, because that's the structure of tf_batch_data
-        tf_batch_data[DIALOGUE][IDS] = [
+        tf_batch_data[DIALOGUE][INDICES] = [
             (
                 tf.map_fn(
                     tf.range,
@@ -1073,7 +1074,10 @@ class TED(TransformerRasaModel):
         last_dialogue_turn_mask = tf.math.logical_not(
             tf.cast(
                 tf.concat(
-                    [tf_batch_data[DIALOGUE][IDS][0], tf.zeros((1,), dtype=tf.int32)],
+                    [
+                        tf_batch_data[DIALOGUE][INDICES][0],
+                        tf.zeros((1,), dtype=tf.int32),
+                    ],
                     axis=0,
                 )[1:],
                 dtype=tf.bool,
@@ -1215,7 +1219,7 @@ class TED(TransformerRasaModel):
             dialogue_lengths = tf.cast(
                 tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32
             )
-            dialogue_indices = tf_batch_data[DIALOGUE][IDS][0]
+            dialogue_indices = tf_batch_data[DIALOGUE][INDICES][0]
         else:
             # for labels, dialogue length is a fake dim and equal to 1
             dialogue_lengths = tf.ones((tf.shape(attribute_mask)[0],), dtype=tf.int32)
