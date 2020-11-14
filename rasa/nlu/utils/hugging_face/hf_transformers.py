@@ -9,6 +9,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+import rasa.shared.utils.io
 from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.shared.utils.io
 import rasa.utils.train_utils as train_utils
@@ -148,7 +149,7 @@ class HFTransformersNLP(Component):
 
         return (
             f"{cls.name}-{component_meta.get('model_name')}-"
-            f"{rasa.core.utils.get_dict_hash(weights)}"
+            f"{rasa.shared.utils.io.deep_container_fingerprint(weights)}"
         )
 
     @classmethod
