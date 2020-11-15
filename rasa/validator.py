@@ -232,7 +232,7 @@ class Validator:
             domain=self.domain,
             remove_duplicates=False,
             augmentation_factor=0,
-        ).generate()
+        ).generate_story_trackers()
 
         # Create a list of `StoryConflict` objects
         conflicts = rasa.core.training.story_conflict.find_story_conflicts(

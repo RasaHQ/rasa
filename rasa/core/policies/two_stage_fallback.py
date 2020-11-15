@@ -5,7 +5,7 @@ from rasa.shared.core.events import UserUttered, ActionExecuted
 
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.policy import confidence_scores_for
+from rasa.core.policies.policy import confidence_scores_for, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.constants import (
     FALLBACK_POLICY_PRIORITY,
@@ -118,9 +118,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         """Predicts the next action if NLU confidence is low."""
-
         nlu_data = tracker.latest_message.parse_data
         last_intent_name = nlu_data["intent"].get(INTENT_NAME_KEY, None)
         should_nlu_fallback = self.should_nlu_fallback(
@@ -177,7 +176,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             )
             result = self.fallback_scores(domain, self.core_threshold)
 
-        return result
+        return self._prediction(result)
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
         action_requires_input = tracker.latest_action.get(ACTION_NAME) in [
