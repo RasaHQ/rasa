@@ -204,7 +204,7 @@ class PikaEventBroker(EventBroker):
         )
 
         await asyncio.gather(
-            [
+            *[
                 self._bind_queue(queue_name, channel, exchange)
                 for queue_name in self.queues
             ]
