@@ -289,9 +289,7 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
             await broker.connect()
 
     # Only Rasa Open Source logs, but logs from the library itself.
-    assert len(caplog.records) == 2 and all(
-        record.name == "rasa.core.brokers.pika" for record in caplog.records
-    )
+    assert all(record.name == "rasa.core.brokers.pika" for record in caplog.records)
 
 
 def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
