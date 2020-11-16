@@ -24,6 +24,15 @@ InvalidConfigError = InvalidConfigException
 def load(
     config: Optional[Union[Text, Dict]] = None, **kwargs: Any
 ) -> "RasaNLUModelConfig":
+    """Create configuration from file or dict.
+
+    Args:
+        config: a file path, a dictionary with configuration keys. If set to
+            `None` the configuration will be loaded from the default file
+            path.
+
+    Returns:
+        Configuration object"""
     if isinstance(config, Dict):
         return _load_from_dict(config, **kwargs)
 

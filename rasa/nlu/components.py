@@ -52,7 +52,6 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
     Args:
         component_names: The list of component names.
     """
-
     from rasa.nlu import registry
 
     # Validate that all required packages are installed

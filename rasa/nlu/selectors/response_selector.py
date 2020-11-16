@@ -540,6 +540,8 @@ class DIET2BOW(DIET):
 
 
 class DIET2DIET(DIET):
+    """Diet 2 Diet transformer implementation."""
+
     def _check_data(self) -> None:
         if TEXT not in self.data_signature:
             raise InvalidConfigException(
