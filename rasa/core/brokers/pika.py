@@ -232,7 +232,7 @@ class PikaEventBroker(EventBroker):
 
     def is_ready(self) -> bool:
         """Return `True` if a connection was established."""
-        return self._exchange is not None
+        return not self._connection.is_closed
 
     def publish(
         self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None
