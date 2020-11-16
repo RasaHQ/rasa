@@ -5,11 +5,11 @@ import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
 from rasa.exceptions import MissingDependencyException
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
@@ -43,7 +43,7 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
     """Validates that all required importable python packages are installed.
 
     Raises:
-        InvalidConfigError: If one of the component names is `None`, likely
+        InvalidConfigException: If one of the component names is `None`, likely
             indicates that a custom implementation is missing this property
             or that there is an invalid configuration file that we did not
             catch earlier.
@@ -51,14 +51,13 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
     Args:
         component_names: The list of component names.
     """
-
     from rasa.nlu import registry
 
     # Validate that all required packages are installed
     failed_imports = {}
     for component_name in component_names:
         if component_name is None:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 "Your pipeline configuration contains a component that is missing "
                 "a name. Please double check your configuration or if this is a "
                 "custom component make sure to implement the name property for "
@@ -121,7 +120,7 @@ def validate_empty_pipeline(pipeline: List["Component"]) -> None:
         pipeline: the list of the :class:`rasa.nlu.components.Component`.
     """
     if len(pipeline) == 0:
-        raise InvalidConfigError(
+        raise InvalidConfigException(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
             "the configuration using the 'pipeline' key."
@@ -143,7 +142,7 @@ def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None:
             tokenizer_names.append(component.name)
 
     if len(tokenizer_names) > 1:
-        raise InvalidConfigError(
+        raise InvalidConfigException(
             f"The pipeline configuration contains more than one tokenizer, "
             f"which is not possible at this time. You can only use one tokenizer. "
             f"The pipeline contains the following tokenizers: {tokenizer_names}. "
@@ -186,7 +185,7 @@ def validate_required_components(pipeline: List["Component"]) -> None:
         missing_components_str = ", ".join(f"'{c}'" for c in missing_components)
 
         if missing_components:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"The pipeline configuration contains errors. The component "
                 f"'{component.name}' requires {missing_components_str} to be "
                 f"placed before it in the pipeline. Please "
@@ -442,7 +441,9 @@ class Component(metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = override_defaults(self.defaults, component_config)
+        self.component_config = rasa.nlu.config.override_defaults(
+            self.defaults, component_config
+        )
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None

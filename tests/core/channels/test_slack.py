@@ -11,6 +11,7 @@ from sanic.compat import Header
 from sanic.request import Request
 
 from rasa.core.channels import SlackInput
+from rasa.shared.exceptions import InvalidConfigException
 from tests.utilities import json_of_latest_request, latest_request
 
 logger = logging.getLogger(__name__)
@@ -82,7 +83,9 @@ def test_slack_metadata():
     }
 
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -128,7 +131,9 @@ def test_slack_form_metadata():
     form_event = {"payload": [json.dumps(payload)]}
 
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -170,7 +175,9 @@ def test_slack_metadata_missing_keys():
     }
 
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -212,7 +219,9 @@ def test_slack_form_metadata_missing_keys():
     form_event = {"payload": [json.dumps(payload)]}
 
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -226,7 +235,9 @@ def test_slack_form_metadata_missing_keys():
 
 def test_slack_no_metadata():
     input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+        slack_token="YOUR_SLACK_TOKEN",
+        slack_channel="YOUR_SLACK_CHANNEL",
+        slack_signing_secret="foobar",
     )
 
     r = Mock()
@@ -290,20 +301,22 @@ def test_slack_message_sanitization():
     )
 
 
-def test_slack_init_one_parameter():
-    ch = SlackInput("xoxb-test")
+def test_slack_init_token_parameter():
+    ch = SlackInput("xoxb-test", slack_signing_secret="foobar")
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel is None
 
 
-def test_slack_init_two_parameters():
-    ch = SlackInput("xoxb-test", "test")
+def test_slack_init_token_channel_parameters():
+    ch = SlackInput("xoxb-test", "test", slack_signing_secret="foobar")
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
 
 
-def test_slack_init_three_parameters():
-    ch = SlackInput("xoxb-test", "test", use_threads=True)
+def test_slack_init_token_channel_threads_parameters():
+    ch = SlackInput(
+        "xoxb-test", "test", slack_signing_secret="foobar", use_threads=True
+    )
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
     assert ch.use_threads is True
@@ -750,16 +763,9 @@ def prepare_slack_request(headers: Dict[Text, Any]) -> Request:
     return request
 
 
-def test_slack_verify_signature_is_always_true_if_there_is_no_key():
-    request = prepare_slack_request(
-        {
-            "x-slack-signature": "foobar",  # this is an invalid signature
-            "x-slack-request-timestamp": str(int(time.time())),
-        }
-    )
-    slack = SlackInput("mytoken", slack_signing_secret=None)
-
-    assert slack.is_request_from_slack_authentic(request) is True
+def test_slack_fails_if_signature_is_missing():
+    with pytest.raises(InvalidConfigException):
+        SlackInput("mytoken")
 
 
 @mock.patch("time.time", mock.MagicMock(return_value=1604586653))
