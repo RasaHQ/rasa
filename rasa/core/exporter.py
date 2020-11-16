@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import logging
 import uuid
@@ -6,6 +7,7 @@ from typing import Text, Optional, List, Set, Dict, Any
 from tqdm import tqdm
 
 import rasa.shared.utils.cli
+import rasa.shared.utils.io
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
@@ -55,7 +57,7 @@ class Exporter:
         self.minimum_timestamp = minimum_timestamp
         self.maximum_timestamp = maximum_timestamp
 
-    def publish_events(self) -> int:
+    async def publish_events(self) -> int:
         """Publish events in a tracker store using an event broker.
 
         Exits if the publishing of events is interrupted due to an error. In that case,
@@ -63,7 +65,6 @@ class Exporter:
 
         Returns:
             The number of successfully published events.
-
         """
         events = self._fetch_events_within_time_range()
 
@@ -86,7 +87,17 @@ class Exporter:
                 logger.exception(e)
                 raise PublishingError(current_timestamp)
 
-        self.event_broker.close()
+        if asyncio.iscoroutinefunction(self.event_broker.close):
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The method '{EventBroker.__name__}.{EventBroker.close.__name__} was "
+                f"changed to be asynchronous. Please adapt your custom event broker "
+                f"accordingly. Support for synchronous implementations will be removed "
+                f"in Rasa Open Source 2.2.0."
+            )
+            # noinspection PyAsyncCall
+            self.event_broker.close()
+        else:
+            await self.event_broker.close()
 
         return published_events
 

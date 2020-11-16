@@ -200,6 +200,7 @@ def serve_application(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
+    app.register_listener(close_resources, "after_server_stop")
 
     # noinspection PyUnresolvedReferences
     async def clear_model_files(_app: Sanic, _loop: Text) -> None:
@@ -289,3 +290,29 @@ async def load_agent_on_start(
 
     logger.info("Rasa server is up and running.")
     return app.agent
+
+
+async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
+    """Gracefully closes resources when shutting down server.
+
+    Args:
+        app: The Sanic application.
+        _: The current Sanic worker event loop.
+    """
+    current_agent = getattr(app, "agent")
+    if not current_agent:
+        logger.debug("No agent found when shutting down server.")
+        return
+
+    event_broker = current_agent.tracker_store.event_broker
+    if event_broker:
+        if asyncio.iscoroutinefunction(event_broker.close):
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The method '{EventBroker.__name__}.{EventBroker.close.__name__} was "
+                f"changed to be asynchronous. Please adapt your custom event broker "
+                f"accordingly. Support for synchronous implementations will be removed "
+                f"in Rasa Open Source 2.2.0."
+            )
+            event_broker.close()
+        else:
+            await event_broker.close()

@@ -55,7 +55,7 @@ class EventBroker:
         """
         return True
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Close the connection to an event broker."""
         # default implementation does nothing
         pass

@@ -63,7 +63,8 @@ class PikaEventBroker(EventBroker):
                 an exception is thrown.
             retry_delay_in_seconds: Time in seconds between connection attempts.
         """
-        logging.getLogger("aio_pika").setLevel(log_level)
+        super().__init__()
+        _set_pika_log_levels(log_level)
 
         self.host = host
         self.username = username
@@ -219,15 +220,8 @@ class PikaEventBroker(EventBroker):
         queue = await channel.declare_queue(queue_name, durable=True)
         await queue.bind(exchange, "")
 
-    def __del__(self) -> None:
-        """Closes connection when object is destroyed."""
-        self._loop.run_until_complete(self._close())
-
-    def close(self) -> None:
-        """Close the pika channel and connection."""
-        self.__del__()
-
-    async def _close(self) -> None:
+    async def close(self) -> None:
+        """Closes connection to RabbitMQ."""
         if not self._connection:
             return
 
@@ -333,3 +327,9 @@ def _create_rabbitmq_ssl_options(
         }
 
     return None
+
+
+def _set_pika_log_levels(log_level: Union[Text, int]) -> None:
+    pika_loggers = ["aio_pika", "aiormq"]
+    for logger_name in pika_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
