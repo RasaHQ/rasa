@@ -137,10 +137,9 @@ def test_policy_priority():
     policy_ensemble_0 = SimplePolicyEnsemble([priority_1, priority_2])
     policy_ensemble_1 = SimplePolicyEnsemble([priority_2, priority_1])
 
-    priority_2_result, e2e_prediction = priority_2.predict_action_probabilities(
+    priority_2_result = priority_2.predict_action_probabilities(
         tracker, domain, RegexInterpreter()
     )
-    assert not e2e_prediction
 
     i = 1  # index of priority_2 in ensemble_0
     prediction = policy_ensemble_0.probabilities_using_best_policy(
