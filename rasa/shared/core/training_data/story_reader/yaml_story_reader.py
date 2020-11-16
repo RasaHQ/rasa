@@ -443,6 +443,9 @@ class YAMLStoryReader(StoryReader):
 
     @functools.lru_cache()
     def _slot_default_value(self, slot_name: Text) -> Any:
+        if not self.domain:
+            return None
+
         slot_types_with_default_types = {TextSlot: "filled", BooleanSlot: True}
         slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
 

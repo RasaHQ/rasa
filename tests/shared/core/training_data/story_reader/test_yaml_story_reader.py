@@ -89,6 +89,25 @@ async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
     assert events[-1].value is None
 
 
+async def test_default_slot_value_if_no_domain():
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader()
+    with pytest.warns(None) as warnings:
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+    assert not warnings
+
+
 async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
