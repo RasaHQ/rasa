@@ -450,7 +450,7 @@ class YAMLStoryReader(StoryReader):
         slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
 
         default_value = slot_types_with_default_types.get(type(slot))
-        if default_value is None:
+        if default_value is None and slot.has_features():
             rasa.shared.utils.io.raise_warning(
                 f"Slot '{slot_name}' was referenced by its name only. As slot "
                 f"'{slot_name}' is of type '{slot.type_name}' you need to specify a "

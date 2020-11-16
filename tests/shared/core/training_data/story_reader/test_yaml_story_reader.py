@@ -108,6 +108,27 @@ async def test_default_slot_value_if_no_domain():
     assert not warnings
 
 
+async def test_default_slot_value_if_unfeaturized_slot():
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+    domain = Domain.from_dict(
+        {"intents": ["greet"], "slots": {"my_slot": {"type": "any"}}}
+    )
+    reader = YAMLStoryReader(domain)
+    with pytest.warns(None) as warnings:
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
+    assert not warnings
+
+
 async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
     trackers = await training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
