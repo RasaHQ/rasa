@@ -46,6 +46,7 @@ class RasaFileImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
 
+        print("Loading stories ...")
         return await utils.story_graph_from_paths(
             self._story_files,
             await self.get_domain(),
@@ -55,9 +56,11 @@ class RasaFileImporter(TrainingDataImporter):
         )
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        print("Loading NLU data ...")
         return utils.training_data_from_paths(self._nlu_files, language)
 
     async def get_domain(self) -> Domain:
+        print("Loading domain ...")
         domain = Domain.empty()
 
         # If domain path is None, return an empty domain
