@@ -212,7 +212,6 @@ class Policy:
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which can be used by the polices for featurization.
         """
-
         raise NotImplementedError("Policy must have the capacity to train.")
 
     def predict_action_probabilities(

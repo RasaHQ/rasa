@@ -674,6 +674,12 @@ class TrainingDataChunk:
         training_examples: List[Message],
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
+        """Initialize a training data chunk.
+
+        Args:
+            training_examples: List of messages representing the training data.
+            responses: List of responses.
+        """
         self.training_examples = training_examples
         self.responses = responses
 

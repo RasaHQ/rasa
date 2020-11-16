@@ -578,7 +578,6 @@ class Component(metaclass=ComponentMetaclass):
             training_data_chunk:
                 The :class:`rasa.shared.nlu.training_data.training_data.TrainingDataChunk`.
             config: The model configuration parameters.
-
         """
         pass
 
@@ -596,9 +595,7 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
-
         """
-
         pass
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
@@ -679,9 +676,9 @@ class Component(metaclass=ComponentMetaclass):
         pass
 
     def partially_process(self, message: Message) -> Message:
-        """Allows the component to process messages during
-        training (e.g. external training data).
+        """Allows the component to process messages during training.
 
+        Messages could be, for example, external training data.
         The passed message will be processed by all components
         previous to this one in the pipeline.
 
@@ -691,9 +688,7 @@ class Component(metaclass=ComponentMetaclass):
 
         Returns:
             The processed :class:`rasa.shared.nlu.training_data.message.Message`.
-
         """
-
         if self.partial_processing_context is not None:
             for component in self.partial_processing_pipeline:
                 component.process(message, **self.partial_processing_context)
