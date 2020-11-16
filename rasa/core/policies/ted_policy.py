@@ -397,7 +397,10 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return self._prediction(confidence.tolist(), diagnostic_data=values_to_numpy(output.get(DIAGNOSTIC_DATA)))
+        return self._prediction(
+            confidence.tolist(),
+            diagnostic_data=values_to_numpy(output.get(DIAGNOSTIC_DATA)),
+        )
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
