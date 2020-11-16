@@ -5,6 +5,21 @@ on:
     types: [opened, synchronize, labeled]
 
 jobs:
+  changes:
+    name: Check for file changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      docker: ${{ steps.filter.outputs.docker }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+        id: filter
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: .github/change_filters.yml
+
   cleanup_runs:
     name: Cancel old branch builds
     runs-on: ubuntu-latest
@@ -27,3 +42,49 @@ jobs:
 
     - name: Gitleaks - detecting hardcoded secrets
       uses: zricethezav/gitleaks-action@v1.1.4
+
+  bandit:
+    name: Detect python security issues
+    runs-on: ubuntu-latest
+    needs: [changes]
+
+    steps:
+    - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.7 🐍
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Install poetry 🦄
+      if: needs.changes.outputs.backend == 'true'
+      uses: Gr1N/setup-poetry@v4
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-3.7
+
+    - name: Install Dependencies 📦
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full
+
+    - name: Run Bandit 🔪
+      if: needs.changes.outputs.backend == 'true'
+      run: make lint-security

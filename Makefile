@@ -79,6 +79,9 @@ endif
 	# Diff of uncommitted changes for running locally
 	git diff HEAD -- rasa | poetry run flake8 --select D --diff
 
+lint-security:
+	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
+
 types:
 	# FIXME: working our way towards removing these
 	# see https://github.com/RasaHQ/rasa/pull/6470
