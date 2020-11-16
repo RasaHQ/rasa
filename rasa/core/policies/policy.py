@@ -390,7 +390,7 @@ class PolicyPrediction:
             is_end_to_end_prediction: `True` if the prediction used the text of the
                 user message instead of the intent.
             diagnostic_data: Intermediate results or other information that is not
-                necessary for Rasa to function, but intended for debuging and 
+                necessary for Rasa to function, but intended for debuging and
                 fine-tuning purposes.
         """
         self.probabilities = probabilities
