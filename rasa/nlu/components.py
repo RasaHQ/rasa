@@ -8,7 +8,7 @@ from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData, TrainingDataChunk
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 
@@ -566,6 +566,21 @@ class Component(metaclass=ComponentMetaclass):
 
         pass
 
+    def train_chunk(
+        self,
+        training_data_chunk: TrainingDataChunk,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Train this component on the given chunk.
+
+        Args:
+            training_data_chunk: the
+                :class:`rasa.shared.nlu.training_data.training_data.TrainingDataChunk`.
+            config: The model configuration parameters.
+        """
+        pass
+
     def process(self, message: Message, **kwargs: Any) -> None:
         """Process an incoming message.
 
@@ -580,9 +595,7 @@ class Component(metaclass=ComponentMetaclass):
 
         Args:
             message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
-
         """
-
         pass
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
@@ -650,10 +663,22 @@ class Component(metaclass=ComponentMetaclass):
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
 
-    def partially_process(self, message: Message) -> Message:
-        """Allows the component to process messages during
-        training (e.g. external training data).
+    def prepare_partial_training(self, training_data: TrainingData) -> None:
+        """Prepare the component for training on just a part of the data.
 
+        The complete training data can be used to extract some information
+        that might be missing when just a part of the training data is
+        seen during training.
+
+        Args:
+            training_data: The complete training data.
+        """
+        pass
+
+    def partially_process(self, message: Message) -> Message:
+        """Allows the component to process messages during training.
+
+        Messages could be, for example, external training data.
         The passed message will be processed by all components
         previous to this one in the pipeline.
 
@@ -663,9 +688,7 @@ class Component(metaclass=ComponentMetaclass):
 
         Returns:
             The processed :class:`rasa.shared.nlu.training_data.message.Message`.
-
         """
-
         if self.partial_processing_context is not None:
             for component in self.partial_processing_pipeline:
                 component.process(message, **self.partial_processing_context)

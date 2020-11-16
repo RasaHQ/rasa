@@ -650,6 +650,73 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def divide_into_chunks(self, max_size: int = 2) -> List["TrainingDataChunk"]:
+        """Divides the training data into smaller chunks.
+
+        Each chunk should be a good representation of the complete dataset. E.g. it
+        should not just contain examples of one intent, but instead match the
+        distribution of the complete dataset.
+
+        Args:
+            max_size: The maximum size (in MB) of one chunk.
+
+        Returns:
+            A list of all training data chunks.
+        """
+        pass
+
+
+class TrainingDataChunk:
+    """Holds a portion of the complete TrainingData."""
+
+    def __init__(
+        self,
+        training_examples: List[Message],
+        responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
+    ) -> None:
+        """Initialize a training data chunk.
+
+        Args:
+            training_examples: List of messages representing the training data.
+            responses: List of responses.
+        """
+        self.training_examples = training_examples
+        self.responses = responses
+
+    def persist_chunk(self, dir_path: Text, filename: Text) -> Text:
+        """Stores the chunk as TFRecord file to disk.
+
+        Args:
+            dir_path: The path to the directory.
+            filename: The filename.
+
+        Returns:
+            The absolute file path the chunk is stored to.
+        """
+        pass
+
+    @classmethod
+    def load_chunk(cls, file_path: Text) -> "TrainingDataChunk":
+        """Loads a training data chunk from the given file path.
+
+        Args:
+            file_path: The file path that contains the training data chunk to load.
+
+        Returns:
+            The loaded training data chunk.
+        """
+        pass
+
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    """Converts a list to a string.
+
+    Args:
+        lst: the list to convert
+        delim: the delimiter to use
+        quote: the quote char to use
+
+    Returns:
+        the list as string
+    """
     return delim.join([quote + e + quote for e in lst])
