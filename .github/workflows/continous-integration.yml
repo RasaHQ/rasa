@@ -30,54 +30,56 @@ env:
   BOTO_CONFIG: /dev/null
 
 jobs:
-  api:
-    name: Test API specification
+  changes:
+    name: Check for file changes
     runs-on: ubuntu-latest
-
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      docker: ${{ steps.filter.outputs.docker }}
+      docs: ${{ steps.filter.outputs.docs }}
     steps:
-    - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+        id: filter
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: .github/change_filters.yml
 
-    - name: Setup Node 🦝
-      uses: actions/setup-node@v1
-      with:
-        node-version: '10.x'
-
-    - name: Run Swagger 🕵️‍♀️
-      run: |
-        npm install -g swagger-cli
-        swagger-cli validate docs/static/spec/action-server.yml
-        swagger-cli validate docs/static/spec/rasa.yml
-
-  quality:
-    name: Code Quality
+  documentation:
+    name: Test Documentation
     runs-on: ubuntu-latest
+    needs: [changes]
 
     steps:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
 
     - name: Set up Node 12.x 🦙
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/setup-node@v1
       with:
         node-version: '12.x'
 
     - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.docs == 'true'
       run: |
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
+      if: needs.changes.outputs.docs == 'true'
       uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
@@ -85,6 +87,7 @@ jobs:
         restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Load Yarn Cached Packages ⬇
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/cache@v1
       with:
         path: docs/node_modules
@@ -92,12 +95,65 @@ jobs:
         restore-keys: ${{ runner.os }}-yarn-12.x
 
     - name: Install Dependencies 📦
+      if: needs.changes.outputs.docs == 'true'
       run: |
         sudo apt-get -y install libpq-dev
         make install-full install-docs
 
+    - name: Run Swagger 🕵️‍♀️
+      if: needs.changes.outputs.docs == 'true'
+      run: |
+        npm install -g swagger-cli
+        swagger-cli validate docs/static/spec/action-server.yml
+        swagger-cli validate docs/static/spec/rasa.yml
+
+    - name: Test Docs 🕸
+      if: needs.changes.outputs.docs == 'true'
+      run: make test-docs
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: [changes]
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.7 🐍
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Install poetry 🦄
+      if: needs.changes.outputs.backend == 'true'
+      uses: Gr1N/setup-poetry@v4
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-3.7
+
+    - name: Install Dependencies 📦
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full
+
     - name: Checkout target branch to be able to diff
-      if: github.event_name == 'pull_request'
+      if: needs.changes.outputs.backend == 'true' && github.event_name == 'pull_request'
       run: |
         git fetch origin ${{ github.base_ref }}
         echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
@@ -107,6 +163,7 @@ jobs:
         git pull --ff-only --unshallow origin ${{ github.head_ref }}
 
     - name: Lint Code 🎎
+      if: needs.changes.outputs.backend == 'true'
       run: |
         # If it's not a pull request, $DOCSTRING_DIFF_BRANCH is unset.
         # This will result in an empty diff, which effictively means that
@@ -114,20 +171,20 @@ jobs:
         make lint BRANCH=$DOCSTRING_DIFF_BRANCH
 
     - name: Check Types 📚
+      if: needs.changes.outputs.backend == 'true'
       run: make types
 
     - name: Test CLI 🖥
+      if: needs.changes.outputs.backend == 'true'
       # makes sure we catch any dependency error early. they will create strange
       # errors during the docs build, so easier to catch them early on by
       # trying to run the `rasa` command once before the docs build.
       run: poetry run rasa --help
 
-    - name: Test Docs 🕸
-      run: make test-docs
-
   test:
     name: Run Tests
     runs-on: ${{ matrix.os }}
+    needs: [changes]
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -138,21 +195,25 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
+      if: needs.changes.outputs.backend == 'true'
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.backend == 'true'
       run: |
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
+      if: needs.changes.outputs.backend == 'true'
       uses: Gr1N/setup-poetry@v4
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
       # Poetry on Windows cannot pick up the virtual environments directory properly,
       # and it creates a new one every time the pipeline runs.
       # We want to  allow Poetry to create a venv directory if it doesn't
@@ -164,6 +225,7 @@ jobs:
         poetry config virtualenvs.in-project true
 
     - name: Load Poetry Cached Libraries ⬇
+      if: needs.changes.outputs.backend == 'true'
       uses: actions/cache@v1
       with:
         path: .venv
@@ -171,7 +233,7 @@ jobs:
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
     - name: Install Dependencies (Linux) 📦
-      if: matrix.os == 'ubuntu-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get -y install libpq-dev
         make install-full | tee .output
@@ -179,7 +241,7 @@ jobs:
         make prepare-tests-ubuntu
 
     - name: Install Dependencies (Windows) 📦
-      if: matrix.os == 'windows-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
       # Restoring cache doesn't work properly on Windows due to symlinks.
       # We create symlinks for spacy models, that's why we need to clean them up
       # before caching the dependencies directory.
@@ -195,6 +257,7 @@ jobs:
         make prepare-tests-windows
 
     - name: Test Code 🔍
+      if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
@@ -202,7 +265,7 @@ jobs:
         make test
 
     - name: Send Coverage Report 📊
-      if: matrix.python-version == 3.6 && matrix.os != 'windows-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
@@ -211,6 +274,7 @@ jobs:
   docker:
     name: Build Docker
     runs-on: ubuntu-latest
+    needs: [changes]
 
     strategy:
       matrix:
@@ -229,6 +293,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Free disk space
+      if: needs.changes.outputs.docker == 'true'
       # tries to make sure we do not run out of disk space, see
       # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
       run: |
@@ -239,13 +304,15 @@ jobs:
         df -h
 
     - name: Login to DockerHub Registry 🔢
+      if: needs.changes.outputs.docker == 'true'
       run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
     - name: Pull latest${{ matrix.image.tag_ext }} Docker image for caching
+      if: needs.changes.outputs.docker == 'true'
       run: docker pull rasa/rasa:latest${{ matrix.image.tag_ext }} || true
 
     - name: Copy Segment write key to the package
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
       env:
         RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
         RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
@@ -253,16 +320,17 @@ jobs:
         ./scripts/write_keys_file.sh
 
     - name: Build latest${{ matrix.image.tag_ext }} Docker image
+      if: needs.changes.outputs.docker == 'true'
       run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
 
     - name: Push image with latest tag 📦
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'RasaHQ/rasa'
+      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'RasaHQ/rasa'
       run: docker push rasa/rasa:latest${{ matrix.image.tag_ext }}
 
     - name: Push image with ${{github.ref}} tag 📦
       env:
         GITHUB_TAG: ${{ github.ref }}
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+      if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
       run: |
         GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
         docker tag rasa/rasa:latest${{ matrix.image.tag_ext }} rasa/rasa:${GITHUB_TAG}${{ matrix.image.tag_ext }}
@@ -274,7 +342,7 @@ jobs:
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-    needs: [quality, test, api, docker]  # only run after all other stages succeeded
+    needs: [quality, test, documentation, docker]  # only run after all other stages succeeded
 
     steps:
     - name: Checkout git repository 🕝
@@ -338,7 +406,7 @@ jobs:
 
   mergepal-merge: # run merge pal in the end
     runs-on: ubuntu-latest
-    needs: [quality, test, api, docker]
+    needs: [quality, test, documentation, docker]
     steps:
       - uses: actions/checkout@v1
       - name: Make sure there is a github token
