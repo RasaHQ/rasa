@@ -28,10 +28,10 @@ class RasaFileImporter(TrainingDataImporter):
         self._domain_path = domain_path
 
         self._nlu_files = rasa.shared.data.get_data_files(
-            training_data_paths, rasa.shared.data.is_nlu_file
+            training_data_paths, lambda x: True
         )
         self._story_files = rasa.shared.data.get_data_files(
-            training_data_paths, rasa.shared.data.is_story_file
+            training_data_paths, lambda x: True
         )
 
         self.config = autoconfig.get_configuration(config_file, training_type)
