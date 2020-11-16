@@ -525,6 +525,14 @@ class TEDPolicy(Policy):
     def _pick_confidence(
         self, confidences: np.ndarray, similarities: np.ndarray
     ) -> Tuple[np.ndarray, bool]:
+        # the confidences and similarities have shape (batch-size x number of actions)
+        # batch-size can only be 1 or 2;
+        # in the case batch-size==2, the first example contain user intent as features,
+        # the second - user text as features
+        if confidences.shape[0] > 2:
+            raise ValueError(
+                "We cannot pick prediction from batches of size more than 2."
+            )
         # we use heuristic to pick correct prediction
         if confidences.shape[0] == 2:
             # we use similarities to pick appropriate input,
