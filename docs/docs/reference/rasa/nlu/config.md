@@ -3,13 +3,24 @@ sidebar_label: rasa.nlu.config
 title: rasa.nlu.config
 ---
 
-## InvalidConfigError Objects
+#### load
 
 ```python
-class InvalidConfigError(ValueError,  RasaException)
+load(config: Optional[Union[Text, Dict]] = None, **kwargs: Any) -> "RasaNLUModelConfig"
 ```
 
-Raised if an invalid configuration is encountered.
+Create configuration from file or dict.
+
+**Arguments**:
+
+- `config` - a file path, a dictionary with configuration keys. If set to
+  `None` the configuration will be loaded from the default file
+  path.
+  
+
+**Returns**:
+
+  Configuration object.
 
 ## RasaNLUModelConfig Objects
 

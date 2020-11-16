@@ -4,7 +4,7 @@ import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union
 
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.shared.constants import (
@@ -17,13 +17,23 @@ from rasa.shared.utils.io import json_to_string
 logger = logging.getLogger(__name__)
 
 
-class InvalidConfigError(ValueError, RasaException):
-    """Raised if an invalid configuration is encountered."""
+# DEPRECATED: will be removed in Rasa Open Source 3.0
+InvalidConfigError = InvalidConfigException
 
 
 def load(
     config: Optional[Union[Text, Dict]] = None, **kwargs: Any
 ) -> "RasaNLUModelConfig":
+    """Create configuration from file or dict.
+
+    Args:
+        config: a file path, a dictionary with configuration keys. If set to
+            `None` the configuration will be loaded from the default file
+            path.
+
+    Returns:
+        Configuration object.
+    """
     if isinstance(config, Dict):
         return _load_from_dict(config, **kwargs)
 

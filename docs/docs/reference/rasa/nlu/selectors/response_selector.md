@@ -67,3 +67,11 @@ Return the metadata necessary to load the model again.
 
 Loads the trained model from the provided directory.
 
+## DIET2DIET Objects
+
+```python
+class DIET2DIET(DIET)
+```
+
+Diet 2 Diet transformer implementation.
+

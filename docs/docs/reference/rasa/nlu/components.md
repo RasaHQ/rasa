@@ -30,7 +30,7 @@ Validates that all required importable python packages are installed.
 
 **Raises**:
 
-- `InvalidConfigError` - If one of the component names is `None`, likely
+- `InvalidConfigException` - If one of the component names is `None`, likely
   indicates that a custom implementation is missing this property
   or that there is an invalid configuration file that we did not
   catch earlier.

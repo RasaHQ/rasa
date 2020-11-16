@@ -22,7 +22,7 @@ Slack input channel implementation. Based on the HTTPInputChannel.
 #### \_\_init\_\_
 
 ```python
- | __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False, slack_signing_secret: Optional[Text] = None) -> None
+ | __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False, slack_signing_secret: Text = "") -> None
 ```
 
 Create a Slack input channel.
