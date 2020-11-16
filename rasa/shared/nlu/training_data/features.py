@@ -107,3 +107,6 @@ class Features:
             and other.attribute == self.attribute
             and other.features == self.features
         )
+
+    def _shape(self):
+        return self.features.shape if self.is_dense else self.features.toarray().shape

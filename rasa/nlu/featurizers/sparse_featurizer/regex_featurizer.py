@@ -62,11 +62,17 @@ class RegexFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> None:
 
-        self.known_patterns = pattern_utils.extract_patterns(
-            training_data,
-            use_lookup_tables=self.component_config["use_lookup_tables"],
-            use_regexes=self.component_config["use_regexes"],
-        )
+        # TODO: This condition should be removed if
+        #  we want to support new data for lookup tables to be
+        #  added and supported during finetuning. Currently, the
+        #  lookup tables are not deduplicated. Which means, for
+        #  duplicate lookup tables there are separate features created, which is wrong.
+        if not self.known_patterns:
+            self.known_patterns = pattern_utils.extract_patterns(
+                training_data,
+                use_lookup_tables=self.component_config["use_lookup_tables"],
+                use_regexes=self.component_config["use_regexes"],
+            )
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
@@ -88,6 +94,8 @@ class RegexFeaturizer(SparseFeaturizer):
                     attribute,
                     self.component_config[FEATURIZER_CLASS_ALIAS],
                 )
+                # if final_sequence_features._shape()[1] != 4:
+                #     print("rf sequence", final_sequence_features._shape())
                 message.add_features(final_sequence_features)
 
             if sentence_features is not None:
@@ -97,6 +105,8 @@ class RegexFeaturizer(SparseFeaturizer):
                     attribute,
                     self.component_config[FEATURIZER_CLASS_ALIAS],
                 )
+                # if final_sentence_features._shape()[1] != 4:
+                #     print("rf sentence", final_sentence_features._shape())
                 message.add_features(final_sentence_features)
 
     def _features_for_patterns(

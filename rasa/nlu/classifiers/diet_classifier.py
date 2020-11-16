@@ -984,7 +984,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta = train_utils.update_similarity_type(meta)
 
         model = cls._load_model(
-            entity_tag_specs, label_data, meta, data_example, model_dir
+            entity_tag_specs, label_data, meta, data_example, model_dir, finetune_mode
         )
 
         return cls(
