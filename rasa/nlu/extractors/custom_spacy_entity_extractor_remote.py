@@ -15,6 +15,12 @@ class RemoteSpacyCustomNER(EntityExtractor):
         "host": '127.0.0.1',
         "port": 9501,
         "arch": None,
+        "dropout": 0.1,
+        "accumulate_gradient": 1,
+        "patience": 100,
+        "max_epochs": 200,
+        "max_steps": 500,
+        "eval_frequency": 200,
         # by default all dimensions recognized by spacy are returned
         # dimensions can be configured to contain an array of strings
         # with the names of the dimensions to filter for
