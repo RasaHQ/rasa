@@ -297,6 +297,9 @@ class TEDPolicy(Policy):
         self._entity_tag_specs = entity_tag_specs
 
         self.fake_features = fake_features or defaultdict(list)
+        # TED is only e2e if only text is present in fake features, which represent
+        # all possible input features for current version of this trained ted
+        self.only_e2e = TEXT in self.fake_features and INTENT not in self.fake_features
 
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
@@ -501,6 +504,44 @@ class TEDPolicy(Policy):
             batch_strategy=self.config[BATCH_STRATEGY],
         )
 
+    def _featurize_tracker_for_e2e(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+    ) -> List[List[Dict[Text, List["Features"]]]]:
+        # the first example in a batch either does not contain user input
+        # or uses intent or text if e2e only
+        tracker_state_features = self.featurizer.create_state_features(
+            [tracker], domain, interpreter, use_text_for_last_user_input=self.only_e2e
+        )
+        # the second - text, but only after user utterance and if not only e2e
+        if tracker.latest_action_name == ACTION_LISTEN_NAME and not self.only_e2e:
+            tracker_state_features += self.featurizer.create_state_features(
+                [tracker], domain, interpreter, use_text_for_last_user_input=True
+            )
+        return tracker_state_features
+
+    def _pick_confidence(
+        self, confidences: np.ndarray, similarities: np.ndarray
+    ) -> Tuple[np.ndarray, bool]:
+        # we use heuristic to pick correct prediction
+        if confidences.shape[0] == 2:
+            # we use similarities to pick appropriate input,
+            # since it seems to be more accurate measure,
+            # policy is trained to maximize the similarity not the confidence
+            if (
+                np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
+                # TODO maybe compare confidences is better
+                and np.max(similarities[1]) > np.max(similarities[0])
+            ):
+                return confidences[1], True
+
+            return confidences[0], False
+
+        # by default the first example in a batch is the one to use for prediction
+        return confidences[0], self.only_e2e
+
     def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -516,59 +557,17 @@ class TEDPolicy(Policy):
             return self._prediction(self._default_predictions(domain))
 
         # create model data from tracker
-        tracker_state_features = []
-        if (
-            INTENT in self.fake_features
-            or not tracker.latest_action_name == ACTION_LISTEN_NAME
-        ):
-            # the first example in a batch uses intent
-            # or current prediction is not after user utterance
-            tracker_state_features += self.featurizer.create_state_features(
-                [tracker], domain, interpreter, use_text_for_last_user_input=False
-            )
-        if (
-            TEXT in self.fake_features
-            and tracker.latest_action_name == ACTION_LISTEN_NAME
-        ):
-            # the second - text, but only after user utterance
-            tracker_state_features += self.featurizer.create_state_features(
-                [tracker], domain, interpreter, use_text_for_last_user_input=True
-            )
-
+        tracker_state_features = self._featurize_tracker_for_e2e(
+            tracker, domain, interpreter
+        )
         model_data = self._create_model_data(tracker_state_features)
 
         output = self.model.predict(model_data)
-
         # take the last prediction in the sequence
         similarities = output["similarities"].numpy()[:, -1, :]
         confidences = output["action_scores"].numpy()[:, -1, :]
-
-        # we using similarities to pick appropriate input,
-        # since it seems to be more accurate measure,
-        # policy is trained to maximize the similarity not the confidence
-        if (
-            len(tracker_state_features) == 2
-            and np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
-            # TODO maybe compare confidences is better
-            and np.max(similarities[1]) > np.max(similarities[0])
-        ):
-            batch_index = 1
-            is_e2e_prediction = True
-        elif len(tracker_state_features) == 2:
-            batch_index = 0
-            is_e2e_prediction = False
-        else:  # only one tracker present
-            batch_index = 0
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                if TEXT in self.fake_features:
-                    is_e2e_prediction = True
-                else:
-                    is_e2e_prediction = False
-            else:
-                is_e2e_prediction = None
-
-        # take correct batch dimension
-        confidence = confidences[batch_index, :]
+        # take correct prediction from batch
+        confidence, is_e2e_prediction = self._pick_confidence(confidences, similarities)
 
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
