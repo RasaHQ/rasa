@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text, List
+from typing import Text, List, Dict
 
 import pytest
 
@@ -36,6 +36,57 @@ async def test_can_read_test_story_with_slots(default_domain: Domain):
 
     assert trackers[0].events[-2] == SlotSet(key="name", value="peter")
     assert trackers[0].events[-1] == ActionExecuted("action_listen")
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        {"slots": {"my_slot": {"type": "text"}}},
+        {"slots": {"my_slot": {"type": "bool"}}},
+    ],
+)
+async def test_default_slot_value_if_slots_referenced_by_name_only(domain: Dict):
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader(Domain.from_dict(domain))
+    events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        {"slots": {"my_slot": {"type": "categorical"}}},
+        {"slots": {"my_slot": {"type": "float"}}},
+    ],
+)
+async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
+    domain: Dict,
+):
+    story = """
+    stories:
+    - story: my story
+      steps:
+      - intent: greet
+      - slot_was_set:
+        - my_slot
+    """
+
+    reader = YAMLStoryReader(Domain.from_dict(domain))
+    with pytest.warns(UserWarning):
+        events = reader.read_from_string(story)[0].events
+
+    assert isinstance(events[-1], SlotSet)
+    assert events[-1].value is None
 
 
 async def test_can_read_test_story_with_entities_slot_autofill(default_domain: Domain):
