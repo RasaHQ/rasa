@@ -308,14 +308,18 @@ def _create_rabbitmq_ssl_options(
     client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
     client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
 
-    if os.environ.get("RABBITMQ_SSL_CA_FILE") or os.environ.get(
-        "RABBITMQ_SSL_KEY_PASSWORD"
-    ):
+    if os.environ.get("RABBITMQ_SSL_CA_FILE"):
         rasa.shared.utils.io.raise_warning(
-            "Specifying 'RABBITMQ_SSL_CA_FILE' or 'RABBITMQ_SSL_KEY_PASSWORD' via "
+            "Specifying 'RABBITMQ_SSL_CA_FILE' via "
             "environment variables is no longer supported. Please specify this "
-            "through the RabbitMQ URL as described here: "
+            "through the RabbitMQ URL parameter 'cacertfile' as described here: "
             "https://www.rabbitmq.com/uri-query-parameters.html "
+        )
+
+    if os.environ.get("RABBITMQ_SSL_KEY_PASSWORD"):
+        rasa.shared.utils.io.raise_warning(
+            "Specifying 'RABBITMQ_SSL_KEY_PASSWORD' via environment variables is no "
+            "longer supported. Please use an unencrypted key file."
         )
 
     if client_certificate_path and client_key_path:

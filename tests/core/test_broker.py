@@ -222,7 +222,7 @@ async def test_load_custom_broker_without_async_support(tmp_path: Path):
         }
     )
 
-    with pytest.warns(UserWarning):
+    with pytest.warns(FutureWarning):
         assert isinstance(await EventBroker.create(config), FileEventBroker)
 
 
@@ -288,8 +288,9 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         with pytest.raises(Exception):
             await broker.connect()
 
-    assert (
-        len(caplog.records) == 1 and caplog.records[0].name == "rasa.core.brokers.pika"
+    # Only Rasa Open Source logs, but logs from the library itself.
+    assert len(caplog.records) == 2 and all(
+        record.name == "rasa.core.brokers.pika" for record in caplog.records
     )
 
 
