@@ -1,9 +1,16 @@
 language: en
 
 pipeline:
-- name: SpacyCustomNER
-  custom_model: "project-ner/training/model-best"
-  project: "project-ner"
+- name: RemoteSpacyCustomNER
+  host: "127.0.0.1"
+  port: "9501"
+  arch: "transformer"
+  dropout: 0.1
+  accumulate_gradient: 1
+  patience: 100
+  max_epochs: 200
+  max_steps: 500
+  eval_frequency: 200
 - name: SpacyNLP
   model: "en_core_web_md"
 - name: SpacyTokenizer
