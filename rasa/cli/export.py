@@ -167,16 +167,16 @@ def _prepare_event_broker(event_broker: "EventBroker") -> None:
 
 
 def export_trackers(args: argparse.Namespace) -> None:
-    rasa.utils.common.run_in_loop(_export_trackers(args))
-
-
-async def _export_trackers(args: argparse.Namespace) -> None:
     """Export events for a connected tracker store using an event broker.
 
     Args:
         args: Command-line arguments to process.
-
     """
+    rasa.utils.common.run_in_loop(_export_trackers(args))
+
+
+async def _export_trackers(args: argparse.Namespace) -> None:
+
     _assert_max_timestamp_is_greater_than_min_timestamp(args)
 
     endpoints = rasa.core.utils.read_endpoints_from_path(args.endpoints)
