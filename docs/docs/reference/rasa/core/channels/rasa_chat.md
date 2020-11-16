@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.rasa_chat
+sidebar_label: rasa_chat
 title: rasa.core.channels.rasa_chat
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.slots
+sidebar_label: slots
 title: rasa.shared.core.slots
 ---
 

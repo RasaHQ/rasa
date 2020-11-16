@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.exporter
+sidebar_label: exporter
 title: rasa.core.exporter
 ---
 
@@ -28,7 +28,7 @@ Manages the publishing of events in a tracker store to an event broker.
 #### publish\_events
 
 ```python
- | publish_events() -> int
+ | async publish_events() -> int
 ```
 
 Publish events in a tracker store using an event broker.

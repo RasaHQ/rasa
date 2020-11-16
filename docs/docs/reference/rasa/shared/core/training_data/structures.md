@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.training_data.structures
+sidebar_label: structures
 title: rasa.shared.core.training_data.structures
 ---
 

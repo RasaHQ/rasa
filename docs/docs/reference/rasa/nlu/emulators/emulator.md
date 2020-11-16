@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.emulators.emulator
+sidebar_label: emulator
 title: rasa.nlu.emulators.emulator
 ---
 

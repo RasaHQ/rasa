@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.importers.autoconfig
+sidebar_label: autoconfig
 title: rasa.shared.importers.autoconfig
 ---
 

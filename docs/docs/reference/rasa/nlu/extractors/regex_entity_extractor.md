@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.extractors.regex_entity_extractor
+sidebar_label: regex_entity_extractor
 title: rasa.nlu.extractors.regex_entity_extractor
 ---
 

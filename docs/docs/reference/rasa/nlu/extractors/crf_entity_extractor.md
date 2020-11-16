@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.extractors.crf_entity_extractor
+sidebar_label: crf_entity_extractor
 title: rasa.nlu.extractors.crf_entity_extractor
 ---
 

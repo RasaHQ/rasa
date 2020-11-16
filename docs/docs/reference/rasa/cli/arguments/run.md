@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.arguments.run
+sidebar_label: run
 title: rasa.cli.arguments.run
 ---
 

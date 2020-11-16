@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.facebook
+sidebar_label: facebook
 title: rasa.core.channels.facebook
 ---
 

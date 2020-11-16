@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.mattermost
+sidebar_label: mattermost
 title: rasa.core.channels.mattermost
 ---
 

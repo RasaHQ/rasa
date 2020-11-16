@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.trackers
+sidebar_label: trackers
 title: rasa.shared.core.trackers
 ---
 

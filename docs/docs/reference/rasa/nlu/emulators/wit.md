@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.emulators.wit
+sidebar_label: wit
 title: rasa.nlu.emulators.wit
 ---
 

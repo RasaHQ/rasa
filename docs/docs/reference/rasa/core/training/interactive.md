@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.training.interactive
+sidebar_label: interactive
 title: rasa.core.training.interactive
 ---
 

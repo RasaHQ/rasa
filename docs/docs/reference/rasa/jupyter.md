@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.jupyter
+sidebar_label: jupyter
 title: rasa.jupyter
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.tracker_store
+sidebar_label: tracker_store
 title: rasa.core.tracker_store
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.botframework
+sidebar_label: botframework
 title: rasa.core.channels.botframework
 ---
 

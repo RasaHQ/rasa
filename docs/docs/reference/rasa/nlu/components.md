@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.components
+sidebar_label: components
 title: rasa.nlu.components
 ---
 

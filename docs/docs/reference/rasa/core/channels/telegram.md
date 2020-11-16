@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.telegram
+sidebar_label: telegram
 title: rasa.core.channels.telegram
 ---
 

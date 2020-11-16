@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.training_data.story_writer.story_writer
+sidebar_label: story_writer
 title: rasa.shared.core.training_data.story_writer.story_writer
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter
+sidebar_label: nlg_markdown_to_yaml_converter
 title: rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter
 ---
 

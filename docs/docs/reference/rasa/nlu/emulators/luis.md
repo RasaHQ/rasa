@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.emulators.luis
+sidebar_label: luis
 title: rasa.nlu.emulators.luis
 ---
 

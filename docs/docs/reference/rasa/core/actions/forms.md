@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.actions.forms
+sidebar_label: forms
 title: rasa.core.actions.forms
 ---
 

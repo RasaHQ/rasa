@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.policies.mapping_policy
+sidebar_label: mapping_policy
 title: rasa.core.policies.mapping_policy
 ---
 

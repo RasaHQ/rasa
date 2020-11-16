@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.telemetry
+sidebar_label: telemetry
 title: rasa.telemetry
 ---
 

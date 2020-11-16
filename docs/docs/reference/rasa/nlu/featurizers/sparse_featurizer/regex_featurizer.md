@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
+sidebar_label: regex_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 ---
 

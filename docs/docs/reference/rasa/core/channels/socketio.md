@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.socketio
+sidebar_label: socketio
 title: rasa.core.channels.socketio
 ---
 

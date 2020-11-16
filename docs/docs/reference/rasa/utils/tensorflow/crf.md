@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.utils.tensorflow.crf
+sidebar_label: crf
 title: rasa.utils.tensorflow.crf
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.emulators.dialogflow
+sidebar_label: dialogflow
 title: rasa.nlu.emulators.dialogflow
 ---
 

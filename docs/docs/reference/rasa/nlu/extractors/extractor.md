@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.extractors.extractor
+sidebar_label: extractor
 title: rasa.nlu.extractors.extractor
 ---
 

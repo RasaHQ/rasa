@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.brokers.broker
+sidebar_label: broker
 title: rasa.core.brokers.broker
 ---
 
@@ -15,10 +15,29 @@ Base class for any event broker implementation.
 
 ```python
  | @staticmethod
- | create(obj: Union["EventBroker", EndpointConfig, None]) -> Optional["EventBroker"]
+ | async create(obj: Union["EventBroker", EndpointConfig, None], loop: Optional[AbstractEventLoop] = None) -> Optional["EventBroker"]
 ```
 
 Factory to create an event broker.
+
+#### from\_endpoint\_config
+
+```python
+ | @classmethod
+ | async from_endpoint_config(cls, broker_config: EndpointConfig, event_loop: Optional[AbstractEventLoop] = None) -> "EventBroker"
+```
+
+Creates an `EventBroker` from the endpoint configuration.
+
+**Arguments**:
+
+- `broker_config` - The configuration for the broker.
+- `event_loop` - The current event loop or `None`.
+  
+
+**Returns**:
+
+  An `EventBroker` object.
 
 #### publish
 
@@ -43,7 +62,7 @@ Determine whether or not the event broker is ready.
 #### close
 
 ```python
- | close() -> None
+ | async close() -> None
 ```
 
 Close the connection to an event broker.

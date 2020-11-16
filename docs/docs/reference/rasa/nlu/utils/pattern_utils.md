@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.utils.pattern_utils
+sidebar_label: pattern_utils
 title: rasa.nlu.utils.pattern_utils
 ---
 

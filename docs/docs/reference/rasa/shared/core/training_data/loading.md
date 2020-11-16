@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.training_data.loading
+sidebar_label: loading
 title: rasa.shared.core.training_data.loading
 ---
 

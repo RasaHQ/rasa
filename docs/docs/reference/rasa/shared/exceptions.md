@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.exceptions
+sidebar_label: exceptions
 title: rasa.shared.exceptions
 ---
 

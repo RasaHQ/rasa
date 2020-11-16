@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.classifiers.keyword_intent_classifier
+sidebar_label: keyword_intent_classifier
 title: rasa.nlu.classifiers.keyword_intent_classifier
 ---
 

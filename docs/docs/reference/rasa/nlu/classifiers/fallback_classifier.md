@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.classifiers.fallback_classifier
+sidebar_label: fallback_classifier
 title: rasa.nlu.classifiers.fallback_classifier
 ---
 

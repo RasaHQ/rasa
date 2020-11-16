@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.generator
+sidebar_label: generator
 title: rasa.shared.core.generator
 ---
 

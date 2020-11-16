@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.conversation
+sidebar_label: conversation
 title: rasa.shared.core.conversation
 ---
 

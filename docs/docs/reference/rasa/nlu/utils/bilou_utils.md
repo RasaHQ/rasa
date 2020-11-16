@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.utils.bilou_utils
+sidebar_label: bilou_utils
 title: rasa.nlu.utils.bilou_utils
 ---
 

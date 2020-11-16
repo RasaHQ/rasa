@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.slack
+sidebar_label: slack
 title: rasa.core.channels.slack
 ---
 

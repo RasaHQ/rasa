@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.brokers.sql
+sidebar_label: sql
 title: rasa.core.brokers.sql
 ---
 
@@ -12,6 +12,15 @@ class SQLEventBroker(EventBroker)
 Save events into an SQL database.
 
 All events will be stored in a table called `events`.
+
+#### from\_endpoint\_config
+
+```python
+ | @classmethod
+ | async from_endpoint_config(cls, broker_config: EndpointConfig, event_loop: Optional[AbstractEventLoop] = None) -> "SQLEventBroker"
+```
+
+Creates broker. See the parent class for more information.
 
 #### session\_scope
 

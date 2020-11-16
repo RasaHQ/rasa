@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.training_data.entities_parser
+sidebar_label: entities_parser
 title: rasa.shared.nlu.training_data.entities_parser
 ---
 

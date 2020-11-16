@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.interpreter
+sidebar_label: interpreter
 title: rasa.core.interpreter
 ---
 

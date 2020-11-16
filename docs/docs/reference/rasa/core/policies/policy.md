@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.policies.policy
+sidebar_label: policy
 title: rasa.core.policies.policy
 ---
 

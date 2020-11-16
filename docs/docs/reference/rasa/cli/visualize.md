@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.visualize
+sidebar_label: visualize
 title: rasa.cli.visualize
 ---
 

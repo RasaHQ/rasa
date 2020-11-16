@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.classifiers.mitie_intent_classifier
+sidebar_label: mitie_intent_classifier
 title: rasa.nlu.classifiers.mitie_intent_classifier
 ---
 

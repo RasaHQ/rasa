@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.policies.sklearn_policy
+sidebar_label: sklearn_policy
 title: rasa.core.policies.sklearn_policy
 ---
 

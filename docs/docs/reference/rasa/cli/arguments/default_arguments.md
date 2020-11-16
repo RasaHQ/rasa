@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.arguments.default_arguments
+sidebar_label: default_arguments
 title: rasa.cli.arguments.default_arguments
 ---
 

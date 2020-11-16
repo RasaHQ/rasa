@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.agent
+sidebar_label: agent
 title: rasa.core.agent
 ---
 

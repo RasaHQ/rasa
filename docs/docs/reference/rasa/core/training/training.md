@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.training.training
+sidebar_label: training
 title: rasa.core.training.training
 ---
 

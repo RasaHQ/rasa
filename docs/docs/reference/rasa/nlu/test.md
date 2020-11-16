@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.test
+sidebar_label: test
 title: rasa.nlu.test
 ---
 

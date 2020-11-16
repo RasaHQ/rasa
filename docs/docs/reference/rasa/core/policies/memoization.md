@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.policies.memoization
+sidebar_label: memoization
 title: rasa.core.policies.memoization
 ---
 

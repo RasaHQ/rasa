@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.policies.fallback
+sidebar_label: fallback
 title: rasa.core.policies.fallback
 ---
 

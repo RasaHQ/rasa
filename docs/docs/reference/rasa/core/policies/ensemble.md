@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.policies.ensemble
+sidebar_label: ensemble
 title: rasa.core.policies.ensemble
 ---
 

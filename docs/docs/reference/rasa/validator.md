@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.validator
+sidebar_label: validator
 title: rasa.validator
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.events
+sidebar_label: events
 title: rasa.shared.core.events
 ---
 

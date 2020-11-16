@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.domain
+sidebar_label: domain
 title: rasa.shared.core.domain
 ---
 

@@ -125,7 +125,6 @@
         },
         {
           "items": [
-            "reference/rasa/core/training",
             "reference/rasa/core/restore",
             "reference/rasa/core/run",
             "reference/rasa/core/processor",
@@ -144,6 +143,7 @@
             "reference/rasa/core/registry",
             {
               "items": [
+                "reference/rasa/core/training/__init__",
                 "reference/rasa/core/training/story_conflict",
                 "reference/rasa/core/training/interactive",
                 "reference/rasa/core/training/training",
@@ -295,7 +295,6 @@
             "reference/rasa/nlu/config",
             "reference/rasa/nlu/train",
             "reference/rasa/nlu/model",
-            "reference/rasa/nlu/utils",
             "reference/rasa/nlu/test",
             "reference/rasa/nlu/registry",
             {
@@ -377,6 +376,7 @@
             },
             {
               "items": [
+                "reference/rasa/nlu/utils/__init__",
                 "reference/rasa/nlu/utils/spacy_utils",
                 "reference/rasa/nlu/utils/bilou_utils",
                 "reference/rasa/nlu/utils/pattern_utils",

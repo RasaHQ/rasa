@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.utils.cli
+sidebar_label: cli
 title: rasa.shared.utils.cli
 ---
 

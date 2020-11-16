@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.config
+sidebar_label: config
 title: rasa.nlu.config
 ---
 

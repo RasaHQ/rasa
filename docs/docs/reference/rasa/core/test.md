@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.test
+sidebar_label: test
 title: rasa.core.test
 ---
 

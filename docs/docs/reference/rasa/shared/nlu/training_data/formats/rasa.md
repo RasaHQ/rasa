@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.training_data.formats.rasa
+sidebar_label: rasa
 title: rasa.shared.nlu.training_data.formats.rasa
 ---
 

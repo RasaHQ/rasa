@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
+sidebar_label: lm_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
 ---
 

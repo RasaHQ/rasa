@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.utils.tensorflow.transformer
+sidebar_label: transformer
 title: rasa.utils.tensorflow.transformer
 ---
 

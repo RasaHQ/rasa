@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.importers.multi_project
+sidebar_label: multi_project
 title: rasa.shared.importers.multi_project
 ---
 

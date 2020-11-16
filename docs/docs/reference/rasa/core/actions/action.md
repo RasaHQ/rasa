@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.actions.action
+sidebar_label: action
 title: rasa.core.actions.action
 ---
 

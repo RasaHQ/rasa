@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.data
+sidebar_label: data
 title: rasa.shared.data
 ---
 

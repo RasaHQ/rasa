@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.classifiers.diet_classifier
+sidebar_label: diet_classifier
 title: rasa.nlu.classifiers.diet_classifier
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.nlg.interpolator
+sidebar_label: interpolator
 title: rasa.core.nlg.interpolator
 ---
 

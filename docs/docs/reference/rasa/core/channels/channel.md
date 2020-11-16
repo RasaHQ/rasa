@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.channel
+sidebar_label: channel
 title: rasa.core.channels.channel
 ---
 

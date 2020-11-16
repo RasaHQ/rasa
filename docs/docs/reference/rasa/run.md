@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.run
+sidebar_label: run
 title: rasa.run
 ---
 

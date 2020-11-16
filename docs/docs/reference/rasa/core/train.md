@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.train
+sidebar_label: train
 title: rasa.core.train
 ---
 

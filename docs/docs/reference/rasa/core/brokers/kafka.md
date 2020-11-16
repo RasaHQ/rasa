@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.brokers.kafka
+sidebar_label: kafka
 title: rasa.core.brokers.kafka
 ---
 
@@ -46,4 +46,13 @@ Kafka event broker.
 - `security_protocol` - Protocol used to communicate with brokers.
   Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
 - `loglevel` - Logging level of the kafka logger.
+
+#### from\_endpoint\_config
+
+```python
+ | @classmethod
+ | async from_endpoint_config(cls, broker_config: EndpointConfig, event_loop: Optional[AbstractEventLoop] = None) -> Optional["KafkaEventBroker"]
+```
+
+Creates broker. See the parent class for more information.
 

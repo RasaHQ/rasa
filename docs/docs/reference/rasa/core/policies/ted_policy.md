@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.policies.ted_policy
+sidebar_label: ted_policy
 title: rasa.core.policies.ted_policy
 ---
 

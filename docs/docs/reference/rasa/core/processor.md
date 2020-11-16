@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.processor
+sidebar_label: processor
 title: rasa.core.processor
 ---
 

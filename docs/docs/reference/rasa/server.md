@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.server
+sidebar_label: server
 title: rasa.server
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.tokenizers.lm_tokenizer
+sidebar_label: lm_tokenizer
 title: rasa.nlu.tokenizers.lm_tokenizer
 ---
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.train
+sidebar_label: train
 title: rasa.nlu.train
 ---
 

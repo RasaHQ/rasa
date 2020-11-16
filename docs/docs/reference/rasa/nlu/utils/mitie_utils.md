@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.utils.mitie_utils
+sidebar_label: mitie_utils
 title: rasa.nlu.utils.mitie_utils
 ---
 
