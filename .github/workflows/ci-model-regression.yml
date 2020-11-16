@@ -22,9 +22,9 @@ jobs:
 
     steps:
       - name: Find and cancel old builds of this branch
-        uses: rokroskar/workflow-run-cleanup-action@v0.2.2
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: "${{ secrets.GITHUB_TOKEN }}"
 
   read_test_configuration:
     name: Reads tests configuration
