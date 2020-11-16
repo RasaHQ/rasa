@@ -57,7 +57,7 @@ title = "gitleaks config"
     regex = '''(?i)(api_key|apikey|secret)(.{0,20})?['|"][0-9a-zA-Z]{16,45}['|"]'''
     tags = ["key", "API", "generic"]
     [rules.allowlist]
-        files = ['''^examples\/.*''']
+        paths = ['''^examples\/.*''']
         description = "ignore examples"
 [[rules]]
     description = "Google API key"
