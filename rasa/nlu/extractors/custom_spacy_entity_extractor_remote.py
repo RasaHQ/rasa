@@ -18,8 +18,8 @@ class RemoteSpacyCustomNER(EntityExtractor):
         "dropout": 0.1,
         "accumulate_gradient": 1,
         "patience": 100,
-        "max_epochs": 200,
-        "max_steps": 500,
+        "max_epochs": 30,
+        "max_steps": 5000,
         "eval_frequency": 200,
         # by default all dimensions recognized by spacy are returned
         # dimensions can be configured to contain an array of strings
