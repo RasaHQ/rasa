@@ -177,7 +177,7 @@ class PolicyTestCollection:
     def _get_next_action(policy: Policy, events: List[Event], domain: Domain) -> Text:
         tracker = get_tracker(events)
 
-        scores, _ = policy.predict_action_probabilities(
+        scores = policy.predict_action_probabilities(
             tracker, domain, RegexInterpreter()
         ).probabilities
         index = scores.index(max(scores))
@@ -298,14 +298,14 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(
             new_trackers, domain=default_domain, interpreter=RegexInterpreter()
         )
-        predicted_probabilities, e2e_prediction = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        ).probabilities
+        )
 
-        assert not e2e_prediction
-        assert len(predicted_probabilities) == default_domain.num_actions
-        assert np.allclose(sum(predicted_probabilities), 1.0)
-        for i, prob in enumerate(predicted_probabilities):
+        assert not prediction.is_end_to_end_prediction
+        assert len(prediction.probabilities) == default_domain.num_actions
+        assert np.allclose(sum(prediction.probabilities), 1.0)
+        for i, prob in enumerate(prediction.probabilities):
             if i in classes:
                 assert prob >= 0.0
             else:
@@ -373,19 +373,17 @@ class TestTEDPolicy(PolicyTestCollection):
         monkeypatch: MonkeyPatch,
     ):
         # first check the output is what we expect
-        (
-            predicted_probabilities,
-            e2e_prediction,
-        ) = trained_policy.predict_action_probabilities(
+        prediction = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
-        ).probabilities
+        )
+        assert not prediction.is_end_to_end_prediction
         # count number of non-zero confidences
         assert (
-            sum([confidence > 0 for confidence in predicted_probabilities])
+            sum([confidence > 0 for confidence in prediction.probabilities])
             == trained_policy.config[RANKING_LENGTH]
         )
         # check that the norm is still 1
-        assert sum(predicted_probabilities) == pytest.approx(1)
+        assert sum(prediction.probabilities) == pytest.approx(1)
 
         # also check our function is called
         mock = Mock()
@@ -399,22 +397,31 @@ class TestTEDPolicy(PolicyTestCollection):
     async def test_gen_batch(self, trained_policy: TEDPolicy, default_domain: Domain):
         training_trackers = await train_trackers(default_domain, augmentation_factor=0)
         interpreter = RegexInterpreter()
-        training_data, label_ids = trained_policy.featurize_for_training(
+        training_data, label_ids, entity_tags = trained_policy.featurize_for_training(
             training_trackers, default_domain, interpreter
         )
         label_data, all_labels = trained_policy._create_label_data(
             default_domain, interpreter
         )
         model_data = trained_policy._create_model_data(
-            training_data, label_ids, all_labels
+            training_data, label_ids, entity_tags, all_labels
         )
         batch_size = 2
+        print(len(next(model_data._gen_batch(batch_size=batch_size))))
+        print()
+        for k, v in model_data.items():
+            print(k)
+            for _k, _v in v.items():
+                print("  ", _k)
+                for __v in _v:
+                    print("    ", __v.shape)
+        # model data keys were sorted, so the order is alphabetical
         (
-            batch_label_ids,
             batch_action_name_mask,
             batch_action_name_sentence_indices,
             batch_action_name_sentence_data,
             batch_action_name_sentence_shape,
+            batch_dialogue_length,
             batch_entities_mask,
             batch_entities_sentence_indices,
             batch_entities_sentence_data,
@@ -423,11 +430,11 @@ class TestTEDPolicy(PolicyTestCollection):
             batch_intent_sentence_indices,
             batch_intent_sentence_data,
             batch_intent_sentence_shape,
+            batch_label_ids,
             batch_slots_mask,
             batch_slots_sentence_indices,
             batch_slots_sentence_data,
             batch_slots_sentence_shape,
-            batch_dialogue_length,
         ) = next(model_data._gen_batch(batch_size=batch_size))
 
         assert (
@@ -468,11 +475,11 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         (
-            batch_label_ids,
             batch_action_name_mask,
             batch_action_name_sentence_indices,
             batch_action_name_sentence_data,
             batch_action_name_sentence_shape,
+            batch_dialogue_length,
             batch_entities_mask,
             batch_entities_sentence_indices,
             batch_entities_sentence_data,
@@ -481,11 +488,11 @@ class TestTEDPolicy(PolicyTestCollection):
             batch_intent_sentence_indices,
             batch_intent_sentence_data,
             batch_intent_sentence_shape,
+            batch_label_ids,
             batch_slots_mask,
             batch_slots_sentence_indices,
             batch_slots_sentence_data,
             batch_slots_sentence_shape,
-            batch_dialogue_length,
         ) = next(
             model_data._gen_batch(
                 batch_size=batch_size, batch_strategy="balanced", shuffle=True
@@ -582,10 +589,7 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         monkeypatch: MonkeyPatch,
     ):
         # first check the output is what we expect
-        (
-            predicted_probabilities,
-            e2e_prediction,
-        ) = trained_policy.predict_action_probabilities(
+        predicted_probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, RegexInterpreter()
         ).probabilities
         # there should be no normalization
@@ -933,14 +937,14 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="policy_0_MappingPolicy"),
         ]
         tracker = get_tracker(events)
-        scores, e2e_prediction = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, domain_with_mapping, RegexInterpreter()
-        ).probabilities
-        index = scores.index(max(scores))
+        )
+        index = prediction.probabilities.index(max(prediction.probabilities))
         action_planned = domain_with_mapping.action_names[index]
-        assert not e2e_prediction
+        assert not prediction.is_end_to_end_prediction
         assert action_planned == ACTION_LISTEN_NAME
-        assert scores != [0] * domain_with_mapping.num_actions
+        assert prediction.probabilities != [0] * domain_with_mapping.num_actions
 
     def test_do_not_follow_other_policy(
         self,
@@ -955,11 +959,11 @@ class TestMappingPolicy(PolicyTestCollection):
             ActionExecuted(intent_mapping[1], policy="other_policy"),
         ]
         tracker = get_tracker(events)
-        scores, e2e_prediction = policy.predict_action_probabilities(
+        prediction = policy.predict_action_probabilities(
             tracker, domain_with_mapping, RegexInterpreter()
-        ).probabilities
-        assert scores == [0] * domain_with_mapping.num_actions
-        assert not e2e_prediction
+        )
+        assert prediction.probabilities == [0] * domain_with_mapping.num_actions
+        assert not prediction.is_end_to_end_prediction
 
 
 class TestFallbackPolicy(PolicyTestCollection):

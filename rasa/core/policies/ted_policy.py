@@ -385,12 +385,7 @@ class TEDPolicy(Policy):
         """
         model_data = RasaModelData(label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY)
 
-        if (
-            label_ids is not None
-            and entity_tags is not None
-            and encoded_all_labels is not None
-        ):
-
+        if label_ids is not None and encoded_all_labels is not None:
             label_ids = np.array(
                 [np.expand_dims(seq_label_ids, -1) for seq_label_ids in label_ids]
             )
@@ -403,7 +398,7 @@ class TEDPolicy(Policy):
             attribute_data, self.fake_features = convert_to_data_format(
                 tracker_state_features, featurizers=self.config[FEATURIZERS]
             )
-            if self.config[ENTITY_RECOGNITION]:
+            if self.config[ENTITY_RECOGNITION] and entity_tags is not None:
                 # check that there are real entity tags
                 if any([any(turn_tags) for turn_tags in entity_tags]):
                     entity_tags_data, _ = convert_to_data_format(entity_tags)
@@ -581,7 +576,7 @@ class TEDPolicy(Policy):
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
         return self._prediction(
-            list(confidence), is_end_to_end_prediction=is_e2e_prediction
+            confidence.tolist(), is_end_to_end_prediction=is_e2e_prediction
         )
 
     def persist(self, path: Union[Text, Path]) -> None:
