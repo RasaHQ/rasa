@@ -20,7 +20,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT, ENTITIES
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
@@ -374,14 +374,13 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> Tuple[List[float], Optional[Dict[Text, Any]]]:
-        """Predict the next action the bot should take.
-        Return the list of probabilities for the next actions and
-        diagnostic data.
-        """
+    ) -> PolicyPrediction:
+        """Predicts the next action the bot should take.
 
+        See the docstring of the parent class `Policy` for more information.
+        """
         if self.model is None:
-            return self._default_predictions(domain), None
+            return self._prediction(self._default_predictions(domain))
 
         # create model data from tracker
         tracker_state_features = self.featurizer.create_state_features(
@@ -398,15 +397,13 @@ class TEDPolicy(Policy):
         if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return confidence.tolist(), values_to_numpy(output.get(DIAGNOSTIC_DATA))
+        return self._prediction(confidence.tolist(), diagnostic_data=values_to_numpy(output.get(DIAGNOSTIC_DATA)))
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
-
         if self.model is None:
             logger.debug(
-                "Method `persist(...)` was called "
-                "without a trained model present. "
+                "Method `persist(...)` was called without a trained model present. "
                 "Nothing to persist then!"
             )
             return

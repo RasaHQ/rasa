@@ -58,6 +58,9 @@ logger = logging.getLogger(__name__)
 POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
 POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
+# default value for key prefix in RedisTrackerStore
+DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
+
 
 class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
@@ -305,6 +308,7 @@ class RedisTrackerStore(TrackerStore):
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
+        key_prefix: Optional[Text] = None,
         use_ssl: bool = False,
         **kwargs: Dict[Text, Any],
     ) -> None:
@@ -314,7 +318,24 @@ class RedisTrackerStore(TrackerStore):
             host=host, port=port, db=db, password=password, ssl=use_ssl
         )
         self.record_exp = record_exp
+
+        self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        if key_prefix:
+            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            self._set_key_prefix(key_prefix)
+
         super().__init__(domain, event_broker, **kwargs)
+
+    def _set_key_prefix(self, key_prefix: Text) -> None:
+        if isinstance(key_prefix, str) and key_prefix.isalnum():
+            self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
+        else:
+            logger.warning(
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+            )
+
+    def _get_key_prefix(self) -> Text:
+        return self.key_prefix
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
@@ -325,10 +346,10 @@ class RedisTrackerStore(TrackerStore):
             timeout = self.record_exp
 
         serialised_tracker = self.serialise_tracker(tracker)
-        self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
+        self.red.set(self.prefix + tracker.sender_id, serialised_tracker, ex=timeout)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        stored = self.red.get(sender_id)
+        stored = self.red.get(self.prefix + sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
         else:
@@ -336,7 +357,7 @@ class RedisTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns keys of the Redis Tracker Store"""
-        return self.red.keys()
+        return self.red.keys(self.prefix + "*")
 
 
 class DynamoTrackerStore(TrackerStore):

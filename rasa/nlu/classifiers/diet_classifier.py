@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type, NamedTup
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
+from rasa.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
@@ -37,8 +38,8 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
 )
-from rasa.constants import DIAGNOSTIC_DATA
-from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
@@ -1154,13 +1155,13 @@ class DIET(TransformerRasaModel):
 
     def _check_data(self) -> None:
         if TEXT not in self.data_signature:
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if self.config[INTENT_CLASSIFICATION]:
             if LABEL not in self.data_signature:
-                raise InvalidConfigError(
+                raise InvalidConfigException(
                     f"No label features specified. "
                     f"Cannot train '{self.__class__.__name__}' model."
                 )

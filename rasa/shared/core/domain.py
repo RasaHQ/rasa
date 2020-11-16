@@ -3,6 +3,7 @@ import collections
 import json
 import logging
 import os
+from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -104,7 +105,7 @@ class Domain:
 
     @classmethod
     def empty(cls) -> "Domain":
-        return cls([], [], [], {}, [], [])
+        return cls([], [], [], {}, [], {})
 
     @classmethod
     def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
@@ -168,6 +169,9 @@ class Domain:
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
+        forms = data.get(KEY_FORMS, {})
+
+        _validate_slot_mappings(forms)
 
         return cls(
             intents,
@@ -175,7 +179,7 @@ class Domain:
             slots,
             utter_templates,
             data.get(KEY_ACTIONS, []),
-            data.get(KEY_FORMS, []),
+            data.get(KEY_FORMS, {}),
             data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
@@ -507,13 +511,14 @@ class Domain:
         self.intent_properties = self.collect_intent_properties(
             intents, self.entities, self.roles, self.groups
         )
-        self.overriden_default_intents = self._collect_overridden_default_intents(
+        self.overridden_default_intents = self._collect_overridden_default_intents(
             intents
         )
 
-        self.forms: Dict[Text, Any] = {}
-        self.form_names: List[Text] = []
-        self._initialize_forms(forms)
+        self.form_names, self.forms, overridden_form_actions = self._initialize_forms(
+            forms
+        )
+        action_names += overridden_form_actions
 
         self.slots = slots
         self.templates = templates
@@ -528,7 +533,11 @@ class Domain:
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
             self._combine_user_with_default_actions(self.user_actions)
-            + self.form_names
+            + [
+                form_name
+                for form_name in self.form_names
+                if form_name not in self._custom_actions
+            ]
             + self.action_texts
         )
 
@@ -569,34 +578,63 @@ class Domain:
         }
         return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
 
-    def _initialize_forms(self, forms: Union[Dict[Text, Any], List[Text]]) -> None:
-        """Initialize the domain's `self.form` and `self.form_names` attributes.
+    @staticmethod
+    def _initialize_forms(
+        forms: Union[Dict[Text, Any], List[Text]]
+    ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
+        """Retrieves the initial values for the Domain's form fields.
 
         Args:
             forms: Form names (if forms are a list) or a form dictionary. Forms
                 provided in dictionary format have the form names as keys, and either
                 empty dictionaries as values, or objects containing
                 `SlotMapping`s.
+
+        Returns:
+            The form names, a mapping of form names and slot mappings, and custom
+            actions.
+            Returning custom actions for each forms means that Rasa Open Source should
+            not use the default `FormAction` for the forms, but rather a custom action
+            for it. This can e.g. be used to run the deprecated Rasa Open Source 1
+            `FormAction` which is implemented in the Rasa SDK.
         """
-        if not forms:
-            # empty dict or empty list
-            return
-        elif isinstance(forms, dict):
+        if isinstance(forms, dict):
             # dict with slot mappings
-            self.forms = forms
-            self.form_names = list(forms.keys())
-        elif isinstance(forms, list) and isinstance(forms[0], str):
-            # list of form names
-            self.forms = {form_name: {} for form_name in forms}
-            self.form_names = forms
-        else:
+            return list(forms.keys()), forms, []
+
+        if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
+            # list of form names (Rasa Open Source 1 format)
             rasa.shared.utils.io.raise_warning(
-                f"The `forms` section in the domain needs to contain a dictionary. "
-                f"Instead found an object of type '{type(forms)}'.",
+                "The `forms` section in the domain used the old Rasa Open Source 1 "
+                "list format to define forms. Rasa Open Source will be configured to "
+                "use the deprecated `FormAction` within the Rasa SDK. If you want to "
+                "use the new Rasa Open Source 2 `FormAction` adapt your `forms` "
+                "section as described in the documentation. Support for the "
+                "deprecated `FormAction` in the Rasa SDK will be removed in Rasa Open "
+                "Source 3.0.",
                 docs=rasa.shared.constants.DOCS_URL_FORMS,
+                category=FutureWarning,
             )
+            return forms, {form_name: {} for form_name in forms}, forms
+
+        rasa.shared.utils.io.raise_warning(
+            f"The `forms` section in the domain needs to contain a dictionary. "
+            f"Instead found an object of type '{type(forms)}'.",
+            docs=rasa.shared.constants.DOCS_URL_FORMS,
+        )
+
+        return [], {}, []
 
     def __hash__(self) -> int:
+        """Returns a unique hash for the domain."""
+        return int(self.fingerprint(), 16)
+
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the domain which is stable across python runs.
+
+        Returns:
+            fingerprint of the domain
+        """
         self_as_dict = self.as_dict()
         self_as_dict[
             KEY_INTENTS
@@ -604,10 +642,7 @@ class Domain:
             self_as_dict[KEY_INTENTS]
         )
         self_as_dict[KEY_ACTIONS] = self.action_names
-        self_as_string = json.dumps(self_as_dict, sort_keys=True)
-        text_hash = rasa.shared.utils.io.get_text_hash(self_as_string)
-
-        return int(text_hash, 16)
+        return rasa.shared.utils.io.get_dictionary_fingerprint(self_as_dict)
 
     @rasa.shared.utils.common.lazy_property
     def user_actions_and_forms(self):
@@ -1032,7 +1067,7 @@ class Domain:
         for intent_name, intent_props in intent_properties.items():
             if (
                 intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
-                and intent_name not in self.overriden_default_intents
+                and intent_name not in self.overridden_default_intents
             ):
                 # Default intents should be not dumped with the domain
                 continue
@@ -1139,14 +1174,26 @@ class Domain:
         rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
-        if clean_before_dump:
-            domain_data: Dict[Text, Any] = self.cleaned_domain()
-        else:
-            domain_data: Dict[Text, Any] = self.as_dict()
+        """Dump the `Domain` object as a YAML string.
+        This function preserves the orders of the keys in the domain.
 
-        domain_data[
-            KEY_TRAINING_DATA_FORMAT_VERSION
-        ] = f"{rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        Args:
+            clean_before_dump: When set to `True`, this method returns
+                               a version of the domain without internal
+                               information. Defaults to `False`.
+        Returns:
+            A string in YAML format representing the domain.
+        """
+        # setting the `version` key first so that it appears at the top of YAML files
+        # thanks to the `should_preserve_key_order` argument
+        # of `dump_obj_as_yaml_to_string`
+        domain_data: Dict[Text, Any] = {
+            KEY_TRAINING_DATA_FORMAT_VERSION: rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION
+        }
+        if clean_before_dump:
+            domain_data.update(self.cleaned_domain())
+        else:
+            domain_data.update(self.as_dict())
 
         return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
             domain_data, should_preserve_key_order=True
@@ -1420,3 +1467,100 @@ class Domain:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
         return self.forms.get(form_name, {})
+
+
+class SlotMapping(Enum):
+    """Defines the available slot mappings."""
+
+    FROM_ENTITY = 0
+    FROM_INTENT = 1
+    FROM_TRIGGER_INTENT = 2
+    FROM_TEXT = 3
+
+    def __str__(self) -> Text:
+        """Returns a string representation of the object."""
+        return self.name.lower()
+
+    @staticmethod
+    def validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None:
+        """Validates a slot mapping.
+
+        Args:
+            mapping: The mapping which is validated.
+            form_name: The name of the form which uses this slot mapping.
+            slot_name: The name of the slot which is mapped by this mapping.
+
+        Raises:
+            InvalidDomain: In case the slot mapping is not valid.
+        """
+        if not isinstance(mapping, dict):
+            raise InvalidDomain(
+                f"Please make sure that the slot mappings for slot '{slot_name}' in "
+                f"your form '{form_name}' are valid dictionaries. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+            )
+
+        validations = {
+            str(SlotMapping.FROM_ENTITY): ["entity"],
+            str(SlotMapping.FROM_INTENT): ["value"],
+            str(SlotMapping.FROM_TRIGGER_INTENT): ["value"],
+            str(SlotMapping.FROM_TEXT): [],
+        }
+
+        mapping_type = mapping.get("type")
+        required_keys = validations.get(mapping_type)
+
+        if required_keys is None:
+            raise InvalidDomain(
+                f"Your form '{form_name}' uses an invalid slot mapping of type "
+                f"'{mapping_type}' for slot '{slot_name}'. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+            )
+
+        for required_key in required_keys:
+            if mapping.get(required_key) is None:
+                raise InvalidDomain(
+                    f"You need to specify a value for the key "
+                    f"'{required_key}' in the slot mapping of type '{mapping_type}' "
+                    f"for slot '{slot_name}' in the form '{form_name}'. Please see "
+                    f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                )
+
+
+def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
+    if isinstance(forms, list):
+        if not all(isinstance(form_name, str) for form_name in forms):
+            raise InvalidDomain(
+                f"If you use the deprecated list syntax for forms, "
+                f"all form names have to be strings. Please see "
+                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+            )
+
+        return
+
+    if not isinstance(forms, dict):
+        raise InvalidDomain("Forms have to be specified as dictionary.")
+
+    for form_name, slots in forms.items():
+        if slots is None:
+            continue
+
+        if not isinstance(slots, Dict):
+            raise InvalidDomain(
+                f"The slots for form '{form_name}' were specified "
+                f"as '{type(slots)}'. They need to be specified "
+                f"as dictionary. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
+                f"for more information."
+            )
+
+        for slot_name, slot_mappings in slots.items():
+            if not isinstance(slot_mappings, list):
+                raise InvalidDomain(
+                    f"The slot mappings for slot '{slot_name}' in "
+                    f"form '{form_name}' have type "
+                    f"'{type(slot_mappings)}'. It is required to "
+                    f"provide a list of slot mappings. Please see "
+                    f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                )
+            for slot_mapping in slot_mappings:
+                SlotMapping.validate(slot_mapping, form_name, slot_name)

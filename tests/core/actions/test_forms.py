@@ -849,22 +849,6 @@ def test_extract_requested_slot_from_entity(
     assert slot_values == expected_slot_values
 
 
-def test_invalid_slot_mapping():
-    form_name = "my_form"
-    form = FormAction(form_name, None)
-    slot_name = "test"
-    tracker = DialogueStateTracker.from_events(
-        "sender", [SlotSet(REQUESTED_SLOT, slot_name)]
-    )
-
-    domain = Domain.from_dict(
-        {"forms": {form_name: {slot_name: [{"type": "invalid"}]}}}
-    )
-
-    with pytest.raises(InvalidDomain):
-        form.extract_requested_slot(tracker, domain)
-
-
 @pytest.mark.parametrize(
     "some_other_slot_mapping, some_slot_mapping, entities, intent, expected_slot_values",
     [
@@ -1101,12 +1085,9 @@ async def test_ask_for_slot(
     monkeypatch.setattr(action, action.action_from_name.__name__, action_from_name)
 
     form = FormAction("my_form", endpoint_config)
+    domain = Domain.from_dict(domain)
     await form._ask_for_slot(
-        Domain.from_dict(domain),
-        None,
-        None,
-        slot_name,
-        DialogueStateTracker.from_events("dasd", []),
+        domain, None, None, slot_name, DialogueStateTracker.from_events("dasd", [])
     )
 
-    action_from_name.assert_called_once_with(expected_action, endpoint_config, ANY)
+    action_from_name.assert_called_once_with(expected_action, domain, endpoint_config)

@@ -28,6 +28,7 @@ from rasa.shared.core.domain import (
     IGNORE_ENTITIES_KEY,
     State,
     Domain,
+    KEY_FORMS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -38,7 +39,7 @@ from tests.core.conftest import (
 )
 
 
-def test_slots_states_before_user_utterance(default_domain):
+def test_slots_states_before_user_utterance(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer()
     tracker = DialogueStateTracker.from_events(
         "bla",
@@ -55,7 +56,7 @@ def test_slots_states_before_user_utterance(default_domain):
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(default_domain):
+async def test_create_train_data_no_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
@@ -87,7 +88,7 @@ async def test_create_train_data_no_history(default_domain):
     ]
 
 
-async def test_create_train_data_with_history(default_domain):
+async def test_create_train_data_with_history(default_domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
@@ -132,8 +133,6 @@ def check_for_too_many_entities_and_remove_them(state: State) -> State:
 
 
 async def test_create_train_data_unfeaturized_entities():
-    import copy
-
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"
     domain = Domain.load(domain_file)
@@ -286,6 +285,7 @@ def test_domain_to_dict():
 
 def test_domain_to_yaml():
     test_yaml = f"""
+version: '2.0'
 actions:
 - action_save_world
 config:
@@ -301,7 +301,6 @@ session_config:
   carry_over_slots_to_new_session: true
   session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
 slots: {{}}
-version: '2.0'
 """
 
     with pytest.warns(None) as record:
@@ -479,7 +478,7 @@ def test_merge_domain_with_forms():
     forms:
       my_form3:
         slot1:
-          type: from_text
+        - type: from_text
     """
 
     domain_1 = Domain.from_yaml(test_yaml_1)
@@ -718,7 +717,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=["random_name", "random_name"],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -728,7 +727,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[TextSlot("random_name"), TextSlot("random_name")],
             templates={},
             action_names=[],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -738,7 +737,7 @@ def test_check_domain_sanity_on_invalid_domain():
             slots=[],
             templates={},
             action_names=[],
-            forms=[],
+            forms={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -872,7 +871,7 @@ def test_clean_domain_for_file():
     assert cleaned == expected
 
 
-def test_add_knowledge_base_slots(default_domain):
+def test_add_knowledge_base_slots(default_domain: Domain):
     # don't modify default domain as it is used in other tests
     test_domain = copy.deepcopy(default_domain)
 
@@ -999,7 +998,7 @@ def test_domain_deepcopy():
 
     # equalities
     assert new_domain.intent_properties == domain.intent_properties
-    assert new_domain.overriden_default_intents == domain.overriden_default_intents
+    assert new_domain.overridden_default_intents == domain.overridden_default_intents
     assert new_domain.entities == domain.entities
     assert new_domain.forms == domain.forms
     assert new_domain.form_names == domain.form_names
@@ -1014,7 +1013,9 @@ def test_domain_deepcopy():
     # not the same objects
     assert new_domain is not domain
     assert new_domain.intent_properties is not domain.intent_properties
-    assert new_domain.overriden_default_intents is not domain.overriden_default_intents
+    assert (
+        new_domain.overridden_default_intents is not domain.overridden_default_intents
+    )
     assert new_domain.entities is not domain.entities
     assert new_domain.forms is not domain.forms
     assert new_domain.form_names is not domain.form_names
@@ -1068,3 +1069,76 @@ def test_get_featurized_entities():
     featurized_entities = domain._get_featurized_entities(user_uttered)
 
     assert featurized_entities == {"GPE", f"GPE{ENTITY_LABEL_SEPARATOR}destination"}
+
+
+@pytest.mark.parametrize(
+    "domain_as_dict",
+    [
+        # No forms
+        {KEY_FORMS: {}},
+        # Deprecated but still support form syntax
+        {KEY_FORMS: ["my form", "other form"]},
+        # No slot mappings
+        {KEY_FORMS: {"my_form": None}},
+        {KEY_FORMS: {"my_form": {}}},
+        # Valid slot mappings
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_entity", "entity": "name"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": 5}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_intent", "value": "some value"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": False}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot_x": [{"type": "from_trigger_intent", "value": 5}]}
+            }
+        },
+        {
+            KEY_FORMS: {
+                "my_form": {
+                    "slot_x": [{"type": "from_trigger_intent", "value": "some value"}]
+                }
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_text"}]}}},
+    ],
+)
+def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
+    Domain.from_dict(domain_as_dict)
+
+
+@pytest.mark.parametrize(
+    "domain_as_dict",
+    [
+        # Wrong type for slot names
+        {KEY_FORMS: {"my_form": []}},
+        {KEY_FORMS: {"my_form": 5}},
+        # Slot mappings not defined as list
+        {KEY_FORMS: {"my_form": {"slot1": {}}}},
+        # Unknown mapping
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "my slot mapping"}]}}},
+        # Mappings with missing keys
+        {
+            KEY_FORMS: {
+                "my_form": {"slot1": [{"type": "from_entity", "intent": "greet"}]}
+            }
+        },
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_intent"}]}}},
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_intent", "value": None}]}}},
+        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_trigger_intent"}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"slot1": [{"type": "from_trigger_intent", "value": None}]}
+            }
+        },
+    ],
+)
+def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)
