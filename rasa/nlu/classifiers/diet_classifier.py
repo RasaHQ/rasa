@@ -1772,7 +1772,10 @@ class DIET(TransformerRasaModel):
 
         predictions: Dict[Text, tf.Tensor] = {}
 
-        predictions[DIAGNOSTIC_DATA] = {"attention_weights": attention_weights}
+        predictions[DIAGNOSTIC_DATA] = {
+            "attention_weights": attention_weights,
+            "text_transformed": text_transformed,
+        }
 
         if self.config[INTENT_CLASSIFICATION]:
             predictions.update(

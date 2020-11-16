@@ -484,3 +484,5 @@ async def test_process_gives_diagnostic_data(
     assert isinstance(diagnostic_data, dict)
     assert "attention_weights" in diagnostic_data
     assert isinstance(diagnostic_data.get("attention_weights"), np.ndarray)
+    assert "text_transformed" in diagnostic_data
+    assert isinstance(diagnostic_data.get("text_transformed"), np.ndarray)
