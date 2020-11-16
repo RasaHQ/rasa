@@ -2,6 +2,7 @@ import logging
 
 import rasa
 from rasa.nlu.train import train
+from rasa.nlu.train import train_in_chunks
 from rasa.nlu.test import run_evaluation as test
 from rasa.nlu.test import cross_validate
 

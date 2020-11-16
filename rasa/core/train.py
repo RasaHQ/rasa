@@ -70,6 +70,29 @@ async def train(
     return agent
 
 
+async def train_in_chunks(
+    domain_file: Union[Domain, Text],
+    training_resource: Union[Text, "TrainingDataImporter"],
+    output_path: Text,
+    interpreter: Optional["NaturalLanguageInterpreter"] = None,
+    endpoints: "AvailableEndpoints" = None,
+    policy_config: Optional[Union[Text, Dict]] = None,
+    exclusion_percentage: Optional[int] = None,
+    additional_arguments: Optional[Dict] = None,
+):
+    # TODO
+    return await train(
+        domain_file,
+        training_resource,
+        output_path,
+        interpreter,
+        endpoints,
+        policy_config,
+        exclusion_percentage,
+        additional_arguments,
+    )
+
+
 async def train_comparison_models(
     story_file: Text,
     domain: Text,
