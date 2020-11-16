@@ -709,4 +709,14 @@ class TrainingDataChunk:
 
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    """Converts a list to a string.
+
+    Args:
+        lst: the list to convert
+        delim: the delimiter to use
+        quote: the quote char to use
+
+    Returns:
+        the list as string
+    """
     return delim.join([quote + e + quote for e in lst])

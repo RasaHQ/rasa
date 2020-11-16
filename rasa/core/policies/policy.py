@@ -207,8 +207,8 @@ class Policy:
         """Trains the policy on given training trackers chunk.
 
         Args:
-            training_trackers_chunk:
-                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            training_trackers_chunk: the list of the
+                :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which can be used by the polices for featurization.
         """

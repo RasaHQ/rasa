@@ -575,8 +575,8 @@ class Component(metaclass=ComponentMetaclass):
         """Train this component on the given chunk.
 
         Args:
-            training_data_chunk:
-                The :class:`rasa.shared.nlu.training_data.training_data.TrainingDataChunk`.
+            training_data_chunk: the
+                :class:`rasa.shared.nlu.training_data.training_data.TrainingDataChunk`.
             config: The model configuration parameters.
         """
         pass
