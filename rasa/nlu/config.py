@@ -32,7 +32,8 @@ def load(
             path.
 
     Returns:
-        Configuration object"""
+        Configuration object.
+    """
     if isinstance(config, Dict):
         return _load_from_dict(config, **kwargs)
 
