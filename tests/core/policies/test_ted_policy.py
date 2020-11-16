@@ -34,13 +34,10 @@ def test_diagnostics():
         ],
     )
     policy.train([GREET_RULE], domain, RegexInterpreter())
-    (
-        action_probabilities,
-        diagnostic_data,
-    ) = policy.predict_action_probabilities(
+    prediction = policy.predict_action_probabilities(
         GREET_RULE, domain, RegexInterpreter()
     )
 
-    assert isinstance(diagnostic_data, dict)
-    assert "attention_weights" in diagnostic_data
-    assert isinstance(diagnostic_data.get("attention_weights"), np.ndarray)
+    assert prediction.diagnostic_data
+    assert "attention_weights" in prediction.diagnostic_data
+    assert isinstance(prediction.diagnostic_data.get("attention_weights"), np.ndarray)
