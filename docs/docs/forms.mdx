@@ -43,7 +43,7 @@ forms:
 Once the form action gets called for the first time, the form gets activated and will
 prompt the user for the next required slot value. It does this by
 looking for a [response](./responses.mdx) called
-`utter_ask_{form_name}_{slot_name}` or `utter_ask_{slot_name}` if the former isn't
+`utter_ask_<form_name>_<slot_name>` or `utter_ask_<slot_name>` if the former isn't
 found. Make sure to define these responses in your domain file for
 each required slot.
 
@@ -299,7 +299,7 @@ After extracting a slot value from user input, you can validate the extracted sl
 By default Rasa Open Source only validates if any slot was filled after requesting
 a slot.
 
-You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_{form_name}`
+You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>`
 to validate any extracted slots. Make sure to add this action to the `actions`
 section of your domain:
 
@@ -360,74 +360,103 @@ to fully customize the validation process.
 
 If none of the predefined [Slot Mappings](./forms.mdx#slot-mappings) fit your use
 case, you can use the
-[Custom Action](./actions.mdx#custom-actions) `validate_{form_name}` to write your own
-extraction code. Rasa Open Source will trigger this function when the form is run.
+[Custom Action](./actions.mdx#custom-actions) `validate_<form_name>` to write your own
+extraction code. Rasa Open Source will trigger this action when the form is run.
 
-Make sure your custom action returns `SlotSet` events for every extracted value.
-The following example shows the implementation of a custom slot mapping which sets
-a slot based on the length of the last user message.
+If you're using the Rasa SDK we recommend you to extend the provided
+`FormValidationAction`. When using the `FormValidationAction`, three steps are required
+to extract customs slots:
+
+1. Define a method `extract_<slot_name>` for every slot that should be mapped in a
+   custom way.
+2. Make sure that in the domain file you list for your form only those slots that use 
+[predefined mappings](./forms.mdx#slot-mappings).
+3. Override `required_slots` to add all slots with custom mappings to the list of slots
+   the form should request.
+
+The following example shows the implementation of a form which extracts a slot
+`outdoor_seating` in a custom way, in addition to the slots which use 
+[predefined mappings](./forms.mdx#slot-mappings).
+The method `extract_outdoor_seating` sets the slot `outdoor_seating` based on whether
+the keyword `outdoor` was present in the last user message.
 
 ```python
-from typing import Dict, Text, List
+from typing import Dict, Text, List, Optional, Any
 
 from rasa_sdk import Tracker
-from rasa_sdk.events import EventType
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk import Action
-from rasa_sdk.events import SlotSet
+from rasa_sdk.forms import FormValidationAction
 
 
-class ValidateRestaurantForm(Action):
+class ValidateRestaurantForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
 
-    def run(
-        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
-    ) -> List[EventType]:
-        text_of_last_user_message = tracker.latest_message.get("text")
+    async def required_slots(
+        self,
+        slots_mapped_in_domain: List[Text],
+        dispatcher: "CollectingDispatcher",
+        tracker: "Tracker",
+        domain: "DomainDict",
+    ) -> Optional[List[Text]]:
+        required_slots = slots_mapped_in_domain + ["outdoor_seating"]
+        return required_slots
 
-        return [SlotSet("user_message_length", len(text_of_last_user_message))]
+    async def extract_outdoor_seating(
+        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
+    ) -> Dict[Text, Any]:
+        text_of_last_user_message = tracker.latest_message.get("text")
+        sit_outside = "outdoor" in text_of_last_user_message
+
+        return {"outdoor_seating": sit_outside}
 ```
 
-### Requesting Extra Slots
+By default the `FormValidationAction`
+will automatically set the [`requested_slot`](forms.mdx#the-requested_slot-slot) to the
+first slot specified in `required_slots` which is not filled.
 
-If you make frequent changes to the required slots and don't want to retrain your
-assistant when your form changes, you can also use a
-[Custom Action](./actions.mdx#custom-actions) `validate_{form_name}` to define
-which slots should be requested. Rasa Open Source will run your custom action whenever
-the form validates user input. Set the slot `requested_slot` to the name of the slot
-which should be extracted next. If all desired slots are filled, set `requested_slot`
-to `None`.
+### Dynamic Form Behavior
 
-The following example shows the implementation of a custom action which requests
-the three slots `cuisine`, `num_people`, and `outdoor_seating`.
+By default Rasa Open Source will ask for the next empty slot from the slots
+listed for your form in the domain file. If you use
+[custom slot mappings](forms.mdx#custom-slot-mappings) and the `FormValidationAction`,
+it will ask for the first empty slot returned by the `required_slots` method. If all
+slots in `required_slots` are filled the form will be be deactivated.
+
+If needed, you can update the required slots of your form dynamically.
+This is, for example, useful when you need further details based on how
+a previous slot was filled or you want to change the order in which slots are requested.
+
+If you are using the Rasa SDK, we recommend you to use the `FormValidationAction` and
+override `required_slots` to fit your dynamic behavior. You should implement
+a method `extract_<slot name>` for every slot which doesn't use a predefined mapping,
+as described in [Custom Slot Mappings](forms.mdx#custom-slot-mappings).
+The example below will ask the user if they want to sit in
+the shade or in the sun in case they said they want to sit outside.
 
 ```python
-from typing import Dict, Text, List
+from typing import Text, List, Optional
 
-from rasa_sdk import Tracker
-from rasa_sdk.events import EventType
-from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk import Action
-from rasa_sdk.events import SlotSet
+from rasa_sdk.forms import FormValidationAction
 
-
-class ValidateRestaurantForm(Action):
+class ValidateRestaurantForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
 
-    def run(
-        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
-    ) -> List[EventType]:
-        required_slots = ["cuisine", "num_people", "outdoor_seating"]
+    async def required_slots(
+        self,
+        slots_mapped_in_domain: List[Text],
+        dispatcher: "CollectingDispatcher",
+        tracker: "Tracker",
+        domain: "DomainDict",
+    ) -> Optional[List[Text]]:
+        additional_slots = ["outdoor_seating"]
+        if tracker.slots.get("outdoor_seating") is True:
+            # If the user wants to sit outside, ask
+            # if they want to sit in the shade or in the sun.
+            additional_slots.append("shade_or_sun")
 
-        for slot_name in required_slots:
-            if tracker.slots.get(slot_name) is None:
-                # The slot is not filled yet. Request the user to fill this slot next.
-                return [SlotSet("requested_slot", slot_name)]
-
-        # All slots are filled.
-        return [SlotSet("requested_slot", None)]
+        return additional_slots + slots_mapped_in_domain
 ```
 
 ### The requested_slot slot
@@ -479,10 +508,10 @@ Again, it is **strongly** recommended that you use
 ### Using a Custom Action to Ask For the Next Slot
 
 As soon as the form determines which slot has to be filled next by the user, it will
-execute the action `utter_ask_{form_name}_{slot_name}` or `utter_ask_{slot_name}`
+execute the action `utter_ask_<form_name>_<slot_name>` or `utter_ask_<slot_name>`
 to ask the user to provide the necessary information. If a regular utterance is not
-enough, you can also use a custom action `action_ask_{form_name}__{slot_name}` or
-`action_ask_{slot_name}` to ask for the next slot.
+enough, you can also use a custom action `action_ask_<form_name>__<slot_name>` or
+`action_ask_<slot_name>` to ask for the next slot.
 
 ```python
 from typing import Dict, Text, List
