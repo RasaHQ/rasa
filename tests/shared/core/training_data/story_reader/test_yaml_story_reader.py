@@ -42,7 +42,7 @@ async def test_can_read_test_story_with_slots(default_domain: Domain):
     "domain",
     [
         {"slots": {"my_slot": {"type": "text"}}},
-        {"slots": {"my_slot": {"type": "bool"}}},
+        {"slots": {"my_slot": {"type": "list"}}},
     ],
 )
 async def test_default_slot_value_if_slots_referenced_by_name_only(domain: Dict):

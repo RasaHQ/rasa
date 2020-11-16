@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union
 
 import rasa.shared.data
-from rasa.shared.core.slots import TextSlot, BooleanSlot
+from rasa.shared.core.slots import TextSlot, ListSlot
 from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
@@ -446,7 +446,7 @@ class YAMLStoryReader(StoryReader):
         if not self.domain:
             return None
 
-        slot_types_with_default_types = {TextSlot: "filled", BooleanSlot: True}
+        slot_types_with_default_types = {TextSlot: "filled", ListSlot: ["filled"]}
         slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
 
         default_value = slot_types_with_default_types.get(type(slot))
@@ -458,6 +458,8 @@ class YAMLStoryReader(StoryReader):
                 f"is empty.",
                 docs=DOCS_URL_SLOTS,
             )
+
+        return default_value
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
 
