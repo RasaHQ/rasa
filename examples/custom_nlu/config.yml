@@ -1,16 +1,6 @@
 language: en
 
 pipeline:
-- name: RemoteSpacyCustomNER
-  host: "127.0.0.1"
-  port: "9501"
-  arch: "transformer"
-  dropout: 0.1
-  accumulate_gradient: 1
-  patience: 100
-  max_epochs: 200
-  max_steps: 500
-  eval_frequency: 200
 - name: SpacyNLP
   model: "en_core_web_md"
 - name: SpacyTokenizer
@@ -23,6 +13,15 @@ pipeline:
   max_ngram: 4
 - name: DIETClassifier
   epochs: 1
+- name: STSFallbackTrainer
+  host: "127.0.0.1"
+  port: "9502"
+  dropout: 0.1
+  accumulate_gradient: 1
+  patience: 100
+  max_epochs: 200
+  max_steps: 500
+  eval_frequency: 200
 
 policies:
   - name: MappingPolicy
