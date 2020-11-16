@@ -13,6 +13,7 @@ from rasa.shared.core.training_data import loading
 from rasa.shared.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
+    DEFAULT_VALUE_TEXT_SLOTS,
 )
 from rasa.shared.core.training_data.structures import StoryStep, RuleStep
 
@@ -231,7 +232,7 @@ async def test_yaml_slot_without_value_is_parsed(default_domain: Domain):
         remove_duplicates=False,
     )
 
-    assert tracker[0].events[-2] == SlotSet(key="name", value=None)
+    assert tracker[0].events[-2] == SlotSet(key="name", value=DEFAULT_VALUE_TEXT_SLOTS)
 
 
 async def test_yaml_wrong_yaml_format_warning(default_domain: Domain):

@@ -49,6 +49,8 @@ KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
 CORE_SCHEMA_FILE = "utils/schemas/stories.yml"
+DEFAULT_VALUE_TEXT_SLOTS = "filled"
+DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
 
 class YAMLStoryReader(StoryReader):
@@ -446,7 +448,10 @@ class YAMLStoryReader(StoryReader):
         if not self.domain:
             return None
 
-        slot_types_with_default_types = {TextSlot: "filled", ListSlot: ["filled"]}
+        slot_types_with_default_types = {
+            TextSlot: DEFAULT_VALUE_TEXT_SLOTS,
+            ListSlot: DEFAULT_VALUE_LIST_SLOTS,
+        }
         slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
 
         default_value = slot_types_with_default_types.get(type(slot))
