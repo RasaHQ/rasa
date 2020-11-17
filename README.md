@@ -290,7 +290,7 @@ release, as well as:
     2. Reminding everyone to go over their issues and PRs and please assign them to the milestone
     3. Clarifying the scheduled date for the release
 
-#### Release day! 🤘
+#### Release day! 🚀
 
 1. **At the start of the day, post a small message on slack announcing release day!** Communicate you'll be handling 
 the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and 
