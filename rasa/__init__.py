@@ -7,7 +7,6 @@ __version__ = version.__version__
 
 from rasa.run import run
 from rasa.train import train
-from rasa.train_chunks import train_in_chunks
 from rasa.test import test
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())

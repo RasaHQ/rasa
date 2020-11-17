@@ -42,7 +42,7 @@ def train_chunks(args: argparse.Namespace) -> Optional[Text]:
     Returns:
         The path where the trained model is stored.
     """
-    import rasa
+    import rasa.train_chunks
 
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
@@ -57,7 +57,7 @@ def train_chunks(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
-    return rasa.train_in_chunks(
+    return rasa.train_chunks.train_in_chunks(
         domain=domain,
         config=config,
         training_files=training_files,
