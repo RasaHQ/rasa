@@ -246,15 +246,14 @@ async def _do_training_in_chunks(
 
     interpreter_path = None
     if fingerprint_comparison_result.should_retrain_nlu():
-        _ = await _train_nlu_in_chunks_with_validated_data(
+        model_path = await _train_nlu_in_chunks_with_validated_data(
             file_importer,
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=nlu_additional_arguments,
         )
-        # TODO set correct interpreter path once NLU training works
-        # interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
+        interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
     else:
         print_color(
             "NLU data/configuration did not change. No need to retrain NLU model.",
@@ -268,8 +267,10 @@ async def _do_training_in_chunks(
             train_path=train_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=core_additional_arguments,
-            interpreter=_load_interpreter(interpreter_path)
-            or _interpreter_from_previous_model(old_model_zip_path),
+            interpreter=None
+            # TODO use actual interpreter as soon as NLU training works
+            # interpreter=_load_interpreter(interpreter_path)
+            # or _interpreter_from_previous_model(old_model_zip_path),
         )
     elif fingerprint_comparison_result.should_retrain_nlg():
         print_color(
