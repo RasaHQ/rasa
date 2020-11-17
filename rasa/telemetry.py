@@ -612,7 +612,7 @@ def initialize_error_reporting() -> None:
         KeyboardInterrupt,
         RasaException,
         NotImplementedError,
-        CancelledError,
+        asyncio.CancelledError,
     ]
 
     try:

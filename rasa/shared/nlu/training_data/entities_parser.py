@@ -4,6 +4,7 @@ from typing import Text, List, Dict, Match, Optional, NamedTuple, Any
 
 import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.shared.exceptions import InvalidEntityFormatException
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
