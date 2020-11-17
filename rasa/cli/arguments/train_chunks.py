@@ -14,7 +14,12 @@ from rasa.cli.arguments.train import (
 )
 
 
-def set_train_in_chunks_arguments(parser: argparse.ArgumentParser):
+def set_train_in_chunks_arguments(parser: argparse.ArgumentParser) -> None:
+    """Set the command line arguments for the command 'rasa train-in-chunks'.
+
+    Args:
+        parser: the parser to add the arguments to
+    """
     add_data_param(parser)
     add_config_param(parser)
     add_domain_param(parser)

@@ -221,6 +221,7 @@ class Trainer:
         """Trains the underlying pipeline using the provided training data."""
         import tempfile
 
+        # TODO do we really need this copy? can we avoid it somehow?
         training_data = copy.deepcopy(data)
         training_data.validate()
 
@@ -309,10 +310,19 @@ class Trainer:
         fixed_model_name: Text = None,
         persist_nlu_training_data: bool = False,
     ) -> Text:
-        """Persist all components of the pipeline to the passed path.
+        """Persists all components of the pipeline to the passed path.
 
-        Returns the directory of the persisted model."""
+        Returns the directory of the persisted model.
 
+        Args:
+            path: The path to use.
+            persistor: The persistor to use.
+            fixed_model_name: The model name to use.
+            persist_nlu_training_data: If True the training data will be persisted.
+
+        Returns:
+            The path to the directory the model is stored.
+        """
         metadata = {"language": self.config["language"], "pipeline": []}
 
         dir_name, model_name = self._create_model_dir(path, fixed_model_name)

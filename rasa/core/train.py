@@ -8,6 +8,7 @@ from typing import Dict, Optional, Text, Union, List
 
 import rasa.shared.utils.io
 import rasa.utils.io
+from rasa.core.agent import Agent
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -77,20 +78,25 @@ async def train_in_chunks(
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
     policy_config: Optional[Union[Text, Dict]] = None,
-    exclusion_percentage: Optional[int] = None,
     additional_arguments: Optional[Dict] = None,
-):
+) -> Agent:
+    """Trains the core model using smaller chunks.
+
+    Args:
+        domain_file: the path to the domain file
+        training_resource: either the path to the training data or a training data
+          importer
+        output_path: the path to store the model to
+        interpreter: the trained interpreter
+        endpoints: the available endpoints
+        policy_config: the config to use
+        additional_arguments: any additional arguments
+
+    Returns:
+        The trained agent.
+    """
     # TODO
-    return await train(
-        domain_file,
-        training_resource,
-        output_path,
-        interpreter,
-        endpoints,
-        policy_config,
-        exclusion_percentage,
-        additional_arguments,
-    )
+    pass
 
 
 async def train_comparison_models(

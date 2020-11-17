@@ -692,6 +692,7 @@ class TrainingData:
         Returns:
             A list of all training data chunks.
         """
+        # TODO split training data into actual chunks
         return [TrainingDataChunk(self.training_examples, self.responses)]
 
 

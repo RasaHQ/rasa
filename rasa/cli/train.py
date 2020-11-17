@@ -69,7 +69,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
 
-    config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
+    config = get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
         rasa.cli.utils.get_validated_path(
@@ -112,7 +112,7 @@ def train_core(
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
+        config = get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
 
         return train_core(
             domain=args.domain,

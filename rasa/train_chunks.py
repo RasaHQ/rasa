@@ -34,6 +34,22 @@ def train_in_chunks(
     nlu_additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> Optional[Text]:
+    """Trains a Rasa model using smaller chunks.
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config for Core and NLU.
+        training_files: Paths to the training data for Core and NLU.
+        output_path: Output path.
+        force_training: If `True` retrain model even if data has not changed.
+        fixed_model_name: Name of model to be stored.
+        core_additional_arguments: Additional training parameters for core training.
+        nlu_additional_arguments: Additional training parameters forwarded to training
+                                  method of each NLU component.
+
+    Returns:
+        Path of the trained model archive.
+    """
     return rasa.utils.common.run_in_loop(
         train_in_chunks_async(
             domain=domain,
@@ -59,7 +75,7 @@ async def train_in_chunks_async(
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
-    """Trains a Rasa model (Core and NLU).
+    """Trains a Rasa model using smaller chunks (Core and NLU).
 
     Args:
         domain: Path to the domain file.
@@ -75,7 +91,6 @@ async def train_in_chunks_async(
     Returns:
         Path of the trained model archive.
     """
-
     file_importer = TrainingDataImporter.load_from_config(
         config, domain, training_files
     )
@@ -103,6 +118,16 @@ async def train_in_chunks_async(
 async def handle_domain_if_not_exists(
     file_importer: TrainingDataImporter, output_path, fixed_model_name
 ):
+    """Trains only NLU as the domain is not valid or does not exist.
+
+    Args:
+        file_importer: `TrainingDataImporter` which supplies the training data.
+        output_path: Output path.
+        fixed_model_name: Name of model to be stored.
+
+    Returns:
+        Path of the trained model archive.
+    """
     nlu_model_only = await _train_nlu_in_chunks_with_validated_data(
         file_importer, output=output_path, fixed_model_name=fixed_model_name
     )
@@ -131,8 +156,6 @@ async def _train_in_chunks_async_internal(
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
-        persist_nlu_training_data: `True` if the NLU training data should be persisted
-                                   with the model.
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
                                   method of each NLU component.
@@ -140,7 +163,6 @@ async def _train_in_chunks_async_internal(
     Returns:
         Path of the trained model archive.
     """
-
     stories, nlu_data = await asyncio.gather(
         file_importer.get_stories(), file_importer.get_nlu_data()
     )
@@ -224,7 +246,7 @@ async def _do_training_in_chunks(
 
     interpreter_path = None
     if fingerprint_comparison_result.should_retrain_nlu():
-        model_path = await _train_nlu_in_chunks_with_validated_data(
+        _ = await _train_nlu_in_chunks_with_validated_data(
             file_importer,
             output=output_path,
             train_path=train_path,
@@ -272,8 +294,19 @@ async def _train_core_in_chunks_with_validated_data(
     additional_arguments: Optional[Dict] = None,
     interpreter: Optional[Interpreter] = None,
 ) -> Optional[Text]:
-    """Train Core with validated training and config data."""
+    """Trains a Rasa Core model using chunks with validated training and config data.
 
+    Args:
+        file_importer: `TrainingDataImporter` which supplies the training data.
+        output: Output path.
+        train_path: Directory in which to train the model.
+        fixed_model_name: Name of model to be stored.
+        additional_arguments: Additional training parameters for core training.
+        interpreter: The trained interpreter.
+
+    Returns:
+        Path of the trained model archive.
+    """
     import rasa.core.train
 
     with ExitStack() as stack:
@@ -323,8 +356,18 @@ async def _train_nlu_in_chunks_with_validated_data(
     fixed_model_name: Optional[Text] = None,
     additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
-    """Train NLU with validated training and config data."""
+    """Trains a Rasa NLU model using chunks with validated training and config data.
 
+    Args:
+        file_importer: `TrainingDataImporter` which supplies the training data.
+        output: Output path.
+        train_path: Directory in which to train the model.
+        fixed_model_name: Name of model to be stored.
+        additional_arguments: Additional training parameters for nlu training.
+
+    Returns:
+        Path of the trained model archive.
+    """
     import rasa.nlu.train
 
     if additional_arguments is None:

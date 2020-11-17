@@ -16,7 +16,7 @@ from rasa.shared.constants import (
 def add_subparser(
     subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
-    """Add all training parsers.
+    """Add all parsers for training in chunks.
 
     Args:
         subparsers: subparser we are going to attach to
@@ -34,6 +34,14 @@ def add_subparser(
 
 
 def train_chunks(args: argparse.Namespace) -> Optional[Text]:
+    """Train a model using smaller chunks.
+
+    Args:
+        args: the command line arguments
+
+    Returns:
+        The path where the trained model is stored.
+    """
     import rasa
 
     domain = rasa.cli.utils.get_validated_path(
@@ -56,12 +64,12 @@ def train_chunks(args: argparse.Namespace) -> Optional[Text]:
         output=args.out,
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
-        core_additional_arguments=extract_core_additional_arguments(args),
-        nlu_additional_arguments=extract_nlu_additional_arguments(args),
+        core_additional_arguments=_extract_core_additional_arguments(args),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(args),
     )
 
 
-def extract_core_additional_arguments(args: argparse.Namespace) -> Dict:
+def _extract_core_additional_arguments(args: argparse.Namespace) -> Dict:
     arguments = {}
 
     if "augmentation" in args:
@@ -70,7 +78,7 @@ def extract_core_additional_arguments(args: argparse.Namespace) -> Dict:
     return arguments
 
 
-def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
+def _extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
     arguments = {}
 
     if "num_threads" in args:
