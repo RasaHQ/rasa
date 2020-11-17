@@ -407,7 +407,7 @@ class YAMLStoryReader(StoryReader):
             PREDICTED_CONFIDENCE_KEY: 1.0,
         }
 
-        if KEY_USER_MESSAGE in step:
+        if self.use_e2e is True and KEY_USER_MESSAGE in step:
             user_message = step[KEY_USER_MESSAGE].strip()
             entities = entities_parser.find_entities_in_training_example(user_message)
             plain_text = entities_parser.replace_entities(user_message)
