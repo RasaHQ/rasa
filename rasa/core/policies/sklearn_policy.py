@@ -306,10 +306,11 @@ class SklearnPolicy(Policy):
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
         if not Path(path).exists():
-            raise OSError(
+            logger.error(
                 f"Failed to load dialogue model. Path {filename.absolute()} "
                 f"doesn't exist."
             )
+            return
 
         featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (

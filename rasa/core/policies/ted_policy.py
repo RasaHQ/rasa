@@ -444,10 +444,11 @@ class TEDPolicy(Policy):
         model_path = Path(path)
 
         if not model_path.exists():
-            raise Exception(
+            logger.error(
                 f"Failed to load TED policy model. Path "
                 f"'{model_path.absolute()}' doesn't exist."
             )
+            return
 
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
