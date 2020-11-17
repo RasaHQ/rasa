@@ -692,7 +692,7 @@ class TrainingData:
         Returns:
             A list of all training data chunks.
         """
-        pass
+        return [TrainingDataChunk(self.training_examples, self.responses)]
 
 
 class TrainingDataChunk:

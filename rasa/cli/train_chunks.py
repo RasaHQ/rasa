@@ -54,14 +54,13 @@ def train_chunks(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
-    return rasa.train(
+    return rasa.train_in_chunks(
         domain=domain,
         config=config,
         training_files=training_files,
         output=args.out,
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
-        persist_nlu_training_data=args.persist_nlu_data,
         core_additional_arguments=extract_core_additional_arguments(args),
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
     )

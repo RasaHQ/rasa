@@ -103,7 +103,7 @@ async def train_in_chunks_async(
 async def handle_domain_if_not_exists(
     file_importer: TrainingDataImporter, output_path, fixed_model_name
 ):
-    nlu_model_only = await _train_nlu_with_validated_data(
+    nlu_model_only = await _train_nlu_in_chunks_with_validated_data(
         file_importer, output=output_path, fixed_model_name=fixed_model_name
     )
     print_warning(
@@ -217,6 +217,8 @@ async def _do_training_in_chunks(
     nlu_additional_arguments: Optional[Dict] = None,
     old_model_zip_path: Optional[Text] = None,
 ):
+    from rasa.train import _load_interpreter, _interpreter_from_previous_model
+
     if not fingerprint_comparison_result:
         fingerprint_comparison_result = FingerprintComparisonResult()
 
@@ -229,7 +231,8 @@ async def _do_training_in_chunks(
             fixed_model_name=fixed_model_name,
             additional_arguments=nlu_additional_arguments,
         )
-        interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
+        # TODO set correct interpreter path once NLU training works
+        # interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
     else:
         print_color(
             "NLU data/configuration did not change. No need to retrain NLU model.",
@@ -259,26 +262,6 @@ async def _do_training_in_chunks(
             "Core stories/configuration did not change. No need to retrain Core model.",
             color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
-
-
-def _load_interpreter(
-    interpreter_path: Optional[Text],
-) -> Optional[NaturalLanguageInterpreter]:
-    if interpreter_path:
-        return rasa.core.interpreter.create_interpreter(interpreter_path)
-
-    return None
-
-
-def _interpreter_from_previous_model(
-    old_model_zip_path: Optional[Text],
-) -> Optional[NaturalLanguageInterpreter]:
-    if not old_model_zip_path:
-        return None
-
-    with model.unpack_model(old_model_zip_path) as unpacked:
-        _, old_nlu = model.get_model_subdirectories(unpacked)
-        return rasa.core.interpreter.create_interpreter(old_nlu)
 
 
 async def _train_core_in_chunks_with_validated_data(

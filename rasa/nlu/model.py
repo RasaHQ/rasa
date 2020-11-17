@@ -5,8 +5,8 @@ import os
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.nlu
-from nlu.featurizers.featurizer import Featurizer
-from nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -265,7 +265,7 @@ class Trainer:
             if isinstance(component, Featurizer):
                 metadata["pipeline"] = self._persist_component(component, dir_name, i)
 
-        # TODO train classifiers
+        # TODO training of classifiers probably needs to be adapted
         for i, component in enumerate(self.pipeline):
             if isinstance(component, (IntentClassifier, EntityExtractor)):
                 for j in range(number_of_chunks):
