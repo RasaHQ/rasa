@@ -77,3 +77,7 @@ class FileIOException(RasaException):
 
 class InvalidConfigException(ValueError, RasaException):
     """Raised if an invalid configuration is encountered."""
+
+
+class InvalidEntityFormatException(RasaException):
+    """Raised if the format of an entity is invalid."""
