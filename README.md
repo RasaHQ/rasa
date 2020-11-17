@@ -274,7 +274,7 @@ and we cannot be 100% sure what will go in a release, because certain features m
 At the beginning of each quarter, the Rasa team will review the scheduled release dates for all products and make sure 
 they work for the projected work we have planned for the quarter, as well as work well across products.
 
-**Once the dates are settled upon, we update the respective milestones.**
+**Once the dates are settled upon, we update the respective [milestones](https://github.com/RasaHQ/rasa/milestones).**
 
 ### Cutting a Major / Minor release
 #### A week before release day
