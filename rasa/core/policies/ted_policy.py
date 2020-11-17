@@ -511,7 +511,11 @@ class TEDPolicy(Policy):
             [tracker], domain, interpreter, use_text_for_last_user_input=self.only_e2e
         )
         # the second - text, but only after user utterance and if not only e2e
-        if tracker.latest_action_name == ACTION_LISTEN_NAME and not self.only_e2e:
+        if (
+            tracker.latest_action_name == ACTION_LISTEN_NAME
+            and TEXT in self.fake_features
+            and not self.only_e2e
+        ):
             tracker_state_features += self.featurizer.create_state_features(
                 [tracker], domain, interpreter, use_text_for_last_user_input=True
             )
