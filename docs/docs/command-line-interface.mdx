@@ -13,6 +13,7 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 |`rasa init`             |Creates a new project with example training data, actions, and config files.                                                              |
 |`rasa train`            |Trains a model using your NLU data and stories, saves trained model in `./models`.                                                        |
+|`rasa train-in-chunks`  |Trains a model using your NLU data and stories in chunks, saves trained model in `./models`.                                                        |
 |`rasa interactive`      |Starts an interactive learning session to create new training data by chatting to your assistant.                                         |
 |`rasa shell`            |Loads your trained model and lets you talk to your assistant on the command line.                                                         |
 |`rasa run`              |Starts a server with your trained model.                                                                                                  |
@@ -84,6 +85,10 @@ The following arguments can be used to configure the training process:
 
 ```text [rasa train --help]
 ```
+
+:::note
+If you run into out of memory issues during training, consider using the command `rasa train-in-chunks` instead.
+:::
 
 ## rasa interactive
 
