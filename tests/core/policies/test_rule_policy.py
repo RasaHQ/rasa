@@ -119,8 +119,8 @@ actions:
             UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
         ],
+        is_rule_tracker=True,
     )
-    greet_rule_at_conversation_start.is_rule_tracker = True
 
     anti_greet_rule = TrackerWithCachedStates.from_events(
         "anti greet rule",
@@ -132,9 +132,11 @@ actions:
             UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(utter_anti_greet_action),
         ],
+        is_rule_tracker=True,
     )
-    anti_greet_rule.is_rule_tracker = True
 
+    # Contradicting rules abort training, hence policy training here needs to succeed
+    # since there aren't contradicting rules in this case.
     policy.train(
         [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
     )
@@ -175,8 +177,8 @@ slots:
             UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
         ],
+        is_rule_tracker=True,
     )
-    greet_rule_at_conversation_start.is_rule_tracker = True
 
     anti_greet_rule = TrackerWithCachedStates.from_events(
         "anti greet rule",
@@ -188,15 +190,16 @@ slots:
             UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(utter_anti_greet_action),
         ],
+        is_rule_tracker=True,
     )
-    anti_greet_rule.is_rule_tracker = True
 
+    # Policy training needs to succeed to confirm that no contradictions have been detected
     policy.train(
         [greet_rule_at_conversation_start, anti_greet_rule], domain, RegexInterpreter()
     )
 
+    # Check that the correct rule is applied when predicting next action in a story.
     conversation_events = [
-        SlotSet(some_slot, some_slot_initial_value),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(intent={"name": GREET_INTENT_NAME}),
     ]
@@ -209,6 +212,8 @@ slots:
     )
     assert_predicted_action(action_probabilities_1, domain, UTTER_GREET_ACTION)
 
+    # A similar check, but this time the first state of the tracker will have the
+    # slot (which has an initial value set in the domain) explicitly set.
     conversation_events_with_initial_slot_explicit = [
         SlotSet(some_slot, some_slot_initial_value),
         ActionExecuted(ACTION_LISTEN_NAME),
