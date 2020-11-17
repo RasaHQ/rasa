@@ -18,7 +18,6 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
 )
-import rasa.utils.io as io_utils
 
 
 def test_train(run_in_simple_project: Callable[..., RunResult]):

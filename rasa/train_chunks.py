@@ -40,7 +40,7 @@ def train_in_chunks(
         domain: Path to the domain file.
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
-        output_path: Output path.
+        output: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         core_additional_arguments: Additional training parameters for core training.
@@ -52,14 +52,14 @@ def train_in_chunks(
     """
     return rasa.utils.common.run_in_loop(
         train_in_chunks_async(
-            domain=domain,
-            config=config,
-            training_files=training_files,
-            output_path=output,
-            force_training=force_training,
-            fixed_model_name=fixed_model_name,
-            core_additional_arguments=core_additional_arguments,
-            nlu_additional_arguments=nlu_additional_arguments,
+            domain,
+            config,
+            training_files,
+            output,
+            force_training,
+            fixed_model_name,
+            core_additional_arguments,
+            nlu_additional_arguments,
         ),
         loop,
     )
@@ -69,7 +69,7 @@ async def train_in_chunks_async(
     domain: Union[Domain, Text],
     config: Text,
     training_files: Optional[Union[Text, List[Text]]],
-    output_path: Text = DEFAULT_MODELS_PATH,
+    output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     core_additional_arguments: Optional[Dict] = None,
@@ -81,7 +81,7 @@ async def train_in_chunks_async(
         domain: Path to the domain file.
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
-        output_path: Output path.
+        output: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
         core_additional_arguments: Additional training parameters for core training.
@@ -101,13 +101,13 @@ async def train_in_chunks_async(
 
         if domain.is_empty():
             return await handle_domain_if_not_exists(
-                file_importer, output_path, fixed_model_name
+                file_importer, output, fixed_model_name
             )
 
         return await _train_in_chunks_async_internal(
             file_importer,
             train_path,
-            output_path,
+            output,
             force_training,
             fixed_model_name,
             core_additional_arguments=core_additional_arguments,
@@ -116,20 +116,22 @@ async def train_in_chunks_async(
 
 
 async def handle_domain_if_not_exists(
-    file_importer: TrainingDataImporter, output_path, fixed_model_name
+    file_importer: TrainingDataImporter,
+    output: Text,
+    fixed_model_name: Optional[Text] = None,
 ):
     """Trains only NLU as the domain is not valid or does not exist.
 
     Args:
         file_importer: `TrainingDataImporter` which supplies the training data.
-        output_path: Output path.
+        output: Output path.
         fixed_model_name: Name of model to be stored.
 
     Returns:
         Path of the trained model archive.
     """
     nlu_model_only = await _train_nlu_in_chunks_with_validated_data(
-        file_importer, output=output_path, fixed_model_name=fixed_model_name
+        file_importer, output=output, fixed_model_name=fixed_model_name
     )
     print_warning(
         "Core training was skipped because no valid domain file was found. "
@@ -137,6 +139,172 @@ async def handle_domain_if_not_exists(
         "the '--domain' argument or check if the provided domain file exists."
     )
     return nlu_model_only
+
+
+def train_core_in_chunks(
+    domain: Union[Domain, Text],
+    config: Text,
+    training_files: Union[Text, List[Text]],
+    output: Text,
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    additional_arguments: Optional[Dict] = None,
+) -> Optional[Text]:
+    """Trains a Core model.
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config file for Core.
+        training_files: Paths to the training data for Core.
+        output: Output path.
+        train_path: If `None` the model will be trained in a temporary
+            directory, otherwise in the provided directory.
+        fixed_model_name: Name of model to be stored.
+        additional_arguments: Additional training parameters.
+
+    Returns:
+        Path of the trained model archive.
+    """
+    return rasa.utils.common.run_in_loop(
+        train_core_in_chunks_async(
+            domain,
+            config,
+            training_files,
+            output,
+            train_path,
+            fixed_model_name,
+            additional_arguments,
+        )
+    )
+
+
+async def train_core_in_chunks_async(
+    domain: Union[Domain, Text],
+    config: Text,
+    training_files: Union[Text, List[Text]],
+    output: Text,
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    additional_arguments: Optional[Dict] = None,
+) -> Optional[Text]:
+    """Trains a Core model (async).
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config file for Core.
+        training_files: Paths to the training data for Core.
+        output: Output path.
+        train_path: If `None` the model will be trained in a temporary
+            directory, otherwise in the provided directory.
+        fixed_model_name: Name of model to be stored.
+        additional_arguments: Additional training parameters.
+
+    Returns:
+        Path of the trained model archive.
+    """
+    file_importer = TrainingDataImporter.load_core_importer_from_config(
+        config, domain, training_files
+    )
+    domain = await file_importer.get_domain()
+    if domain.is_empty():
+        print_error(
+            "Core training was skipped because no valid domain file was found. "
+            "Please specify a valid domain using '--domain' argument or check "
+            "if the provided domain file exists."
+        )
+        return None
+
+    if not await file_importer.get_stories():
+        print_error(
+            "No stories given. Please provide stories in order to "
+            "train a Rasa Core model using the '--stories' argument."
+        )
+        return
+
+    return await _train_core_in_chunks_with_validated_data(
+        file_importer,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        additional_arguments=additional_arguments,
+    )
+
+
+def train_nlu_in_chunks(
+    domain: Union[Domain, Text],
+    config: Text,
+    training_files: Union[Text, List[Text]],
+    output: Text,
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    additional_arguments: Optional[Dict] = None,
+) -> Optional[Text]:
+    """Trains an NLU model.
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config file for Core.
+        training_files: Paths to the training data for NLU.
+        output: Output path.
+        train_path: If `None` the model will be trained in a temporary
+            directory, otherwise in the provided directory.
+        fixed_model_name: Name of model to be stored.
+        additional_arguments: Additional training parameters.
+
+    Returns:
+        If `train_path` is given it returns the path to the model archive,
+        otherwise the path to the directory with the trained model files.
+    """
+    return rasa.utils.common.run_in_loop(
+        _train_nlu_in_chunks_async(
+            domain,
+            config,
+            training_files,
+            output,
+            train_path,
+            fixed_model_name,
+            additional_arguments,
+        )
+    )
+
+
+async def _train_nlu_in_chunks_async(
+    domain: Union[Domain, Text],
+    config: Text,
+    training_files: Union[Text, List[Text]],
+    output: Text,
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    additional_arguments: Optional[Dict] = None,
+) -> Optional[Text]:
+    if not training_files:
+        print_error(
+            "No NLU data given. Please provide NLU data in order to train "
+            "a Rasa NLU model using the '--nlu' argument."
+        )
+        return
+
+    # training NLU only hence the training files still have to be selected
+    file_importer = TrainingDataImporter.load_nlu_importer_from_config(
+        config, domain, training_data_paths=training_files
+    )
+
+    training_data = await file_importer.get_nlu_data()
+    if training_data.can_train_nlu_model():
+        print_error(
+            f"Path '{training_files}' doesn't contain valid NLU data in it. "
+            f"Please verify the data format. "
+            f"The NLU model training will be skipped now."
+        )
+        return
+
+    return await _train_nlu_in_chunks_with_validated_data(
+        file_importer,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        additional_arguments=additional_arguments,
+    )
 
 
 async def _train_in_chunks_async_internal(
@@ -244,16 +412,16 @@ async def _do_training_in_chunks(
     if not fingerprint_comparison_result:
         fingerprint_comparison_result = FingerprintComparisonResult()
 
-    interpreter_path = None
+    # interpreter_path = None
     if fingerprint_comparison_result.should_retrain_nlu():
-        model_path = await _train_nlu_in_chunks_with_validated_data(
+        _ = await _train_nlu_in_chunks_with_validated_data(
             file_importer,
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
             additional_arguments=nlu_additional_arguments,
         )
-        interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
+        # interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
     else:
         print_color(
             "NLU data/configuration did not change. No need to retrain NLU model.",
